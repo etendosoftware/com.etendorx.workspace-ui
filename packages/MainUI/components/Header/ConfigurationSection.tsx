@@ -17,7 +17,7 @@
 
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { ConfigurationModal } from "@workspaceui/componentlibrary/src/components";
+import { ConfigurationModal, AboutModal } from "@workspaceui/componentlibrary/src/components";
 import { modalConfig } from "../../mocks";
 import { useTranslation } from "../../hooks/useTranslation";
 import type {
@@ -40,6 +40,8 @@ import {
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 import { usePreferences } from "@/contexts/preferences";
+import useAboutModalOpen from "@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen";
+import { useAboutModal } from "@/hooks/about/useAboutModal";
 
 const DENSITY_STYLES_OPTIONS = { small: "small-scale", default: "default-scale", large: "large-scale" };
 
@@ -48,6 +50,9 @@ const ConfigurationSection: React.FC = () => {
   const { customFaviconColor, setCustomFaviconColor } = usePreferences();
   const [density, setDensity] = useLocalStorage(DENSITY_KEY, "");
   const [sections, setSections] = useState<ISection[]>([]);
+
+  const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
+  const { aboutUrl } = useAboutModal();
 
   const config = useMemo(() => {
     const translatedSections = modalConfig.sections.map((section) => {
@@ -189,13 +194,25 @@ const ConfigurationSection: React.FC = () => {
   };
 
   return (
-    <ConfigurationModal
-      {...config}
-      sections={sections}
-      tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
-      onChangeSelect={handleSelectOption}
-      data-testid="ConfigurationModal__d44cf2"
-    />
+    <>
+      <ConfigurationModal
+        {...config}
+        sections={sections}
+        tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
+        onChangeSelect={handleSelectOption}
+        onAboutClick={openAboutModal}
+        aboutButtonTooltip={t("common.about")}
+        data-testid="ConfigurationModal__d44cf2"
+      />
+      <AboutModal
+        aboutUrl={aboutUrl}
+        title={t("common.about")}
+        isOpen={aboutModalOpen}
+        onClose={closeAboutModal}
+        closeButtonText={t("common.close")}
+        data-testid="AboutModal__d44cf2"
+      />
+    </>
   );
 };
 

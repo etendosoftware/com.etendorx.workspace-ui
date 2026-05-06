@@ -195,10 +195,13 @@ export function useProcessInitialization({
     [params, enabled, fetch]
   );
 
-  // Auto-fetch on mount if enabled and type is process_definition
-  // For other types, skip loading and set empty defaults
+  // Auto-fetch on mount for process types that support DefaultsProcessActionHandler.
+  // REPORT_AND_PROCESS processes also need defaults loaded so their parameters get
+  // correct initial display logic and default values (same as PROCESS_DEFINITION).
   useMemo(() => {
-    if (type !== PROCESS_TYPES.PROCESS_DEFINITION) {
+    const supportsDefaults = type === PROCESS_TYPES.PROCESS_DEFINITION || type === PROCESS_TYPES.REPORT_AND_PROCESS;
+
+    if (!supportsDefaults) {
       dispatch({ type: "SKIP" });
       return;
     }

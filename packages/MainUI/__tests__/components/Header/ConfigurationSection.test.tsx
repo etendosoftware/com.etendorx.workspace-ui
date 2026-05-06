@@ -16,13 +16,20 @@
  */
 
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import ConfigurationSection from "@/components/Header/ConfigurationSection";
 
 // Mock useTranslation - return stable reference
 const mockT = jest.fn((key: string) => key);
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({
     t: mockT,
+  }),
+}));
+
+// Mock useUserContext
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: () => ({
+    token: "mock-token",
+    currentRole: { id: "role-1", name: "Role 1" },
   }),
 }));
 
@@ -40,6 +47,25 @@ const mockSetDensity = jest.fn();
 jest.mock("@workspaceui/componentlibrary/src/hooks/useLocalStorage", () => ({
   useLocalStorage: () => ["default-scale", mockSetDensity],
 }));
+
+// Mock useAboutModal
+jest.mock("@/hooks/about/useAboutModal", () => ({
+  useAboutModal: () => ({
+    aboutUrl: "http://example.com/about",
+  }),
+}));
+
+// Mock useAboutModalOpen
+jest.mock("@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen", () => ({
+  __esModule: true,
+  default: () => ({
+    isOpen: false,
+    openModal: jest.fn(),
+    closeModal: jest.fn(),
+  }),
+}));
+
+import ConfigurationSection from "@/components/Header/ConfigurationSection";
 
 // Mock modalConfig
 jest.mock("@/mocks", () => ({
@@ -124,6 +150,7 @@ jest.mock("@workspaceui/componentlibrary/src/components", () => ({
       </div>
     );
   },
+  AboutModal: () => <div data-testid="about-modal" />,
 }));
 
 describe("ConfigurationSection", () => {

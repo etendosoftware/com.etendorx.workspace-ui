@@ -19,17 +19,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import ConversationList from "../../../src/components/Copilot/ConversationList";
 import type { IConversationSummary } from "@workspaceui/api-client/src/api/copilot";
 
-// Mock icons
-jest.mock("../../../src/assets/icons/plus.svg", () => ({
-  __esModule: true,
-  default: () => <div data-testid="plus-icon" />,
-}));
-
-jest.mock("../../../src/assets/icons/sidebar.svg", () => ({
-  __esModule: true,
-  default: () => <div data-testid="sidebar-icon" />,
-}));
-
 // Mock IconButton component
 jest.mock("../../../src/components/IconButton", () => ({
   __esModule: true,
@@ -48,6 +37,13 @@ describe("ConversationList", () => {
     loading: "Loading conversations...",
     untitledConversation: "Untitled Conversation",
     closeSidebar: "Close sidebar",
+    searchPlaceholder: "Search conversations",
+    archivedTitle: "Archived",
+    noArchivedConversations: "No archived conversations",
+    renameConversation: "Rename conversation",
+    deleteConversation: "Hide conversation",
+    restoreConversation: "Restore conversation",
+    permanentDeleteConversation: "Delete permanently",
   };
 
   const mockConversations: IConversationSummary[] = [
@@ -60,6 +56,12 @@ describe("ConversationList", () => {
     onSelectConversation: jest.fn(),
     onNewConversation: jest.fn(),
     onCloseSidebar: jest.fn(),
+    onSearchQueryChange: jest.fn(),
+    onRenameConversation: jest.fn(),
+    onDeleteConversation: jest.fn(),
+    onToggleArchive: jest.fn(),
+    onRestoreConversation: jest.fn(),
+    onPermanentDeleteConversation: jest.fn(),
   };
 
   beforeEach(() => {
@@ -242,6 +244,63 @@ describe("ConversationList", () => {
 
       expect(mockHandlers.onCloseSidebar).toHaveBeenCalledTimes(1);
     });
+
+    it("should call onSearchQueryChange when the search input changes", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onSearchQueryChange={mockHandlers.onSearchQueryChange}
+          searchQuery=""
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      fireEvent.change(screen.getByPlaceholderText(mockTranslations.searchPlaceholder), {
+        target: { value: "Test" },
+      });
+
+      expect(mockHandlers.onSearchQueryChange).toHaveBeenCalledWith("Test");
+    });
+
+    it("should call onRenameConversation when inline rename is submitted", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onRenameConversation={mockHandlers.onRenameConversation}
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      fireEvent.click(screen.getAllByTitle(mockTranslations.renameConversation)[0]);
+      const input = screen.getByDisplayValue("Test Conversation 1");
+      fireEvent.change(input, { target: { value: "Renamed Conversation" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+
+      expect(mockHandlers.onRenameConversation).toHaveBeenCalledWith("conv-1", "Renamed Conversation");
+    });
+
+    it("should call onDeleteConversation when hide action is clicked", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onDeleteConversation={mockHandlers.onDeleteConversation}
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      fireEvent.click(screen.getAllByTitle(mockTranslations.deleteConversation)[0]);
+
+      expect(mockHandlers.onDeleteConversation).toHaveBeenCalledWith("conv-1");
+    });
   });
 
   describe("Generating State", () => {
@@ -263,6 +322,69 @@ describe("ConversationList", () => {
 
       expect(screen.getByText("Generating...")).toBeInTheDocument();
       expect(screen.getByText("Test Conversation")).toBeInTheDocument();
+    });
+  });
+
+  describe("Archive Section", () => {
+    const archivedConversations: IConversationSummary[] = [{ id: "arch-1", title: "Archived Chat" }];
+
+    it("should call onToggleArchive when archive header is clicked", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onToggleArchive={mockHandlers.onToggleArchive}
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      fireEvent.click(screen.getByText(mockTranslations.archivedTitle));
+
+      expect(mockHandlers.onToggleArchive).toHaveBeenCalledTimes(1);
+    });
+
+    it("should render archived conversations and call restore/permanent delete actions", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          archivedConversations={archivedConversations}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onToggleArchive={mockHandlers.onToggleArchive}
+          onRestoreConversation={mockHandlers.onRestoreConversation}
+          onPermanentDeleteConversation={mockHandlers.onPermanentDeleteConversation}
+          archiveExpanded={true}
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      expect(screen.getByText("Archived Chat")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTitle(mockTranslations.restoreConversation));
+      fireEvent.click(screen.getByTitle(mockTranslations.permanentDeleteConversation));
+
+      expect(mockHandlers.onRestoreConversation).toHaveBeenCalledWith("arch-1");
+      expect(mockHandlers.onPermanentDeleteConversation).toHaveBeenCalledWith("arch-1");
+    });
+
+    it("should show empty archive text when expanded without archived conversations", () => {
+      render(
+        <ConversationList
+          conversations={mockConversations}
+          archivedConversations={[]}
+          onSelectConversation={mockHandlers.onSelectConversation}
+          onNewConversation={mockHandlers.onNewConversation}
+          onToggleArchive={mockHandlers.onToggleArchive}
+          archiveExpanded={true}
+          isLoading={false}
+          translations={mockTranslations}
+        />
+      );
+
+      expect(screen.getByText(mockTranslations.noArchivedConversations)).toBeInTheDocument();
     });
   });
 });

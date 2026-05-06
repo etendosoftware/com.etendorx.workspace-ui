@@ -47,11 +47,8 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await customerOption.waitFor({ state: "visible", timeout: 10_000 });
     await customerOption.click({ force: true });
 
-    // Save header to populate defaults (twice)
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 });
-    await closeToastIfPresent(page);
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    // Save header to populate defaults
+    await page.locator("button.toolbar-button-save").first().click();
     await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 

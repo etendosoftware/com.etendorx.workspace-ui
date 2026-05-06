@@ -319,6 +319,7 @@ const en = {
     buttons: {
       submit: "Log In",
       google: "Continue with Google",
+      orGoogle: "Or continue with Google",
     },
     errors: {
       csrfToken: {
@@ -375,6 +376,7 @@ const en = {
       profilesTitle: "Profiles",
       learnMoreText: "Learn more about Copilot →",
       filterPlaceholder: "Filter profiles...",
+      toggleFeaturedFilter: "Show only featured profiles",
     },
     messageInput: {
       placeholder: "Chat with Copilot...",
@@ -662,6 +664,54 @@ const en = {
         RESIZE:
           "Your {{originalWidth}}x{{originalHeight}} pixels uploaded image is going to be resized automatically to {{targetWidth}}x{{targetHeight}} pixels.\nThis could result in a loss of image quality.\n\nDo you want to continue?",
       },
+    },
+  },
+  dashboard: {
+    title: "Dashboard",
+    ctaBanner: {
+      badge: "What's New",
+      title: "Etendo News & Updates",
+      description: "Discover the latest features, improvements, and release notes from Etendo.",
+      learnMore: "Read more",
+    },
+    recentlyViewed: {
+      title: "Recently Viewed",
+      empty: "No recently viewed items",
+    },
+    recentDocuments: {
+      title: "Recent Documents",
+      empty: "No recent documents",
+    },
+    widget: {
+      unavailable: "Module not installed",
+    },
+    noWidgets: "No widgets configured for this dashboard.",
+    loadError: "Could not load the dashboard. Please try again.",
+    retry: "Retry",
+    editParams: {
+      save: "Save",
+      saving: "Saving...",
+    },
+    params: {
+      urlError: "Only public https:// URLs are allowed",
+    },
+    addWidget: {
+      button: "Add widget",
+      title: "Add widget",
+      subtitle: "Choose a widget to add to your dashboard",
+      search: "Search widgets...",
+      noResults: "No widgets match your search",
+      loadError: "Could not load available widgets. Please try again.",
+      add: "Add",
+      adding: "Adding...",
+      cancel: "Cancel",
+      close: "Close",
+      alreadyAdded: "Added",
+      unavailable: "Unavailable",
+      next: "Next",
+      back: "Back",
+      configureSubtitle: "Customize the widget settings before adding it to your dashboard",
+      submitError: "The widget could not be added. Please check the values and try again.",
     },
   },
   packing: {

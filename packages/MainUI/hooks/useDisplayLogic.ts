@@ -48,7 +48,8 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
       return compiledExpr(smartContext, smartContext);
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
-      return logger.error("Unexpected error", error);
+      logger.error("Unexpected error", error);
+      return false;
     }
   }, [
     field.displayLogicExpression,
