@@ -106,7 +106,6 @@ async function processRequestData(
     headers["X-CSRF-Token"] = csrf;
   }
 
-  // GET requests don't have a body
   if (method === "GET") {
     return { headers };
   }

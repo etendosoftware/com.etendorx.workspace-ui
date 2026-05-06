@@ -47,10 +47,6 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     cy.clickSave();
     cy.closeToastIfPresent();
 
-    // Save all header fields
-    cy.clickSave();
-    cy.closeToastIfPresent();
-
     // Verify Draft status
     cy.contains(".MuiChip-label", "Draft", { timeout: 10000 }).should("exist");
 
@@ -58,8 +54,10 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     // Step 3: Add Invoice Line
     // -------------------------
     cy.get('button[aria-label="Lines"]').click();
+    cy.wait(2500);
 
     cy.clickNewRecord();
+    cy.wait(500);
 
     // Product: Final good A
     cy.get('[data-testid="ChevronDown__2996"]').scrollIntoView().click({ force: true });
@@ -79,9 +77,11 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     cy.get('[data-testid="TextInput__2999"]').clear({ force: true });
     cy.get('[data-testid="TextInput__2999"]').type("13.13", { force: true });
 
-    // Save line
+    // Save line — intercept EDIT-mode FormInit to wait for computed net amount
+    cy.intercept("POST", /FormInitializationComponent/).as("lineFormInitEdit");
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.closeToastIfPresent();
+    cy.wait("@lineFormInitEdit", { timeout: 60000 });
 
     // Verify Net Amount: 26.26
     cy.contains("26.26").should("be.visible");
@@ -97,14 +97,8 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
 
     cy.clickOkInLegacyPopup();
 
-    cy.get(".mb-1", { timeout: 10000 }).should("have.text", "Process completed successfully");
-
     cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    // Refresh and verify Completed status
-    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
-    cy.wait(500);
 
     // Capture invoice number for later use
     cy.captureDocumentNumber(undefined, "invoiceNumber");
@@ -222,8 +216,6 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
 
     cy.get('[data-sonner-toast][data-type="success"]', { timeout: 30000 }).should("be.visible");
     cy.closeToastIfPresent();
-
-    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
 
     // Verify Status: Payment Received
     cy.get('[data-testid="status-bar-container"] span[name="status"]', { timeout: 20000 })

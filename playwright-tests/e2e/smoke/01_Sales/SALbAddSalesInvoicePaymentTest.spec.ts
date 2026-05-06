@@ -170,7 +170,7 @@ test.describe("Sales Order Automation - Complete Flow", () => {
       .first()
       .click();
 
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
 
     // Verify payment transaction toast
     await expect(

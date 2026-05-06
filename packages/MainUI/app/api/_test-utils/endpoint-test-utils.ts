@@ -16,7 +16,7 @@ export function getExpectedDatasourceUrl(
   operationType?: string,
   queryParams?: URLSearchParams | Record<string, string | number>
 ): string {
-  // Use the same logic as the actual implementation
+  // All datasource operations (reads and writes) use the SWS metadata-forward path.
   const baseUrl = getDatasourceUrl(entity, operationType);
 
   if (!queryParams) {
