@@ -14,7 +14,7 @@
  *************************************************************************
  */
 
-import type { ProcessDefinition, ProcessParameters } from "../../components/ProcessModal/types";
+import type { ProcessDefinition, ProcessParameters } from "@workspaceui/api-client/src/api/types";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 /**

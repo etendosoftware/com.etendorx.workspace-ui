@@ -70,6 +70,7 @@ import {
   BUTTON_LIST_REFERENCE_ID,
   BUTTON_REFERENCE_ID,
   PROCESS_TYPES,
+  isPickAndExecute,
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
@@ -92,6 +93,7 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
+import { useGridRowValidation } from "./hooks/useGridRowValidation";
 
 const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
   const [expanded, setExpanded] = useState(true);
@@ -241,6 +243,14 @@ function ProcessDefinitionModalContent({
   const javaClassName = processDefinition.javaClassName;
 
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
+  const [gridRefreshKeysByGrid, setGridRefreshKeysByGrid] = useState<Record<string, number>>({});
+
+  const setGridRefreshKeyForGrid = useCallback(
+    (gridName: string) => {
+      setGridRefreshKeysByGrid((prev) => ({ ...prev, [gridName]: (prev[gridName] ?? 0) + 1 }));
+    },
+    []
+  );
 
   // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
@@ -412,10 +422,9 @@ function ProcessDefinitionModalContent({
     return buildPayloadByInputName(record, tab.fields);
   }, [record, tab?.fields]);
 
-  const hasWindowReference = useMemo(
-    () => Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID),
-    [parameters]
-  );
+  // Pick-and-Execute discriminator: prefers the explicit `uiPattern` from metadata
+  // and falls back to the presence of a Window Reference parameter for legacy seeds.
+  const isPE = useMemo(() => isPickAndExecute(button.processDefinition), [button.processDefinition]);
 
   const {
     fetchConfig,
@@ -701,6 +710,22 @@ function ProcessDefinitionModalContent({
     });
   }, [loading, initializationLoading, parameters, formValues]);
 
+  const peGrids = useMemo(() => {
+    if (!isPE) return [];
+    return Object.values(parameters)
+      .filter((p) => p.reference === WINDOW_REFERENCE_ID && p.window?.tabs)
+      .map((p) => {
+        const paramTab = p.window!.tabs![0] as Tab;
+        const key = p.dBColumnName || p.name;
+        return {
+          selectedRows: gridSelection[key]?._selection ?? [],
+          fields: paramTab?.fields,
+        };
+      });
+  }, [isPE, parameters, gridSelection]);
+
+  const { hasInvalidSelection } = useGridRowValidation({ grids: peGrids });
+
   const handleClose = useCallback(() => {
     if (isPending) return;
     setResult(null);
@@ -764,7 +789,7 @@ function ProcessDefinitionModalContent({
     buildWindowSpecificFields,
     getMappedFormValues,
     resolveDocAction,
-    hasWindowReference,
+    hasWindowReference: isPE,
     availableButtons,
     isPending,
     shouldTriggerSuccess,
@@ -774,6 +799,7 @@ function ProcessDefinitionModalContent({
     setParameters,
     setShouldTriggerSuccess,
     setGridRefreshKey,
+    setGridRefreshKeyForGrid,
     initialParameters: button.processDefinition.parameters,
     fileParams,
   });
@@ -820,14 +846,14 @@ function ProcessDefinitionModalContent({
   );
 
   useEffect(() => {
-    if (open && hasWindowReference) {
+    if (open && isPE) {
       const loadConfig = async () => {
         const combinedPayload = { ...recordValues, ...session };
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, recordValues, session, tabId, open, hasWindowReference]);
+  }, [fetchConfig, recordValues, session, tabId, open, isPE]);
 
   useEffect(() => {
     if (initializationError) {
@@ -1159,6 +1185,7 @@ function ProcessDefinitionModalContent({
               originTab={tab}
               showTitle={false}
               onClose={onClose}
+              processDefinition={button.processDefinition}
               data-testid="WindowReferenceGrid__761503"
             />
           </CollapsibleSection>
@@ -1216,7 +1243,8 @@ function ProcessDefinitionModalContent({
     hasMandatoryParametersWithoutValue ||
     isSubmitting ||
     !!isFinalSuccess ||
-    (hasWindowReference && !gridSelection);
+    (isPE && !gridSelection) ||
+    (isPE && hasInvalidSelection);
 
   const renderModalContent = () => {
     if (warehousePluginLoading && onLoad) {
@@ -1252,7 +1280,7 @@ function ProcessDefinitionModalContent({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
-                {button.processDefinition.description && (
+                {!!button.processDefinition.description && (
                   <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
                 )}
               </div>

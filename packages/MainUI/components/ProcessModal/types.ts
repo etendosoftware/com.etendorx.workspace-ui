@@ -19,6 +19,7 @@ import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasou
 import type {
   Field,
   ProcessAction,
+  ProcessDefinition,
   RefListField,
   EntityData,
   EntityValue,
@@ -153,15 +154,6 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  description?: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
-}
 export interface ResponseMessage {
   msgText: string;
   msgTitle: string;
@@ -190,6 +182,8 @@ export interface WindowReferenceGridProps {
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
   showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
+  /** Parent process definition. Used for P&E layout detection; grid selection mode is driven by `windowReferenceTab.obuiappSelectionType`. */
+  processDefinition?: ProcessDefinition;
 }
 
 export type RowProps = (props: {

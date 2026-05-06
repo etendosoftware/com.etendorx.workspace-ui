@@ -75,6 +75,11 @@ export {
   PROCESS_TYPES,
   ADD_PAYMENT_ORDER_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
+export {
+  isPickAndExecute,
+  allowsMultipleRecords,
+  PICK_AND_EXECUTE_UI_PATTERN,
+} from "@/utils/processes/definition/pickAndExecute";
 
 // --- Components ---
 export { GenericWarehouseProcess } from "./Custom/GenericWarehouseProcess";

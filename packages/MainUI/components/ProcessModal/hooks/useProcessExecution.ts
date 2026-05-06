@@ -46,22 +46,16 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
 import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
+import {
+  type DispatchedAction,
+  dispatchResponseActions,
+  findFirstMessage,
+  findFirstOpenDirectTab,
+} from "../utils/responseActionDispatcher";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
 // ---------------------------------------------------------------------------
-
-interface ProcessViewMsg {
-  msgType?: string;
-  msgTitle?: string;
-  msgText?: string;
-}
-
-interface ResponseAction {
-  showMsgInProcessView?: ProcessViewMsg;
-  showMsgInView?: ProcessViewMsg;
-  smartclientSay?: { message?: string };
-}
 
 interface ExtractedMessage {
   message: unknown;
@@ -122,6 +116,8 @@ export interface UseProcessExecutionParams {
   setParameters: (params: any) => void;
   setShouldTriggerSuccess: (value: boolean) => void;
   setGridRefreshKey: (fn: (prev: number) => number) => void;
+  /** Refresh a single grid by its parameter dBColumnName (for refreshGridParameter action) */
+  setGridRefreshKeyForGrid: (gridName: string) => void;
   /** Original button.processDefinition.parameters — used to reset on close */
   initialParameters: Record<string, ProcessParameter>;
   /** File objects from Upload File parameters, keyed by parameter dBColumnName */
@@ -182,6 +178,7 @@ export function useProcessExecution({
   setParameters,
   setShouldTriggerSuccess,
   setGridRefreshKey,
+  setGridRefreshKeyForGrid,
   initialParameters,
   fileParams,
 }: UseProcessExecutionParams): UseProcessExecutionReturn {
@@ -192,38 +189,31 @@ export function useProcessExecution({
   // -------------------------------------------------------------------------
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult): ExtractedMessage | null => {
-    const data = res.data;
-    const responseActions =
-      data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
+    const actions: DispatchedAction[] = dispatchResponseActions(res.data);
+    const message = findFirstMessage(actions);
+    // Prefer the structured `openDirectTab` action over the legacy SmartClient
+    // HTML link parser. The fallback still kicks in when the handler embeds
+    // `openDirectTab('TAB','REC')` inside the message HTML (older handlers).
+    const structuredOpenDirectTab = findFirstOpenDirectTab(actions);
 
-    if (!responseActions) return null;
-
-    let actionWithMsg: ResponseAction | undefined;
-    if (Array.isArray(responseActions)) {
-      actionWithMsg = responseActions.find(
-        (action: ResponseAction) => action.showMsgInProcessView || action.showMsgInView || action.smartclientSay
-      );
-    } else if (typeof responseActions === "object") {
-      actionWithMsg = responseActions as ResponseAction;
-    }
-
-    const msgView = actionWithMsg?.showMsgInProcessView ?? actionWithMsg?.showMsgInView;
-    if (msgView) {
-      const rawMsg = msgView.msgText || "";
-      const parsed = parseSmartClientMessage(rawMsg);
+    if (message) {
+      const rawMsg = message.payload.msgText || "";
+      const parsedHtml = parseSmartClientMessage(rawMsg);
       return {
-        message: rawMsg || parsed.text,
-        messageType: msgView.msgType,
+        message: rawMsg || parsedHtml.text,
+        messageType: message.payload.msgType,
         isHtml: /<[a-z][\s\S]*>/i.test(rawMsg),
-        linkTabId: parsed.tabId,
-        linkRecordId: parsed.recordId,
+        linkTabId: structuredOpenDirectTab?.tabId ?? parsedHtml.tabId,
+        linkRecordId: structuredOpenDirectTab?.recordId ?? parsedHtml.recordId,
       };
     }
 
-    const smartclientSay = actionWithMsg?.smartclientSay;
-    if (smartclientSay?.message) {
+    const smartclientSayAction = actions.find(
+      (a): a is Extract<DispatchedAction, { kind: "smartclientSay" }> => a.kind === "smartclientSay"
+    );
+    if (smartclientSayAction?.payload.message) {
       return {
-        message: smartclientSay.message,
+        message: smartclientSayAction.payload.message,
         messageType: "success",
         isHtml: true,
       };
@@ -475,6 +465,13 @@ export function useProcessExecution({
 
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
+        const dispatchedActions = dispatchResponseActions(resultData);
+        for (const action of dispatchedActions) {
+          if (action.kind === "refreshGridParameter" && action.payload.gridName) {
+            setGridRefreshKeyForGrid(action.payload.gridName);
+          }
+        }
+
         if (hasRetryExecution) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
@@ -502,6 +499,7 @@ export function useProcessExecution({
       setResult,
       setShouldTriggerSuccess,
       setGridRefreshKey,
+      setGridRefreshKeyForGrid,
     ]
   );
 
@@ -601,9 +599,8 @@ export function useProcessExecution({
 
   const extractResponseMessage = useCallback(
     (result: any) => {
-      if (result?.responseActions?.[0]?.showMsgInProcessView || result?.responseActions?.[0]?.showMsgInView) {
-        return result.responseActions[0].showMsgInProcessView ?? result.responseActions[0].showMsgInView;
-      }
+      const message = findFirstMessage(dispatchResponseActions(result));
+      if (message) return message.payload;
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }
@@ -663,12 +660,12 @@ export function useProcessExecution({
           const result = stringFnResult?.data ?? stringFnResult;
           const responseMessage = extractResponseMessage(result);
 
-          const msgType = responseMessage.msgType || responseMessage.severity;
+          const msgType = responseMessage.msgType;
           const isSuccess = msgType === "success";
           const isWarning = msgType === "warning";
 
           if (isSuccess || isWarning) {
-            const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
+            const message = responseMessage.msgText || t("process.completedSuccessfully");
 
             showProcessToast({
               isSuccess,

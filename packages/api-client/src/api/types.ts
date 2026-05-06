@@ -312,6 +312,7 @@ export enum UIPattern {
   EDIT_ONLY = "SR",
   EDIT_AND_DELETE_ONLY = "ED",
   STANDARD = "STD",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface AuxiliaryInput {
@@ -336,6 +337,7 @@ export interface Tab {
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;
+  filterName?: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
   hqlorderbyclause?: string;
@@ -347,6 +349,8 @@ export interface Tab {
   tableTree?: boolean | string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  /** "M" = multiple (default), "S" = single, "N" = none */
+  obuiappSelectionType?: "M" | "S" | "N" | null;
   process?: string;
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
@@ -895,6 +899,12 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+  /** Pick and Execute discriminator emitted by the metadata converter. Most
+   *  process definitions omit it; only P&E seeds set it to `OBUIAPP_PickAndExecute`. */
+  uIPattern?: UIPattern | string;
+  /** Whether the embedded grid accepts more than one selected row. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  isMultiRecord?: boolean | "Y" | "N";
 }
 
 export interface Labels {

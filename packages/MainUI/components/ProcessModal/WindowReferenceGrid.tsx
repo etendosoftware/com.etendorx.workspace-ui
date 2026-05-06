@@ -15,6 +15,8 @@
  *************************************************************************
  */
 
+import { FilterAlt, FilterAltOff } from "@mui/icons-material";
+import { IconButton, Tooltip } from "@mui/material";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
@@ -46,6 +48,7 @@ import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
 import { useColumns } from "@/hooks/table/useColumns";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import { tabAllowsMultipleSelection } from "@/utils/processes/definition/pickAndExecute";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorDisplay } from "../ErrorDisplay";
 import EmptyState from "../Table/EmptyState";
@@ -612,6 +615,23 @@ export function buildGridCriteria(
 }
 
 /**
+ * Pure helper: given a proposed selection update and the prior selection, clamps
+ * the result to at most 1 row. The kept entry is the one the user just toggled on
+ * (the id missing from `prev`). Exported for unit testing.
+ */
+export function clampToSingleRecord(
+  next: Record<string, boolean>,
+  prev: Record<string, boolean>
+): Record<string, boolean> {
+  const selectedIds = Object.entries(next)
+    .filter(([, isSelected]) => isSelected)
+    .map(([id]) => id);
+  if (selectedIds.length <= 1) return next;
+  const newlyToggledId = selectedIds.find((id) => !prev[id]) ?? selectedIds[selectedIds.length - 1];
+  return { [newlyToggledId]: true };
+}
+
+/**
  * Deep-merges two filter expression maps by grid key.
  * Returns `base` as-is when override is empty → stable reference, no new object.
  */
@@ -647,6 +667,7 @@ const WindowReferenceGrid = ({
   originTab,
   showTitle = true,
   onClose,
+  processDefinition,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1278,6 +1299,7 @@ const WindowReferenceGrid = ({
     columns: rawColumns,
     activeColumnFilters: appliedTableFilters,
     skip: shouldSkipFetch,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? true,
   });
 
   // Ref to track if we have performed initial auto-selection from context
@@ -1494,7 +1516,17 @@ const WindowReferenceGrid = ({
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
-      const newSelection = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
+      const rawSelection = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
+      // For single-select tabs (obuiappSelectionType="S") clamp the selection to at most one row.
+      // The kept entry is the one the user just toggled on (i.e. the id missing from `rowSelection`).
+      let newSelection = rawSelection;
+      if (!tabAllowsMultipleSelection(windowReferenceTab)) {
+        const clamped = clampToSingleRecord(rawSelection, rowSelection);
+        if (clamped !== rawSelection) {
+          persistentSelectionRef.current.clear();
+        }
+        newSelection = clamped;
+      }
 
       // 1. Prepare new records state first to ensure synchronous consistency
       let recordsChanged = false;
@@ -1550,7 +1582,7 @@ const WindowReferenceGrid = ({
         },
       }));
     },
-    [rowSelection, records, onSelectionChange, parameter.dBColumnName]
+    [rowSelection, records, onSelectionChange, parameter.dBColumnName, processDefinition]
   );
 
   const handleClearSelections = useCallback(() => {
@@ -1605,6 +1637,14 @@ const WindowReferenceGrid = ({
       const newSelection = { ...rowSelection };
       newSelection[row.id] = !newSelection[row.id];
 
+      // For single-select tabs, deselect everything else when this row is being turned on.
+      if (!tabAllowsMultipleSelection(windowReferenceTab) && newSelection[row.id]) {
+        for (const otherId of Object.keys(newSelection)) {
+          if (otherId !== row.id) newSelection[otherId] = false;
+        }
+        persistentSelectionRef.current.clear();
+      }
+
       // Mirror Classic SmartClient: update obSelected and payment on each record
       const updatedRecords = records.map((record) => {
         const rid = String(record.id);
@@ -1637,7 +1677,7 @@ const WindowReferenceGrid = ({
         },
       }));
     },
-    [records, onSelectionChange, parameter.dBColumnName, rowSelection]
+    [records, onSelectionChange, parameter.dBColumnName, rowSelection, processDefinition]
   );
 
   const handleCreateRow = useCallback(
@@ -1968,7 +2008,7 @@ const WindowReferenceGrid = ({
       enableColumnResizing: true,
       enableGlobalFilter: false,
       enableRowSelection: true,
-      enableMultiRowSelection: true,
+      enableMultiRowSelection: tabAllowsMultipleSelection(windowReferenceTab),
       positionToolbarAlertBanner: "none",
       enablePagination: false,
       enableStickyHeader: true,
@@ -2006,11 +2046,11 @@ const WindowReferenceGrid = ({
       ),
       initialState: {
         density: "compact",
+        showColumnFilters: true,
       },
       state: {
         rowSelection,
         columnFilters,
-        showColumnFilters: true,
         sorting,
       },
       keepNonExistentRowsSelected: true,
@@ -2153,17 +2193,6 @@ export const GridTopToolbar = ({
   const selectedCount = table.getSelectedRowModel().rows.length;
   const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
 
-  const handleFilterClick = () => {
-    if (effectiveImplicitFilter) {
-      // First: remove implicit filter
-      setIsImplicitFilterApplied(false);
-    } else {
-      // Then: clear column filters
-      table.setColumnFilters([]);
-      handleMRTColumnFiltersChange([]);
-    }
-  };
-
   return (
     <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
       <div className="flex items-center px-2">
@@ -2183,12 +2212,21 @@ export const GridTopToolbar = ({
         )}
       </div>
       <div className="flex items-center">
-        <MRT_ToggleFiltersButton
-          table={table}
-          onClick={handleFilterClick}
-          sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
-          data-testid="MRT_ToggleFiltersButton__ce8544"
-        />
+        {initialIsFilterApplied && (
+          <Tooltip title={t(effectiveImplicitFilter ? "table.tooltips.implicitFilterOn" : "table.tooltips.implicitFilterOff")}>
+            <span>
+              <IconButton
+                onClick={() => setIsImplicitFilterApplied(false)}
+                disabled={!effectiveImplicitFilter}
+                size="small"
+                sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+                data-testid="implicit-filter-button">
+                {effectiveImplicitFilter ? <FilterAlt fontSize="small" /> : <FilterAltOff fontSize="small" />}
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
+        <MRT_ToggleFiltersButton table={table} data-testid="MRT_ToggleFiltersButton__ce8544" />
         <MRT_ShowHideColumnsButton table={table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
         <MRT_ToggleDensePaddingButton table={table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
         <MRT_ToggleFullScreenButton table={table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
