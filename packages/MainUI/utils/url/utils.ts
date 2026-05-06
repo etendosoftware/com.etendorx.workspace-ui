@@ -280,6 +280,29 @@ const buildLocationUrl = (contextPath: string, encoded: string, kioskMode: boole
  * @param kioskMode - Enables kiosk UI restrictions when true
  * @param token - JWT token for authentication. If null, returns legacy URL format
  */
+export const buildEtendoViewUrl = ({
+  baseUrl,
+  viewId,
+  token,
+}: {
+  baseUrl: string;
+  viewId: string;
+  token: string | null;
+}): string => {
+  const viewTab: EtendoBookmarkTab = { viewId, params: {} };
+  const bookmarkData = { st: 1, bm: [viewTab] };
+  const encoded = encodeEtendoBookmark(serializeEtendoValue(bookmarkData));
+
+  if (!token) {
+    return `${baseUrl}/#${encoded}`;
+  }
+
+  const contextPath = extractContextPath(baseUrl);
+  const locationUrl = buildLocationUrl(contextPath, encoded, true);
+  const encodedLocation = encodeURIComponent(locationUrl);
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/redirect?location=${encodedLocation}&token=${token}`;
+};
+
 export const buildEtendoClassicBookmarkUrl = ({
   baseUrl,
   processUrl,
