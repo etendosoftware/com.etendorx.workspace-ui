@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useSSEConnection } from "./useSSEConnection";
 import type {
   IMessage,
@@ -118,6 +118,22 @@ function copilotReducer(state: CopilotState, action: CopilotAction): CopilotStat
 export const useCopilot = () => {
   const [state, dispatch] = useReducer(copilotReducer, initialState);
   const copilotClient = useCopilotClient();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [archivedConversations, setArchivedConversations] = useState<IConversationSummary[]>([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [archiveExpanded, setArchiveExpanded] = useState(false);
+  const [loadedArchiveAssistantId, setLoadedArchiveAssistantId] = useState<string | null>(null);
+  const archiveAssistantRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const assistantId = state.selectedAssistant?.app_id || null;
+    archiveAssistantRef.current = assistantId;
+    setSearchQuery("");
+    setArchivedConversations([]);
+    setArchivedLoading(false);
+    setArchiveExpanded(false);
+    setLoadedArchiveAssistantId(null);
+  }, [state.selectedAssistant?.app_id]);
 
   const addMessage = useCallback((sender: string, text: string, role?: string, files?: File[]) => {
     const newMessage: IMessage = {
@@ -251,6 +267,15 @@ export const useCopilot = () => {
     closeConnection();
   }, [closeConnection]);
 
+  const clearActiveConversationState = useCallback(() => {
+    dispatch({ type: "SET_MESSAGES", messages: [] });
+    dispatch({ type: "SET_CONVERSATION_ID", conversationId: null });
+    dispatch({ type: "SET_FILES", files: null });
+    dispatch({ type: "SET_FILE_IDS", fileIds: null });
+    dispatch({ type: "SET_LOADING", isLoading: false });
+    closeConnection();
+  }, [closeConnection]);
+
   const handleFileUpload = useCallback(
     async (uploadedFiles: File[]) => {
       try {
@@ -370,6 +395,41 @@ export const useCopilot = () => {
     }
   }, [state.selectedAssistant, copilotClient, generateTitleForConversation]);
 
+  const loadArchivedConversations = useCallback(async () => {
+    if (!state.selectedAssistant) return;
+
+    const assistantId = state.selectedAssistant.app_id;
+    setArchivedLoading(true);
+    try {
+      const conversations = await copilotClient.getArchivedConversations(assistantId);
+      if (archiveAssistantRef.current === assistantId) {
+        setArchivedConversations(conversations);
+        setLoadedArchiveAssistantId(assistantId);
+      }
+    } catch (error) {
+      console.error("Error loading archived conversations:", error);
+      if (archiveAssistantRef.current === assistantId) {
+        setArchivedConversations([]);
+      }
+    } finally {
+      if (archiveAssistantRef.current === assistantId) {
+        setArchivedLoading(false);
+      }
+    }
+  }, [state.selectedAssistant, copilotClient]);
+
+  const toggleArchiveExpanded = useCallback(async () => {
+    const nextExpanded = !archiveExpanded;
+    setArchiveExpanded(nextExpanded);
+
+    const assistantId = state.selectedAssistant?.app_id;
+    if (!assistantId || !nextExpanded) return;
+
+    if (loadedArchiveAssistantId !== assistantId) {
+      await loadArchivedConversations();
+    }
+  }, [archiveExpanded, state.selectedAssistant?.app_id, loadedArchiveAssistantId, loadArchivedConversations]);
+
   const handleSelectConversation = useCallback(
     async (conversationId: string) => {
       dispatch({ type: "SET_LOADING", isLoading: true });
@@ -387,17 +447,128 @@ export const useCopilot = () => {
     [copilotClient, addMessage]
   );
 
+  const renameConversation = useCallback(
+    async (conversationId: string, title: string) => {
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) return;
+
+      const previousConversations = state.conversations;
+      dispatch({
+        type: "SET_CONVERSATIONS",
+        conversations: state.conversations.map((conv) =>
+          conv.id === conversationId ? { ...conv, title: trimmedTitle } : conv
+        ),
+      });
+
+      try {
+        await copilotClient.renameConversation(conversationId, trimmedTitle);
+      } catch (error) {
+        console.error("Error renaming conversation:", error);
+        dispatch({ type: "SET_CONVERSATIONS", conversations: previousConversations });
+      }
+    },
+    [state.conversations, copilotClient]
+  );
+
+  const deleteConversation = useCallback(
+    async (conversationId: string) => {
+      const conversationToDelete = state.conversations.find((conversation) => conversation.id === conversationId);
+      if (!conversationToDelete) return null;
+
+      const previousConversations = state.conversations;
+      dispatch({
+        type: "SET_CONVERSATIONS",
+        conversations: state.conversations.filter((conversation) => conversation.id !== conversationId),
+      });
+
+      try {
+        await copilotClient.deleteConversation(conversationId);
+
+        if (conversationId === state.conversationId) {
+          clearActiveConversationState();
+        }
+
+        if (archiveExpanded) {
+          setArchivedConversations((prev) => [
+            conversationToDelete,
+            ...prev.filter((conv) => conv.id !== conversationId),
+          ]);
+        }
+
+        return conversationToDelete;
+      } catch (error) {
+        console.error("Error deleting conversation:", error);
+        dispatch({ type: "SET_CONVERSATIONS", conversations: previousConversations });
+        return null;
+      }
+    },
+    [state.conversations, state.conversationId, copilotClient, clearActiveConversationState, archiveExpanded]
+  );
+
+  const restoreConversation = useCallback(
+    async (conversationId: string) => {
+      const conversationToRestore = archivedConversations.find((conversation) => conversation.id === conversationId);
+      if (!conversationToRestore) return null;
+
+      const previousArchived = archivedConversations;
+      setArchivedConversations((prev) => prev.filter((conversation) => conversation.id !== conversationId));
+
+      try {
+        await copilotClient.restoreConversation(conversationId);
+        dispatch({
+          type: "SET_CONVERSATIONS",
+          conversations: [conversationToRestore, ...state.conversations.filter((conv) => conv.id !== conversationId)],
+        });
+        return conversationToRestore;
+      } catch (error) {
+        console.error("Error restoring conversation:", error);
+        setArchivedConversations(previousArchived);
+        return null;
+      }
+    },
+    [archivedConversations, state.conversations, copilotClient]
+  );
+
+  const permanentDeleteConversation = useCallback(
+    async (conversationId: string) => {
+      const previousArchived = archivedConversations;
+      setArchivedConversations((prev) => prev.filter((conversation) => conversation.id !== conversationId));
+
+      try {
+        await copilotClient.permanentDeleteConversation(conversationId);
+      } catch (error) {
+        console.error("Error permanently deleting conversation:", error);
+        setArchivedConversations(previousArchived);
+      }
+    },
+    [archivedConversations, copilotClient]
+  );
+
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) return state.conversations;
+    const normalizedQuery = searchQuery.toLowerCase();
+    return state.conversations.filter((conversation) =>
+      (conversation.title || "").toLowerCase().includes(normalizedQuery)
+    );
+  }, [state.conversations, searchQuery]);
+
   return {
     messages: state.messages,
     selectedAssistant: state.selectedAssistant,
     isLoading: state.isLoading,
     files: state.files,
     contextTitle: state.contextTitle,
-    conversations: state.conversations,
+    conversations: filteredConversations,
+    allConversations: state.conversations,
     conversationsLoading: state.conversationsLoading,
+    archivedConversations,
+    archivedLoading,
+    archiveExpanded,
+    searchQuery,
 
     setContextTitle,
     setContextValue,
+    setSearchQuery,
 
     handleSendMessage,
     handleSelectAssistant,
@@ -406,6 +577,12 @@ export const useCopilot = () => {
     handleRemoveFile,
     getMessageDisplayType,
     loadConversations,
+    loadArchivedConversations,
+    toggleArchiveExpanded,
     handleSelectConversation,
+    renameConversation,
+    deleteConversation,
+    restoreConversation,
+    permanentDeleteConversation,
   };
 };

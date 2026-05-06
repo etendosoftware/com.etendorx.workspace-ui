@@ -140,8 +140,18 @@ const Navigation: React.FC = () => {
     handleRemoveFile,
     conversations,
     conversationsLoading,
+    archivedConversations,
+    archivedLoading,
+    archiveExpanded,
+    searchQuery,
     loadConversations,
+    toggleArchiveExpanded,
     handleSelectConversation,
+    renameConversation,
+    deleteConversation,
+    restoreConversation,
+    permanentDeleteConversation,
+    setSearchQuery,
   } = useCopilot();
 
   const handleCopilotSendMessage = useCallback(
@@ -312,9 +322,19 @@ const Navigation: React.FC = () => {
         onFileSelect={handleFileUpload}
         onRemoveFile={handleRemoveFile}
         conversations={conversations}
+        archivedConversations={archivedConversations}
         onSelectConversation={handleSelectConversation}
         onLoadConversations={loadConversations}
         conversationsLoading={conversationsLoading}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={deleteConversation}
+        onRestoreConversation={restoreConversation}
+        onPermanentDeleteConversation={permanentDeleteConversation}
+        onToggleArchive={toggleArchiveExpanded}
+        archiveExpanded={archiveExpanded}
+        archivedLoading={archivedLoading}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         showOnlyFeatured={showOnlyFeatured}
         hasFeaturedAssistants={hasFeaturedAssistants}
         onToggleFeaturedFilter={toggleFeaturedFilter}
@@ -351,6 +371,13 @@ const Navigation: React.FC = () => {
             startNewConversation: t("copilot.conversationList.startNewConversation"),
             loading: t("copilot.conversationList.loading"),
             untitledConversation: t("copilot.conversationList.untitledConversation"),
+            searchPlaceholder: "Search conversations",
+            archivedTitle: "Archived",
+            noArchivedConversations: "No archived conversations",
+            renameConversation: "Rename conversation",
+            deleteConversation: "Hide conversation",
+            restoreConversation: "Restore conversation",
+            permanentDeleteConversation: "Delete permanently",
           },
           conversationsButton: t("copilot.conversationsButton"),
           hideConversationsButton: t("copilot.hideConversationsButton"),
