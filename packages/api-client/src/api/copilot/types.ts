@@ -206,6 +206,11 @@ export interface IConversationSummary {
   title?: string;
 }
 
+export interface ConversationMutationResponse {
+  success: boolean;
+  title?: string;
+}
+
 /**
  * Full conversation with messages
  */

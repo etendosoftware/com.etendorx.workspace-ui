@@ -16,6 +16,7 @@
  */
 
 import { CopilotClient } from "../copilot/client";
+import { COPILOT_ENDPOINTS, COPILOT_METHODS } from "../copilot/constants";
 
 describe("CopilotClient", () => {
   beforeEach(() => {
@@ -124,6 +125,99 @@ describe("CopilotClient", () => {
 
       const result = await CopilotClient.getConversations("app-123");
       expect(result).toEqual(mockConversations);
+    });
+  });
+
+  describe("conversation mutations", () => {
+    it("should fetch archived conversations for an appId", async () => {
+      const requestSpy = jest.spyOn(CopilotClient.client, "request").mockResolvedValue({
+        ok: true,
+        data: [{ id: "arch-1", title: "Archived" }],
+      } as any);
+
+      const result = await CopilotClient.getArchivedConversations("app-123");
+
+      expect(result).toEqual([{ id: "arch-1", title: "Archived" }]);
+      expect(requestSpy).toHaveBeenCalledWith(
+        `${COPILOT_ENDPOINTS.GET_ARCHIVED_CONVERSATIONS}?app_id=app-123`,
+        expect.objectContaining({ method: COPILOT_METHODS.GET })
+      );
+    });
+
+    it("should rename a conversation", async () => {
+      const requestSpy = jest.spyOn(CopilotClient.client, "request").mockResolvedValue({
+        ok: true,
+        data: { success: true, title: "Renamed" },
+      } as any);
+
+      const result = await CopilotClient.renameConversation("conv-1", "Renamed");
+
+      expect(result).toEqual({ success: true, title: "Renamed" });
+      expect(requestSpy).toHaveBeenCalledWith(
+        COPILOT_ENDPOINTS.RENAME_CONVERSATION,
+        expect.objectContaining({
+          method: COPILOT_METHODS.POST,
+          body: JSON.stringify({ conversation_id: "conv-1", title: "Renamed" }),
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+
+    it("should delete a conversation", async () => {
+      const requestSpy = jest.spyOn(CopilotClient.client, "request").mockResolvedValue({
+        ok: true,
+        data: { success: true },
+      } as any);
+
+      const result = await CopilotClient.deleteConversation("conv-1");
+
+      expect(result).toEqual({ success: true });
+      expect(requestSpy).toHaveBeenCalledWith(
+        COPILOT_ENDPOINTS.DELETE_CONVERSATION,
+        expect.objectContaining({
+          method: COPILOT_METHODS.POST,
+          body: JSON.stringify({ conversation_id: "conv-1" }),
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+
+    it("should restore a conversation", async () => {
+      const requestSpy = jest.spyOn(CopilotClient.client, "request").mockResolvedValue({
+        ok: true,
+        data: { success: true },
+      } as any);
+
+      const result = await CopilotClient.restoreConversation("conv-1");
+
+      expect(result).toEqual({ success: true });
+      expect(requestSpy).toHaveBeenCalledWith(
+        COPILOT_ENDPOINTS.RESTORE_CONVERSATION,
+        expect.objectContaining({
+          method: COPILOT_METHODS.POST,
+          body: JSON.stringify({ conversation_id: "conv-1" }),
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+
+    it("should permanently delete a conversation", async () => {
+      const requestSpy = jest.spyOn(CopilotClient.client, "request").mockResolvedValue({
+        ok: true,
+        data: { success: true },
+      } as any);
+
+      const result = await CopilotClient.permanentDeleteConversation("conv-1");
+
+      expect(result).toEqual({ success: true });
+      expect(requestSpy).toHaveBeenCalledWith(
+        COPILOT_ENDPOINTS.PERMANENT_DELETE_CONVERSATION,
+        expect.objectContaining({
+          method: COPILOT_METHODS.POST,
+          body: JSON.stringify({ conversation_id: "conv-1" }),
+          headers: { "Content-Type": "application/json" },
+        })
+      );
     });
   });
 
