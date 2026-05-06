@@ -154,6 +154,71 @@ describe("useProcessMessage", () => {
     }
   });
 
+  it("fetchProcessMessage should return null when the backend always returns an empty object", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    const { result } = renderHook(() => useProcessMessage(tabId));
+
+    let message: Awaited<ReturnType<typeof result.current.fetchProcessMessage>> | undefined;
+    await act(async () => {
+      message = await result.current.fetchProcessMessage();
+    });
+
+    expect(message).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("fetchProcessMessage should return null when the backend returns 'No message found' on every attempt", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ text: "No message found" }),
+    });
+
+    const { result } = renderHook(() => useProcessMessage(tabId));
+
+    let message: Awaited<ReturnType<typeof result.current.fetchProcessMessage>> | undefined;
+    await act(async () => {
+      message = await result.current.fetchProcessMessage();
+    });
+
+    expect(message).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("fetchProcessMessage should retry and return the message when a later attempt succeeds", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            text: "Late success",
+            type: "success",
+            title: "Process Done",
+          }),
+      });
+
+    const { result } = renderHook(() => useProcessMessage(tabId));
+
+    let message: Awaited<ReturnType<typeof result.current.fetchProcessMessage>> | undefined;
+    await act(async () => {
+      message = await result.current.fetchProcessMessage();
+    });
+
+    expect(message).toEqual({
+      text: "Late success",
+      type: "success",
+      title: "Process Done",
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("should handle fetch errors gracefully", async () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
 

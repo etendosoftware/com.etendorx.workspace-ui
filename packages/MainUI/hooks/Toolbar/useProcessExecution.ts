@@ -23,7 +23,6 @@ import {
 } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { isDebugManualProcesses } from "@/utils/debug";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
@@ -31,14 +30,25 @@ import { UserContext } from "../../contexts/user";
 import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
-import { getParams } from "@/utils/processes/manual/utils";
+import { getParams, resolveLegacyProcessData } from "@/utils/processes/manual/utils";
 import data from "@/utils/processes/manual/data.json";
+import type { ProcessActionData } from "@/utils/processes/manual/types";
+import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
+
+function paramsToRecord(params: URLSearchParams): Record<string, string> {
+  const record: Record<string, string> = {};
+  params.forEach((value, key) => {
+    record[key] = value;
+  });
+  return record;
+}
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState("");
+  const [iframeFormParams, setIframeFormParams] = useState<Record<string, string> | null>(null);
   const { config, loading: configLoading } = useRuntimeConfig();
 
   // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat
@@ -124,28 +134,17 @@ export function useProcessExecution() {
             throw new Error("Required data not found");
           }
 
-          let processAction = data[currentButtonId as keyof typeof data];
+          const processAction: ProcessActionData | null = resolveLegacyProcessData(
+            button,
+            data as Record<string, ProcessActionData>
+          );
 
           if (!processAction) {
-            // Fallback: If the exact Button ID (AD_Column_ID) is not mapped, try to find a mapped process
-            // that shares the same column name (e.g. Header button vs Line button for the same process).
-            const fallbackKey = Object.keys(data).find(
-              (key) => button.columnName && (data as any)[key].command?.includes(button.columnName)
-            );
-
-            if (fallbackKey) {
-              logger.warn(
-                `Button ID ${currentButtonId} not in data.json, falling back to ${fallbackKey} for column ${button.columnName}`
-              );
-              processAction = (data as any)[fallbackKey];
-            } else {
-              throw new Error(
-                `Button ID '${currentButtonId}' (${button.columnName}) not found in data.json manually mapped processes`
-              );
-            }
+            throw new LegacyProcessUnresolvedError(currentButtonId, button.columnName);
           }
+
           const baseUrl = `${publicHost}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
-          const isPostedProcess = currentButtonId === "Posted";
+          const isPostedProcess = button.columnName === "Posted";
 
           const params = getParams({
             currentButtonId,
@@ -159,34 +158,17 @@ export function useProcessExecution() {
             isPostedProcess,
           });
 
-          const completeUrl = `${baseUrl}?${params.toString()}`;
+          const formParams = paramsToRecord(params);
 
-          if (isDebugManualProcesses()) {
-            try {
-              const debugParams: Record<string, string> = {};
-              params.forEach((v, k) => {
-                debugParams[k] = v;
-              });
-              logger.debug("[MANUAL_PROCESS] Prepared URL", completeUrl);
-              logger.debug("[MANUAL_PROCESS] Context", {
-                buttonId: currentButtonId,
-                windowId: safeWindowId,
-                tabId: safeTabId,
-                tableId: safeTableId,
-                recordId: safeRecordId,
-              });
-              logger.debug("[MANUAL_PROCESS] Params", debugParams);
-            } catch {}
-          }
-          setIframeUrl(completeUrl);
+          setIframeUrl(baseUrl);
+          setIframeFormParams(formParams);
 
           resolve({
             showInIframe: true,
-            iframeUrl: completeUrl,
+            iframeUrl: baseUrl,
+            iframeFormParams: formParams,
           });
         } catch (error) {
-          logger.warn(error);
-
           const processError = error instanceof Error ? error : new Error("Process execution failed");
           setError(processError);
           reject(processError);
@@ -200,29 +182,28 @@ export function useProcessExecution() {
 
   const executeProcess = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
-      try {
-        if (isProcessActionButton(button)) {
-          return await executeProcessAction(button);
-        }
-        if (isProcessDefinitionButton(button)) {
-          return await executeProcessDefinition({ button, recordId, params });
-        }
-        throw new Error("Process type not supported");
-      } catch (error) {
-        console.error(error);
-        throw new Error("Process execution failed");
+      if (isProcessActionButton(button)) {
+        return executeProcessAction(button);
       }
+      if (isProcessDefinitionButton(button)) {
+        return executeProcessDefinition({ button, recordId, params });
+      }
+      throw new Error("Process type not supported");
     },
     [executeProcessAction, executeProcessDefinition]
   );
 
-  const resetIframeUrl = useCallback(() => setIframeUrl(""), []);
+  const resetIframeUrl = useCallback(() => {
+    setIframeUrl("");
+    setIframeFormParams(null);
+  }, []);
 
   return {
     executeProcess,
     loading: loading || configLoading,
     error,
     iframeUrl,
+    iframeFormParams,
     resetIframeUrl,
     currentRecord: record,
     recordsLoaded: !!record,

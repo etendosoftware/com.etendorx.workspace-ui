@@ -63,18 +63,34 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await newLineBtn.click();
 
     // Product: Final good A
-    await page.locator('[data-testid="ChevronDown__2996"]').scrollIntoViewIfNeeded();
-    await page.locator('[data-testid="ChevronDown__2996"]').click({ force: true });
+    const productDropdown = page.locator('[data-testid="ChevronDown__2996"]');
     const productSearch = page.locator('input[aria-label="Search options"]');
-    await productSearch.waitFor({ state: "visible", timeout: 10_000 });
-    await productSearch.clear();
-    await productSearch.fill("Final good");
     const productOption = page.locator('[data-testid^="OptionItem__"]').filter({ hasText: /Final good A/ });
+
+    await productDropdown.scrollIntoViewIfNeeded();
+    let hasProductSearch = false;
+    let productDropdownOpened = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await productDropdown.click({ force: true });
+      hasProductSearch = await productSearch.isVisible({ timeout: 2_000 }).catch(() => false);
+      productDropdownOpened =
+        hasProductSearch || (await productOption.isVisible({ timeout: 2_000 }).catch(() => false));
+      if (productDropdownOpened) break;
+    }
+    if (!productDropdownOpened) throw new Error("Product dropdown did not open");
+
+    if (hasProductSearch) {
+      await productSearch.clear();
+      await productSearch.fill("Final good");
+    }
     await productOption.waitFor({ state: "visible", timeout: 10_000 });
-    // Use keyboard navigation — the search input intercepts pointer events,
-    // so ArrowDown from the focused input + Enter selects the highlighted option
-    await productSearch.press("ArrowDown");
-    await page.keyboard.press("Enter");
+    if (hasProductSearch) {
+      // Use keyboard navigation because the search input intercepts pointer events.
+      await productSearch.press("ArrowDown");
+      await page.keyboard.press("Enter");
+    } else {
+      await productOption.click({ force: true });
+    }
     await page.waitForLoadState("networkidle", { timeout: 30_000 });
 
     // Invoiced Quantity: 13.13 (React-controlled input — use native setter)
@@ -135,24 +151,26 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       }
     })();
 
-    // Wait for "Process completed successfully" — Cypress: cy.get(".mb-1").should("have.text", "Process completed successfully")
-    // Use Playwright's built-in 100ms polling (much faster than our 500ms manual loop).
-    // Catch: on some environments the text appears and disappears in <500ms; if so, the
-    // Close button being visible means the process already ran — accept that as success.
-    await page
+    // The legacy iframe modal now auto-closes after showing the success message.
+    // Accept either the visible success banner or the modal closing by itself.
+    const processSuccessMessage = page
       .locator(".mb-1")
       .filter({ hasText: /Process completed successfully/i })
-      .waitFor({ state: "visible", timeout: 30_000 })
-      .catch(async () => {
-        const closeVisible = await page
-          .getByRole("button", { name: /^Close$/i })
-          .isVisible({ timeout: 2_000 })
-          .catch(() => false);
-        if (!closeVisible) throw new Error("Process did not complete within 30s");
-        // Close visible + empty body = process ran but returned no text (acceptable)
-      });
+      .first();
+    const processModalTitle = page.locator("h2").filter({ hasText: "Process Invoices" }).first();
+    const processCompleted = await Promise.race([
+      processSuccessMessage
+        .waitFor({ state: "visible", timeout: 35_000 })
+        .then(() => true)
+        .catch(() => false),
+      processModalTitle
+        .waitFor({ state: "hidden", timeout: 35_000 })
+        .then(() => true)
+        .catch(() => false),
+    ]);
+    if (!processCompleted) throw new Error("Process did not complete within 35s");
 
-    // Close the Process Invoices modal
+    // Close the Process Invoices modal if it is still open in older UI behavior.
     const closeModal = page.getByRole("button", { name: /^Close$/i });
     if (await closeModal.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await closeModal.click();
@@ -189,22 +207,38 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await closeToastIfPresent(page);
 
     // Amount: 28.92 (React-controlled input — use native setter)
-    await page.locator('[data-testid="TextInput__329fab"]').scrollIntoViewIfNeeded();
-    await page.evaluate(() => {
-      const input = document.querySelector('[data-testid="TextInput__329fab"]') as HTMLInputElement;
-      if (!input) return;
-      input.disabled = false;
-      input.readOnly = false;
-      input.focus();
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-      nativeSetter?.call(input, "28.92");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await page.waitForTimeout(500);
+    const amountInput = page.locator('[data-testid="TextInput__329fab"]');
+    const visibleSaveButton = page.locator("button.toolbar-button-save").filter({ visible: true }).first();
+    const setAmountValue = async (value: string) => {
+      await page.evaluate((nextValue) => {
+        const input = document.querySelector('[data-testid="TextInput__329fab"]') as HTMLInputElement;
+        if (!input) return;
+        input.disabled = false;
+        input.readOnly = false;
+        input.focus();
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        nativeSetter?.call(input, nextValue);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }, value);
+    };
+
+    await amountInput.scrollIntoViewIfNeeded();
+    await setAmountValue("28.92");
+    await expect(amountInput).toHaveValue("28.92", { timeout: 5_000 });
+
+    const saveEnabledAfterAmount = await visibleSaveButton.isEnabled({ timeout: 2_000 }).catch(() => false);
+    if (!saveEnabledAfterAmount) {
+      await setAmountValue("28.9");
+      await page.waitForTimeout(100);
+      await setAmountValue("28.92");
+      await expect(amountInput).toHaveValue("28.92", { timeout: 5_000 });
+    }
+
+    await expect(visibleSaveButton).toBeEnabled({ timeout: 10_000 });
 
     // Save Payment In
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    await visibleSaveButton.click();
     await closeToastIfPresent(page);
 
     // Verify Status: Awaiting Payment

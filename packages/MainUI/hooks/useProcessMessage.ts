@@ -20,6 +20,9 @@ import { logger } from "@/utils/logger";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
+import { useLanguage } from "../contexts/language";
+
+const DEFAULT_LANGUAGE = "en_US";
 
 export interface ProcessMessage {
   text: string;
@@ -27,10 +30,21 @@ export interface ProcessMessage {
   title: string;
 }
 
+// Retry policy for fetchProcessMessage. Mitigates the race between
+// sendMessage('processOrder') firing before the legacy servlet finishes the
+// submit and writes the OBError to the session under <tabId>|MESSAGE.
+// With 3 attempts spaced 500 ms apart, total worst-case is ~1 s of extra
+// latency before the fallback timer (5 s) takes over.
+const PROCESS_MESSAGE_FETCH_ATTEMPTS = 3;
+const PROCESS_MESSAGE_RETRY_DELAY_MS = 500;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
   const { token } = useUserContext();
   const { config } = useRuntimeConfig();
+  const { language } = useLanguage();
 
   // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat
   // This is necessary because the iframe is also loading from Tomcat directly
@@ -90,6 +104,13 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
+      // Treat empty payloads ({} or { type: "info", text: "", title: "" }) as
+      // "no message" so the iframe modal keeps the loading + fallback timer
+      // running instead of cancelling them on a meaningless response.
+      if (!data.text && !data.title && !data.type) {
+        return null;
+      }
+
       const messageType = normalizeMessageType(data.type || "info", data.text || "");
 
       return {
@@ -110,29 +131,40 @@ export function useProcessMessage(tabId: string) {
     return null;
   }, []);
 
-  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+  const fetchProcessMessageOnce = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
+      const lang = language || DEFAULT_LANGUAGE;
+      const url = `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=${encodeURIComponent(lang)}`;
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const response: Response & { data?: any } = await fetch(
-        `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json;charset=UTF-8",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tabId,
-          }),
-        }
-      );
+      const response: Response & { data?: any } = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tabId,
+        }),
+      });
       const data = await response.json();
       return processResponseData(data);
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [publicHost, token, tabId, processResponseData, handleFetchError]);
+  }, [publicHost, token, tabId, language, processResponseData, handleFetchError]);
+
+  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+    for (let attempt = 0; attempt < PROCESS_MESSAGE_FETCH_ATTEMPTS; attempt++) {
+      const message = await fetchProcessMessageOnce();
+      if (message) return message;
+      const isLastAttempt = attempt === PROCESS_MESSAGE_FETCH_ATTEMPTS - 1;
+      if (!isLastAttempt) {
+        await sleep(PROCESS_MESSAGE_RETRY_DELAY_MS);
+      }
+    }
+    return null;
+  }, [fetchProcessMessageOnce]);
 
   const fetchMetadataMessage = useCallback(async (): Promise<ProcessMessage | null> => {
     try {

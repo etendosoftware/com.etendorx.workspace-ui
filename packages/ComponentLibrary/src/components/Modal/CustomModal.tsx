@@ -9,13 +9,16 @@
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  * implied. See the License for the specific language governing rights
  * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All portions are Copyright © 2021–2026 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
 
-import type { ReactNode, RefObject } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
+
+const FORM_TARGET_PREFIX = "etendo-legacy-iframe-";
+const FORM_METHOD = "POST";
 
 interface CustomModalProps {
   isOpen: boolean;
@@ -23,6 +26,7 @@ interface CustomModalProps {
   iframeLoading: boolean;
   customContent?: ReactNode;
   url: string;
+  formParams?: Record<string, string> | null;
   handleIframeLoad?: () => void;
   handleClose: () => void;
   texts: {
@@ -35,18 +39,74 @@ interface CustomModalProps {
   iframeRef?: RefObject<HTMLIFrameElement | null>;
 }
 
+interface LegacyIframeProps {
+  url: string;
+  formParams?: Record<string, string> | null;
+  formRef: RefObject<HTMLFormElement | null>;
+  iframeRef?: RefObject<HTMLIFrameElement | null>;
+  iframeName: string;
+  customContent?: ReactNode;
+  handleIframeLoad?: () => void;
+  iframeTitle?: string;
+}
+
+const LegacyIframe = ({
+  url,
+  formParams,
+  formRef,
+  iframeRef,
+  iframeName,
+  customContent,
+  handleIframeLoad,
+  iframeTitle,
+}: LegacyIframeProps) => {
+  const visibilityClass = customContent ? " invisible" : "";
+  const iframeClassName = `h-full w-full border-0${visibilityClass}`;
+
+  if (formParams) {
+    return (
+      <>
+        <form ref={formRef} action={url} method={FORM_METHOD} target={iframeName} className="hidden">
+          {Object.entries(formParams).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+        </form>
+        <iframe
+          ref={iframeRef}
+          name={iframeName}
+          onLoad={handleIframeLoad}
+          className={iframeClassName}
+          title={iframeTitle}
+        />
+      </>
+    );
+  }
+
+  return <iframe ref={iframeRef} src={url} onLoad={handleIframeLoad} className={iframeClassName} title={iframeTitle} />;
+};
+
 const CustomModal = ({
   isOpen,
   title,
   iframeLoading,
   customContent,
   url,
+  formParams,
   handleIframeLoad,
   handleClose,
   texts,
   customContentClass,
   iframeRef,
 }: CustomModalProps) => {
+  const iframeName = `${FORM_TARGET_PREFIX}${useId()}`;
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (formParams && formRef.current) {
+      formRef.current.submit();
+    }
+  }, [formParams]);
+
   if (!isOpen) return null;
 
   return (
@@ -74,12 +134,15 @@ const CustomModal = ({
               </div>
             </div>
           )}
-          <iframe
-            ref={iframeRef}
-            src={url}
-            onLoad={handleIframeLoad}
-            className="h-full w-full border-0"
-            title={texts.iframeTitle}
+          <LegacyIframe
+            url={url}
+            formParams={formParams}
+            formRef={formRef}
+            iframeRef={iframeRef}
+            iframeName={iframeName}
+            customContent={customContent}
+            handleIframeLoad={handleIframeLoad}
+            iframeTitle={texts.iframeTitle}
           />
         </div>
         <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] px-4 py-2">

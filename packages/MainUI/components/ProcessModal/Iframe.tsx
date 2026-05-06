@@ -25,10 +25,10 @@ import {
   type ProcessIframeModalOpenProps,
   isIframeModalOpen,
 } from "./types";
+import { LEGACY_ACTIONS } from "./legacyMessageProtocol";
 import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/CustomModal";
 
-const CLOSE_MODAL_ACTION = "closeModal";
-const PROCESS_ORDER_ACTION = "processOrder";
+const MESSAGE_FALLBACK_TIMEOUT_MS = 5000;
 
 /**
  * Classic forms running inside an iframe use window.innerWidth (the iframe's width)
@@ -73,6 +73,7 @@ const ProcessIframeOpenModal = ({
   isOpen,
   onClose,
   url,
+  formParams,
   title,
   onProcessSuccess,
   tabId,
@@ -81,12 +82,19 @@ const ProcessIframeOpenModal = ({
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
+  const processMessageRef = useRef<ProcessMessage | null>(null);
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const [progressWidth, setProgressWidth] = useState(100);
   const loadCount = useRef<number>(0);
   const [hasNavigated, setHasNavigated] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [awaitingMessage, setAwaitingMessage] = useState(false);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    processMessageRef.current = processMessage;
+  }, [processMessage]);
 
   const handleClose = useCallback(() => {
     if ((processWasSuccessful || hasNavigated) && onProcessSuccess) {
@@ -98,10 +106,35 @@ const ProcessIframeOpenModal = ({
     onClose();
   }, [onClose, onProcessSuccess, processWasSuccessful, hasNavigated]);
 
+  const clearFallbackTimer = useCallback(() => {
+    if (fallbackTimerRef.current !== null) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const showFallbackMessage = useCallback(() => {
+    clearFallbackTimer();
+    setAwaitingMessage(false);
+    setProcessMessage({
+      type: "warning",
+      title: t("process.fallbackMessage.title"),
+      text: t("process.fallbackMessage.text"),
+    });
+  }, [t, clearFallbackTimer]);
+
+  const startFallbackCountdown = useCallback(() => {
+    if (fallbackTimerRef.current !== null) return;
+    setAwaitingMessage(true);
+    fallbackTimerRef.current = setTimeout(showFallbackMessage, MESSAGE_FALLBACK_TIMEOUT_MS);
+  }, [showFallbackMessage]);
+
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
-      if (message?.type === "info") return;
-      if (message.text?.toUpperCase().includes("ERROR")) {
+      if (message?.type === "info" && message?.text === "") return;
+      clearFallbackTimer();
+      setAwaitingMessage(false);
+      if (message.text?.toUpperCase().includes("ERROR") || message.title?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
           type: "error",
@@ -117,7 +150,7 @@ const ProcessIframeOpenModal = ({
         }
       }
     },
-    [t]
+    [t, clearFallbackTimer]
   );
 
   const handleMessageError = useCallback(
@@ -134,19 +167,34 @@ const ProcessIframeOpenModal = ({
     [t]
   );
 
+  const handleRequestFailed = useCallback(() => {
+    clearFallbackTimer();
+    setAwaitingMessage(false);
+    setProcessMessage({
+      type: "error",
+      title: t("process.requestFailed.title"),
+      text: t("process.requestFailed.text"),
+    });
+  }, [t, clearFallbackTimer]);
+
   const handleProcessMessage = useCallback(async () => {
+    startFallbackCountdown();
     try {
       const message = await fetchProcessMessage();
       if (message) {
+        clearFallbackTimer();
+        setAwaitingMessage(false);
         handleReceivedMessage(message);
         return true;
       }
     } catch (error) {
       handleMessageError(error);
+      clearFallbackTimer();
+      setAwaitingMessage(false);
       return error instanceof Error && !(error instanceof DOMException);
     }
     return false;
-  }, [fetchProcessMessage, handleReceivedMessage, handleMessageError]);
+  }, [fetchProcessMessage, handleReceivedMessage, handleMessageError, startFallbackCountdown, clearFallbackTimer]);
 
   const handleIframeLoad = useCallback(() => {
     loadCount.current += 1;
@@ -196,44 +244,67 @@ const ProcessIframeOpenModal = ({
     if (url) {
       setIframeLoading(true);
       setProcessMessage(null);
+      setAwaitingMessage(false);
+      clearFallbackTimer();
     }
     loadCount.current = 0;
     setHasNavigated(false);
-  }, [url]);
+  }, [url, clearFallbackTimer]);
+
+  useEffect(() => () => clearFallbackTimer(), [clearFallbackTimer]);
 
   useEffect(() => {
     if (processMessage?.type === "success") {
-      const totalDuration = 3000; // 3 seconds
-      const updateInterval = 50; // Update every 50ms
+      const totalDuration = 3000;
+      const updateInterval = 50;
       const decrementValue = (100 / totalDuration) * updateInterval;
 
-      const timer = setInterval(() => {
-        setProgressWidth((prevWidth) => {
-          const newWidth = prevWidth - decrementValue;
-
-          if (newWidth <= 0) {
-            clearInterval(timer);
-            setProcessMessage(null);
-            return 0;
-          }
-
-          return newWidth;
-        });
+      const progressTimer = setInterval(() => {
+        setProgressWidth((prev) => Math.max(0, prev - decrementValue));
       }, updateInterval);
 
+      const closeTimer = setTimeout(() => {
+        clearInterval(progressTimer);
+        handleClose();
+      }, totalDuration);
+
       return () => {
-        clearInterval(timer);
+        clearInterval(progressTimer);
+        clearTimeout(closeTimer);
       };
     }
-  }, [processMessage]);
+  }, [processMessage, handleClose]);
+
+  const shouldSuppressAutoClose = useCallback(() => {
+    const current = processMessageRef.current;
+    return current?.type === "error" || current?.type === "warning";
+  }, []);
 
   useEffect(() => {
+    // NOTE: We intentionally do not validate event.origin here. The legacy iframe
+    // protocol is restricted to UI-only actions (close modal, show in-page message,
+    // notify unload) that have no backend side effects, so a cross-origin spoofed
+    // message can at worst close the modal or render a fake banner. If a new action
+    // with backend impact (e.g. forceRefresh, triggerSave) is ever added, this
+    // listener MUST start filtering by origin against config.etendoClassicHost.
+    // Audit reference: ETP-3747.
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.action === CLOSE_MODAL_ACTION) {
+      if (event.data?.action === LEGACY_ACTIONS.CLOSE_MODAL) {
+        if (shouldSuppressAutoClose()) return;
         handleClose();
       }
-      if (event.data?.action === PROCESS_ORDER_ACTION) {
+      if (event.data?.action === LEGACY_ACTIONS.PROCESS_ORDER) {
         await handleProcessMessage();
+      }
+      if (event.data?.action === LEGACY_ACTIONS.SHOW_PROCESS_MESSAGE && event.data?.payload) {
+        handleReceivedMessage(event.data.payload as ProcessMessage);
+      }
+      if (event.data?.action === LEGACY_ACTIONS.IFRAME_UNLOADED) {
+        if (processMessageRef.current) return;
+        startFallbackCountdown();
+      }
+      if (event.data?.action === LEGACY_ACTIONS.REQUEST_FAILED) {
+        handleRequestFailed();
       }
     };
 
@@ -242,7 +313,14 @@ const ProcessIframeOpenModal = ({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [handleClose, handleProcessMessage]);
+  }, [
+    handleClose,
+    handleProcessMessage,
+    handleReceivedMessage,
+    handleRequestFailed,
+    shouldSuppressAutoClose,
+    startFallbackCountdown,
+  ]);
 
   const messageStyles = useMemo(
     () =>
@@ -262,11 +340,14 @@ const ProcessIframeOpenModal = ({
   // Apply larger size for Forms - responsive with max size
   const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[92vh] !max-h-[1000px]" : "";
 
+  const showLoadingOverlay = iframeLoading || awaitingMessage;
+  const loadingText = awaitingMessage ? t("process.processingMessage") : t("common.loading");
+
   return (
     <CustomModal
       isOpen={isOpen}
       title={title || t("common.processes")}
-      iframeLoading={iframeLoading}
+      iframeLoading={showLoadingOverlay}
       iframeRef={iframeRef}
       customContentClass={sizeClass}
       customContent={
@@ -301,10 +382,11 @@ const ProcessIframeOpenModal = ({
         )
       }
       url={url || ""}
+      formParams={formParams ?? null}
       handleIframeLoad={handleIframeLoad}
       handleClose={handleClose}
       texts={{
-        loading: t("common.loading"),
+        loading: loadingText,
         iframeTitle: t("common.processes"),
         noData: t("common.noDataAvailable"),
         closeButton: t("common.close"),
