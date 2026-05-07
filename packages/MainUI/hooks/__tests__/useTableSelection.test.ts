@@ -21,11 +21,16 @@ import useTableSelection from "../useTableSelection";
 import { useSelected } from "@/hooks/useSelected";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 // Mocks
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/contexts/window");
 jest.mock("@/utils/logger");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "win_1"),
+  useCurrentWindowId: jest.fn(() => "win1"),
+}));
 jest.mock("@/utils/structures", () => ({
   mapBy: jest.fn((arr, key) => {
     const map: Record<string, any> = {};
@@ -55,6 +60,8 @@ describe("useTableSelection", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (useCurrentWindowId as jest.Mock).mockReturnValue("win1");
+    (useCurrentWindowIdentifier as jest.Mock).mockReturnValue("win_1");
     (useSelected as jest.Mock).mockReturnValue({ graph: mockGraph });
     (useUserContext as jest.Mock).mockReturnValue({
       setSession: jest.fn(),
@@ -90,12 +97,8 @@ describe("useTableSelection", () => {
   });
 
   it("should do nothing if window is inactive", () => {
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowId: "win-different", windowIdentifier: "diff" },
-      setSelectedRecord: mockSetSelectedRecord,
-      clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: mockGetSelectedRecord,
-    });
+    (useCurrentWindowId as jest.Mock).mockReturnValue("win-different");
+    (useCurrentWindowIdentifier as jest.Mock).mockReturnValue("diff");
 
     const rowSelection = { r1: true };
     renderHook(() => useTableSelection(mockTab, mockRecords, rowSelection));

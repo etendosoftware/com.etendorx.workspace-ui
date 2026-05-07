@@ -103,6 +103,11 @@ jest.mock("@/contexts/window", () => ({
   WindowProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "WIN1"),
+  useCurrentWindowId: jest.fn(() => "WIN1"),
+}));
+
 jest.mock("@/hooks/useFormValidation", () => ({
   useFormValidation: jest.fn(),
 }));

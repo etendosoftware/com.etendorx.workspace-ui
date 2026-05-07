@@ -44,6 +44,10 @@ jest.mock("@/hooks/useDeleteRecord", () => ({
 }));
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/utils/logger");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "windowIdentifier1"),
+  useCurrentWindowId: jest.fn(() => "window1"),
+}));
 
 describe("useToolbarConfig", () => {
   const mockTab = {
@@ -51,6 +55,7 @@ describe("useToolbarConfig", () => {
     entityName: "TestEntity",
     obuiappCloneChildren: false,
     tabLevel: 0,
+    window: "window1",
   };
 
   const mockActiveWindow = {

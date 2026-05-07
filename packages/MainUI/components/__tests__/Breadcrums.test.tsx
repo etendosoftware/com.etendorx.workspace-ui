@@ -20,6 +20,7 @@ jest.mock("../../hooks/useMetadataContext", () => ({
     window: { window$_identifier: "test-window-id", name: "Test Window" },
     windowId: "test-window-id",
     windowIdentifier: "test-window-identifier",
+    getWindowMetadata: jest.fn().mockReturnValue({ window$_identifier: "test-window-id", name: "Test Window" }),
   }),
 }));
 
@@ -33,7 +34,13 @@ jest.mock("@/contexts/window", () => ({
     getTabFormState: mockGetTabFormState,
     clearTabFormState: mockClearTabFormState,
     setAllWindowsInactive: mockSetAllWindowsInactive,
+    getSelectedRecord: jest.fn(() => undefined),
   }),
+}));
+
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "test-window-identifier"),
+  useCurrentWindowId: jest.fn(() => "test-window-id"),
 }));
 
 jest.mock("@/hooks/useSelected", () => ({

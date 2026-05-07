@@ -79,8 +79,10 @@ describe("Window Page", () => {
     const homeElement = screen.getByText("Home");
     expect(homeElement).toBeInTheDocument();
 
-    // Check that Window is NOT rendered
-    expect(screen.queryByText("Window")).not.toBeInTheDocument();
+    // Window is mounted in DOM (CSS visibility approach) but Home is the visible view
+    // The home div has visibility:visible when shouldShowWindow is false
+    const homeWrapper = homeElement.closest("div[style]");
+    expect(homeWrapper).toHaveStyle("visibility: visible");
   });
 
   it("renders Window when activeWindow is present and not home route", () => {
