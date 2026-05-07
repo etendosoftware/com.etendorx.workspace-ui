@@ -17,7 +17,7 @@
 
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 
 interface CurrentWindowContextValue {
   windowIdentifier: string;
@@ -41,9 +41,8 @@ export function CurrentWindowProvider({
   windowId: string;
   children: React.ReactNode;
 }) {
-  return (
-    <CurrentWindowContext.Provider value={{ windowIdentifier, windowId }}>{children}</CurrentWindowContext.Provider>
-  );
+  const value = useMemo(() => ({ windowIdentifier, windowId }), [windowIdentifier, windowId]);
+  return <CurrentWindowContext.Provider value={value}>{children}</CurrentWindowContext.Provider>;
 }
 
 export function useCurrentWindowIdentifier(): string {
