@@ -214,7 +214,7 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
       await expect(orderRow.locator('input[type="checkbox"]')).toBeChecked();
     }).toPass({ timeout: 10_000 });
 
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
     // Wait for the React modal to close
     await page
       .locator(".fixed.inset-0")

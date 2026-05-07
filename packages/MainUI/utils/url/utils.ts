@@ -320,6 +320,29 @@ const buildObManualURL = (processUrl: string, params?: string): string => {
  *   already filtered (e.g. {@code Command=DIRECT&inpRecord=...}); omit for
  *   plain Sidebar entries.
  */
+export const buildEtendoViewUrl = ({
+  baseUrl,
+  viewId,
+  token,
+}: {
+  baseUrl: string;
+  viewId: string;
+  token: string | null;
+}): string => {
+  const viewTab: EtendoBookmarkTab = { viewId, params: {} };
+  const bookmarkData = { st: 1, bm: [viewTab] };
+  const encoded = encodeEtendoBookmark(serializeEtendoValue(bookmarkData));
+
+  if (!token) {
+    return `${baseUrl}/#${encoded}`;
+  }
+
+  const contextPath = extractContextPath(baseUrl);
+  const locationUrl = buildLocationUrl(contextPath, encoded, true);
+  const encodedLocation = encodeURIComponent(locationUrl);
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/redirect?location=${encodedLocation}&token=${token}`;
+};
+
 export const buildEtendoClassicBookmarkUrl = ({
   baseUrl,
   processUrl,

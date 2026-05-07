@@ -138,7 +138,7 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await page.locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]').click();
 
     // ── Step 11: Execute payment ──────────────────────────────────────────────
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
     await page.waitForTimeout(2_000);
 
     // Close result
@@ -187,7 +187,7 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 20_000 });
     await page.locator("tr").filter({ hasText: orderNumber }).locator('input[type="checkbox"]').check();
 
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
     await page
       .locator(".fixed.inset-0")
       .waitFor({ state: "hidden", timeout: 15_000 })

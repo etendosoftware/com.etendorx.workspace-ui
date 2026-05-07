@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
@@ -25,6 +24,36 @@ jest.mock("@/contexts/ToolbarContext", () => ({
 }));
 jest.mock("@/hooks/useSelected", () => require("../__testUtils__/toolbarMocks").UseSelectedMock);
 jest.mock("@/contexts/window", () => require("../__testUtils__/toolbarMocks").WindowContextMock);
+jest.mock("@/hooks/useSelected", () => ({
+  useSelected: () => ({ graph: { getChildren: () => [] } }),
+}));
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
+    getTabFormState: jest.fn(),
+    clearChildrenSelections: jest.fn(),
+    getTableState: jest.fn(() => ({
+      filters: [],
+      sorting: [],
+      visibility: {},
+      order: [],
+      implicitFilterApplied: false,
+      advancedCriteria: [],
+    })),
+    getNavigationState: jest.fn(() => ({
+      activeLevels: [],
+      activeTabsByLevel: new Map(),
+    })),
+    setTableFilters: jest.fn(),
+    setTableVisibility: jest.fn(),
+    setTableSorting: jest.fn(),
+    setTableOrder: jest.fn(),
+    setTableImplicitFilterApplied: jest.fn(),
+    setTableAdvancedCriteria: jest.fn(),
+    setNavigationActiveLevels: jest.fn(),
+    setNavigationActiveTabsByLevel: jest.fn(),
+  }),
+}));
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({
   useProcessExecution: () => ({ executeProcess: jest.fn() }),
 }));

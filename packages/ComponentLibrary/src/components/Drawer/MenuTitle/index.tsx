@@ -12,8 +12,7 @@
  * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
+ * ************************************************************************/
 
 // @data-testid-ignore
 "use client";
@@ -39,53 +38,33 @@ function getIconSrc(item: { icon?: string | null; type?: string }): string {
 }
 
 function getMenuButtonClassName(open?: boolean, selected?: boolean, isParentActive?: boolean): string {
-  const parts: string[] = ["relative flex items-center transition-colors duration-300 cursor-pointer"];
-
+  let stateClasses = "";
   if (open) {
-    parts.push(
-      "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]"
-    );
-  }
-
-  if (selected) {
-    parts.push(
-      "hover:bg-dynamic-main",
-      "text-white",
-      "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-    );
+    const selectedClasses = selected
+      ? "bg-dynamic-main text-white [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
+      : "text-baseline-80 hover:text-dynamic-main";
+    stateClasses = `rounded-lg text-xl justify-between p-1 ${selectedClasses} w-full`;
   } else {
-    parts.push("hover:bg-dynamic-contrast-text");
+    const parentActiveClasses = isParentActive
+      ? "bg-dynamic-main [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
+      : "";
+    stateClasses = `p-2.5 rounded-full hover:bg-dynamic-main hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)] ${parentActiveClasses}`;
   }
 
-  if (isParentActive && open) {
-    parts.push(
-      "[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]",
-      "text-dynamic-main"
-    );
-  }
+  const hoverFilter = open
+    ? "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]"
+    : "";
+  const hoverBg = selected
+    ? "hover:bg-dynamic-main text-white hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
+    : "hover:bg-dynamic-contrast-text";
+  const parentActiveFilter =
+    isParentActive && open
+      ? "[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] text-dynamic-main"
+      : "";
 
-  if (open) {
-    if (selected) {
-      parts.push(
-        "rounded-lg text-xl justify-between p-1",
-        "bg-dynamic-main text-white [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]",
-        "w-full"
-      );
-    } else {
-      parts.push("rounded-lg text-xl justify-between p-1 text-baseline-80 hover:text-dynamic-main w-full");
-    }
-  } else {
-    parts.push(
-      "p-2.5 rounded-full hover:bg-dynamic-main hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-    );
-    if (isParentActive) {
-      parts.push(
-        "bg-dynamic-main [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-      );
-    }
-  }
-
-  return parts.join(" ");
+  return `${hoverFilter} relative flex items-center transition-colors duration-300 cursor-pointer ${hoverBg} ${parentActiveFilter} ${stateClasses}`
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
@@ -106,10 +85,13 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
   ({ item, onClick, selected, expanded, open, popperOpen, isParentActive }) => {
     const favoritesCtx = useFavoritesDrawer();
-    const isFav = favoritesCtx && item.windowId ? favoritesCtx.isFavorite(item.windowId) : false;
+    const isFav = !!(favoritesCtx && item.windowId && favoritesCtx.isFavorite(item.windowId));
 
     const handleFavoriteClick = useCallback(
-      (e: React.MouseEvent) => {
+      (e: React.MouseEvent | React.KeyboardEvent) => {
+        if ("key" in e && e.key !== "Enter" && e.key !== " ") {
+          return;
+        }
         e.stopPropagation();
         e.preventDefault();
         favoritesCtx?.toggle(item);
@@ -125,21 +107,13 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         className={getMenuButtonClassName(open, selected, isParentActive)}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
-            {item.icon ? (
+            <span className="text-base">
               <img
-                alt="img"
-                src={`data:image/svg+xml;base64,${item.icon}`}
+                alt={item.icon ? "img" : item.type || "icon"}
+                src={getIconSrc(item)}
                 className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
               />
-            ) : (
-              <span className="text-base">
-                <img
-                  alt={item.type || "icon"}
-                  src={getIconSrc(item)}
-                  className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                />
-              </span>
-            )}
+            </span>
           </div>
           {open && (
             <div className="relative group flex items-center py-1.5 flex-1 min-w-0">
@@ -147,9 +121,9 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                 {item.name}
               </span>
               {favoritesCtx && item.windowId && (
-                <button
-                  type="button"
+                <span
                   onClick={handleFavoriteClick}
+                  onKeyDown={handleFavoriteClick}
                   className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
                     isFav
                       ? "text-yellow-400 opacity-100"
@@ -157,7 +131,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                   }`}
                   title={isFav ? "Remove from favorites" : "Add to favorites"}>
                   <StarIcon filled={isFav} />
-                </button>
+                </span>
               )}
             </div>
           )}

@@ -67,8 +67,15 @@ export const useCopilotClient = () => {
       getConversations: async (appId: string) => {
         return await CopilotClient.getConversations(appId);
       },
+      getArchivedConversations: async (appId: string) => {
+        return await CopilotClient.getArchivedConversations(appId);
+      },
       getConversationMessages: CopilotClient.getConversationMessages,
       generateTitle: CopilotClient.generateTitle,
+      renameConversation: CopilotClient.renameConversation,
+      deleteConversation: CopilotClient.deleteConversation,
+      restoreConversation: CopilotClient.restoreConversation,
+      permanentDeleteConversation: CopilotClient.permanentDeleteConversation,
       reinitialize: initializeClient,
       isReady: !!token?.token,
     }),
