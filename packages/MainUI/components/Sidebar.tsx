@@ -15,6 +15,7 @@ import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
+import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
@@ -282,6 +283,10 @@ export default function Sidebar() {
       // Handle ProcessManual items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
       if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
+        // console.log("ETENDO_BASE_URL: ", ETENDO_BASE_URL);
+        // console.log("processUrl: ", processUrl);
+        // console.log("item.name: ", item.name);
+        // console.log("token: ", token);
         const classicUrl = buildEtendoClassicBookmarkUrl({
           baseUrl: ETENDO_BASE_URL,
           processUrl,
@@ -289,14 +294,22 @@ export default function Sidebar() {
           token: token,
           kioskMode: true,
         });
-        // Open in js modal
+        console.log("classicUrl: ", classicUrl);
+        const popupBlockedTexts = {
+          title: t("process.openLegacyReport.popupBlockedTitle"),
+          openLabel: t("process.openLegacyReport.openManually"),
+        };
         if (item.isModalProcess) {
-          window.open(classicUrl, "Test", "width=950,height=700");
+          if (!tryOpenReportPopup(classicUrl)) {
+            notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
+          }
           return;
         }
 
         // Fallback: Open in new tab
-        window.open(classicUrl, "_blank");
+        if (!window.open(classicUrl, "_blank")) {
+          notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
+        }
         return;
       }
 

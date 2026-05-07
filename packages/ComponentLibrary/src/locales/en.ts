@@ -312,6 +312,10 @@ const en = {
       title: "The process could not be executed",
       text: "The process could not be executed. Please contact support.",
     },
+    openLegacyReport: {
+      popupBlockedTitle: "The browser blocked the report popup.",
+      openManually: "Open report",
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

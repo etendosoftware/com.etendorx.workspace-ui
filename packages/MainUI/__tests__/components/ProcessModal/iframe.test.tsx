@@ -35,6 +35,14 @@ jest.mock("@/hooks/useProcessMessage", () => ({
   }),
 }));
 
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: () => ({ token: "test-token" }),
+}));
+
+jest.mock("@/contexts/RuntimeConfigContext", () => ({
+  useRuntimeConfig: () => ({ config: { etendoClassicHost: "http://localhost:8080/etendo" } }),
+}));
+
 describe("ProcessIframeModal", () => {
   const baseProps: ProcessIframeModalOpenProps = {
     isOpen: true,

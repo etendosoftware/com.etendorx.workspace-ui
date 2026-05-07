@@ -314,6 +314,10 @@ const es = {
       title: "El proceso no pudo ejecutarse",
       text: "El proceso no pudo ejecutarse. Contacta a soporte.",
     },
+    openLegacyReport: {
+      popupBlockedTitle: "El navegador bloqueó la ventana del reporte.",
+      openManually: "Abrir reporte",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

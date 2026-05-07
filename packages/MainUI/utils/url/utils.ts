@@ -223,10 +223,22 @@ const serializeEtendoValue = (value: unknown): string => {
 
 /**
  * Encodes a string for Etendo Classic URL format.
- * Uses encodeURIComponent but keeps :, , and / unencoded.
+ * Uses encodeURIComponent but keeps `:`, `,`, `/`, `&`, and `=` unencoded so
+ * the resulting URL fragment matches the canonical SmartClient bookmark
+ * (RFC 3986 §3.5 allows these as `sub-delims` / `pchar` in fragments without
+ * encoding). Critical for `obManualURL` values that carry a query string:
+ * the SmartClient hash parser (`isc.JSON.decode` after `__→"`) does NOT run
+ * `decodeURIComponent`, so any `%26`/`%3D` left in the fragment would land
+ * literally inside `obManualURL` and propagate to the iframe path that
+ * `OBClassicWindow` builds — breaking the legacy report popup with a 404.
  */
 const encodeEtendoBookmark = (serialized: string): string => {
-  return encodeURIComponent(serialized).replace(/%3A/g, ":").replace(/%2C/g, ",").replace(/%2F/g, "/");
+  return encodeURIComponent(serialized)
+    .replace(/%3A/g, ":")
+    .replace(/%2C/g, ",")
+    .replace(/%2F/g, "/")
+    .replace(/%26/g, "&")
+    .replace(/%3D/g, "=");
 };
 
 /**
@@ -262,6 +274,29 @@ const buildLocationUrl = (contextPath: string, encoded: string, kioskMode: boole
 };
 
 /**
+ * Separator the SmartClient classic UI uses inside {@code obManualURL} between
+ * the process path and its query string. The classic OBClassicWindow JS
+ * (`obManualURL.replace('?', '&')`) normalises the URL to this shape before
+ * concatenating to {@code Menu.html?url=...}, so when the report URL carries
+ * parameters we feed them to the bookmark already in the canonical form.
+ */
+const OB_MANUAL_URL_PARAMS_SEPARATOR = "&";
+
+/**
+ * Combines the process path with an optional query string into the
+ * {@code obManualURL} value the SmartClient bookmark expects. Returns the
+ * path unchanged when no params are provided (Sidebar entries) and uses the
+ * classic UI's canonical {@code &} separator when params are present (post-
+ * process reports such as Sales Invoice → Posted).
+ */
+const buildObManualURL = (processUrl: string, params?: string): string => {
+  if (!params) {
+    return processUrl;
+  }
+  return `${processUrl}${OB_MANUAL_URL_PARAMS_SEPARATOR}${params}`;
+};
+
+/**
  * Builds a complete Etendo Classic URL using bookmark navigation.
  *
  * The generated URL:
@@ -279,6 +314,11 @@ const buildLocationUrl = (contextPath: string, encoded: string, kioskMode: boole
  * @param tabTitle - Title shown on the process tab
  * @param kioskMode - Enables kiosk UI restrictions when true
  * @param token - JWT token for authentication. If null, returns legacy URL format
+ * @param params - Optional query string appended to {@code obManualURL} using
+ *   the classic UI's canonical {@code &} separator (no leading {@code ?} or
+ *   {@code &}). Required for post-process reports that need to reach Menu.html
+ *   already filtered (e.g. {@code Command=DIRECT&inpRecord=...}); omit for
+ *   plain Sidebar entries.
  */
 export const buildEtendoClassicBookmarkUrl = ({
   baseUrl,
@@ -286,17 +326,19 @@ export const buildEtendoClassicBookmarkUrl = ({
   tabTitle,
   kioskMode,
   token,
+  params,
 }: {
   baseUrl: string;
   processUrl: string;
   tabTitle: string;
   kioskMode: boolean;
   token: string | null;
+  params?: string;
 }): string => {
   const processTab: EtendoBookmarkTab = {
     viewId: "OBClassicWindow",
     params: {
-      obManualURL: processUrl,
+      obManualURL: buildObManualURL(processUrl, params),
       command: "DEFAULT",
       tabTitle: tabTitle,
     },

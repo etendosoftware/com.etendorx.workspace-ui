@@ -60,6 +60,11 @@ const LegacyIframe = ({
   handleIframeLoad,
   iframeTitle,
 }: LegacyIframeProps) => {
+  // Hides the iframe whenever an overlay (process message banner, blocked-popup
+  // CTA, ...) is rendered on top, so the message has the focus without a
+  // competing background. Callers must pass {@code null} (not an empty
+  // Fragment) when there is no overlay — empty Fragments are truthy and would
+  // permanently hide the iframe.
   const visibilityClass = customContent ? " invisible" : "";
   const iframeClassName = `h-full w-full border-0${visibilityClass}`;
 

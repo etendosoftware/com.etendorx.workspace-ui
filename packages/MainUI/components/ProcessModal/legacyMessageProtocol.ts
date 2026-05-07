@@ -31,6 +31,7 @@ export const LEGACY_ACTIONS = {
   SHOW_PROCESS_MESSAGE: "showProcessMessage",
   IFRAME_UNLOADED: "iframeUnloaded",
   REQUEST_FAILED: "requestFailed",
+  OPEN_LEGACY_REPORT: "openLegacyReport",
 } as const;
 
 export type LegacyAction = (typeof LEGACY_ACTIONS)[keyof typeof LEGACY_ACTIONS];

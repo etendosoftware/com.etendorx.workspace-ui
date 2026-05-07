@@ -17,7 +17,11 @@
 
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { logger } from "@/utils/logger";
+import { tryOpenReportPopup } from "@/utils/reportPopup";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   type MessageStylesType,
@@ -29,6 +33,25 @@ import { LEGACY_ACTIONS } from "./legacyMessageProtocol";
 import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/CustomModal";
 
 const MESSAGE_FALLBACK_TIMEOUT_MS = 5000;
+
+/**
+ * Shape of each entry in the {@code openLegacyReport} payload emitted by the
+ * metadata module's {@code LegacyProcessServlet}. The backend has already
+ * stripped the public host, isolated the query string, and pulled the tab
+ * title from the popup body — the handler just feeds these straight into
+ * {@code buildEtendoClassicBookmarkUrl}.
+ */
+interface OpenLegacyReportItem {
+  processUrl: string;
+  tabTitle: string;
+  params: string;
+}
+
+const isOpenLegacyReportItem = (value: unknown): value is OpenLegacyReportItem => {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.processUrl === "string" && typeof v.tabTitle === "string" && typeof v.params === "string";
+};
 
 /**
  * Classic forms running inside an iframe use window.innerWidth (the iframe's width)
@@ -80,6 +103,9 @@ const ProcessIframeOpenModal = ({
   size = "default",
 }: ProcessIframeModalOpenProps) => {
   const { t } = useTranslation();
+  const { token } = useUserContext();
+  const { config } = useRuntimeConfig();
+  const publicHost = config?.etendoClassicHost || "";
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
   const processMessageRef = useRef<ProcessMessage | null>(null);
@@ -90,6 +116,7 @@ const ProcessIframeOpenModal = ({
   const [hasNavigated, setHasNavigated] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [awaitingMessage, setAwaitingMessage] = useState(false);
+  const [blockedReportUrls, setBlockedReportUrls] = useState<string[]>([]);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -177,6 +204,60 @@ const ProcessIframeOpenModal = ({
     });
   }, [t, clearFallbackTimer]);
 
+  const handleOpenLegacyReports = useCallback(
+    (reports: OpenLegacyReportItem[]) => {
+      clearFallbackTimer();
+      setAwaitingMessage(false);
+
+      // Build each popup URL with the same Etendo Classic bookmark helper used
+      // by the Sidebar (`buildEtendoClassicBookmarkUrl`). The backend already
+      // splits the absolute URL emitted by `printPageClosePopUp` into
+      // {processUrl, params, tabTitle}, so we only have to feed those values
+      // to the helper. The bookmark embeds `params` inside `obManualURL` with
+      // `&` as the path-vs-query separator, matching the canonical format the
+      // classic OBClassicWindow JS produces — Menu.html receives the report
+      // already filtered without any double-encoding of `?`/`&`.
+      const blocked: string[] = [];
+      for (const report of reports) {
+        const popupUrl = buildEtendoClassicBookmarkUrl({
+          baseUrl: publicHost,
+          processUrl: report.processUrl,
+          tabTitle: report.tabTitle,
+          kioskMode: true,
+          token,
+          params: report.params,
+        });
+        if (!tryOpenReportPopup(popupUrl)) {
+          blocked.push(popupUrl);
+        }
+      }
+
+      if (blocked.length > 0) {
+        setBlockedReportUrls(blocked);
+        return;
+      }
+
+      setBlockedReportUrls([]);
+      handleClose();
+    },
+    [publicHost, token, clearFallbackTimer, handleClose]
+  );
+
+  const handleRetryBlockedReports = useCallback(() => {
+    const stillBlocked: string[] = [];
+    for (const popupUrl of blockedReportUrls) {
+      if (!tryOpenReportPopup(popupUrl)) {
+        stillBlocked.push(popupUrl);
+      }
+    }
+    if (stillBlocked.length === 0) {
+      setBlockedReportUrls([]);
+      handleClose();
+      return;
+    }
+    setBlockedReportUrls(stillBlocked);
+  }, [blockedReportUrls, handleClose]);
+
   const handleProcessMessage = useCallback(async () => {
     startFallbackCountdown();
     try {
@@ -245,6 +326,7 @@ const ProcessIframeOpenModal = ({
       setIframeLoading(true);
       setProcessMessage(null);
       setAwaitingMessage(false);
+      setBlockedReportUrls([]);
       clearFallbackTimer();
     }
     loadCount.current = 0;
@@ -289,6 +371,13 @@ const ProcessIframeOpenModal = ({
     // listener MUST start filtering by origin against config.etendoClassicHost.
     // Audit reference: ETP-3747.
     const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.action === LEGACY_ACTIONS.OPEN_LEGACY_REPORT) {
+        const reports = event.data?.payload?.reports;
+        if (Array.isArray(reports) && reports.length > 0 && reports.every(isOpenLegacyReportItem)) {
+          handleOpenLegacyReports(reports);
+        }
+        return;
+      }
       if (event.data?.action === LEGACY_ACTIONS.CLOSE_MODAL) {
         if (shouldSuppressAutoClose()) return;
         handleClose();
@@ -315,6 +404,7 @@ const ProcessIframeOpenModal = ({
     };
   }, [
     handleClose,
+    handleOpenLegacyReports,
     handleProcessMessage,
     handleReceivedMessage,
     handleRequestFailed,
@@ -343,6 +433,66 @@ const ProcessIframeOpenModal = ({
   const showLoadingOverlay = iframeLoading || awaitingMessage;
   const loadingText = awaitingMessage ? t("process.processingMessage") : t("common.loading");
 
+  // CustomModal hides the iframe behind any non-empty `customContent` overlay
+  // so the banner has the focus. Pass `null` (not an empty Fragment) when no
+  // banner is active — Fragments are always truthy regardless of their inner
+  // conditional children, so an `<>{...}</>` wrapper would keep the iframe
+  // permanently invisible.
+  const hasOverlayBanner = Boolean(processMessage) || blockedReportUrls.length > 0;
+  const overlayContent = hasOverlayBanner ? (
+    <>
+      {processMessage && (
+        <div
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
+          style={{
+            borderColor: messageStyles.borderColor,
+            backgroundColor: "white",
+          }}>
+          <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
+            <div className="flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
+                {processMessage.title || t("common.processes")}
+              </h3>
+              {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
+            </div>
+          </div>
+          {processMessage.type === "success" && (
+            <div className="w-full bg-(--color-transparent-neutral-10) h-1">
+              <div
+                className="h-1 transition-all duration-50 ease-linear"
+                style={{
+                  width: `${progressWidth}%`,
+                  backgroundColor: messageStyles.borderColor,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {blockedReportUrls.length > 0 && (
+        <div
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border bg-white shadow-lg"
+          style={{ borderColor: "var(--color-warning-main)" }}
+          data-testid="LegacyReportPopupBlocked__banner">
+          <div className="flex flex-col gap-3 p-4" style={{ backgroundColor: "var(--color-warning-contrast-text)" }}>
+            <h3 className="font-semibold text-lg" style={{ color: "var(--color-warning-main)" }}>
+              {t("process.openLegacyReport.popupBlockedTitle")}
+            </h3>
+            <button
+              type="button"
+              onClick={handleRetryBlockedReports}
+              className="self-start rounded px-3 py-1 font-medium text-white"
+              style={{ backgroundColor: "var(--color-warning-main)" }}
+              data-testid="LegacyReportPopupBlocked__retry">
+              {t("process.openLegacyReport.openManually")}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  ) : null;
+
   return (
     <CustomModal
       isOpen={isOpen}
@@ -350,37 +500,7 @@ const ProcessIframeOpenModal = ({
       iframeLoading={showLoadingOverlay}
       iframeRef={iframeRef}
       customContentClass={sizeClass}
-      customContent={
-        processMessage && (
-          <div
-            className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
-            style={{
-              borderColor: messageStyles.borderColor,
-              backgroundColor: "white",
-            }}>
-            <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
-              <div className="flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
-                  {processMessage.title || t("common.processes")}
-                </h3>
-                {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
-              </div>
-            </div>
-            {processMessage.type === "success" && (
-              <div className="w-full bg-(--color-transparent-neutral-10) h-1">
-                <div
-                  className="h-1 transition-all duration-50 ease-linear"
-                  style={{
-                    width: `${progressWidth}%`,
-                    backgroundColor: messageStyles.borderColor,
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )
-      }
+      customContent={overlayContent}
       url={url || ""}
       formParams={formParams ?? null}
       handleIframeLoad={handleIframeLoad}
