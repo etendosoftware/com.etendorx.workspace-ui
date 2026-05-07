@@ -290,7 +290,9 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     }
 
     // ── Step 9: Verify final payment state ───────────────────────────────────
-    await page.locator("button.toolbar-button-refresh").first().click();
+    const refreshBtn = page.locator("button.toolbar-button-refresh").first();
+    await refreshBtn.waitFor({ state: "visible", timeout: 30_000 });
+    await refreshBtn.click({ timeout: 10_000 });
 
     await expect(page.locator('[data-testid="status-bar-container"] span[name="status"]')).toHaveText(
       "Payment Received",

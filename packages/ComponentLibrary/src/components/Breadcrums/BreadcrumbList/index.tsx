@@ -24,7 +24,13 @@ import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
 import BreadcrumbItem from "../BreadcrumbItem/index";
 
-const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation, separator }) => {
+const BreadcrumbList: FC<BreadcrumbListProps> = ({
+  items,
+  handleActionMenuOpen,
+  handleHomeNavigation,
+  separator,
+  afterFirstItem,
+}) => {
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
   const theme = useTheme();
   const { sx } = useStyle();
@@ -45,14 +51,16 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
     return (
       <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         {items.map((item, index) => (
-          <BreadcrumbItem
-            key={item.id}
-            item={item}
-            position={index}
-            breadcrumbsSize={items.length}
-            handleActionMenuOpen={handleActionMenuOpen}
-            handleHomeNavigation={handleHomeNavigation}
-          />
+          <Box key={item.id} sx={{ display: "flex", alignItems: "center" }}>
+            <BreadcrumbItem
+              item={item}
+              position={index}
+              breadcrumbsSize={items.length}
+              handleActionMenuOpen={handleActionMenuOpen}
+              handleHomeNavigation={handleHomeNavigation}
+            />
+            {index === 0 && afterFirstItem}
+          </Box>
         ))}
       </Breadcrumbs>
     );
@@ -60,13 +68,16 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
 
   return (
     <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-      <BreadcrumbItem
-        item={firstItem}
-        position={0}
-        breadcrumbsSize={items.length}
-        handleActionMenuOpen={handleActionMenuOpen}
-        handleHomeNavigation={handleHomeNavigation}
-      />
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <BreadcrumbItem
+          item={firstItem}
+          position={0}
+          breadcrumbsSize={items.length}
+          handleActionMenuOpen={handleActionMenuOpen}
+          handleHomeNavigation={handleHomeNavigation}
+        />
+        {afterFirstItem}
+      </Box>
       {middleItems.length > 0 && (
         <Box sx={sx.breadcrumbItem}>
           <IconButton onClick={handleMiddleMenuOpen}>

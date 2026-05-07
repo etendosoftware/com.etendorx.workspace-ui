@@ -110,6 +110,8 @@ export interface KpiWidgetData {
 export interface QueryListColumn {
   name: string;
   label: string;
+  referencedWindowId?: string;
+  referencedTabId?: string;
 }
 
 export interface QueryListWidgetData {
