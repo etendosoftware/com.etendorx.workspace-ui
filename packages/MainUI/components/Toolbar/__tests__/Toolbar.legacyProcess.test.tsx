@@ -59,7 +59,33 @@ jest.mock("@/contexts/ToolbarContext", () => ({
   }),
 }));
 jest.mock("@/hooks/useSelected", () => require("../__testUtils__/toolbarMocks").UseSelectedMock);
-jest.mock("@/contexts/window", () => require("../__testUtils__/toolbarMocks").WindowContextMock);
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
+    getTabFormState: jest.fn(),
+    clearChildrenSelections: jest.fn(),
+    getTableState: jest.fn().mockReturnValue({
+      filters: [],
+      visibility: {},
+      sorting: [],
+      order: [],
+      isImplicitFilterApplied: false,
+      advancedCriteria: undefined,
+    }),
+    getNavigationState: jest.fn().mockReturnValue({
+      activeLevels: [],
+      activeTabsByLevel: new Map(),
+    }),
+    setTableFilters: jest.fn(),
+    setTableVisibility: jest.fn(),
+    setTableSorting: jest.fn(),
+    setTableOrder: jest.fn(),
+    setTableImplicitFilterApplied: jest.fn(),
+    setTableAdvancedCriteria: jest.fn(),
+    setNavigationActiveLevels: jest.fn(),
+    setNavigationActiveTabsByLevel: jest.fn(),
+  }),
+}));
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({
   useProcessExecution: () => ({ executeProcess: jest.fn(), iframeUrl: "" }),
 }));
