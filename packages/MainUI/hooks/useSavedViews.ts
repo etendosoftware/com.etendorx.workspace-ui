@@ -99,7 +99,10 @@ export function useSavedViews(): UseSavedViewsReturn {
           const sv = rawRecordToSavedView(r);
           return { ...sv, config: parseGridConfiguration(sv.gridConfiguration) };
         });
-        parsed.sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1));
+        parsed.sort((a, b) => {
+          if (a.isDefault === b.isDefault) return 0;
+          return a.isDefault ? -1 : 1;
+        });
         setViews(parsed);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error fetching saved views";
