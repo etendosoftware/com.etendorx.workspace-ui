@@ -42,6 +42,7 @@ export const useStyle = () => {
           height: "3rem",
           padding: "0.25rem",
           display: "flex",
+          marginLeft: "auto",
           borderRadius: "6.25rem",
           background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
         },
