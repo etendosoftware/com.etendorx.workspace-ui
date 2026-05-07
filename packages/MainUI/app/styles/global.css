@@ -360,8 +360,8 @@ button {
 }
 
 [data-sonner-toast][data-type="success"] .toast-close-btn {
-  border-color: #16a34a !important;
-  background-color: #16a34a !important;
+  border-color: #39dd75 !important;
+  background-color: #39dd75 !important;
 }
 
 [data-sonner-toast][data-type="error"] .toast-close-btn {
