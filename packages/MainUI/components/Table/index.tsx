@@ -55,6 +55,7 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
@@ -752,7 +753,9 @@ const DynamicTable = ({
     registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
-  const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
+  const { getSelectedRecord, getTabFormState } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 
@@ -768,7 +771,7 @@ const DynamicTable = ({
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
     useTableStatePersistenceTab({
-      windowIdentifier: activeWindow?.windowIdentifier || "",
+      windowIdentifier,
       tabId: tab.id,
       tabLevel: tab.tabLevel,
     });
@@ -2497,14 +2500,12 @@ const DynamicTable = ({
 
   // Initialize row selection from URL parameters with proper validation and logging
   const urlBasedRowSelection = useMemo(() => {
-    // Use proper URL state management instead of search params
-    const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window) {
       return {};
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(activeWindow.windowIdentifier, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -2516,12 +2517,10 @@ const DynamicTable = ({
     }
 
     return {};
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records]);
 
   /** Track URL selection changes to detect direct navigation */
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
@@ -2551,7 +2550,7 @@ const DynamicTable = ({
     if (currentURLSelection) {
       previousURLSelection.current = currentURLSelection;
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records]);
 
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
@@ -2669,7 +2668,6 @@ const DynamicTable = ({
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowIdentifier = activeWindow?.windowIdentifier;
             const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
@@ -3111,7 +3109,6 @@ const DynamicTable = ({
 
       const parent = graph.getParent(tab);
       if (parent) {
-        const windowIdentifier = activeWindow?.windowIdentifier;
         const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
         if (!parentSelectedInURL) return;
       }
@@ -3125,7 +3122,7 @@ const DynamicTable = ({
 
       setRecordId(record.id as string);
     },
-    [effectiveRecords, tableContainerRef, graph, tab, activeWindow, getSelectedRecord, setRecordId]
+    [effectiveRecords, tableContainerRef, graph, tab, windowIdentifier, getSelectedRecord, setRecordId]
   );
 
   const handleNewWithParentGuard = useCallback(() => {
@@ -3215,9 +3212,6 @@ const DynamicTable = ({
 
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -3264,13 +3258,11 @@ const DynamicTable = ({
         scrollToIndex(selectedIndex);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -3293,14 +3285,12 @@ const DynamicTable = ({
     // This allows the selection to persist when filters change or pagination occurs,
     // ensuring that if the record reappears (or if we are just viewing other data),
     // the logical selection remains intact.
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
 
   // Handle browser navigation and direct link access
   // NOTE: Disabled for tabs with children - their selection is handled atomically
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -3336,7 +3326,7 @@ const DynamicTable = ({
         return () => clearTimeout(timeoutId);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records, graph]);
 
   // Sync records to graph for cache optimization
   useEffect(() => {
@@ -3347,8 +3337,6 @@ const DynamicTable = ({
 
   /** Restore selection from URL on mount */
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }
@@ -3367,7 +3355,7 @@ const DynamicTable = ({
       table.setRowSelection({ [urlSelectedId]: true });
       hasRestoredSelection.current = true;
     }
-  }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
+  }, [windowId, windowIdentifier, tab.window, records, getSelectedRecord, tab.id]);
 
   /**
    * Reset hasRestoredSelection when the target selected record ID changes.
@@ -3375,14 +3363,13 @@ const DynamicTable = ({
    * (e.g., after cloning a record and navigating to the clone).
    */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (urlSelectedId !== prevRestorationId.current) {
       prevRestorationId.current = urlSelectedId;
       hasRestoredSelection.current = false;
     }
-  }, [activeWindow, getSelectedRecord, tab.id]);
+  }, [windowIdentifier, getSelectedRecord, tab.id]);
 
   /**
    * When the table becomes visible again (user navigates back from form/clone view),
@@ -3395,7 +3382,6 @@ const DynamicTable = ({
 
     if (!becameVisible) return;
 
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
@@ -3405,7 +3391,7 @@ const DynamicTable = ({
     if (!recordExists) {
       refetch();
     }
-  }, [isVisible, activeWindow, getSelectedRecord, tab.id, records, refetch]);
+  }, [isVisible, windowIdentifier, getSelectedRecord, tab.id, records, refetch]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {

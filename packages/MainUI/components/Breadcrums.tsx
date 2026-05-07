@@ -31,6 +31,7 @@ import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useCurrentRecord } from "@/hooks/useCurrentRecord";
 import { useWindowContext } from "@/contexts/window";
 import { useFavoritesContext } from "@/contexts/favorites";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -54,8 +55,11 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
+  const { window: activeWindowMetadata, getWindowMetadata } = useMetadataContext();
+  const { getTabFormState, clearTabFormState, setAllWindowsInactive, getSelectedRecord } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
+  const window = windowId ? getWindowMetadata(windowId) : activeWindowMetadata;
   const { isFavorite, toggle, menuIdByWindowId } = useFavoritesContext();
   const { graph } = useSelected();
 
@@ -79,8 +83,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   }, [allTabsFormatted, windowId, window]);
 
   const currentRecordId = useMemo(() => {
-    return activeWindow?.tabs[currentTab?.id || ""]?.selectedRecord;
-  }, [activeWindow, currentTab?.id]);
+    if (!windowIdentifier || !currentTab?.id) return undefined;
+    return getSelectedRecord(windowIdentifier, currentTab.id);
+  }, [windowIdentifier, currentTab?.id, getSelectedRecord]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,

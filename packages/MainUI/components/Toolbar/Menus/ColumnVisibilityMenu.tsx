@@ -26,7 +26,7 @@ import DragModalContent from "@workspaceui/componentlibrary/src/components/DragM
 import { useTabContext } from "@/contexts/tab";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { isEmptyObject } from "@/utils/commons";
-import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
@@ -49,9 +49,9 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
 }: ColumnVisibilityMenuProps<T>) => {
   const { t } = useTranslation();
   const { tab } = useTabContext();
-  const { activeWindow } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
   const { tableColumnVisibility } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
