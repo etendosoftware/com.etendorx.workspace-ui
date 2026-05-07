@@ -6,6 +6,7 @@ import {
   navigateByMenuTestId,
   clickNewRecord,
   closeToastIfPresent,
+  openSidebarAndGetSearch,
 } from "../../helpers/etendo.helpers";
 
 test.describe("User Management - Create user and assign role @smoke", () => {
@@ -97,18 +98,7 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     await page.waitForTimeout(1_000);
 
     // Ensure drawer is open so MenuTitle__166 becomes visible
-    const searchInput = page.locator('input[placeholder="Search"]').first();
-    await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-    if (await searchInput.isDisabled()) {
-      await page.locator(".h-14 > div > .transition > svg").click();
-      await page.waitForFunction(
-        () => {
-          const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-          return el !== null && !el.disabled;
-        },
-        { timeout: 5_000 }
-      );
-    }
+    await openSidebarAndGetSearch(page);
 
     await expect(
       page.locator('[data-testid="MenuTitle__166"] > .flex.overflow-hidden > .relative > .ml-2').first()
