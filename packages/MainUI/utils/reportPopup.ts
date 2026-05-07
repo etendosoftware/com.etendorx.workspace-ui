@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 
 export const REPORT_POPUP_FEATURES = "width=950,height=700";
-export const REPORT_POPUP_TARGET = "EtendoLegacyReport";
+export const REPORT_POPUP_TARGET = "_blank";
 
 export interface ReportPopupBlockedTexts {
   title: string;

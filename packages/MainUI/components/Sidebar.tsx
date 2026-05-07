@@ -283,10 +283,6 @@ export default function Sidebar() {
       // Handle ProcessManual items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
       if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
-        // console.log("ETENDO_BASE_URL: ", ETENDO_BASE_URL);
-        // console.log("processUrl: ", processUrl);
-        // console.log("item.name: ", item.name);
-        // console.log("token: ", token);
         const classicUrl = buildEtendoClassicBookmarkUrl({
           baseUrl: ETENDO_BASE_URL,
           processUrl,
@@ -294,7 +290,6 @@ export default function Sidebar() {
           token: token,
           kioskMode: true,
         });
-        console.log("classicUrl: ", classicUrl);
         const popupBlockedTexts = {
           title: t("process.openLegacyReport.popupBlockedTitle"),
           openLabel: t("process.openLegacyReport.openManually"),
