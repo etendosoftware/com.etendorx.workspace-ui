@@ -80,7 +80,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { graph } = useSelected();
   const {
     getTabFormState,
-    getNavigationState,
     clearChildrenSelections,
     setTableFilters,
     setTableVisibility,
@@ -101,11 +100,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
-  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({
-      windowIdentifier,
-      tabId: tab?.id ?? "",
-    });
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    tableColumnSorting,
+    tableColumnOrder,
+    activeLevels,
+    activeTabsByLevel,
+  } = useTableStatePersistenceTab({
+    windowIdentifier,
+    tabId: tab?.id ?? "",
+  });
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -132,11 +137,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
-    if (!windowIdentifier || !tab?.id) return false;
-    const navigationState = getNavigationState(windowIdentifier);
-    // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
-    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
-  }, [windowIdentifier, getNavigationState, tab?.id]);
+    if (!tab?.id) return false;
+    return activeLevels.includes(1) && activeTabsByLevel.has(1);
+  }, [activeLevels, activeTabsByLevel, tab?.id]);
 
   // Manage temporary filter tooltip visibility
   useEffect(() => {
