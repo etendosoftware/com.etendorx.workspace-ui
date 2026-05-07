@@ -95,12 +95,12 @@ export function useSavedViews(): UseSavedViewsReturn {
         }
 
         const records = (json.response?.data ?? []) as RawSavedViewRecord[];
-        setViews(
-          records.map((r) => {
-            const sv = rawRecordToSavedView(r);
-            return { ...sv, config: parseGridConfiguration(sv.gridConfiguration) };
-          })
-        );
+        const parsed = records.map((r) => {
+          const sv = rawRecordToSavedView(r);
+          return { ...sv, config: parseGridConfiguration(sv.gridConfiguration) };
+        });
+        parsed.sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1));
+        setViews(parsed);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error fetching saved views";
         logger.error("[useSavedViews] fetchViews failed:", err);
