@@ -39,7 +39,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
       optionText: string,
       searchPlaceholder: "Search options" | "Search..." | "Buscar..." = "Search options"
     ) => {
-      await page.locator(`[aria-label="${containerAriaLabel}"] > div[tabindex="0"]`).click();
+      await page.locator(`[aria-label="${containerAriaLabel}"] > div[tabindex="0"]`).first().click();
       const searchInput =
         searchPlaceholder === "Search options"
           ? page.locator('input[aria-label="Search options"]').first()

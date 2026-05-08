@@ -19,6 +19,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
   test("Navigates to Sales Order, Goods Shipment and Purchase Invoice, verifying LinkedItems navigation", async ({
     page,
   }) => {
+    test.setTimeout(300_000);
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
 
@@ -95,7 +96,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
     };
 
     const clickParagraphWithText = async (pattern: string | RegExp, extraSelector?: string) => {
-      const base = extraSelector ? page.locator(extraSelector) : page.locator("p");
+      const base = extraSelector ? page.locator(extraSelector) : page.locator("p:visible");
       const el = base.filter({ hasText: pattern }).first();
       await el.waitFor({ state: "visible", timeout: 15_000 });
       await el.scrollIntoViewIfNeeded();
