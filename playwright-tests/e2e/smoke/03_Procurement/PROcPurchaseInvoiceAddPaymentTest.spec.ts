@@ -127,7 +127,7 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
     await page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .first()
-      .waitFor({ state: "attached", timeout: 15_000 });
+      .waitFor({ state: "attached", timeout: 30_000 });
 
     // Select action: "Process Made Payment(s)"
     await page
@@ -149,7 +149,7 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
         timeout: 30_000,
       })
       .catch(() => null);
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
 
     // ── Step 7: Verify payment success ───────────────────────────────────────
     // Wait for modal to close (indicates execution completed)

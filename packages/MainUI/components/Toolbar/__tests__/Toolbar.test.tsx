@@ -31,6 +31,26 @@ jest.mock("@/contexts/window", () => ({
     activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
     getTabFormState: jest.fn(),
     clearChildrenSelections: jest.fn(),
+    getTableState: jest.fn(() => ({
+      filters: [],
+      sorting: [],
+      visibility: {},
+      order: [],
+      implicitFilterApplied: false,
+      advancedCriteria: [],
+    })),
+    getNavigationState: jest.fn(() => ({
+      activeLevels: [],
+      activeTabsByLevel: new Map(),
+    })),
+    setTableFilters: jest.fn(),
+    setTableVisibility: jest.fn(),
+    setTableSorting: jest.fn(),
+    setTableOrder: jest.fn(),
+    setTableImplicitFilterApplied: jest.fn(),
+    setTableAdvancedCriteria: jest.fn(),
+    setNavigationActiveLevels: jest.fn(),
+    setNavigationActiveTabsByLevel: jest.fn(),
   }),
 }));
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({

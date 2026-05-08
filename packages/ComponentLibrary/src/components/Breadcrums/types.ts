@@ -37,6 +37,7 @@ export interface BreadcrumbProps {
   onHomeClick: () => void;
   onBackClick?: () => void;
   separator?: ReactNode;
+  afterFirstItem?: React.ReactNode;
 }
 
 export interface BreadcrumbListProps {
@@ -46,6 +47,7 @@ export interface BreadcrumbListProps {
   onCollapseMenuOpen?: (event: React.MouseEvent<HTMLButtonElement>, items: BreadcrumbItem[]) => void;
   onBackClick?: () => void;
   separator?: ReactNode;
+  afterFirstItem?: React.ReactNode;
 }
 
 export interface BreadcrumbItemProps {

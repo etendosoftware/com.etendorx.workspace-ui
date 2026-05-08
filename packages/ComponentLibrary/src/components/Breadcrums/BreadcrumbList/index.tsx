@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { Breadcrumbs, Button } from "@mui/material";
+import { Breadcrumbs, Button, Box } from "@mui/material";
 import { type FC, useRef } from "react";
 import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
@@ -28,6 +28,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({
   handleHomeNavigation,
   onCollapseMenuOpen,
   onBackClick,
+  afterFirstItem,
   separator,
 }) => {
   const { sx } = useStyle();
@@ -39,6 +40,25 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({
 
   if (visibleItemsWithIndex.length === 0) {
     return null;
+  }
+
+  if (items.length <= 2) {
+    return (
+      <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+        {items.map((item, index) => (
+          <Box key={item.id} sx={{ display: "flex", alignItems: "center" }}>
+            <BreadcrumbItem
+              item={item}
+              position={index}
+              breadcrumbsSize={items.length}
+              handleActionMenuOpen={handleActionMenuOpen}
+              handleHomeNavigation={handleHomeNavigation}
+            />
+            {index === 0 && afterFirstItem}
+          </Box>
+        ))}
+      </Breadcrumbs>
+    );
   }
 
   const [firstEntry, ...restEntries] = visibleItemsWithIndex;

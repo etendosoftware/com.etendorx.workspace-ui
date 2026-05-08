@@ -18,15 +18,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { QueryListWidgetData } from "@workspaceui/api-client/src/api/dashboard";
+import type { QueryListColumn, QueryListWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { WIDGET_PAGE_SIZE } from "@/hooks/useDashboard";
+import { useRedirect } from "@/hooks/navigation/useRedirect";
 
 interface QueryListRendererProps {
   data: QueryListWidgetData;
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
 }
 
-function inferColumns(data: QueryListWidgetData): { name: string; label: string }[] {
+function inferColumns(data: QueryListWidgetData): QueryListColumn[] {
   if (data.columns.length > 0) {
     return data.columns;
   }
@@ -37,9 +38,14 @@ function inferColumns(data: QueryListWidgetData): { name: string; label: string 
   }));
 }
 
+function isNavigable(col: QueryListColumn): boolean {
+  return !!col.referencedWindowId && !!col.referencedTabId;
+}
+
 export default function QueryListRenderer({ data, onFetchPage }: QueryListRendererProps) {
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
+  const { handleClickRedirect } = useRedirect();
 
   const totalPages = data.totalRows > 0 ? Math.ceil(data.totalRows / WIDGET_PAGE_SIZE) : 1;
 
@@ -82,14 +88,44 @@ export default function QueryListRenderer({ data, onFetchPage }: QueryListRender
               <tr
                 key={columns.map((col) => String(row[col.name] ?? "")).join("|")}
                 className="border-t border-transparent-neutral-10">
-                {columns.map((col) => (
-                  <td
-                    key={col.name}
-                    className="py-1.5 pr-4 text-baseline-100 whitespace-nowrap"
-                    data-testid={`QueryListRenderer__cell_${i}_${col.name}`}>
-                    {String(row[col.name] ?? "")}
-                  </td>
-                ))}
+                {columns.map((col) => {
+                  const cellValue = String(row[col.name] ?? "");
+                  const recordId = row[`${col.name}_id`] as string | undefined;
+
+                  if (isNavigable(col) && recordId) {
+                    return (
+                      <td
+                        key={col.name}
+                        className="py-1.5 pr-4 whitespace-nowrap"
+                        data-testid={`QueryListRenderer__cell_${i}_${col.name}`}>
+                        <button
+                          type="button"
+                          className="text-left text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                          data-testid={`QueryListRenderer__link_${i}_${col.name}`}
+                          onClick={(e) =>
+                            handleClickRedirect({
+                              e,
+                              windowId: col.referencedWindowId as string,
+                              windowTitle: col.label,
+                              referencedTabId: col.referencedTabId as string,
+                              selectedRecordId: recordId,
+                            })
+                          }>
+                          {cellValue}
+                        </button>
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td
+                      key={col.name}
+                      className="py-1.5 pr-4 text-baseline-100 whitespace-nowrap"
+                      data-testid={`QueryListRenderer__cell_${i}_${col.name}`}>
+                      {cellValue}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

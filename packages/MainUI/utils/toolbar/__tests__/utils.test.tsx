@@ -317,7 +317,7 @@ describe("createButtonByType - extended", () => {
     const result = createButtonByType({
       ...defaultProps,
       button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD }),
-      tab: { ...defaultTab, obuiappShowCloneButton: false } as any,
+      tab: { ...defaultTab, obuiappShowCloneButton: false },
     });
     expect(result.disabled).toBe(true);
   });
@@ -326,7 +326,7 @@ describe("createButtonByType - extended", () => {
     const result = createButtonByType({
       ...defaultProps,
       button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD }),
-      tab: { ...defaultTab, obuiappShowCloneButton: true } as any,
+      tab: { ...defaultTab, obuiappShowCloneButton: true },
     });
     expect(result.disabled).toBe(false);
   });

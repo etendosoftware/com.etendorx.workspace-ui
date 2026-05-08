@@ -247,11 +247,25 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     if (windowMenuId && windowId) toggle(windowMenuId, windowId);
   }, [windowMenuId, windowId, toggle]);
 
+  const favoriteButton = windowMenuId ? (
+    <button
+      type="button"
+      onClick={handleFavToggle}
+      className={`shrink-0 p-1 rounded transition-all ${
+        isCurWindowFav ? "text-yellow-400" : "text-baseline-40 hover:text-yellow-400"
+      }`}
+      title={isCurWindowFav ? "Remove from favorites" : "Add to favorites"}
+      data-testid="Breadcrumb__favorite_toggle">
+      <StarIcon filled={isCurWindowFav} data-testid="StarIcon__50ef19" />
+    </button>
+  ) : undefined;
+
   return (
     <div className="flex items-center gap-1 w-full h-8">
       <Breadcrumb
         onHomeClick={handleHomeClick}
         onBackClick={handleBackClick}
+        afterFirstItem={favoriteButton}
         items={breadcrumbItems || []}
         data-testid="Breadcrumb__50ef19"
       />
