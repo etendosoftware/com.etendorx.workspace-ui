@@ -169,7 +169,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await page.waitForTimeout(1_000);
     await typeName(page, "VAT 3%");
     await page.waitForTimeout(1_000);
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').first().click();
+    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible').first().click();
     await closeToastIfPresent(page);
 
     // ── Product window ────────────────────────────────────────────────────────

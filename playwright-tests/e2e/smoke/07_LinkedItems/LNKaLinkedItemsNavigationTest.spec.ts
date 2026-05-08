@@ -151,7 +151,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await expect(
       page
-        .locator("p")
+        .locator("p:visible")
         .filter({ hasText: /^Goods Shipment$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
@@ -178,7 +178,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await expect(
       page
-        .locator("p")
+        .locator("p:visible")
         .filter({ hasText: /^Purchase Invoice$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });

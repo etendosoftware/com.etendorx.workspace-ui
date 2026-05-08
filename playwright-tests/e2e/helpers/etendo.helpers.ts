@@ -262,7 +262,7 @@ export async function clickSave(page: Page) {
 }
 
 export async function typeName(page: Page, text: string) {
-  const input = page.locator('input[aria-label="Name"]').first();
+  const input = page.locator('input[aria-label="Name"]:visible').first();
   await input.waitFor({ state: "visible", timeout: 20_000 });
   await input.clear();
   await input.fill(text);
