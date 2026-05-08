@@ -24,7 +24,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     test.setTimeout(360_000);
     // ── Local helpers ────────────────────────────────────────────────────────
     const clickNewChildRecord = async () => {
-      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
+      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible > span').click();
     };
 
     const fillVisibleByAriaLabel = async (label: string, value: string) => {

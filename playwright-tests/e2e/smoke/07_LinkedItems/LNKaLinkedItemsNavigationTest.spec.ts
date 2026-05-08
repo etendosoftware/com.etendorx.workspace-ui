@@ -62,11 +62,11 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await filterInput.fill(value);
       await filterInput.press("Enter");
       // Wait for the table to re-render with filtered results before proceeding
-      await page.locator("tr").filter({ hasText: value }).first().waitFor({ state: "visible", timeout: 15_000 });
+      await page.locator("tr:visible").filter({ hasText: value }).first().waitFor({ state: "visible", timeout: 15_000 });
     };
 
     const openRowFormByText = async (rowText: string | RegExp) => {
-      const row = page.locator("tr").filter({ hasText: rowText }).first();
+      const row = page.locator("tr:visible").filter({ hasText: rowText }).first();
       await row.waitFor({ state: "visible", timeout: 10_000 });
       await row.scrollIntoViewIfNeeded();
       await row.locator('button[data-testid^="form-button-"]').click();
@@ -79,7 +79,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .waitForRequest((req) => req.url().includes("UsedByLink") && req.method() === "POST", { timeout: 20_000 })
         .catch(() => null);
       const btn = page
-        .locator("button")
+        .locator("button:visible")
         .filter({ hasText: /^Linked Items$/ })
         .first();
       await btn.waitFor({ state: "visible", timeout: 15_000 });
@@ -137,7 +137,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
     // Column virtualisation: scroll the table to the right so the pinned
     // actions column with the form button becomes visible.
     await page
-      .locator(".MuiTableContainer-root")
+      .locator(".MuiTableContainer-root:visible")
       .first()
       .evaluate((el) => {
         (el as HTMLElement).scrollLeft = (el as HTMLElement).scrollWidth;
@@ -157,7 +157,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
     ).toBeVisible({ timeout: 15_000 });
     await expect(
       page
-        .locator("button")
+        .locator("button:visible")
         .filter({ hasText: /^Lines$/ })
         .first()
     ).toBeVisible({ timeout: 10_000 });
@@ -184,7 +184,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
     ).toBeVisible({ timeout: 15_000 });
     await expect(
       page
-        .locator("button")
+        .locator("button:visible")
         .filter({ hasText: /^Basic Discounts$/ })
         .first()
     ).toBeVisible({ timeout: 10_000 });
