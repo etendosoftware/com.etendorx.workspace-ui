@@ -14,7 +14,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
   });
 
   test("Generates invoices from processed sales orders and shipments for multiple customers", async ({ page }) => {
-    test.setTimeout(360_000);
+    test.setTimeout(720_000);
     // ── Login & role ──────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
@@ -168,18 +168,21 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await createInput.fill("");
     await page.keyboard.type("create");
     await page.locator('[data-testid="MenuTitle__346"]').waitFor({ state: "visible", timeout: 10_000 });
+
+    // Form now opens in an external popup (window.open) — capture it before triggering the click.
+    const formPopupPromise = page.waitForEvent("popup");
     await page
       .locator('[data-testid="MenuTitle__346"] > .flex.overflow-hidden > .relative > .ml-2')
       .evaluate((el) => (el as HTMLElement).click());
+    const formPopup = await formPopupPromise;
+    await formPopup.waitForLoadState("domcontentloaded");
 
-    // The outer legacy iframe loads Menu.html, which in turn loads the actual form
-    // (GenerateShipmentsmanual.html or similar) inside a nested iframe. legacyFrame()
-    // only reaches one level deep, so we must iterate page.frames() — same technique
-    // as fillCreateLinesFromPopup — to find the nested frame that contains #paramDateFrom.
+    // Menu.html loads the actual form (GenerateShipmentsmanual.html) inside a nested iframe.
+    // Search formPopup.frames() to find the nested frame that contains #paramDateFrom.
     let processFrame: Frame | null = null;
     const frameDeadline = Date.now() + 30_000;
     while (Date.now() < frameDeadline && !processFrame) {
-      for (const f of page.frames()) {
+      for (const f of formPopup.frames()) {
         try {
           if ((await f.locator("#paramDateFrom").count()) > 0) {
             processFrame = f;
@@ -223,11 +226,10 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await page.waitForTimeout(2_000);
 
     // Find the frame that has the inpOrder checkboxes (the results frame in the frameset).
-    // Both checkboxes and Process button live in this same frame.
     let resultsFrame: Frame = processFrame;
     const cbDeadline = Date.now() + 15_000;
     outer: while (Date.now() < cbDeadline) {
-      for (const f of page.frames()) {
+      for (const f of formPopup.frames()) {
         try {
           if ((await f.locator('input[type="checkbox"][name="inpOrder"]').count()) > 0) {
             resultsFrame = f;
@@ -250,7 +252,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     });
     await page.waitForTimeout(500);
 
-    // Process button is in the same results frame — mirrors Cypress clickLegacyButton("Process")
+    // Process button is in the same results frame
     await resultsFrame.evaluate(() => {
       const btns = document.querySelectorAll<HTMLElement>(
         'td.Button_text, button, input[type="button"], input[type="submit"]'
@@ -263,13 +265,12 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
     });
 
-    // Success message: check the results frame first, then fall back to all frames
-    // (Cypress verifyLegacySuccessMessage uses .MessageBox_TextTitle#messageBoxIDTitle)
+    // Success message: search formPopup.frames() (popup context, not main page)
     const successSelector = ".MessageBox_TextTitle#messageBoxIDTitle";
     const successDeadline = Date.now() + 30_000;
     let processSuccess = false;
     while (Date.now() < successDeadline && !processSuccess) {
-      for (const f of page.frames()) {
+      for (const f of formPopup.frames()) {
         try {
           const el = f.locator(successSelector);
           if ((await el.count()) > 0) {
@@ -287,7 +288,8 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     }
     if (!processSuccess) throw new Error("Create Shipments process did not complete successfully within 30s");
 
-    await page.locator('[data-testid="close-button"]').click();
+    // Close the popup window (replaces the React modal close button)
+    await formPopup.close();
     await closeToastIfPresent(page);
 
     // ── Step 9: Navigate to Generate Invoices report (MenuTitle__192) ─────────

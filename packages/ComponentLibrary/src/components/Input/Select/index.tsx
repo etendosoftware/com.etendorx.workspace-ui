@@ -17,9 +17,9 @@
 
 "use client";
 
-import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import XIcon from "../../../assets/icons/x.svg";
+import ChevronDownIcon from "../../../assets/icons/chevron-down.svg";
 import {
   Autocomplete,
   type AutocompleteRenderInputParams,
@@ -142,8 +142,18 @@ const Select: React.FC<ISelectInput> = ({
         disabled={disabled}
         options={options}
         getOptionLabel={(option) => option.title}
-        clearIcon={<CancelIcon style={sx.dropdownIcons} />}
-        popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
+        clearIcon={
+          <XIcon
+            style={{ width: "0.875rem", height: "0.875rem", color: theme.palette.baselineColor.neutral[80] }}
+            fill={theme.palette.baselineColor.neutral[80] as string}
+          />
+        }
+        popupIcon={
+          <ChevronDownIcon
+            style={{ width: "0.875rem", height: "0.875rem" }}
+            fill={theme.palette.baselineColor.neutral[80] as string}
+          />
+        }
         renderInput={renderInput}
         sx={sx.autocomplete}
         PaperComponent={paperComponent}

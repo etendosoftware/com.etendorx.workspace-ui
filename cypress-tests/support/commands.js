@@ -177,9 +177,7 @@ Cypress.Commands.add("selectRoleOrgWarehouse", (options = {}) => {
   cy.wait(500);
 
   // Open role dropdown
-  cy.get(
-    ':nth-child(1) > .MuiFormControl-root > .MuiInputBase-root > [style="display: flex; align-items: center;"] > .MuiAutocomplete-endAdornment > .MuiAutocomplete-popupIndicator > [data-testid="ExpandMoreIcon"]'
-  ).click();
+  cy.get("#role-select").click();
   cy.wait(500);
 
   // Select role

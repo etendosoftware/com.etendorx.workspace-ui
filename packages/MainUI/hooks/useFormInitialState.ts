@@ -100,6 +100,28 @@ function applyColumnValues(
 }
 
 /**
+ * Third pass: applies plain static defaultValue for fields that are still empty
+ * after FIC (e.g. non-displayed fields excluded from _gridVisibleProperties, or
+ * fields whose server-side default was not evaluated).
+ * Skips @...@ expressions (column refs, SQL, session vars) — those are handled
+ * elsewhere or delegated to the server.
+ */
+function applyStaticDefaults(acc: EntityData, fields: Tab["fields"]): void {
+  for (const field of Object.values(fields)) {
+    const dv = field?.column?.defaultValue;
+    if (!dv || !field.hqlName) continue;
+    if (dv.startsWith("@")) continue;
+    const current = acc[field.hqlName];
+    // For YES_NO (boolean) fields, "" from FIC becomes false after toBooleanEntityValue.
+    // Treat false the same as "" — both mean "no value was computed by the server".
+    const isBooleanField = field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id;
+    const isEmpty = current === undefined || current === "" || (isBooleanField && current === false);
+    if (!isEmpty) continue;
+    acc[field.hqlName] = toBooleanEntityValue(dv, field);
+  }
+}
+
+/**
  * Second pass: resolves @ColumnName@ default references for fields that came back
  * empty from the FIC. The backend cannot resolve cross-field references like
  * @DateInvoiced@ for NEW records because the payload carries no record data.
@@ -156,6 +178,7 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     applyAuxiliaryInputs(acc, formInitialization.auxiliaryInputValues, fieldsByColumnName);
     applyColumnValues(acc, formInitialization.columnValues, fieldsByColumnName, fieldsByPropertyFieldKey);
+    applyStaticDefaults(acc, tab.fields);
     resolveDefaultReferences(acc, tab.fields, fieldsByColumnName);
 
     return { ...parentData, ...acc };

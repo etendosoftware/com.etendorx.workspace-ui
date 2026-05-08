@@ -25,6 +25,11 @@ export const COPILOT_ENDPOINTS = {
   GET_CONVERSATIONS: "copilot/conversations",
   GET_CONVERSATION_MESSAGES: "copilot/conversationMessages",
   GENERATE_TITLE: "copilot/generateTitleConversation",
+  RENAME_CONVERSATION: "copilot/renameConversation",
+  DELETE_CONVERSATION: "copilot/deleteConversation",
+  RESTORE_CONVERSATION: "copilot/restoreConversation",
+  PERMANENT_DELETE_CONVERSATION: "copilot/permanentDeleteConversation",
+  GET_ARCHIVED_CONVERSATIONS: "copilot/archivedConversations",
 } as const;
 
 export const COPILOT_METHODS = {

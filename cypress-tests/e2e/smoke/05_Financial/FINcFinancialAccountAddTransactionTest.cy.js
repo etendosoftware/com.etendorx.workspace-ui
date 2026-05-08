@@ -74,14 +74,13 @@ describe("Financial Account - Add Transaction from Purchase Invoice", () => {
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(500);
 
-    cy.clickNewRecord();
+    cy.get("button.toolbar-button-new-form", { timeout: 15000 }).filter(":visible").not(":disabled").first().click();
     cy.wait(500);
 
     // Product: Raw material A
     cy.get('[data-testid="ChevronDown__3371"]').first().click({ force: true });
     cy.wait(500);
 
-    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]').scrollIntoView().click({ force: true });
     cy.wait("@productFormInit", { timeout: 60000 });
 

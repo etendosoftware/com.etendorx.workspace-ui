@@ -14,29 +14,19 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
+import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
-import ProcessIframeModal from "./ProcessModal/Iframe";
-import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
+import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
-
-interface ExtendedMenu extends Menu {
-  processDefinitionId?: string;
-  formId?: string;
-  processId?: string;
-  description?: string;
-}
+import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
+import { useFavoritesContext } from "@/contexts/favorites";
 
 interface FormData {
-  url: string;
   paramUrl: string;
-  noprefs: string;
-  hideMenu: string;
-  command: string;
 }
 
 const buildProcessUrl = (processId: string, token: string | null, baseUrl: string): string => {
@@ -50,24 +40,16 @@ const buildProcessUrl = (processId: string, token: string | null, baseUrl: strin
   return `${baseUrl}${API_IFRAME_FORWARD_PATH}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
 };
 
-const buildFormUrl = (formId: string, token: string | null, baseUrl: string): string | null => {
-  const formData = (formsData as Record<string, FormData>)[formId];
-  if (!formData) {
-    return null;
-  }
-
-  const { url, paramUrl, noprefs, hideMenu, command } = formData;
-
+const buildFormUrl = (formPath: string, token: string | null, baseUrl: string): string => {
   const params = new URLSearchParams({
-    noprefs,
-    hideMenu,
-    Command: command,
+    noprefs: "true",
+    hideMenu: "true",
+    Command: "DEFAULT",
   });
-
   if (token) {
     params.append("token", token);
   }
-  return `${baseUrl}${API_IFRAME_FORWARD_PATH}${url}?url=${paramUrl}&${params.toString()}`;
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/security/Menu.html?url=${formPath}&${params.toString()}`;
 };
 
 interface ManualProcessResult {
@@ -75,21 +57,15 @@ interface ManualProcessResult {
   size: "default" | "large";
 }
 
-/**
- * Checks if a menu item is a ProcessDefinition type that should use the new ProcessDefinitionModal
- */
-const isProcessDefinitionMenuItem = (item: ExtendedMenu): boolean => {
+const isProcessDefinitionMenuItem = (item: Menu): boolean => {
   return item.type === "ProcessDefinition" && !!item.id;
 };
 
-const isReportAndProcessMenuItem = (item: ExtendedMenu): boolean => {
+const isReportAndProcessMenuItem = (item: Menu): boolean => {
   return item.type === "Process" && !!item.id;
 };
 
-/**
- * Maps a Menu item to a ProcessDefinitionButton structure for the ProcessDefinitionModal
- */
-const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinitionButton | null => {
+const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton | null => {
   if (!isProcessDefinitionMenuItem(item) && !isReportAndProcessMenuItem(item)) {
     return null;
   }
@@ -135,15 +111,7 @@ const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinition
   } as unknown as ProcessDefinitionButton;
 };
 
-/**
- * Gets the iframe configuration for legacy manual processes (Process/Form types)
- * ProcessDefinition types are handled separately via ProcessDefinitionModal
- */
-const getManualProcessConfig = (
-  item: ExtendedMenu,
-  token: string | null,
-  baseUrl: string
-): ManualProcessResult | null => {
+const getManualProcessConfig = (item: Menu, token: string | null, baseUrl: string): ManualProcessResult | null => {
   if (item.type === "Process" && item.processId) {
     return {
       url: buildProcessUrl(item.processId, token, baseUrl),
@@ -152,16 +120,16 @@ const getManualProcessConfig = (
   }
 
   if (item.type === "Form" && item.formId) {
-    const url = buildFormUrl(item.formId, token, baseUrl);
-    if (!url) return null;
-    return { url, size: "large" };
+    // Prefer formUrl from backend; fall back to data.json for older backend versions
+    const formPath = item.formUrl ?? (formsData as Record<string, FormData>)[item.formId]?.paramUrl;
+    if (!formPath) return null;
+    return { url: buildFormUrl(formPath, token, baseUrl), size: "large" };
   }
 
-  // ProcessDefinition is no longer handled here - it uses ProcessDefinitionModal
   return null;
 };
 
-const getManualProcessUrl = (item: ExtendedMenu): string | null => {
+const getManualProcessUrl = (item: Menu): string | null => {
   return item.processUrl || null;
 };
 
@@ -205,7 +173,6 @@ export default function Sidebar() {
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
-  const [processIframeModal, setProcessIframeModal] = useState<ProcessIframeModalProps>({ isOpen: false });
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
@@ -244,15 +211,13 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
-      const extendedItem = item as ExtendedMenu;
-
       // Check if this is a ProcessDefinition item that should use the new modal
-      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(extendedItem);
-      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(extendedItem);
+      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(item);
+      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(item);
       const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
 
       if (isProcessMenuItem) {
-        const processButton = mapMenuToProcessDefinitionButton(extendedItem);
+        const processButton = mapMenuToProcessDefinitionButton(item);
         if (processButton) {
           setSelectedProcessDefinitionButton(processButton);
           setShowProcessDefinitionModal(true);
@@ -263,17 +228,10 @@ export default function Sidebar() {
         }
       }
 
-      // Handle legacy manual processes (Form / Process) with iframe
-      const processConfig = getManualProcessConfig(extendedItem, token, ETENDO_BASE_URL);
+      // Handle legacy manual processes (Form) as external popup
+      const processConfig = getManualProcessConfig(item, token, ETENDO_BASE_URL);
       if (processConfig) {
-        setProcessIframeModal({
-          isOpen: true,
-          url: processConfig.url,
-          title: extendedItem.name,
-          tabId: "",
-          size: processConfig.size,
-          onClose: () => setProcessIframeModal({ isOpen: false }),
-        });
+        window.open(processConfig.url, "Test", "width=950,height=700");
         return;
       }
 
@@ -298,6 +256,13 @@ export default function Sidebar() {
         return;
       }
 
+      // Handle View items — open as OpenUI view in Classic (popup window, same as legacy modal processes)
+      if (item.type === "View" && item.viewId) {
+        const viewUrl = buildEtendoViewUrl({ baseUrl: ETENDO_BASE_URL, viewId: item.viewId, token });
+        window.open(viewUrl, "Test", "width=950,height=700");
+        return;
+      }
+
       if (item.type !== "Window") {
         return;
       }
@@ -308,9 +273,7 @@ export default function Sidebar() {
         return;
       }
 
-      if (windowId) {
-        setPendingWindowId(windowId);
-      }
+      setPendingWindowId(windowId);
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
@@ -375,32 +338,59 @@ export default function Sidebar() {
     }
   }, [currentWindowId, pendingWindowId]);
 
+  const { isFavorite, toggle, setMenuMap } = useFavoritesContext();
+
+  // Build windowId→menuId map from the flat menu tree so the breadcrumb
+  // can look up the menuId for the current window without prop drilling.
+  useEffect(() => {
+    function collect(items: Menu[], map: Map<string, string>) {
+      for (const item of items) {
+        if (item.windowId) map.set(item.windowId, item.id);
+        if (item.children?.length) collect(item.children, map);
+      }
+    }
+    const map = new Map<string, string>();
+    collect(menu, map);
+    setMenuMap(map);
+  }, [menu, setMenuMap]);
+
+  const favoritesDrawerValue = useMemo(
+    () => ({
+      isFavorite,
+      toggle: (item: Menu) => {
+        if (item.windowId) toggle(item.id, item.windowId);
+      },
+    }),
+    [isFavorite, toggle]
+  );
+
   return (
-    <>
-      <Drawer
-        windowId={currentWindowId}
-        pendingWindowId={pendingWindowId}
-        logo={EtendoLogotype.src}
-        title={t("common.etendo")}
-        items={menu}
-        onClick={handleClick}
-        onReportClick={handleClick}
-        onProcessClick={handleClick}
-        getTranslatedName={getTranslatedName}
-        RecentlyViewedComponent={RecentlyViewed}
-        VersionComponent={VersionComponent}
-        searchContext={searchContext}
-        data-testid="Drawer__6c6035"
-      />
-      <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
-      <ProcessDefinitionModal
-        type={processType}
-        open={showProcessDefinitionModal}
-        onClose={handleCloseProcessDefinitionModal}
-        button={selectedProcessDefinitionButton}
-        keepOpenOnSuccess
-        data-testid="ProcessDefinitionModal__sidebar"
-      />
-    </>
+    <FavoritesDrawerContext.Provider value={favoritesDrawerValue}>
+      <>
+        <Drawer
+          windowId={currentWindowId}
+          pendingWindowId={pendingWindowId}
+          logo={EtendoLogotype.src}
+          title={t("common.etendo")}
+          items={menu}
+          onClick={handleClick}
+          onReportClick={handleClick}
+          onProcessClick={handleClick}
+          getTranslatedName={getTranslatedName}
+          RecentlyViewedComponent={RecentlyViewed}
+          VersionComponent={VersionComponent}
+          searchContext={searchContext}
+          data-testid="Drawer__6c6035"
+        />
+        <ProcessDefinitionModal
+          type={processType}
+          open={showProcessDefinitionModal}
+          onClose={handleCloseProcessDefinitionModal}
+          button={selectedProcessDefinitionButton}
+          keepOpenOnSuccess
+          data-testid="ProcessDefinitionModal__sidebar"
+        />
+      </>
+    </FavoritesDrawerContext.Provider>
   );
 }

@@ -63,6 +63,8 @@ export interface FormViewProps {
   onSave?: (saveFn: () => void) => void;
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   uIPattern?: UIPattern;
+  isFocused?: boolean;
+  onFocusAcquire?: () => void;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition["value"];

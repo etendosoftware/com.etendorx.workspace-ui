@@ -109,9 +109,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onFileSelect,
   onRemoveFile,
   conversations = [],
+  archivedConversations = [],
   onSelectConversation,
   onLoadConversations,
   conversationsLoading = false,
+  onRenameConversation,
+  onDeleteConversation,
+  onRestoreConversation,
+  onPermanentDeleteConversation,
+  onToggleArchive,
+  archiveExpanded = false,
+  archivedLoading = false,
+  searchQuery = "",
+  onSearchQueryChange,
+  showOnlyFeatured,
+  hasFeaturedAssistants,
+  onToggleFeaturedFilter,
   translations,
 }) => {
   const [showConversations, setShowConversations] = useState(true);
@@ -166,6 +179,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isExpanded={isExpanded}
         showDescription={showDescription}
         isLoading={isLoadingAssistants}
+        showOnlyFeatured={showOnlyFeatured}
+        hasFeaturedAssistants={hasFeaturedAssistants}
+        onToggleFeaturedFilter={onToggleFeaturedFilter}
         translations={translations.assistantSelector}
       />
     );
@@ -177,9 +193,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return (
         <ConversationList
           conversations={conversations}
+          archivedConversations={archivedConversations}
           onSelectConversation={handleSelectConversationInternal}
           onNewConversation={handleNewConversation}
           isLoading={conversationsLoading}
+          onRenameConversation={onRenameConversation}
+          onDeleteConversation={onDeleteConversation}
+          onRestoreConversation={onRestoreConversation}
+          onPermanentDeleteConversation={onPermanentDeleteConversation}
+          onToggleArchive={onToggleArchive}
+          archiveExpanded={archiveExpanded}
+          archivedLoading={archivedLoading}
+          searchQuery={searchQuery}
+          onSearchQueryChange={onSearchQueryChange}
           translations={translations.conversationList}
         />
       );
@@ -232,10 +258,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {showConversations && (
             <ConversationList
               conversations={conversations}
+              archivedConversations={archivedConversations}
               onSelectConversation={handleSelectConversationInternal}
               onNewConversation={handleNewConversation}
               onCloseSidebar={handleToggleConversations}
               isLoading={conversationsLoading}
+              onRenameConversation={onRenameConversation}
+              onDeleteConversation={onDeleteConversation}
+              onRestoreConversation={onRestoreConversation}
+              onPermanentDeleteConversation={onPermanentDeleteConversation}
+              onToggleArchive={onToggleArchive}
+              archiveExpanded={archiveExpanded}
+              archivedLoading={archivedLoading}
+              searchQuery={searchQuery}
+              onSearchQueryChange={onSearchQueryChange}
               translations={translations.conversationList}
             />
           )}

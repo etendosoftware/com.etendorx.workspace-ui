@@ -289,16 +289,30 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       await page.waitForTimeout(3_000);
     }
 
-    // Filter and select each invoice independently. keepNonExistentRowsSelected=true
-    // in the WindowReferenceGrid DataGrid ensures Invoice A stays selected when the
-    // filter changes to show Invoice B (MUI DataGrid default deselects filtered-out rows).
+    // Filter by the shared prefix of both invoice document numbers so both rows
+    // appear in the viewport simultaneously if possible (logic from HEAD). Sequential doc numbers
+    // (e.g. 10000134 / 10000135) share enough characters that one filter shows both.
+    // This avoids MUI DataGrid row virtualization hiding the second invoice when the two invoices have
+    // different due dates (different vendors have different payment terms).
+    // Additionally, keepNonExistentRowsSelected=true in the WindowReferenceGrid DataGrid
+    // ensures Invoice A stays selected when the filter changes to show Invoice B (logic from Branch).
+    let prefixLen = 0;
+    while (
+      prefixLen < invoiceNumberA.length &&
+      prefixLen < invoiceNumberB.length &&
+      invoiceNumberA[prefixLen] === invoiceNumberB[prefixLen]
+    ) {
+      prefixLen++;
+    }
+    const invoiceFilter = prefixLen >= 4 ? invoiceNumberA.slice(0, prefixLen) : invoiceNumberA;
+
     const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
     await invoiceDocFilter.waitFor({ state: "visible", timeout: 15_000 });
 
     const filterResponseA = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
-    await invoiceDocFilter.fill(invoiceNumberA);
+    await invoiceDocFilter.fill(invoiceFilter);
     await filterResponseA;
-    await page.waitForTimeout(1_500);
+    await page.waitForTimeout(2_000);
 
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
@@ -309,6 +323,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowA.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
+    // Filter for Invoice B specifically to ensure it's visible and clickable (Branch logic).
     const filterResponseB = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await invoiceDocFilter.fill(invoiceNumberB);
     await filterResponseB;
@@ -323,14 +338,14 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowB.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowB.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Submit — set up toast watcher BEFORE clicking.
-    // The footer button is labelled "Submit" (from the process availableButtons config).
+    // Execute — set up toast watcher BEFORE clicking.
     const successToastAppeared = page.waitForSelector('[data-sonner-toast][data-type="success"]', {
       state: "visible",
       timeout: 60_000,
     });
     await page.waitForTimeout(500);
-    const submitBtn = page.locator('[data-testid*="ExecuteButton"][data-testid$="__761503"]').first();
+    const submitBtn = page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]');
+
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
     await successToastAppeared;

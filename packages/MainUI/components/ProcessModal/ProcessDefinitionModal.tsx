@@ -68,6 +68,7 @@ import {
   Metadata,
   // Constants
   BUTTON_LIST_REFERENCE_ID,
+  BUTTON_REFERENCE_ID,
   PROCESS_TYPES,
   // Components
   GenericWarehouseProcess,
@@ -90,6 +91,7 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
+import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
 
 const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
   const [expanded, setExpanded] = useState(true);
@@ -259,6 +261,7 @@ function ProcessDefinitionModalContent({
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
+  const isFinalSuccess = result?.success === true && !result?.keepOpen;
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
@@ -330,43 +333,58 @@ function ProcessDefinitionModalContent({
       }
     };
 
+    const getListButtons = (refList: any[]): any[] => {
+      return refList.map((item) => ({
+        value: item.value,
+        label: item.label,
+      }));
+    };
+
+    const getDynamicButtons = async (buttonListParam: any) => {
+      const rawRefKey = buttonListParam.referenceSearchKey;
+      const referenceId = rawRefKey && typeof rawRefKey === "object" ? (rawRefKey as { id: string }).id : rawRefKey;
+
+      if (!referenceId) return [];
+
+      const responseData = await fetchDynamicButtons(referenceId);
+      if (!responseData || responseData.length === 0) return [];
+
+      return responseData.map((item: any) => ({
+        value: item.searchKey,
+        label: item.name,
+        isFilter: ["filter", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+      }));
+    };
+
     const loadButtons = async () => {
-      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      const allParameters = Object.values(parameters);
+      const buttonListParam = allParameters.find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      const individualButtons = allParameters.filter((p) => p.reference === BUTTON_REFERENCE_ID);
 
-      if (!buttonListParam) {
+      if (!buttonListParam && individualButtons.length === 0) {
         if (active) setAvailableButtons([]);
         return;
       }
 
-      if (buttonListParam.refList && buttonListParam.refList.length > 0) {
-        if (active) {
-          setAvailableButtons(
-            buttonListParam.refList.map((item) => ({
-              value: item.value,
-              label: item.label,
-            }))
-          );
+      const buttons: Array<{ value: string; label: string; isFilter?: boolean }> = [];
+
+      if (buttonListParam) {
+        if (buttonListParam.refList && buttonListParam.refList.length > 0) {
+          buttons.push(...getListButtons(buttonListParam.refList));
+        } else {
+          const dynamicButtons = await getDynamicButtons(buttonListParam);
+          buttons.push(...dynamicButtons);
         }
-        return;
       }
 
-      const referenceId = (buttonListParam as any).referenceSearchKey;
+      const individualMapped = individualButtons.map((p) => ({
+        value: p.dBColumnName,
+        label: p.name,
+      }));
+      buttons.push(...individualMapped);
 
-      if (referenceId) {
-        const responseData = await fetchDynamicButtons(referenceId);
-
-        if (responseData && responseData.length > 0 && active) {
-          const mappedButtons = responseData.map((item: any) => ({
-            value: item.searchKey,
-            label: item.name,
-            isFilter: ["filter", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
-          }));
-          setAvailableButtons(mappedButtons);
-        } else if (active) {
-          setAvailableButtons([]);
-        }
-      } else {
-        if (active) setAvailableButtons([]);
+      if (active) {
+        setAvailableButtons(buttons);
       }
     };
 
@@ -429,10 +447,25 @@ function ProcessDefinitionModalContent({
 
   const {
     initialState,
-    logicFields,
+    logicFields: staticLogicFields,
     filterExpressions,
     hasData: hasInitialData,
   } = useProcessInitializationState(processInitialization, memoizedParameters);
+
+  // Dynamic logic fields updated by server-side FIC callout responses.
+  // These take precedence over the static initialization values.
+  const [calloutLogicFields, setCalloutLogicFields] = useState<Record<string, boolean>>({});
+
+  // Combined view: static defaults + dynamic callout updates (callout wins on conflict)
+  const logicFields = useMemo(
+    () => ({ ...staticLogicFields, ...calloutLogicFields }),
+    [staticLogicFields, calloutLogicFields]
+  );
+
+  // Reset callout logic fields when the modal closes
+  useEffect(() => {
+    if (!open) setCalloutLogicFields({});
+  }, [open]);
 
   const isBulkCompletion = useMemo(
     () => isBulkCompletionProcess(processDefinition, parameters),
@@ -566,6 +599,70 @@ function ProcessDefinitionModalContent({
     onGridUpdate: handleGridUpdate,
     dependencies: [rulesRegistered],
     selectedRecords,
+  });
+
+  // Generic server-side callout for REPORT_AND_PROCESS processes.
+  // Replicates Classic's FormInitializationComponent MODE=CHANGE mechanism:
+  // when any parameter changes, the FIC servlet is called and the response
+  // (updated column values + display logic) is applied back to the form.
+  // The tabId comes from the process metadata returned by meta/report-and-process.
+  const ficTabId =
+    type === PROCESS_TYPES.REPORT_AND_PROCESS
+      ? ((processDefinition as Record<string, unknown>).tabId as string | undefined) || ""
+      : "";
+
+  const handleCalloutResponse = useCallback(
+    (response: FICCalloutResponse) => {
+      // Apply field value updates from the callout
+      for (const [rawKey, rawValue] of Object.entries(response.columnValues)) {
+        // Classic uses inp-prefixed keys; strip the prefix to find the form field
+        const key = rawKey.startsWith("inp") ? rawKey.substring(3) : rawKey;
+
+        // Try to match by dBColumnName first, then by name
+        const param = Object.values(parameters).find(
+          (p) => p.dBColumnName === key || p.dBColumnName === rawKey || p.name === key || p.name === rawKey
+        );
+        const formKey = param?.name || key;
+
+        if (rawValue.value !== undefined) {
+          form.setValue(formKey, rawValue.value, { shouldDirty: true, shouldValidate: false });
+        }
+        if (rawValue.identifier !== undefined) {
+          form.setValue(`${formKey}$_identifier`, rawValue.identifier, { shouldDirty: false, shouldValidate: false });
+        }
+      }
+
+      // Extract display/readonly logic updates from columnValues.
+      // Classic FIC returns logic flags as entries with keys ending in _displaylogic / _readonly_logic.
+      const newLogic: Record<string, boolean> = {};
+      for (const [rawKey, rawValue] of Object.entries(response.columnValues)) {
+        const lowerKey = rawKey.toLowerCase();
+        if (lowerKey.endsWith("_displaylogic") || lowerKey.endsWith("_display_logic")) {
+          const baseKey = rawKey.replace(/_display_?logic$/i, "");
+          const param = Object.values(parameters).find((p) => p.dBColumnName === baseKey || p.name === baseKey);
+          const logicKey = param?.name || baseKey;
+          newLogic[`${logicKey}.display`] = rawValue.value === "Y";
+        } else if (lowerKey.endsWith("_readonlylogic") || lowerKey.endsWith("_readonly_logic")) {
+          const baseKey = rawKey.replace(/_readonly_?logic$/i, "");
+          const param = Object.values(parameters).find((p) => p.dBColumnName === baseKey || p.name === baseKey);
+          const logicKey = param?.name || baseKey;
+          newLogic[`${logicKey}.readonly`] = rawValue.value === "Y";
+        }
+      }
+
+      if (Object.keys(newLogic).length > 0) {
+        setCalloutLogicFields((prev) => ({ ...prev, ...newLogic }));
+      }
+    },
+    [parameters, form]
+  );
+
+  useProcessFICCallout({
+    tabId: ficTabId,
+    parameters,
+    form,
+    enabled: open && !!ficTabId && !loading && !initializationLoading,
+    onCalloutResponse: handleCalloutResponse,
   });
 
   const initializationBlocksSubmit = Boolean(initializationError);
@@ -949,7 +1046,24 @@ function ProcessDefinitionModalContent({
 
   const renderResponse = () => {
     if (!result) return null;
-    if (result.success) return null;
+    if (isFinalSuccess) return null;
+
+    if (result.keepOpen && result.success) {
+      const rawMsg =
+        typeof result.data === "string"
+          ? result.data
+          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
+      const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
+      const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
+      return (
+        <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
+          <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
+          <div className="border-(--color-active-40) rounded p-2">
+            <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
+          </div>
+        </div>
+      );
+    }
 
     const isWarning = result.messageType === "warning";
     const msgTitle = t("process.warning");
@@ -985,7 +1099,9 @@ function ProcessDefinitionModalContent({
   }, []);
 
   const renderParameters = () => {
-    if (result?.success) return null;
+    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
+    // Only hide parameters when execution fully completed (isFinalSuccess).
+    if (result?.success && !result?.keepOpen) return null;
 
     const parametersList = Object.values(parameters)
       .filter((p) => {
@@ -1004,7 +1120,7 @@ function ProcessDefinitionModalContent({
     for (const parameter of parametersList) {
       // @ts-ignore
       if (parameter.active === false) continue;
-      if (parameter.reference === BUTTON_LIST_REFERENCE_ID) continue;
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) continue;
 
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
@@ -1081,7 +1197,7 @@ function ProcessDefinitionModalContent({
         text: <span className="animate-pulse">{t("common.loading")}...</span>,
       };
     }
-    if (result?.success) {
+    if (isFinalSuccess) {
       return {
         icon: <CheckIcon fill="white" data-testid="CheckIcon__761503" />,
         text: t("process.completedSuccessfully"),
@@ -1095,10 +1211,11 @@ function ProcessDefinitionModalContent({
 
   const isActionButtonDisabled =
     isPending ||
+    loadingMetadata ||
     initializationBlocksSubmit ||
     hasMandatoryParametersWithoutValue ||
     isSubmitting ||
-    !!result?.success ||
+    !!isFinalSuccess ||
     (hasWindowReference && !gridSelection);
 
   const renderModalContent = () => {
@@ -1157,7 +1274,7 @@ function ProcessDefinitionModalContent({
                   </div>
                 )}
                 <div className="h-full">
-                  {result && !result.success && renderResponse()}
+                  {renderResponse()}
                   {renderParameters()}
                 </div>
               </div>
@@ -1165,7 +1282,7 @@ function ProcessDefinitionModalContent({
 
             {/* Footer */}
             <div className="flex gap-3 justify-end mx-3 my-3">
-              {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && (
+              {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && (
                 <>
                   <Button
                     variant="outlined"
@@ -1189,7 +1306,7 @@ function ProcessDefinitionModalContent({
                 </>
               )}
 
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && !isPending && (
+              {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && !isPending && (
                 <Button
                   variant="outlined"
                   size="large"
@@ -1201,7 +1318,7 @@ function ProcessDefinitionModalContent({
               )}
 
               {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                ((!result || !result.success) && availableButtons.length > 0
+                ((!result || !isFinalSuccess) && availableButtons.length > 0
                   ? availableButtons.map((btn) => (
                       <Button
                         key={btn.value}
@@ -1214,7 +1331,7 @@ function ProcessDefinitionModalContent({
                         {btn.label}
                       </Button>
                     ))
-                  : (!result || !result.success) && (
+                  : (!result || !isFinalSuccess) && (
                       <Button
                         variant="filled"
                         size="large"
@@ -1235,8 +1352,8 @@ function ProcessDefinitionModalContent({
 
   return (
     <>
-      {open && !result?.success && (
-        <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
+      {open && !isFinalSuccess && (
+        <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
           {renderModalContent()}
         </Modal>
       )}

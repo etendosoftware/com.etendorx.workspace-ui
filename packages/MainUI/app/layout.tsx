@@ -30,6 +30,7 @@ import { MetadataSynchronizer } from "@/contexts/metadata";
 import WindowProvider from "@/contexts/window";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import { PreferencesProvider } from "@/contexts/preferences";
+import { FavoritesProvider } from "@/contexts/favorites";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 import { Toaster } from "@/components/Toaster";
@@ -90,11 +91,13 @@ export default async function RootLayout({
                     <DatasourceProvider data-testid="DatasourceProvider__ba7569">
                       <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
                         <WindowProvider data-testid="WindowProvider__ba7569">
-                          <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
-                          <LoadingProvider data-testid="LoadingProvider__ba7569">
-                            <Layout data-testid="Layout__ba7569">{children}</Layout>
-                            <Toaster data-testid="Toaster__ba7569" />
-                          </LoadingProvider>
+                          <FavoritesProvider data-testid="FavoritesProvider__ba7569">
+                            <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
+                            <LoadingProvider data-testid="LoadingProvider__ba7569">
+                              <Layout data-testid="Layout__ba7569">{children}</Layout>
+                              <Toaster data-testid="Toaster__ba7569" />
+                            </LoadingProvider>
+                          </FavoritesProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>
                     </DatasourceProvider>

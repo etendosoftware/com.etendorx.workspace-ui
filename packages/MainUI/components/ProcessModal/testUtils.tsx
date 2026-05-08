@@ -1,5 +1,5 @@
 import type React from "react";
-import { fireEvent, type RenderResult } from "@testing-library/react";
+import { fireEvent, waitFor, type RenderResult } from "@testing-library/react";
 
 // Mock Data
 export const mockExecuteStringFunctionResponse = {
@@ -86,8 +86,11 @@ export const mockMetadataImplementation = {
 
 // Actions
 export const clickExecuteButton = async (container: RenderResult): Promise<void> => {
-  const executeButton = container.getByText("common.execute");
-  fireEvent.click(executeButton);
+  await waitFor(() => {
+    const btn = container.getByText("common.execute") as HTMLButtonElement;
+    if (btn.disabled) throw new Error("Execute button is still disabled");
+  });
+  fireEvent.click(container.getByText("common.execute"));
 };
 
 // Mock Component Implementations
