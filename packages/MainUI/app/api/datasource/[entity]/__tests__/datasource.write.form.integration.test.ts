@@ -37,6 +37,7 @@ suite.describe(() => {
     expect(String(dest)).toBe(expectedUrl);
     expect(init.method).toBe("POST");
     expect(init.headers["Content-Type"]).toBe("application/x-www-form-urlencoded");
+    // CSRF from session store is appended to the body
     expect(init.body).toBe(`${formBody}&csrfToken=test-csrf-token`);
   });
 });

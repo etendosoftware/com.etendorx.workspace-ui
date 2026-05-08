@@ -69,6 +69,7 @@ export { parseSmartClientMessage } from "./Custom/shared/processModalUtils";
 // --- Constants ---
 export {
   BUTTON_LIST_REFERENCE_ID,
+  BUTTON_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,

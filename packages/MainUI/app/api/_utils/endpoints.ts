@@ -105,6 +105,23 @@ export function getDatasourceUrl(entity: string, operationType?: string): string
 }
 
 /**
+ * Returns the direct datasource servlet URL for a specific entity.
+ * This path (`org.openbravo.service.datasource/<entity>`) authenticates via
+ * session cookie + CSRF token. Use for entities not exposed through the
+ * metadata-forward SWS path (e.g. OBUIAPP_SavedSearch).
+ * @param entity - The datasource entity name
+ * @returns Complete direct datasource URL for the entity
+ */
+export function getDirectDatasourceUrl(entity: string): string {
+  return buildEndpointUrl({
+    baseUrl: process.env.ETENDO_CLASSIC_URL || "",
+    useSws: false,
+    useForward: false,
+    service: `org.openbravo.service.datasource/${entity}`,
+  });
+}
+
+/**
  * Convenience function to get a complete kernel URL
  * @returns Complete kernel URL
  */

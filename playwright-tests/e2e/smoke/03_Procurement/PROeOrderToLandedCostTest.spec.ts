@@ -280,8 +280,10 @@ test.describe.skip("Purchase Order to Landed Cost flow @smoke", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl > .cursor-pointer").first().click();
 
-    await page.locator('[data-testid="ExecuteButton__761503"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page
+      .locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
 
     // ── Step 19: Verify completion ────────────────────────────────────────────
     await expect(page.getByText(/Process completed success/i).first()).toBeVisible({ timeout: 30_000 });

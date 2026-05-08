@@ -20,6 +20,7 @@ import { useFormContext } from "react-hook-form";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "./useUserContext";
+import { createSmartContext } from "@/utils/expressions";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
@@ -94,7 +95,12 @@ export const useFormValidation = (tab: Tab) => {
         }
 
         const compiledExpression = compileExpression(field.displayLogicExpression);
-        return compiledExpression(session, currentValues);
+        const ctx = createSmartContext({
+          values: currentValues,
+          fields: tab?.fields,
+          context: session,
+        });
+        return compiledExpression(ctx, ctx);
       } catch (error) {
         logger.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
         return field.displayed; // Default to displayed on error

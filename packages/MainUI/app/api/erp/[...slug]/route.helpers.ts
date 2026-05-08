@@ -38,8 +38,24 @@ export function isBinaryContentType(contentType: string): boolean {
  * @param originalResponse - Original response to copy headers/status from
  * @returns New Response object with HTML content
  */
+// Headers from the backend that must not be forwarded to avoid duplicates or iframe blocking
+const HEADERS_TO_STRIP = [
+  "access-control-allow-origin",
+  "access-control-allow-credentials",
+  "access-control-allow-headers",
+  "access-control-allow-methods",
+  "access-control-expose-headers",
+  "x-frame-options",
+];
+
 export function createHtmlResponse(html: string, originalResponse: Response): Response {
   const htmlHeaders = new Headers(originalResponse.headers);
+
+  // Remove headers that conflict with the proxy layer or block iframe embedding
+  for (const header of HEADERS_TO_STRIP) {
+    htmlHeaders.delete(header);
+  }
+
   const contentType = htmlHeaders.get("content-type") || "text/html";
 
   // Ensure Content-Type header exists and has charset

@@ -80,7 +80,7 @@ export const buildFormInitializationPayload = (
   const computedGridVisibleProperties =
     mode !== SessionMode.SETSESSION
       ? Object.values(tab.fields)
-          .filter((f) => f.displayed && f.columnName)
+          .filter((f) => (f.displayed || f.column?.defaultValue?.startsWith("@SQL=")) && f.columnName)
           .flatMap((f) => {
             const propertyPath = f.column?.propertyPath;
             if (propertyPath) {

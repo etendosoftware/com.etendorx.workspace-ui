@@ -32,6 +32,8 @@ export const TOOLBAR_BUTTONS_ACTIONS = {
   SHARE_LINK: "SHARE_LINK",
   COPY_RECORD: "COPY_RECORD",
   ADVANCED_FILTERS: "ADVANCED_FILTERS",
+  SEND_MAIL: "SEND_MAIL",
+  SAVE_VIEW: "SAVE_VIEW",
 };
 
 export const TOOLBAR_BUTTONS_TYPES = {
@@ -53,3 +55,9 @@ export const REFRESH_TYPES = {
 } as const;
 
 export type RefreshType = (typeof REFRESH_TYPES)[keyof typeof REFRESH_TYPES];
+
+/**
+ * List of entity names that support the email send action in the toolbar.
+ * Add entity names here to enable the email button for that entity in form view.
+ */
+export const EMAIL_SUPPORTED_ENTITIES: readonly string[] = ["Invoice", "Order"];

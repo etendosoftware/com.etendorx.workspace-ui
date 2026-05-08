@@ -5,6 +5,7 @@ import {
   selectRoleOrgWarehouse,
   typeInGlobalSearch,
   disableImplicitFilter,
+  openSidebarAndGetSearch,
 } from "../../helpers/etendo.helpers";
 
 test.describe("LinkedItems Navigation @smoke", () => {
@@ -24,18 +25,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     // ── Small helpers (local to this test) ───────────────────────────────────
     const ensureDrawerOpen = async () => {
-      const searchInput = page.locator('input[placeholder="Search"]').first();
-      await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-      if (await searchInput.isDisabled()) {
-        await page.locator(".h-14 > div > .transition > svg").click();
-        await page.waitForFunction(
-          () => {
-            const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-            return el !== null && !el.disabled;
-          },
-          { timeout: 5_000 }
-        );
-      }
+      await openSidebarAndGetSearch(page);
     };
 
     const navigateViaSearch = async (searchText: string, menuText: string | RegExp) => {

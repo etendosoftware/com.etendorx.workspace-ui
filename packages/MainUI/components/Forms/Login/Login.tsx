@@ -118,14 +118,19 @@ export default function Login({ title, onSubmit }: LoginProps) {
             data-testid="Input__602739"
           />
 
-          <Button type="submit" className="mt-6" size="large" data-testid="Button__602739">
+          <Button
+            type="submit"
+            className="mt-6"
+            size="large"
+            disabled={!username || !password}
+            data-testid="Button__602739">
             {t("login.buttons.submit")}
           </Button>
 
           <div className="relative flex items-center my-4">
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
             <span className="font-inter font-medium text-xs leading-4 tracking-normal mx-4 border-(--color-transparent-neutral-70)">
-              {t("login.buttons.google")}
+              {t("login.buttons.orGoogle")}
             </span>
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
           </div>
