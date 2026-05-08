@@ -34,15 +34,6 @@ jest.mock("@/contexts/window", () => ({
   useWindowContext: (...args: any[]) => mockUseWindowContext(...args),
 }));
 
-jest.mock("@/hooks/useSelected", () => ({
-  useSelected: () => ({
-    graph: {
-      clear: jest.fn(),
-      clearSelected: jest.fn(),
-    },
-  }),
-}));
-
 jest.mock("@/hooks/useCurrentRecord");
 jest.mock("@/hooks/useTableStatePersistenceTab");
 
@@ -54,11 +45,15 @@ jest.mock("@/contexts/focus", () => ({
 }));
 
 // Mock Component Library Breadcrumb to simplify assertions
+const mockFavToggle = jest.fn();
+const mockIsFavorite = jest.fn(() => false);
+let mockMenuIdByWindowId: Map<string, string> = new Map();
+
 jest.mock("@/contexts/favorites", () => ({
   useFavoritesContext: () => ({
-    isFavorite: jest.fn(() => false),
-    toggle: jest.fn(),
-    menuIdByWindowId: new Map(),
+    isFavorite: mockIsFavorite,
+    toggle: mockFavToggle,
+    menuIdByWindowId: mockMenuIdByWindowId,
   }),
 }));
 
@@ -69,10 +64,12 @@ jest.mock("@workspaceui/componentlibrary/src/components/Breadcrums", () => ({
     items,
     onHomeClick,
     onBackClick,
+    afterFirstItem,
   }: {
     items: { id: string; label: string; onClick?: () => void }[];
     onHomeClick: () => void;
     onBackClick?: () => void;
+    afterFirstItem?: React.ReactNode;
   }) => (
     <div data-testid="breadcrumb-lib">
       <button onClick={onHomeClick} data-testid="home-button">
@@ -83,9 +80,12 @@ jest.mock("@workspaceui/componentlibrary/src/components/Breadcrums", () => ({
           Back
         </button>
       )}
-      {items.map((item) => (
-        <span key={item.id} onClick={item.onClick} data-testid={`item-${item.id}`}>
-          {item.label}
+      {items.map((item, index) => (
+        <span key={item.id}>
+          <span onClick={item.onClick} data-testid={`item-${item.id}`}>
+            {item.label}
+          </span>
+          {index === 0 && afterFirstItem}
         </span>
       ))}
     </div>
@@ -167,6 +167,8 @@ describe("AppBreadcrumb", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockActiveFocusId = null;
+    mockMenuIdByWindowId = new Map();
+    mockIsFavorite.mockImplementation(() => false);
 
     setupTabsAndWindow();
 
@@ -208,23 +210,47 @@ describe("AppBreadcrumb", () => {
     expect(mockSetAllWindowsInactive).toHaveBeenCalledTimes(1);
   });
 
-  it("calls setActiveLevel(0) when window title item is clicked", () => {
-    renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+  describe("Window title click", () => {
+    it("collapses to level 0 and transfers focus to the level-0 tab", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
-    fireEvent.click(screen.getByTestId("item-test-window-id"));
+      fireEvent.click(screen.getByTestId("item-test-window-id"));
 
-    expect(mockSetActiveLevel).toHaveBeenCalledWith(0);
-  });
+      expect(mockSetActiveLevel).toHaveBeenCalledWith(0);
+      expect(mockSetFocus).toHaveBeenCalledWith("tab-1");
+    });
 
-  it("does not reset tab form state when window title is clicked", () => {
-    const mockClearTabFormState = jest.fn();
-    setupTabsAndWindow({ windowContextOverrides: { clearTabFormState: mockClearTabFormState } });
+    it("does not reset tab form state", () => {
+      const mockClearTabFormState = jest.fn();
+      setupTabsAndWindow({ windowContextOverrides: { clearTabFormState: mockClearTabFormState } });
 
-    renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
-    fireEvent.click(screen.getByTestId("item-test-window-id"));
+      fireEvent.click(screen.getByTestId("item-test-window-id"));
 
-    expect(mockClearTabFormState).not.toHaveBeenCalled();
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
+
+    // Regression: previously this handler called graph.clear / graph.clearSelected, which
+    // emitted "unselected" → Table cleared row selection → onRecordSelection("") cascaded
+    // back into clearSelectedRecord(WindowContext) → breadcrumb level-0 record item
+    // disappeared and the URL ri_N param was dropped. Per spec, the click MUST preserve
+    // the selected record (breadcrumb stays intact) and the URL.
+    it("preserves the level-0 record breadcrumb item (does not clear selectedRecord)", () => {
+      setupTabsAndWindow({ tabsContext: { "tab-1": { selectedRecord: "record-abc" } } });
+      mockUseCurrentRecordCalls({ 0: { _identifier: "My Record" } });
+
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+      // Sanity: record item is rendered before the click.
+      expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId("item-test-window-id"));
+
+      // The record item must remain — clicking the title does not clear the selection.
+      expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+      expect(screen.getByText("My Record")).toBeInTheDocument();
+    });
   });
 
   it("does not render a record item when no record is selected in the active window", () => {
@@ -384,94 +410,155 @@ describe("AppBreadcrumb", () => {
   });
 
   describe("Back button", () => {
-    it("Case 1: clears form state of focused level-1 tab when it is in Form mode", () => {
-      mockActiveFocusId = level1TabId;
+    type BackScenarioConfig = {
+      focusedTabId: string | null;
+      formStateByTabId?: Record<string, { mode: "form" | "table" } | undefined>;
+      activeTabs?: [number, string][];
+      activeLevels?: number[];
+      tabs?: typeof mockTabs;
+    };
+
+    const renderBackScenario = ({
+      focusedTabId,
+      formStateByTabId = {},
+      activeTabs,
+      activeLevels,
+      tabs = mockTabs,
+    }: BackScenarioConfig) => {
+      mockActiveFocusId = focusedTabId;
       const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn((_, tabId) => (tabId === level1TabId ? { mode: "form" } : undefined));
+      const mockGetTabFormState = jest.fn((_, tabId) => formStateByTabId[tabId]);
 
       setupTabsAndWindow({
-        activeTabs: [
-          [0, "tab-1"],
-          [1, level1TabId],
-        ],
-        activeLevels: [0, 1],
+        activeTabs,
+        activeLevels,
         windowContextOverrides: {
           getTabFormState: mockGetTabFormState,
           clearTabFormState: mockClearTabFormState,
         },
       });
 
-      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
-
+      renderWithTheme(<AppBreadcrumb allTabs={tabs} />);
       fireEvent.click(screen.getByTestId("back-button"));
+
+      return { mockClearTabFormState };
+    };
+
+    const twoLevelActive = {
+      activeTabs: [
+        [0, "tab-1"],
+        [1, level1TabId],
+      ] as [number, string][],
+      activeLevels: [0, 1],
+      tabs: sharedTwoLevelTabs,
+    };
+
+    it("Case 1: clears form state of focused level-1 tab when it is in Form mode", () => {
+      const { mockClearTabFormState } = renderBackScenario({
+        focusedTabId: level1TabId,
+        formStateByTabId: { [level1TabId]: { mode: "form" } },
+        ...twoLevelActive,
+      });
 
       expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", level1TabId);
       expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
     });
 
     it("Case 2: clears form state of focused level-0 tab when it is in Form mode", () => {
-      mockActiveFocusId = "tab-1";
-      const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn((_, tabId) => (tabId === "tab-1" ? { mode: "form" } : undefined));
-
-      setupTabsAndWindow({
-        windowContextOverrides: {
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
-        },
+      const { mockClearTabFormState } = renderBackScenario({
+        focusedTabId: "tab-1",
+        formStateByTabId: { "tab-1": { mode: "form" } },
       });
-
-      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
-
-      fireEvent.click(screen.getByTestId("back-button"));
 
       expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", "tab-1");
       expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
     });
 
     it("Case 3: calls setAllWindowsInactive when focused tab is level-0 in Grid/Table mode", () => {
-      mockActiveFocusId = "tab-1";
-      const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
-
-      setupTabsAndWindow({
-        windowContextOverrides: {
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
-        },
+      const { mockClearTabFormState } = renderBackScenario({
+        focusedTabId: "tab-1",
+        formStateByTabId: { "tab-1": { mode: "table" } },
       });
-
-      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
-
-      fireEvent.click(screen.getByTestId("back-button"));
 
       expect(mockSetAllWindowsInactive).toHaveBeenCalledTimes(1);
       expect(mockClearTabFormState).not.toHaveBeenCalled();
     });
 
     it("does nothing when focused tab is level > 0 in Grid/Table mode", () => {
-      mockActiveFocusId = level1TabId;
-      const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
+      const { mockClearTabFormState } = renderBackScenario({
+        focusedTabId: level1TabId,
+        formStateByTabId: { [level1TabId]: { mode: "table" } },
+        ...twoLevelActive,
+      });
 
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+      expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Favorite star", () => {
+    const FAV_TESTID = "Breadcrumb__favorite_toggle";
+    const WINDOW_MENU_ID = "menu-id-123";
+
+    const enableFavorites = () => {
+      mockMenuIdByWindowId = new Map([["test-window-id", WINDOW_MENU_ID]]);
+    };
+
+    it("does not render the star when no menu id is available for the window", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+      expect(screen.queryAllByTestId(FAV_TESTID)).toHaveLength(0);
+    });
+
+    it("renders exactly one star when no records are selected", () => {
+      enableFavorites();
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+      expect(screen.getAllByTestId(FAV_TESTID)).toHaveLength(1);
+    });
+
+    it("renders exactly one star when a single level-0 record is selected", () => {
+      enableFavorites();
+      setupTabsAndWindow({ tabsContext: { "tab-1": { selectedRecord: "record-abc" } } });
+      mockUseCurrentRecordCalls({ 0: { _identifier: "My Record" } });
+
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+      expect(screen.getAllByTestId(FAV_TESTID)).toHaveLength(1);
+    });
+
+    it("renders exactly one star when multiple records across levels are selected", () => {
+      enableFavorites();
       setupTabsAndWindow({
         activeTabs: [
           [0, "tab-1"],
           [1, level1TabId],
+          [2, level2TabId],
         ],
-        activeLevels: [0, 1],
-        windowContextOverrides: {
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
+        activeLevels: [1, 2],
+        tabsContext: {
+          "tab-1": { selectedRecord: "record-0" },
+          [level1TabId]: { selectedRecord: "record-1" },
+          [level2TabId]: { selectedRecord: "record-2" },
         },
       });
+      mockUseCurrentRecordCalls({
+        0: { _identifier: "Level0 Item" },
+        1: { _identifier: "Level1 Item" },
+        2: { _identifier: "Level2 Item" },
+      });
 
-      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
+      renderWithTheme(<AppBreadcrumb allTabs={sharedThreeLevelTabs} />);
 
-      fireEvent.click(screen.getByTestId("back-button"));
+      expect(screen.getAllByTestId(FAV_TESTID)).toHaveLength(1);
+    });
 
-      expect(mockClearTabFormState).not.toHaveBeenCalled();
-      expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
+    it("invokes toggle(menuId, windowId) when the star is clicked", () => {
+      enableFavorites();
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+      fireEvent.click(screen.getByTestId(FAV_TESTID));
+
+      expect(mockFavToggle).toHaveBeenCalledTimes(1);
+      expect(mockFavToggle).toHaveBeenCalledWith(WINDOW_MENU_ID, "test-window-id");
     });
   });
 });

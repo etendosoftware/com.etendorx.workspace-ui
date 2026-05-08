@@ -22,6 +22,10 @@ import type { BreadcrumbListProps } from "../types";
 import { useBreadcrumbOverflow } from "../useBreadcrumbOverflow";
 import BreadcrumbItem from "../BreadcrumbItem/index";
 
+// Wraps the first breadcrumb item + its trailing slot (`afterFirstItem`) in a single MUI
+// Breadcrumbs child so the separator is NOT inserted between them.
+const FIRST_ITEM_WRAPPER_SX = { display: "flex", alignItems: "center" } as const;
+
 const BreadcrumbList: FC<BreadcrumbListProps> = ({
   items,
   handleActionMenuOpen,
@@ -46,13 +50,14 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({
     return (
       <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         {items.map((item, index) => (
-          <Box key={item.id} sx={{ display: "flex", alignItems: "center" }}>
+          <Box key={item.id} sx={FIRST_ITEM_WRAPPER_SX}>
             <BreadcrumbItem
               item={item}
               position={index}
               breadcrumbsSize={items.length}
               handleActionMenuOpen={handleActionMenuOpen}
               handleHomeNavigation={handleHomeNavigation}
+              onBackClick={onBackClick}
             />
             {index === 0 && afterFirstItem}
           </Box>
@@ -65,16 +70,18 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({
 
   return (
     <Breadcrumbs ref={containerRef} separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-      {/* First item is always visible */}
-      <BreadcrumbItem
-        key={firstEntry.item.id}
-        item={firstEntry.item}
-        position={firstEntry.originalIndex}
-        breadcrumbsSize={items.length}
-        handleActionMenuOpen={handleActionMenuOpen}
-        handleHomeNavigation={handleHomeNavigation}
-        onBackClick={onBackClick}
-      />
+      {/* First item + favorite slot grouped so MUI does not insert a separator between them */}
+      <Box key={firstEntry.item.id} sx={FIRST_ITEM_WRAPPER_SX}>
+        <BreadcrumbItem
+          item={firstEntry.item}
+          position={firstEntry.originalIndex}
+          breadcrumbsSize={items.length}
+          handleActionMenuOpen={handleActionMenuOpen}
+          handleHomeNavigation={handleHomeNavigation}
+          onBackClick={onBackClick}
+        />
+        {afterFirstItem}
+      </Box>
 
       {/* Ellipsis button as a standalone breadcrumb entry when collapsed */}
       {isCollapsed && (
