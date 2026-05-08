@@ -121,7 +121,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
     ).toBeVisible({ timeout: 15_000 });
     await expect(
       page
-        .locator("button")
+        .locator("button:visible")
         .filter({ hasText: /^Line Tax$/ })
         .first()
     ).toBeVisible({ timeout: 10_000 });

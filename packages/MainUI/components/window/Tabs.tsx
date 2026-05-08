@@ -91,11 +91,15 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         return;
       }
 
+      // Update activeLevels immediately (outside startTransition) so the collapsed state
+      // reflects the new level synchronously — prevents the tab content from briefly
+      // rendering with class="hidden" while the deferred transition is pending.
+      setActiveLevel(tab.tabLevel);
+
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
         setCustomHeight(50);
         setCurrent(tab);
-        setActiveLevel(tab.tabLevel);
 
         // Update the active tab mapping for this level so child tab filtering works correctly
         setActiveTabsByLevel(tab);
