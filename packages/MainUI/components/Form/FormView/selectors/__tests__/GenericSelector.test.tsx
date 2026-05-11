@@ -79,6 +79,10 @@ jest.mock("../ButtonSelector", () => ({
   ButtonSelector: () => <div data-testid="ButtonSelector__mock">ButtonSelector</div>,
 }));
 
+jest.mock("../RichTextSelector", () => ({
+  RichTextSelector: () => <div data-testid="RichTextSelector__mock">RichTextSelector</div>,
+}));
+
 jest.mock("../SelectorModal", () => ({
   __esModule: true,
   default: () => <div data-testid="SelectorModal">SelectorModal</div>,
@@ -204,6 +208,11 @@ describe("GenericSelector", () => {
       title: "SELECTOR_AS_LINK fields",
       expected: "TableDirSelector",
       field: { column: { reference: FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id } },
+    },
+    {
+      title: "RICH_TEXT fields",
+      expected: "RichTextSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.RICH_TEXT.id }, id: "rt-1" },
     },
   ];
 

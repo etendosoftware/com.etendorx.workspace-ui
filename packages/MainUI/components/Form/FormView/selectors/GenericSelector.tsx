@@ -47,6 +47,7 @@ import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
 import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
 import { ButtonSelector } from "./ButtonSelector";
+import { RichTextSelector } from "./RichTextSelector";
 import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -192,6 +193,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             disabled={isReadOnly}
             data-testid={`UploadFileSelector__${field.id}`}
           />
+        );
+      case FIELD_REFERENCE_CODES.RICH_TEXT.id:
+        return (
+          <RichTextSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`RichTextSelector__${field.id}`} />
         );
       case FIELD_REFERENCE_CODES.BUTTON.id:
         return (

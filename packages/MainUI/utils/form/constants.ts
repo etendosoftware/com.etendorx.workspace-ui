@@ -102,6 +102,9 @@ export const FIELD_REFERENCE_CODES = {
 
   // SelectorAsLink — renders as a navigable link in labels (OBUISEL_SelectorAsLink Reference)
   SELECTOR_AS_LINK: { id: "80B1630792EA46F298A3FBF81E77EF9C", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Rich Text Area — HTML WYSIWYG editor
+  RICH_TEXT: { id: "7CB371C13D204EB69BF370217F692999", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 } as const;
 
 /**
