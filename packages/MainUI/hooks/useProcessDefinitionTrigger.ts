@@ -68,7 +68,7 @@ export function useProcessDefinitionTrigger(field: Field): UseProcessDefinitionT
         setIsLoading(false);
       }
     },
-    [field],
+    [field]
   );
 
   const closeProcessModal = useCallback(() => {

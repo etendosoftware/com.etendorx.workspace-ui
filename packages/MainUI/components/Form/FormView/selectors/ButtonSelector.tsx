@@ -11,13 +11,7 @@ interface ButtonSelectorProps {
 }
 
 const Spinner = ({ size = 16 }: { size?: number }) => (
-  <svg
-    className="animate-spin"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    aria-hidden="true">
+  <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle
       cx="12"
       cy="12"
@@ -46,20 +40,20 @@ const ButtonSelector = ({ field, isReadOnly }: ButtonSelectorProps) => {
     if (isReadOnly || isLoading) return;
 
     if (hasRefList) {
-      setIsDropdownOpen(prev => !prev);
+      setIsDropdownOpen((prev) => !prev);
     } else if (processId) {
       triggerProcess(processId);
     }
   }, [isReadOnly, isLoading, hasRefList, processId, triggerProcess]);
 
   const handleRefListSelect = useCallback(
-    (value: string) => {
+    (_value: string) => {
       setIsDropdownOpen(false);
       if (processId) {
         triggerProcess(processId);
       }
     },
-    [processId, triggerProcess],
+    [processId, triggerProcess]
   );
 
   // Close dropdown on outside click
@@ -105,7 +99,7 @@ const ButtonSelector = ({ field, isReadOnly }: ButtonSelectorProps) => {
 
         {isDropdownOpen && hasRefList && (
           <div className="absolute z-10 mt-1 w-full min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg">
-            {field.refList.map(item => (
+            {field.refList.map((item) => (
               <button
                 key={item.id}
                 type="button"

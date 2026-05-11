@@ -194,11 +194,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.BUTTON.id:
         return (
-          <ButtonSelector
-            field={effectiveField}
-            isReadOnly={isReadOnly}
-            data-testid={`ButtonSelector__${field.id}`}
-          />
+          <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
         );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
@@ -262,7 +258,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           button={processButtonData}
           contextRecord={getValues()}
           onSuccess={closeProcessModal}
-          data-testid={"ProcessDefinitionModal__" + field.id}
+          data-testid={`ProcessDefinitionModal__${field.id}`}
         />
       )}
     </>
