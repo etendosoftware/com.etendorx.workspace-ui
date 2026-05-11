@@ -510,7 +510,8 @@ const BaseSelectorComp = ({
   if (isDisplayed) {
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
     const isImage = field.column.reference === FIELD_REFERENCE_CODES.IMAGE.id;
-    const isExpandedField = isTextLong || isImage;
+    const isRichText = field.column.reference === FIELD_REFERENCE_CODES.RICH_TEXT.id;
+    const isExpandedField = isTextLong || isImage || isRichText;
     const containerClasses = isExpandedField ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
 
     return (
