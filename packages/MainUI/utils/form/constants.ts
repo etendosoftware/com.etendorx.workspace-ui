@@ -99,6 +99,9 @@ export const FIELD_REFERENCE_CODES = {
 
   // Upload File reference (for process parameters)
   UPLOAD_FILE: { id: "715C53D4FEA74B28B74F14AE65BC5C16", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // SelectorAsLink — renders as a navigable link in labels (OBUISEL_SelectorAsLink Reference)
+  SELECTOR_AS_LINK: { id: "80B1630792EA46F298A3FBF81E77EF9C", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 } as const;
 
 /**

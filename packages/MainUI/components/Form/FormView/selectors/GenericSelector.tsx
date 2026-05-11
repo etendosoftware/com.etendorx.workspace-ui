@@ -105,6 +105,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.PRODUCT.id: // Product reference to datasource
       case FIELD_REFERENCE_CODES.SELECTOR.id: // Generic selector (includes Product)
+      case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id: // Selector rendered as navigable link
       case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
       case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
         return (

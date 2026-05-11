@@ -200,6 +200,11 @@ describe("GenericSelector", () => {
       expected: "ButtonSelector__mock",
       field: { column: { reference: FIELD_REFERENCE_CODES.BUTTON.id }, id: "btn-1", refList: [] },
     },
+    {
+      title: "SELECTOR_AS_LINK fields",
+      expected: "TableDirSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id } },
+    },
   ];
 
   test.each(cases)("renders $expected when $title", ({ expected, field }: any) => {
