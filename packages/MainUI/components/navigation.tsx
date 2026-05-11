@@ -22,20 +22,11 @@ import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
-import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
-import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
-import {
-  CopilotButton,
-  CopilotPopup,
-  NotificationButton,
-  NotificationModal,
-  Waterfall,
-} from "@workspaceui/componentlibrary/src/components";
-import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
+import { CopilotButton, CopilotPopup } from "@workspaceui/componentlibrary/src/components";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NOTIFICATIONS, menuItems, sections } from "../mocks";
+import { sections } from "../mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
@@ -44,12 +35,6 @@ import { useCopilot } from "@/hooks/useCopilot";
 import { buildContextString } from "@/utils/contextUtils";
 import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
-
-const handleClose = () => {
-  return true;
-};
-
-const item: Item[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -68,7 +53,6 @@ const Navigation: React.FC = () => {
   const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
-  const [anchorEl] = useState<HTMLElement | null>(null);
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
@@ -140,8 +124,18 @@ const Navigation: React.FC = () => {
     handleRemoveFile,
     conversations,
     conversationsLoading,
+    archivedConversations,
+    archivedLoading,
+    archiveExpanded,
+    searchQuery,
     loadConversations,
+    toggleArchiveExpanded,
     handleSelectConversation,
+    renameConversation,
+    deleteConversation,
+    restoreConversation,
+    permanentDeleteConversation,
+    setSearchQuery,
   } = useCopilot();
 
   const handleCopilotSendMessage = useCallback(
@@ -217,49 +211,12 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      <Nav title={t("common.notImplemented")} data-testid="Nav__120cc9">
-        <Waterfall
-          menuItems={menuItems}
-          backButtonText={t("modal.secondaryButtonLabel")}
-          activateAllText={t("navigation.waterfall.activateAll")}
-          deactivateAllText={t("navigation.waterfall.deactivateAll")}
-          tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
-          buttonText={t("navigation.waterfall.buttons")}
-          customizeText={t("navigation.waterfall.customize")}
-          items={item}
-          icon={<AddIcon className="w-5 h-5" data-testid="AddIcon__120cc9" />}
-          setItems={() => {}}
-          data-testid="Waterfall__120cc9"
-        />
-        <NotificationButton
-          notifications={NOTIFICATIONS}
-          icon={<NotificationIcon className="w-5 h-5" data-testid="NotificationIcon__120cc9" />}
-          data-testid="NotificationButton__120cc9">
-          <NotificationModal
-            notifications={NOTIFICATIONS}
-            anchorEl={anchorEl}
-            onClose={handleClose}
-            title={{
-              icon: <NotificationIcon className="w-5 h-5" fill="#2E365C" data-testid="NotificationIcon__120cc9" />,
-              label: t("navigation.notificationModal.title"),
-            }}
-            linkTitle={{
-              label: t("navigation.notificationModal.markAllAsRead"),
-              url: "/home",
-            }}
-            emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
-            emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
-            emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
-            actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
-            data-testid="NotificationModal__120cc9"
-          />
-        </NotificationButton>
+      <Nav data-testid="Nav__120cc9">
         {isCopilotInstalled && (
           <CopilotButton
             onClick={handleCopilotOpen}
             disabled={!isCopilotInstalled}
             tooltip="Copilot"
-            className="[&>svg]:w-5 [&>svg]:h-5"
             data-testid="CopilotButton__120cc9"
           />
         )}
@@ -312,9 +269,19 @@ const Navigation: React.FC = () => {
         onFileSelect={handleFileUpload}
         onRemoveFile={handleRemoveFile}
         conversations={conversations}
+        archivedConversations={archivedConversations}
         onSelectConversation={handleSelectConversation}
         onLoadConversations={loadConversations}
         conversationsLoading={conversationsLoading}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={deleteConversation}
+        onRestoreConversation={restoreConversation}
+        onPermanentDeleteConversation={permanentDeleteConversation}
+        onToggleArchive={toggleArchiveExpanded}
+        archiveExpanded={archiveExpanded}
+        archivedLoading={archivedLoading}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         showOnlyFeatured={showOnlyFeatured}
         hasFeaturedAssistants={hasFeaturedAssistants}
         onToggleFeaturedFilter={toggleFeaturedFilter}
@@ -351,6 +318,13 @@ const Navigation: React.FC = () => {
             startNewConversation: t("copilot.conversationList.startNewConversation"),
             loading: t("copilot.conversationList.loading"),
             untitledConversation: t("copilot.conversationList.untitledConversation"),
+            searchPlaceholder: "Search conversations",
+            archivedTitle: "Archived",
+            noArchivedConversations: "No archived conversations",
+            renameConversation: "Rename conversation",
+            deleteConversation: "Hide conversation",
+            restoreConversation: "Restore conversation",
+            permanentDeleteConversation: "Delete permanently",
           },
           conversationsButton: t("copilot.conversationsButton"),
           hideConversationsButton: t("copilot.hideConversationsButton"),

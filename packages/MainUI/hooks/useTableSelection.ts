@@ -249,6 +249,11 @@ export interface UseTableSelectionOptions {
    * use this to perform deferred work (e.g. scroll the final record into view).
    */
   onStableSelection?: (recordId: string) => void;
+  /**
+   * Whether the table is currently visible (grid mode). When false (form view),
+   * stale rowSelection must not override the URL or session state.
+   */
+  isTableVisible?: boolean;
 }
 
 export default function useTableSelection(
@@ -267,6 +272,7 @@ export default function useTableSelection(
 
   const isKeyboardNavigationSource = options?.isKeyboardNavigationSource;
   const onStableSelection = options?.onStableSelection;
+  const isTableVisible = options?.isTableVisible ?? true;
   const optionsRef = useRef({ isKeyboardNavigationSource, onStableSelection });
   optionsRef.current = { isKeyboardNavigationSource, onStableSelection };
 
@@ -371,8 +377,12 @@ export default function useTableSelection(
     // 5. Synchronize to Context
     // ONLY do this if the selected IDs have actually changed. If only content changed,
     // skip overriding the Window context to avoid race conditions with actions like Clone.
+    // Also only update the URL from a VISIBLE table's selection. When the table is hidden
+    // (form view), its rowSelection can be stale and must not override the URL that was
+    // set by the form navigation — doing so would navigate away from the current record.
     if (hasSelectionIdChanged) {
-      if (selectedRecords.length === 1) {
+      if (selectedRecords.length === 1 && isTableVisible) {
+        // Case A: Single Record Selected (table must be visible to update URL)
         const recordId = String(selectedRecords[0].id);
         if (fromKeyboard) {
           // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
@@ -401,8 +411,17 @@ export default function useTableSelection(
     // 6. Update Graph (Global State) — always synchronous to keep UI responsive
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    if (selectedRecords.length > 0 && hasSelectionIdChanged && !fromKeyboard) {
-      // Non-keyboard path runs session sync immediately (keyboard path runs it via the debounced persist).
+    // Sync to session for backend state — ONLY when:
+    // 1. The selected record IDs have changed, AND
+    // 2. The table is currently VISIBLE (grid mode), AND
+    // 3. No child tab is currently in FormView mode, AND
+    // 4. Not from keyboard navigation (keyboard path runs it via the debounced persist).
+    const hasChildInFormView = graph.getChildren(tab)?.some((child) => {
+      if (!getTabFormState) return false;
+      return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+    });
+
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && isTableVisible && !hasChildInFormView && !fromKeyboard) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
@@ -426,6 +445,7 @@ export default function useTableSelection(
     setSessionSyncLoading,
     windowId,
     debouncedPersistSelection,
+    isTableVisible,
   ]);
 
   useEffect(() => {

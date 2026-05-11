@@ -34,6 +34,7 @@ export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   onHomeClick: () => void;
   separator?: React.ReactNode;
+  afterFirstItem?: React.ReactNode;
 }
 
 export interface BreadcrumbListProps {
@@ -41,6 +42,7 @@ export interface BreadcrumbListProps {
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
   separator?: React.ReactNode;
+  afterFirstItem?: React.ReactNode;
 }
 
 export interface BreadcrumbItemProps {

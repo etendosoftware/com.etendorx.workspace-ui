@@ -82,9 +82,6 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
 
-    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
-    cy.wait(1000);
-
     cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 
     cy.captureDocumentNumber(undefined, "invoiceNumberA");
@@ -93,16 +90,14 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     // =========================
     // Invoice B (Vendor B)
     // =========================
-    cy.get('[data-testid="IconButton__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
+    cy.get("button.toolbar-button-new-form", { timeout: 15000 }).filter(":visible").not(":disabled").first().click();
     cy.wait(1000);
 
     cy.contains("Main Section").should("be.visible");
 
     cy.get('[aria-describedby="Business Partner-help"]', { timeout: 15000 })
-      .first()
-      .scrollIntoView()
+      .find('div[tabindex="0"]', { timeout: 15000 })
       .should("be.visible")
-      .find('div[tabindex="0"]')
       .scrollIntoView()
       .click({ force: true });
     cy.wait(1000);
@@ -167,9 +162,6 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
 
     cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
-    cy.wait(1000);
 
     cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 

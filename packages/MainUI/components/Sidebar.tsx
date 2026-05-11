@@ -14,10 +14,9 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
+import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
-import ProcessIframeModal from "./ProcessModal/Iframe";
-import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
+import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
@@ -29,11 +28,7 @@ import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { type ExtendedMenu, MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 
 interface FormData {
-  url: string;
   paramUrl: string;
-  noprefs: string;
-  hideMenu: string;
-  command: string;
 }
 
 const buildProcessUrl = (processId: string, token: string | null, baseUrl: string): string => {
@@ -47,24 +42,16 @@ const buildProcessUrl = (processId: string, token: string | null, baseUrl: strin
   return `${baseUrl}${API_IFRAME_FORWARD_PATH}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
 };
 
-const buildFormUrl = (formId: string, token: string | null, baseUrl: string): string | null => {
-  const formData = (formsData as Record<string, FormData>)[formId];
-  if (!formData) {
-    return null;
-  }
-
-  const { url, paramUrl, noprefs, hideMenu, command } = formData;
-
+const buildFormUrl = (formPath: string, token: string | null, baseUrl: string): string => {
   const params = new URLSearchParams({
-    noprefs,
-    hideMenu,
-    Command: command,
+    noprefs: "true",
+    hideMenu: "true",
+    Command: "DEFAULT",
   });
-
   if (token) {
     params.append("token", token);
   }
-  return `${baseUrl}${API_IFRAME_FORWARD_PATH}${url}?url=${paramUrl}&${params.toString()}`;
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/security/Menu.html?url=${formPath}&${params.toString()}`;
 };
 
 interface ManualProcessResult {
@@ -89,15 +76,16 @@ const getManualProcessConfig = (
   }
 
   if (item.type === MENU_ITEM_TYPES.FORM && item.formId) {
-    const url = buildFormUrl(item.formId, token, baseUrl);
-    if (!url) return null;
-    return { url, size: "large" };
+    // Prefer formUrl from backend; fall back to data.json for older backend versions
+    const formPath = item.formUrl ?? (formsData as Record<string, FormData>)[item.formId]?.paramUrl;
+    if (!formPath) return null;
+    return { url: buildFormUrl(formPath, token, baseUrl), size: "large" };
   }
 
   return null;
 };
 
-const getManualProcessUrl = (item: ExtendedMenu): string | null => {
+const getManualProcessUrl = (item: Menu): string | null => {
   return item.processUrl || null;
 };
 
@@ -141,7 +129,6 @@ export default function Sidebar() {
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
-  const [processIframeModal, setProcessIframeModal] = useState<ProcessIframeModalProps>({ isOpen: false });
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
@@ -207,17 +194,10 @@ export default function Sidebar() {
         return;
       }
 
-      // Handle legacy manual processes (Form / Process) with iframe
-      const processConfig = getManualProcessConfig(extendedItem, token, ETENDO_BASE_URL);
+      // Handle legacy manual processes (Form) as external popup
+      const processConfig = getManualProcessConfig(item, token, ETENDO_BASE_URL);
       if (processConfig) {
-        setProcessIframeModal({
-          isOpen: true,
-          url: processConfig.url,
-          title: extendedItem.name,
-          tabId: "",
-          size: processConfig.size,
-          onClose: () => setProcessIframeModal({ isOpen: false }),
-        });
+        window.open(processConfig.url, "Test", "width=950,height=700");
         return;
       }
 
@@ -237,6 +217,13 @@ export default function Sidebar() {
           return;
         }
         window.open(classicUrl, "_blank");
+        return;
+      }
+
+      // Handle View items — open as OpenUI view in Classic (popup window, same as legacy modal processes)
+      if (item.type === "View" && item.viewId) {
+        const viewUrl = buildEtendoViewUrl({ baseUrl: ETENDO_BASE_URL, viewId: item.viewId, token });
+        window.open(viewUrl, "Test", "width=950,height=700");
         return;
       }
 
@@ -359,7 +346,6 @@ export default function Sidebar() {
           searchContext={searchContext}
           data-testid="Drawer__6c6035"
         />
-        <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
         <ProcessDefinitionModal
           type={processType}
           open={showProcessDefinitionModal}

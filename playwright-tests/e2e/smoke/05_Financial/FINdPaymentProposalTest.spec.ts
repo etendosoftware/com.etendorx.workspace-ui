@@ -344,7 +344,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       timeout: 60_000,
     });
     await page.waitForTimeout(500);
-    const submitBtn = page.locator('[data-testid="ExecuteButton__761503"]');
+    const submitBtn = page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]');
 
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();

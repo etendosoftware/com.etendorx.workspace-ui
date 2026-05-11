@@ -13,10 +13,11 @@ export const Toaster = () => {
           width: "min(100vw, 420px)", // larger width
         },
         classNames: {
-          closeButton: "!absolute !right-0 !left-auto !top-3 !bg-gray-500 !text-white",
-          toast: "!border !border-gray-500/30 relative", // darker border
-          title: "!text-[1.10rem] !font-bold", // larger title
-          description: "!text-[0.95rem] !font-medium", // larger description
+          closeButton:
+            "!absolute !right-2 !left-auto !top-2 !translate-x-0 !translate-y-0 !border !border-solid !rounded-full !text-white toast-close-btn",
+          toast: "!border !border-gray-500/30 relative",
+          title: "!text-[1.10rem] !font-bold",
+          description: "!text-[0.95rem] !font-medium",
           success: "!border-green-600 !bg-[#e8fbe8]",
           error: "!border-red-600 !bg-[#feeced]",
           warning: "!border-amber-500 !bg-[#fff8e1]",

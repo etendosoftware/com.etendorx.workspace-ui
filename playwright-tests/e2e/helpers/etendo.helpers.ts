@@ -142,42 +142,32 @@ export async function clickOkInLegacyPopup(page: Page, timeout = 10_000) {
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
 export async function typeInGlobalSearch(page: Page, text: string) {
-  const input = page.locator('input[placeholder="Search"]').first();
-  await input.waitFor({ state: "visible", timeout: 10_000 });
-  // Only clear/fill once the input is actually enabled
-  // waitFor doesn't support "editable" state; use page.waitForFunction instead
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-      return el !== null && !el.disabled;
-    },
-    { timeout: 10_000 }
-  );
+  const input = await openSidebarAndGetSearch(page);
   await input.click({ force: true });
   await input.clear();
   await input.fill(text);
 }
 
-async function navigateSidebarTo(page: Page, searchText: string, menuTestId: string, tabName: RegExp) {
-  // The sidebar/global search input uses placeholder="Search".
-  // The dynamic ID (#_r_1_, #_r_2_, ...) changes after re-renders, so use placeholder selector.
+/**
+ * Opens the sidebar if it is closed and returns the search input locator.
+ * The search input only exists in the DOM when the sidebar is open.
+ */
+export async function openSidebarAndGetSearch(page: Page) {
+  const sidebarToggle = page.locator(".h-14 button").first();
   const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
 
-  // The search input starts disabled until the sidebar toggle is clicked.
-  // Only click the toggle if it's currently disabled — avoids closing an already-open sidebar.
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    // Wait up to 5s for the input to become enabled
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
+  // If the search input is not visible, the sidebar is closed — click the toggle to open it.
+  const isVisible = await searchInput.isVisible().catch(() => false);
+  if (!isVisible) {
+    await sidebarToggle.click();
+    await searchInput.waitFor({ state: "visible", timeout: 10_000 });
   }
 
+  return searchInput;
+}
+
+async function navigateSidebarTo(page: Page, searchText: string, menuTestId: string, tabName: RegExp) {
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
@@ -215,18 +205,7 @@ export async function navigateToGoodsShipment(page: Page) {
  * that navigate through many windows in sequence.
  */
 export async function navigateByMenuTestId(page: Page, searchText: string, menuTestId: string) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
-  }
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
@@ -473,18 +452,7 @@ export async function navigateToPurchaseInvoice(page: Page) {
 // ─── Financial navigation ─────────────────────────────────────────────────────
 
 export async function navigateToPaymentIn(page: Page) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
-  }
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill("payment");
@@ -506,18 +474,7 @@ export async function navigateToPaymentIn(page: Page) {
  * Avoids waitForLoadState("networkidle") — Etendo keeps SSE connections open.
  */
 async function navigateByMenuLabel(page: Page, searchText: string, menuLabel: RegExp, breadcrumbLabel: RegExp) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
-  }
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
@@ -568,20 +525,7 @@ export async function navigateToLandedCost(page: Page) {
  * This is a list-only view with no breadcrumb form tab — waits for the table header.
  */
 export async function navigateToProcessScheduler(page: Page) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
-  }
-
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill("Process");
@@ -625,20 +569,7 @@ export async function disableImplicitFilter(page: Page): Promise<void> {
  * Waits for the table header to confirm the view loaded.
  */
 export async function navigateToManageRequisitions(page: Page) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
-        return el !== null && !el.disabled;
-      },
-      { timeout: 5_000 }
-    );
-  }
-
+  const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill("requi");

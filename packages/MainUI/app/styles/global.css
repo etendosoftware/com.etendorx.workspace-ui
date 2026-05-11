@@ -108,7 +108,8 @@
 .toolbar-button-share-link .icon-base64,
 .toolbar-button-copy-record .icon-base64,
 .toolbar-button-advanced-filters .icon-base64,
-.toolbar-button-send-mail .icon-base64 {
+.toolbar-button-send-mail .icon-base64,
+.toolbar-button-save-view .icon-base64 {
   opacity: 1;
 }
 
@@ -125,7 +126,8 @@
 .toolbar-button-share-link:hover .icon-base64,
 .toolbar-button-copy-record:hover .icon-base64,
 .toolbar-button-advanced-filters:hover .icon-base64,
-.toolbar-button-send-mail:hover .icon-base64 {
+.toolbar-button-send-mail:hover .icon-base64,
+.toolbar-button-save-view:hover .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
 }
@@ -347,4 +349,32 @@ button {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Toast close button - status-colored background, white icon, inside toast */
+[data-sonner-toast] .toast-close-btn {
+  transform: none !important;
+  border-color: #6b7280 !important;
+  background-color: #6b7280 !important;
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="success"] .toast-close-btn {
+  border-color: #39dd75 !important;
+  background-color: #39dd75 !important;
+}
+
+[data-sonner-toast][data-type="error"] .toast-close-btn {
+  border-color: #dc2626 !important;
+  background-color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="warning"] .toast-close-btn {
+  border-color: #f59e0b !important;
+  background-color: #f59e0b !important;
+}
+
+[data-sonner-toast][data-type="info"] .toast-close-btn {
+  border-color: #3b82f6 !important;
+  background-color: #3b82f6 !important;
 }

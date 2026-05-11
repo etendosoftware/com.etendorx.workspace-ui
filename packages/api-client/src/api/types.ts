@@ -393,6 +393,12 @@ export interface Menu {
   fullPath?: string;
   processUrl?: string;
   isModalProcess?: boolean;
+  formId?: string;
+  formUrl?: string;
+  processId?: string;
+  processDefinitionId?: string;
+  description?: string;
+  viewId?: string;
 }
 
 export enum Action {
