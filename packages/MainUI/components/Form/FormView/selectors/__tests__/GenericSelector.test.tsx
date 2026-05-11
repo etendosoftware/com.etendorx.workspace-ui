@@ -41,6 +41,8 @@ jest.mock("../DateSelector", () => ({
 }));
 
 jest.mock("../DatetimeSelector", () => ({
+  __esModule: true,
+  default: () => <div data-testid="DatetimeSelector">DatetimeSelector</div>,
   DatetimeSelector: () => <div data-testid="DatetimeSelector">DatetimeSelector</div>,
 }));
 
@@ -145,6 +147,16 @@ describe("GenericSelector", () => {
       field: { column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19.id } },
     },
     { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } },
+    {
+      title: "DATETIME fields",
+      expected: "DatetimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.DATETIME.id } },
+    },
+    {
+      title: "ABSOLUTE_DATETIME fields",
+      expected: "DatetimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id } },
+    },
     {
       title: "BOOLEAN fields",
       expected: "BooleanSelector",

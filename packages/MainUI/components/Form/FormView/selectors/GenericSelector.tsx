@@ -155,6 +155,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.DATE.id:
         return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id:
       case FIELD_REFERENCE_CODES.DATETIME.id:
         return (
           <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />
