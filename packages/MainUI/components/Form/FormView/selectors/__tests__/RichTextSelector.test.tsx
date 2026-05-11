@@ -64,9 +64,6 @@ describe("RichTextSelector", () => {
     expect(screen.getByTestId("RichTextSelector__toolbar__bold")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__italic")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__underline")).toBeInTheDocument();
-    // List buttons
-    expect(screen.getByTestId("RichTextSelector__toolbar__insertOrderedList")).toBeInTheDocument();
-    expect(screen.getByTestId("RichTextSelector__toolbar__insertUnorderedList")).toBeInTheDocument();
     // Alignment buttons
     expect(screen.getByTestId("RichTextSelector__toolbar__justifyLeft")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__justifyCenter")).toBeInTheDocument();

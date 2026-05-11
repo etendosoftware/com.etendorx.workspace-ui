@@ -40,11 +40,6 @@ const BUTTON_ACTIONS: ToolbarAction[] = [
   { command: "underline", label: "U", ariaLabel: "Underline" },
 ];
 
-const LIST_ACTIONS: ToolbarAction[] = [
-  { command: "insertOrderedList", label: "OL", ariaLabel: "Ordered list" },
-  { command: "insertUnorderedList", label: "UL", ariaLabel: "Unordered list" },
-];
-
 const ALIGN_ACTIONS: ToolbarAction[] = [
   { command: "justifyLeft", label: "L", ariaLabel: "Align left" },
   { command: "justifyCenter", label: "C", ariaLabel: "Align center" },
@@ -97,7 +92,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
       className="w-full border border-gray-200 rounded-md focus-within:ring-2 focus-within:ring-[var(--color-etendo-main)] focus-within:border-transparent"
       data-testid={`RichTextSelector__${field.id}`}>
       <div
-        className="flex flex-wrap items-center gap-1 px-2 py-1 border-b border-gray-200 bg-gray-50 rounded-t-md"
+        className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 bg-gray-50 rounded-t-md"
         data-testid="RichTextSelector__toolbar">
         <select
           className={selectClass}
@@ -155,23 +150,6 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
         <span className="w-px h-5 bg-gray-300" />
 
         {ALIGN_ACTIONS.map((action) => (
-          <button
-            key={action.command}
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              execCommand(action.command);
-            }}
-            className={buttonClass}
-            aria-label={action.ariaLabel}
-            data-testid={`RichTextSelector__toolbar__${action.command}`}>
-            {action.label}
-          </button>
-        ))}
-
-        <span className="w-px h-5 bg-gray-300" />
-
-        {LIST_ACTIONS.map((action) => (
           <button
             key={action.command}
             type="button"
