@@ -45,6 +45,7 @@ import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
+import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import type { ProcessDefinitionButton } from "@/components/ProcessModal/types";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -222,6 +223,18 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.IMAGE.id:
         return (
           <ImageSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ImageSelector__${field.id}`} />
+        );
+      case FIELD_REFERENCE_CODES.UPLOAD_FILE.id:
+        // TODO: Form save pipeline does not support multipart uploads yet.
+        // The component stores a fake path string; actual file persistence
+        // may need a pre-save upload hook (similar to useImageUpload) once
+        // the backend expectation for form-level file fields is clarified.
+        return (
+          <UploadFileSelector
+            field={effectiveField}
+            disabled={isReadOnly}
+            data-testid={`UploadFileSelector__${field.id}`}
+          />
         );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
