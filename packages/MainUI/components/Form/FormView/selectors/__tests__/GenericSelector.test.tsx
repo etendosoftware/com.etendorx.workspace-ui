@@ -75,6 +75,10 @@ jest.mock("@/components/ProcessModal/selectors/UploadFileSelector", () => ({
   UploadFileSelector: () => <div data-testid="UploadFileSelector__mock">UploadFileSelector</div>,
 }));
 
+jest.mock("../ButtonSelector", () => ({
+  ButtonSelector: () => <div data-testid="ButtonSelector__mock">ButtonSelector</div>,
+}));
+
 jest.mock("../SelectorModal", () => ({
   __esModule: true,
   default: () => <div data-testid="SelectorModal">SelectorModal</div>,
@@ -190,6 +194,11 @@ describe("GenericSelector", () => {
       title: "UPLOAD_FILE fields",
       expected: "UploadFileSelector__mock",
       field: { column: { reference: FIELD_REFERENCE_CODES.UPLOAD_FILE.id }, id: "upload-1" },
+    },
+    {
+      title: "BUTTON fields",
+      expected: "ButtonSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.BUTTON.id }, id: "btn-1", refList: [] },
     },
   ];
 
