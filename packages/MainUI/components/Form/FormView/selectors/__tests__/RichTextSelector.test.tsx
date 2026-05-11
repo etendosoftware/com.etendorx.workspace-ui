@@ -58,13 +58,22 @@ describe("RichTextSelector", () => {
     expect(screen.getByTestId("RichTextSelector__editor__rt-1")).toBeInTheDocument();
   });
 
-  it("renders all toolbar buttons", () => {
+  it("renders all toolbar buttons and selectors", () => {
     render(<RichTextSelector field={makeField()} isReadOnly={false} />);
+    // Format buttons
     expect(screen.getByTestId("RichTextSelector__toolbar__bold")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__italic")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__underline")).toBeInTheDocument();
+    // List buttons
     expect(screen.getByTestId("RichTextSelector__toolbar__insertOrderedList")).toBeInTheDocument();
     expect(screen.getByTestId("RichTextSelector__toolbar__insertUnorderedList")).toBeInTheDocument();
+    // Alignment buttons
+    expect(screen.getByTestId("RichTextSelector__toolbar__justifyLeft")).toBeInTheDocument();
+    expect(screen.getByTestId("RichTextSelector__toolbar__justifyCenter")).toBeInTheDocument();
+    expect(screen.getByTestId("RichTextSelector__toolbar__justifyRight")).toBeInTheDocument();
+    // Font selectors
+    expect(screen.getByTestId("RichTextSelector__toolbar__fontName")).toBeInTheDocument();
+    expect(screen.getByTestId("RichTextSelector__toolbar__fontSize")).toBeInTheDocument();
   });
 
   it("sets contentEditable on the editor div", () => {
