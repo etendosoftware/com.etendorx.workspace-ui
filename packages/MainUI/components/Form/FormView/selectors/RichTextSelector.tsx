@@ -53,7 +53,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
   if (isReadOnly) {
     return (
       <div
-        className="w-full min-h-[80px] px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-700 overflow-auto"
+        className="w-full min-h-[80px] max-h-[200px] px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-700 overflow-auto resize-y"
         data-testid={`RichTextSelector__readonly__${field.id}`}
         // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized HTML from backend
         dangerouslySetInnerHTML={{ __html: sanitize(currentValue) }}
@@ -88,7 +88,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
-        className="w-full min-h-[120px] px-3 py-2 text-sm text-gray-700 outline-none overflow-auto"
+        className="w-full min-h-[120px] max-h-[300px] px-3 py-2 text-sm text-gray-700 outline-none overflow-auto resize-y"
         data-testid={`RichTextSelector__editor__${field.id}`}
       />
     </div>
