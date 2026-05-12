@@ -15,10 +15,12 @@
  *************************************************************************
  */
 
+import type { ReactNode } from "react";
+
 export interface BreadcrumbAction {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   onClick?: () => void;
   toggle?: boolean;
 }
@@ -33,7 +35,8 @@ export interface BreadcrumbItem {
 export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   onHomeClick: () => void;
-  separator?: React.ReactNode;
+  onBackClick?: () => void;
+  separator?: ReactNode;
   afterFirstItem?: React.ReactNode;
 }
 
@@ -41,7 +44,9 @@ export interface BreadcrumbListProps {
   items: BreadcrumbItem[];
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
-  separator?: React.ReactNode;
+  onCollapseMenuOpen?: (event: React.MouseEvent<HTMLButtonElement>, items: BreadcrumbItem[]) => void;
+  onBackClick?: () => void;
+  separator?: ReactNode;
   afterFirstItem?: React.ReactNode;
 }
 
@@ -51,4 +56,5 @@ export interface BreadcrumbItemProps {
   position: number;
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
+  onBackClick?: () => void;
 }
