@@ -889,6 +889,8 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
+  fieldGroup?: string;
+  fieldGroup$_identifier?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

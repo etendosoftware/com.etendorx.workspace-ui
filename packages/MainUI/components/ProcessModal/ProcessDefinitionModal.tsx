@@ -94,6 +94,11 @@ import { useProcessPayload, isDateReference, convertParameterDateFields } from "
 import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
+import {
+  DEFAULT_PROCESS_PARAM_GROUP_ID,
+  groupProcessParametersByFieldGroup,
+  type ProcessParameterGroup,
+} from "./utils/groupProcessParametersByFieldGroup";
 
 const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
   const [expanded, setExpanded] = useState(true);
@@ -1124,32 +1129,36 @@ function ProcessDefinitionModalContent({
     return parameter.window.tabs[0] as Tab;
   }, []);
 
-  const renderParameters = () => {
-    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
-    // Only hide parameters when execution fully completed (isFinalSuccess).
-    if (result?.success && !result?.keepOpen) return null;
+  const isWindowReferenceParameter = useCallback(
+    (parameter: ProcessParameter) => parameter.reference === WINDOW_REFERENCE_ID,
+    []
+  );
 
-    const parametersList = Object.values(parameters)
-      .filter((p) => {
-        // @ts-ignore
-        if (p.active === false) return false;
-        if (isBulkCompletion) {
-          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
-        }
-        return true;
-      })
-      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+  const resolveGroupTitle = useCallback(
+    (group: ProcessParameterGroup): string => {
+      if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) return t("forms.sections.main");
+      return group.identifier;
+    },
+    [t]
+  );
 
-    const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
-
-    for (const parameter of parametersList) {
-      // @ts-ignore
-      if (parameter.active === false) continue;
-      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) continue;
-
-      if (parameter.reference === WINDOW_REFERENCE_ID) {
-        const isDisplayed = evaluateWindowReferenceDisplay({
+  const isParameterRenderable = useCallback(
+    (parameter: ProcessParameter): boolean => {
+      // @ts-ignore — `active` is not in the public ProcessParameter type but
+      // the metadata payload carries it; mirroring the previous behaviour.
+      if (parameter.active === false) return false;
+      if (isBulkCompletion) {
+        return (
+          parameter.name === "DocAction" ||
+          parameter.dBColumnName === "DocAction" ||
+          parameter.name === "Document Actionn"
+        );
+      }
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) {
+        return false;
+      }
+      if (isWindowReferenceParameter(parameter)) {
+        return evaluateWindowReferenceDisplay({
           parameter,
           logicFields,
           formValues,
@@ -1159,62 +1168,95 @@ function ProcessDefinitionModalContent({
           recordValues: recordValues || {},
           parentFields: tab?.fields,
         });
-
-        if (!isDisplayed) continue;
-
-        const parameterTab = getTabForParameter(parameter);
-        windowReferences.push(
-          <CollapsibleSection
-            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
-            title={parameter.name}
-            data-testid="CollapsibleSection__761503">
-            <WindowReferenceGrid
-              parameter={parameter}
-              parameters={parameters}
-              selectedRecordsCount={selectedRecordsCount}
-              onSelectionChange={setGridSelection}
-              gridSelection={gridSelection}
-              tabId={parameterTab?.id || ""}
-              entityName={parameterTab?.entityName || ""}
-              windowReferenceTab={parameterTab || windowReferenceTab}
-              processConfig={stableProcessConfig}
-              processConfigLoading={processConfigLoading}
-              processConfigError={processConfigError}
-              recordValues={recordValues}
-              currentValues={formValues}
-              originTab={tab}
-              showTitle={false}
-              onClose={onClose}
-              processDefinition={button.processDefinition}
-              data-testid="WindowReferenceGrid__761503"
-            />
-          </CollapsibleSection>
-        );
-      } else {
-        selectors.push(
-          <ProcessParameterSelector
-            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-            parameter={parameter}
-            logicFields={logicFields}
-            parameters={parameters}
-            recordValues={recordValues || undefined}
-            parentFields={tab?.fields}
-            selectedRecordsCount={selectedRecordsCount}
-            onFileChange={handleFileChange}
-            data-testid="ProcessParameterSelector__761503"
-          />
-        );
       }
-    }
+      return true;
+    },
+    [
+      isBulkCompletion,
+      isWindowReferenceParameter,
+      logicFields,
+      formValues,
+      availableFormData,
+      parameters,
+      session,
+      recordValues,
+      tab?.fields,
+    ]
+  );
+
+  const renderScalarParameter = (parameter: ProcessParameter) => (
+    <ProcessParameterSelector
+      key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+      parameter={parameter}
+      logicFields={logicFields}
+      parameters={parameters}
+      recordValues={recordValues || undefined}
+      parentFields={tab?.fields}
+      selectedRecordsCount={selectedRecordsCount}
+      onFileChange={handleFileChange}
+      data-testid="ProcessParameterSelector__761503"
+    />
+  );
+
+  const renderWindowReferenceParameter = (parameter: ProcessParameter) => {
+    const parameterTab = getTabForParameter(parameter);
+    return (
+      <WindowReferenceGrid
+        key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
+        parameter={parameter}
+        parameters={parameters}
+        selectedRecordsCount={selectedRecordsCount}
+        onSelectionChange={setGridSelection}
+        gridSelection={gridSelection}
+        tabId={parameterTab?.id || ""}
+        entityName={parameterTab?.entityName || ""}
+        windowReferenceTab={parameterTab || windowReferenceTab}
+        processConfig={stableProcessConfig}
+        processConfigLoading={processConfigLoading}
+        processConfigError={processConfigError}
+        recordValues={recordValues}
+        currentValues={formValues}
+        originTab={tab}
+        showTitle={false}
+        onClose={onClose}
+        processDefinition={button.processDefinition}
+        data-testid="WindowReferenceGrid__761503"
+      />
+    );
+  };
+
+  const renderGroup = (group: ProcessParameterGroup) => {
+    const scalars = group.parameters.filter((p) => !isWindowReferenceParameter(p));
+    const windowRefs = group.parameters.filter(isWindowReferenceParameter);
 
     return (
-      <>
-        {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+      <CollapsibleSection
+        key={`group-${group.id}`}
+        title={resolveGroupTitle(group)}
+        data-testid="CollapsibleSection__761503">
+        {scalars.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{scalars.map(renderScalarParameter)}</div>
         )}
-        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
-      </>
+        {windowRefs.length > 0 && (
+          <div className="w-full flex flex-col gap-4 mt-2">{windowRefs.map(renderWindowReferenceParameter)}</div>
+        )}
+      </CollapsibleSection>
     );
+  };
+
+  const renderParameters = () => {
+    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
+    // Only hide parameters when execution fully completed (isFinalSuccess).
+    if (result?.success && !result?.keepOpen) return null;
+
+    const visibleParameters = Object.values(parameters)
+      .filter(isParameterRenderable)
+      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+
+    const groups = groupProcessParametersByFieldGroup(visibleParameters);
+    if (groups.length === 0) return null;
+
+    return <div className="w-full flex flex-col gap-4 mb-4">{groups.map(renderGroup)}</div>;
   };
 
   const getActionButtonContent = () => {
