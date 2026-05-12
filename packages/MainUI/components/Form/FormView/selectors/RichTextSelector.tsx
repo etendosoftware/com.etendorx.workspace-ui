@@ -14,6 +14,79 @@ type ToolbarAction = {
   ariaLabel: string;
 };
 
+const INLINE_TAG_MAP: Record<string, string> = {
+  bold: "strong",
+  italic: "em",
+  underline: "u",
+};
+
+const ALIGN_VALUE_MAP: Record<string, string> = {
+  justifyLeft: "left",
+  justifyCenter: "center",
+  justifyRight: "right",
+};
+
+function getClosestBlock(node: Node): HTMLElement | null {
+  let current: Node | null = node;
+  while (current && current.nodeType !== Node.ELEMENT_NODE) {
+    current = current.parentNode;
+  }
+  while (current && current instanceof HTMLElement) {
+    const display = window.getComputedStyle(current).display;
+    if (display === "block" || display === "list-item" || current.tagName === "DIV") {
+      return current;
+    }
+    current = current.parentNode as HTMLElement | null;
+  }
+  return null;
+}
+
+function wrapSelectionWithTag(tagName: string): void {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+
+  const ancestor = range.commonAncestorContainer;
+  const existingTag =
+    ancestor instanceof HTMLElement ? ancestor.closest(tagName) : ancestor.parentElement?.closest(tagName);
+
+  if (existingTag) {
+    const parent = existingTag.parentNode;
+    if (parent) {
+      while (existingTag.firstChild) {
+        parent.insertBefore(existingTag.firstChild, existingTag);
+      }
+      parent.removeChild(existingTag);
+    }
+  } else {
+    const wrapper = document.createElement(tagName);
+    range.surroundContents(wrapper);
+  }
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function wrapSelectionWithStyle(property: string, value: string): void {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  const wrapper = document.createElement("span");
+  wrapper.style.setProperty(property, value);
+  range.surroundContents(wrapper);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function applyAlignment(command: string): void {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  const block = getClosestBlock(range.startContainer);
+  if (block) {
+    block.style.textAlign = ALIGN_VALUE_MAP[command] || "left";
+  }
+}
+
 const FONT_FAMILIES = [
   { label: "Sans Serif", value: "arial, helvetica, sans-serif" },
   { label: "Serif", value: "times new roman, serif" },
@@ -71,10 +144,31 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
     }
   }, [fieldName, setValue]);
 
-  const execCommand = useCallback((command: string, argument?: string) => {
-    document.execCommand(command, false, argument);
-    editorRef.current?.focus();
-  }, []);
+  const applyCommand = useCallback(
+    (command: string, argument?: string) => {
+      if (INLINE_TAG_MAP[command]) {
+        wrapSelectionWithTag(INLINE_TAG_MAP[command]);
+      } else if (ALIGN_VALUE_MAP[command]) {
+        applyAlignment(command);
+      } else if (command === "fontName" && argument) {
+        wrapSelectionWithStyle("font-family", argument);
+      } else if (command === "fontSize" && argument) {
+        const sizeMap: Record<string, string> = {
+          "1": "8px",
+          "2": "10px",
+          "3": "12px",
+          "4": "14px",
+          "5": "18px",
+          "6": "24px",
+          "7": "36px",
+        };
+        wrapSelectionWithStyle("font-size", sizeMap[argument] || `${argument}px`);
+      }
+      handleInput();
+      editorRef.current?.focus();
+    },
+    [handleInput]
+  );
 
   if (isReadOnly) {
     return (
@@ -97,7 +191,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
         <select
           className={selectClass}
           onChange={(e) => {
-            if (e.target.value) execCommand("fontName", e.target.value);
+            if (e.target.value) applyCommand("fontName", e.target.value);
           }}
           defaultValue=""
           aria-label="Font family"
@@ -115,7 +209,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
         <select
           className={selectClass}
           onChange={(e) => {
-            if (e.target.value) execCommand("fontSize", e.target.value);
+            if (e.target.value) applyCommand("fontSize", e.target.value);
           }}
           defaultValue=""
           aria-label="Font size"
@@ -138,7 +232,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
             type="button"
             onMouseDown={(e) => {
               e.preventDefault();
-              execCommand(action.command);
+              applyCommand(action.command);
             }}
             className={buttonClass}
             aria-label={action.ariaLabel}
@@ -155,7 +249,7 @@ const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
             type="button"
             onMouseDown={(e) => {
               e.preventDefault();
-              execCommand(action.command);
+              applyCommand(action.command);
             }}
             className={buttonClass}
             aria-label={action.ariaLabel}

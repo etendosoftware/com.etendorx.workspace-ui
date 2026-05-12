@@ -80,7 +80,7 @@ const ButtonSelector = ({ field, isReadOnly }: ButtonSelectorProps) => {
             hover:bg-gray-50 hover:border-gray-400
             disabled:opacity-50 disabled:cursor-not-allowed
             focus:outline-none focus:ring-2 focus:ring-[var(--color-etendo-main)] focus:ring-offset-1">
-          {isLoading && <Spinner size={14} />}
+          {isLoading && <Spinner size={14} data-testid={"Spinner__" + field.id} />}
           {field.name}
           {hasRefList && (
             <svg
@@ -112,7 +112,6 @@ const ButtonSelector = ({ field, isReadOnly }: ButtonSelectorProps) => {
           </div>
         )}
       </div>
-
       {isProcessModalOpen && processButtonData && (
         <ProcessDefinitionModal
           type={PROCESS_TYPES.PROCESS_DEFINITION}

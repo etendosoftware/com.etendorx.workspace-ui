@@ -183,7 +183,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           <ImageSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ImageSelector__${field.id}`} />
         );
       case FIELD_REFERENCE_CODES.UPLOAD_FILE.id:
-        // TODO: Form save pipeline does not support multipart uploads yet.
+        // NOTE: Form save pipeline does not support multipart uploads yet.
         // The component stores a fake path string; actual file persistence
         // may need a pre-save upload hook (similar to useImageUpload) once
         // the backend expectation for form-level file fields is clarified.
@@ -196,7 +196,11 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.RICH_TEXT.id:
         return (
-          <RichTextSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`RichTextSelector__${field.id}`} />
+          <RichTextSelector
+            field={effectiveField}
+            isReadOnly={isReadOnly}
+            data-testid={`RichTextSelector__${field.id}`}
+          />
         );
       case FIELD_REFERENCE_CODES.BUTTON.id:
         return (
