@@ -32,6 +32,10 @@ export interface ProcessParameterGroup {
   /** Minimum `sequenceNumber` across the members of the group; used to sort
    *  groups themselves in the rendered modal. */
   sequenceNumber: number;
+  /** True when the backing `AD_FieldGroup.IsCollapsed` is true. Mirrors the
+   *  classic UI rule so the section opens collapsed by default. Undefined for
+   *  the synthetic default group (no AD_FieldGroup backing it). */
+  fieldGroupCollapsed?: boolean;
   parameters: ProcessParameter[];
 }
 
@@ -64,12 +68,14 @@ export function groupProcessParametersByFieldGroup(parameters: ProcessParameter[
   const buckets: Record<string, ProcessParameterGroup> = {};
   let currentExplicitGroupId: string | null = null;
   let currentExplicitGroupIdentifier = "";
+  let currentExplicitGroupCollapsed: boolean | undefined;
 
   for (const param of parameters) {
     const explicitId = param.fieldGroup ?? "";
     if (explicitId) {
       currentExplicitGroupId = explicitId;
       currentExplicitGroupIdentifier = param.fieldGroup$_identifier ?? "";
+      currentExplicitGroupCollapsed = param.fieldGroupCollapsed;
     }
 
     const bucketId = currentExplicitGroupId ?? DEFAULT_PROCESS_PARAM_GROUP_ID;
@@ -80,6 +86,7 @@ export function groupProcessParametersByFieldGroup(parameters: ProcessParameter[
         id: bucketId,
         identifier: currentExplicitGroupIdentifier,
         sequenceNumber: seq,
+        fieldGroupCollapsed: currentExplicitGroupCollapsed,
         parameters: [],
       };
     } else if (seq < buckets[bucketId].sequenceNumber) {

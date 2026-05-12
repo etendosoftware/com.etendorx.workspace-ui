@@ -32,7 +32,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import ChevronDownIcon from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
@@ -99,25 +98,7 @@ import {
   groupProcessParametersByFieldGroup,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
-
-const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
-  const [expanded, setExpanded] = useState(true);
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-left cursor-pointer select-none">
-        <ChevronDownIcon
-          className={`h-3.5 w-3.5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
-          data-testid="ChevronDownIcon__761503"
-        />
-        <span className="text-sm font-medium text-gray-700">{title}</span>
-      </button>
-      <div style={{ display: expanded ? "block" : "none" }}>{children}</div>
-    </div>
-  );
-};
+import { CollapsibleSection } from "./components/CollapsibleSection";
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -1135,11 +1116,8 @@ function ProcessDefinitionModalContent({
   );
 
   const resolveGroupTitle = useCallback(
-    (group: ProcessParameterGroup): string => {
-      if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) return t("forms.sections.main");
-      return group.identifier;
-    },
-    [t]
+    (group: ProcessParameterGroup): string => group.identifier,
+    []
   );
 
   const isParameterRenderable = useCallback(
@@ -1225,21 +1203,36 @@ function ProcessDefinitionModalContent({
     );
   };
 
-  const renderGroup = (group: ProcessParameterGroup) => {
+  const renderGroupBody = (group: ProcessParameterGroup) => {
     const scalars = group.parameters.filter((p) => !isWindowReferenceParameter(p));
     const windowRefs = group.parameters.filter(isWindowReferenceParameter);
-
     return (
-      <CollapsibleSection
-        key={`group-${group.id}`}
-        title={resolveGroupTitle(group)}
-        data-testid="CollapsibleSection__761503">
+      <>
         {scalars.length > 0 && (
           <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{scalars.map(renderScalarParameter)}</div>
         )}
         {windowRefs.length > 0 && (
           <div className="w-full flex flex-col gap-4 mt-2">{windowRefs.map(renderWindowReferenceParameter)}</div>
         )}
+      </>
+    );
+  };
+
+  const renderGroup = (group: ProcessParameterGroup) => {
+    if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) {
+      return (
+        <div key={`group-${group.id}`} className="w-full">
+          {renderGroupBody(group)}
+        </div>
+      );
+    }
+    return (
+      <CollapsibleSection
+        key={`group-${group.id}`}
+        title={resolveGroupTitle(group)}
+        initiallyExpanded={!group.fieldGroupCollapsed}
+        data-testid="CollapsibleSection__761503">
+        {renderGroupBody(group)}
       </CollapsibleSection>
     );
   };

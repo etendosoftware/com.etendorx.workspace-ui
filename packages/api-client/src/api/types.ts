@@ -891,6 +891,11 @@ export type ProcessParameter = {
   selector?: SelectorInfo;
   fieldGroup?: string;
   fieldGroup$_identifier?: string;
+  /**
+   * When true, the field group (subsection) starts collapsed in the process modal.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

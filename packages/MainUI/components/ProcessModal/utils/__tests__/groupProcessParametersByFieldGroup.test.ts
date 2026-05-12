@@ -26,6 +26,8 @@ const GROUP_STATUS_ID = "STATUS_GROUP_ID";
 const GROUP_STATUS_LABEL = "Status";
 const GROUP_TOTALS_ID = "BFFF70E721654110AD5BACF3D4216D3A";
 const GROUP_TOTALS_LABEL = "Totals";
+const GROUP_GL_ITEMS_ID = "7B6B5F5475634E35A85CF7023165E50B";
+const GROUP_GL_ITEMS_LABEL = "GL Items";
 
 type ParamOverrides = Partial<ProcessParameter> & { sequenceNumber?: number | string };
 
@@ -310,5 +312,90 @@ describe("groupProcessParametersByFieldGroup", () => {
     expect(groups.map((g) => g.id)).toEqual([DEFAULT_PROCESS_PARAM_GROUP_ID, GROUP_TOTALS_ID]);
     expect(groups[0].parameters.map((p) => p.id)).toEqual(["currency"]);
     expect(groups[1].parameters.map((p) => p.id)).toEqual(["amount-gl-items", "action-regarding-document"]);
+  });
+
+  it("assigns fieldGroupCollapsed=true when the opening parameter carries it", () => {
+    const params = [
+      makeParam({
+        id: "gl-anchor",
+        sequenceNumber: 150,
+        fieldGroup: GROUP_GL_ITEMS_ID,
+        fieldGroup$_identifier: GROUP_GL_ITEMS_LABEL,
+        fieldGroupCollapsed: true,
+      }),
+    ];
+
+    const groups = groupProcessParametersByFieldGroup(params);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(GROUP_GL_ITEMS_ID);
+    expect(groups[0].fieldGroupCollapsed).toBe(true);
+  });
+
+  it("assigns fieldGroupCollapsed=false when the opening parameter has it false", () => {
+    const params = [
+      makeParam({
+        id: "totals-anchor",
+        sequenceNumber: 170,
+        fieldGroup: GROUP_TOTALS_ID,
+        fieldGroup$_identifier: GROUP_TOTALS_LABEL,
+        fieldGroupCollapsed: false,
+      }),
+    ];
+
+    const groups = groupProcessParametersByFieldGroup(params);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(GROUP_TOTALS_ID);
+    expect(groups[0].fieldGroupCollapsed).toBe(false);
+  });
+
+  it("keeps the synthetic main bucket without fieldGroupCollapsed", () => {
+    const params = [makeParam({ id: "p1", sequenceNumber: 10 }), makeParam({ id: "p2", sequenceNumber: 20 })];
+
+    const groups = groupProcessParametersByFieldGroup(params);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(DEFAULT_PROCESS_PARAM_GROUP_ID);
+    expect(groups[0].fieldGroupCollapsed).toBeUndefined();
+  });
+
+  it("does not overwrite fieldGroupCollapsed captured from the opener via sticky inheritance", () => {
+    const params = [
+      makeParam({
+        id: "gl-anchor",
+        sequenceNumber: 150,
+        fieldGroup: GROUP_GL_ITEMS_ID,
+        fieldGroup$_identifier: GROUP_GL_ITEMS_LABEL,
+        fieldGroupCollapsed: true,
+      }),
+      // Sticky-inherited param: same bucket, but should NOT mutate the flag.
+      makeParam({ id: "gl-inherited", sequenceNumber: 160, fieldGroupCollapsed: false }),
+    ];
+
+    const groups = groupProcessParametersByFieldGroup(params);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].parameters.map((p) => p.id)).toEqual(["gl-anchor", "gl-inherited"]);
+    expect(groups[0].fieldGroupCollapsed).toBe(true);
+  });
+
+  it("mirrors the Add Payment GL Items group — collapsed by default", () => {
+    const params = [
+      makeParam({
+        id: "gl-item",
+        sequenceNumber: 150,
+        fieldGroup: GROUP_GL_ITEMS_ID,
+        fieldGroup$_identifier: GROUP_GL_ITEMS_LABEL,
+        fieldGroupCollapsed: true,
+      }),
+    ];
+
+    const groups = groupProcessParametersByFieldGroup(params);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(GROUP_GL_ITEMS_ID);
+    expect(groups[0].identifier).toBe(GROUP_GL_ITEMS_LABEL);
+    expect(groups[0].fieldGroupCollapsed).toBe(true);
   });
 });
