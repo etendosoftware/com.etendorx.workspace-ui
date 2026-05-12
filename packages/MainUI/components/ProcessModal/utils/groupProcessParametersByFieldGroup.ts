@@ -40,42 +40,53 @@ const readSequenceNumber = (param: ProcessParameter): number => {
   return Number(raw) || 0;
 };
 
-const readGroupId = (param: ProcessParameter): string => {
-  const raw = param.fieldGroup ?? "";
-  if (raw) return raw;
-  return DEFAULT_PROCESS_PARAM_GROUP_ID;
-};
-
 /**
- * Groups process definition parameters by their `fieldGroup` metadata.
+ * Groups process definition parameters by their `fieldGroup` metadata, mirroring
+ * the classic UI behavior implemented in `OBViewParameterHandler.java`.
  *
- * - Parameters without a `fieldGroup` fall into a synthetic
- *   {@link DEFAULT_PROCESS_PARAM_GROUP_ID} bucket.
+ * **Precondition**: callers MUST pre-sort `parameters` by `sequenceNumber`. The
+ * sticky-inheritance rule below relies on that order.
+ *
+ * Rules:
+ * - When a parameter has an explicit non-empty `fieldGroup`, it opens (or
+ *   re-enters) a section identified by that id.
+ * - When a parameter has a null/empty `fieldGroup` AFTER a section has opened,
+ *   it is appended to the most-recently-opened section (sticky inheritance) —
+ *   matching how the classic SmartClient UI renders parameters sequentially.
+ * - Parameters that appear BEFORE any non-empty `fieldGroup` go into the
+ *   synthetic {@link DEFAULT_PROCESS_PARAM_GROUP_ID} bucket.
  * - Each group's `sequenceNumber` is the minimum across its members, so the
  *   returned array is sorted in the same order the user would expect from a
  *   global sort by `sequenceNumber`.
- * - Insertion order within a group is preserved — callers that pre-sort the
- *   input by `sequenceNumber` get a deterministic intra-group order.
+ * - Insertion order within a group is preserved.
  */
 export function groupProcessParametersByFieldGroup(parameters: ProcessParameter[]): ProcessParameterGroup[] {
   const buckets: Record<string, ProcessParameterGroup> = {};
+  let currentExplicitGroupId: string | null = null;
+  let currentExplicitGroupIdentifier = "";
 
   for (const param of parameters) {
-    const id = readGroupId(param);
+    const explicitId = param.fieldGroup ?? "";
+    if (explicitId) {
+      currentExplicitGroupId = explicitId;
+      currentExplicitGroupIdentifier = param.fieldGroup$_identifier ?? "";
+    }
+
+    const bucketId = currentExplicitGroupId ?? DEFAULT_PROCESS_PARAM_GROUP_ID;
     const seq = readSequenceNumber(param);
 
-    if (!buckets[id]) {
-      buckets[id] = {
-        id,
-        identifier: param.fieldGroup$_identifier ?? "",
+    if (!buckets[bucketId]) {
+      buckets[bucketId] = {
+        id: bucketId,
+        identifier: currentExplicitGroupIdentifier,
         sequenceNumber: seq,
         parameters: [],
       };
-    } else if (seq < buckets[id].sequenceNumber) {
-      buckets[id].sequenceNumber = seq;
+    } else if (seq < buckets[bucketId].sequenceNumber) {
+      buckets[bucketId].sequenceNumber = seq;
     }
 
-    buckets[id].parameters.push(param);
+    buckets[bucketId].parameters.push(param);
   }
 
   return Object.values(buckets).sort((a, b) => a.sequenceNumber - b.sequenceNumber);
