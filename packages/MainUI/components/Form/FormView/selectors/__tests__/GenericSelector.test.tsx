@@ -41,6 +41,8 @@ jest.mock("../DateSelector", () => ({
 }));
 
 jest.mock("../DatetimeSelector", () => ({
+  __esModule: true,
+  default: () => <div data-testid="DatetimeSelector">DatetimeSelector</div>,
   DatetimeSelector: () => <div data-testid="DatetimeSelector">DatetimeSelector</div>,
 }));
 
@@ -67,6 +69,18 @@ jest.mock("../LocationSelector", () => ({
 }));
 jest.mock("../ImageSelector", () => ({
   ImageSelector: () => <div data-testid="ImageSelector__mock">ImageSelector</div>,
+}));
+
+jest.mock("@/components/ProcessModal/selectors/UploadFileSelector", () => ({
+  UploadFileSelector: () => <div data-testid="UploadFileSelector__mock">UploadFileSelector</div>,
+}));
+
+jest.mock("../ButtonSelector", () => ({
+  ButtonSelector: () => <div data-testid="ButtonSelector__mock">ButtonSelector</div>,
+}));
+
+jest.mock("../RichTextSelector", () => ({
+  RichTextSelector: () => <div data-testid="RichTextSelector__mock">RichTextSelector</div>,
 }));
 
 jest.mock("../SelectorModal", () => ({
@@ -146,6 +160,16 @@ describe("GenericSelector", () => {
     },
     { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } },
     {
+      title: "DATETIME fields",
+      expected: "DatetimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.DATETIME.id } },
+    },
+    {
+      title: "ABSOLUTE_DATETIME fields",
+      expected: "DatetimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id } },
+    },
+    {
       title: "BOOLEAN fields",
       expected: "BooleanSelector",
       field: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } },
@@ -169,6 +193,26 @@ describe("GenericSelector", () => {
       title: "IMAGE fields",
       expected: "ImageSelector__mock",
       field: { column: { reference: FIELD_REFERENCE_CODES.IMAGE.id }, id: "img-1" },
+    },
+    {
+      title: "UPLOAD_FILE fields",
+      expected: "UploadFileSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.UPLOAD_FILE.id }, id: "upload-1" },
+    },
+    {
+      title: "BUTTON fields",
+      expected: "ButtonSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.BUTTON.id }, id: "btn-1", refList: [] },
+    },
+    {
+      title: "SELECTOR_AS_LINK fields",
+      expected: "TableDirSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id } },
+    },
+    {
+      title: "RICH_TEXT fields",
+      expected: "RichTextSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.RICH_TEXT.id }, id: "rt-1" },
     },
   ];
 
