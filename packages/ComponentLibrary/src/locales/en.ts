@@ -300,6 +300,12 @@ const en = {
     selectFile: "Select file...",
     executionTimeout: "Process execution timed out. Please try again.",
   },
+  processModal: {
+    gridToolbar: {
+      addRow: "Add row",
+      deleteRow: "Delete row",
+    },
+  },
   drawer: {
     recentlyViewed: "Recently Viewed",
   },

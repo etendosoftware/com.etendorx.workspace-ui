@@ -36,6 +36,13 @@ interface WindowReferenceGridContextValue {
   tabId: string | undefined;
   fieldReadOnlyMap: Record<string, boolean>;
   shouldSendOrg: boolean;
+  /**
+   * Set of `columnName`s whose mandatory-validation failed for the active
+   * create-row. Consumers use it to flip the cell visual to red.
+   */
+  createRowErrors: Set<string>;
+  /** Drops a single column from {@link createRowErrors} (called on edit). */
+  clearCellError: (columnName: string) => void;
 }
 
 const WindowReferenceGridContext = createContext<WindowReferenceGridContextValue | undefined>(undefined);

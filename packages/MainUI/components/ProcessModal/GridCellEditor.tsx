@@ -153,13 +153,29 @@ export interface GridCellEditorProps {
   onRecordChange?: (row: any, changes: any) => void;
   // biome-ignore lint/suspicious/noExplicitAny: validation object
   validationError?: any;
+  /**
+   * When true, paints the cell as errored even without a `validationError`.
+   * Used by P&E grids to flag empty mandatory fields in a create-row.
+   */
+  forceError?: boolean;
+  /** Notified after each edit; lets parents clear per-cell create-row errors. */
+  onCellEdit?: (columnName: string) => void;
 }
 
 /**
  * Optimized Grid Cell Editor component
  * Uses context for shared grid data and refs for dynamic data to prevent unnecessary re-renders
  */
-const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validationError }: GridCellEditorProps) => {
+const GridCellEditorBase = ({
+  cell,
+  row,
+  col,
+  fields,
+  onRecordChange,
+  validationError,
+  forceError,
+  onCellEdit,
+}: GridCellEditorProps) => {
   const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap, shouldSendOrg } =
     useWindowReferenceGridContext();
   const { t } = useTranslation();
@@ -201,8 +217,27 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
       }
 
       cell.row._valuesCache[cell.column.id] = newValue;
+
+      // Tell the parent that this cell has been touched so create-row
+      // mandatory errors can be dismissed per cell. Use `dbColumnName` (the DB
+      // column name) when present — it's the key stored in `createRowErrors`.
+      // `col.columnName` here is the parsed HQL camelCase name, so falling
+      // back to it preserves behavior for callers that don't supply dbColumnName.
+      if (onCellEdit) {
+        onCellEdit(col.dbColumnName ?? col.columnName);
+      }
     },
-    [col.columnName, fieldType, reference, onRecordChange, cell.column.id, cell.row._valuesCache, row]
+    [
+      col.columnName,
+      col.dbColumnName,
+      fieldType,
+      reference,
+      onRecordChange,
+      onCellEdit,
+      cell.column.id,
+      cell.row._valuesCache,
+      row,
+    ]
   );
 
   const loadOptions = useCallback(
@@ -245,15 +280,17 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
   // Generate unique IDs for accessibility
   const fieldId = `grid-cell-${row.id}-${col.columnName}`;
 
-  // Validation state
-  const hasError = !!validationError;
+  // Validation state. `forceError` lets parents flag a cell as errored without
+  // attaching a message (e.g. mandatory-empty cells in a create-row, where we
+  // want a red border only — no text and no tooltip).
+  const hasError = !!validationError || forceError === true;
   const rawErrorMessage = validationError?.message;
   const errorMessage = rawErrorMessage ? t(rawErrorMessage) : undefined;
 
   const isFieldReadOnly = fieldReadOnlyMap?.[col.columnName] || fieldReadOnlyMap?.[col.accessorKey] || false;
 
   return (
-    <div className="w-full min-w-[200px]" title={errorMessage}>
+    <div className="w-full min-w-[200px]">
       <CellEditorFactory
         fieldType={fieldType}
         value={cell.getValue()}
@@ -264,12 +301,13 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
         loadOptions={loadOptions}
         disabled={isFieldReadOnly}
         hasError={hasError}
+        showTooltip={false}
         onBlur={() => {}}
         id={fieldId}
         name={col.columnName}
         data-testid={`grid-cell-editor-${col.columnName}`}
       />
-      {hasError && <div className="text-xs text-red-500 mt-1">{errorMessage}</div>}
+      {hasError && errorMessage && <div className="text-xs text-red-500 mt-1">{errorMessage}</div>}
     </div>
   );
 };
@@ -287,7 +325,8 @@ export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) =>
     prevProps.cell.getValue() === nextProps.cell.getValue() &&
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
-    prevProps.validationError === nextProps.validationError
+    prevProps.validationError === nextProps.validationError &&
+    prevProps.forceError === nextProps.forceError
   );
 });
 

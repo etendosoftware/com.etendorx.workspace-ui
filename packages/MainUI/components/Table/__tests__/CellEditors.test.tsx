@@ -250,6 +250,79 @@ describe("Cell Editor Components", () => {
     });
   });
 
+  describe("SelectCellEditor — showTooltip prop", () => {
+    const selectField = createMockField({
+      type: FieldType.LIST,
+      refList: [{ value: "a", label: "A" }],
+    });
+
+    it("does not set title when showTooltip=false and no error", () => {
+      render(
+        <SelectCellEditor
+          value="a"
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={false}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
+    });
+
+    it("does not set title when showTooltip=false even with error", () => {
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={true}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
+    });
+
+    it("sets title when showTooltip is true (default) and hasError is true", () => {
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={true}
+          disabled={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).toHaveAttribute("title", "This field has validation errors");
+    });
+
+    it("fallback input has no title when showTooltip=false", () => {
+      const tableDirField = createMockField({
+        type: FieldType.TABLEDIR,
+        refList: [],
+        referencedEntity: "SomeEntity",
+      });
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={tableDirField}
+          hasError={false}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      const input = screen.getByRole("textbox");
+      expect(input).not.toHaveAttribute("title");
+      expect(screen.queryByText(/TABLEDIR field/)).not.toBeInTheDocument();
+    });
+  });
+
   describe("SelectCellEditor", () => {
     const mockField = createMockField({
       type: FieldType.LIST,

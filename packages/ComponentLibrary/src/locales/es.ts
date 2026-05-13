@@ -302,6 +302,12 @@ const es = {
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
   },
+  processModal: {
+    gridToolbar: {
+      addRow: "Agregar fila",
+      deleteRow: "Eliminar fila",
+    },
+  },
   drawer: {
     recentlyViewed: "Visto recientemente",
   },

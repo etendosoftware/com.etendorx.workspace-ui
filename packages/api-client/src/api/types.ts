@@ -349,6 +349,24 @@ export interface Tab {
   tableTree?: boolean | string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_ADD. When true, the P&E grid for this tab shows
+   * an "Add row" button that opens an inline-editable new row (same rule as the
+   * classic UI in OBViewTab#isAllowAdd()).
+   */
+  obuiappCanAdd?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_DELETE. When true, the P&E grid shows a
+   * per-row trash icon that removes the row from the local grid buffer
+   * (no backend call) — matches classic UI behavior for tabs like APRM GL Items.
+   */
+  obuiappCanDelete?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_SHOW_SELECT. When false, the grid hides the
+   * row-selection checkbox column (e.g. GL Items, where the backend reads
+   * `_allRows` and selection has no semantic meaning).
+   */
+  obuiappShowSelect?: boolean;
   /** "M" = multiple (default), "S" = single, "N" = none */
   obuiappSelectionType?: "M" | "S" | "N" | null;
   process?: string;
