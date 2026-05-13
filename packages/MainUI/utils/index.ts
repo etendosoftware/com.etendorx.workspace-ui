@@ -39,11 +39,13 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
     case FIELD_REFERENCE_CODES.PRODUCT.id:
     case FIELD_REFERENCE_CODES.SELECTOR.id:
+    case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
       return FieldType.TABLEDIR;
     case FIELD_REFERENCE_CODES.DATE.id:
       return FieldType.DATE;
     case FIELD_REFERENCE_CODES.DATETIME.id:
+    case FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id:
       return FieldType.DATETIME;
     case FIELD_REFERENCE_CODES.BOOLEAN.id:
       return FieldType.BOOLEAN;
@@ -59,7 +61,7 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.LIST;
     case FIELD_REFERENCE_CODES.TIME.id:
       return FieldType.TIME;
-    case "28":
+    case FIELD_REFERENCE_CODES.BUTTON.id:
       return FieldType.BUTTON;
     case FIELD_REFERENCE_CODES.SELECT_30.id:
       return FieldType.SELECT;
