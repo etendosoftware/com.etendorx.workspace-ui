@@ -16,6 +16,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 interface WindowReferenceGridContextValue {
   // Use Refs for dynamic data to prevent context updates from triggering re-renders
@@ -34,6 +35,13 @@ interface WindowReferenceGridContextValue {
   // biome-ignore lint/suspicious/noExplicitAny: user session
   session: any;
   tabId: string | undefined;
+  /**
+   * The P&E grid's own tab metadata (e.g. the "GL Item" tab inside the Add
+   * Payment process). Distinct from the ambient {@link useTabContext} value,
+   * which carries the *outer* record's tab. Cells use this to scope selector
+   * default-criteria and filter context to the right table.
+   */
+  tab?: Tab | null;
   fieldReadOnlyMap: Record<string, boolean>;
   shouldSendOrg: boolean;
   /**

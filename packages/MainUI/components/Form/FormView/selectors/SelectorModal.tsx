@@ -7,7 +7,7 @@ import {
   type MRT_SortingState,
 } from "material-react-table";
 import { useDatasource } from "../../../../hooks/useDatasource";
-import type { Field, EntityData, SelectorColumn } from "@workspaceui/api-client/src/api/types";
+import type { Field, EntityData, SelectorColumn, Tab } from "@workspaceui/api-client/src/api/types";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useSelected } from "@/hooks/useSelected";
 import { buildEtendoContext } from "@/utils/contextUtils";
@@ -34,19 +34,44 @@ interface SelectorModalProps {
   onClose: () => void;
   onSelect: (record: EntityData) => void;
   currentDisplayValue?: string;
+  /**
+   * Optional override for the record-values getter. Used by grid cells that
+   * live outside a `react-hook-form` `<FormProvider>` (or inside one whose
+   * values describe a different scope, e.g. the parent process modal). When
+   * omitted, falls back to `useFormContext().getValues`.
+   */
+  getValues?: () => Record<string, unknown>;
+  /**
+   * Optional override for the current tab. Used by grid cells whose ambient
+   * `useTabContext()` returns the *outer* tab (e.g. the form-mode parent),
+   * not the P&E grid's own tab. When omitted, falls back to `useTabContext().tab`.
+   */
+  currentTab?: Tab | null;
 }
 
-const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps) => {
+const SelectorModal = ({
+  field,
+  isOpen,
+  onClose,
+  onSelect,
+  getValues: getValuesProp,
+  currentTab: currentTabProp,
+}: SelectorModalProps) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const { sx } = useStyle();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<MRT_SortingState>([]);
   const { graph } = useSelected();
-  const { tab: currentTab } = useTabContext();
+  // `useTabContext()` returns `{}` (no `tab`) outside a TabContextProvider — safe.
+  const { tab: tabFromContext } = useTabContext();
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { getValues } = useFormContext();
+  // `useFormContext()` returns `null` outside a FormProvider — handle that.
+  const formCtx = useFormContext();
   const { session } = useUserContext();
+
+  const getValues = getValuesProp ?? formCtx?.getValues ?? ((): Record<string, unknown> => ({}));
+  const currentTab = currentTabProp ?? tabFromContext ?? null;
 
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = useMemo(() => {

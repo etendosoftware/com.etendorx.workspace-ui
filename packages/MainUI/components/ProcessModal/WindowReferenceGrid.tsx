@@ -1900,12 +1900,22 @@ const WindowReferenceGrid = ({
       validations,
       session,
       tabId,
+      tab: stableWindowReferenceTab,
       fieldReadOnlyMap,
       shouldSendOrg,
       createRowErrors,
       clearCellError,
     }),
-    [tabId, session, validations, fieldReadOnlyMap, shouldSendOrg, createRowErrors, clearCellError]
+    [
+      tabId,
+      stableWindowReferenceTab,
+      session,
+      validations,
+      fieldReadOnlyMap,
+      shouldSendOrg,
+      createRowErrors,
+      clearCellError,
+    ]
   );
 
   const finalColumns = useMemo(() => {

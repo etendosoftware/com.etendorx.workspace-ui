@@ -255,4 +255,74 @@ describe("SelectorModal", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
+
+  describe("optional getValues / currentTab overrides (grid mode)", () => {
+    // These tests pin the contract used by `GridCellEditor`: when a P&E grid
+    // opens the modal, the row's data and the P&E tab must take precedence
+    // over the ambient form/tab contexts (which point at the outer record).
+    it("forwards the `getValues` prop to useSelectorDefaultCriteria when provided", () => {
+      const customGetValues = jest.fn(() => ({ rowField: "row-value" }));
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(
+        <SelectorModal
+          field={defaultField}
+          isOpen={true}
+          onClose={mockOnClose}
+          onSelect={mockOnSelect}
+          getValues={customGetValues}
+        />
+      );
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.getValues).toBe(customGetValues);
+    });
+
+    it("falls back to useFormContext().getValues when no `getValues` prop is supplied", () => {
+      const formContextGetValues = jest.fn(() => ({ fromForm: true }));
+      (useFormContext as jest.Mock).mockReturnValue({
+        ...createMockFormContext(),
+        getValues: formContextGetValues,
+      });
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.getValues).toBe(formContextGetValues);
+    });
+
+    it("forwards the `currentTab` prop to useSelectorDefaultCriteria when provided", () => {
+      const customTab = { id: "PE-TAB", window: "PE-WINDOW", table: "PE-TABLE", fields: {} };
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(
+        <SelectorModal
+          field={defaultField}
+          isOpen={true}
+          onClose={mockOnClose}
+          onSelect={mockOnSelect}
+          // biome-ignore lint/suspicious/noExplicitAny: test override, real type comes from api-client
+          currentTab={customTab as any}
+        />
+      );
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.currentTab).toEqual(customTab);
+    });
+
+    it("falls back to useTabContext().tab when no `currentTab` prop is supplied", () => {
+      // `useTabContext` is re-mocked here so we can compare against the *same*
+      // tab object the component received (instead of a freshly built helper).
+      const ambientTab = { id: "ambient-tab", window: "ambient-window", fields: {} };
+      const { useTabContext } = require("@/contexts/tab");
+      useTabContext.mockReturnValue({ tab: ambientTab });
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.currentTab).toBe(ambientTab);
+    });
+  });
 });

@@ -15,14 +15,18 @@
  *************************************************************************
  */
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { CellEditorFactory } from "../Table/CellEditors";
 import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import SelectorModal from "../Form/FormView/selectors/SelectorModal";
+import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 // Helper functions extracted to avoid recreation
 // biome-ignore lint/suspicious/noExplicitAny: Dynamic payload structure from datasource API
@@ -176,9 +180,10 @@ const GridCellEditorBase = ({
   forceError,
   onCellEdit,
 }: GridCellEditorProps) => {
-  const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap, shouldSendOrg } =
+  const { effectiveRecordValuesRef, parametersRef, tabId, tab, session, fieldReadOnlyMap, shouldSendOrg } =
     useWindowReferenceGridContext();
   const { t } = useTranslation();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // Find matched field definition
   const matchingField =
@@ -289,25 +294,68 @@ const GridCellEditorBase = ({
 
   const isFieldReadOnly = fieldReadOnlyMap?.[col.columnName] || fieldReadOnlyMap?.[col.accessorKey] || false;
 
+  // Magnifying-glass: identical predicate to GenericSelector.tsx (form mode).
+  const hasTableRelated = matchingField.selector?.hasTableRelated === true;
+  const showSearchButton = hasTableRelated && !isFieldReadOnly;
+
+  // Mirror GenericSelector.handleSelect: resolve the real ID via `valueField`,
+  // synthesize an option carrying the displayable identifier, then route the
+  // selection through the same `handleChange` used by the dropdown editor —
+  // that keeps `$_identifier` propagation and `onRecordChange` notification
+  // unified across both paths.
+  const handleModalSelect = (record: EntityData) => {
+    const valueField = matchingField.selector?.valueField as string | undefined;
+    const displayField = matchingField.selector?.displayField as string | undefined;
+    const resolvedId = (valueField ? record[valueField] : record.id) as string | undefined;
+    if (!resolvedId) return;
+    const label = (displayField ? record[displayField] : record._identifier) as string | undefined;
+    const option = { id: resolvedId, value: resolvedId, label: label ?? "", ...record };
+    handleChange(resolvedId, option);
+  };
+
   return (
     <div className="w-full min-w-[200px]">
-      <CellEditorFactory
-        fieldType={fieldType}
-        value={cell.getValue()}
-        onChange={handleChange}
-        field={{ ...matchingField, type: fieldType }}
-        rowId={row.id}
-        columnId={cell.column.id}
-        loadOptions={loadOptions}
-        disabled={isFieldReadOnly}
-        hasError={hasError}
-        showTooltip={false}
-        onBlur={() => {}}
-        id={fieldId}
-        name={col.columnName}
-        data-testid={`grid-cell-editor-${col.columnName}`}
-      />
+      <div className="flex w-full items-center gap-1">
+        <div className="flex-grow min-w-0">
+          <CellEditorFactory
+            fieldType={fieldType}
+            value={cell.getValue()}
+            onChange={handleChange}
+            field={{ ...matchingField, type: fieldType }}
+            rowId={row.id}
+            columnId={cell.column.id}
+            loadOptions={loadOptions}
+            disabled={isFieldReadOnly}
+            hasError={hasError}
+            showTooltip={false}
+            onBlur={() => {}}
+            id={fieldId}
+            name={col.columnName}
+            data-testid={`grid-cell-editor-${col.columnName}`}
+          />
+        </div>
+        {showSearchButton && (
+          <IconButton
+            onClick={() => setIsSearchModalOpen(true)}
+            className="w-8 h-8 flex-shrink-0"
+            tooltip="Search"
+            tooltipPosition="top"
+            data-testid={`grid-cell-search-${col.columnName}`}>
+            <SearchIcon className="w-5 h-5 fill-current" />
+          </IconButton>
+        )}
+      </div>
       {hasError && errorMessage && <div className="text-xs text-red-500 mt-1">{errorMessage}</div>}
+      {isSearchModalOpen && (
+        <SelectorModal
+          field={matchingField}
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          onSelect={handleModalSelect}
+          getValues={() => effectiveRecordValuesRef.current ?? {}}
+          currentTab={tab ?? null}
+        />
+      )}
     </div>
   );
 };
