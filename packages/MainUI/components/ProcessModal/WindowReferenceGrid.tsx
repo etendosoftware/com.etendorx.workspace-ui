@@ -29,6 +29,7 @@ import {
   type Tab,
   type Criteria,
   UIPattern,
+  FieldType,
 } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
@@ -38,6 +39,7 @@ import {
   MRT_ToggleFiltersButton,
   MRT_ToggleFullScreenButton,
   useMaterialReactTable,
+  createRow,
   type MRT_RowSelectionState,
   type MRT_ColumnFiltersState,
   type MRT_TableOptions,
@@ -944,6 +946,8 @@ const WindowReferenceGrid = ({
       // Ensure hqlName is consistent for grid columns
       hqlName: field.columnName || field.hqlName,
       label: field.name,
+      // Resolve FieldType so applyNumericMandatoryDefaults can detect numeric fields
+      type: getFieldReference(field.column?.reference || field.reference),
     }));
     return parsed;
   }, [stableWindowReferenceTab?.fields, isFieldVisible]); // isFieldVisible changes often, but we check result below
@@ -2068,6 +2072,7 @@ const WindowReferenceGrid = ({
           initialIsFilterApplied={initialIsFilterApplied}
           handleMRTColumnFiltersChange={handleMRTColumnFiltersChange}
           setIsImplicitFilterApplied={setIsImplicitFilterApplied}
+          visibleFieldsFromTab={visibleFieldsFromTab}
           data-testid="GridTopToolbar__ce8544"
         />
       ),
@@ -2262,10 +2267,33 @@ export const GridTopToolbar = ({
   initialIsFilterApplied,
   handleMRTColumnFiltersChange,
   setIsImplicitFilterApplied,
+  visibleFieldsFromTab,
 }: any) => {
   const selectedCount = table.getSelectedRowModel().rows.length;
   const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
   const addRowLabel = t("processModal.gridToolbar.addRow");
+
+  const handleAddRow = () => {
+    const initialValues: Record<string, unknown> = {};
+    if (visibleFieldsFromTab) {
+      for (const field of visibleFieldsFromTab) {
+        if (
+          field.isMandatory &&
+          (field.type === FieldType.NUMBER || field.type === FieldType.QUANTITY)
+        ) {
+          // Populate every key shape so cell.getValue() picks it up via accessorKey
+          const keys = [field.columnName, field.hqlName, field.name, field._key].filter(Boolean);
+          for (const k of keys) initialValues[k] = 0;
+        }
+      }
+    }
+    if (Object.keys(initialValues).length === 0) {
+      table.setCreatingRow(true);
+      return;
+    }
+    const initialRow = createRow(table, initialValues as EntityData);
+    table.setCreatingRow(initialRow);
+  };
 
   return (
     <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
@@ -2289,7 +2317,7 @@ export const GridTopToolbar = ({
         {canAdd && (
           <Tooltip title={addRowLabel}>
             <IconButton
-              onClick={() => table.setCreatingRow(true)}
+              onClick={handleAddRow}
               aria-label={addRowLabel}
               data-testid="GridTopToolbar__AddRowButton">
               <PlusIcon className="h-4 w-4" />
