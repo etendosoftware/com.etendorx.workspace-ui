@@ -87,6 +87,55 @@ const PAGE_SIZE = 100;
 const TABLE_PAPER_HEIGHT = 350;
 
 /**
+ * Compiles and evaluates a server-rewritten display-logic expression. Returns
+ * the truthy result, or `true` if compilation/evaluation throws — failing open
+ * keeps a column visible when its expression is malformed, matching the
+ * behavior of the form-level display-logic evaluator.
+ */
+function evaluateExpression(
+  expression: string,
+  session: Record<string, unknown>,
+  context: Record<string, unknown>,
+  fieldName: string,
+  kind: string
+): boolean {
+  try {
+    const compiled = compileExpression(expression);
+    return !!compiled(session, context);
+  } catch (e) {
+    console.warn(`Error evaluating ${kind} for field ${fieldName}`, e);
+    return true;
+  }
+}
+
+/**
+ * Pure predicate that decides whether a grid column should render. Combines
+ * the static flags (`isActive`, `displayed`, `showInGridView`) with the two
+ * server-rewritten expressions (`displayLogicExpression`,
+ * `gridDisplayLogicExpression`). Extracted from the component so the
+ * visibility logic can be unit-tested without rendering the grid.
+ */
+export function isFieldVisibleForContext(
+  field: any,
+  session: Record<string, unknown>,
+  context: Record<string, unknown>
+): boolean {
+  if (field.isActive === false) return false;
+  if (field.displayed === false) return false;
+  if (!field.showInGridView) return false;
+
+  if (field.displayLogicExpression && !evaluateExpression(field.displayLogicExpression, session, context, field.name, "display logic")) {
+    return false;
+  }
+
+  if (field.gridDisplayLogicExpression && !evaluateExpression(field.gridDisplayLogicExpression, session, context, field.name, "grid display logic")) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Extracts the actual value from a wrapped value object or returns the value directly
  */
 export function extractActualValue(value: unknown): EntityValue {
@@ -742,7 +791,7 @@ const WindowReferenceGrid = ({
   }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
-  const { user, session, currentClient } = useUserContext();
+  const { user, session } = useUserContext();
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);
@@ -863,69 +912,18 @@ const WindowReferenceGrid = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRecordValues = useMemo(() => effectiveRecordValues, [recordValuesKey]);
 
-  // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
-  const getAcctDimensionDisplay = useCallback(
-    (columnName: string) => {
-      if (!currentClient) return "";
-
-      // Generic logic to map column name to client property
-      // e.g. C_BPartner_ID -> bpartnerAcctdimBreakdown
-
-      // 1. Remove _ID suffix (case insensitive)
-      let key = columnName.replace(/_ID$/i, "");
-      // 2. Remove C_ or M_ prefix (case insensitive) if present
-      key = key.replace(/^[CM]_/i, "");
-
-      const propName = `${key.toLowerCase()}AcctdimBreakdown`;
-      // Check if property exists on currentClient
-      const isActive = (currentClient as any)[propName];
-
-      return isActive === true ? "Y" : "";
-    },
-    [currentClient]
-  );
-
   const isFieldVisible = useCallback(
     (field: any) => {
-      if (field.isActive === false) return false;
-      if (field.displayed === false) return false;
-      if (!field.showInGridView) return false;
-
-      const accVal = getAcctDimensionDisplay(field.columnName) || "";
-
-      const context = {
-        ...user,
-        ...session,
-        ...recordValues,
-        ACCT_DIMENSION_DISPLAY: accVal,
-      };
-
-      // Evaluate Display Logic
-      if (field.displayLogicExpression) {
-        try {
-          const compiledExpr = compileExpression(field.displayLogicExpression);
-          if (!compiledExpr(session, context)) return false;
-        } catch (e) {
-          console.warn(`Error evaluating display logic for field ${field.name}`, e);
-        }
-      }
-
-      // Evaluate Grid Display Logic (if present)
-      // The backend serializes this property as `displaylogicgrid` (lowercase).
-      // Fall back to the camelCase alias for forward compatibility.
-      const gridLogic = field.displaylogicgrid ?? field.gridDisplayLogic;
-      if (gridLogic) {
-        try {
-          const compiledExpr = compileExpression(gridLogic);
-          if (!compiledExpr(session, context)) return false;
-        } catch (e) {
-          console.warn(`Error evaluating grid display logic for field ${field.name}`, e);
-        }
-      }
-
-      return true;
+      // Both expressions arrive pre-rewritten from the backend: `displayLogic`
+      // and `displaylogicgrid` go through `DynamicExpressionParser` server-side,
+      // which expands placeholders like `@ACCT_DIMENSION_DISPLAY@` into
+      // per-field JS that references session attributes (e.g.
+      // `context['$Element_BP_APP_L']`). Those keys live in `session` because
+      // `SessionBuilder` exposes them via `attributes`.
+      const context = { ...user, ...session, ...recordValues };
+      return isFieldVisibleForContext(field, session, context);
     },
-    [getAcctDimensionDisplay, user, session, recordValues]
+    [user, session, recordValues]
   );
 
   // Filter fields based on visibility logic (displayLogic & gridDisplayLogic)

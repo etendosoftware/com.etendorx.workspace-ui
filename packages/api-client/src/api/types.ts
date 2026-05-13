@@ -158,6 +158,7 @@ export interface Field {
   referencedWindowId: string;
   referencedTabId: string;
   displayLogicExpression?: string;
+  gridDisplayLogicExpression?: string;
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;

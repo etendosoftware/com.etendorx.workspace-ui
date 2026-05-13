@@ -28,6 +28,7 @@ import {
   buildDeselectedRecord,
   syncGridSelectionToLocalRecords,
   findMatchingRecord,
+  isFieldVisibleForContext,
 } from "../WindowReferenceGrid";
 import "@testing-library/jest-dom";
 
@@ -369,5 +370,110 @@ describe("findMatchingRecord", () => {
   it("returns undefined when neither parentContextId nor contextDocNo match any record", () => {
     const records = [{ id: "1", documentNo: "DOC-1" }];
     expect(findMatchingRecord(records, "NOPE", "NOPE")).toBeUndefined();
+  });
+});
+
+describe("isFieldVisibleForContext", () => {
+  // Server-rewritten expression that mirrors what classic UI produces via
+  // `DimensionDisplayUtility.computeAccountingDimensionDisplayLogic` for a
+  // BPartner field on an APP/Lines tab: visible when either the legacy
+  // `$Element_BP` is "Y" (decentralized config) or the per-doctype-level
+  // `$Element_BP_<DOCBASETYPE>_L` is "Y" (centralized config).
+  const KEY_CENTRALLY = "$IsAcctDimCentrally";
+  const KEY_BP_LEGACY = "$Element_BP";
+  const KEY_BP_APP_L = "$Element_BP_APP_L";
+  const BP_REWRITTEN_EXPR =
+    "(context.$IsAcctDimCentrally === 'N' && context.$Element_BP === 'Y') || " +
+    "(context.$IsAcctDimCentrally === 'Y' && context['$Element_BP_' + OB.Utilities.getValue(currentValues, \"DOCBASETYPE\") + '_L'] === 'Y')";
+
+  const baseField = {
+    name: "BPartner",
+    isActive: true,
+    displayed: true,
+    showInGridView: true,
+  };
+
+  it("returns false when isActive is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, isActive: false }, {}, {})).toBe(false);
+  });
+
+  it("returns false when displayed is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, displayed: false }, {}, {})).toBe(false);
+  });
+
+  it("returns false when showInGridView is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, showInGridView: false }, {}, {})).toBe(false);
+  });
+
+  it("returns true when there is no display logic and no grid display logic", () => {
+    expect(isFieldVisibleForContext(baseField, {}, {})).toBe(true);
+  });
+
+  it("returns false when gridDisplayLogicExpression evaluates to false", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "false" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(false);
+  });
+
+  it("returns true when gridDisplayLogicExpression evaluates to true", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "true" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(true);
+  });
+
+  it("fails open (returns true) when gridDisplayLogicExpression is unparseable", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "this is not valid !!" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(true);
+  });
+
+  it("hides BPartner when centralized mode and per-doctype flag is 'N' (matches classic Product/CostCenter case)", () => {
+    const session = {
+      [KEY_CENTRALLY]: "Y",
+      [KEY_BP_APP_L]: "N",
+      [KEY_BP_LEGACY]: "",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(false);
+  });
+
+  it("shows BPartner when centralized mode and per-doctype flag is 'Y' (matches classic BPartner/Project case)", () => {
+    const session = {
+      [KEY_CENTRALLY]: "Y",
+      [KEY_BP_APP_L]: "Y",
+      [KEY_BP_LEGACY]: "",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(true);
+  });
+
+  it("shows BPartner when decentralized mode and legacy $Element_BP is 'Y'", () => {
+    const session = {
+      [KEY_CENTRALLY]: "N",
+      [KEY_BP_LEGACY]: "Y",
+      [KEY_BP_APP_L]: "N",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(true);
+  });
+
+  it("hides BPartner when decentralized mode and legacy $Element_BP is empty", () => {
+    const session = {
+      [KEY_CENTRALLY]: "N",
+      [KEY_BP_LEGACY]: "",
+      [KEY_BP_APP_L]: "Y",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(false);
+  });
+
+  it("evaluates displayLogicExpression independently of gridDisplayLogicExpression", () => {
+    const field = {
+      ...baseField,
+      displayLogicExpression: "false",
+      gridDisplayLogicExpression: "true",
+    };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(false);
   });
 });
