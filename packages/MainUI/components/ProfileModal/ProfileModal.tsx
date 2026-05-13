@@ -50,6 +50,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   roles,
   changeProfile,
   onSetDefaultConfiguration,
+  onPasswordChange,
   logger,
   translations,
   language,
@@ -62,6 +63,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const theme = useTheme();
   const { styles } = useStyle();
   const [currentSection, setCurrentSection] = useState<string>("profile");
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -198,6 +203,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
+    setCurrentPwd("");
+    setNewPwd("");
+    setConfirmPwd("");
+    setPasswordError("");
   }, []);
 
   const getProfileUpdates = useCallback(() => {
@@ -284,7 +293,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   );
 
   const handleSave = useCallback(async () => {
-    if (currentSection !== "profile") return;
+    if (currentSection === "password") {
+      setPasswordError("");
+      if (!currentPwd || !newPwd || !confirmPwd) {
+        setPasswordError(t("navigation.profile.passwordRequired"));
+        return;
+      }
+      if (newPwd !== confirmPwd) {
+        setPasswordError(t("navigation.profile.passwordMismatch"));
+        return;
+      }
+      try {
+        await onPasswordChange({ currentPwd, newPwd, confirmPwd });
+        setCurrentPwd("");
+        setNewPwd("");
+        setConfirmPwd("");
+        handleClose();
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "";
+        const messageKey: Record<string, string> = {
+          UINAVBA_CurrentPwdIncorrect: t("navigation.profile.errorCurrentPwdIncorrect"),
+          CPDifferentPassword: t("navigation.profile.errorDifferentPassword"),
+          UINAVBA_IncorrectPwd: t("navigation.profile.errorIncorrectPwd"),
+          UINAVBA_UnequalPwd: t("navigation.profile.errorUnequalPwd"),
+          CPPasswordNotStrongEnough: t("navigation.profile.errorNotStrongEnough"),
+        };
+        setPasswordError(messageKey[code] ?? t("navigation.profile.errorGeneric"));
+      }
+      return;
+    }
 
     try {
       const params = getProfileUpdates();
@@ -310,18 +347,27 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, [
     currentSection,
+    currentPwd,
+    newPwd,
+    confirmPwd,
+    onPasswordChange,
+    t,
+    handleClose,
     getProfileUpdates,
     changeProfile,
     selectedLanguage,
     language,
     saveConfigurationDefaults,
     cleanWindowState,
-    handleClose,
     onLanguageChange,
     logger,
   ]);
 
   const isSaveDisabled = useMemo(() => {
+    if (currentSection === "password") {
+      return !currentPwd || !newPwd || !confirmPwd || newPwd !== confirmPwd;
+    }
+
     if (!selectedRole) {
       return true;
     }
@@ -335,6 +381,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
     return !somethingChanged;
   }, [
+    currentSection,
+    currentPwd,
+    newPwd,
+    confirmPwd,
     currentRole?.id,
     currentOrganization?.id,
     currentWarehouse?.id,
@@ -388,6 +438,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onSaveAsDefaultChange={onSaveAsDefaultChange}
           translations={translations}
           languagesFlags={languagesFlags}
+          currentPwd={currentPwd}
+          newPwd={newPwd}
+          confirmPwd={confirmPwd}
+          onCurrentPwdChange={setCurrentPwd}
+          onNewPwdChange={setNewPwd}
+          onConfirmPwdChange={setConfirmPwd}
+          passwordError={passwordError}
           data-testid="SelectorList__75987a"
         />
         <div style={styles.buttonContainerStyles}>

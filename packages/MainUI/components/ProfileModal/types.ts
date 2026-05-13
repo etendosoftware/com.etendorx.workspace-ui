@@ -18,6 +18,7 @@
 import type { Logger } from "@/utils/logger";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
+import type { Dispatch, SetStateAction } from "react";
 import type {
   CurrentOrganization,
   CurrentRole,
@@ -85,6 +86,7 @@ export interface ActionProps {
   onChangeRole?: (roleId: string) => Promise<void>;
   onChangeWarehouse?: (warehouseId: string) => Promise<void>;
   onSetDefaultConfiguration: (config: BaseDefaultConfiguration) => Promise<void>;
+  onPasswordChange: (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => Promise<void>;
 }
 
 export interface LanguageOption {
@@ -134,4 +136,11 @@ export interface SelectorListProps {
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   translations: Translations;
   languagesFlags: string;
+  currentPwd: string;
+  newPwd: string;
+  confirmPwd: string;
+  onCurrentPwdChange: Dispatch<SetStateAction<string>>;
+  onNewPwdChange: Dispatch<SetStateAction<string>>;
+  onConfirmPwdChange: Dispatch<SetStateAction<string>>;
+  passwordError?: string;
 }
