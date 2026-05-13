@@ -18,7 +18,7 @@
 import type { Logger } from "@/utils/logger";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type {
   CurrentOrganization,
   CurrentRole,
@@ -27,7 +27,6 @@ import type {
   LoginResponse,
   SessionResponse,
 } from "@workspaceui/api-client/src/api/types";
-import type { ReactNode } from "react";
 import type { Section } from "./ToggleButton/types";
 
 export interface Translations {
