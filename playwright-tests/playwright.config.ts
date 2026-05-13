@@ -24,7 +24,7 @@ loadEnv();
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.CYPRESS_BASE_URL || "http://localhost:3000";
 const IFRAME_URL = process.env.CYPRESS_IFRAME_URL || "localhost:8080";
 const DEFAULT_USER = process.env.CYPRESS_USER || "admin";
-const DEFAULT_PASSWORD = process.env.CYPRESS_PASSWORD || "admin";
+const DEFAULT_PASSWORD = process.env.CYPRESS_PASSWORD || "Admin0123";
 
 export default defineConfig({
   testDir: "./e2e",

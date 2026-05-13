@@ -25,8 +25,8 @@ import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
@@ -64,10 +64,10 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     }
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
-  const { activeWindow } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
   const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
 
@@ -91,11 +91,15 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         return;
       }
 
+      // Update activeLevels immediately (outside startTransition) so the collapsed state
+      // reflects the new level synchronously — prevents the tab content from briefly
+      // rendering with class="hidden" while the deferred transition is pending.
+      setActiveLevel(tab.tabLevel);
+
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
         setCustomHeight(50);
         setCurrent(tab);
-        setActiveLevel(tab.tabLevel);
 
         // Update the active tab mapping for this level so child tab filtering works correctly
         setActiveTabsByLevel(tab);

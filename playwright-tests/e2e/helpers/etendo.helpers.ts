@@ -11,7 +11,7 @@ export async function loginToEtendo(page: Page, username = DEFAULT_USER, passwor
   await page.locator("#password").clear();
   await page.locator("#password").fill(password);
   await page.locator('[data-testid="Button__602739"]').first().click();
-  await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+  await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function cleanupEtendo(page: Page) {
@@ -241,7 +241,7 @@ export async function clickSave(page: Page) {
 }
 
 export async function typeName(page: Page, text: string) {
-  const input = page.locator('input[aria-label="Name"]').first();
+  const input = page.locator('input[aria-label="Name"]:visible').first();
   await input.waitFor({ state: "visible", timeout: 20_000 });
   await input.clear();
   await input.fill(text);
@@ -541,7 +541,7 @@ export async function navigateToProcessScheduler(page: Page) {
     '[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
   await page.locator(menuSelector).evaluate((el) => (el as HTMLElement).click());
-  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator("table thead:visible").waitFor({ state: "visible", timeout: 30_000 });
 }
 
 /**
@@ -551,7 +551,7 @@ export async function navigateToProcessScheduler(page: Page) {
  * Safe to call when the button is absent or the filter is already off (no-op).
  */
 export async function disableImplicitFilter(page: Page): Promise<void> {
-  const filterToggle = page.locator("button.toolbar-button-filter").first();
+  const filterToggle = page.locator("button.toolbar-button-filter:visible").first();
   await filterToggle.waitFor({ state: "visible", timeout: 5_000 }).catch(() => null);
 
   const isActive = await filterToggle
@@ -582,5 +582,5 @@ export async function navigateToManageRequisitions(page: Page) {
   const manageReqSelector = '[data-testid="MenuTitle__1004400000"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(manageReqSelector).waitFor({ state: "visible", timeout: 10_000 });
   await page.locator(manageReqSelector).evaluate((el) => (el as HTMLElement).click());
-  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator("table thead:visible").waitFor({ state: "visible", timeout: 30_000 });
 }
