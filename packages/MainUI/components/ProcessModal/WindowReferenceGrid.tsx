@@ -2224,7 +2224,7 @@ const WindowReferenceGrid = ({
   if (error) {
     return (
       <ErrorDisplay
-        title={t("errors.missingData")}
+        title={t("errors.missingData.title")}
         description={error?.message}
         showRetry
         onRetry={refetch}
