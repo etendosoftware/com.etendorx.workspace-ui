@@ -1,24 +1,30 @@
-# Pick and Execute (P&E) — Implementation Snapshot
+# Pick and Execute (P&E) — Complete Implementation Reference
 
-> **Status**: Work in progress. This document describes the state of the Pick and Execute (P&E) implementation on the `feature/ETP-3751` branch (parent: `epic/ETP-3931`) as of 2026-05-11. It is **not** the final documentation. Items that are still in flight or pending decisions are listed in the [Open Items](#open-items) section at the end.
->
-> **Scope**: Covers the new Etendo WorkspaceUI (Next.js) and the `com.etendoerp.metadata` adapter module. The classic Openbravo backend is treated as a black box.
+> **Branch**: `feature/ETP-3751` (parent: `epic/ETP-3931`)
+> **Last updated**: 2026-05-14
+> **Status**: Feature complete. This document covers every commit on `feature/ETP-3751` and serves as the authoritative reference for how Pick and Execute works in the new Next.js UI. Open items from the previous snapshot have been resolved or explicitly deferred below.
+
+---
 
 ## 1. TL;DR
 
-Pick and Execute (P&E) is the Etendo process pattern in which a user opens a dialog, picks records from one or more embedded grids, optionally fills inline values, and executes a server-side action against the selection. In Etendo Classic this is the `OBUIAPP_PickAndExecute` UI pattern.
+Pick and Execute (P&E) is the Etendo process pattern in which a user opens a dialog, picks records from one or more embedded grids, optionally fills inline values into those rows, and executes a server-side action against the selection. In Etendo Classic this is the `OBUIAPP_PickAndExecute` UI pattern.
 
 This branch reproduces P&E in the new Next.js UI with the following capabilities:
 
 1. **Menu-driven and button-driven entry** — P&E processes can be opened from a sidebar menu entry (window of type `OBUIAPP_PickAndExecute`) and from a Process Definition button rendered on a window form.
-2. **Multi-grid support** — a single P&E process can stack multiple Window Reference grids (e.g. Add Payment shows 3 grids: orders/invoices, GL items, credit-to-use).
-3. **Per-row mandatory cell validation** — the Execute button is disabled while any selected row has an empty mandatory cell.
-4. **Single-record vs multi-record selection** — grid selection mode is driven by the tab's `obuiappSelectionType` column; execution mode (one vs many record IDs delivered to the handler) is driven by the process's `isMultiRecord` flag.
-5. **Implicit filter toggle** — when the underlying tab carries an `hqlfilterclause` or `sQLWhereClause`, a funnel button is rendered in the toolbar; pressing it disables the implicit filter on subsequent datasource fetches.
-6. **Auto-select from `onLoad`** — a JavaScript hook attached to the process can return an `autoSelectConfig` describing which records should be pre-selected on open.
-7. **Structured response actions** — the post-execute response is parsed into a normalized list of typed actions (messages, grid refreshes, tab navigation, etc.) and dispatched as side effects.
-
-The flow follows the project's standard 3-tier request path: **Next.js client → Next.js API → Etendo ERP**. No new server route was needed: the existing metadata adapter already serializes the required fields once the relevant catalog columns are populated upstream.
+2. **Multi-grid support** — a single P&E process stacks multiple Window Reference grids (e.g. Add Payment shows three grids: orders/invoices, GL items, credit-to-use), each independently selecting and validating records.
+3. **Inline row editing** — when the user selects a row in a server-fetched grid, every cell in that row switches to the appropriate cell editor (text, number, selector, date, boolean). The editor is gated on selection state, not open at all times.
+4. **Local-row grids (GL Items)** — grids driven by `AD_Tab.obuiappCanAdd = true` support adding, editing during creation, and deleting rows entirely client-side without hitting the backend. Confirmed rows become read-only and can only be removed by clicking the trash icon.
+5. **Mandatory cell validation on create-row** — when the user saves a new row with empty mandatory fields, the create-row remains open, the affected cells turn red, and the system auto-fills `0` for numeric mandatory fields before checking.
+6. **Search modal for selector fields in grid cells** — selector fields whose backing table has related records show a magnifying-glass button next to the dropdown editor; clicking it opens the full SelectorModal with filters.
+7. **Dynamic column visibility (display logic)** — each grid column is shown or hidden based on the field's `displayLogicExpression` and `gridDisplayLogicExpression`, evaluated server-side and re-evaluated on every context change.
+8. **Parameter field groups with collapsible sections** — process parameters are organized by `AD_FieldGroup`, matching classic UI behavior. Sections backed by `AD_FieldGroup.IsCollapsed = true` open collapsed by default.
+9. **Per-row mandatory cell validation for execution gating** — the Execute button is disabled while any selected row in any grid has an empty mandatory cell.
+10. **Single-record vs multi-record selection** — grid selection mode is driven by `tab.obuiappSelectionType`; execution mode by the process's `isMultiRecord` flag.
+11. **Implicit filter toggle** — a funnel button disables the tab's implicit HQL/SQL filter for the modal session.
+12. **Auto-select from `onLoad`** — a JavaScript hook can pre-select records matching a predicate when the process opens.
+13. **Structured response actions** — the post-execute response is parsed into a typed action list (messages, grid refreshes, tab navigation, etc.).
 
 ---
 
@@ -45,17 +51,16 @@ flowchart TB
     Modal[ProcessDefinitionModal]
     Grid[WindowReferenceGrid]
     Toolbar[GridTopToolbar]
+    CellEditor[GridCellEditor]
     UseExec[useProcessExecution]
     Datasource[useDatasource]
     Parser[responseActionDispatcher]
     Flags[processResponseFlags]
+    FieldGroups[groupProcessParametersByFieldGroup]
   end
 
   AD --> Conv
-  Conv --> MB
-  Conv --> WB
-  Conv --> PB
-  Conv --> TB
+  Conv --> MB & WB & PB & TB
   MB -->|"GET /meta/menu<br/>(windowType field)"| Sidebar
   Sidebar --> Dispatch
   Dispatch -->|"MenuClickIntent"| Modal
@@ -63,8 +68,10 @@ flowchart TB
   TB -->|"GET /meta/window/{id}/tab"| Grid
   Modal --> Grid
   Grid --> Toolbar
+  Grid --> CellEditor
   Grid -->|"datasource request<br/>(isImplicitFilterApplied)"| Datasource
   Datasource -->|"POST /meta/datasource/{entity}"| Backend
+  Modal --> FieldGroups
   Modal --> UseExec
   UseExec -->|"POST process exec"| Handler
   Handler -->|"response JSON"| UseExec
@@ -72,76 +79,65 @@ flowchart TB
   UseExec --> Flags
 ```
 
-The branch only added code on the client and on the metadata adapter. The classic backend was not modified.
+Changes landed exclusively in the client and in the metadata adapter. The classic backend (`ProcessActionHandler`) was not modified.
 
 ---
 
 ## 3. Backend Changes (`com.etendoerp.metadata`)
 
-The metadata module is the only Java module touched in this branch. Diff vs `epic/ETP-3931`:
+### 3.1 [MenuBuilder.java](../../../../erp/modules/com.etendoerp.metadata/src/com/etendoerp/metadata/builders/MenuBuilder.java)
 
-### 3.1 [src/com/etendoerp/metadata/builders/MenuBuilder.java](../../../../erp/modules/com.etendoerp.metadata/src/com/etendoerp/metadata/builders/MenuBuilder.java)
-
-Added a private helper `addWindowType(JSONObject json, Window window)` and a call site inside the window-menu emission path. When the menu entry has an associated `AD_WINDOW`, the JSON now includes:
+Added a private helper `addWindowType(JSONObject json, Window window)` called inside the window-menu emission path. When the menu entry has an associated `AD_WINDOW`, the JSON includes:
 
 ```json
 { "windowType": "OBUIAPP_PickAndExecute" }
 ```
 
-The field is optional: if `Window.getWindowType()` is null the key is not emitted, matching the convention already used for `processId` and `formId`. The constant `JSON_WINDOW_TYPE_KEY = "windowType"` lives in [Constants.java](../../../../erp/modules/com.etendoerp.metadata/src/com/etendoerp/metadata/utils/Constants.java) to avoid magic strings.
+The constant `JSON_WINDOW_TYPE_KEY = "windowType"` lives in `Constants.java`. The key is absent when `Window.getWindowType()` is null.
 
-**Why**: the sidebar needs to discriminate a P&E menu entry from a regular window entry before the modal is opened, so it can route the click to `ProcessDefinitionModal` instead of opening a normal window screen.
+**Why**: the sidebar must discriminate a P&E menu entry from a regular window entry *before* the modal is opened, so it can route the click to `ProcessDefinitionModal` instead of opening a normal window screen.
 
-### 3.2 ProcessDefinitionBuilder — no code change, contract test added
+### 3.2 ProcessDefinitionBuilder — contract locked by tests
 
-`ProcessDefinitionBuilder.toJSON()` already invokes the converter with `DataResolvingMode.FULL_TRANSLATABLE`, which serializes every property of `OBUIAPP_PROCESS`, including `uIPattern` and `isMultiRecord`. No Java code change was required.
+`ProcessDefinitionBuilder.toJSON()` already invokes the converter with `DataResolvingMode.FULL_TRANSLATABLE`, which serializes every column of `OBUIAPP_PROCESS`, including `uIPattern` and `isMultiRecord`. No Java code change was needed. A new test file [ProcessDefinitionBuilderPickAndExecuteTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/ProcessDefinitionBuilderPickAndExecuteTest.java) locks the contract.
 
-A new test file [ProcessDefinitionBuilderPickAndExecuteTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/ProcessDefinitionBuilderPickAndExecuteTest.java) was added to lock in this contract:
+### 3.3 ParameterBuilder — `fieldGroupCollapsed`
 
-| Test method | Asserts |
-|---|---|
-| `testPickAndExecuteMultiRecord` | P&E process with `isMultiRecord = true` round-trips through JSON |
-| `testPickAndExecuteSingleRecord` | P&E process with `isMultiRecord = false` round-trips through JSON |
-| `testAbsentUiPatternIsNotInjected` | The builder never injects `uIPattern` itself; absence is preserved |
-| `testConverterCalledWithFullTranslatableMode` | The data-resolving mode is `FULL_TRANSLATABLE` |
+[ParameterBuilder.java](../../../../erp/modules/com.etendoerp.metadata/src/com/etendoerp/metadata/builders/ParameterBuilder.java) already serializes parameters via `FULL_TRANSLATABLE`. A dedicated `addFieldGroupCollapsed` method was added to emit `fieldGroupCollapsed: true/false` when a parameter belongs to a `FieldGroup` whose `AD_FieldGroup.IsCollapsed` is `true`. The client reads this flag to decide whether to start the collapsible section expanded or collapsed.
 
-### 3.3 Existing builders unchanged
+### 3.4 Existing builders unchanged
 
-`TabBuilder`, `WindowBuilder` and `ParameterBuilder` already serialize:
-
-- `tab.hqlfilterclause` (from `OBUIAPP_TAB.HQL_FILTERCLAUSE`)
-- `tab.sQLWhereClause` (from `AD_TAB.WhereClause`)
-- `tab.obuiappSelectionType` (from `OBUIAPP_TAB.OBUIAPP_SELECTIONTYPE`)
-- `tab.filterName` (from `OBUIAPP_TAB.FILTERNAME`)
-- `window.windowType` (from `AD_WINDOW.WindowType`)
-
-via `DataResolvingMode.FULL_TRANSLATABLE`. New test coverage was added in [MenuBuilderTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/MenuBuilderTest.java) and [WindowBuilderTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/WindowBuilderTest.java) to verify that these fields are present in the API response.
+`TabBuilder` and `WindowBuilder` already serialize `hqlfilterclause`, `sQLWhereClause`, `obuiappSelectionType`, `filterName`, `obuiappCanAdd`, `obuiappCanDelete`, `obuiappShowSelect`, and `windowType` via `FULL_TRANSLATABLE`. New tests in `MenuBuilderTest.java` and `WindowBuilderTest.java` verify these fields are present in the API response.
 
 ---
 
 ## 4. API Client Type Surface
 
-[packages/api-client/src/api/types.ts](../../../packages/api-client/src/api/types.ts) gained the following type members. These mirror the JSON fields now exposed by the metadata adapter:
+[packages/api-client/src/api/types.ts](../../../packages/api-client/src/api/types.ts) was extended to mirror the JSON fields exposed by the metadata adapter:
 
 | Type | New field | Source column | Purpose |
 |---|---|---|---|
 | `UIPattern` (enum) | `PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute"` | — | Discriminator constant |
 | `WindowType` (enum) | `PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute"` | `AD_WINDOW.WindowType` | Menu-level discriminator |
-| `Menu` | `windowType?: string` | `AD_WINDOW.WindowType` | Surfaces window classification at the menu API |
-| `Tab` | `filterName?: string` | `OBUIAPP_TAB.FILTERNAME` | Human-readable implicit-filter label (not currently rendered) |
+| `Menu` | `windowType?: string` | `AD_WINDOW.WindowType` | Surfaces window classification at menu API |
+| `Tab` | `filterName?: string` | `OBUIAPP_TAB.FILTERNAME` | Human-readable implicit-filter label |
 | `Tab` | `obuiappSelectionType?: "M" \| "S" \| "N" \| null` | `OBUIAPP_TAB.OBUIAPP_SELECTIONTYPE` | Grid row-selection UI mode |
+| `Tab` | `obuiappCanAdd?: boolean` | `OBUIAPP_TAB.OBUIAPP_CANADD` | Whether the "+" button is visible for this tab |
+| `Tab` | `obuiappCanDelete?: boolean` | `OBUIAPP_TAB.OBUIAPP_CANDELETE` | Whether the trash icon is visible per row |
+| `Tab` | `obuiappShowSelect?: boolean` | `OBUIAPP_TAB.OBUIAPP_SHOWSELECT` | Whether the row-selection checkbox column is rendered |
 | `ProcessDefinition` | `uIPattern?: UIPattern \| string` | `OBUIAPP_PROCESS.UIPattern` | P&E discriminator at the process level |
 | `ProcessDefinition` | `isMultiRecord?: boolean \| "Y" \| "N"` | `OBUIAPP_PROCESS.IsMultiRecord` | Execution-mode flag (legacy string shape supported) |
-
-`Tab.hqlfilterclause` and `Tab.sQLWhereClause` were already on the `Tab` type before this branch.
+| `ProcessParameter` | `fieldGroup?: string` | `OBUIAPP_PARAMETER.AD_FIELDGROUP_ID` | FieldGroup id for section grouping |
+| `ProcessParameter` | `fieldGroup$_identifier?: string` | — (identifier via conv) | Human-readable FieldGroup name |
+| `ProcessParameter` | `fieldGroupCollapsed?: boolean` | `AD_FIELDGROUP.IsCollapsed` | Whether section starts collapsed |
 
 ---
 
 ## 5. Menu Dispatch
 
-A new module [utils/menu/menuItemDispatch.ts](../../../packages/MainUI/utils/menu/menuItemDispatch.ts) encapsulates the decision tree that the sidebar applies when the user clicks a menu entry. It is pure (no React, no hooks) so it can be tested exhaustively.
+### 5.1 `menuItemDispatch.ts`
 
-### 5.1 Public surface
+[utils/menu/menuItemDispatch.ts](../../../packages/MainUI/utils/menu/menuItemDispatch.ts) is the pure function that maps a sidebar menu entry to a typed intent:
 
 ```ts
 type MenuClickIntent =
@@ -150,30 +146,27 @@ type MenuClickIntent =
   | { kind: "none" };
 
 resolveMenuClickIntent(item: ExtendedMenu): MenuClickIntent;
-isPickAndExecuteMenuItem(item: ExtendedMenu): boolean;
-isProcessDefinitionMenuItem(item: ExtendedMenu): boolean;
-isReportAndProcessMenuItem(item: ExtendedMenu): boolean;
-mapMenuToProcessDefinitionButton(item: ExtendedMenu): ProcessDefinitionButton | null;
 ```
 
-The decision precedence is:
-
-1. **P&E** wins first — if `item.windowType === "OBUIAPP_PickAndExecute"` (even if `item.type === "ProcessDefinition"`).
+Decision precedence:
+1. **P&E** wins first — `item.windowType === "OBUIAPP_PickAndExecute"` even if `item.type === "ProcessDefinition"`.
 2. **Process Definition** — `item.type === "ProcessDefinition" && item.id`.
-3. **Report and Process** (legacy `Process` type) — both share the same modal; the dispatched intent carries `processType` so the modal knows which payload shape to send.
-4. Anything else returns `{ kind: "none" }`, letting `Sidebar.tsx` fall through to its existing window/iframe routing.
+3. **Report and Process** (legacy `Process` type) — both share the modal; intent carries `processType` so the modal selects the right payload shape.
+4. Everything else returns `{ kind: "none" }`.
 
-Type constants for `MENU_ITEM_TYPES.PROCESS_DEFINITION`, `MENU_ITEM_TYPES.PROCESS`, etc. live in [menuItemTypes.ts](../../../packages/MainUI/utils/menu/menuItemTypes.ts) so the dispatch logic compares against named constants rather than magic strings.
+### 5.2 `menuItemTypes.ts`
 
-### 5.2 Sidebar integration
+Type constants (`MENU_ITEM_TYPES.PROCESS_DEFINITION`, `MENU_ITEM_TYPES.PROCESS`, etc.) live here so the dispatch logic compares against named constants rather than magic strings.
 
-[components/Sidebar.tsx](../../../packages/MainUI/components/Sidebar.tsx) was refactored to delegate the click logic to `resolveMenuClickIntent` and to centralize modal opening behind a single `openProcessModal` callback. The P&E intent and the Process Definition intent both end up calling `openProcessModal`, the difference being the `processType` carried in the intent (`PROCESS_DEFINITION` for both P&E and process definitions; `REPORT_AND_PROCESS` for the legacy Report and Process type).
+### 5.3 Sidebar integration
+
+[Sidebar.tsx](../../../packages/MainUI/components/Sidebar.tsx) was refactored to call `resolveMenuClickIntent` and centralize modal opening behind a single `openProcessModal` callback. Both P&E and Process Definition intents call `openProcessModal`; the difference is which `processType` is carried in the intent.
 
 ---
 
 ## 6. P&E Discrimination & Mode Predicates
 
-[utils/processes/definition/pickAndExecute.ts](../../../packages/MainUI/utils/processes/definition/pickAndExecute.ts) hosts three pure predicates used across the modal, the grid, and the menu layer.
+[utils/processes/definition/pickAndExecute.ts](../../../packages/MainUI/utils/processes/definition/pickAndExecute.ts) hosts three pure predicates:
 
 ### 6.1 `isPickAndExecute(process)`
 
@@ -187,280 +180,414 @@ export const isPickAndExecute = (process: ProcessDefinition | null | undefined):
 };
 ```
 
-Primary discriminator is `uIPattern`. The fallback (checking for a Window Reference parameter via `FIELD_REFERENCE_CODES.WINDOW.id`) covers legacy seeds where `OBUIAPP_PROCESS.UIPattern` is not populated but the process clearly behaves as P&E — e.g. some core processes still carry the older `uIPattern = "A"` while declaring a Window Reference parameter.
+Primary discriminator is `uIPattern`. The fallback (checking for a Window Reference parameter via `FIELD_REFERENCE_CODES.WINDOW.id`) covers legacy seeds where `OBUIAPP_PROCESS.UIPattern` is not populated but the process has a Window Reference parameter.
 
 ### 6.2 `allowsMultipleRecords(process)`
 
-```ts
-export const allowsMultipleRecords = (process: ProcessDefinition | null | undefined): boolean => {
-  if (!process) return true;
-  const flag = process.isMultiRecord;
-  if (typeof flag === "boolean") return flag;
-  if (typeof flag === "string") return flag === "Y";
-  return true;
-};
-```
-
-Normalizes the legacy `"Y"` / `"N"` shape into a boolean. Default is `true` to match Etendo Classic.
-
-> **Important semantic distinction.** This flag controls **execution behaviour** — whether the handler ultimately receives one record ID or many. It does **not** control grid selection mode.
+Normalizes the legacy `"Y"` / `"N"` shape into a boolean. Default is `true` to match Etendo Classic. This flag controls **execution behaviour** — whether the handler receives one record ID or many. It does not control grid selection mode.
 
 ### 6.3 `tabAllowsMultipleSelection(tab)`
 
-```ts
-export const tabAllowsMultipleSelection = (tab: Tab | null | undefined): boolean => {
-  const sel = tab?.obuiappSelectionType;
-  return sel !== "S" && sel !== "N";
-};
-```
-
-Drives the grid's row-selection UI mode. Mapping mirrors the classic UI:
+Controls the grid's row-selection UI mode by mapping `obuiappSelectionType`:
 
 | `obuiappSelectionType` | Grid behaviour |
 |---|---|
 | `"M"` or absent | Multi-row (checkboxes) |
 | `"S"` | Single-row |
-| `"N"` | No selection (treated as single here) |
-
-Tests live in [__tests__/pickAndExecute.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/pickAndExecute.test.ts).
+| `"N"` | No selection (treated as single) |
 
 ---
 
-## 7. Modal Orchestration (`ProcessDefinitionModal`)
+## 7. Parameter Field Groups & Collapsible Sections
 
-[components/ProcessModal/ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx) is the dialog that hosts the P&E experience. The orchestration responsibilities split into:
+This feature (commits `b525e6d6`, `9e3f1dda`) mirrors classic UI behavior where process parameters can be organized under named `AD_FieldGroup` sections.
 
-### 7.1 Grid selection model
+### 7.1 `groupProcessParametersByFieldGroup`
 
-The modal maintains a single state shape keyed by parameter name:
+[utils/groupProcessParametersByFieldGroup.ts](../../../packages/MainUI/components/ProcessModal/utils/groupProcessParametersByFieldGroup.ts) is a pure function that takes the sorted list of visible parameters and returns a `ProcessParameterGroup[]`:
 
 ```ts
-export type GridSelectionStructure = {
-  [parameterName: string]: {
-    _selection: EntityData[];   // rows currently checked / picked
-    _allRows: EntityData[];     // all rows visible in the grid (used by payscript / auto-select)
-  };
-};
-```
-
-Single-grid P&E processes (≈ 28 of the 32 catalog windows surveyed) populate one key. Multi-grid P&E (Add Payment, Modify Payment Plan, etc.) populates one key per grid. Each grid updates only its own slot.
-
-A `GridSelectionUpdater` type accepts either a replacement object or a functional updater for finer-grained updates.
-
-### 7.2 Display logic for grid parameters
-
-`evaluateWindowReferenceDisplay(options)` evaluates a parameter's `displayLogic` expression against the current modal values, so a Window Reference grid can appear/disappear dynamically based on other parameter inputs. It re-evaluates on every render against the latest values; results are stable enough not to require memoization.
-
-### 7.3 Auto-select from `onLoad`
-
-A JavaScript hook attached to the process (`eTMETAOnload` column on `OBUIAPP_PROCESS`) may return:
-
-```js
-{
-  autoSelectConfig: {
-    table: "order_invoice",
-    logic: { field: "salesOrderNo", operator: "=", valueFromContext: "documentNo" },
-  }
+export interface ProcessParameterGroup {
+  id: string;          // FieldGroup id, or "_main" sentinel for the default bucket
+  identifier: string;  // FieldGroup display name
+  sequenceNumber: number;
+  fieldGroupCollapsed?: boolean;  // from AD_FieldGroup.IsCollapsed
+  parameters: ProcessParameter[];
 }
 ```
 
-When present, the modal pre-selects the matching rows once the grid has loaded. Two shapes are accepted:
+**Sticky-inheritance rule**: parameters are walked in sequence-number order. When a parameter has an explicit `fieldGroup`, it opens that section as the current group. Subsequent parameters with a null `fieldGroup` are appended to that same section — this is how the classic SmartClient renderer works sequentially through the parameter list.
 
-- **Predicate-based**: `{ field, operator, value | valueFromContext }`. The modal pulls `value` directly or resolves `valueFromContext` from the parent window's context.
-- **Explicit ID list**: `{ ids: ["id1", "id2", ...] }`.
+Parameters appearing before any explicit FieldGroup are placed in the `DEFAULT_PROCESS_PARAM_GROUP_ID = "_main"` bucket, which is rendered without a collapsible wrapper (as a flat grid directly in the modal body).
 
-The filter expressions returned from `onLoad` are also stored in a ref (`onLoadFilterExpressionsRef`) and re-applied to the grid's filter state so the user sees the same filtered slice the auto-select operated on.
+### 7.2 `CollapsibleSection`
 
-### 7.4 Execute button gating
+[components/CollapsibleSection.tsx](../../../packages/MainUI/components/ProcessModal/components/CollapsibleSection.tsx) is an uncontrolled component: its `initiallyExpanded` prop initializes local state, but after mount it responds only to user clicks.
 
-The Execute button is `disabled` when any of the following hold:
+- `initiallyExpanded = true` (default) mirrors `AD_FieldGroup.IsCollapsed = false` or absent.
+- `initiallyExpanded = false` mirrors `AD_FieldGroup.IsCollapsed = true`.
 
-1. Any selected row in any grid has an empty mandatory cell (`hasInvalidSelection` from `useGridRowValidation`).
-2. The grid for a P&E process required to have a non-empty selection has zero selected rows.
-3. The user has already triggered execution and the response is in flight.
+The component was extracted from `ProcessDefinitionModal.tsx` into its own file so it can be unit-tested independently and reused.
 
-The first condition is the new contribution of this branch (see Section 9).
+### 7.3 Rendering pipeline in `ProcessDefinitionModal`
+
+The `renderParameters()` function:
+1. Filters parameters through `isParameterRenderable` (active, bulk-completion logic, display-logic for Window References).
+2. Sorts by `sequenceNumber`.
+3. Groups with `groupProcessParametersByFieldGroup`.
+4. For each group, calls `renderGroup`, which splits members into `scalars` (non–Window Reference) and `windowRefs`, then renders:
+   - Scalars in a 3-column grid via `renderScalarParameter` → `ProcessParameterSelector`.
+   - Window References stacked vertically via `renderWindowReferenceParameter` → `WindowReferenceGrid`.
+5. The default group (`_main`) is rendered as a plain `<div>`; named groups are wrapped in `CollapsibleSection`.
 
 ---
 
 ## 8. Window Reference Grid
 
-[components/ProcessModal/WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) renders the embedded grid for a single Window Reference parameter. It is built on top of Material React Table and `useDatasource`.
+[components/ProcessModal/WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) renders the embedded grid for a single Window Reference parameter. It is built on top of Material React Table (MRT) and `useDatasource`. The component is large (~2,300 lines) and mixes data fetching, column building, row editing, and UI rendering; the key sub-systems are described below.
 
-### 8.1 Selection modes — multi-select and single-select clamping
+### 8.1 Fixed paper height
 
-The component reads `tabAllowsMultipleSelection(stableWindowReferenceTab)` and toggles the MRT `enableMultiRowSelection` flag. When multi-selection is disabled (or when the process is `!allowsMultipleRecords`), the helper `clampToSingleRecord(next, prev)` keeps only the most recently toggled row even if MRT's internal selection model temporarily holds more than one. This guarantees CT-AD-2: under single-record P&E, clicking row B while A is selected results in only B being selected, regardless of timing.
+The outer MRT paper is fixed at `TABLE_PAPER_HEIGHT = 350px`. Previously, height was calculated dynamically from row count using per-row heights, which caused layout collapse when placed inside a flex container. The fixed height avoids this — the container's `flex-1` fills remaining space below the toolbar.
 
-The helper is exported for unit testing:
+### 8.2 Selection modes
 
-```ts
-export const clampToSingleRecord = (
-  next: MRT_RowSelectionState,
-  prev: MRT_RowSelectionState
-): MRT_RowSelectionState;
-```
+The component reads `tabAllowsMultipleSelection(stableWindowReferenceTab)` and sets MRT's `enableMultiRowSelection`. When multi-selection is disabled (or `!allowsMultipleRecords`), `clampToSingleRecord(next, prev)` keeps only the most recently toggled row.
 
-Unit tests in [__tests__/ProcessDefinitionModal.singleSelect.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.singleSelect.test.ts) cover the seven edge cases (empty input, single-row input, freshly toggled row detection, fallback when all IDs already in `prev`, ignoring explicitly false rows, and reference stability).
+When `tab.obuiappShowSelect === false`, rows are visually inert (no click-to-toggle, no blue highlight). The grid still propagates every record as `_allRows` for the backend payload — selection here is purely cosmetic, as the datasource pre-fills `obSelected = true` for all rows.
 
-### 8.2 Mandatory cell validation
-
-Each grid contributes its `selectedRows` and `fields` to the shared `useGridRowValidation` hook in [hooks/useGridRowValidation.ts](../../../packages/MainUI/components/ProcessModal/hooks/useGridRowValidation.ts):
+### 8.3 Column visibility — `isFieldVisibleForContext`
 
 ```ts
-const { hasInvalidSelection, invalidCellsByRow } = useGridRowValidation({
-  grids: [
-    { selectedRows: orderInvoiceSelection, fields: orderInvoiceTab.fields },
-    { selectedRows: glItemsSelection,      fields: glItemsTab.fields },
-    { selectedRows: creditToUseSelection,  fields: creditToUseTab.fields },
-  ],
-});
+export function isFieldVisibleForContext(
+  field: any,
+  session: Record<string, unknown>,
+  context: Record<string, unknown>
+): boolean
 ```
 
-The hook collects mandatory + updatable + displayed fields per grid, then walks every selected row checking each mandatory field for emptiness. The "empty" predicate treats `null`, `undefined`, and whitespace-only strings as empty; `0` and `false` are valid. The result is a map of `rowId → set of empty hqlNames` for surfaceable feedback and a single `hasInvalidSelection` boolean for gating the Execute button.
+This exported pure function (commit `92c4c52f`) decides whether a grid column should render. It checks in order:
+1. `field.isActive === false` → hidden.
+2. `field.displayed === false` → hidden.
+3. `!field.showInGridView` → hidden.
+4. `field.displayLogicExpression` evaluated — if `false`, hidden.
+5. `field.gridDisplayLogicExpression` evaluated — if `false`, hidden.
 
-Cell-level validation runs at selection time (not at execute time), so the Execute button reflects the live state.
+Both expressions arrive **pre-rewritten from the backend**: `DynamicExpressionParser` (Java) expands session-variable placeholders like `@ACCT_DIMENSION_DISPLAY@` into JS that references `context['$Element_BP_APP_L']`-style keys. The `session` object from `useUserContext` carries those keys because `SessionBuilder` exposes them via `attributes`.
 
-### 8.3 Implicit filter button
+The `evaluateExpression` helper wraps `compileExpression` in a try/catch and **fails open** (returns `true`) on malformed expressions — keeping columns visible rather than silently hiding them on bad metadata.
 
-When the grid's underlying tab carries an implicit server-side filter, a dedicated funnel button is rendered in the top toolbar.
+The context passed to `isFieldVisibleForContext` is `{ ...user, ...session, ...recordValues }`. The `recordValues` slice lets expressions reference fields on the parent record (e.g. `@IsSOTrx@`).
 
-**Gating condition** ([WindowReferenceGrid.tsx:736-739](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx#L736-L739)):
+### 8.4 Cell rendering architecture — `GridCellRenderer` and `InteractiveGridCellRenderer`
+
+This was the most complex sub-system to get right. The challenge: MRT's `useColumns` hook installs a `Cell` function for each column (color tags, reference buttons, client-class links, etc.). That upstream `Cell` doesn't know about row selection, so it can't switch to an editor when the user picks a row.
+
+**Solution** (commit `50ade9fb`): when building `finalColumns`, preserve the upstream `Cell` under a new key `fallbackCell`, then unconditionally set `Cell = GridCellRenderer`.
+
+```
+useColumns result:
+  { ..., Cell: <upstream color/ref wrapper> }
+            ↓
+finalColumns override:
+  { ..., Cell: GridCellRenderer, fallbackCell: <upstream wrapper> }
+```
+
+`GridCellRenderer` (module-level, not inside the component) reads `row.getIsSelected()` and `row.original?._locallyAdded` and decides:
+
+```
+if (isSelected && !isLocallyAdded)  → StableGridCellEditorRenderer  (shows editor)
+else if (isDateColumn)              → <span> with formatted date
+else if (fallbackCell)              → fallbackCell(props)  (upstream Cell)
+else                                → InteractiveGridCellRenderer  (plain text)
+```
+
+`InteractiveGridCellRenderer` (for the plain-text fallback) also checks `!isFieldReadOnly` before the editor branch.
+
+**Why `_locallyAdded`?** When `handleCreateRow` confirms a new row, it calls `setRowSelection((prev) => ({ ...prev, [id]: true }))` — so newly confirmed rows are immediately selected. Without the `_locallyAdded` guard, those rows would render as editors (breaking the "confirmed rows are read-only" requirement). Setting `_locallyAdded: true` on `row.original` when the row is added via `addRecordLocally` provides a stable, per-row flag that module-level renderers can read without needing component state from closures.
+
+The `parameterDBColumnName` column-def key (the parent P&E parameter's DB column name, same for every column in the grid) is distinct from `dbColumnName` (the field's own DB column name). Both are stored on the column-def to avoid key collision.
+
+### 8.5 `StableGridCellEditorRenderer` and `WindowReferenceGridContext`
+
+Because `GridCellRenderer` is defined at module level (outside the component), it cannot access component state via closure. Instead, state is funneled through `WindowReferenceGridContext`:
 
 ```ts
-const initialIsFilterApplied = useMemo(
-  () => !!(stableWindowReferenceTab?.hqlfilterclause || stableWindowReferenceTab?.sQLWhereClause),
-  [stableWindowReferenceTab]
-);
+interface WindowReferenceGridContextValue {
+  effectiveRecordValuesRef: MutableRefObject<any>;
+  parametersRef: MutableRefObject<any>;
+  fieldsRef: MutableRefObject<any[]>;
+  handleRecordChangeRef: MutableRefObject<((row, changes) => void) | null>;
+  validationsRef: MutableRefObject<any[]>;
+  validations: any[];
+  session: any;
+  tabId: string | undefined;
+  tab?: Tab | null;
+  fieldReadOnlyMap: Record<string, boolean>;
+  shouldSendOrg: boolean;
+  createRowErrors: Set<string>;
+  clearCellError: (columnName: string) => void;
+}
 ```
 
-The button is rendered only when `initialIsFilterApplied` is true — i.e., when the tab actually has something to disable. Tabs with neither field populated never show the button (this differs from classic, which shows a non-functional funnel everywhere).
+`Ref`-based fields (`effectiveRecordValuesRef`, `fieldsRef`, `handleRecordChangeRef`) are used for dynamic data that changes frequently — storing them as refs avoids triggering context re-renders on every keystroke. The `validations` array is stored both as a ref (for reads inside event handlers) and as plain state (to trigger re-renders when validation changes).
 
-**State machine** for the single button:
+`StableGridCellEditorRenderer` consumes the context and delegates to `GridCellEditor`, forwarding:
+- `cell`, `row`, `column` from MRT.
+- `forceError` — true when the cell's `columnName` appears in `createRowErrors` (mandatory-empty validation for the active create-row).
+- `onCellEdit` — set to `clearCellError` for creating rows, so the red border disappears as the user types.
 
-| State | `isImplicitFilterApplied` | `effectiveImplicitFilter` | Icon | Color | Clickable | Resulting request param |
-|---|---|---|---|---|---|---|
-| Initial (filter active) | `undefined` | `true` (from `initialIsFilterApplied`) | `FilterAlt` | `--color-etendo-main` | yes | `isImplicitFilterApplied=true` |
-| User clicked once | `false` | `false` | `FilterAltOff` | grey | **no** (disabled) | `isImplicitFilterApplied=false` |
+### 8.6 `GridCellEditor` — inline cell editor
 
-Once disabled, the filter cannot be re-enabled from the UI — matching the classic UX (where the funnel is a one-shot toggle within a modal session). The button is rendered with a `<span>` wrapper because MUI requires it for `Tooltip` to receive mouse events over a disabled `IconButton`.
+[GridCellEditor.tsx](../../../packages/MainUI/components/ProcessModal/GridCellEditor.tsx) resolves the matching field definition from `fieldsRef`, computes `fieldType` via `getFieldReference`, assembles `handleChange` (which calls `onRecordChange` to persist into `localRecords`), and renders:
 
-The `MRT_ToggleFiltersButton` (column-filter visibility toggle) sits to the right of the implicit-filter button and operates independently — its `showColumnFilters` is in MRT `initialState` (not `state`) so MRT can toggle it internally.
+```
+<div className="flex w-full items-center gap-1">
+  <div className="flex-grow min-w-0">
+    <CellEditorFactory ... />
+  </div>
+  {showSearchButton && <IconButton onClick={() => setIsSearchModalOpen(true)} />}
+</div>
+```
 
-Source: [WindowReferenceGrid.tsx:2214-2229](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx#L2214-L2229).
+**Search button** (commit `a6730a76`): shown when `matchingField.selector?.hasTableRelated === true && !isFieldReadOnly`. The same condition used by `GenericSelector` in form mode. When the user clicks it, `SelectorModal` opens with the field's selector definition, current context, and the tab from `WindowReferenceGridContext`. On selection, `handleModalSelect` resolves the real ID via `selector.valueField`, builds an option with the displayable label via `selector.displayField`, and routes it through the same `handleChange` used by the dropdown editor — unifying `$_identifier` propagation and `onRecordChange` notification across both paths.
 
-### 8.4 Datasource integration
+**`BooleanCellEditor`**: was refactored to use the same `onChange(value, option)` signature as other editors so it integrates cleanly with `handleChange` in `GridCellEditor`.
 
-`useDatasource` has a default parameter `isImplicitFilterApplied = false`. The grid passes the value explicitly so the controlled state wins over the default:
+### 8.7 Local-row grid — Add/Delete row (the GL Items pattern)
+
+This sub-system (commit `08c6b1e0`) enables grids whose tabs have `obuiappCanAdd = true` and/or `obuiappCanDelete = true` to work entirely client-side, without backend round-trips.
+
+**Tab capability detection** (computed from tab metadata, not hardcoded):
 
 ```ts
-} = useDatasource({
-  entity: String(entityName),
-  params: datasourceOptions,
-  columns: rawColumns,
-  activeColumnFilters: appliedTableFilters,
-  skip: shouldSkipFetch,
-  isImplicitFilterApplied: isImplicitFilterApplied ?? true,
-});
+const isReadOnlyTab = windowReferenceTab?.uIPattern === UIPattern.READ_ONLY;
+const canAdd    = windowReferenceTab?.obuiappCanAdd === true    && !isReadOnlyTab;
+const canDelete = windowReferenceTab?.obuiappCanDelete === true && !isReadOnlyTab;
+const enableRowSelectionFromMetadata = windowReferenceTab?.obuiappShowSelect !== false;
 ```
 
-The fallback `?? true` matches the classic default ("filter on" until the user disables it).
+**"+" button**: rendered by `GridTopToolbar` when `canAdd`. Clicking it calls `handleAddRow`, which pre-fills `0` for every mandatory numeric field (see §8.8) and calls `table.setCreatingRow(initialRow)` to open MRT's creating-row scaffold.
 
-### 8.5 Multi-grid pattern (Add Payment)
+**Creating-row scaffold**: MRT shows an inline row with an editor in every cell. When the user fills the fields and clicks the save icon (or MRT's own Save/Cancel chrome), `onCreatingRowSave` fires.
 
-Three Window Reference grids (`order_invoice`, `glItems`, `credit_to_use`) are rendered stacked inside a single modal. Each grid:
+**`handleCreateRow`** (called by `onCreatingRowSave`):
+1. Merges `values` from MRT with `row.original` (inline edits from custom cell editors).
+2. Applies `applyNumericMandatoryDefaults` — pre-fills `0` for any mandatory numeric field not yet filled.
+3. Calls `collectMissingMandatory` — finds mandatory fields still empty.
+4. If any missing: sets `createRowErrors` (a `Set<string>` of `columnName`s) and **aborts** — the creating-row stays open with red cells.
+5. If none missing: calls `buildLocalGridRecord` to generate a UUID-based id, calls `addRecordLocally({ ...record, _locallyAdded: true })`, selects the new row via `setRowSelection`, and closes the creating-row with `table.setCreatingRow(null)`.
 
-- Has its own `WindowReferenceGrid` instance.
-- Maintains its own selection slot in `GridSelectionStructure`.
-- Contributes its own entry to `useGridRowValidation` (so an empty mandatory cell in grid 2 disables Execute even if grids 1 and 3 are clean).
-- Optionally fires a JS `onGridLoadFunction` hook from the parameter definition (used by APRM to compute outstanding amounts and payment distribution).
+The `_locallyAdded: true` flag is critical — it tells `GridCellRenderer` and `InteractiveGridCellRenderer` that this row is confirmed and should render as read-only even though it is selected.
 
-Isolation tests live in [__tests__/ProcessDefinitionModal.multiGrid.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.multiGrid.test.ts).
+**Trash icon**: rendered by `renderRowActions` when `canDelete`. For the creating-row scaffold (where `isCreating || !row.original?.id`), `MRT_EditActionButtons` are rendered instead so the user can save or cancel the new row. For confirmed rows, the trash icon calls `handleDeleteRow`.
+
+**`handleDeleteRow`**:
+1. Removes the record from `useDatasource`'s local buffer via `removeRecordLocally`.
+2. Removes it from `localRecords` state.
+3. Removes it from `persistentSelectionRef` and `rowSelection`.
+4. Removes it from the parent's `GridSelectionStructure` (both `_selection` and `_allRows`).
+
+**Why no backend save**: these grids are a batch input surface. All rows are held in memory and delivered at once when the surrounding process is executed. The pattern matches classic Openbravo P&E behavior for GL Items in Add Payment.
+
+**Action column sizing**: `displayColumnDefOptions["mrt-row-actions"]` fixes the column at `100px` non-resizable, so the action column doesn't grow or shrink with content.
+
+### 8.8 Mandatory validation for creating rows
+
+Two utilities in [utils/validateMandatoryFields.ts](../../../packages/MainUI/components/ProcessModal/utils/validateMandatoryFields.ts):
+
+**`collectMissingMandatory(fields, values): Set<string>`** — returns the set of `columnName`s for mandatory fields with no filled value. Checks all four key shapes (`columnName`, `hqlName`, `name`, `_key`) because MRT, custom cell editors, and the field definition each use different naming transforms. The empty predicate (`isEmptyValue`) treats `null`, `undefined`, and empty string as empty; `0` and `false` are valid.
+
+**`applyNumericMandatoryDefaults(fields, values): Record<string, unknown>`** — returns a copy of `values` with `0` filled for every mandatory field whose `type` is `FieldType.NUMBER` or `FieldType.QUANTITY` and that is currently empty. This mirrors classic UI behavior where the unused side of mutually-exclusive amount fields (e.g. `received_in` / `paid_out`) stays at `0` without forcing the user to type it.
+
+Both functions check all key shapes, so their lookups land regardless of which naming transform the value was written under.
+
+**`createRowErrors` state and `clearCellError`** — when `handleCreateRow` aborts due to missing mandatory fields, `setCreateRowErrors(missing)` fires. This bubbles into `WindowReferenceGridContext`, where `StableGridCellEditorRenderer` reads it via `createRowErrors.has(colDef.columnName)` to set `forceError = true` on the cell. When the user edits the cell, `onCellEdit = clearCellError` is called, removing the column from the error set. On `onCreatingRowCancel`, `setCreateRowErrors(new Set())` clears all errors.
+
+### 8.9 Default values for numeric fields on row creation
+
+Before opening the creating-row scaffold (commit `9e498891`), `handleAddRow` in `GridTopToolbar` walks `visibleFieldsFromTab` and pre-fills `0` for every mandatory field whose `type` is `FieldType.NUMBER` or `FieldType.QUANTITY`:
+
+```ts
+const handleAddRow = () => {
+  const initialValues: Record<string, unknown> = {};
+  for (const field of visibleFieldsFromTab) {
+    if (field.isMandatory && (field.type === FieldType.NUMBER || field.type === FieldType.QUANTITY)) {
+      const keys = [field.columnName, field.hqlName, field.name, field._key].filter(Boolean);
+      for (const k of keys) initialValues[k] = 0;
+    }
+  }
+  const initialRow = Object.keys(initialValues).length > 0
+    ? createRow(table, initialValues as EntityData)
+    : undefined;
+  table.setCreatingRow(initialRow ?? true);
+};
+```
+
+`visibleFieldsFromTab` is passed from `WindowReferenceGrid` into `GridTopToolbar` as a prop, since the toolbar doesn't own the tab data. The `createRow` helper from MRT constructs a fully initialized row with the given values so the cells show `0` immediately when the scaffold opens.
+
+**Why `visibleFieldsFromTab`?** The field type resolution (`getFieldReference(field.column?.reference)`) requires the full field definition with the `column.reference` chain, which is only available after `parseColumns` runs. Passing already-resolved fields avoids re-running that logic inside the toolbar.
+
+### 8.10 `generateLocalRecordId` / `buildLocalGridRecord`
+
+[utils/generateLocalRecordId.ts](../../../packages/MainUI/components/ProcessModal/utils/generateLocalRecordId.ts):
+
+- `generateLocalRecordId()`: uses `crypto.randomUUID()` when available; falls back to a Math.random-based v4 UUID for environments without crypto. Output is uppercased and dash-stripped to match the id shape expected by `useDatasource`.
+- `buildLocalGridRecord(values, rowOriginal)`: merges MRT-tracked values with inline edits from `row.original` (custom cell editors write directly into `row.original`), attaches the generated id, and returns both the id and the merged record separately so callers can use the id for selection without re-reading the record.
+
+### 8.11 Implicit filter button
+
+**Gating**: the button is rendered only when `stableWindowReferenceTab?.hqlfilterclause || stableWindowReferenceTab?.sQLWhereClause` — tabs without an implicit filter never show it (unlike classic, which shows a non-functional funnel everywhere).
+
+**State machine** (one-shot toggle, cannot be re-enabled in the same session):
+
+| State | `isImplicitFilterApplied` | Icon | Clickable |
+|---|---|---|---|
+| Initial | `undefined` (treated as `true`) | `FilterAlt` (colored) | yes |
+| After click | `false` | `FilterAltOff` (grey) | **no** (disabled) |
+
+The `<span>` wrapper around the disabled `IconButton` is required for MUI's `Tooltip` to receive pointer events over a disabled element.
+
+**Datasource integration**: the grid passes `isImplicitFilterApplied ?? true` to `useDatasource`, so the default before the user has interacted is "filter on."
+
+### 8.12 Datasource integration details
+
+`useDatasource` is called with:
+- `entity`: the tab's `entityName`.
+- `params`: built by `buildDatasourceOptions` from the process context, parent record values, defaults, and current form values.
+- `columns`: `rawColumns` (Column[] from the tab's metadata).
+- `activeColumnFilters`: `appliedTableFilters` (the column filters the user has explicitly applied).
+- `skip`: `shouldSkipFetch` (true when essential parameters are missing or the tab/entity is not resolved).
+- `isImplicitFilterApplied`: controlled value, falling back to `true`.
+
+The grid subscribes to `records`, `hasMoreRecords`, `fetchMore`, `addRecordLocally`, and `removeRecordLocally` from the hook. `addRecordLocally` and `removeRecordLocally` operate on the datasource's local buffer without re-fetching.
+
+### 8.13 Sorting and criteria
+
+`getSortByString(sorting, rawColumns, hasCriteria)` converts MRT's `MRT_SortingState` to the Etendo sortBy query param:
+- Looks up each sort item against `column.filterFieldName`, `column.columnName`, or `column.header`.
+- Prefixes with `-` for descending.
+- Returns `-documentNo` as a default when there are criteria but no explicit sorting (matches classic default sort for filtered grids).
 
 ---
 
-## 9. Execution Pipeline
+## 9. Modal Orchestration (`ProcessDefinitionModal`)
 
-[components/ProcessModal/hooks/useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts) is the hook that turns "user clicked Execute" into a request, parses the response, and triggers side effects.
+### 9.1 Grid selection model
 
-### 9.1 Four execution paths
+```ts
+export type GridSelectionStructure = {
+  [parameterName: string]: {
+    _selection: EntityData[];  // rows currently picked
+    _allRows: EntityData[];    // all visible rows (used for auto-select / payscript)
+  };
+};
+```
 
-The hook picks one of four dispatch strategies based on the process metadata:
+Each `WindowReferenceGrid` updates only its own slot via `setGridSelection`. `_allRows` is populated in an `useEffect` when `records` are loaded; `_selection` is updated on row toggle.
 
-1. **Window Reference (P&E)** — `handleWindowReferenceExecute`. Builds the payload from `GridSelectionStructure`, appends any extra parameters from the modal form, and POSTs to the classic process servlet.
-2. **Direct Java handler** — `executeJavaProcess`. Used for process definitions with `javaClassName` but no Window Reference. Sends the parameter values as a flat map.
-3. **String function (legacy)** — for processes whose handler is a JavaScript function name. Looks up the function on the `OB` namespace and invokes it.
-4. **Report and Process** — emits a download request for the report PDF/XLS.
+### 9.2 Execute button gating
 
-The branch did not introduce new execution paths; it refactored the existing ones to consume the new response parser and flag helpers.
+Disabled when any of the following hold:
+1. `hasInvalidSelection` from `useGridRowValidation` — any selected row has an empty mandatory cell.
+2. Required P&E process has zero selected rows across all grids.
+3. Execution is in flight.
 
-### 9.2 Response parsing (`responseActionDispatcher`)
+### 9.3 Display logic for Window Reference parameters
 
-[utils/responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts) normalizes the `responseActions[]` array emitted by Etendo Classic handlers (`ResponseActionsBuilder.java` on the server) into a typed discriminated union.
+`evaluateWindowReferenceDisplay(options)` evaluates a parameter's `displayLogicExpression` against current modal values so a grid can appear/disappear dynamically (e.g. the Credit To Use grid in Add Payment is hidden when there is nothing to credit).
 
-Action keys recognized (constant `RESPONSE_ACTION_KEYS`):
+### 9.4 Auto-select from `onLoad`
 
-| Key | Discriminator | Effect handled downstream |
-|---|---|---|
-| `showMsgInProcessView` | `message` (channel: `processView`) | Renders message inside the modal |
-| `showMsgInView` | `message` (channel: `view`) | Toast in the parent window |
-| `openDirectTab` | `openDirectTab` | Navigate to a record (modal closes) |
-| `refreshGrid` | `refreshGrid` | Refresh parent window's main grid |
-| `refreshGridParameter` | `refreshGridParameter` | Refresh a specific P&E grid by name (used by retry flows) |
-| `setSelectorValueFromRecord` | `setSelectorValueFromRecord` | Patch a selector value in the parent form |
-| `smartclientSay` | `smartclientSay` | Generic alert |
+A JavaScript hook on the process (`eTMETAOnload`) may return:
+```js
+{ autoSelectConfig: { table: "order_invoice", logic: { field: "salesOrderNo", operator: "=", valueFromContext: "documentNo" } } }
+```
 
-`readResponseActions(data)` extracts the array from any of three nested paths used by Etendo Classic (top-level, `response.responseActions`, `response.data.responseActions`). `dispatchResponseActions(data)` returns the normalized list; unknown keys are silently dropped so adding a new server-side action is a single new case.
+Two shapes:
+- **Predicate-based**: `{ field, operator, value | valueFromContext }`.
+- **Explicit ID list**: `{ ids: ["id1", "id2"] }`.
 
-Two convenience helpers preserve legacy ergonomics:
-- `findFirstMessage(actions)` — backward compatible with the pre-existing message-extraction contract.
-- `findFirstOpenDirectTab(actions)` — preferred over the legacy SmartClient HTML parser when both representations are present.
+Filter expressions from `onLoad` are stored in `onLoadFilterExpressionsRef` and re-applied to the grid's filter state so the user sees the same slice.
 
-### 9.3 Response flags (`processResponseFlags`)
+---
 
-[utils/processResponseFlags.ts](../../../packages/MainUI/components/ProcessModal/utils/processResponseFlags.ts) reads two booleans from the response with the same triple-path lookup:
+## 10. Execution Pipeline (`useProcessExecution`)
 
-- `shouldRefreshAfterProcess(data)` — refresh the parent window unless the handler explicitly returns `refreshParent: false`. Default-true matches `BaseProcessActionHandler.doRefreshParent()` in classic.
-- `shouldRetryAfterProcess(data)` — keep the modal open only when the handler returns `retryExecution: true`.
+### 10.1 Four execution paths
 
-The two flags combine to produce four post-execute behaviours:
+1. **Window Reference (P&E)**: `handleWindowReferenceExecute`. Builds payload from `GridSelectionStructure`, appends extra parameters, POSTs to the classic process servlet.
+2. **Direct Java handler**: `executeJavaProcess`. Sends parameter values as a flat map.
+3. **String function (legacy)**: looks up the function on `OB` namespace and invokes it.
+4. **Report and Process**: emits a download request.
+
+### 10.2 Response parsing (`responseActionDispatcher`)
+
+[utils/responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts) normalizes the `responseActions[]` array from Etendo Classic handlers:
+
+| Key | Effect |
+|---|---|
+| `showMsgInProcessView` | Message inside the modal |
+| `showMsgInView` | Toast in parent window |
+| `openDirectTab` | Navigate to a record |
+| `refreshGrid` | Refresh parent window's grid |
+| `refreshGridParameter` | Refresh a specific P&E grid by name |
+| `setSelectorValueFromRecord` | Patch selector in parent form |
+| `smartclientSay` | Generic alert |
+
+`readResponseActions(data)` handles three nested paths used by Etendo Classic. Unknown keys are silently dropped.
+
+### 10.3 Response flags (`processResponseFlags`)
+
+[utils/processResponseFlags.ts](../../../packages/MainUI/components/ProcessModal/utils/processResponseFlags.ts):
+
+- `shouldRefreshAfterProcess(data)`: default `true` — refresh parent window unless handler returns `refreshParent: false`.
+- `shouldRetryAfterProcess(data)`: default `false` — keep modal open only when handler returns `retryExecution: true`.
 
 | `refreshParent` | `retryExecution` | Modal | Parent grid |
 |---|---|---|---|
-| `true` (default) | `false` (default) | Closes | Refreshes |
+| `true` | `false` | Closes | Refreshes |
 | `false` | `false` | Closes | No refresh |
 | `true` | `true` | Stays open | Refreshes |
 | `false` | `true` | Stays open | No refresh |
 
 ---
 
-## 10. Tests
+## 11. Tests
 
-Eight new test suites land in this branch, plus a contract test on the Java side. Total ≈ 1,200 lines of test code.
-
-### 10.1 Client (Jest + React Testing Library)
+### 11.1 Client (Jest + React Testing Library)
 
 | File | What it locks in |
 |---|---|
-| [utils/processes/definition/__tests__/pickAndExecute.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/pickAndExecute.test.ts) | All three predicates: explicit `uIPattern`, Window Reference fallback, legacy `"Y"`/`"N"` normalization, `obuiappSelectionType` mapping |
-| [utils/menu/__tests__/menuItemDispatch.test.ts](../../../packages/MainUI/utils/menu/__tests__/menuItemDispatch.test.ts) | Menu intent resolution decision tree, including P&E-over-ProcessDefinition precedence and fallback to legacy types |
-| [components/ProcessModal/utils/__tests__/responseActionDispatcher.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/responseActionDispatcher.test.ts) | All 7 action types normalized; nested-path extraction; unknown keys dropped |
-| [components/ProcessModal/utils/__tests__/processResponseFlags.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/processResponseFlags.test.ts) | Default-true / default-false semantics; precedence across the three nested paths |
-| [components/ProcessModal/hooks/__tests__/useGridRowValidation.test.ts](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useGridRowValidation.test.ts) | Single-grid and multi-grid validation, empty detection for `null` / `undefined` / whitespace, ignored fields (non-mandatory, non-updatable, hidden) |
-| [components/ProcessModal/hooks/__tests__/useProcessExecution.responseFlags.test.ts](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.responseFlags.test.ts) | Interaction between `retryExecution` and `refreshParent` in the execution hook |
-| [components/ProcessModal/__tests__/ProcessDefinitionModal.singleSelect.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.singleSelect.test.ts) | `clampToSingleRecord` invariants (CT-AD-2 spec) |
-| [components/ProcessModal/__tests__/ProcessDefinitionModal.multiGrid.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.multiGrid.test.ts) | Multi-grid selection isolation and aggregated validation (CT-AD-3 spec) |
+| [pickAndExecute.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/pickAndExecute.test.ts) | All three predicates; `uIPattern`, Window Reference fallback, `"Y"`/`"N"` normalization, `obuiappSelectionType` |
+| [menuItemDispatch.test.ts](../../../packages/MainUI/utils/menu/__tests__/menuItemDispatch.test.ts) | Intent decision tree; P&E-over-ProcessDefinition precedence; legacy type fallback |
+| [responseActionDispatcher.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/responseActionDispatcher.test.ts) | All 7 action types; nested-path extraction; unknown keys dropped |
+| [processResponseFlags.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/processResponseFlags.test.ts) | Default-true / default-false semantics; triple-path precedence |
+| [useGridRowValidation.test.ts](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useGridRowValidation.test.ts) | Single/multi-grid validation; empty detection; ignored fields |
+| [useProcessExecution.responseFlags.test.ts](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.responseFlags.test.ts) | `retryExecution` × `refreshParent` interaction |
+| [ProcessDefinitionModal.singleSelect.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.singleSelect.test.ts) | `clampToSingleRecord` invariants (CT-AD-2) |
+| [ProcessDefinitionModal.multiGrid.test.ts](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.multiGrid.test.ts) | Multi-grid selection isolation and aggregated validation (CT-AD-3) |
+| [groupProcessParametersByFieldGroup.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/groupProcessParametersByFieldGroup.test.ts) | Grouping rules, sticky inheritance, fieldGroupCollapsed propagation |
+| [CollapsibleSection.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/CollapsibleSection.test.tsx) | Initial expanded/collapsed state; toggle interaction |
+| [validateMandatoryFields.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/validateMandatoryFields.test.ts) | Missing detection across all 4 key shapes; `isEmptyValue`; numeric defaults |
+| [generateLocalRecordId.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/generateLocalRecordId.test.ts) | UUID format; `buildLocalGridRecord` merging order |
+| [GridCellEditor.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/GridCellEditor.test.tsx) | Search modal visibility; `handleModalSelect` ID/label resolution; `forceError` propagation |
+| [GridTopToolbar.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/GridTopToolbar.test.tsx) | "+ button" visibility; implicit filter button state machine |
+| [CellEditors.test.tsx](../../../packages/MainUI/components/Table/__tests__/CellEditors.test.tsx) | `BooleanCellEditor` signature alignment |
+| [TableDirCellEditor.test.tsx](../../../packages/MainUI/components/Table/__tests__/TableDirCellEditor.test.tsx) | TableDir cell editor inline behavior |
+| [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx) | `GridCellRenderer` selection-gated editability; `_locallyAdded` blocks editor; exported utility functions |
 
-Run with `pnpm --filter @workspaceui/mainui test` (or `pnpm test:mainui` from the repo root).
+Run all with `pnpm test:mainui` from the repo root.
 
-### 10.2 Adapter (JUnit)
+### 11.2 Adapter (JUnit)
 
-- [ProcessDefinitionBuilderPickAndExecuteTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/ProcessDefinitionBuilderPickAndExecuteTest.java) — `uIPattern` + `isMultiRecord` round-trip through the converter; no Java injection.
-- [MenuBuilderTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/MenuBuilderTest.java) — `windowType` emitted for P&E and Maintain windows; absent when null.
-- [WindowBuilderTest.java](../../../../erp/modules/com.etendoerp.metadata/src-test/src/com/etendoerp/metadata/builders/WindowBuilderTest.java) — `windowType` preserved by `/meta/window/{id}` endpoint.
+- `ProcessDefinitionBuilderPickAndExecuteTest.java` — `uIPattern` + `isMultiRecord` round-trip.
+- `MenuBuilderTest.java` — `windowType` emitted for P&E and Maintain windows.
+- `WindowBuilderTest.java` — `windowType` passthrough.
 
 ---
 
-## 11. File Index (Quick Reference)
+## 12. File Index
 
 ### New files (client)
 
@@ -475,22 +602,45 @@ packages/MainUI/components/ProcessModal/hooks/__tests__/useGridRowValidation.tes
 packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.responseFlags.test.ts
 packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts
 packages/MainUI/components/ProcessModal/utils/processResponseFlags.ts
+packages/MainUI/components/ProcessModal/utils/groupProcessParametersByFieldGroup.ts
+packages/MainUI/components/ProcessModal/utils/generateLocalRecordId.ts
+packages/MainUI/components/ProcessModal/utils/validateMandatoryFields.ts
 packages/MainUI/components/ProcessModal/utils/__tests__/responseActionDispatcher.test.ts
 packages/MainUI/components/ProcessModal/utils/__tests__/processResponseFlags.test.ts
+packages/MainUI/components/ProcessModal/utils/__tests__/groupProcessParametersByFieldGroup.test.ts
+packages/MainUI/components/ProcessModal/utils/__tests__/generateLocalRecordId.test.ts
+packages/MainUI/components/ProcessModal/utils/__tests__/validateMandatoryFields.test.ts
+packages/MainUI/components/ProcessModal/components/CollapsibleSection.tsx
+packages/MainUI/components/ProcessModal/__tests__/CollapsibleSection.test.tsx
 packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.singleSelect.test.ts
 packages/MainUI/components/ProcessModal/__tests__/ProcessDefinitionModal.multiGrid.test.ts
+packages/MainUI/components/ProcessModal/__tests__/GridCellEditor.test.tsx
+packages/MainUI/components/ProcessModal/__tests__/GridTopToolbar.test.tsx
+packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx
+packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGridContext.test.tsx
+packages/MainUI/components/Table/__tests__/CellEditors.test.tsx
+packages/MainUI/components/Table/__tests__/TableDirCellEditor.test.tsx
 ```
 
 ### Modified files (client)
 
 ```
-packages/api-client/src/api/types.ts                                  (+ UIPattern, WindowType, Menu, Tab, ProcessDefinition fields)
-packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx    (grid selection, auto-select, gating)
-packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx       (selection modes, validation, implicit filter button)
-packages/MainUI/components/ProcessModal/types.ts                      (new prop types)
-packages/MainUI/components/ProcessModal/imports.ts                    (isPickAndExecute export)
-packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts  (response parsing extraction)
-packages/MainUI/components/Sidebar.tsx                                (menu dispatch refactor)
+packages/api-client/src/api/types.ts                                   (UIPattern, WindowType, Tab, ProcessDefinition, ProcessParameter fields)
+packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx     (field groups, collapsible sections, parameter rendering pipeline)
+packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx        (inline editing, local rows, display logic, fixed height, fallbackCell)
+packages/MainUI/components/ProcessModal/GridCellEditor.tsx             (search modal button, BooleanCellEditor alignment)
+packages/MainUI/components/ProcessModal/WindowReferenceGridContext.tsx (createRowErrors, clearCellError, tab prop)
+packages/MainUI/components/ProcessModal/types.ts                       (new prop types)
+packages/MainUI/components/ProcessModal/imports.ts                     (isPickAndExecute export)
+packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts   (response parsing extraction, refresh flags)
+packages/MainUI/components/Sidebar.tsx                                 (menu dispatch refactor)
+packages/MainUI/components/Table/CellEditors/BooleanCellEditor.tsx     (onChange signature alignment)
+packages/MainUI/components/Table/CellEditors/CellEditorFactory.tsx     (selector integration)
+packages/MainUI/components/Table/CellEditors/SelectCellEditor.tsx      (option propagation)
+packages/MainUI/components/Table/CellEditors/TableDirCellEditor.tsx    (inline behavior)
+packages/MainUI/components/Table/EmptyState.tsx                        (containerStyle prop)
+packages/ComponentLibrary/src/locales/en.ts                            (addRow / deleteRow translations)
+packages/ComponentLibrary/src/locales/es.ts                            (addRow / deleteRow translations)
 ```
 
 ### New files (adapter)
@@ -502,38 +652,43 @@ src-test/src/com/etendoerp/metadata/builders/ProcessDefinitionBuilderPickAndExec
 ### Modified files (adapter)
 
 ```
-src/com/etendoerp/metadata/builders/MenuBuilder.java                 (addWindowType helper)
-src/com/etendoerp/metadata/utils/Constants.java                      (JSON_WINDOW_TYPE_KEY)
+src/com/etendoerp/metadata/builders/MenuBuilder.java          (addWindowType helper)
+src/com/etendoerp/metadata/builders/ParameterBuilder.java     (addFieldGroupCollapsed)
+src/com/etendoerp/metadata/utils/Constants.java               (JSON_WINDOW_TYPE_KEY)
 src-test/src/com/etendoerp/metadata/builders/MenuBuilderTest.java    (windowType coverage)
 src-test/src/com/etendoerp/metadata/builders/WindowBuilderTest.java  (windowType passthrough)
 ```
 
 ---
 
-## 12. Open Items
+## 13. Known Limitations and Deferred Items
 
-The following items are known to be incomplete or pending review. They should be the next blocks of work on top of this branch.
-
-1. **`filterName` not yet surfaced.** The field is exposed on the `Tab` type and the metadata adapter emits it, but the implicit-filter button currently uses generic `table.tooltips.implicitFilterOn` / `Off` translations rather than the human-readable name. Consider showing the filter name inside an `aria-label` or expanded tooltip when present.
-2. **Per-row display logic in grids.** `useGridRowValidation` deliberately does not evaluate per-row display logic — the comment on the helper notes the path forward (`compileExpression` + `createSmartContext` per row) if a future P&E ships dynamic column visibility.
-3. **`refreshGridParameter` handler.** The action is parsed by `responseActionDispatcher` but the side-effect dispatcher in `useProcessExecution` does not yet route it to a specific P&E grid refresh — currently it falls through to the generic refresh path. To be wired once a backend handler actually emits it.
-4. **Payscript integration on the modal.** The `etmetaPayscriptLogic` column on `OBUIAPP_PROCESS` (visible on the Add Payment fixture) is parsed elsewhere but its integration with the modal's recompute loop is being tracked separately.
-5. **Single-record execution payload shape.** When `allowsMultipleRecords === false`, the handler still expects an array of one record ID in some legacy paths and a scalar in others. The execution payload builder normalizes this to an array; a follow-up audit is planned to confirm parity with the classic UI for every process in the catalog.
-6. **Tests for the implicit filter button rendering.** Predicates and request-param threading are tested but the JSX-level rendering of the toolbar button (icon swap, disabled state, color) does not yet have a dedicated test. Worth adding under `WindowReferenceGrid.__tests__/`.
-7. **Documentation gaps.** This document is a snapshot; once the items above land, sections 8.3 / 8.5 / 9 will need refreshes, and a final `Architecture Decisions` section should accompany the merge with rationales captured in ADR form.
+1. **`refreshGridParameter` not yet routed**: the action is parsed by `responseActionDispatcher` but the side-effect dispatcher in `useProcessExecution` does not yet route it to a specific P&E grid refresh — it falls through to the generic refresh path. To be wired once a backend handler actually emits it.
+2. **`filterName` not rendered**: the field is exposed on the `Tab` type and emitted by the adapter, but the implicit-filter button uses generic translations rather than the human-readable name. Consider adding to `aria-label` or tooltip.
+3. **Per-row display logic in validation**: `useGridRowValidation` does not evaluate per-row display logic — it applies mandatory checks regardless of field visibility per row. The code comment notes the path forward (`compileExpression` + `createSmartContext` per row).
+4. **Single-record execution payload shape**: when `allowsMultipleRecords === false`, the payload normalizes to an array of one; a parity audit against every classic process in the catalog is planned.
+5. **Payscript integration**: `etmetaPayscriptLogic` on `OBUIAPP_PROCESS` is parsed but its integration with the modal's recompute loop is tracked separately.
 
 ---
 
-## 13. Glossary
+## 14. Glossary
 
 | Term | Meaning |
 |---|---|
-| **P&E** | Pick and Execute. UI pattern in Etendo Classic where the user picks records from one or more grids and triggers a server-side action against them. |
-| **Window Reference** | A reference type (`reference = FF80818132D8F0F30132D9BC395D0038`) used by process parameters to embed an `AD_WINDOW` (and its tabs) inside the process dialog. |
-| **Implicit filter** | A server-side HQL or SQL where-clause attached to a tab (`OBUIAPP_TAB.HQL_FILTERCLAUSE` / `AD_TAB.WhereClause`). The user can disable it from the toolbar funnel. |
+| **P&E** | Pick and Execute. UI pattern where the user picks records from one or more grids and triggers a server-side action. |
+| **Window Reference** | Reference type (`FF80818132D8F0F30132D9BC395D0038`) used by process parameters to embed an `AD_WINDOW` inside the process dialog. |
+| **Implicit filter** | Server-side HQL/SQL where-clause on a tab (`OBUIAPP_TAB.HQL_FILTERCLAUSE` / `AD_TAB.WhereClause`). Can be disabled from the toolbar funnel in the modal session. |
 | **`uIPattern`** | Column on `OBUIAPP_PROCESS`. `"OBUIAPP_PickAndExecute"` flags the process as P&E. |
-| **`isMultiRecord`** | Column on `OBUIAPP_PROCESS`. Controls **execution** behaviour: whether the handler receives 1 or N record IDs. Independent of grid selection mode. |
-| **`obuiappSelectionType`** | Column on `OBUIAPP_TAB`. Controls **grid selection UI** mode: `"M"` (multi), `"S"` (single), `"N"` (none). |
-| **`responseActions`** | Structured array emitted by classic handlers; replaces the legacy SmartClient HTML parser path. |
-| **`refreshParent` / `retryExecution`** | Boolean flags on the process response. Default `true` / `false` respectively. |
-| **CT-AD-2 / CT-AD-3** | Internal spec IDs for the single-record clamping and multi-grid isolation acceptance criteria. |
+| **`isMultiRecord`** | Column on `OBUIAPP_PROCESS`. Controls execution payload: whether the handler receives 1 or N record IDs. Independent of grid selection mode. |
+| **`obuiappSelectionType`** | Column on `OBUIAPP_TAB`. Controls grid selection UI: `"M"` (multi), `"S"` (single), `"N"` (none). |
+| **`obuiappCanAdd`** | Column on `OBUIAPP_TAB`. When true, the "+" button appears in the grid toolbar and rows can be added locally. |
+| **`obuiappCanDelete`** | Column on `OBUIAPP_TAB`. When true, a trash icon appears per row so locally-added rows can be removed. |
+| **`obuiappShowSelect`** | Column on `OBUIAPP_TAB`. When false, the row-selection checkbox column is hidden; all rows are implicitly included in `_allRows`. |
+| **`_locallyAdded`** | Field on `row.original` set to `true` when a row is confirmed via the creating-row scaffold. Tells cell renderers that the row is read-only even when selected. |
+| **Local-row grid** | A P&E grid that holds rows entirely in client memory, without backend round-trips, until the surrounding process is executed. GL Items in Add Payment is the canonical example. |
+| **`createRowErrors`** | Set of `columnName`s that were empty when the user tried to save a creating row. Drives the red-cell visual. Cleared on edit or cancel. |
+| **`fallbackCell`** | The original `Cell` function installed by `useColumns` (color tags, reference buttons, etc.), stashed on the column-def so `GridCellRenderer` can delegate to it for non-selected, non-editing cells. |
+| **`responseActions`** | Structured array emitted by classic handlers; replaces the legacy SmartClient HTML parser. |
+| **`refreshParent` / `retryExecution`** | Boolean flags on the process response controlling modal lifecycle post-execute. Defaults: `true` / `false`. |
+| **`fieldGroupCollapsed`** | Property on a parameter (surfaced from `AD_FieldGroup.IsCollapsed`) and on `ProcessParameterGroup`. Controls whether the collapsible section starts expanded or collapsed. |
+| **CT-AD-2 / CT-AD-3** | Internal acceptance criteria IDs for single-record clamping and multi-grid isolation respectively. |
