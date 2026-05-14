@@ -88,11 +88,6 @@ const PAGE_SIZE = 100;
 // the remaining space below the toolbar.
 const TABLE_PAPER_HEIGHT = 350;
 
-// DB column name of the GL Items P&E parameter. Rows in that grid are
-// always local (no backend id), so they're treated as always-editable
-// regardless of selection state. Other P&E grids gate editing on
-// `row.getIsSelected()`.
-const GL_ITEM_PARAMETER_DB_NAME = "glitem";
 
 /**
  * Compiles and evaluates a server-rewritten display-logic expression. Returns
@@ -362,16 +357,11 @@ const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
 // Stable renderer for interactive cells
 const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   const isSelected = row.getIsSelected();
-  // The parent P&E parameter's DB name (e.g. "glitem"), set on every column by
-  // the columns useMemo. Distinct from per-column `dbColumnName` (the field's
-  // own DB name like "c_glitem_id"), which is used elsewhere.
-  const parameterDBColumnName = column.columnDef?.parameterDBColumnName;
   const isFieldReadOnly = column.columnDef?.isFieldReadOnly;
 
-  // glItems are always local/editable
-  const isAlwaysEditable = parameterDBColumnName === GL_ITEM_PARAMETER_DB_NAME;
+  const isLocallyAdded = Boolean(row.original?._locallyAdded);
 
-  if ((isSelected || isAlwaysEditable) && !isFieldReadOnly) {
+  if (isSelected && !isFieldReadOnly && !isLocallyAdded) {
     return (
       <StableGridCellEditorRenderer
         cell={cell}
@@ -406,9 +396,9 @@ export const getBooleanEditProps = (_cell: any) => {
 export const GridCellRenderer = (props: any) => {
   const { row, column, cell } = props;
   const isSelected = row.getIsSelected();
-  const isAlwaysEditable = column.columnDef.parameterDBColumnName === GL_ITEM_PARAMETER_DB_NAME;
+  const isLocallyAdded = Boolean(row.original?._locallyAdded);
 
-  if (isSelected || isAlwaysEditable) {
+  if (isSelected && !isLocallyAdded) {
     return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
   }
 
@@ -1522,7 +1512,6 @@ const WindowReferenceGrid = ({
 
   // Populate _allRows when records are loaded
   useEffect(() => {
-    // For glitem, we want to allow empty lists initially
     if (!records) return;
 
     onSelectionChange((prev: GridSelectionStructure) => ({
@@ -1805,7 +1794,7 @@ const WindowReferenceGrid = ({
       }
       setCreateRowErrors(new Set());
       const { id, record } = buildLocalGridRecord(mergedWithDefaults, row?.original);
-      addRecordLocally(record);
+      addRecordLocally({ ...record, _locallyAdded: true });
       setRowSelection((prev) => ({ ...prev, [id]: true }));
       table.setCreatingRow(null);
     },
@@ -1814,11 +1803,7 @@ const WindowReferenceGrid = ({
 
   const handleSaveRow = useCallback(
     async ({ _values, row, table }: any) => {
-      // Check if this record is local (should be in localRecords)
-      // glitem records are always local
-      const isLocal =
-        parameter.dBColumnName === GL_ITEM_PARAMETER_DB_NAME ||
-        localRecords.some((r) => String(r.id) === String(row.id));
+      const isLocal = localRecords.some((r) => String(r.id) === String(row.id));
 
       if (isLocal) {
         // IMPORTANT: Since we use custom Cell Editors that modify row.original directly (via handleChange),
@@ -1880,7 +1865,7 @@ const WindowReferenceGrid = ({
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
-      if (parameter.dBColumnName !== GL_ITEM_PARAMETER_DB_NAME && !records.some((r) => String(r.id) === String(row.id)))
+      if (!records.some((r) => String(r.id) === String(row.id)))
         return;
 
       // Update state (trigger re-render)

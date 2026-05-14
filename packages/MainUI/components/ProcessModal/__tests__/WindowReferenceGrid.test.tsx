@@ -190,13 +190,14 @@ describe("WindowReferenceGrid Utilities", () => {
   // Mirrors the classic P&E grid: a cell whose row is selected renders the
   // editor; otherwise it renders the upstream Cell that `useColumns` installed
   // (color wrappers, reference buttons…), preserved here under `fallbackCell`.
-  // glItems rows are always editable because they have no backend id and are
-  // mutated locally before the process is submitted.
+  // Confirmed rows (in localRecords) are read-only even when selected; only
+  // the MRT creating-row scaffold shows editors for new rows.
   describe("GridCellRenderer — selection-gated editability", () => {
     const EDITOR_PROBE_ID = "probe-grid-cell-editor";
 
     const buildCellRendererProps = ({
       isSelected,
+      locallyAdded = false,
       parameterDBColumnName,
       fallbackCell,
       cellValue = "cell-value",
@@ -205,6 +206,7 @@ describe("WindowReferenceGrid Utilities", () => {
       columnName = "amount",
     }: {
       isSelected: boolean;
+      locallyAdded?: boolean;
       parameterDBColumnName?: string;
       fallbackCell?: (props: unknown) => React.ReactElement;
       cellValue?: unknown;
@@ -214,7 +216,7 @@ describe("WindowReferenceGrid Utilities", () => {
     }) => ({
       row: {
         getIsSelected: () => isSelected,
-        original: { id: "row-1" },
+        original: { id: "row-1", ...(locallyAdded ? { _locallyAdded: true } : {}) },
         id: "row-1",
       },
       cell: {
@@ -233,24 +235,26 @@ describe("WindowReferenceGrid Utilities", () => {
       },
     });
 
-    it("renders the editor probe when the row is selected", () => {
-      render(<GridCellRenderer {...buildCellRendererProps({ isSelected: true })} />);
+    it("renders the editor probe when the row is selected and not locally added", () => {
+      render(<GridCellRenderer {...buildCellRendererProps({ isSelected: true, locallyAdded: false })} />);
       expect(screen.getByTestId(EDITOR_PROBE_ID)).toBeInTheDocument();
     });
 
-    it("renders the editor probe for glItems rows even without selection", () => {
+    it("does not render the editor for a selected locally-added row (confirmed rows are read-only)", () => {
+      const fallbackCell = jest.fn(() => <span data-testid="probe-fallback">fb</span>);
       render(
         <GridCellRenderer
-          {...buildCellRendererProps({ isSelected: false, parameterDBColumnName: "glitem" })}
+          {...buildCellRendererProps({ isSelected: true, locallyAdded: true, fallbackCell })}
         />
       );
-      expect(screen.getByTestId(EDITOR_PROBE_ID)).toBeInTheDocument();
+      expect(screen.queryByTestId(EDITOR_PROBE_ID)).toBeNull();
+      expect(screen.getByTestId("probe-fallback")).toBeInTheDocument();
     });
 
-    it("delegates to fallbackCell on an unselected row of a non-glitem grid", () => {
-      // Pins the fix for the Order/Invoices P&E grid: when the row is not
-      // selected, the cell must render via the upstream `useColumns` wrapper
-      // (preserved as `fallbackCell`), not via the editor.
+    it("delegates to fallbackCell on any unselected row", () => {
+      // All P&E grids: when the row is not selected, the cell must render via
+      // the upstream `useColumns` wrapper (preserved as `fallbackCell`), not via
+      // the editor.
       const fallbackCell = jest.fn(() => <span data-testid="probe-fallback">fb</span>);
       render(
         <GridCellRenderer
