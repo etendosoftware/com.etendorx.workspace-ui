@@ -314,12 +314,12 @@ const GridCellEditorBase = ({
   };
 
   return (
-    <div className="w-full min-w-[200px]">
+    <div className="w-full">
       <div className="flex w-full items-center gap-1">
         <div className="flex-grow min-w-0">
           <CellEditorFactory
             fieldType={fieldType}
-            value={cell.getValue()}
+            value={row.original[col.columnName]}
             onChange={handleChange}
             field={{ ...matchingField, type: fieldType }}
             rowId={row.id}

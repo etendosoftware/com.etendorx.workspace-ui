@@ -88,6 +88,12 @@ const PAGE_SIZE = 100;
 // the remaining space below the toolbar.
 const TABLE_PAPER_HEIGHT = 350;
 
+// DB column name of the GL Items P&E parameter. Rows in that grid are
+// always local (no backend id), so they're treated as always-editable
+// regardless of selection state. Other P&E grids gate editing on
+// `row.getIsSelected()`.
+const GL_ITEM_PARAMETER_DB_NAME = "glitem";
+
 /**
  * Compiles and evaluates a server-rewritten display-logic expression. Returns
  * the truthy result, or `true` if compilation/evaluation throws — failing open
@@ -363,7 +369,7 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   const isFieldReadOnly = column.columnDef?.isFieldReadOnly;
 
   // glItems are always local/editable
-  const isAlwaysEditable = parameterDBColumnName === "glitem";
+  const isAlwaysEditable = parameterDBColumnName === GL_ITEM_PARAMETER_DB_NAME;
 
   if ((isSelected || isAlwaysEditable) && !isFieldReadOnly) {
     return (
@@ -397,10 +403,10 @@ export const getBooleanEditProps = (_cell: any) => {
   };
 };
 
-const GridCellRenderer = (props: any) => {
+export const GridCellRenderer = (props: any) => {
   const { row, column, cell } = props;
   const isSelected = row.getIsSelected();
-  const isAlwaysEditable = column.columnDef.parameterDBColumnName === "glitem";
+  const isAlwaysEditable = column.columnDef.parameterDBColumnName === GL_ITEM_PARAMETER_DB_NAME;
 
   if (isSelected || isAlwaysEditable) {
     return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
@@ -425,9 +431,13 @@ const GridCellRenderer = (props: any) => {
     return <span>{value ? String(value) : ""}</span>;
   }
 
-  const existingCell = column.columnDef.Cell;
-  if (existingCell && typeof existingCell === "function" && existingCell !== GridCellRenderer) {
-    return existingCell(props);
+  // When this renderer is installed as the column's `Cell`, the *original*
+  // Cell function from `useColumns` (color-tag wrapper, reference button,
+  // clientclass link, etc.) is preserved under `fallbackCell` so we can
+  // delegate to it for the non-selected, display-only path.
+  const fallbackCell = column.columnDef.fallbackCell;
+  if (fallbackCell && typeof fallbackCell === "function") {
+    return fallbackCell(props);
   }
 
   return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
@@ -1282,6 +1292,22 @@ const WindowReferenceGrid = ({
 
       // ALWAYS add custom editing logic (Edit and enableEditing)
       // This ensures our CellEditorFactory is used for all columns, including those with Filters (TableDir, etc.)
+      //
+      // `useColumns` already installs a `Cell` wrapper (color-tag rendering,
+      // reference-button navigation, clientclass links, etc.). We can't keep
+      // that wrapper as the final `Cell` — it doesn't know about row selection,
+      // so editable cells (Amount, Writeoff in Order/Invoices) would never
+      // switch to an editor when the user picks the row. Promote
+      // `GridCellRenderer` to be the final `Cell` (it gates on
+      // `row.getIsSelected()`) and stash the upstream wrapper under
+      // `fallbackCell` so `GridCellRenderer` delegates to it for the
+      // unselected/display path. Read-only columns are still overridden later
+      // in `finalColumns` with `ReadOnlyCellRenderer`, so this preserves the
+      // classic-UI parity: editable fields become editors on selection,
+      // read-only fields stay as plain text.
+      const upstreamCell = (col as any).Cell;
+      const fallbackCell =
+        typeof upstreamCell === "function" && upstreamCell !== GridCellRenderer ? upstreamCell : undefined;
       return {
         ...columnConfig,
         isFieldReadOnly:
@@ -1306,7 +1332,8 @@ const WindowReferenceGrid = ({
         // `dbColumnName` set by `parseColumns`, which we need for the
         // create-row mandatory-error lookup in `StableGridCellEditorRenderer`.
         parameterDBColumnName: parameter.dBColumnName,
-        Cell: (col as any).Cell ?? GridCellRenderer,
+        Cell: GridCellRenderer,
+        fallbackCell,
       };
     });
 
@@ -1789,7 +1816,9 @@ const WindowReferenceGrid = ({
     async ({ _values, row, table }: any) => {
       // Check if this record is local (should be in localRecords)
       // glitem records are always local
-      const isLocal = parameter.dBColumnName === "glitem" || localRecords.some((r) => String(r.id) === String(row.id));
+      const isLocal =
+        parameter.dBColumnName === GL_ITEM_PARAMETER_DB_NAME ||
+        localRecords.some((r) => String(r.id) === String(row.id));
 
       if (isLocal) {
         // IMPORTANT: Since we use custom Cell Editors that modify row.original directly (via handleChange),
@@ -1851,7 +1880,8 @@ const WindowReferenceGrid = ({
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
-      if (parameter.dBColumnName !== "glitem" && !records.some((r) => String(r.id) === String(row.id))) return;
+      if (parameter.dBColumnName !== GL_ITEM_PARAMETER_DB_NAME && !records.some((r) => String(r.id) === String(row.id)))
+        return;
 
       // Update state (trigger re-render)
       setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...changes } : r)));

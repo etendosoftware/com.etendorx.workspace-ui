@@ -18,6 +18,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
+import CheckIcon from "../../../../ComponentLibrary/src/assets/icons/check.svg";
+
+const convertToBoolean = (val: unknown): boolean => {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") {
+    const strVal = val.toLowerCase().trim();
+    return strVal === "true" || strVal === "y" || strVal === "1" || strVal === "yes";
+  }
+  if (typeof val === "number") return val !== 0;
+  return false;
+};
 
 /**
  * Checkbox/switch editor for boolean fields
@@ -37,7 +48,7 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
   shouldAutoFocus = false,
 }) => {
   const checkboxRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState<boolean>(false);
+  const [localValue, setLocalValue] = useState<boolean>(() => convertToBoolean(value));
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
@@ -61,27 +72,6 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
     const boolValue = convertToBoolean(value);
     setLocalValue(boolValue);
   }, [value]);
-
-  /**
-   * Convert various boolean representations to actual boolean
-   * Handles: true/false, "Y"/"N", "true"/"false", 1/0, etc.
-   */
-  const convertToBoolean = (val: unknown): boolean => {
-    if (typeof val === "boolean") {
-      return val;
-    }
-
-    if (typeof val === "string") {
-      const strVal = val.toLowerCase().trim();
-      return strVal === "true" || strVal === "y" || strVal === "1" || strVal === "yes";
-    }
-
-    if (typeof val === "number") {
-      return val !== 0;
-    }
-
-    return false;
-  };
 
   /**
    * Convert boolean to the format expected by the backend
@@ -146,9 +136,15 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
     }
   };
 
+  // Tailwind's `checked:` variant is not reliably generated for this file
+  // (JIT content-path issue), so the checked state is expressed via inline styles.
+  const accentColor = hasError ? "#dc2626" : "#004ACA";
+  const borderColor = localValue ? accentColor : hasError ? "#ef4444" : "rgba(0,3,13,0.4)";
+  const backgroundColor = localValue ? accentColor : "white";
+
   return (
     <div className="inline-edit-boolean-container flex items-center justify-center">
-      <label className="inline-edit-boolean-label flex items-center cursor-pointer">
+      <div className="relative flex items-center">
         <input
           ref={checkboxRef}
           type="checkbox"
@@ -160,35 +156,34 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
           data-row-id={rowId}
           data-column-id={columnId}
           disabled={disabled}
+          style={{ backgroundColor, borderColor }}
           className={`
             inline-edit-checkbox
+            min-w-4
+            min-h-4
             w-4
             h-4
             rounded
-            border-2
+            border-[1.67px]
+            appearance-none
             focus:outline-none
             focus:ring-2
-            focus:ring-blue-500
             focus:ring-offset-1
-            ${hasError ? "border-red-500 text-red-600 focus:ring-red-500" : "border-gray-300 text-blue-600"}
-            ${
-              disabled
-                ? "bg-gray-100 border-gray-300 cursor-not-allowed opacity-50"
-                : "hover:border-gray-400 cursor-pointer"
-            }
+            ${hasError ? "focus:ring-red-500" : "focus:ring-blue-500"}
+            ${disabled ? "cursor-not-allowed opacity-50" : "hover:border-gray-500 cursor-pointer"}
           `}
           title={hasError ? "This field has validation errors" : field.name}
           aria-label={field.name}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${field.name}-error` : undefined}
         />
-
-        {/* Optional label text */}
-        <span className="ml-2 text-sm text-gray-700 select-none">{localValue ? "Yes" : "No"}</span>
-      </label>
-
-      {/* Visual indicator for the current state */}
-      <div className="ml-2 text-xs text-gray-500">{localValue ? "✓" : "✗"}</div>
+        {localValue && (
+          <CheckIcon
+            className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white"
+            data-testid="BooleanCellEditor__CheckIcon"
+          />
+        )}
+      </div>
     </div>
   );
 };
