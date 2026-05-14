@@ -62,6 +62,7 @@ export interface IUserContext {
   logout: () => Promise<void>;
   // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
+  changePassword: (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => Promise<void>;
   token: string | null;
   roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;

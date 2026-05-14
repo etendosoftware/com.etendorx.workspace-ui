@@ -46,6 +46,7 @@ const Navigation: React.FC = () => {
     currentWarehouse,
     currentClient,
     changeProfile,
+    changePassword,
     roles,
     languages,
     isCopilotInstalled,
@@ -239,6 +240,7 @@ const Navigation: React.FC = () => {
           languagesFlags={flagString}
           changeProfile={changeProfile}
           onSetDefaultConfiguration={setDefaultConfiguration}
+          onPasswordChange={changePassword}
           logger={logger}
           languages={languagesWithFlags}
           userName={profile.name}
