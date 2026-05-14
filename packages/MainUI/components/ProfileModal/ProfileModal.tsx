@@ -186,9 +186,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, []);
 
-  const handleToggle = useCallback((section: string) => {
-    setCurrentSection(section);
-  }, []);
+  const handleToggle = useCallback(
+    (section: string) => {
+      if (currentSection === "password" && section !== "password") {
+        setCurrentPwd("");
+        setNewPwd("");
+        setConfirmPwd("");
+        setPasswordError("");
+      }
+      setCurrentSection(section);
+    },
+    [currentSection]
+  );
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -203,6 +212,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
+    setCurrentSection("profile");
     setCurrentPwd("");
     setNewPwd("");
     setConfirmPwd("");
@@ -365,7 +375,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const isSaveDisabled = useMemo(() => {
     if (currentSection === "password") {
-      return !currentPwd || !newPwd || !confirmPwd || newPwd !== confirmPwd;
+      return !currentPwd || !newPwd || !confirmPwd;
     }
 
     if (!selectedRole) {
