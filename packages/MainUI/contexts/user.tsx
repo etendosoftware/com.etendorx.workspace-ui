@@ -213,7 +213,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     try {
       await doChangePassword(params);
     } catch (error) {
-      logger.warn("Error changing password:", error);
+      logger.warn("Error changing password:", error instanceof Error ? error.message : "Unknown error");
       throw error;
     }
   }, []);
