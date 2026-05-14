@@ -198,6 +198,15 @@ const GridCellEditorBase = ({
   const handleChange = useCallback(
     (newValue: any, selectedOption?: any) => {
       row.original[col.columnName] = newValue;
+      // Mirror to the DB column name so the display reads the user's edit.
+      // parseColumns puts the HQL/property name on `col.columnName` and the DB
+      // name on `col.dbColumnName`; `getRawCellValue` (used by the column's
+      // accessorFn) reads `value[dbColumnName] ?? value[hqlName]`. Initial 0s
+      // seeded by handleAddRow under the DB key would otherwise shadow user
+      // edits via the `??` chain (since 0 is not nullish).
+      if (col.dbColumnName && col.dbColumnName !== col.columnName) {
+        row.original[col.dbColumnName] = newValue;
+      }
 
       // Identifier update logic for TableDir/Search
       if (
@@ -207,8 +216,11 @@ const GridCellEditorBase = ({
           reference === FIELD_REFERENCE_CODES.PRODUCT ||
           reference === FIELD_REFERENCE_CODES.SELECTOR)
       ) {
-        const identifierKey = `${col.columnName}$_identifier`;
-        row.original[identifierKey] = selectedOption.label || selectedOption._identifier;
+        const identifierLabel = selectedOption.label || selectedOption._identifier;
+        row.original[`${col.columnName}$_identifier`] = identifierLabel;
+        if (col.dbColumnName && col.dbColumnName !== col.columnName) {
+          row.original[`${col.dbColumnName}$_identifier`] = identifierLabel;
+        }
       }
 
       // Notify parent of change

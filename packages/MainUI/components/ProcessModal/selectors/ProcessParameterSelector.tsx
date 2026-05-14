@@ -1,6 +1,6 @@
 import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
@@ -34,6 +34,11 @@ interface ProcessParameterSelectorProps {
   parentFields?: Record<string, Field>;
   selectedRecordsCount?: number;
   onFileChange?: (paramName: string, file: File | null) => void;
+  // Stabilized form values passed from the parent. Each selector previously called
+  // `watch()` on its own, registering 20–30 global subscribers that re-rendered
+  // every selector on every keystroke. Receiving values as a prop lets the parent
+  // own the single subscription and React.memo skip re-renders of unaffected selectors.
+  values?: Record<string, unknown>;
 }
 
 import { createProcessExpressionContext } from "../utils/processExpressionUtils";
@@ -44,7 +49,9 @@ import { createProcessExpressionContext } from "../utils/processExpressionUtils"
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
  */
-export const ProcessParameterSelector = ({
+const EMPTY_VALUES: Record<string, unknown> = {};
+
+const ProcessParameterSelectorImpl = ({
   parameter,
   logicFields,
   parameters,
@@ -52,10 +59,10 @@ export const ProcessParameterSelector = ({
   parentFields,
   selectedRecordsCount,
   onFileChange,
+  values = EMPTY_VALUES,
 }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
-  const { watch, register } = useFormContext();
-  const values = watch(); // Watch all form values for reactive logic evaluation
+  const { register } = useFormContext();
 
   // Map ProcessParameter to Field interface for FormView selector compatibility
   const mappedField = useMemo(() => {
@@ -292,5 +299,7 @@ export const ProcessParameterSelector = ({
     </div>
   );
 };
+
+export const ProcessParameterSelector = memo(ProcessParameterSelectorImpl);
 
 export default ProcessParameterSelector;

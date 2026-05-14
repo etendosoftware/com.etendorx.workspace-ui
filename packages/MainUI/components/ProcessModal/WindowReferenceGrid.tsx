@@ -1013,12 +1013,13 @@ const WindowReferenceGrid = ({
       return enriched;
     }
     return [];
-  }, [fields]);
+  }, [fields, stableVisibleFields]);
 
-  // Column filters hook - needs stable columns reference
-  const rawColumnIds = rawColumns.map((c: Column) => c.id).join(",");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableRawColumns = useMemo(() => rawColumns, [rawColumnIds]);
+  // `rawColumns` is already a useMemo, so its reference is stable across renders
+  // unless its dependencies change. The previous join-based stabilization layer was
+  // a no-op (the join ran every render and didn't add information beyond what the
+  // useMemo deps already guarantee).
+  const stableRawColumns = rawColumns;
 
   const datasourceOptions = useMemo(() => {
     const options: DatasourceParams = {
@@ -1327,23 +1328,20 @@ const WindowReferenceGrid = ({
       };
     });
 
-    // Sort the final columns based on gridPosition
-    // We access the original fields from stableWindowReferenceTab
-    const sortedColumns = columnsWithFilters.sort((a: Column, b: Column) => {
-      // Find field definition for column A
-      const fieldA = Object.values(stableWindowReferenceTab?.fields || {}).find(
-        (f) => f.name === a.header || f.hqlName === a.columnName
-      );
-      // Find field definition for column B
-      const fieldB = Object.values(stableWindowReferenceTab?.fields || {}).find(
-        (f) => f.name === b.header || f.hqlName === b.columnName
-      );
-
-      const posA = fieldA?.gridPosition ?? fieldA?.sequenceNumber ?? 0;
-      const posB = fieldB?.gridPosition ?? fieldB?.sequenceNumber ?? 0;
-
-      return posA - posB;
-    });
+    // Sort the final columns based on gridPosition.
+    // Build a name→position lookup once instead of doing a linear `.find` per pair
+    // inside the sort comparator (which is O(n²)).
+    const positionByLookup = new Map<string, number>();
+    for (const f of Object.values(stableWindowReferenceTab?.fields || {})) {
+      const pos = f.gridPosition ?? f.sequenceNumber ?? 0;
+      if (f.name) positionByLookup.set(`n:${f.name}`, pos);
+      if (f.hqlName) positionByLookup.set(`h:${f.hqlName}`, pos);
+    }
+    const resolvePosition = (col: Column) =>
+      positionByLookup.get(`n:${col.header}`) ?? positionByLookup.get(`h:${col.columnName}`) ?? 0;
+    const sortedColumns = columnsWithFilters.sort(
+      (a: Column, b: Column) => resolvePosition(a) - resolvePosition(b)
+    );
 
     return sortedColumns;
   }, [columnsFromHook, rawColumns, stableWindowReferenceTab, fieldReadOnlyMap]);
@@ -1593,9 +1591,11 @@ const WindowReferenceGrid = ({
         newSelection = clamped;
       }
 
-      // 1. Prepare new records state first to ensure synchronous consistency
+      // 1. Prepare new records state first to ensure synchronous consistency.
+      // Reuse the same `records` array reference when nothing changed — prevents
+      // downstream parents from re-rendering on no-op selection toggles.
       let recordsChanged = false;
-      const newRecords = records.map((record) => {
+      const mappedRecords = records.map((record) => {
         const recordId = String(record.id);
         const isSelected = newSelection[recordId];
 
@@ -1620,6 +1620,7 @@ const WindowReferenceGrid = ({
         }
         return record;
       });
+      const newRecords = recordsChanged ? mappedRecords : records;
 
       // 2. Update local state if needed
       if (recordsChanged) {
@@ -1789,10 +1790,16 @@ const WindowReferenceGrid = ({
       const mergedWithDefaults = applyNumericMandatoryDefaults(visibleFieldsFromTab, merged);
       const missing = collectMissingMandatory(visibleFieldsFromTab, mergedWithDefaults);
       if (missing.size > 0) {
-        setCreateRowErrors(missing);
+        // Preserve Set reference when contents haven't changed — prevents context
+        // consumers (every grid cell) from re-rendering on identical errors.
+        setCreateRowErrors((prev) => {
+          if (prev.size !== missing.size) return missing;
+          for (const k of missing) if (!prev.has(k)) return missing;
+          return prev;
+        });
         return;
       }
-      setCreateRowErrors(new Set());
+      setCreateRowErrors((prev) => (prev.size === 0 ? prev : new Set()));
       const { id, record } = buildLocalGridRecord(mergedWithDefaults, row?.original);
       addRecordLocally({ ...record, _locallyAdded: true });
       setRowSelection((prev) => ({ ...prev, [id]: true }));
@@ -1896,10 +1903,6 @@ const WindowReferenceGrid = ({
   ); // Dependencies are now minimal and stable
 
   // Update the ref exposed to context
-  useEffect(() => {
-    handleRecordChangeRef.current = handleRecordChange;
-  }, [handleRecordChange]);
-
   useEffect(() => {
     handleRecordChangeRef.current = handleRecordChange;
   }, [handleRecordChange]);
@@ -2206,7 +2209,7 @@ const WindowReferenceGrid = ({
       onCreatingRowSave: handleCreateRow,
       onCreatingRowCancel: () => {
         setValidationErrors({});
-        setCreateRowErrors(new Set());
+        setCreateRowErrors((prev) => (prev.size === 0 ? prev : new Set()));
       },
       onEditingRowSave: handleSaveRow, // Handle standard row saves
       onEditingRowCancel: () => setValidationErrors({}),

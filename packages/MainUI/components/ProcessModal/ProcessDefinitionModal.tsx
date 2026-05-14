@@ -1172,6 +1172,7 @@ function ProcessDefinitionModalContent({
       parentFields={tab?.fields}
       selectedRecordsCount={selectedRecordsCount}
       onFileChange={handleFileChange}
+      values={formValues}
       data-testid="ProcessParameterSelector__761503"
     />
   );
