@@ -248,7 +248,21 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setRecords((prev) => {
+          const fetched = data.response.data;
+          if (page !== 1 && !searchQuery) {
+            return prev.concat(fetched);
+          }
+          // Page-1 replace (default and search refetches). Preserve `_locallyAdded`
+          // rows so user-created rows in Pick & Execute input grids (e.g. GL Items
+          // in Add Payment) survive datasource refetches triggered by unrelated
+          // param changes (form values folded into datasourceOptions).
+          const locallyAdded = prev.filter((r) => r._locallyAdded);
+          if (locallyAdded.length === 0) return fetched;
+          const fetchedIds = new Set(fetched.map((r) => String(r.id)));
+          const survivors = locallyAdded.filter((r) => !fetchedIds.has(String(r.id)));
+          return survivors.length === 0 ? fetched : [...survivors, ...fetched];
+        });
         setLoaded(true);
       } catch (e) {
         logger.warn(e);

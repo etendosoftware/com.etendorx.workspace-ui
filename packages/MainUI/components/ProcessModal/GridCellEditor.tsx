@@ -164,6 +164,14 @@ export interface GridCellEditorProps {
   forceError?: boolean;
   /** Notified after each edit; lets parents clear per-cell create-row errors. */
   onCellEdit?: (columnName: string) => void;
+  /**
+   * Monotonic counter from the grid context bumped whenever a field-interaction
+   * sibling patch is applied (e.g. mutually-exclusive column zeroed). Not read
+   * in the component body — its sole purpose is to invalidate the surrounding
+   * `memo` comparator so the cell re-renders and re-reads `row.original`. See
+   * `WindowReferenceGridContext.siblingPatchVersion`.
+   */
+  siblingPatchVersion?: number;
 }
 
 /**
@@ -225,11 +233,25 @@ const GridCellEditorBase = ({
 
       // Notify parent of change
       if (onRecordChange) {
+        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working
+        console.log("[GridCellEditor.handleChange] onRecordChange fired", {
+          rowId: row.id,
+          columnName: col.columnName,
+          dbColumnName: col.dbColumnName,
+          newValue,
+          newValueType: typeof newValue,
+        });
         onRecordChange(row, {
           [col.columnName]: newValue,
           ...(selectedOption
             ? { [`${col.columnName}$_identifier`]: selectedOption.label || selectedOption._identifier }
             : {}),
+        });
+      } else {
+        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — surface when the grid's record-change handler ref is unset
+        console.warn("[GridCellEditor.handleChange] onRecordChange is UNDEFINED — sibling-zeroing won't run", {
+          rowId: row.id,
+          columnName: col.columnName,
         });
       }
 
@@ -386,7 +408,10 @@ export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) =>
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
     prevProps.validationError === nextProps.validationError &&
-    prevProps.forceError === nextProps.forceError
+    prevProps.forceError === nextProps.forceError &&
+    // Bumped by field-interactions in the parent grid; forces re-render so the
+    // sibling cell re-reads `row.original` after a mutually-exclusive zeroing.
+    prevProps.siblingPatchVersion === nextProps.siblingPatchVersion
   );
 });
 

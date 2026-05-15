@@ -63,6 +63,8 @@ import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 import { useUserContext } from "@/hooks/useUserContext";
 import { GridCellEditor } from "./GridCellEditor";
+import { getPayScriptRules } from "./callouts/genericPayScriptCallout";
+import { resolveMutualExclusion } from "@/payscript/engine/LogicEngine";
 import { buildLocalGridRecord } from "./utils/generateLocalRecordId";
 import { applyNumericMandatoryDefaults, collectMissingMandatory } from "./utils/validateMandatoryFields";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
@@ -81,6 +83,97 @@ import {
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
+const EMPTY_PATCH: Record<string, number> = Object.freeze({});
+
+/**
+ * Expands a column key to both naming shapes used across the row state:
+ *   - HQL camelCase (`paidOut`)   — what `parseColumns` puts on `col.columnName`
+ *   - DB snake_case (`paid_out`) — what `parseColumns` puts on `col.dbColumnName`
+ *
+ * `GridCellEditor.handleChange` mirrors writes to both keys on `row.original`
+ * (and the accessor reads `value[dbColumnName] ?? value[hqlName]`), so the
+ * sibling-zeroing path must also touch both — otherwise the sibling cell ends
+ * up with one shape at the new value and the other at the old, and which one
+ * "wins" depends on the accessor's nullish chain.
+ */
+export function expandKeyVariants(key: string): string[] {
+  if (/[A-Z]/.test(key)) {
+    const snake = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+    return snake === key ? [key] : [key, snake];
+  }
+  if (key.includes("_")) {
+    const camel = key.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
+    return camel === key ? [key] : [key, camel];
+  }
+  return [key];
+}
+
+/**
+ * Looks up the payscript registered for `processId` and applies any
+ * declarative `fieldInteractions` rule (e.g. mutually-exclusive columns) that
+ * matches `changes`. Mutates `row.original` in place with the sibling patch so
+ * the live MRT row stays consistent with the dual-key write pattern used by
+ * `GridCellEditor`, and returns the merged patch ready to be fed into
+ * `setLocalRecords` / `onSelectionChange`.
+ *
+ * Returns the original `changes` unchanged when there are no rules, no
+ * matching grid entry, or no triggered exclusion. Exported for unit testing.
+ */
+export function applyFieldInteractions(
+  processId: string | undefined,
+  gridName: string,
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row object is intentionally untyped across this file
+  row: any,
+  // biome-ignore lint/suspicious/noExplicitAny: payscript changes patch is intentionally untyped
+  changes: Record<string, any>
+  // biome-ignore lint/suspicious/noExplicitAny: merged patch passes through to setLocalRecords
+): Record<string, any> {
+  const rules = processId ? getPayScriptRules(processId) : undefined;
+  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working in browser
+  console.log("[fieldInteractions] entry", {
+    processId,
+    gridName,
+    changesKeys: Object.keys(changes),
+    changes,
+    rulesFound: !!rules,
+    rulesHaveFieldInteractions: !!rules?.fieldInteractions,
+    declaredGrids: rules?.fieldInteractions ? Object.keys(rules.fieldInteractions) : [],
+    pairsForThisGrid: rules?.fieldInteractions?.[gridName]?.mutualExclusion,
+  });
+  const rawSiblingPatch = rules ? resolveMutualExclusion(rules, gridName, changes) : EMPTY_PATCH;
+  // Expand each emitted sibling key to both DB and HQL shapes so row.original
+  // (and the cell-edit cache) stay consistent with the dual-key write pattern.
+  // biome-ignore lint/suspicious/noExplicitAny: same untyped patch shape
+  const siblingPatch: Record<string, any> = {};
+  for (const [key, value] of Object.entries(rawSiblingPatch)) {
+    for (const variant of expandKeyVariants(key)) {
+      siblingPatch[variant] = value;
+    }
+  }
+  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic
+  console.log("[fieldInteractions] siblingPatch", siblingPatch);
+  if (Object.keys(siblingPatch).length === 0) return changes;
+  for (const [key, value] of Object.entries(siblingPatch)) {
+    row.original[key] = value;
+    // Mirror to MRT's per-cell cache so the sibling cell renders the new value
+    // on next paint (MRT's memo bails on identical `cell.getValue()`, which
+    // reads from `_valuesCache[column.id]`). Writing both DB and HQL variants
+    // covers whichever shape MRT uses as the column id for this grid.
+    if (row._valuesCache) {
+      row._valuesCache[key] = value;
+    }
+  }
+  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic
+  console.log("[fieldInteractions] mutated row.original keys", {
+    rowId: row.id,
+    received_in: row.original.received_in,
+    receivedIn: row.original.receivedIn,
+    paid_out: row.original.paid_out,
+    paidOut: row.original.paidOut,
+    valuesCacheKeys: row._valuesCache ? Object.keys(row._valuesCache) : null,
+  });
+  return { ...changes, ...siblingPatch };
+}
 // Fixed paper height keeps the table visually constant regardless of row count.
 // Placing the size on the paper (which is the visible "card" wrapping toolbar +
 // table container) avoids the flex-1/flex-basis: 0% collapse the container
@@ -246,7 +339,7 @@ export function buildDeselectedRecord(record: EntityData): { updated: EntityData
 // Stable renderer component that consumes context instead of closures
 // detailed props type would be better but simple any works for MRT contract here
 const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
-  const { fieldsRef, handleRecordChangeRef, validations, createRowErrors, clearCellError } =
+  const { fieldsRef, handleRecordChangeRef, validations, createRowErrors, clearCellError, siblingPatchVersion } =
     useWindowReferenceGridContext();
 
   // Check for validation errors for this row.
@@ -286,6 +379,7 @@ const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
       validationError={validationError}
       forceError={forceError}
       onCellEdit={isCreateRow ? clearCellError : undefined}
+      siblingPatchVersion={siblingPatchVersion}
       data-testid="GridCellEditor__ce8544"
     />
   );
@@ -1434,6 +1528,14 @@ const WindowReferenceGrid = ({
   const [localRecords, setLocalRecords] = useState<EntityData[]>([]);
   const rawRecordsStringRef = useRef<string>("");
 
+  // Bumped by `handleRecordChange` whenever `applyFieldInteractions` produces a
+  // non-empty sibling patch. Threaded through the grid context so each
+  // GridCellEditor sees a new value and its `memo` comparator invalidates,
+  // forcing the sibling cell to re-read `row.original` on the next paint. This
+  // is the visual-refresh path for MRT create-rows (id="mrt-row-create") which
+  // never enter `localRecords` and so never trigger re-render via state.
+  const [siblingPatchVersion, setSiblingPatchVersion] = useState(0);
+
   // Sync with datasource (rawRecords)
   useEffect(() => {
     // Only update if rawRecords actually changed content
@@ -1777,6 +1879,9 @@ const WindowReferenceGrid = ({
     [removeRecordLocally, onSelectionChange, parameter.dBColumnName]
   );
 
+  // Process id (used by field-interactions lookups in the handlers below).
+  const processId = processDefinition?.id;
+
   const handleCreateRow = useCallback(
     ({ values, table, row }: any) => {
       if (!stableWindowReferenceTab) return;
@@ -1787,7 +1892,25 @@ const WindowReferenceGrid = ({
       // Pre-fill `0` for empty mandatory numeric fields (e.g. received_in /
       // paid_out) so the user only has to type the non-zero side — matches
       // the classic UI flow.
-      const mergedWithDefaults = applyNumericMandatoryDefaults(visibleFieldsFromTab, merged);
+      let mergedWithDefaults = applyNumericMandatoryDefaults(visibleFieldsFromTab, merged);
+      // Defense-in-depth: re-apply mutual-exclusion field interactions at
+      // create-row save time. The synchronous handler (handleRecordChange)
+      // already zeroes the sibling on every cell edit, so under normal flow
+      // this is a no-op. We re-run it here to guard against edge cases where
+      // an edit was dispatched while the rules registry was momentarily
+      // empty or the row state hadn't propagated yet.
+      const rules = processId ? getPayScriptRules(processId) : undefined;
+      if (rules) {
+        const patch = resolveMutualExclusion(rules, parameter.dBColumnName, mergedWithDefaults);
+        if (Object.keys(patch).length > 0) {
+          // biome-ignore lint/suspicious/noExplicitAny: same untyped patch shape
+          const expanded: Record<string, any> = {};
+          for (const [k, v] of Object.entries(patch)) {
+            for (const variant of expandKeyVariants(k)) expanded[variant] = v;
+          }
+          mergedWithDefaults = { ...mergedWithDefaults, ...expanded };
+        }
+      }
       const missing = collectMissingMandatory(visibleFieldsFromTab, mergedWithDefaults);
       if (missing.size > 0) {
         // Preserve Set reference when contents haven't changed — prevents context
@@ -1805,7 +1928,7 @@ const WindowReferenceGrid = ({
       setRowSelection((prev) => ({ ...prev, [id]: true }));
       table.setCreatingRow(null);
     },
-    [stableWindowReferenceTab, addRecordLocally, visibleFieldsFromTab]
+    [stableWindowReferenceTab, addRecordLocally, visibleFieldsFromTab, processId, parameter.dBColumnName]
   );
 
   const handleSaveRow = useCallback(
@@ -1872,18 +1995,54 @@ const WindowReferenceGrid = ({
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
-      if (!records.some((r) => String(r.id) === String(row.id)))
+      // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working in browser
+      console.log("[handleRecordChange] entry", {
+        rowId: row.id,
+        gridName: parameter.dBColumnName,
+        processId,
+        changes,
+      });
+
+      // Apply declarative field interactions from the payscript (e.g. mutually
+      // exclusive columns in a P&E grid). Runs BEFORE the localRecords lookup so
+      // MRT create-rows (id="mrt-row-create"), which haven't entered the state
+      // yet, still get their sibling columns zeroed on `row.original` and on
+      // MRT's per-cell cache — otherwise the row would be saved with both
+      // siblings populated.
+      const mergedChanges = applyFieldInteractions(processId, parameter.dBColumnName, row, changes);
+
+      // If a sibling patch was applied, bump the version so every GridCellEditor
+      // memo invalidates and re-reads row.original. Both create-rows and
+      // existing rows path through here; for existing rows it's redundant with
+      // setLocalRecords below but harmless (single integer bump).
+      if (mergedChanges !== changes) {
+        setSiblingPatchVersion((v) => v + 1);
+      }
+
+      // For rows not yet in localRecords (typical create-row case), the
+      // row.original / _valuesCache mutation plus the version bump above are
+      // the entire effect. The setLocalRecords + onSelectionChange paths below
+      // operate on existing rows only, so we stop here.
+      if (!records.some((r) => String(r.id) === String(row.id))) {
+        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — confirm we exit through the create-row branch after mutating row.original
+        console.log("[handleRecordChange] create-row branch — row.original mutated, skipping state sync", {
+          rowId: row.id,
+          mergedChanges,
+        });
         return;
+      }
 
       // Update state (trigger re-render)
-      setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...changes } : r)));
+      setLocalRecords((prev) =>
+        prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...mergedChanges } : r))
+      );
 
       // Update selection if selected (read from ref)
       if (selection[row.id]) {
         onSelectionChange((prev: GridSelectionStructure) => {
           const currentSelection = prev[parameter.dBColumnName]?._selection || [];
           const updatedSelection = currentSelection.map((item) =>
-            String(item.id) === String(row.id) ? { ...item, ...changes } : item
+            String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
           );
           return {
             ...prev,
@@ -1892,14 +2051,14 @@ const WindowReferenceGrid = ({
               _selection: updatedSelection,
               _allRows:
                 prev[parameter.dBColumnName]?._allRows?.map((item) =>
-                  String(item.id) === String(row.id) ? { ...item, ...changes } : item
+                  String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
                 ) || [],
             },
           };
         });
       }
     },
-    [parameter.dBColumnName, onSelectionChange]
+    [parameter.dBColumnName, onSelectionChange, processId]
   ); // Dependencies are now minimal and stable
 
   // Update the ref exposed to context
@@ -1923,6 +2082,7 @@ const WindowReferenceGrid = ({
       shouldSendOrg,
       createRowErrors,
       clearCellError,
+      siblingPatchVersion,
     }),
     [
       tabId,
@@ -1933,6 +2093,7 @@ const WindowReferenceGrid = ({
       shouldSendOrg,
       createRowErrors,
       clearCellError,
+      siblingPatchVersion,
     ]
   );
 

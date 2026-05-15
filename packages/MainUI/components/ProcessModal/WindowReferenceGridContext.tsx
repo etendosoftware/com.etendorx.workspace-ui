@@ -51,6 +51,15 @@ interface WindowReferenceGridContextValue {
   createRowErrors: Set<string>;
   /** Drops a single column from {@link createRowErrors} (called on edit). */
   clearCellError: (columnName: string) => void;
+  /**
+   * Monotonic counter bumped whenever `applyFieldInteractions` produces a
+   * non-empty sibling patch (e.g. mutually-exclusive column was zeroed). Flows
+   * down to each `GridCellEditor` as a prop so its `memo` comparator detects
+   * the change and re-renders — without this, the editor never re-evaluates
+   * `row.original[col.columnName]` for the sibling cell in MRT create-rows
+   * (which aren't in `localRecords` and so don't trigger re-render via state).
+   */
+  siblingPatchVersion: number;
 }
 
 const WindowReferenceGridContext = createContext<WindowReferenceGridContextValue | undefined>(undefined);
