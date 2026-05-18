@@ -148,16 +148,16 @@ describe("columnFilterHelpers", () => {
 
       expect(result).toEqual(mockData);
       // When column has datasourceId, needsDistinctValues returns true, uses entityName and columnName
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
-        undefined,
-        undefined,
-        20,
-        "organization",
-        "tab123",
-        0,
-        undefined
-      );
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith({
+        datasourceId: "SalesOrder",
+        searchQuery: undefined,
+        limit: 20,
+        distinctField: "organization",
+        tabId: "tab123",
+        offset: 0,
+        isImplicitFilterApplied: undefined,
+        extraParams: undefined,
+      });
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
 
@@ -183,16 +183,16 @@ describe("columnFilterHelpers", () => {
 
       expect(result).toEqual(mockData);
       // When column has referencedEntity, needsDistinctValues returns true, uses entityName and columnName
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
-        undefined,
-        undefined,
-        20,
-        "businessPartner",
-        "tab123",
-        0,
-        undefined
-      );
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith({
+        datasourceId: "SalesOrder",
+        searchQuery: undefined,
+        limit: 20,
+        distinctField: "businessPartner",
+        tabId: "tab123",
+        offset: 0,
+        isImplicitFilterApplied: undefined,
+        extraParams: undefined,
+      });
     });
 
     it("should handle pagination with offset and pageSize", async () => {
@@ -211,16 +211,16 @@ describe("columnFilterHelpers", () => {
       });
 
       // Column has datasourceId, so uses distinct values approach
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
-        undefined,
-        undefined,
-        10,
-        "product",
-        "tab123",
-        20,
-        undefined
-      );
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith({
+        datasourceId: "SalesOrder",
+        searchQuery: undefined,
+        limit: 10,
+        distinctField: "product",
+        tabId: "tab123",
+        offset: 20,
+        isImplicitFilterApplied: undefined,
+        extraParams: undefined,
+      });
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);
     });
 

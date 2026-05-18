@@ -177,7 +177,8 @@ describe("useColumns integration with custom JS", () => {
     // Normal field should not have custom Cell
     const normalColumn = result.current.find((col) => col.name === "normalField");
     expect(normalColumn).toBeDefined();
-    expect(normalColumn?.Cell).toBeUndefined();
+    // The normal column now has a Cell because of global color rendering logic
+    expect(normalColumn?.Cell).toBeDefined();
 
     // Custom field should have custom Cell function
     const customColumn = result.current.find((col) => col.name === "customField");
@@ -198,7 +199,8 @@ describe("useColumns integration with custom JS", () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].name).toBe("normalField");
-    expect(result.current[0].Cell).toBeUndefined();
+    // Global color rendering wraps every Cell
+    expect(result.current[0].Cell).toBeDefined();
   });
 
   it("should handle tab with empty fields", () => {
@@ -210,5 +212,24 @@ describe("useColumns integration with custom JS", () => {
     const { result } = renderHook(() => useColumns(emptyTab));
 
     expect(result.current).toHaveLength(0);
+  });
+
+  it("should filter out image columns", () => {
+    const tabWithImage = {
+      ...mockTab,
+      fields: {
+        normalField: mockTab.fields.normalField,
+        imageField: {
+          ...mockTab.fields.normalField,
+          name: "imageField",
+          column: { reference: "4AA6C3BE9D3B4D84A3B80489505A23E5" } as any,
+        },
+      },
+    };
+
+    const { result } = renderHook(() => useColumns(tabWithImage));
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].name).toBe("normalField");
   });
 });

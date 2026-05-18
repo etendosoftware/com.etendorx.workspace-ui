@@ -17,6 +17,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { FocusProvider } from "@/contexts/focus";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
@@ -569,7 +570,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const newState = { ...prevState };
 
       // Check if the window being deleted is the active one
-      const windowToDelete: WindowState = newState[windowIdentifier];
+      const windowToDelete: WindowState | undefined = newState[windowIdentifier];
+      if (!windowToDelete) {
+        return newState;
+      }
       const wasActive = windowToDelete.isActive;
 
       // Get all window identifiers in order (implicit order from state)
@@ -686,6 +690,14 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
   }, [isRecoveryLoading]);
 
+  const hasAppliedWindowsRef = useRef(false);
+
+  useEffect(() => {
+    if (windows.length > 0) {
+      hasAppliedWindowsRef.current = true;
+    }
+  }, [windows]);
+
   /**
    * Initialize state from recovered windows
    *
@@ -757,6 +769,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     // Only update URL if not recovering and all windows are initialized
     if (isRecoveryLoading) {
+      return;
+    }
+
+    // Wait for state to catch up to recovered windows before syncing URL.
+    // This prevents clearing the URL before the first render with Windows finishes.
+    if (recoveredWindows.length > 0 && windows.length === 0 && !hasAppliedWindowsRef.current) {
       return;
     }
 
@@ -875,7 +893,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     ]
   );
 
-  return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
+  return (
+    <WindowContext.Provider value={value}>
+      <FocusProvider data-testid="FocusProvider__77fd99">{children}</FocusProvider>
+    </WindowContext.Provider>
+  );
 }
 
 export const useWindowContext = () => {

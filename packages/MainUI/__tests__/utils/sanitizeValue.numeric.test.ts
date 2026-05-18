@@ -30,7 +30,7 @@ describe("sanitizeValue numeric field handling", () => {
     }) as Field;
 
   describe("INTEGER fields", () => {
-    const integerField = createMockField(FIELD_REFERENCE_CODES.INTEGER);
+    const integerField = createMockField(FIELD_REFERENCE_CODES.INTEGER.id);
 
     it("should convert string numbers to numeric values", () => {
       expect(sanitizeValue("123", integerField)).toBe(123);
@@ -57,7 +57,7 @@ describe("sanitizeValue numeric field handling", () => {
   });
 
   describe("NUMERIC fields", () => {
-    const numericField = createMockField(FIELD_REFERENCE_CODES.NUMERIC);
+    const numericField = createMockField(FIELD_REFERENCE_CODES.NUMERIC.id);
 
     it("should convert string numbers to numeric values", () => {
       expect(sanitizeValue("123.45", numericField)).toBe(123.45);
@@ -73,7 +73,7 @@ describe("sanitizeValue numeric field handling", () => {
   });
 
   describe("DECIMAL fields", () => {
-    const decimalField = createMockField(FIELD_REFERENCE_CODES.DECIMAL);
+    const decimalField = createMockField(FIELD_REFERENCE_CODES.DECIMAL.id);
 
     it("should convert string numbers to numeric values", () => {
       expect(sanitizeValue("999.999", decimalField)).toBe(999.999);
@@ -87,7 +87,7 @@ describe("sanitizeValue numeric field handling", () => {
   });
 
   describe("QUANTITY fields", () => {
-    const quantityField = createMockField(FIELD_REFERENCE_CODES.QUANTITY_29);
+    const quantityField = createMockField(FIELD_REFERENCE_CODES.QUANTITY_29.id);
 
     it("should convert string numbers to numeric values", () => {
       expect(sanitizeValue("10.5", quantityField)).toBe(10.5);
@@ -101,7 +101,7 @@ describe("sanitizeValue numeric field handling", () => {
   });
 
   describe("consumptionDays specific scenario", () => {
-    const consumptionDaysField = createMockField(FIELD_REFERENCE_CODES.INTEGER);
+    const consumptionDaysField = createMockField(FIELD_REFERENCE_CODES.INTEGER.id);
 
     it("should handle the specific case that was causing the error", () => {
       // This was the problematic case: "0" string being sent to backend

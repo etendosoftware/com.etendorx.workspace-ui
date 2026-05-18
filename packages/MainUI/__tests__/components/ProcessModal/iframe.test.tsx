@@ -139,4 +139,74 @@ describe("ProcessIframeModal", () => {
     const { container } = render(<ProcessIframeModal isOpen={false} />);
     expect(container.firstChild).toBeNull();
   });
+
+  it("sets hasNavigated on second onLoad and calls onProcessSuccess on close", async () => {
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+    const iframe = screen.getByTitle("common.processes");
+
+    // First load — initial render, must NOT set hasNavigated
+    fireEvent.load(iframe);
+    // Second load — URL navigation
+    fireEvent.load(iframe);
+
+    const closeButton = screen.getByTestId("close-button");
+    fireEvent.click(closeButton);
+
+    expect(onProcessSuccess).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("does NOT call onProcessSuccess after only the initial onLoad", async () => {
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+    const iframe = screen.getByTitle("common.processes");
+
+    // Only first load — initial render
+    fireEvent.load(iframe);
+
+    const closeButton = screen.getByTestId("close-button");
+    fireEvent.click(closeButton);
+
+    expect(onProcessSuccess).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call onProcessSuccess when closing without any load or postMessage", () => {
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+
+    const closeButton = screen.getByTestId("close-button");
+    fireEvent.click(closeButton);
+
+    expect(onProcessSuccess).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("calls onProcessSuccess via postMessage success path (existing behavior unchanged)", async () => {
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    mockFetchProcessMessage.mockResolvedValueOnce({
+      type: "success",
+      title: "Done",
+    });
+    render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+
+    act(() => {
+      window.postMessage({ action: "processOrder" }, "*");
+    });
+
+    await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+
+    act(() => {
+      window.postMessage({ action: "closeModal" }, "*");
+    });
+
+    await waitFor(() => {
+      expect(onProcessSuccess).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
 });

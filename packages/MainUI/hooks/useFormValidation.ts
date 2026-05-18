@@ -20,6 +20,7 @@ import { useFormContext } from "react-hook-form";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "./useUserContext";
+import { createSmartContext } from "@/utils/expressions";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
@@ -69,7 +70,8 @@ export const useFormValidation = (tab: Tab) => {
     if (!tab?.fields) return [];
 
     return Object.values(tab.fields).filter((field: Field) => {
-      return field.isMandatory && field.displayed && !field.isReadOnly;
+      const isPropertyField = !!field.column?.propertyPath;
+      return field.isMandatory && field.displayed && !field.isReadOnly && !isPropertyField;
     });
   }, [tab?.fields]);
 
@@ -93,7 +95,12 @@ export const useFormValidation = (tab: Tab) => {
         }
 
         const compiledExpression = compileExpression(field.displayLogicExpression);
-        return compiledExpression(session, currentValues);
+        const ctx = createSmartContext({
+          values: currentValues,
+          fields: tab?.fields,
+          context: session,
+        });
+        return compiledExpression(ctx, ctx);
       } catch (error) {
         logger.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
         return field.displayed; // Default to displayed on error
@@ -165,8 +172,8 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isReferenceField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 ||
-      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id
     );
   };
 
@@ -175,8 +182,8 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isStringField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.STRING ||
-      field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG
+      field.column?.reference === FIELD_REFERENCE_CODES.STRING.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id
     );
   };
 
@@ -185,9 +192,9 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isNumericField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.INTEGER ||
-      field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC ||
-      field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22
+      field.column?.reference === FIELD_REFERENCE_CODES.INTEGER.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22.id
     );
   };
 
@@ -195,7 +202,7 @@ export const useFormValidation = (tab: Tab) => {
    * Check if field is boolean type
    */
   const isBooleanField = (field: Field): boolean => {
-    return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN;
+    return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id;
   };
 
   /**

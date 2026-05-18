@@ -47,7 +47,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
 
         setLoading(true);
 
-        const body = new URLSearchParams({
+        const baseBody = {
           _startRow: "0",
           _endRow: "75",
           _operationType: "fetch",
@@ -60,7 +60,9 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           initiatorField: field.hqlName,
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
           ...parentData,
-        });
+        };
+
+        const body = new URLSearchParams(baseBody as unknown as Record<string, string>);
 
         for (const [key, value] of Object.entries(getValues())) {
           const _key = tab.fields[key]?.inputName;
@@ -81,7 +83,8 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           }
         }
 
-        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? "", {
+        const datasourceName = (field.selector?.datasourceName ?? "") as string;
+        const { data, statusText } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
           method: "POST",
           body,
         });

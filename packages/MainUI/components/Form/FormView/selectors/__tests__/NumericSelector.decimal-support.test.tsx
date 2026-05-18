@@ -38,12 +38,12 @@ describe("NumericSelector - Decimal Separator Support", () => {
 
     it("should accept decimal values with dot", basicTests.testDotInput);
 
-    it("should accept comma input and normalize to dot", () => basicTests.testCommaInput());
+    it("should accept comma input and normalize to dot", () => basicTests.testCommaInput("123.00"));
 
     it("should process intermediate values during typing", () => {
       basicTests.testIntermediateValues("123.", () => {
         const input = document.querySelector("input") as HTMLInputElement;
-        expect(input).toHaveValue("123");
+        expect(input).toHaveValue("123.00");
       });
     });
   });
@@ -69,7 +69,7 @@ describe("NumericSelector - Decimal Separator Support", () => {
     });
 
     it("should normalize values starting with decimal separator", () => {
-      edgeCaseTests.testValueStartingWithDecimal("0.5");
+      edgeCaseTests.testValueStartingWithDecimal("0.50");
     });
   });
 });

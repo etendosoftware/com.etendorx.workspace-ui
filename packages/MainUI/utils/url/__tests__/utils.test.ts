@@ -32,6 +32,7 @@ import {
   removeRecoveryParameters,
   removeWindowParameters,
   appendWindowToUrl,
+  buildEtendoClassicBookmarkUrl,
 } from "../utils";
 import type { WindowState } from "../../window/constants";
 import { TAB_MODES, FORM_MODES, URL_PREFIXS } from "../constants";
@@ -1115,5 +1116,109 @@ describe("appendWindowToUrl", () => {
         "window?wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_2000&ti_1=LocationTab&ri_1=2000015"
       );
     });
+  });
+});
+
+describe("buildEtendoClassicBookmarkUrl", () => {
+  const baseUrl = "http://localhost:8080/etendo";
+  const processUrl = "/ad_actionButton/ExpenseSOrder.html";
+  const tabTitle = "Process Tab";
+
+  it("should return legacy URL format when token is null", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl,
+      tabTitle,
+      kioskMode: false,
+      token: null,
+    });
+
+    expect(result).toContain(baseUrl);
+    expect(result).toContain("/#");
+    expect(result).toContain("OBClassicWindow");
+    expect(result).not.toContain("kiosk");
+  });
+
+  it("should include kiosk param in legacy URL when kioskMode is true and token is null", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl,
+      tabTitle,
+      kioskMode: true,
+      token: null,
+    });
+
+    expect(result).toContain("?kiosk=true");
+    expect(result).toContain("/#");
+  });
+
+  it("should return redirect URL format when token is provided", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl,
+      tabTitle,
+      kioskMode: false,
+      token: "jwt-token-123",
+    });
+
+    expect(result).toContain("/redirect?location=");
+    expect(result).toContain("&token=jwt-token-123");
+  });
+
+  it("should include kiosk in redirect location when kioskMode is true", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl,
+      tabTitle,
+      kioskMode: true,
+      token: "jwt-token-123",
+    });
+
+    expect(result).toContain("/redirect?location=");
+    expect(result).toContain("token=jwt-token-123");
+    // The encoded location should contain kiosk=true
+    const locationParam = new URL(result).searchParams.get("location");
+    expect(locationParam).toContain("kiosk=true");
+  });
+
+  it("should serialize bookmark data with process URL and tab title", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl,
+      tabTitle,
+      kioskMode: false,
+      token: null,
+    });
+
+    // The hash portion should contain encoded bookmark data
+    const hashPart = result.split("#")[1];
+    expect(hashPart).toBeDefined();
+    expect(hashPart).toContain("OBClassicWindow");
+  });
+
+  it("should handle baseUrl with trailing slash", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl: "http://localhost:8080/etendo/",
+      processUrl,
+      tabTitle,
+      kioskMode: false,
+      token: "tok",
+    });
+
+    // Should still produce a valid URL
+    expect(result).toContain("/redirect?location=");
+  });
+
+  it("should encode the process URL in the bookmark", () => {
+    const result = buildEtendoClassicBookmarkUrl({
+      baseUrl,
+      processUrl: "/path/with spaces&special",
+      tabTitle: "Test",
+      kioskMode: false,
+      token: null,
+    });
+
+    expect(result).toBeDefined();
+    expect(result).toContain("#");
   });
 });

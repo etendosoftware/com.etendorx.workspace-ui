@@ -46,7 +46,7 @@ describe("hooks/useColumnFilterData", () => {
     });
 
     const { result } = renderHook(() => useColumnFilterData());
-    const options = await result.current.fetchFilterOptions("ProductDS");
+    const options = await result.current.fetchFilterOptions({ datasourceId: "ProductDS" });
 
     expect(datasource.get).toHaveBeenCalledWith(
       "ProductDS",
@@ -71,7 +71,13 @@ describe("hooks/useColumnFilterData", () => {
     });
 
     const { result } = renderHook(() => useColumnFilterData());
-    const options = await result.current.fetchFilterOptions("ProductDS", undefined, "search", 10, "category", "TAB1");
+    const options = await result.current.fetchFilterOptions({
+      datasourceId: "ProductDS",
+      searchQuery: "search",
+      limit: 10,
+      distinctField: "category",
+      tabId: "TAB1",
+    });
 
     expect(datasource.get).toHaveBeenCalledWith(
       "ProductDS",
@@ -93,7 +99,7 @@ describe("hooks/useColumnFilterData", () => {
     (datasource.get as jest.Mock).mockResolvedValue({ ok: false });
     const { result } = renderHook(() => useColumnFilterData());
 
-    const options = await result.current.fetchFilterOptions("DS");
+    const options = await result.current.fetchFilterOptions({ datasourceId: "DS" });
     expect(options).toEqual([]);
   });
 
@@ -103,7 +109,7 @@ describe("hooks/useColumnFilterData", () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
     const { result } = renderHook(() => useColumnFilterData());
-    const options = await result.current.fetchFilterOptions("DS");
+    const options = await result.current.fetchFilterOptions({ datasourceId: "DS" });
 
     expect(options).toEqual([]);
     expect(consoleSpy).toHaveBeenCalledWith("Error fetching filter options:", error);

@@ -23,7 +23,10 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
+import { changePassword as doChangePassword } from "@workspaceui/api-client/src/api/changePassword";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
+import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
+import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
@@ -119,6 +122,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         ...sessionResponse.attributes,
         "#AD_Org_ID": sessionResponse.currentOrganization.id,
         adOrgId: sessionResponse.currentOrganization.id,
+        "#AD_Client_ID": sessionResponse.currentClient.id,
+        AD_CLIENT_ID: sessionResponse.currentClient.id,
       }));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);
@@ -140,6 +145,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentOrganization(sessionResponse.currentOrganization);
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
+
+      // Load all preferences from backend and store in localStorage
+      // These are used by display logic expressions (OB.PropertyStore.get)
+      try {
+        const prefs = await getPreferences();
+        savePreferences(prefs);
+      } catch (prefError) {
+        logger.warn("Failed to load preferences:", prefError);
+      }
     },
     [language, setLanguage, updateProfile]
   );
@@ -160,6 +174,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem("currentWarehouse");
     localStorage.removeItem("currentLanguage");
     localStorage.removeItem("language");
+    clearPreferences();
     setLanguage(null);
   }, [INITIAL_PROFILE, setToken, setLanguage]);
 
@@ -172,6 +187,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
       try {
         const response = await doChangeProfile(params);
 
+        // Persist the new role BEFORE calling setToken so the verifySession
+        // useEffect does not see a mismatch and revert the role change.
+        if (params.role) {
+          localStorage.setItem("currentRoleId", params.role);
+        }
         localStorage.setItem("token", response.token);
         setToken(response.token);
 
@@ -188,6 +208,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
     },
     [setToken, token, updateSessionInfo]
   );
+
+  const changePassword = useCallback(async (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => {
+    try {
+      await doChangePassword(params);
+    } catch (error) {
+      logger.warn("Error changing password:", error instanceof Error ? error.message : "Unknown error");
+      throw error;
+    }
+  }, []);
 
   const login = useCallback(
     async (username: string, password: string) => {
@@ -233,6 +262,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       currentRole,
       profile,
       changeProfile,
+      changePassword,
       currentWarehouse,
       currentClient,
       currentOrganization,
@@ -261,6 +291,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       currentRole,
       profile,
       changeProfile,
+      changePassword,
       currentWarehouse,
       currentClient,
       currentOrganization,
@@ -288,9 +319,32 @@ export default function UserProvider(props: React.PropsWithChildren) {
       try {
         if (token) {
           setIsVerifyingSession(true);
-          Metadata.setToken(token);
-          datasource.setToken(token);
-          CopilotClient.setToken(token);
+          let activeToken = token;
+
+          // If the stored token was issued for a different role than the user's last
+          // session (e.g. initial login token has role "0" but the user previously
+          // switched to a specific role), re-authenticate with the saved role so that
+          // every subsequent request — including the dashboard layout GET — uses a
+          // role-scoped token and sees the correct data.
+          const savedRoleId = localStorage.getItem("currentRoleId");
+          if (savedRoleId) {
+            try {
+              const [, payloadB64] = token.split(".");
+              const payload = JSON.parse(atob(payloadB64));
+              if (payload.role !== savedRoleId) {
+                const refreshed = await doChangeProfile({ role: savedRoleId });
+                activeToken = refreshed.token;
+                localStorage.setItem("token", activeToken);
+                setToken(activeToken);
+              }
+            } catch {
+              // JWT decode or changeProfile failed — proceed with the stored token
+            }
+          }
+
+          Metadata.setToken(activeToken);
+          datasource.setToken(activeToken);
+          CopilotClient.setToken(activeToken);
           const sessionData = await getSession();
           await updateSessionInfo(sessionData);
         }
@@ -307,7 +361,23 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
-      if (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) {
+      const isIgnorableError =
+        (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) &&
+        (response.url.includes("meta/window") ||
+          response.url.includes("meta/tab") ||
+          response.url.includes("meta/toolbar") ||
+          response.url.includes("api/datasource") ||
+          response.url.includes("org.openbravo.client.kernel") ||
+          response.url.includes("meta/labels") ||
+          response.url.includes("utility/ReferencedLink") ||
+          // Dashboard widget errors should not log the user out
+          response.url.includes("meta/widget") ||
+          response.url.includes("meta/dashboard"));
+
+      if (
+        (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&
+        !isIgnorableError
+      ) {
         logout();
         setLoginErrorText(t("login.errors.defaultLogout.title"));
         setLoginErrorDescription(t("login.errors.defaultLogout.description"));

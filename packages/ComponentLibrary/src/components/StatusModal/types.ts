@@ -55,6 +55,7 @@ export interface ConfirmModalProps {
   onCancel: () => void;
   saveLabel?: string;
   secondaryButtonLabel?: string;
+  hideSecondaryButton?: boolean;
   onAfterClose?: () => void;
   open?: boolean;
 }

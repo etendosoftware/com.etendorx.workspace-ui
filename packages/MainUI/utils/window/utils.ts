@@ -31,6 +31,7 @@ import type {
   WindowState,
   WindowRecoveryInfo,
 } from "@/utils/window/constants";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 /**
  * Generates a new tab form state for a specific record and mode.
@@ -335,4 +336,48 @@ export const markWindowAsInitialized = (windowState: WindowState): WindowState =
  */
 export const isWindowReady = (windowState: WindowState): boolean => {
   return windowState.initialized;
+};
+
+/**
+ * Returns the map key (in `tab.fields`) of the primary-key field, or `undefined`
+ * if no PK field is present.
+ *
+ * Detection follows the project convention (`field.column.keyColumn` truthy),
+ * consistent with `useFormInitialization` and `useTableSelection/sessionSync`.
+ */
+export const getKeyFieldName = (tab: Tab): string | undefined => {
+  const fields = tab.fields ?? {};
+  const pkEntry = Object.entries(fields).find(([, field]) => Boolean(field?.column?.keyColumn));
+  return pkEntry?.[0];
+};
+
+/**
+ * Discriminates the two sub-cases of a Single-Record (SR) tab.
+ *
+ * A SR tab is a **1:1 ID extension** when the child's primary-key column is
+ * also one of its parent foreign-key columns — i.e. the same database column
+ * is both the child's PK and the FK to the parent (e.g. `AD_ClientInfo.ad_client_id`).
+ * In that case `child.id === parent.id`, so the parent-selected id can be
+ * safely reused to open the form.
+ *
+ * When the PK and FK are distinct columns, the tab is a **logical SR relation**
+ * (e.g. `ETSG_Certificate.organization`): the child has its own id and the
+ * parent-selected id must not be forced onto the form. Auto-open for that
+ * variant is handled by `DynamicTable` once the child records are fetched.
+ *
+ * Defensive defaults:
+ * - `parentColumns` empty → treat as 1:1 (legacy behavior; no FK modelled).
+ * - `fields` not yet loaded → return `false` so the 1:1 auto-open is skipped
+ *   until field metadata arrives and the effect re-runs.
+ */
+export const isSrOneToOneExtension = (tab: Tab): boolean => {
+  const parentColumns = tab.parentColumns ?? [];
+  if (parentColumns.length === 0) {
+    return true;
+  }
+  const keyFieldName = getKeyFieldName(tab);
+  if (!keyFieldName) {
+    return false;
+  }
+  return parentColumns.includes(keyFieldName);
 };

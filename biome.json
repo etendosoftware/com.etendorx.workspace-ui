@@ -17,7 +17,9 @@
       "**/jest.setup.js",
       "**/jest.polyfills.js",
       "**/__mocks__/**",
-      "**/GenericWarehouseProcess/pluginValues/**"
+      "**/GenericWarehouseProcess/pluginValues/**",
+      "**/playwright-tests/test-results/**",
+      "**/playwright-tests/.playwright-artifacts*/**"
     ]
   },
   "linter": {

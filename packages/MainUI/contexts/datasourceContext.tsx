@@ -24,8 +24,8 @@ interface DatasourceContextValue {
   registerDatasource: (tabId: string, removeRecordLocally: (recordId: string) => void) => void;
   unregisterDatasource: (tabId: string) => void;
   removeRecordFromDatasource: (tabId: string, recordId: string) => void;
-  refetchDatasource: (tabId: string) => void;
-  registerRefetchFunction: (tabId: string, refetchFunction: () => void) => void;
+  refetchDatasource: (tabId: string) => Promise<void> | void;
+  registerRefetchFunction: (tabId: string, refetchFunction: () => Promise<void> | void) => void;
   registerRecordsGetter: (tabId: string, getRecords: () => EntityData[]) => void;
   getRecords: (tabId: string) => EntityData[];
   registerHasMoreRecordsGetter: (tabId: string, getHasMoreRecords: () => boolean) => void;
@@ -43,7 +43,7 @@ const DatasourceContext = createContext<DatasourceContextValue | undefined>(unde
 export function DatasourceProvider({ children }: { children: ReactNode }) {
   const datasourcesRef = useRef<Record<string, (recordId: string) => void>>({});
 
-  const refetchFunctionsRef = useRef<Record<string, () => void>>({});
+  const refetchFunctionsRef = useRef<Record<string, () => Promise<void> | void>>({});
   const recordsGettersRef = useRef<Record<string, () => EntityData[]>>({});
   const hasMoreRecordsGettersRef = useRef<Record<string, () => boolean>>({});
   const fetchMoreFunctionsRef = useRef<Record<string, () => void>>({});
@@ -51,14 +51,14 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
   const updateRecordFunctionsRef = useRef<Record<string, (recordId: string, record: EntityData) => void>>({});
   const addRecordFunctionsRef = useRef<Record<string, (record: EntityData) => void>>({});
 
-  const registerRefetchFunction = useCallback((tabId: string, refetchFunction: () => void) => {
+  const registerRefetchFunction = useCallback((tabId: string, refetchFunction: () => Promise<void> | void) => {
     refetchFunctionsRef.current[tabId] = refetchFunction;
   }, []);
 
-  const refetchDatasource = useCallback((tabId: string) => {
+  const refetchDatasource = useCallback(async (tabId: string) => {
     const refetchFunction = refetchFunctionsRef.current[tabId];
     if (refetchFunction) {
-      refetchFunction();
+      await refetchFunction();
     }
   }, []);
 

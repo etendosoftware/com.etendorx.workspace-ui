@@ -77,7 +77,7 @@ describe("API: /api/datasource/:entity save/update", () => {
     const { decoded } = assertErpForwardCall(expectedUrl, `Bearer ${BEARER_TOKEN}`, undefined, "application/json");
     expect(decoded).toContain('"operationType":"add"');
     expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
-    expect(decoded).toContain('"csrfToken":"CSRF-TEST-123"'); // Should be replaced with token from session store
+    expect(decoded).toContain('"csrfToken":"CSRF-TEST-123"'); // Replaced with CSRF token from session store
     expect(decoded).toContain('"data":{"key":"val"}');
     expect(decoded).toContain('"oldValues":{"prev":1}');
   });
@@ -110,6 +110,7 @@ describe("API: /api/datasource/:entity save/update", () => {
 
     expect(String(dest)).toBe(expectedUrl);
     expect(init.headers["Content-Type"]).toBe("application/x-custom");
+    // CSRF from session store is appended to non-JSON bodies
     expect(init.body).toBe(`${rawBody}&csrfToken=CSRF-TEST-123`);
   });
 });

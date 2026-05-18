@@ -296,19 +296,27 @@ function hasTreeConfiguration(tabData: Tab): boolean {
   return false;
 }
 
-function getTableIdFromTableName(tableName: string): string | undefined {
+function getTableIdFromTableName(tableName: string | undefined): string | undefined {
+  if (!tableName) return undefined;
+
   const tableIds: Record<string, string> = {
     ad_menu: "155",
     ad_org: "155",
     c_bpartner: "291",
     ad_table: "100",
     ad_column: "101",
+    a_asset: "539",
   };
 
   const normalizedTableName = tableName.toLowerCase();
 
-  // If it looks like a UUID, return it as is
+  // If it looks like a valid 32-char UUID, return it
   if (/^[0-9a-f]{32}$/i.test(normalizedTableName)) {
+    return tableName;
+  }
+
+  // If it's literally a numeric ID (like "539" for A_Asset)
+  if (/^\d+$/.test(normalizedTableName)) {
     return tableName;
   }
 
@@ -339,5 +347,7 @@ function getEntityIdFromTab(entityName: string, tabId?: string): string {
     return "90034CAE96E847D78FBEF6D38CB1930D";
   }
 
+  // Standard Etendo entities use the generic AD_TreeNode datasource UUID.
+  // The referencedTableId parameter in the request differentiates which table's tree to update.
   return "90034CAE96E847D78FBEF6D38CB1930D";
 }

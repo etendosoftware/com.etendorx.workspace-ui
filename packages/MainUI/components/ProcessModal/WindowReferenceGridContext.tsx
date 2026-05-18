@@ -34,6 +34,8 @@ interface WindowReferenceGridContextValue {
   // biome-ignore lint/suspicious/noExplicitAny: user session
   session: any;
   tabId: string | undefined;
+  fieldReadOnlyMap: Record<string, boolean>;
+  shouldSendOrg: boolean;
 }
 
 const WindowReferenceGridContext = createContext<WindowReferenceGridContextValue | undefined>(undefined);

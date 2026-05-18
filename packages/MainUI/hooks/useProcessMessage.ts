@@ -134,5 +134,33 @@ export function useProcessMessage(tabId: string) {
     }
   }, [publicHost, token, tabId, processResponseData, handleFetchError]);
 
-  return { fetchProcessMessage };
+  const fetchMetadataMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+    try {
+      const response = await fetch(`/api/erp/meta/message?tabId=${tabId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (!data || (data.message === "" && !data.type)) {
+        return null;
+      }
+
+      return processResponseData({
+        text: data.message,
+        type: data.type || "info",
+        title: data.title || "",
+      });
+    } catch (error) {
+      return handleFetchError(error);
+    }
+  }, [token, tabId, processResponseData, handleFetchError]);
+
+  return { fetchProcessMessage, fetchMetadataMessage };
 }

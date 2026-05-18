@@ -117,10 +117,10 @@ export class ProcessParameterMapper {
 
     // Map reference types to appropriate datasource names
     const datasourceMap: Record<string, string> = {
-      [FIELD_REFERENCE_CODES.PRODUCT]: "ProductByPriceAndWarehouse",
-      [FIELD_REFERENCE_CODES.TABLE_DIR_19]: "ComboTableDatasourceService",
-      [FIELD_REFERENCE_CODES.TABLE_DIR_18]: "ComboTableDatasourceService",
-      [FIELD_REFERENCE_CODES.SELECT_30]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.PRODUCT.id]: "ProductByPriceAndWarehouse",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_19.id]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_18.id]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.SELECT_30.id]: "ComboTableDatasourceService",
     };
 
     const datasourceName = datasourceMap[reference];
@@ -149,39 +149,49 @@ export class ProcessParameterMapper {
     // Map textual references from process definition to reference codes
     const referenceMap: Record<string, string> = {
       // Boolean types
-      "Yes/No": FIELD_REFERENCE_CODES.BOOLEAN,
-      YesNo: FIELD_REFERENCE_CODES.BOOLEAN,
-      Boolean: FIELD_REFERENCE_CODES.BOOLEAN,
+      "Yes/No": FIELD_REFERENCE_CODES.BOOLEAN.id,
+      YesNo: FIELD_REFERENCE_CODES.BOOLEAN.id,
+      Boolean: FIELD_REFERENCE_CODES.BOOLEAN.id,
 
       // Numeric types
-      Amount: FIELD_REFERENCE_CODES.DECIMAL,
-      Number: FIELD_REFERENCE_CODES.DECIMAL,
-      Decimal: FIELD_REFERENCE_CODES.DECIMAL,
-      Integer: FIELD_REFERENCE_CODES.INTEGER,
-      Quantity: FIELD_REFERENCE_CODES.QUANTITY_29,
+      Amount: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Number: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Decimal: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Integer: FIELD_REFERENCE_CODES.INTEGER.id,
+      Quantity: FIELD_REFERENCE_CODES.QUANTITY_29.id,
 
       // Date types
-      Date: FIELD_REFERENCE_CODES.DATE,
-      DateTime: FIELD_REFERENCE_CODES.DATETIME,
+      Date: FIELD_REFERENCE_CODES.DATE.id,
+      DateTime: FIELD_REFERENCE_CODES.DATETIME.id,
 
       // List types
-      List: FIELD_REFERENCE_CODES.LIST_17,
+      List: FIELD_REFERENCE_CODES.LIST_17.id,
 
       // Select types
-      Select: FIELD_REFERENCE_CODES.SELECT_30,
+      Select: FIELD_REFERENCE_CODES.SELECT_30.id,
 
       // Product types
-      Product: FIELD_REFERENCE_CODES.PRODUCT,
+      Product: FIELD_REFERENCE_CODES.PRODUCT.id,
 
       // Table Directory types
-      TableDir: FIELD_REFERENCE_CODES.TABLE_DIR_19,
-      "Table Directory": FIELD_REFERENCE_CODES.TABLE_DIR_19,
+      TableDir: FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
+      "Table Directory": FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
 
       // Password
-      Password: FIELD_REFERENCE_CODES.PASSWORD,
+      Password: FIELD_REFERENCE_CODES.PASSWORD.id,
 
       // Window reference
-      Window: FIELD_REFERENCE_CODES.WINDOW,
+      Window: FIELD_REFERENCE_CODES.WINDOW.id,
+
+      // Attribute Set Instance
+      PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
+
+      // Image
+      Image: FIELD_REFERENCE_CODES.IMAGE.id,
+
+      // Upload File (process parameters only)
+      "Upload File": FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
+      UploadFile: FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
 
       // String/Text (default)
       String: "10", // Text reference
@@ -224,12 +234,16 @@ export class ProcessParameterMapper {
       "TableDir",
       "Table Directory",
       "Window",
+      "PAttribute",
+      "Image",
+      "Upload File",
+      "UploadFile",
     ];
 
     return (
       !parameter.reference ||
       supportedReferences.includes(parameter.reference) ||
-      (Object.values(FIELD_REFERENCE_CODES) as string[]).includes(parameter.reference)
+      (Object.values(FIELD_REFERENCE_CODES).map((v) => v.id) as string[]).includes(parameter.reference)
     );
   }
 
@@ -241,40 +255,48 @@ export class ProcessParameterMapper {
   static getFieldType(parameter: ProcessParameter | ExtendedProcessParameter): string {
     const reference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
-    // Check if parameter has selector information - indicates it's a tabledir/selector field
-    if (parameter.selector?.datasourceName) {
-      // Special case for Product selector
-      if (
-        parameter.selector.datasourceName === "ProductByPriceAndWarehouse" ||
-        parameter.selector.datasourceName === "Product"
-      ) {
-        return "product";
-      }
-      return "tabledir";
-    }
-
-    if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
-    if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";
-    if (reference === FIELD_REFERENCE_CODES.DECIMAL || reference === FIELD_REFERENCE_CODES.INTEGER) {
-      return "numeric";
-    }
-    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29 || reference === FIELD_REFERENCE_CODES.QUANTITY_22) {
-      return "quantity";
-    }
-    if (reference === FIELD_REFERENCE_CODES.DATE) return "date";
-    if (reference === FIELD_REFERENCE_CODES.DATETIME) return "datetime";
-    if (reference === FIELD_REFERENCE_CODES.SELECT_30) return "select";
-    if (reference === FIELD_REFERENCE_CODES.PRODUCT) return "product";
-    if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19 || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18) {
-      return "tabledir";
-    }
-    if (reference === FIELD_REFERENCE_CODES.LIST_17 || reference === FIELD_REFERENCE_CODES.LIST_13) {
+    // List types must be checked BEFORE the selector/datasource check,
+    // because the API may return a selector object even for List-type parameters (e.g. Lead Status).
+    // If we let the selector check win, the parameter gets routed to TableDirSelector which
+    // tries to fetch from a datasource and fails.
+    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
       return "list";
     }
-    if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
 
-    return "text"; // Default fallback
+    if (parameter.selector?.datasourceName) {
+      return ProcessParameterMapper.getSelectorFieldType(parameter.selector.datasourceName);
+    }
+
+    return ProcessParameterMapper.REFERENCE_TO_FIELD_TYPE[reference] ?? "text";
   }
+
+  private static getSelectorFieldType(datasourceName: string): string {
+    if (datasourceName === "ProductByPriceAndWarehouse" || datasourceName === "Product") {
+      return "product";
+    }
+    return "tabledir";
+  }
+
+  private static readonly REFERENCE_TO_FIELD_TYPE: Record<string, string> = Object.fromEntries([
+    [FIELD_REFERENCE_CODES.PASSWORD.id, "password"],
+    [FIELD_REFERENCE_CODES.BOOLEAN.id, "boolean"],
+    [FIELD_REFERENCE_CODES.DECIMAL.id, "numeric"],
+    [FIELD_REFERENCE_CODES.INTEGER.id, "numeric"],
+    [FIELD_REFERENCE_CODES.QUANTITY_29.id, "quantity"],
+    [FIELD_REFERENCE_CODES.QUANTITY_22.id, "quantity"],
+    [FIELD_REFERENCE_CODES.DATE.id, "date"],
+    [FIELD_REFERENCE_CODES.DATETIME.id, "datetime"],
+    [FIELD_REFERENCE_CODES.SELECT_30.id, "select"],
+    [FIELD_REFERENCE_CODES.PRODUCT.id, "product"],
+    [FIELD_REFERENCE_CODES.TABLE_DIR_19.id, "tabledir"],
+    [FIELD_REFERENCE_CODES.TABLE_DIR_18.id, "tabledir"],
+    [FIELD_REFERENCE_CODES.LIST_17.id, "list"],
+    [FIELD_REFERENCE_CODES.LIST_13.id, "list"],
+    [FIELD_REFERENCE_CODES.WINDOW.id, "window"],
+    [FIELD_REFERENCE_CODES.PATTRIBUTE.id, "pattribute"],
+    [FIELD_REFERENCE_CODES.IMAGE.id, "image"],
+    [FIELD_REFERENCE_CODES.UPLOAD_FILE.id, "uploadfile"],
+  ]);
 
   /**
    * Maps DefaultsProcessActionHandler response to parameter-based field names
@@ -395,7 +417,7 @@ export class ProcessParameterMapper {
           }
           if (isSimpleValue(processDefaultValue)) {
             if (
-              parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN ||
+              parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id ||
               parameter?.reference === "Yes/No" ||
               parameter?.reference === "Boolean"
             ) {

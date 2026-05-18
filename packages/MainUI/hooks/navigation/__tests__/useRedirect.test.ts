@@ -22,6 +22,8 @@ import { useRedirect } from "../useRedirect";
 const mockSetWindowActive = jest.fn();
 const mockGetNewWindowIdentifier = jest.fn();
 const mockCreateDefaultTabState = jest.fn();
+const mockGetCachedMenu = jest.fn();
+const mockGetWindow = jest.fn();
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => ({
@@ -37,6 +39,15 @@ jest.mock("@/utils/window/utils", () => ({
 jest.mock("@/utils/url/constants", () => ({
   FORM_MODES: { EDIT: "EDIT", NEW: "NEW", VIEW: "VIEW" },
   TAB_MODES: { FORM: "FORM", GRID: "GRID" },
+}));
+
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: {
+    getCachedMenu: () => mockGetCachedMenu(),
+    getWindow: (id: string) => mockGetWindow(id),
+    client: { request: jest.fn() },
+    registerInterceptor: jest.fn(),
+  },
 }));
 
 describe("useRedirect", () => {
@@ -291,6 +302,154 @@ describe("useRedirect", () => {
 
       expect(result.current.handleClickRedirect).toBe(firstClickHandler);
       expect(result.current.handleKeyDownRedirect).toBe(firstKeyHandler);
+    });
+  });
+
+  // ============================================================================
+  // handleClientclassNavigation Tests
+  // ============================================================================
+
+  describe("handleClientclassNavigation", () => {
+    const mockMenu = [
+      {
+        id: "menu-1",
+        name: "Sales Order",
+        windowId: "W-SALES",
+        children: [],
+      },
+      {
+        id: "menu-2",
+        name: "Sales Invoice",
+        windowId: "W-INVOICE",
+        children: [{ id: "menu-2-1", name: "Invoice Lines", windowId: "W-INV-LINES", children: [] }],
+      },
+    ];
+
+    const mockWindowMeta = {
+      id: "W-SALES",
+      name: "Sales Order",
+      tabs: [
+        { id: "TAB-ROOT", tabLevel: 0, entityName: "Order" },
+        { id: "TAB-LINES", tabLevel: 1, entityName: "OrderLine" },
+      ],
+    };
+
+    beforeEach(() => {
+      mockGetCachedMenu.mockReturnValue(mockMenu);
+      mockGetWindow.mockResolvedValue(mockWindowMeta);
+    });
+
+    it("should be exposed from useRedirect", () => {
+      const { result } = renderHook(() => useRedirect());
+      expect(result.current.handleClientclassNavigation).toBeDefined();
+      expect(typeof result.current.handleClientclassNavigation).toBe("function");
+    });
+
+    it("should resolve window by converting clientclass to display name and navigate", async () => {
+      const { result } = renderHook(() => useRedirect());
+
+      await act(async () => {
+        await result.current.handleClientclassNavigation({
+          clientclass: "SalesOrderTabLink",
+          recordId: "ORDER-001",
+        });
+      });
+
+      expect(mockGetCachedMenu).toHaveBeenCalled();
+      expect(mockGetWindow).toHaveBeenCalledWith("W-SALES");
+      expect(mockSetWindowActive).toHaveBeenCalledWith(
+        expect.objectContaining({
+          windowData: expect.objectContaining({
+            title: "Sales Order",
+            tabs: expect.objectContaining({
+              "TAB-ROOT": expect.objectContaining({
+                form: expect.objectContaining({
+                  recordId: "ORDER-001",
+                  mode: "FORM",
+                  formMode: "EDIT",
+                }),
+                selectedRecord: "ORDER-001",
+              }),
+            }),
+          }),
+        })
+      );
+    });
+
+    it("should warn and not navigate when no matching menu item found", async () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      const { result } = renderHook(() => useRedirect());
+
+      await act(async () => {
+        await result.current.handleClientclassNavigation({
+          clientclass: "UnknownEntityTabLink",
+          recordId: "RECORD-001",
+        });
+      });
+
+      expect(mockSetWindowActive).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[useRedirect] Could not find window for clientclass:",
+        "UnknownEntityTabLink"
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it("should navigate without tab state when window metadata has no tabs", async () => {
+      mockGetWindow.mockResolvedValue({ id: "W-SALES", name: "Sales Order", tabs: [] });
+      const { result } = renderHook(() => useRedirect());
+
+      await act(async () => {
+        await result.current.handleClientclassNavigation({
+          clientclass: "SalesOrderTabLink",
+          recordId: "ORDER-002",
+        });
+      });
+
+      expect(mockSetWindowActive).toHaveBeenCalledWith(
+        expect.objectContaining({
+          windowData: expect.objectContaining({
+            tabs: {},
+          }),
+        })
+      );
+    });
+
+    it("should navigate even if getWindow throws, with empty tab state", async () => {
+      mockGetWindow.mockRejectedValue(new Error("Network error"));
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      const { result } = renderHook(() => useRedirect());
+
+      await act(async () => {
+        await result.current.handleClientclassNavigation({
+          clientclass: "SalesOrderTabLink",
+          recordId: "ORDER-003",
+        });
+      });
+
+      expect(mockSetWindowActive).toHaveBeenCalledWith(
+        expect.objectContaining({
+          windowData: expect.objectContaining({ tabs: {} }),
+        })
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[useRedirect] Could not load window metadata for clientclass navigation:",
+        expect.any(Error)
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it("should find window items nested inside children", async () => {
+      const { result } = renderHook(() => useRedirect());
+
+      await act(async () => {
+        await result.current.handleClientclassNavigation({
+          clientclass: "InvoiceLinesTabLink",
+          recordId: "LINE-001",
+        });
+      });
+
+      expect(mockGetWindow).toHaveBeenCalledWith("W-INV-LINES");
     });
   });
 });

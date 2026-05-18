@@ -350,8 +350,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
       );
 
       if (locationId) {
-        setValue(field.hqlName, locationId);
-        setValue(`${field.hqlName}$_identifier`, displayIdentifier);
+        setValue(`${field.hqlName}$_identifier`, displayIdentifier, { shouldDirty: false });
+        setValue(field.hqlName, locationId, { shouldDirty: true, shouldValidate: true });
         setValue(`${field.hqlName}_data`, {
           id: locationId,
           _identifier: displayIdentifier,

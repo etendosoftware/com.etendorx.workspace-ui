@@ -79,6 +79,10 @@ jest.mock("@/contexts/tab", () => ({
   }),
 }));
 
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({ triggerRecovery: jest.fn(), isRecoveryLoading: false }),
+}));
+
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getSelectedMultiple: () => [] } }),
 }));

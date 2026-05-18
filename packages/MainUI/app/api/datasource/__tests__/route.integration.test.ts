@@ -2,7 +2,7 @@
 import { setupDatasourceMocks } from "../../_test-utils/common-mocks";
 setupDatasourceMocks();
 /**
- * Integration-like test: Grids POST /api/datasource with criteria array → single JSON array string.
+ * Integration-like test: Grids POST /api/datasource with criteria array → multiple separate criteria params.
  */
 
 import { createDatasourceTestSuite, assertDatasourceCall } from "../../_test-utils/datasource-test-utils";
@@ -13,7 +13,7 @@ import { getExpectedDatasourceUrl } from "../../_test-utils/endpoint-test-utils"
 const testSuite = createDatasourceTestSuite("Grids: /api/datasource criteria handling", "grid");
 
 testSuite.describe(() => {
-  it("flattens multiple criteria entries into a single JSON array string", async () => {
+  it("sends multiple criteria entries as separate params (one per criterion)", async () => {
     const BEARER_TOKEN = "Bearer-Token-XYZ";
     setErpSessionCookie(BEARER_TOKEN, {
       cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
@@ -47,9 +47,9 @@ testSuite.describe(() => {
     const [, init] = fetchMock.mock.calls[0];
     const decoded = decodeURIComponent(init.body as string);
 
-    // Should be a single criteria=[...] entry
-    expect(decoded).toContain("criteria=[");
-    expect(decoded.match(/criteria=/g)?.length).toBe(1);
+    // Each criterion is sent as a separate criteria= param (not as a JSON array)
+    expect(decoded).not.toContain("criteria=[");
+    expect(decoded.match(/criteria=/g)?.length).toBe(2);
     expect(decoded).toContain('"fieldName":"name"');
     expect(decoded).toContain('"fieldName":"code"');
   });

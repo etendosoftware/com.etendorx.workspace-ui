@@ -44,9 +44,8 @@ export function hasUnsavedChanges(editingRowData: EditingRowData): boolean {
 export function createCancelConfirmationMessage(editingRowData: EditingRowData, t: (key: string) => string): string {
   if (editingRowData.isNew) {
     return t("table.cancel.confirmNewRow");
-  } else {
-    return t("table.cancel.confirmChanges");
   }
+  return t("table.cancel.confirmChanges");
 }
 
 /**
@@ -165,7 +164,7 @@ export async function handleBatchCancelOperation({
     const confirmed = confirmationCallback ? await confirmationCallback(message, title) : window.confirm(message);
 
     if (!confirmed) {
-      logger.info(`[CancelOperation] User cancelled the batch cancel operation`);
+      logger.info("[CancelOperation] User cancelled the batch cancel operation");
       throw new Error("Batch cancel operation was cancelled by user");
     }
   }

@@ -37,4 +37,32 @@ describe("GlobalCalloutManager", () => {
     expect(aEnd).toBeLessThan(bStart);
     expect(bStart).toBeLessThan(bEnd);
   });
+
+  it("resolves waitForIdle when all callouts are complete", async () => {
+    // Start a callout that blocks
+    let resolveCallout: () => void;
+    const calloutPromise = globalCalloutManager.executeCallout("C", async () => {
+      await new Promise<void>((r) => {
+        resolveCallout = r;
+      });
+    });
+
+    // waitForIdle should not resolve yet
+    let isIdle = false;
+    const idlePromise = globalCalloutManager.waitForIdle().then(() => {
+      isIdle = true;
+    });
+
+    // Wait a bit to ensure it hasn't resolved
+    await new Promise((r) => setTimeout(r, 20));
+    expect(isIdle).toBe(false);
+
+    // Resolve the callout
+    resolveCallout!();
+    await calloutPromise;
+
+    // Now waitForIdle should resolve
+    await idlePromise;
+    expect(isIdle).toBe(true);
+  });
 });

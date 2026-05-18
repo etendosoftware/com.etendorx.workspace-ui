@@ -152,6 +152,44 @@ function MyComponent() {
 }
 ```
 
+## Copy / Clone Record Behavior
+
+### Overview
+
+The Copy (clone) action in the toolbar duplicates the currently selected record(s) via an API request. After cloning, the graph selection state and the window's selected record reference must both be updated to point at the new clone — not the original. Failing to clear the previous selection causes the Breadcrumb to display the old identifier and the Grid to highlight the wrong row on return from Form view.
+
+### How It Works
+
+`handleCopyRecord` in `useToolbarConfig.ts` orchestrates the clone flow:
+
+1. A confirmation modal is shown. If the tab supports `obuiappCloneChildren`, the user can choose between a shallow clone and a deep clone (with child records).
+2. `copyRecordRequest` sends the clone request to the backend.
+3. On success, `handleCopyRecordResponse` dispatches one of two callbacks:
+
+| Callback | Condition | Actions taken |
+|---|---|---|
+| `onSingleRecord(newRecordId)` | Exactly one record was cloned | Sets the new record as selected in the window context, transitions the tab to Form/Edit view for the clone. Grid refresh is deferred until the Table becomes visible again. |
+| `onMultipleRecords()` | Multiple records were cloned | Clears graph selection, clears the selected record reference, triggers grid refresh immediately. |
+
+### Selection State Clearing
+
+`onMultipleRecords` calls `graph.clearSelected(tab)` and `graph.clearSelectedMultiple(tab)` before `clearSelectedRecord`. This ordering ensures the graph cache is evicted before the window context is updated.
+
+`onSingleRecord` does **not** call `graph.clearSelected` or `graph.clearSelectedMultiple`. Doing so emits an `"unselected"` event synchronously, which causes `table.setRowSelection({})` → `useTableSelection` → `clearSelectedRecord`, overwriting the new record ID just set in the window context. Instead, the graph cache is naturally invalidated by the record ID change in `useCurrentRecord` (new `paramsKey`), and `FormView` calls `graph.setSelected` once it loads the clone's data.
+
+### Grid Refresh After Single-Record Clone
+
+When one record is cloned, the user is navigated to Form view of the clone. The Table component remains mounted but hidden. A `useEffect` in `Table/index.tsx` detects the visibility transition (`isVisible: false → true`) when the user returns to Grid view, and triggers `refetch()` if a selected record exists. This guarantees the cloned record appears in the grid without requiring an immediate (and wasteful) refresh while the Table is invisible.
+
+### Clone with Children
+
+When `tab.obuiappCloneChildren` is `true`, the confirmation modal offers three buttons: **Clone** (shallow), **Clone with Children** (deep), and **Cancel**. The `cloneWithChildren` boolean is forwarded to `copyRecordRequest` and controls the backend duplication depth.
+
+### Key Files
+
+- `packages/MainUI/hooks/Toolbar/useToolbarConfig.ts` — `handleCopyRecord` callback
+- `packages/MainUI/utils/processes/toolbar/utils.ts` — `copyRecordRequest`, `handleCopyRecordResponse`
+
 ## Component Architecture
 
 ### Main Components

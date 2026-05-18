@@ -84,7 +84,7 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
           return false;
         }
 
-        if (colDef.type === "button") {
+        if (colDef.type === "button" || colDef.type === "image") {
           return false;
         }
 

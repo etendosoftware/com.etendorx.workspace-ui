@@ -15,37 +15,47 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
-import type { FormMode, Tab } from "@workspaceui/api-client/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowContext } from "@/contexts/window";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
-  onSave: (options: SaveOptions) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<boolean>;
   showErrorModal: (message: string) => void;
   mode: FormMode;
+  isFocused?: boolean;
 }
 
-export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode }: FormActionsProps) {
+export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode, isFocused }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
   const { activeWindow, clearTabFormState } = useWindowContext();
-  const { registerActions, setSaveButtonState } = useToolbarContext();
+  const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
-  const { isFormInitializing } = useFormInitializationContext();
+  const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
-  const { validateRequiredFields } = useFormValidation(tab);
+  const { validateRequiredFields, requiredFields } = useFormValidation(tab);
+
+  // Get required field names to watch for changes
+  const requiredFieldNames = useMemo(() => requiredFields.map((f) => f.hqlName), [requiredFields]);
+
+  // Watch only the required fields to re-validate when they change
+  const requiredValues = useWatch({ name: requiredFieldNames });
+
   const [hasValidatedInitialLoad, setHasValidatedInitialLoad] = useState(false);
 
   // Update validation state when form data changes
@@ -76,7 +86,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   }, [isDirty, markFormAsChanged, resetFormChanges]);
 
   useEffect(() => {
-    if (isFormInitializing) {
+    if (isFormInitializing || isSettingInitialValues) {
       return;
     }
 
@@ -90,31 +100,27 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
       return;
     }
 
-    // If we already validated and callouts are done, don't validate again
-    if (hasValidatedInitialLoad) {
+    // If we already validated and callouts are done, don't validate again unless required values change
+    if (hasValidatedInitialLoad && !requiredValues) {
       return;
     }
 
     // Form is completely loaded, validate if save button should be enabled
-    const timer = setTimeout(() => {
-      const validationResult = validateRequiredFields();
-      // Enable save if:
-      // 1. Form has changes (isDirty), OR
-      // 2. It's a NEW record and all required fields are valid (pre-populated with defaults)
-      const shouldEnableSave = isDirty || (mode === "NEW" && validationResult.isValid);
-      shouldEnableSave ? markFormAsChanged() : resetFormChanges();
-      setHasValidatedInitialLoad(true);
-    }, 150);
+    const validationResult = validateRequiredFields();
 
-    return () => clearTimeout(timer);
+    const shouldEnableSave = isDirty || (mode === FormMode.NEW && validationResult.isValid);
+    shouldEnableSave ? markFormAsChanged() : resetFormChanges();
+    setHasValidatedInitialLoad(true);
   }, [
     isFormInitializing,
+    isSettingInitialValues,
     isDirty,
     mode,
     markFormAsChanged,
     resetFormChanges,
     hasValidatedInitialLoad,
     validateRequiredFields,
+    requiredValues,
   ]);
 
   // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
@@ -125,16 +131,16 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   }, [isFormInitializing]);
 
   const handleSave = useCallback(
-    async (options: SaveOptions) => {
+    async (options: SaveOptions): Promise<boolean> => {
       try {
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
 
-        // Check if any callouts are currently running
+        // Wait if any callouts are currently running
         const globalCalloutState = globalCalloutManager.getState();
-        if (globalCalloutState.isRunning) {
-          logger.warn("Cannot save while callouts are running");
-          return;
+        if (globalCalloutState.isRunning || globalCalloutState.pendingCount > 0 || globalCalloutState.queueLength > 0) {
+          logger.info("Waiting for callouts to finish before saving...");
+          await globalCalloutManager.waitForIdle();
         }
 
         // Perform required field validation
@@ -143,13 +149,15 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
         if (!validationResult.isValid) {
           const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
           showErrorModal(`The following required fields are missing: ${missingFields}`);
-          return;
+          return false;
         }
 
         // Proceed with save if validation passes
-        await onSave(options);
+        const succeeded = await onSave(options);
+        return succeeded;
       } catch (error) {
         logger.error("Error during save operation:", error);
+        return false;
       } finally {
         // Clear saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
@@ -175,6 +183,30 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
     onNew();
   }, [onNew]);
 
+  const handleKeyboardSave = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    await handleSave({ showModal: true });
+  }, [handleSave, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  const handleKeyboardEscape = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (isDirty) {
+      const saved = await handleSave({ showModal: false });
+      if (!saved) return;
+    }
+    handleBack();
+  }, [isDirty, handleSave, handleBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  useKeyboardShortcuts(
+    {
+      "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
+      "ctrl+n": { handler: handleNew, allowInInputs: true },
+      Escape: { handler: handleKeyboardEscape },
+    },
+    isFocused ?? true
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: actions need to change every Tab change
   useEffect(() => {
     const actions = {
       save: handleSave,

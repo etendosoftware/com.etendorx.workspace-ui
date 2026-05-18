@@ -18,6 +18,7 @@
 // @data-testid-ignore
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "./components/Select/Select";
+import type { ColumnDef } from "./components/types";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 
@@ -26,11 +27,13 @@ export const SelectSelector = ({
   isReadOnly,
   pageSize = 20,
   initialPageSize = 20,
+  columns,
 }: {
   field: Field;
   isReadOnly: boolean;
   pageSize?: number;
   initialPageSize?: number;
+  columns?: ColumnDef[];
 }) => {
   const { records, loading, refetch, loadMore, hasMore } = useTableDirDatasource({ field, pageSize, initialPageSize });
   const options = useSelectFieldOptions(field, records);
@@ -45,6 +48,7 @@ export const SelectSelector = ({
       loading={loading}
       hasMore={hasMore}
       field={field}
+      columns={columns}
       data-testid={`Select__${field.id ?? field.hqlName ?? "d5687c"}`}
     />
   );

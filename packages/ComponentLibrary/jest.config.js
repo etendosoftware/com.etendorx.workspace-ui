@@ -28,9 +28,11 @@ export default {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
 
   moduleNameMapper: {
+    "^@workspaceui/api-client/src(.*)$": "<rootDir>/../api-client/src$1",
     "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
     "^@workspaceui/mainui(.*)$": "<rootDir>/../MainUI$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "\\.svg\\?react$": "<rootDir>/__mocks__/svgReactMock.js",
     "\\.(gif|ttf|eot|svg|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
     "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
     "^react-markdown$": "<rootDir>/__mocks__/ReactMarkdownMock.tsx",

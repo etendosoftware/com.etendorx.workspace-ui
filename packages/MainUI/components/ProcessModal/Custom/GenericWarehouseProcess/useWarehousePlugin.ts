@@ -34,6 +34,7 @@ import { executeStringFunction } from "@/utils/functions";
 import { getPayScriptRules } from "@/components/ProcessModal/callouts/genericPayScriptCallout";
 import { logger } from "@/utils/logger";
 import { createCallAction, createFetchDatasource } from "./warehouseApiHelpers";
+import { createOBShim } from "@/utils/propertyStore";
 import type { WarehouseProcessSchema, WarehousePayScriptPlugin } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,7 @@ export function useWarehousePlugin({
         const context = {
           callAction,
           fetchDatasource,
+          OB: createOBShim(), // OB.PropertyStore.get(key) — reads preferences from localStorage
           fetch: undefined, // explicitly blocked — use callAction / fetchDatasource instead
         };
 

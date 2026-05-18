@@ -62,8 +62,8 @@ export function processCalloutColumnValues(
     // Handle restricted entries for TABLEDIR fields
     const withEntries = (columnValue as any).entries;
     const isTableDirField =
-      targetField.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19 ||
-      targetField.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18;
+      targetField.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id ||
+      targetField.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id;
 
     if (withEntries?.length) {
       update.entries = withEntries.map((e: any) => ({
@@ -135,7 +135,7 @@ export function getEntriesKey(field: Field): string {
  */
 export function isTableDirField(field: Field): boolean {
   return (
-    field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19 ||
-    field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18
+    field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id ||
+    field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id
   );
 }

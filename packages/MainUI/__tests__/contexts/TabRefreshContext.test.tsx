@@ -100,7 +100,7 @@ describe("TabRefreshContext", () => {
       expect(logger.debug).toHaveBeenCalledWith("TabRefreshContext: No parent levels to refresh");
     });
 
-    it("should trigger all types of refreshes for parent levels sequentially", async () => {
+    it("should prefer FORM refresh over TABLE refresh for parent levels", async () => {
       renderWithProvider();
 
       const mockTableRefresh0 = jest.fn().mockResolvedValue(undefined);
@@ -117,10 +117,11 @@ describe("TabRefreshContext", () => {
         await contextValue.triggerParentRefreshes(2);
       });
 
-      // Should call all registered refreshes for level 1, then level 0
+      // Should call table refresh for level 1 (since it has no form refresh),
+      // but for level 0 it should ONLY call form refresh
       expect(mockTableRefresh1).toHaveBeenCalledTimes(1);
-      expect(mockTableRefresh0).toHaveBeenCalledTimes(1);
       expect(mockFormRefresh0).toHaveBeenCalledTimes(1);
+      expect(mockTableRefresh0).not.toHaveBeenCalled();
     });
 
     it("should continue refreshing other levels if one fails", async () => {
@@ -141,7 +142,7 @@ describe("TabRefreshContext", () => {
       expect(mockRefresh1).toHaveBeenCalledTimes(1);
       expect(mockRefresh0).toHaveBeenCalledTimes(1);
       expect(logger.warn).toHaveBeenCalledWith(
-        `TabRefreshContext: Failed to execute ${REFRESH_TYPES.TABLE} refresh at level 1:`,
+        `TabRefreshContext: Failed to execute TABLE refresh at parent level 1:`,
         expect.any(Error)
       );
     });

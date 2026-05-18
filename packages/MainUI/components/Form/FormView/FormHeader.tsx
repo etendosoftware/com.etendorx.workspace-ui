@@ -17,6 +17,7 @@
 
 import { useMemo } from "react";
 import { useTheme } from "@mui/material";
+import { useFormContext } from "react-hook-form";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab";
 import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
@@ -27,6 +28,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { StatusModalState } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useTabContext } from "@/contexts/tab";
+import { compileExpression } from "./selectors/BaseSelector";
+import { createSmartContext } from "@/utils/expressions";
 
 interface FormHeaderProps {
   statusBarFields: Record<string, Field>;
@@ -51,6 +56,10 @@ export function FormHeader({
 }: FormHeaderProps) {
   const theme = useTheme();
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
+  const { session } = useUserContext();
+  const { tab } = useTabContext();
+  const { watch } = useFormContext();
+  const formData = watch();
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__cb26f1" />,
@@ -60,15 +69,32 @@ export function FormHeader({
   const { t } = useTranslation();
 
   const tabs: TabItem[] = useMemo(() => {
-    return groups.map(([id, group]) => ({
-      id: String(id || "_main"),
-      icon: getIconForGroup(group.identifier),
-      label: group.identifier === "More Information" ? t("forms.sections.moreInformation") : group.identifier,
-      fill: theme.palette.baselineColor.neutral[80],
-      hoverFill: theme.palette.baselineColor.neutral[0],
-      showInTab: true,
-    }));
-  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral, t]);
+    return groups
+      .filter(([, group]) => {
+        // Special sections (Notes, Attachments, Linked Items) have no fields — always show them.
+        if (Object.keys(group.fields).length === 0) return true;
+
+        return Object.values(group.fields).some((field) => {
+          if (!field.displayed) return false;
+          if (!field.displayLogicExpression) return true;
+          const compiledExpr = compileExpression(field.displayLogicExpression);
+          try {
+            const ctx = createSmartContext({ values: formData, fields: tab?.fields, context: session });
+            return compiledExpr(ctx, ctx);
+          } catch {
+            return true;
+          }
+        });
+      })
+      .map(([id, group]) => ({
+        id: String(id || "_main"),
+        icon: getIconForGroup(group.identifier),
+        label: group.identifier === "More Information" ? t("forms.sections.moreInformation") : group.identifier,
+        fill: theme.palette.baselineColor.neutral[80],
+        hoverFill: theme.palette.baselineColor.neutral[0],
+        showInTab: true,
+      }));
+  }, [groups, formData, tab?.fields, session, getIconForGroup, theme.palette.baselineColor.neutral, t]);
 
   return (
     <>

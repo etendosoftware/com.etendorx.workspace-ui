@@ -32,25 +32,29 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
   selectedCount,
   isLoading = false,
   labels = {},
+  actions,
 }) => {
   return (
     <div
       data-testid="RecordCounterBar"
-      className="flex justify-start gap-4 items-center px-4 py-2 min-h-8 bg-white border-b border-gray-200 flex-shrink-0 flex-col sm:flex-row">
-      {/* Record counter on the left */}
-      <div className="flex items-center">
-        <RecordCounter
-          totalRecords={totalRecords}
-          loadedRecords={loadedRecords}
-          isLoading={isLoading}
-          labels={labels}
-        />
+      className="flex justify-between items-center px-4 py-2 min-h-8 bg-white border-b border-gray-200 flex-shrink-0">
+      {/* Counters on the left */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center">
+          <RecordCounter
+            totalRecords={totalRecords}
+            loadedRecords={loadedRecords}
+            isLoading={isLoading}
+            labels={labels}
+          />
+        </div>
+        <div className="flex items-center">
+          <SelectionCounter selectedCount={selectedCount} selectedLabel={labels.selectedRecords} />
+        </div>
       </div>
 
-      {/* Selection counter on the right */}
-      <div className="flex items-center">
-        <SelectionCounter selectedCount={selectedCount} selectedLabel={labels.selectedRecords} />
-      </div>
+      {/* Actions on the right */}
+      {actions && <div className="flex items-center">{actions}</div>}
     </div>
   );
 };

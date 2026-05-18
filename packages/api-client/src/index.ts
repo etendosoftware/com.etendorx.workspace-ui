@@ -20,6 +20,8 @@ export * from "./api/client";
 export * from "./api/copilot/index";
 export * from "./api/types";
 export * from "./api/linkedItems";
+export * from "./api/getPreferences";
+export * from "./api/dashboard";
 
 // Export column filter utilities and hooks
 export * from "./utils/column-filter-utils";

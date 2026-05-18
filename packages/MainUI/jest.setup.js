@@ -18,6 +18,11 @@
 require("../../jest.setup.js");
 const React = require("react");
 
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
 jest.mock("next/router", () => ({
   useRouter: () => ({
     push: jest.fn(),

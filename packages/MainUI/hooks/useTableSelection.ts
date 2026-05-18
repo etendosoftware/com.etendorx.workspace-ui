@@ -39,11 +39,15 @@ import { useSelected } from "@/hooks/useSelected";
 import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import { useWindowContext } from "@/contexts/window";
+import type { TabFormState } from "@/utils/url/constants";
+import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
+
+const KEYBOARD_NAV_DEBOUNCE_MS = 150;
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -143,6 +147,34 @@ const processSelectedRecords = (
  * });
  * ```
  */
+/**
+ * Handles clearing the selected record in context when table selection becomes empty.
+ * Guards against clearing parent selection while a child tab is in FormView mode.
+ */
+const handleDeselectInContext = (
+  windowIdentifier: string,
+  tab: Tab,
+  rowSelection: MRT_RowSelectionState,
+  graph: ReturnType<typeof useSelected>["graph"],
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void
+): void => {
+  const hasTableSelection = Object.keys(rowSelection).length > 0;
+  if (hasTableSelection) return;
+
+  const children = graph.getChildren(tab);
+  const hasChildInFormView = children?.some((child) => {
+    if (!getTabFormState) return false;
+    return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+  });
+
+  if (!hasChildInFormView) {
+    clearSelectedRecord(windowIdentifier, tab.id);
+  } else {
+    logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+  }
+};
+
 const updateGraphSelection = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
@@ -205,44 +237,31 @@ const validateParentSelection = (
   return true;
 };
 
-/**
- * Custom React hook for managing table row selection state with comprehensive synchronization capabilities.
- *
- * This hook provides a complete solution for handling table selection in Etendo WorkspaceUI's multi-window,
- * multi-tab environment. It manages the complex interactions between:
- *
- * - Material React Table selection state (UI layer)
- * - URL parameters (navigation and bookmarking)
- * - Global selection graph (application state)
- * - Parent-child tab relationships (hierarchical data)
- *
- * Key Features:
- * - **Bidirectional Sync**: Keeps URL parameters and table selection in sync
- * - **Performance Optimized**: Uses debounced URL updates and change detection
- * - **Multi-Window Support**: Handles selection across multiple browser windows/tabs
- * - **Hierarchical Management**: Automatically clears child tab selections when parent changes
- * - **State Reconciliation**: Resolves conflicts between different selection sources
- * - **Error Handling**: Gracefully handles sync errors and edge cases
- *
- * The hook operates only when the current tab belongs to the active window, preventing
- * cross-window interference while maintaining proper isolation.
- *
- * @param tab - Tab metadata containing window information and hierarchical relationships
- * @param records - Array of EntityData records available for selection in the current table
- * @param rowSelection - Current Material React Table selection state (record ID -> boolean mapping)
- * @param _onSelectionChange - Optional callback function invoked when selection changes, receives the last selected record ID
- *
- * @returns void - This hook manages side effects and doesn't return values
- *
- * @see {@link useSelected} - For global selection graph access
- * @see {@link useStateReconciliation} - For handling selection conflicts
- * @see {@link debounce} - For performance optimization of URL updates
- */
+export interface UseTableSelectionOptions {
+  /**
+   * Returns true when the most recent selection change originated from keyboard
+   * navigation (ArrowUp/ArrowDown). When true, side effects such as URL updates
+   * and session sync are debounced so rapid auto-repeat does not thrash the app.
+   */
+  isKeyboardNavigationSource?: () => boolean;
+  /**
+   * Invoked once selection stabilizes after keyboard navigation. The caller can
+   * use this to perform deferred work (e.g. scroll the final record into view).
+   */
+  onStableSelection?: (recordId: string) => void;
+  /**
+   * Whether the table is currently visible (grid mode). When false (form view),
+   * stale rowSelection must not override the URL or session state.
+   */
+  isTableVisible?: boolean;
+}
+
 export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
-  _onSelectionChange?: (recordId: string) => void
+  _onSelectionChange?: (recordId: string) => void,
+  options?: UseTableSelectionOptions
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
@@ -250,6 +269,38 @@ export default function useTableSelection(
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
+
+  const isKeyboardNavigationSource = options?.isKeyboardNavigationSource;
+  const onStableSelection = options?.onStableSelection;
+  const isTableVisible = options?.isTableVisible ?? true;
+  const optionsRef = useRef({ isKeyboardNavigationSource, onStableSelection });
+  optionsRef.current = { isKeyboardNavigationSource, onStableSelection };
+
+  const persistSelection = useCallback(
+    (payload: {
+      windowIdentifier: string;
+      tabId: string;
+      recordId: string;
+      selectedRecords: EntityData[];
+      parentId: Tab["parentTabId"];
+      tabForSession: Tab;
+    }) => {
+      setSelectedRecord(payload.windowIdentifier, payload.tabId, payload.recordId);
+      if (payload.selectedRecords.length > 0) {
+        syncSelectedRecordsToSession({
+          tab: payload.tabForSession,
+          selectedRecords: payload.selectedRecords,
+          parentId: payload.parentId,
+          setSession,
+          setSessionSyncLoading,
+        });
+      }
+      optionsRef.current.onStableSelection?.(payload.recordId);
+    },
+    [setSelectedRecord, setSession, setSessionSyncLoading]
+  );
+
+  const debouncedPersistSelection = useDebouncedCallback(persistSelection, KEYBOARD_NAV_DEBOUNCE_MS);
 
   const windowId = activeWindow?.windowId;
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -300,7 +351,9 @@ export default function useTableSelection(
     const { selectedRecords, lastSelected } = processSelectedRecords(rowSelection, recordsMap);
 
     // 4. Detect changes (ignore order changes)
-    const currentSelectionIds = selectedRecords.map((r) => String(r.id));
+    // Use rowSelection keys directly instead of selectedRecords to avoid jitter
+    // when records temporarily empty out during data refetching.
+    const currentSelectionIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
     const hasSelectionIdChanged = !compareArraysAlphabetically(currentSelectionIds, previousSelectionRef.current);
 
     // Check if the actual record objects have changed (e.g. updated data/attachments)
@@ -319,41 +372,56 @@ export default function useTableSelection(
     previousSelectionRef.current = currentSelectionIds;
     previousSelectedRecordsRef.current = selectedRecords;
 
-    // 5. Synchronize to Context (Immediate)
-    if (selectedRecords.length === 1) {
-      // Case A: Single Record Selected
-      const recordId = String(selectedRecords[0].id);
-      setSelectedRecord(windowIdentifier, tab.id, recordId);
-    } else if (selectedRecords.length === 0) {
-      // Case B: No Selection (Deselect All)
-      // Only clear if the table selection state is actually empty
-      // If rowSelection has keys but selectedRecords is empty, it means the selected record
-      // is not in the current page of data, so we should PRESERVE the global selection.
-      const hasTableSelection = Object.keys(rowSelection).length > 0;
+    const fromKeyboard = optionsRef.current.isKeyboardNavigationSource?.() ?? false;
 
-      if (!hasTableSelection) {
-        // Guard: Check if any child tab is in "Form Mode"
-        const children = graph.getChildren(tab);
-        const hasChildInFormView = children?.some((child) => {
-          if (!getTabFormState) return false;
-          const childState = getTabFormState(windowIdentifier, child.id);
-          return childState?.mode === "form";
-        });
-
-        if (!hasChildInFormView) {
-          clearSelectedRecord(windowIdentifier, tab.id);
+    // 5. Synchronize to Context
+    // ONLY do this if the selected IDs have actually changed. If only content changed,
+    // skip overriding the Window context to avoid race conditions with actions like Clone.
+    // Also only update the URL from a VISIBLE table's selection. When the table is hidden
+    // (form view), its rowSelection can be stale and must not override the URL that was
+    // set by the form navigation — doing so would navigate away from the current record.
+    if (hasSelectionIdChanged) {
+      if (selectedRecords.length === 1 && isTableVisible) {
+        // Case A: Single Record Selected (table must be visible to update URL)
+        const recordId = String(selectedRecords[0].id);
+        if (fromKeyboard) {
+          // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
+          // + deferred scroll) behind a short debounce so each key press does not kick off
+          // a full re-render chain (useCurrentRecord → FIC → Toolbar). The graph is still
+          // updated synchronously below so the visible row highlight never lags.
+          debouncedPersistSelection({
+            windowIdentifier,
+            tabId: tab.id,
+            recordId,
+            selectedRecords,
+            parentId: tab.parentTabId,
+            tabForSession: tab,
+          });
         } else {
-          logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+          debouncedPersistSelection.cancel();
+          setSelectedRecord(windowIdentifier, tab.id, recordId);
         }
+      } else if (selectedRecords.length === 0) {
+        // Deselect all — guard against clearing parent selection while a child tab is in FormView.
+        debouncedPersistSelection.cancel();
+        handleDeselectInContext(windowIdentifier, tab, rowSelection, graph, getTabFormState, clearSelectedRecord);
       }
     }
 
-    // 6. Update Graph (Global State)
-    // DON'T call onSelectionChange to avoid infinite loop
+    // 6. Update Graph (Global State) — always synchronous to keep UI responsive
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Sync to session for backend state
-    if (selectedRecords.length > 0) {
+    // Sync to session for backend state — ONLY when:
+    // 1. The selected record IDs have changed, AND
+    // 2. The table is currently VISIBLE (grid mode), AND
+    // 3. No child tab is currently in FormView mode, AND
+    // 4. Not from keyboard navigation (keyboard path runs it via the debounced persist).
+    const hasChildInFormView = graph.getChildren(tab)?.some((child) => {
+      if (!getTabFormState) return false;
+      return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+    });
+
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && isTableVisible && !hasChildInFormView && !fromKeyboard) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
@@ -376,5 +444,13 @@ export default function useTableSelection(
     setSession,
     setSessionSyncLoading,
     windowId,
+    debouncedPersistSelection,
+    isTableVisible,
   ]);
+
+  useEffect(() => {
+    return () => {
+      debouncedPersistSelection.cancel();
+    };
+  }, [debouncedPersistSelection]);
 }

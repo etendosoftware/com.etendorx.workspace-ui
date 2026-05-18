@@ -15,6 +15,8 @@
  *************************************************************************
  */
 
+import type React from "react";
+
 /**
  * Props for the RecordCounterBar container component
  */
@@ -27,6 +29,8 @@ export interface RecordCounterBarProps {
   selectedCount: number;
   /** Whether the data is currently loading */
   isLoading?: boolean;
+  /** Optional actions to render on the right side of the bar */
+  actions?: React.ReactNode;
   /** Text labels for internationalization */
   labels?: {
     /** Text for showing records count (e.g., "Showing {count} records") */

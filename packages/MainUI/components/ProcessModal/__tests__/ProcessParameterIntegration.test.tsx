@@ -6,6 +6,16 @@ import { render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ProcessParameterSelector } from "../selectors/ProcessParameterSelector";
 
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 // Mock dependencies
 jest.mock("@/hooks/useUserContext", () => ({
   useUserContext: () => ({ session: {} }),

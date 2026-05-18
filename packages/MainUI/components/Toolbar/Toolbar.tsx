@@ -24,7 +24,6 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { EMPTY_ARRAY } from "@/utils/defaults";
-import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,8 +40,9 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
-import ProcessResultModal from "../ProcessModal/ProcessResultModal";
+import SaveViewMenu from "./Menus/SaveViewMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
@@ -55,6 +55,11 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -63,28 +68,45 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
-
-  const [activeModal, setActiveModal] = useState<{
-    button: ToolbarButtonMetadata;
-    isOpen: boolean;
-  } | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailConfig, setEmailConfig] = useState<Record<string, unknown> | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
+  const {
+    activeWindow,
+    getTabFormState,
+    clearChildrenSelections,
+    setTableFilters,
+    setTableVisibility,
+    setTableSorting,
+    setTableOrder,
+    setTableImplicitFilterApplied,
+  } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
+  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [saveViewAnchorEl, setSaveViewAnchorEl] = useState<HTMLElement | null>(null);
+  const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
+
+  // Table state for Save View feature — reads current grid state to persist
+  const windowIdentifier = activeWindow?.windowIdentifier ?? "";
+  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
+    useTableStatePersistenceTab({
+      windowIdentifier,
+      tabId: tab?.id ?? "",
+    });
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -95,15 +117,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     handleSearch,
     searchValue,
     setSearchValue,
-    statusModal,
     confirmAction,
     handleConfirm,
     handleCancelConfirm,
-    hideStatusModal,
     actionModal,
     closeActionModal,
-    resultModal,
-    closeResultModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -155,15 +173,71 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     setAnchorEl(null);
   }, []);
 
+  const handleSaveViewMenuToggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!saveViewAnchorEl) {
+        setSaveViewAnchorEl(event.currentTarget);
+      } else {
+        setSaveViewAnchorEl(null);
+      }
+    },
+    [saveViewAnchorEl]
+  );
+
+  const handleSaveViewMenuClose = useCallback(() => {
+    setSaveViewAnchorEl(null);
+  }, []);
+
+  const handleApplyView = useCallback(
+    (state: {
+      filters: typeof tableColumnFilters;
+      visibility: typeof tableColumnVisibility;
+      sorting: typeof tableColumnSorting;
+      order: typeof tableColumnOrder;
+      implicitFilterApplied: boolean;
+    }) => {
+      if (!activeWindow?.windowIdentifier || !tab?.id) return;
+      const wi = activeWindow.windowIdentifier;
+      const ti = tab.id;
+      setTableFilters(wi, ti, state.filters);
+      setTableVisibility(wi, ti, state.visibility);
+      setTableSorting(wi, ti, state.sorting);
+      setTableOrder(wi, ti, state.order);
+      setTableImplicitFilterApplied(wi, ti, state.implicitFilterApplied);
+    },
+    [
+      activeWindow?.windowIdentifier,
+      tab?.id,
+      setTableFilters,
+      setTableVisibility,
+      setTableSorting,
+      setTableOrder,
+      setTableImplicitFilterApplied,
+    ]
+  );
+
+  useAutoApplyDefaultView({
+    tabId: tab?.id ?? "",
+    windowIdentifier,
+    onApplyView: handleApplyView,
+  });
+
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
-      if (!selectedRecord) return;
+      const record = selectedRecord || selectedRecords[0];
+      if (!record) return;
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
-        const response = await handleProcessClick(button, String(selectedRecord.id));
+        const response = await handleProcessClick(button, String(record.id));
         setProcessResponse(response);
         setSelectedProcessActionButton(button);
-        setOpenIframeModal(true);
+        if (response.showInIframe) {
+          setOpenIframeModal(true);
+        } else if (response.responseActions?.[0]?.showMsgInProcessView) {
+          // If there's an error and not an iframe, show it in actionModal or similar.
+          // For now, logging it clearly, as the previous logic just hung infinitely.
+          console.error("Process error:", response.responseActions[0].showMsgInProcessView);
+        }
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -173,7 +247,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       handleMenuClose();
     },
-    [handleMenuClose, handleProcessClick, selectedRecord]
+    [handleMenuClose, handleProcessClick, selectedRecord, selectedRecords]
   );
 
   const handleSearchChange = useCallback(
@@ -214,33 +288,35 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   );
 
   const handleCompleteRefresh = useCallback(async () => {
-    const childTabs = graph.getChildren(tab);
-    const childTabIdsInFormView: string[] = [];
+    setIsProcessRefreshing(true);
+    try {
+      const childTabs = graph.getChildren(tab);
+      const childTabIdsInFormView: string[] = [];
+      const hasChildTabs = childTabs && childTabs.length > 0;
+      const windowIdentifier = activeWindow?.windowIdentifier;
 
-    const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
-    if (hasChildTabs && windowIdentifier) {
-      childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
-    }
-
-    if (isFormView && formViewRefetch) {
-      await formViewRefetch();
-    } else {
-      refetchDatasource(tab.id);
-    }
-
-    if (hasChildTabs) {
-      for (const childTab of childTabs) {
-        refetchDatasource(childTab.id);
+      if (hasChildTabs && windowIdentifier) {
+        childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
       }
-    }
 
-    Metadata.clearToolbarCache();
-    await refetchToolbar();
+      if (isFormView && formViewRefetch) {
+        await formViewRefetch();
+      } else {
+        await refetchDatasource(tab.id);
+      }
 
-    if (childTabIdsInFormView.length > 0 && windowIdentifier) {
-      clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      if (hasChildTabs) {
+        await Promise.all(childTabs.map((childTab) => refetchDatasource(childTab.id)));
+      }
+
+      Metadata.clearToolbarCache();
+      await refetchToolbar();
+
+      if (childTabIdsInFormView.length > 0 && windowIdentifier) {
+        clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      }
+    } finally {
+      setIsProcessRefreshing(false);
     }
   }, [
     graph,
@@ -256,7 +332,110 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
-  const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
+  const handleCloseEmailModal = useCallback(() => {
+    setEmailModalOpen(false);
+    setEmailConfig(null);
+  }, []);
+
+  const handleOpenEmailModal = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return;
+    try {
+      const response = await fetch(`/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const configResult = await response.json();
+      if (!response.ok || configResult.success === false) {
+        toast.error(t("process.processError"), {
+          description: (
+            <ToastContent
+              message={configResult.message || configResult.error || t("errors.internalServerError.title")}
+              data-testid="ToastContent__a2dd07"
+            />
+          ),
+        });
+        return;
+      }
+      setEmailConfig(configResult);
+      setEmailModalOpen(true);
+    } catch (e) {
+      toast.error(t("errors.internalServerError.title"), {
+        description: (
+          <ToastContent
+            message={e instanceof Error ? e.message : t("errors.internalServerError.title")}
+            data-testid="ToastContent__a2dd07"
+          />
+        ),
+      });
+    }
+  }, [tab, selectedRecord, token, t]);
+
+  const handleEmailSend = useCallback(
+    async (data: EmailFormData, files: File[], recordAttachmentIds: string[]) => {
+      if (!selectedRecord?.id || !tab?.id) return;
+      setIsSendingEmail(true);
+      try {
+        const params = new URLSearchParams({
+          recordId: String(selectedRecord.id),
+          tabId: tab.id,
+          to: data.to,
+          cc: data.cc ?? "",
+          bcc: data.bcc ?? "",
+          replyTo: data.replyTo ?? "",
+          subject: data.subject,
+          notes: data.body ?? "",
+          archive: data.archive ? "Y" : "N",
+          templateId: data.templateId ?? "",
+        });
+        for (const attId of recordAttachmentIds) {
+          params.append("recordAttachmentIds", attId);
+        }
+        const formData = new FormData();
+        formData.append("params", params.toString());
+        for (const file of files) {
+          formData.append("files", file);
+        }
+        const response = await fetch("/api/erp/meta/email/send", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const result = await response.json();
+        if (!response.ok || result.success === false) {
+          toast.error(t("process.processError"), {
+            description: (
+              <ToastContent message={result.message || result.error || ""} data-testid="ToastContent__a2dd07" />
+            ),
+          });
+          return;
+        }
+        toast.success(t("email.successMessage"));
+        handleCloseEmailModal();
+      } catch (e) {
+        toast.error(t("errors.internalServerError.title"), {
+          description: (
+            <ToastContent message={e instanceof Error ? e.message : ""} data-testid="ToastContent__a2dd07" />
+          ),
+        });
+      } finally {
+        setIsSendingEmail(false);
+      }
+    },
+    [selectedRecord, tab, token, t, handleCloseEmailModal]
+  );
+
+  const handleFetchEmailAttachments = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return [];
+    try {
+      const response = await fetch(
+        `/api/erp/meta/email/attachments?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      return (data.attachments ?? []) as { id: string; name: string }[];
+    } catch {
+      return [];
+    }
+  }, [selectedRecord, tab, token]);
 
   const handleActionWithTooltip = useCallback(
     (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
@@ -266,9 +445,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           setShowShareLinkTooltip(false);
         }, 2000);
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL) {
+        handleOpenEmailModal();
+        return;
+      }
+      if (action === "SAVE_VIEW") {
+        handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction]
+    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -306,7 +493,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
               handleMenuToggle,
               t,
               anchorEl,
-              isSessionSyncLoading
+              isSessionSyncLoading || isProcessRefreshing
             )
           : undefined,
     };
@@ -335,6 +522,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     showFilterTooltip,
     showShareLinkTooltip,
     isAdvancedFilterApplied,
+    isProcessRefreshing,
   ]);
 
   if (loading) {
@@ -344,26 +532,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   return (
     <>
       <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
-      {activeModal && (
-        <StatusModal
-          open={activeModal.isOpen}
-          statusText={`Modal para: ${activeModal.button.name}`}
-          statusType="info"
-          saveLabel="Cerrar"
-          onClose={handleCloseStatusModal}
-          data-testid="StatusModal__a2dd07"
-        />
-      )}
-      {statusModal.open && (
-        <StatusModal
-          open={statusModal.open}
-          statusText={statusModal.statusText}
-          statusType={statusModal.statusType}
-          errorMessage={statusModal.errorMessage}
-          saveLabel={statusModal.saveLabel || t("common.close")}
-          secondaryButtonLabel={statusModal.secondaryButtonLabel}
-          onClose={hideStatusModal}
-          data-testid="StatusModal__a2dd07"
+      {!isFormView && tab?.id && (
+        <SaveViewMenu
+          anchorEl={saveViewAnchorEl}
+          onClose={handleSaveViewMenuClose}
+          tabId={tab.id}
+          currentFilters={tableColumnFilters}
+          currentVisibility={tableColumnVisibility}
+          currentSorting={tableColumnSorting}
+          currentOrder={tableColumnOrder}
+          isImplicitFilterApplied={isImplicitFilterApplied}
+          onApplyView={handleApplyView}
+          data-testid="SaveViewMenu__a2dd07"
         />
       )}
       {confirmAction && (
@@ -384,6 +564,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
+          hasSelection={!!(selectedRecord || selectedRecords.length > 0)}
           data-testid="ProcessMenu__a2dd07"
         />
       )}
@@ -428,13 +609,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ActionModal__a2dd07"
         />
       )}
-      <ProcessResultModal
-        open={resultModal.open}
-        success={resultModal.success}
-        title={resultModal.title}
-        message={resultModal.message}
-        onClose={closeResultModal}
-        data-testid="ProcessResultModal__a2dd07"
+      <EmailSendModal
+        isOpen={emailModalOpen}
+        onClose={handleCloseEmailModal}
+        onSend={handleEmailSend}
+        onFetchRecordAttachments={handleFetchEmailAttachments}
+        loading={isSendingEmail}
+        initialData={emailConfig ?? undefined}
+        data-testid="EmailSendModal__a2dd07"
       />
     </>
   );

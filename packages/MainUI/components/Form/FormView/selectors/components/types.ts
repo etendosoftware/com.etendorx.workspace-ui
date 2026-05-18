@@ -62,9 +62,22 @@ export interface Option {
   label: string;
 }
 
+export interface ColumnDef {
+  accessorKey: string;
+  header: string;
+}
+
+export interface SelectOption {
+  id: string;
+  label: string;
+  data?: EntityData;
+  /** Optional color value (hex or CSS color) for badge/Tag rendering */
+  color?: string;
+}
+
 export interface SelectProps {
   name: string;
-  options: Array<{ id: string; label: string; data?: EntityData }>;
+  options: Array<SelectOption>;
   onFocus?: () => void;
   onSearch?: (term: string) => void;
   isReadOnly?: boolean;
@@ -72,4 +85,5 @@ export interface SelectProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   field: Field;
+  columns?: ColumnDef[];
 }

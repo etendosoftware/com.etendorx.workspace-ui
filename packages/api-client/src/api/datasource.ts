@@ -144,6 +144,7 @@ export class Datasource {
         "org",
         "sqlWhere",
         "isPickAndEdit",
+        "isSorting",
       ]);
 
       if (keysToPrefix.has(key)) {
@@ -158,10 +159,17 @@ export class Datasource {
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;
 
-    if (Array.isArray(options.criteria)) {
+    if (Array.isArray(options.criteria) && options.criteria.length > 0) {
       params.criteria = options.criteria.map((criteria) => JSON.stringify(criteria));
-    } else if (options.criteria && typeof options.criteria === "string") {
+    } else if (typeof options.criteria === "string" && options.criteria.trim() !== "") {
       params.criteria = options.criteria;
+    } else if (
+      typeof options.criteria === "object" &&
+      options.criteria !== null &&
+      !Array.isArray(options.criteria) &&
+      Object.keys(options.criteria).length > 0
+    ) {
+      params.criteria = JSON.stringify(options.criteria);
     }
 
     if (options.parentId) {

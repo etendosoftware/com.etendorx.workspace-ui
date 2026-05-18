@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
+import { getStoredPreferences } from "./propertyStore";
 
 interface SmartContextOptions {
   values?: Record<string, unknown>; // Primary values (current record, form values)
@@ -25,6 +26,7 @@ interface SmartContextOptions {
   parentFields?: Record<string, Field>;
 
   context?: Record<string, unknown>; // Session/Global context
+  auxiliaryInputs?: Record<string, string>; // Tab-scoped evaluated auxiliary inputs
   normalizeValues?: boolean;
   defaultValue?: unknown;
 }
@@ -39,7 +41,16 @@ interface SmartContextOptions {
  * 3. Fallback across multiple data sources (Values > ParentValues > Context).
  */
 export const createEvaluationContext = (options: SmartContextOptions) => {
-  const { values, fields, parentValues, parentFields, context = {}, normalizeValues = true, defaultValue } = options;
+  const {
+    values,
+    fields,
+    parentValues,
+    parentFields,
+    context = {},
+    auxiliaryInputs,
+    normalizeValues = true,
+    defaultValue,
+  } = options;
 
   // Helper to normalize values (true -> 'Y', false -> 'N')
   const normalize = (val: unknown) => {
@@ -54,7 +65,17 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     evalContext[key] = normalize(val);
   });
 
-  // 2. Merge & Normalize Values (Current & Parent)
+  // 2. Tab-scoped auxiliary inputs (higher priority than session, lower than record values)
+  if (auxiliaryInputs) {
+    Object.entries(auxiliaryInputs).forEach(([key, val]) => {
+      const normalizedVal = normalize(val);
+      evalContext[key] = normalizedVal;
+      const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+      evalContext[snakeKey] = normalizedVal;
+    });
+  }
+
+  // 3. Merge & Normalize Values (Current & Parent)
   const allValues = { ...parentValues, ...values };
 
   Object.entries(allValues).forEach(([key, val]) => {
@@ -66,12 +87,19 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       const normalizedKey = lowerKey.replace(/_/g, "");
 
       // 3. Case-Insensitive Overwrite (Strict & Loose)
+      // Guard: do not overwrite an existing non-empty value with an empty one.
+      // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
+      // (e.g. productType:"I") and must not corrupt them.
       Object.keys(evalContext).forEach((existingKey) => {
         if (existingKey === key) return;
         const existingLower = existingKey.toLowerCase();
 
         if (existingLower === lowerKey || existingLower.replace(/_/g, "") === normalizedKey) {
-          evalContext[existingKey] = normalizedVal;
+          const existingVal = evalContext[existingKey];
+          const existingIsEmpty = existingVal === "" || existingVal === null || existingVal === undefined;
+          if (existingIsEmpty || (normalizedVal !== "" && normalizedVal !== null && normalizedVal !== undefined)) {
+            evalContext[existingKey] = normalizedVal;
+          }
         }
       });
 
@@ -131,34 +159,64 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return looseMatchFound ? looseMatchValue : undefined;
   };
 
+  const getFromPrefs = (key: string) => {
+    const prefs = getStoredPreferences();
+    if (prefs[key] !== undefined) return normalize(prefs[key]);
+
+    const lowerKey = key.toLowerCase();
+    for (const [k, v] of Object.entries(prefs)) {
+      if (k.toLowerCase() === lowerKey) return normalize(v);
+    }
+    return undefined;
+  };
+
+  // Check if a cleared foreign key should return empty string.
+  // Only applies to UUID-like ID values (32+ hex chars), not to short values like 'Y'/'N'.
+  const checkClearedIdentifier = (target: Record<string, any>, prop: string, val: unknown): string | undefined => {
+    if (typeof val === "string" && val.length > 8) {
+      const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+      if (identifierVal === "") return "";
+    }
+    return undefined;
+  };
+
+  // Resolve special prefixed properties (@prop@, #prop, $prop)
+  const resolvePrefixed = (target: Record<string, any>, prop: string): unknown => {
+    if (prop.startsWith("@") && prop.endsWith("@")) {
+      const cleanVal = resolveProperty(target, prop.slice(1, -1));
+      if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
+    }
+    if (prop.startsWith("#") || prop.startsWith("$")) {
+      const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
+      if (valFromPrefs !== undefined) return valFromPrefs;
+    }
+    return undefined;
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
         return Reflect.get(target, prop, receiver);
       }
 
-      // 1. Try standard resolution (Exact + Fuzzy)
       const val = resolveProperty(target, prop);
-      if (val !== undefined && val !== null) {
-        return val;
-      }
 
-      // 2. Handle @property@ access pattern (from Hotfix ETP-3261)
-      // This handles cases where raw @field@ syntax is passed directly to the context
-      if (prop.startsWith("@") && prop.endsWith("@")) {
-        const cleanProp = prop.slice(1, -1);
-        const cleanVal = resolveProperty(target, cleanProp);
-        if (cleanVal !== undefined && cleanVal !== null) {
-          return cleanVal;
-        }
-      }
+      // If the field has an empty identifier, treat as empty (Classic behavior for cleared foreign keys)
+      const cleared = checkClearedIdentifier(target, prop, val);
+      if (cleared !== undefined) return cleared;
 
-      // 3. Fallback to default value
-      if (defaultValue !== undefined) {
-        return defaultValue;
-      }
+      if (val !== undefined && val !== null) return val;
 
-      return val;
+      // Handle @property@, #property, $property access patterns
+      const prefixed = resolvePrefixed(target, prop);
+      if (prefixed !== undefined) return prefixed;
+
+      // Fallback to default value, then empty string (matching Classic behavior).
+      // In Classic, unresolved context variables always resolve to '' (empty string).
+      // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
+      // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+
+      return defaultValue !== undefined ? defaultValue : "";
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);

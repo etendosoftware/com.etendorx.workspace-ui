@@ -146,7 +146,7 @@ export const DatasourceTestData = {
    * @returns Formatted ERP URL with pagination parameters for operations
    */
   createErpForwardUrl: (entity: string, windowId = 10, tabId = 20, operationType = "add"): string => {
-    return `http://erp.example/etendo/org.openbravo.service.datasource/${entity}?windowId=${windowId}&tabId=${tabId}&_operationType=${operationType}&_startRow=0&_endRow=75`;
+    return `https://erp.example/etendo/org.openbravo.service.datasource/${entity}?windowId=${windowId}&tabId=${tabId}&_operationType=${operationType}&_startRow=0&_endRow=75`;
   },
 
   /**

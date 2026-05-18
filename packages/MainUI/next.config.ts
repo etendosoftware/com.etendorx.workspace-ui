@@ -25,13 +25,31 @@ const ANALYZE = process.env.ANALYZE === "true";
 const APP_VERSION = generateAppVersion();
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@mui/material", "@mui/system", "@mui/icons-material", "@emotion/react", "@emotion/styled"],
-  modularizeImports: {
-    "@mui/material": {
-      transform: "@mui/material/{{member}}",
-    },
-    "@mui/icons-material": {
-      transform: "@mui/icons-material/{{member}}",
+  transpilePackages: [
+    "@mui/material",
+    "@mui/system",
+    "@mui/icons-material",
+    "@emotion/react",
+    "@emotion/styled",
+    "@workspaceui/componentlibrary",
+    "@workspaceui/api-client",
+  ],
+  experimental: {
+    optimizePackageImports: ["@mui/material", "@mui/icons-material"],
+  },
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: [
+          {
+            loader: "@svgr/webpack",
+            options: {
+              icon: true,
+            },
+          },
+        ],
+        as: "*.js",
+      },
     },
   },
   reactStrictMode: false,

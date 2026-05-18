@@ -27,6 +27,27 @@ import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 
+/**
+ * Extracts a human-readable error message from the datasource servlet response.
+ * The backend may return errors in two shapes:
+ *   1. { error: { message: "..." } }           — process / callout errors
+ *   2. { errors: { fieldName: "..." , ... } }   — field-level validation errors
+ */
+export function extractServerErrorMessage(response: Record<string, unknown> | undefined): string {
+  if (!response) return "Unknown server error";
+
+  const singleError = response.error as { message?: string } | undefined;
+  if (singleError?.message) return singleError.message;
+
+  const fieldErrors = response.errors as Record<string, string> | undefined;
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const messages = Object.values(fieldErrors).filter(Boolean);
+    if (messages.length > 0) return messages.join("; ");
+  }
+
+  return "Unknown server error";
+}
+
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
@@ -48,6 +69,7 @@ export const useFormAction = ({
 }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
+  const lastSaveSucceeded = useRef(false);
   const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
   const { t } = useTranslation();
 
@@ -92,10 +114,12 @@ export const useFormAction = ({
         const { ok, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
+          lastSaveSucceeded.current = true;
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
-          throw new Error(data.response.error?.message);
+          const errorMsg = extractServerErrorMessage(data?.response);
+          throw new Error(errorMsg);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -130,7 +154,14 @@ export const useFormAction = ({
     ]
   );
 
-  const save = useCallback((options: SaveOptions) => submit((values) => execute(values, options))(), [execute, submit]);
+  const save = useCallback(
+    async (options: SaveOptions): Promise<boolean> => {
+      lastSaveSucceeded.current = false;
+      await submit((values) => execute(values, options))();
+      return lastSaveSucceeded.current;
+    },
+    [execute, submit]
+  );
 
   useEffect(() => {
     const _controller = controller.current;

@@ -93,7 +93,7 @@ describe("ToolbarContext - Save Wrapping", () => {
   it("should wrap onSave to trigger parent refreshes after successful save", async () => {
     renderWithProviders();
 
-    const mockSave = jest.fn().mockResolvedValue(undefined);
+    const mockSave = jest.fn().mockResolvedValue(true);
 
     // Register a save action
     act(() => {
@@ -135,7 +135,7 @@ describe("ToolbarContext - Save Wrapping", () => {
 
     renderWithProviders(level0Tab);
 
-    const mockSave = jest.fn().mockResolvedValue(undefined);
+    const mockSave = jest.fn().mockResolvedValue(true);
 
     act(() => {
       contextValue.registerActions({ save: mockSave });

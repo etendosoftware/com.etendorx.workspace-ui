@@ -17,6 +17,7 @@
 
 export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
+export const CREATE_LINES_FROM_ORDER_RECEIPT_PROCESS_ID = "19B7ADFA1E844099A940B4D179EE4062";
 export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
 export const ADD_PAYMENT_ORDER_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
 export const CREATE_LINES_FROM_RECEIPT_ID = "7737CA7330FD49FBA7EBC225E85F2BC9";
@@ -29,6 +30,7 @@ export const REQUEST_DOMAIN_PROCESS_ID = "8ACE386EA8B7472A8BF6279D4A019E82";
 export const DELETE_SERVER_PROCESS_ID = "8F6B9719DDAC4B178212599EE62489D8";
 export const FUNDS_TRANSFER_PROCESS_ID = "CC73C4845CDC487395804946EACB225F";
 export const BUTTON_LIST_REFERENCE_ID = "FF80818132F94B500132F9575619000A";
+export const BUTTON_REFERENCE_ID = "28";
 type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
@@ -83,6 +85,18 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     inpPrimaryKeyColumnId: "inpcOrderId",
     defaultKeys: {},
     dynamicKeys: {},
+    staticOptions: {},
+  },
+  [CREATE_LINES_FROM_ORDER_RECEIPT_PROCESS_ID]: {
+    inpColumnId: "ETAWIM_Inbound_Receipt_ID",
+    inpPrimaryKeyColumnId: "inpetawimInboundReceiptId",
+    defaultKeys: {},
+    dynamicKeys: {
+      "@ETAWIM_Inbound_Receipt.processed@": "processed",
+      "@ETAWIM_Inbound_Receipt.client@": "inpadClientId",
+      "@ETAWIM_Inbound_Receipt.id@": "inpetawimInboundReceiptId",
+      "@ETAWIM_Inbound_Receipt.organization@": "inpadOrgId",
+    },
     staticOptions: {},
   },
   [CREATE_LINES_FROM_RECEIPT_ID]: {

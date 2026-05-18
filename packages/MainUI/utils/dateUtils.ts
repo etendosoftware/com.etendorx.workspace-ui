@@ -38,9 +38,9 @@ export function formatCellValue(value: unknown, field: Field): string {
  */
 function isDateTimeField(field: Field): boolean {
   const dateReferences = [
-    FIELD_REFERENCE_CODES.DATE,
-    FIELD_REFERENCE_CODES.DATETIME,
-    FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME,
+    FIELD_REFERENCE_CODES.DATE.id,
+    FIELD_REFERENCE_CODES.DATETIME.id,
+    FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id,
   ];
 
   const hasDateReference =
@@ -66,11 +66,11 @@ function isUserReference(field: Field): boolean {
  */
 function isNumericField(field: Field): boolean {
   const numericReferences = [
-    FIELD_REFERENCE_CODES.INTEGER,
-    FIELD_REFERENCE_CODES.NUMERIC,
-    FIELD_REFERENCE_CODES.QUANTITY_22,
-    FIELD_REFERENCE_CODES.QUANTITY_29,
-    FIELD_REFERENCE_CODES.DECIMAL,
+    FIELD_REFERENCE_CODES.INTEGER.id,
+    FIELD_REFERENCE_CODES.NUMERIC.id,
+    FIELD_REFERENCE_CODES.QUANTITY_22.id,
+    FIELD_REFERENCE_CODES.QUANTITY_29.id,
+    FIELD_REFERENCE_CODES.DECIMAL.id,
   ];
 
   return field.column?.reference
@@ -82,7 +82,7 @@ function isNumericField(field: Field): boolean {
  * Checks if a field is a reference to another entity
  */
 function isReferenceField(field: Field): boolean {
-  const referenceTypes = [FIELD_REFERENCE_CODES.TABLE_DIR_19, FIELD_REFERENCE_CODES.TABLE_DIR_18];
+  const referenceTypes = [FIELD_REFERENCE_CODES.TABLE_DIR_19.id, FIELD_REFERENCE_CODES.TABLE_DIR_18.id];
 
   return field.column?.reference
     ? referenceTypes.includes(field.column.reference as (typeof referenceTypes)[number])
@@ -104,7 +104,7 @@ function formatDateTime(isoString: string, field: Field): string {
     }
 
     // Check if it's a Date field (no time) or DateTime field
-    const isDateOnly = field.column?.reference === FIELD_REFERENCE_CODES.DATE;
+    const isDateOnly = field.column?.reference === FIELD_REFERENCE_CODES.DATE.id;
 
     // Special handling for audit fields - these are typically timestamps
     const isAuditField = field.hqlName && ["creationDate", "updated"].includes(field.hqlName);
@@ -176,7 +176,7 @@ function formatNumeric(value: unknown, field: Field): string {
   if (Number.isNaN(num)) return String(value);
 
   // You can customize precision based on field type
-  const isDecimal = field.column?.reference === FIELD_REFERENCE_CODES.DECIMAL;
+  const isDecimal = field.column?.reference === FIELD_REFERENCE_CODES.DECIMAL.id;
   const decimals = isDecimal ? 2 : 0;
 
   return new Intl.NumberFormat("es-AR", {

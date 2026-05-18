@@ -56,7 +56,7 @@ type ToolbarActions = {
    * @param options - Save options including showModal and skipFormStateUpdate flags
    * @returns Promise that resolves when save operation is complete
    */
-  save: (options: SaveOptions) => Promise<void>;
+  save: (options: SaveOptions) => Promise<boolean>;
 
   /**
    * Refresh the current view or data.
@@ -112,7 +112,7 @@ type ToolbarActions = {
 };
 
 type ToolbarContextType = {
-  onSave: (options: SaveOptions) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<boolean>;
   onRefresh: () => Promise<void>;
   onNew: () => void;
   onBack: () => void;
@@ -139,7 +139,7 @@ type ToolbarContextType = {
 };
 
 const initialState: ToolbarActions = {
-  save: async (_options: SaveOptions) => {},
+  save: async (_options: SaveOptions) => false,
   refresh: async () => {},
   new: () => {},
   back: () => {},
@@ -153,7 +153,7 @@ const initialState: ToolbarActions = {
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
-  onSave: async (_options: SaveOptions) => {},
+  onSave: async (_options: SaveOptions) => false,
   onRefresh: async () => {},
   onNew: () => {},
   onBack: () => {},
@@ -232,14 +232,18 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const { triggerParentRefreshes } = useTabRefreshContext();
 
   const wrappedOnSave = useCallback(
-    async (options: SaveOptions) => {
-      // Execute original save operation first
-      await originalOnSave(options);
+    async (options: SaveOptions): Promise<boolean> => {
+      const succeeded = await originalOnSave(options);
 
-      // If save succeeded and this tab has parents, trigger parent refreshes
-      if (tab?.tabLevel && tab.tabLevel > 0) {
+      // Only refresh parent tabs when save actually succeeded.
+      // Previously this ran unconditionally, causing a double refresh on success
+      // (once here, once via refetchDatasource in onSuccess) and an unnecessary
+      // refresh on backend failure that wiped unsaved child tab data.
+      if (succeeded && tab?.tabLevel && tab.tabLevel > 0) {
         await triggerParentRefreshes(tab.tabLevel);
       }
+
+      return succeeded;
     },
     [originalOnSave, tab?.tabLevel, triggerParentRefreshes]
   );

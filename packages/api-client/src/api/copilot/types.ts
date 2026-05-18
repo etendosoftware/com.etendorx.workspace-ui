@@ -27,6 +27,7 @@ export interface IAssistant {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  featured?: "Y" | "N";
 }
 
 /**
@@ -202,6 +203,11 @@ export interface CopilotClientConfig {
  */
 export interface IConversationSummary {
   id: string;
+  title?: string;
+}
+
+export interface ConversationMutationResponse {
+  success: boolean;
   title?: string;
 }
 

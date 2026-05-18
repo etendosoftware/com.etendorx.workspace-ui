@@ -98,6 +98,11 @@ export const getCurrentRowCanExpand = ({
 export const getNewActiveLevels = (currentLevels: number[], level: number, expand?: boolean) => {
   if (expand) return [level];
 
+  if (expand === false) {
+    if (level === 0) return [0];
+    return [level - 1, level];
+  }
+
   const maxLevel = currentLevels[currentLevels.length - 1];
 
   if (level === 0) return [0];

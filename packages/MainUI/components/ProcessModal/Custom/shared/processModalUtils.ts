@@ -74,18 +74,11 @@ export const parseSmartClientMessage = (html: string): { text: string; tabId?: s
     }
   }
 
-  // Strip HTML tags using a safe character-by-character approach
-  let cleanText = html;
-  const anchorStart = cleanText.indexOf("<a");
-  if (anchorStart !== -1) {
-    const anchorEnd = cleanText.indexOf("</a>", anchorStart);
-    if (anchorEnd !== -1) {
-      cleanText = cleanText.substring(0, anchorStart) + cleanText.substring(anchorEnd + 4);
-    }
-  }
+  // Strip ONLY HTML tags using a safe character-by-character approach
+  // We keep the content inside the tags (like <a>Link Text</a> -> Link Text)
   let result = "";
   let inTag = false;
-  for (const ch of cleanText) {
+  for (const ch of html) {
     if (ch === "<") inTag = true;
     else if (ch === ">") inTag = false;
     else if (!inTag) result += ch;

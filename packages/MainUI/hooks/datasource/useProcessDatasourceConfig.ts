@@ -25,6 +25,7 @@ export interface ProcessConfigResponse {
   processId: string;
   defaults?: Record<string, { value: string; identifier: string }>;
   filterExpressions?: Record<string, Record<string, string>>;
+  _filterExpressions?: Record<string, Record<string, string>>;
   refreshParent?: boolean;
 }
 

@@ -74,27 +74,24 @@ export const useTableDirOptions = ({ tabId, entityName }: UseTableDirOptionsPara
 
         if (datasourceId) {
           // Use selector/datasource approach for fields that reference other entities (e.g., businessPartner, product)
-          options = await fetchFilterOptions(
-            String(datasourceId),
+          options = await fetchFilterOptions({
+            datasourceId: String(datasourceId),
             selectorDefinitionId,
             searchQuery,
-            pageSize,
-            undefined,
-            undefined,
-            0
-          );
+            limit: pageSize,
+            offset: 0,
+          });
         } else if (entityName && tabId && column.columnName) {
           // Fallback to distinct values approach for fields without a referenced entity
           // This queries the main datasource for unique values of this field
-          options = await fetchFilterOptions(
-            String(entityName),
-            undefined,
+          options = await fetchFilterOptions({
+            datasourceId: String(entityName),
             searchQuery,
-            pageSize,
-            column.columnName,
+            limit: pageSize,
+            distinctField: column.columnName,
             tabId,
-            0
-          );
+            offset: 0,
+          });
         }
 
         // Cache the options if no search query (to avoid caching filtered results)

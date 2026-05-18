@@ -432,7 +432,7 @@ describe("CustomModal", () => {
     it("should have proper spacing on header and footer", () => {
       const { container } = render(<CustomModal {...defaultProps} />);
 
-      const header = container.querySelector(".p-4");
+      const header = container.querySelector(".px-4");
       expect(header).toBeInTheDocument();
     });
 

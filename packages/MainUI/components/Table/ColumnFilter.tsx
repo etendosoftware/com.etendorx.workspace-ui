@@ -43,22 +43,32 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
   const supportsDropdown = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
 
-  const booleanOptions: FilterOption[] = [
-    { id: "true", label: t("common.trueText"), value: "true" },
-    { id: "false", label: t("common.falseText"), value: "false" },
-  ];
+  const booleanOptions = useMemo<FilterOption[]>(
+    () => [
+      { id: "true", label: t("common.trueText"), value: "true" },
+      { id: "false", label: t("common.falseText"), value: "false" },
+    ],
+    [t]
+  );
 
   const availableOptions = useMemo(() => {
-    return isBooleanColumn
-      ? booleanOptions
-      : (filterState?.availableOptions || [])
-          .filter((option) => !option.isTextSearch)
-          .map((option) => ({
-            id: option.id,
-            label: option.label,
-            value: option.value ?? option.id,
-          }));
-  }, [isBooleanColumn, filterState?.availableOptions, booleanOptions]);
+    if (isBooleanColumn) return booleanOptions;
+
+    const loaded = (filterState?.availableOptions || [])
+      .filter((option) => !option.isTextSearch)
+      .map((option) => ({
+        id: option.id,
+        label: option.label,
+        value: option.value ?? option.id,
+      }));
+
+    // Ensure selected options are always present for label display, even before the dropdown loads
+    const selected = (filterState?.selectedOptions || []).filter(
+      (o) => !o.isTextSearch && !loaded.some((l) => l.id === o.id)
+    );
+
+    return [...selected, ...loaded];
+  }, [isBooleanColumn, filterState?.availableOptions, filterState?.selectedOptions, booleanOptions]);
 
   if (!supportsDropdown) return null;
 

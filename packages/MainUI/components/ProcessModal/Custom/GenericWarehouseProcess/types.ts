@@ -56,6 +56,8 @@ export interface WarehouseProcessFeatures {
   calculateWeight?: boolean;
   /** Whether to track scannedInputs per line (default: false, used in picking) */
   trackScannedInputs?: boolean;
+  /** When true, use operationQty (alternative UOM) instead of quantity for qtyPending calculation */
+  useOperativeQty?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +76,19 @@ export interface OnScanResult {
    * Falls back to the raw user input if not provided.
    */
   scannedCode?: string;
+  /** Optional AI config id for advanced barcode parsing flows */
+  aiId?: string | null;
+  /** Optional barcode algorithm id for advanced barcode parsing flows */
+  algorithmId?: string | null;
   /** If true, the scan failed and an error should be shown */
   error?: false;
+}
+
+export interface WarehouseScannedInput {
+  code: string;
+  qty: number;
+  aiId?: string | null;
+  algorithmId?: string | null;
 }
 
 export interface OnScanError {
@@ -105,6 +118,7 @@ export interface OnScanContext {
   currentBox: number;
   lines: WarehouseLine[];
   callAction: (actionHandler: string, params: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  OB: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +132,7 @@ export interface WarehouseLine {
   qtyVerified: number;
   qtyPending: number;
   boxed?: number;
-  scannedInputs?: { code: string; qty: number }[];
+  scannedInputs?: WarehouseScannedInput[];
   [key: string]: unknown;
 }
 

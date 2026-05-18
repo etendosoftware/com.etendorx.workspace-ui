@@ -34,7 +34,7 @@ interface UseRecordNavigationOptions {
   records: EntityData[];
   onNavigate: (recordId: string) => void;
   formState: FormState<EntityData>;
-  handleSave: (options: SaveOptions) => Promise<void>;
+  handleSave: (options: SaveOptions) => Promise<boolean>;
   showErrorModal: (message: string) => void;
   hasMoreRecords?: boolean;
   fetchMore?: () => void;

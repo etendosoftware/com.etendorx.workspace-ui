@@ -46,7 +46,7 @@ describe("api/linkedItems", () => {
       const result = await fetchLinkedItemCategories(params);
 
       expect(Metadata.client.post).toHaveBeenCalledWith(
-        "meta/utility/UsedByLink.html",
+        "meta/legacy/utility/UsedByLink.html",
         expect.any(URLSearchParams),
         expect.objectContaining({
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -95,7 +95,7 @@ describe("api/linkedItems", () => {
       const result = await fetchLinkedItems(params);
 
       expect(Metadata.client.post).toHaveBeenCalledWith(
-        "meta/utility/UsedByLink.html",
+        "meta/legacy/utility/UsedByLink.html",
         expect.any(URLSearchParams),
         expect.any(Object)
       );

@@ -39,6 +39,7 @@ export interface UseTableDirDatasourceParams {
   initialPageSize?: number;
   isProcessModal?: boolean;
   staticOptions?: Array<{ id: string; name: string; [key: string]: unknown }>;
+  selectedRecordsCount?: number;
 }
 
 export interface ContextItem {

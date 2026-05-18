@@ -105,11 +105,46 @@ export function getDatasourceUrl(entity: string, operationType?: string): string
 }
 
 /**
+ * Returns the direct datasource servlet URL for a specific entity.
+ * This path (`org.openbravo.service.datasource/<entity>`) authenticates via
+ * session cookie + CSRF token. Use for entities not exposed through the
+ * metadata-forward SWS path (e.g. OBUIAPP_SavedSearch).
+ * @param entity - The datasource entity name
+ * @returns Complete direct datasource URL for the entity
+ */
+export function getDirectDatasourceUrl(entity: string): string {
+  return buildEndpointUrl({
+    baseUrl: process.env.ETENDO_CLASSIC_URL || "",
+    useSws: false,
+    useForward: false,
+    service: `org.openbravo.service.datasource/${entity}`,
+  });
+}
+
+/**
  * Convenience function to get a complete kernel URL
  * @returns Complete kernel URL
  */
 export function getKernelUrl(): string {
   const config = getKernelEndpoint();
+  return buildEndpointUrl(config);
+}
+
+/**
+ * Returns the kernel SWS datasource URL for a specific entity.
+ * This path (`sws/com.smf.securewebservices.kernel/org.openbravo.service.datasource/<entity>`)
+ * authenticates via Bearer token without requiring a CSRF token, making it the correct
+ * route for write operations (PUT/PATCH/DELETE) initiated by the New UI.
+ * @param entity - The datasource entity name
+ * @returns Complete kernel datasource URL for the entity
+ */
+export function getKernelDatasourceUrl(entity: string): string {
+  const config: EndpointConfig = {
+    baseUrl: process.env.ETENDO_CLASSIC_URL || "",
+    useSws: true,
+    useForward: false,
+    service: `com.smf.securewebservices.kernel/org.openbravo.service.datasource/${entity}`,
+  };
   return buildEndpointUrl(config);
 }
 

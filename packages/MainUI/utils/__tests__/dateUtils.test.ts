@@ -55,7 +55,7 @@ describe("dateUtils", () => {
           name: "dateField",
           columnName: "dateField",
           column: {
-            reference: FIELD_REFERENCE_CODES.DATE,
+            reference: FIELD_REFERENCE_CODES.DATE.id,
           },
           id: "date-id",
           _identifier: "date-identifier",
@@ -71,7 +71,7 @@ describe("dateUtils", () => {
           name: "dateTimeField",
           columnName: "dateTimeField",
           column: {
-            reference: FIELD_REFERENCE_CODES.DATETIME,
+            reference: FIELD_REFERENCE_CODES.DATETIME.id,
           },
           id: "datetime-id",
           _identifier: "datetime-identifier",
@@ -131,7 +131,7 @@ describe("dateUtils", () => {
           name: "dateField",
           columnName: "dateField",
           column: {
-            reference: FIELD_REFERENCE_CODES.DATE,
+            reference: FIELD_REFERENCE_CODES.DATE.id,
           },
           id: "date-id",
           _identifier: "date-identifier",
@@ -215,7 +215,7 @@ describe("dateUtils", () => {
           name: "quantity",
           columnName: "quantity",
           column: {
-            reference: FIELD_REFERENCE_CODES.INTEGER,
+            reference: FIELD_REFERENCE_CODES.INTEGER.id,
           },
           id: "quantity-id",
           _identifier: "quantity-id",
@@ -231,7 +231,7 @@ describe("dateUtils", () => {
           name: "price",
           columnName: "price",
           column: {
-            reference: FIELD_REFERENCE_CODES.DECIMAL,
+            reference: FIELD_REFERENCE_CODES.DECIMAL.id,
           },
           id: "price-id",
           _identifier: "price-id",
@@ -247,7 +247,7 @@ describe("dateUtils", () => {
           name: "amount",
           columnName: "amount",
           column: {
-            reference: FIELD_REFERENCE_CODES.NUMERIC,
+            reference: FIELD_REFERENCE_CODES.NUMERIC.id,
           },
           id: "amount-id",
           _identifier: "amount-id",
@@ -264,7 +264,7 @@ describe("dateUtils", () => {
           name: "qty",
           columnName: "qty",
           column: {
-            reference: FIELD_REFERENCE_CODES.QUANTITY_22,
+            reference: FIELD_REFERENCE_CODES.QUANTITY_22.id,
           },
           id: "qty-id",
           _identifier: "qty-id",
@@ -280,7 +280,7 @@ describe("dateUtils", () => {
           name: "qty",
           columnName: "qty",
           column: {
-            reference: FIELD_REFERENCE_CODES.QUANTITY_29,
+            reference: FIELD_REFERENCE_CODES.QUANTITY_29.id,
           },
           id: "qty-id",
           _identifier: "qty-id",
@@ -296,7 +296,7 @@ describe("dateUtils", () => {
           name: "amount",
           columnName: "amount",
           column: {
-            reference: FIELD_REFERENCE_CODES.NUMERIC,
+            reference: FIELD_REFERENCE_CODES.NUMERIC.id,
           },
           id: "amount-id",
           _identifier: "amount-id",
@@ -327,7 +327,7 @@ describe("dateUtils", () => {
           name: "customerRef",
           columnName: "customerRef",
           column: {
-            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19,
+            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
           },
           id: "customer-id",
           _identifier: "customer-id",
@@ -349,7 +349,7 @@ describe("dateUtils", () => {
           name: "vendorRef",
           columnName: "vendorRef",
           column: {
-            reference: FIELD_REFERENCE_CODES.TABLE_DIR_18,
+            reference: FIELD_REFERENCE_CODES.TABLE_DIR_18.id,
           },
           id: "vendor-id",
           _identifier: "vendor-id",
@@ -370,7 +370,7 @@ describe("dateUtils", () => {
           name: "partRef",
           columnName: "partRef",
           column: {
-            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19,
+            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
           },
           id: "part-id",
           _identifier: "part-id",
@@ -391,7 +391,7 @@ describe("dateUtils", () => {
           name: "refField",
           columnName: "refField",
           column: {
-            reference: FIELD_REFERENCE_CODES.TABLE_DIR_18,
+            reference: FIELD_REFERENCE_CODES.TABLE_DIR_18.id,
           },
           id: "ref-id",
           _identifier: "ref-id",
@@ -482,7 +482,7 @@ describe("dateUtils", () => {
           name: "dateField",
           columnName: "dateField",
           column: {
-            reference: FIELD_REFERENCE_CODES.DATE,
+            reference: FIELD_REFERENCE_CODES.DATE.id,
           },
           id: "date-id",
           _identifier: "date-id",
@@ -498,7 +498,7 @@ describe("dateUtils", () => {
           name: "value",
           columnName: "value",
           column: {
-            reference: FIELD_REFERENCE_CODES.NUMERIC,
+            reference: FIELD_REFERENCE_CODES.NUMERIC.id,
           },
           id: "value-id",
           _identifier: "value-id",
@@ -514,7 +514,7 @@ describe("dateUtils", () => {
           name: "refField",
           columnName: "refField",
           column: {
-            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19,
+            reference: FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
           },
           id: "ref-id",
           _identifier: "ref-id",

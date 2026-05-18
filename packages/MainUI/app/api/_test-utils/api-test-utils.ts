@@ -56,7 +56,7 @@ export function setupApiTestEnvironment() {
       text: async () => JSON.stringify({ response: { status: 0 } }),
     });
 
-    process.env = { ...originalEnv, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
+    process.env = { ...originalEnv, ETENDO_CLASSIC_URL: "https://erp.example/etendo" };
   });
 
   afterAll(() => {
@@ -118,7 +118,7 @@ export function setupTestEnvironment() {
 
   const setup = () => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "https://erp.example/etendo" };
     (global as any).fetch = jest.fn().mockResolvedValue(createMockFetchResponse());
   };
 
@@ -164,13 +164,13 @@ export const testData = {
   },
   urls: {
     invoice:
-      "http://localhost:3000/api/datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json",
-    order: "http://localhost:3000/api/datasource/Order?windowId=10&tabId=20&_operationType=add",
-    simple: "http://localhost:3000/api/datasource/Invoice?windowId=1&tabId=2&_operationType=add",
+      "https://localhost:3000/api/datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json",
+    order: "https://localhost:3000/api/datasource/Order?windowId=10&tabId=20&_operationType=add",
+    simple: "https://localhost:3000/api/datasource/Invoice?windowId=1&tabId=2&_operationType=add",
   },
   expectedUrls: {
     invoice:
-      "http://erp.example/etendo/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json&_startRow=0&_endRow=75",
+      "https://erp.example/etendo/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json&_startRow=0&_endRow=75",
   },
 };
 

@@ -19,13 +19,18 @@ import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { formatNumber, getFieldReference } from "@/utils";
+import { useLanguage } from "@/contexts/language";
 
 /**
  * Hook to safely get field value with proper identifier/value synchronization
  */
 export const useFieldValue = (field: Field) => {
   const { watch } = useFormContext();
-  const [value, identifier] = watch([field.hqlName, `${field.hqlName}$_identifier`]);
+  const { language } = useLanguage();
+  const colorWatchKey = field.colorFieldName
+    ? `${field.hqlName}$${field.colorFieldName}`
+    : `${field.hqlName}$__color_noop__`;
+  const [value, identifier, colorValue] = watch([field.hqlName, `${field.hqlName}$_identifier`, colorWatchKey]);
 
   const displayValue = useMemo(() => {
     if (identifier !== null && identifier !== undefined && identifier !== "") {
@@ -49,16 +54,17 @@ export const useFieldValue = (field: Field) => {
         return value ? "Y" : "N";
       case FieldType.NUMBER:
       case FieldType.QUANTITY:
-        return formatNumber(value);
+        return formatNumber(value, language ?? undefined, field.column?.reference, field.column?.valueFormat);
       default:
         return String(value);
     }
-  }, [field, identifier, value]);
+  }, [field, identifier, value, language]);
 
   return {
     value,
     identifier,
     displayValue,
+    colorValue: field.colorFieldName ? (colorValue as string | undefined) : undefined,
     hasIdentifier: identifier !== null && identifier !== undefined && identifier !== "",
     isEmpty:
       (value === null || value === undefined || value === "") &&

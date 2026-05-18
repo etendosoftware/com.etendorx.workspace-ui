@@ -17,6 +17,8 @@ docs/
 │   │   ├── process-definition-modal.md
 │   │   ├── defaults-action-handler.md
 │   │   └── window-references.md
+│   ├── process-scripts/              # Feature: Dynamic process scripts (onLoad / onProcess / PayScript)
+│   │   └── preferences.md           # Reading ERP preferences in scripts
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
 │   ├── data-grids/                   # Feature: Data grids
