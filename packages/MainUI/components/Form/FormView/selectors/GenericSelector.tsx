@@ -45,10 +45,12 @@ import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
+import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
+import { ButtonSelector } from "./ButtonSelector";
+import { RichTextSelector } from "./RichTextSelector";
+import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
-import type { ProcessDefinitionButton } from "@/components/ProcessModal/types";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useFormContext } from "react-hook-form";
 
 export type GenericSelectorProps = {
@@ -59,8 +61,6 @@ export type GenericSelectorProps = {
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { getValues, setValue } = useFormContext();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
-  const [processButtonData, setProcessButtonData] = useState<ProcessDefinitionButton | null>(null);
 
   // if hqlName data is missing, try camelCase version
   let effectiveField = field;
@@ -76,61 +76,19 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     }
   }
 
+  const { isProcessModalOpen, processButtonData, triggerProcess, closeProcessModal } =
+    useProcessDefinitionTrigger(effectiveField);
+
+  const handleProcessClick = useCallback(() => {
+    const processId = effectiveField.selector?.processDefinitionId as string | undefined;
+    if (processId) triggerProcess(processId);
+  }, [effectiveField, triggerProcess]);
+
   const { reference } = effectiveField.column;
 
   const isProductStockModal =
     effectiveField.selector?.datasourceName === "ProductStockView" ||
     (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
-
-  const handleProcessClick = useCallback(async () => {
-    const processId = effectiveField.selector?.processDefinitionId as string | undefined;
-    if (!processId) return;
-
-    try {
-      const response = await Metadata.client.post(`meta/process/${processId}`);
-      if (response.ok && response.data) {
-        const processData = response.data;
-        const name = processData.name || effectiveField.name || "";
-
-        const button = {
-          ...effectiveField,
-          id: effectiveField.id,
-          name,
-          action: "P",
-          enabled: true,
-          visible: true,
-          processId,
-          buttonText: name,
-          buttonRefList: [],
-          processInfo: {
-            loadFunction: processData.loadFunction || "",
-            searchKey: processData.searchKey || "",
-            clientSideValidation: processData.clientSideValidation || "",
-            _entityName: processData._entityName || "OBUIAPP_Process",
-            id: processId,
-            name,
-            javaClassName: processData.javaClassName || "",
-            parameters: [],
-          },
-          processDefinition: {
-            id: processId,
-            name,
-            description: processData.description || "",
-            javaClassName: processData.javaClassName || "",
-            parameters: processData.parameters || {},
-            onLoad: processData.onLoad || "",
-            onProcess: processData.onProcess || "",
-            ...processData,
-          },
-        } as unknown as ProcessDefinitionButton;
-
-        setProcessButtonData(button);
-        setIsProcessModalOpen(true);
-      }
-    } catch (error) {
-      console.error("Failed to load process definition:", error);
-    }
-  }, [effectiveField]);
 
   if (isProductStockModal) {
     return (
@@ -148,6 +106,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.PRODUCT.id: // Product reference to datasource
       case FIELD_REFERENCE_CODES.SELECTOR.id: // Generic selector (includes Product)
+      case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id: // Selector rendered as navigable link
       case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
       case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
         return (
@@ -155,6 +114,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.DATE.id:
         return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id:
       case FIELD_REFERENCE_CODES.DATETIME.id:
         return (
           <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />
@@ -222,6 +182,30 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return (
           <ImageSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ImageSelector__${field.id}`} />
         );
+      case FIELD_REFERENCE_CODES.UPLOAD_FILE.id:
+        // NOTE: Form save pipeline does not support multipart uploads yet.
+        // The component stores a fake path string; actual file persistence
+        // may need a pre-save upload hook (similar to useImageUpload) once
+        // the backend expectation for form-level file fields is clarified.
+        return (
+          <UploadFileSelector
+            field={effectiveField}
+            disabled={isReadOnly}
+            data-testid={`UploadFileSelector__${field.id}`}
+          />
+        );
+      case FIELD_REFERENCE_CODES.RICH_TEXT.id:
+        return (
+          <RichTextSelector
+            field={effectiveField}
+            isReadOnly={isReadOnly}
+            data-testid={`RichTextSelector__${field.id}`}
+          />
+        );
+      case FIELD_REFERENCE_CODES.BUTTON.id:
+        return (
+          <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
+        );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
@@ -280,17 +264,11 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         <ProcessDefinitionModal
           type={PROCESS_TYPES.PROCESS_DEFINITION}
           open={isProcessModalOpen}
-          onClose={() => {
-            setIsProcessModalOpen(false);
-            setProcessButtonData(null);
-          }}
+          onClose={closeProcessModal}
           button={processButtonData}
           contextRecord={getValues()}
-          onSuccess={() => {
-            setIsProcessModalOpen(false);
-            setProcessButtonData(null);
-          }}
-          data-testid={"ProcessDefinitionModal__" + field.id}
+          onSuccess={closeProcessModal}
+          data-testid={`ProcessDefinitionModal__${field.id}`}
         />
       )}
     </>

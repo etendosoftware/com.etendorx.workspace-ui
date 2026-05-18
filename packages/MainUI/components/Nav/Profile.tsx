@@ -32,6 +32,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     profile,
     currentWarehouse,
     changeProfile,
+    changePassword,
     roles,
     languages,
   } = useContext(UserContext);
@@ -71,6 +72,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       changeProfile={changeProfile}
       onSetDefaultConfiguration={setDefaultConfiguration}
+      onPasswordChange={changePassword}
       logger={logger}
       languages={languagesWithFlags}
       userName={profile.name}

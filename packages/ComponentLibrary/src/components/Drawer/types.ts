@@ -53,7 +53,7 @@ export interface DrawerProps {
 
 export interface MenuTitleProps {
   item: Menu;
-  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  onClick: (event?: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => void;
   selected?: boolean;
   expanded?: boolean;
   open?: boolean;

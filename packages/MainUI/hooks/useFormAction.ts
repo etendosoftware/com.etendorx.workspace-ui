@@ -27,6 +27,27 @@ import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 
+/**
+ * Extracts a human-readable error message from the datasource servlet response.
+ * The backend may return errors in two shapes:
+ *   1. { error: { message: "..." } }           — process / callout errors
+ *   2. { errors: { fieldName: "..." , ... } }   — field-level validation errors
+ */
+export function extractServerErrorMessage(response: Record<string, unknown> | undefined): string {
+  if (!response) return "Unknown server error";
+
+  const singleError = response.error as { message?: string } | undefined;
+  if (singleError?.message) return singleError.message;
+
+  const fieldErrors = response.errors as Record<string, string> | undefined;
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const messages = Object.values(fieldErrors).filter(Boolean);
+    if (messages.length > 0) return messages.join("; ");
+  }
+
+  return "Unknown server error";
+}
+
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
@@ -97,7 +118,8 @@ export const useFormAction = ({
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
-          throw new Error(data.response.error?.message);
+          const errorMsg = extractServerErrorMessage(data?.response);
+          throw new Error(errorMsg);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);

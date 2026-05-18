@@ -15,27 +15,28 @@
  *************************************************************************
  */
 
-"use client";
+import { Metadata } from "./metadata";
 
-import { Box } from "@mui/material";
-import type React from "react";
-import type { ReactNode } from "react";
-import RightButtons from "./RigthComponents/RightButtons";
-import { useStyle } from "./Nav.styles";
-export interface NavProps {
-  children?: ReactNode;
+interface ChangePasswordPayload {
+  currentPwd: string;
+  newPwd: string;
+  confirmPwd: string;
 }
 
-const Nav: React.FC<NavProps> = ({ children }) => {
-  const { styles } = useStyle();
+export const changePassword = async (params: ChangePasswordPayload): Promise<void> => {
+  const client = Metadata.kernelClient;
 
-  return (
-    <Box component="nav" sx={styles.NavStyles}>
-      <Box sx={styles.RightItems}>
-        <RightButtons>{children}</RightButtons>
-      </Box>
-    </Box>
+  const response = await client.post(
+    "?command=changePwd&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true",
+    params as unknown as Record<string, unknown>
   );
-};
 
-export default Nav;
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  if (response.data?.result === "error") {
+    const messageCode = response.data?.fields?.[0]?.messageCode ?? "passwordChangeError";
+    throw new Error(messageCode);
+  }
+};

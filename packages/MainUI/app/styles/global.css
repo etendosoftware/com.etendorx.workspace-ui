@@ -350,3 +350,31 @@ button {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Toast close button - status-colored background, white icon, inside toast */
+[data-sonner-toast] .toast-close-btn {
+  transform: none !important;
+  border-color: #6b7280 !important;
+  background-color: #6b7280 !important;
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="success"] .toast-close-btn {
+  border-color: #39dd75 !important;
+  background-color: #39dd75 !important;
+}
+
+[data-sonner-toast][data-type="error"] .toast-close-btn {
+  border-color: #dc2626 !important;
+  background-color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="warning"] .toast-close-btn {
+  border-color: #f59e0b !important;
+  background-color: #f59e0b !important;
+}
+
+[data-sonner-toast][data-type="info"] .toast-close-btn {
+  border-color: #3b82f6 !important;
+  background-color: #3b82f6 !important;
+}

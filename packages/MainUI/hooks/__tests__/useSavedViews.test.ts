@@ -111,11 +111,15 @@ describe("useSavedViews — fetchViews", () => {
     });
 
     expect(result.current.views).toHaveLength(2);
-    expect(result.current.views[0].id).toBe("view-001");
-    expect(result.current.views[0].name).toBe("Sales Orders");
+    // Default views are sorted first
+    expect(result.current.views[0].id).toBe("view-002");
+    expect(result.current.views[0].name).toBe("Default View");
     expect(result.current.views[0].tabId).toBe("tab-abc");
-    expect(result.current.views[0].isDefault).toBe(false);
+    expect(result.current.views[0].isDefault).toBe(true);
     expect(result.current.views[0].config).not.toBeNull();
+    expect(result.current.views[1].id).toBe("view-001");
+    expect(result.current.views[1].name).toBe("Sales Orders");
+    expect(result.current.views[1].isDefault).toBe(false);
   });
 
   it("parses grid configuration into a valid MRT config object", async () => {

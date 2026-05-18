@@ -16,12 +16,12 @@
  */
 
 import { useTranslation } from "@/hooks/useTranslation";
-import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from "@mui/material";
+import { Checkbox, FormControl, FormControlLabel, Grid, Typography, styled, useTheme } from "@mui/material";
 import { InputPassword } from "@workspaceui/componentlibrary/src/components";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import { Item } from "@workspaceui/componentlibrary/src/components/enums";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import ClientIcon from "../../../../ComponentLibrary/src/assets/icons/github.svg";
 import LockOutlined from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import OrganizationIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
@@ -50,14 +50,18 @@ const SelectorList: React.FC<SelectorListProps> = ({
   onSaveAsDefaultChange,
   translations,
   languagesFlags,
+  currentPwd,
+  newPwd,
+  confirmPwd,
+  onCurrentPwdChange,
+  onNewPwdChange,
+  onConfirmPwdChange,
+  passwordError,
 }) => {
   const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
   const { getFlag } = useLanguage();
-  const [password, setPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
 
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
@@ -232,32 +236,34 @@ const SelectorList: React.FC<SelectorListProps> = ({
         <Grid margin="0.5rem" data-testid="Grid__da17cd">
           <form action="#" autoComplete="off">
             <InputPassword
-              label={t("common.notImplemented")}
-              value={password}
-              setValue={setPassword}
+              label={t("navigation.profile.currentPasswordLabel")}
+              value={currentPwd}
+              setValue={onCurrentPwdChange}
               leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
-              autoComplete="new-password"
-              disabled
+              autoComplete="current-password"
               data-testid="InputPassword__da17cd"
             />
             <InputPassword
-              label={t("common.notImplemented")}
-              value={newPassword}
-              setValue={setNewPassword}
+              label={t("navigation.profile.newPasswordLabel")}
+              value={newPwd}
+              setValue={onNewPwdChange}
               leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
               autoComplete="new-password"
-              disabled
               data-testid="InputPassword__da17cd"
             />
             <InputPassword
-              label={t("common.notImplemented")}
-              value={newPasswordConfirmation}
-              setValue={setNewPasswordConfirmation}
+              label={t("navigation.profile.confirmPasswordLabel")}
+              value={confirmPwd}
+              setValue={onConfirmPwdChange}
               leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
               autoComplete="new-password"
-              disabled
               data-testid="InputPassword__da17cd"
             />
+            {passwordError && (
+              <Typography variant="caption" color="error" display="block" mt={0.5} data-testid="Typography__da17cd">
+                {passwordError}
+              </Typography>
+            )}
           </form>
         </Grid>
       )}

@@ -23,6 +23,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
+import { changePassword as doChangePassword } from "@workspaceui/api-client/src/api/changePassword";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { savePreferences, clearPreferences } from "@/utils/propertyStore";
@@ -208,6 +209,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [setToken, token, updateSessionInfo]
   );
 
+  const changePassword = useCallback(async (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => {
+    try {
+      await doChangePassword(params);
+    } catch (error) {
+      logger.warn("Error changing password:", error instanceof Error ? error.message : "Unknown error");
+      throw error;
+    }
+  }, []);
+
   const login = useCallback(
     async (username: string, password: string) => {
       try {
@@ -252,6 +262,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       currentRole,
       profile,
       changeProfile,
+      changePassword,
       currentWarehouse,
       currentClient,
       currentOrganization,
@@ -280,6 +291,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       currentRole,
       profile,
       changeProfile,
+      changePassword,
       currentWarehouse,
       currentClient,
       currentOrganization,

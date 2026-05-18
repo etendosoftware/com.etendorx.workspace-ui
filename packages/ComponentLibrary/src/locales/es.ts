@@ -283,10 +283,21 @@ const es = {
     profile: {
       tooltipButtonProfile: "Configuración de la cuenta",
       passwordLabel: "Contraseña",
+      currentPasswordLabel: "Contraseña actual",
       newPasswordLabel: "Nueva Contraseña",
       confirmPasswordLabel: "Confirmar Nueva Contraseña",
       signOffTooltip: "Cerrar sesión",
       saveAsDefault: "Guardar perfil por defecto",
+      passwordChangedSuccess: "Contraseña cambiada correctamente",
+      passwordMismatch: "Las contraseñas no coinciden",
+      passwordRequired: "Todos los campos de contraseña son requeridos",
+      errorCurrentPwdIncorrect: "La contraseña actual es incorrecta",
+      errorDifferentPassword: "La nueva contraseña debe ser diferente a la actual",
+      errorIncorrectPwd: "La nueva contraseña no es válida",
+      errorUnequalPwd: "Las contraseñas no coinciden",
+      errorNotStrongEnough:
+        "La contraseña no es suficientemente segura. Use mayúsculas, minúsculas, números y caracteres especiales",
+      errorGeneric: "Error al cambiar la contraseña",
     },
   },
   breadcrumb: {
