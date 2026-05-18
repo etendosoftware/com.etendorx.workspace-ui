@@ -91,6 +91,7 @@ sequenceDiagram
 ## Related Documentation
 
 - [ProcessDefinitionModal Detailed](./process-definition-modal.md)
+- [AD Fields: onLoad and onProcess](./ad-fields-onload-onprocess.md)
 - [DefaultsProcessActionHandler](./defaults-action-handler.md)
 - [Window References](./window-references.md)
 - [API Integration](../../api/kernel-servlet.md)
