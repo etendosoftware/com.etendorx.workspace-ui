@@ -16,7 +16,7 @@
  */
 
 import { CacheStore } from "./cache";
-import { Client, type Interceptor } from "./client";
+import { Client, type Interceptor, type AuthRetryHandler } from "./client";
 import { API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_ERP_PROXY, API_DATASOURCE_PROXY } from "./constants";
 import { LocationClient } from "./location";
 import { joinUrl } from "./utils";
@@ -89,6 +89,17 @@ export class Metadata {
       listener3();
       listener4();
     };
+  }
+
+  public static setAuthRetryHandler(handler: AuthRetryHandler | null) {
+    for (const client of [
+      Metadata.client,
+      Metadata.kernelClient,
+      Metadata.datasourceServletClient,
+      Metadata.locationClient,
+    ]) {
+      client.setAuthRetryHandler(handler);
+    }
   }
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {

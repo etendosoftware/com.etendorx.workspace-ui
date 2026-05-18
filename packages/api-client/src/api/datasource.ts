@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { Client, type Interceptor } from "./client";
+import { Client, type Interceptor, type AuthRetryHandler } from "./client";
 import type { DatasourceParams } from "./types";
 
 export class Datasource {
@@ -48,6 +48,10 @@ export class Datasource {
 
   public registerInterceptor(interceptor: Interceptor) {
     return this.client.registerInterceptor(interceptor);
+  }
+
+  public setAuthRetryHandler(handler: AuthRetryHandler | null) {
+    this.client.setAuthRetryHandler(handler);
   }
 
   /**

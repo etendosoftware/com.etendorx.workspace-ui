@@ -24,6 +24,7 @@ export interface ClientOptions extends Omit<RequestInit, "body"> {
 }
 
 export type Interceptor = (response: Response) => Promise<Response> | Response;
+export type AuthRetryHandler = () => Promise<boolean>;
 
 export class UnauthorizedError extends Error {
   public response: Response;
@@ -39,6 +40,7 @@ export class Client {
   private baseQueryParams: URLSearchParams;
   private baseUrl: string;
   private interceptor: Interceptor | null;
+  private authRetryHandler: AuthRetryHandler | null;
   private readonly JSON_CONTENT_TYPE = "application/json";
   private readonly FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
@@ -46,6 +48,7 @@ export class Client {
     this.baseUrl = url || "";
     this.baseHeaders = {};
     this.interceptor = null;
+    this.authRetryHandler = null;
     this.baseQueryParams = new URLSearchParams();
   }
 
@@ -167,6 +170,21 @@ export class Client {
         },
       });
 
+      if ((response.status === 401 || response.status === 403) && this.authRetryHandler) {
+        const recovered = await this.authRetryHandler();
+        if (recovered) {
+          response = await fetch(destination, {
+            ...options,
+            credentials: "include",
+            body: this.getFormattedBody(options.body),
+            headers: {
+              ...this.baseHeaders,
+              ...options.headers,
+            },
+          });
+        }
+      }
+
       if (typeof this.interceptor === "function") {
         response = await this.interceptor(response);
       }
@@ -198,6 +216,10 @@ export class Client {
     return () => {
       this.interceptor = null;
     };
+  }
+
+  public setAuthRetryHandler(handler: AuthRetryHandler | null) {
+    this.authRetryHandler = handler;
   }
 
   public async post(url: string, payload: ClientOptions["body"] = null, options: ClientOptions = {}) {
