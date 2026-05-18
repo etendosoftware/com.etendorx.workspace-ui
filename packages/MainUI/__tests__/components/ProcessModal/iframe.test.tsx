@@ -141,6 +141,73 @@ describe("ProcessIframeModal", () => {
     });
   });
 
+  it("auto-closes a showProcessMessage success after the 3s progress timer (no premature closeModal needed)", async () => {
+    jest.useFakeTimers();
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    try {
+      render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+
+      act(() => {
+        window.postMessage(
+          {
+            type: "fromForm",
+            action: "showProcessMessage",
+            payload: {
+              type: "success",
+              title: "Process completed successfully",
+              text: "The process has been unscheduled successfully.",
+            },
+          },
+          "*"
+        );
+      });
+
+      await waitFor(() =>
+        expect(screen.getByText("The process has been unscheduled successfully.")).toBeInTheDocument()
+      );
+
+      // The backend no longer schedules a 150ms closeModal: the modal must stay
+      // open while the 3s internal progress timer is running.
+      act(() => {
+        jest.advanceTimersByTime(2000);
+      });
+      expect(onClose).not.toHaveBeenCalled();
+
+      // After the full 3s the internal timer fires handleClose().
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+
+      await waitFor(() => {
+        expect(onProcessSuccess).toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("closes the modal immediately when showProcessMessage payload is info with empty text", async () => {
+    const onClose = jest.fn();
+    render(<ProcessIframeModal {...baseProps} onClose={onClose} />);
+
+    act(() => {
+      window.postMessage(
+        {
+          type: "fromForm",
+          action: "showProcessMessage",
+          payload: { type: "info", title: "", text: "" },
+        },
+        "*"
+      );
+    });
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
   it("handles postMessage: processOrder and calls fetchProcessMessage", async () => {
     mockFetchProcessMessage.mockResolvedValueOnce({
       type: "success",

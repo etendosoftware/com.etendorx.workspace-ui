@@ -158,9 +158,12 @@ const ProcessIframeOpenModal = ({
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
-      if (message?.type === "info" && message?.text === "") return;
       clearFallbackTimer();
       setAwaitingMessage(false);
+      if (message?.type === "info" && message?.text === "") {
+        handleClose();
+        return;
+      }
       if (message.text?.toUpperCase().includes("ERROR") || message.title?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
@@ -177,7 +180,7 @@ const ProcessIframeOpenModal = ({
         }
       }
     },
-    [t, clearFallbackTimer]
+    [t, clearFallbackTimer, handleClose]
   );
 
   const handleMessageError = useCallback(

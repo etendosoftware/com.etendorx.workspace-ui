@@ -227,9 +227,15 @@ captured body before flushing it. Five injections happen, in order:
      exception of refresh submits** (see Section 3.8 below).
    - Pop-up message pages (template marker `id="messageBoxIDMessage"`):
      inject `SHOW_PROCESS_MESSAGE_SCRIPT` before `</HEAD>` to forward the
-     parsed `{type, title, text}` payload to the parent and close the modal
-     150 ms later (the delay is critical — closing earlier discards the React
-     state update of the parent).
+     parsed `{type, title, text}` payload to the parent. The script does
+     **not** dispatch `closeModal` — closing the modal is delegated to the
+     React shell, which auto-closes `success` messages after its 3 s
+     progress timer and keeps `error`/`warning`/`info` (non-empty text)
+     open until the user dismisses them. The `info` + empty-text case is
+     short-circuited client-side: `Iframe.tsx → handleReceivedMessage`
+     calls `handleClose()` immediately so the empty popup never lingers.
+     This mirrors `MINIMAL_FORWARDER_HTML`, which has always relied on the
+     parent for the close decision.
 4. **Classic JS hook injection** — for action-button forms, the captured body
    is rewritten so that:
    - Every call to `submitThisPage(...)` is preceded by
@@ -686,7 +692,7 @@ The iframe and the parent communicate exclusively through
 |---|---|---|---|
 | `processOrder` | `POST_MESSAGE_SCRIPT` after `submitThisPage(...)` | `Iframe.tsx` → `handleProcessMessage` | Triggers `useProcessMessage.fetchProcessMessage` polling. |
 | `showProcessMessage` | `SHOW_PROCESS_MESSAGE_SCRIPT` (popup pages) and `MINIMAL_FORWARDER_HTML` | `Iframe.tsx` → `handleReceivedMessage` | Renders the message overlay using `payload = {type, title, text}`. |
-| `closeModal` | `POST_MESSAGE_SCRIPT` after `closePage()` / 150 ms after `showProcessMessage` | `Iframe.tsx` → `handleClose` (skipped if current message is error/warning) | Closes the modal and triggers `onProcessSuccess` if a success was previously seen. |
+| `closeModal` | `POST_MESSAGE_SCRIPT` after `closePage()` / `closeThisPage()` in action-button forms (popup-message pages never emit it — `SHOW_PROCESS_MESSAGE_SCRIPT` and `MINIMAL_FORWARDER_HTML` rely on the parent to close) | `Iframe.tsx` → `handleClose` (skipped if current message is error/warning) | Closes the modal and triggers `onProcessSuccess` if a success was previously seen. |
 | `iframeUnloaded` | `POST_MESSAGE_SCRIPT` on `pagehide` / `beforeunload` if no terminal action was emitted **and** the submitted `Command` is not a refresh command (see Section 3.8) | `Iframe.tsx` → `startFallbackCountdown` | Starts the 5 s fallback timer that shows the "no message captured" warning. Refresh submits (`FIND*`, `REFRESH*`, `DEFAULT*`) suppress this event so the fallback never triggers for non-process navigations. |
 | `requestFailed` | `REQUEST_FAILED_FORWARDER_HTML` (servlet error path) | `Iframe.tsx` → `handleRequestFailed` | Shows the error overlay with `process.requestFailed.{title,text}`. |
 
