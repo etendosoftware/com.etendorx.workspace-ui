@@ -336,22 +336,25 @@ const BaseSelectorComp = ({
           _gridVisibleProperties: gridVisibleProperties,
         } as Record<string, any>;
 
-        //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
-        if (field.inputName === "inpmProductId" && optionData) {
-          // Pricing fields (for order/invoice windows)
-          calloutData.inpmProductId_CURR =
-            optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
-          calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
-          calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
-          calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
-          calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
-
-          // Inventory/warehouse fields (from ProductStockView data)
-          calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
-          calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
-          calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
-          calloutData.inpmProductId_PUOM = "";
-          calloutData.inpmProductId_PQTY = "";
+        // Populate callout inputs from selector out-fields metadata.
+        // For type "calloutInput": append the suffix to the field's inputName so the
+        // backend callout receives the hidden input (e.g. inpmProductId_CURR).
+        // For type "field": directly set the target form field value from the selected record.
+        const outFields = field.selector?.outFields;
+        if (outFields?.length && optionData) {
+          for (const outField of outFields) {
+            const rawValue = optionData[outField.selectorFieldProperty];
+            if (outField.type === "calloutInput" && outField.suffix) {
+              calloutData[`${field.inputName}${outField.suffix}`] = String(rawValue ?? "");
+            } else if (outField.type === "field" && outField.targetHqlName) {
+              const val = rawValue ?? "";
+              setValue(outField.targetHqlName, val, { shouldDirty: false });
+              const identifierKey = `${outField.selectorFieldProperty}$_identifier`;
+              if (optionData[identifierKey]) {
+                setValue(`${outField.targetHqlName}$_identifier`, optionData[identifierKey], { shouldDirty: false });
+              }
+            }
+          }
         }
 
         const data = skipDebounce ? await executeCalloutBase(calloutData) : await debouncedCallout(calloutData);
