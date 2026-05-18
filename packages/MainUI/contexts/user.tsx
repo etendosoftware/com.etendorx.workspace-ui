@@ -374,18 +374,48 @@ export default function UserProvider(props: React.PropsWithChildren) {
       return response;
     };
 
+    const authRetryHandler = async () => {
+      try {
+        const res = await fetch("/api/auth/recover", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.newToken) {
+            setToken(data.newToken);
+            Metadata.setToken(data.newToken);
+            datasource.setToken(data.newToken);
+            CopilotClient.setToken(data.newToken);
+          }
+          return true;
+        }
+      } catch (_e) {
+        // recovery fetch failed — fall through to interceptor
+      }
+      return false;
+    };
+
     if (token) {
       const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
       const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
       const unregisterCopilotInterceptor = CopilotClient.registerInterceptor(interceptor);
 
+      Metadata.setAuthRetryHandler(authRetryHandler);
+      datasource.setAuthRetryHandler(authRetryHandler);
+      CopilotClient.setAuthRetryHandler(authRetryHandler);
+
       return () => {
         unregisterMetadataInterceptor();
         unregisterDatasourceInterceptor();
         unregisterCopilotInterceptor();
+        Metadata.setAuthRetryHandler(null);
+        datasource.setAuthRetryHandler(null);
+        CopilotClient.setAuthRetryHandler(null);
       };
     }
-  }, [logout, t, token]);
+  }, [logout, setToken, t, token]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {

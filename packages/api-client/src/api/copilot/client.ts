@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { Client, type Interceptor, type ClientOptions } from "../client";
+import { Client, type Interceptor, type ClientOptions, type AuthRetryHandler } from "../client";
 import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
 import type {
   ConversationMutationResponse,
@@ -139,6 +139,10 @@ export class CopilotClient {
    */
   public static registerInterceptor(interceptor: Interceptor) {
     return CopilotClient.client.registerInterceptor(interceptor);
+  }
+
+  public static setAuthRetryHandler(handler: AuthRetryHandler | null) {
+    CopilotClient.client.setAuthRetryHandler(handler);
   }
 
   /**
