@@ -208,13 +208,16 @@ captured body before flushing it. Five injections happen, in order:
    the real Tomcat context path.
 2. **`frameMenu` shim** (`injectFrameMenuShim` + `buildFrameMenuShim`) —
    Classic templates expect a top-level `frameMenu` frame to expose locale
-   formatting, autosave flags and a `getFrame` lookup function. The shim
-   creates a synthetic `window.frameMenu` populated from the current
-   `VariablesSecureApp` (decimal/group separators, numeric mask) and overrides
-   `window.getFrame` so the rest of the Classic JS keeps working inside an
-   iframe with no parent frame. A patch script is appended before `</HEAD>` to
-   re-wrap any later redefinition by `messages.js` (commit
-   `0789f270b0` introduced this fix).
+   formatting, autosave flags, a `getFrame` lookup function and the servlet
+   context path via `getAppUrlFromMenu`. The shim creates a synthetic
+   `window.frameMenu` populated from the current `VariablesSecureApp`
+   (decimal/group separators, numeric mask) and from `req.getContextPath()`
+   (so legacy XHRs like `/businessUtility/MessageJS.html` resolve against
+   `/etendo/...` and not the host root — otherwise validation messages such as
+   `showJSMessage('NoDataSelected')` would 404), and overrides `window.getFrame`
+   so the rest of the Classic JS keeps working inside an iframe with no parent
+   frame. A patch script is appended before `</HEAD>` to re-wrap any later
+   redefinition by `messages.js` (commit `0789f270b0` introduced this fix).
 3. **`postMessage` listeners** — depending on the page shape:
    - Pages with `</FRAMESET>` (compound legacy windows, only in the parent
      view): inject `RECEIVE_AND_POST_MESSAGE_SCRIPT` before `</HEAD>`. This
@@ -238,12 +241,22 @@ captured body before flushing it. Five injections happen, in order:
      parent for the close decision.
 4. **Classic JS hook injection** — for action-button forms, the captured body
    is rewritten so that:
-   - Every call to `submitThisPage(...)` is preceded by
-     `sendMessage('processOrder')` (fires before the page can unload).
    - Every call to `closePage()` / `closeThisPage()` is followed by
      `sendMessage('closeModal')`.
-   This is what lets the React shell know that the user actually clicked OK,
-   even when Classic immediately navigates away.
+   - `processOrder` is **not** prepended to `submitThisPage(...)` calls
+     anymore. Instead, `POST_MESSAGE_SCRIPT` installs a global one-shot hook on
+     `HTMLFormElement.prototype.submit` that dispatches
+     `sendMessage('processOrder')` only when the form is actually submitted
+     (filtering refresh-prefix Commands via the same `isRefreshCommand` helper
+     used by `notifyUnload`). This way, client-side validation aborts via
+     `showJSMessage(...)` (e.g. `NoDataSelected`, missing required fields) no
+     longer fire a false `processOrder` that would otherwise leave the React
+     shell polling `GetTabMessageActionHandler` until the fallback warning
+     ("Could not capture response") trips.
+   This is what lets the React shell know that the user actually clicked OK
+   *and the form really submitted*, while keeping inline validations
+   (`showJSMessage`, `setValues_MessageBox`) untouched and visible inside the
+   iframe.
 5. **`Command=PROCESS` short-circuit** (`isProcessCommandPopup` +
    `writeProcessCommandForwarder`) — when the captured body is a popup-message
    page **and** the original request was a `Command` whose value starts with
