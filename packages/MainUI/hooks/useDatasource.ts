@@ -224,9 +224,9 @@ export function useDatasource({
     };
 
     return finalParams;
-  // activeColumnFilters is intentionally omitted: it's already captured by
-  // columnFilterCriteria, which is listed above and changes whenever filters do.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // activeColumnFilters is intentionally omitted: it's already captured by
+    // columnFilterCriteria, which is listed above and changes whenever filters do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
   const fetchData = useCallback(
