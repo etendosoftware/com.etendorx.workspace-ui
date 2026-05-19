@@ -79,8 +79,8 @@ export default function Page() {
               key={win.windowIdentifier}
               className="absolute inset-0 flex flex-col overflow-hidden"
               style={{
-                visibility: isActive ? "visible" : "hidden",
-                pointerEvents: isActive ? "auto" : "none",
+                visibility: isActive && !isHomeRoute ? "visible" : "hidden",
+                pointerEvents: isActive && !isHomeRoute ? "auto" : "none",
               }}>
               <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
             </div>

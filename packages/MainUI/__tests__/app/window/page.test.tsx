@@ -79,8 +79,9 @@ describe("Window Page", () => {
     const homeElement = screen.getByText("Home");
     expect(homeElement).toBeInTheDocument();
 
-    // Check that Window is NOT rendered
-    expect(screen.queryByText("Window")).not.toBeInTheDocument();
+    // Window IS in DOM for performance (keep-in-DOM architecture) but its container is hidden
+    const windowEl = screen.queryByTestId("Window__123");
+    expect(windowEl?.parentElement).toHaveStyle({ visibility: "hidden" });
   });
 
   it("renders Window when activeWindow is present and not home route", () => {

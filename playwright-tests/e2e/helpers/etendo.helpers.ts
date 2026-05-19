@@ -205,15 +205,17 @@ export async function navigateToGoodsShipment(page: Page) {
  * that navigate through many windows in sequence.
  */
 export async function navigateByMenuTestId(page: Page, searchText: string, menuTestId: string) {
+  // Wait for any loading overlay to clear BEFORE interacting with the sidebar search.
+  // The overlay (div.absolute.h-screen.w-screen) appears after save/process operations
+  // and leaves the search input visible-but-disabled, causing fill() to hang indefinitely.
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
+
   const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
-
-  // Wait for the loading overlay to clear before clicking (same guard as navigateSidebarTo).
-  await page
-    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-    .catch(() => null);
 
   const menu = page.locator(`[data-testid="${menuTestId}"]`).first();
   await menu.waitFor({ state: "visible", timeout: 10_000 });
