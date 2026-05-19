@@ -129,17 +129,6 @@ export function applyFieldInteractions(
   // biome-ignore lint/suspicious/noExplicitAny: merged patch passes through to setLocalRecords
 ): Record<string, any> {
   const rules = processId ? getPayScriptRules(processId) : undefined;
-  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working in browser
-  console.log("[fieldInteractions] entry", {
-    processId,
-    gridName,
-    changesKeys: Object.keys(changes),
-    changes,
-    rulesFound: !!rules,
-    rulesHaveFieldInteractions: !!rules?.fieldInteractions,
-    declaredGrids: rules?.fieldInteractions ? Object.keys(rules.fieldInteractions) : [],
-    pairsForThisGrid: rules?.fieldInteractions?.[gridName]?.mutualExclusion,
-  });
   const rawSiblingPatch = rules ? resolveMutualExclusion(rules, gridName, changes) : EMPTY_PATCH;
   // Expand each emitted sibling key to both DB and HQL shapes so row.original
   // (and the cell-edit cache) stay consistent with the dual-key write pattern.
@@ -150,8 +139,6 @@ export function applyFieldInteractions(
       siblingPatch[variant] = value;
     }
   }
-  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic
-  console.log("[fieldInteractions] siblingPatch", siblingPatch);
   if (Object.keys(siblingPatch).length === 0) return changes;
   for (const [key, value] of Object.entries(siblingPatch)) {
     row.original[key] = value;
@@ -163,15 +150,6 @@ export function applyFieldInteractions(
       row._valuesCache[key] = value;
     }
   }
-  // biome-ignore lint/suspicious/noConsole: TEMP diagnostic
-  console.log("[fieldInteractions] mutated row.original keys", {
-    rowId: row.id,
-    received_in: row.original.received_in,
-    receivedIn: row.original.receivedIn,
-    paid_out: row.original.paid_out,
-    paidOut: row.original.paidOut,
-    valuesCacheKeys: row._valuesCache ? Object.keys(row._valuesCache) : null,
-  });
   return { ...changes, ...siblingPatch };
 }
 // Fixed paper height keeps the table visually constant regardless of row count.
@@ -1995,14 +1973,6 @@ const WindowReferenceGrid = ({
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
-      // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working in browser
-      console.log("[handleRecordChange] entry", {
-        rowId: row.id,
-        gridName: parameter.dBColumnName,
-        processId,
-        changes,
-      });
-
       // Apply declarative field interactions from the payscript (e.g. mutually
       // exclusive columns in a P&E grid). Runs BEFORE the localRecords lookup so
       // MRT create-rows (id="mrt-row-create"), which haven't entered the state
@@ -2024,11 +1994,6 @@ const WindowReferenceGrid = ({
       // the entire effect. The setLocalRecords + onSelectionChange paths below
       // operate on existing rows only, so we stop here.
       if (!records.some((r) => String(r.id) === String(row.id))) {
-        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — confirm we exit through the create-row branch after mutating row.original
-        console.log("[handleRecordChange] create-row branch — row.original mutated, skipping state sync", {
-          rowId: row.id,
-          mergedChanges,
-        });
         return;
       }
 

@@ -233,25 +233,11 @@ const GridCellEditorBase = ({
 
       // Notify parent of change
       if (onRecordChange) {
-        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — remove once mutual-exclusion is confirmed working
-        console.log("[GridCellEditor.handleChange] onRecordChange fired", {
-          rowId: row.id,
-          columnName: col.columnName,
-          dbColumnName: col.dbColumnName,
-          newValue,
-          newValueType: typeof newValue,
-        });
         onRecordChange(row, {
           [col.columnName]: newValue,
           ...(selectedOption
             ? { [`${col.columnName}$_identifier`]: selectedOption.label || selectedOption._identifier }
             : {}),
-        });
-      } else {
-        // biome-ignore lint/suspicious/noConsole: TEMP diagnostic — surface when the grid's record-change handler ref is unset
-        console.warn("[GridCellEditor.handleChange] onRecordChange is UNDEFINED — sibling-zeroing won't run", {
-          rowId: row.id,
-          columnName: col.columnName,
         });
       }
 
