@@ -329,6 +329,10 @@ export function useDatasource({
     async (options?: { silent?: boolean }) => {
       const isSilent = options?.silent === true;
 
+      // Always bypass the response cache on an explicit refetch (e.g. after a
+      // process completes) so the updated record state is always fetched fresh.
+      datasource.clearCacheForEntity(entity);
+
       if (!isSilent) {
         reinit();
         setLoading(true);
@@ -342,7 +346,7 @@ export function useDatasource({
 
       await fetchData(1);
     },
-    [reinit, fetchData]
+    [reinit, fetchData, entity]
   );
 
   return {
