@@ -128,6 +128,11 @@ export function useDatasource({
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
   const fetchInProgressRef = useRef(false);
+  // Tracks the previous "query identity" (everything except page) to detect
+  // filter/entity changes. When the query changes while page > 1 we fetch
+  // page 1 directly and guard against the re-run caused by setPage(1).
+  const prevQueryKeyRef = useRef("");
+  const skipPageResetFetchRef = useRef(false);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -219,7 +224,10 @@ export function useDatasource({
     };
 
     return finalParams;
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
+  // activeColumnFilters is intentionally omitted: it's already captured by
+  // columnFilterCriteria, which is listed above and changes whenever filters do.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
@@ -248,7 +256,7 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setRecords((prev) => (targetPage === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
@@ -285,18 +293,37 @@ export function useDatasource({
       return;
     }
 
+    // When a filter/entity change causes page to reset to 1 inside this effect,
+    // React will re-run the effect with the new page value. Skip that extra run
+    // to avoid a redundant network request.
+    if (skipPageResetFetchRef.current) {
+      skipPageResetFetchRef.current = false;
+      return;
+    }
+
+    // Compute a key that represents "what data" we want, independent of page.
+    // activeColumnFilters and searchQuery are already baked into queryParams so
+    // they don't need to be listed separately in the dependency array.
+    const queryKey = `${entity}|${pageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
+    const queryChanged = queryKey !== prevQueryKeyRef.current;
+    prevQueryKeyRef.current = queryKey;
+
     setError(undefined);
     setLoading(true);
 
-    fetchData();
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied, activeColumnFilters]);
-
-  useEffect(() => {
-    // Reset pagination but keep existing records visible until new data arrives,
-    // avoiding the blank-grid flash that reinit() would cause.
-    setPage(1);
-    setHasMoreRecords(true);
-  }, [activeColumnFilters, searchQuery]);
+    if (queryChanged && page !== 1) {
+      // Query (filters/search/entity) changed while on a page > 1.
+      // Fetch page 1 directly instead of first fetching the wrong page and then
+      // resetting — this replaces the old two-request pattern with one correct request.
+      skipPageResetFetchRef.current = true;
+      setPage(1);
+      setHasMoreRecords(true);
+      fetchData(1);
+    } else {
+      // Page-only change (load more) or query changed on page 1 — use current page.
+      fetchData();
+    }
+  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
