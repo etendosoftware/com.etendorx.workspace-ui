@@ -243,6 +243,10 @@ export function FormView({
         .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
         .join(",");
 
+      // Evict the entity from the response cache so the fetch below always
+      // returns the post-process/post-save state, not a 30-second-old snapshot.
+      datasource.clearCacheForEntity(tab.entityName);
+
       // Fetch the record first so the graph is updated before refetch() runs.
       // Running them in parallel caused a race: if refetch() completed first, the graph-sync
       // useEffect would compute availableFormData from the stale graph record and cache that
