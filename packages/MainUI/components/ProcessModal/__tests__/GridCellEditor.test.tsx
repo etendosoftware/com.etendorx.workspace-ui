@@ -20,19 +20,27 @@ import "@testing-library/jest-dom";
 
 // Mock the heavyweight CellEditorFactory with a probe that exposes the
 // `hasError` prop and lets us trigger `onChange` from the test.
+type ProbeLoadOptions = (field: unknown, searchQuery?: string) => Promise<unknown>;
 type ProbeProps = {
   hasError: boolean;
   onChange: (value: unknown) => void;
+  loadOptions?: ProbeLoadOptions;
 };
+const capturedLoadOptionsRef: { current: ProbeLoadOptions | null } = { current: null };
 jest.mock("../../Table/CellEditors", () => ({
-  CellEditorFactory: ({ hasError, onChange }: ProbeProps) => (
-    <div>
-      <span data-testid="probe-has-error">{hasError ? "yes" : "no"}</span>
-      <button type="button" data-testid="probe-trigger-change" onClick={() => onChange("value-x")}>
-        change
-      </button>
-    </div>
-  ),
+  CellEditorFactory: ({ hasError, onChange, loadOptions }: ProbeProps) => {
+    // Capture the inline `loadOptions` callback so tests can invoke it directly,
+    // bypassing the dropdown UI that lives inside the real cell editor.
+    capturedLoadOptionsRef.current = loadOptions ?? null;
+    return (
+      <div>
+        <span data-testid="probe-has-error">{hasError ? "yes" : "no"}</span>
+        <button type="button" data-testid="probe-trigger-change" onClick={() => onChange("value-x")}>
+          change
+        </button>
+      </div>
+    );
+  },
 }));
 
 // `useWindowReferenceGridContext` is mocked via `jest.fn()` so individual
@@ -69,7 +77,30 @@ jest.mock("@/utils/form/constants", () => ({
 }));
 
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
-  datasource: { client: { request: jest.fn() } },
+  datasource: { client: { request: jest.fn() }, get: jest.fn() },
+}));
+
+// Selector-definition path mocks. These let the inline selector-definition
+// branch of `loadOptions` run end-to-end against fakes that record their
+// arguments so tests can assert on the request that would have been built.
+jest.mock("@/utils/form/selectors/defaultFilters", () => ({
+  fetchSelectorDefaultFilters: jest.fn(),
+  buildCriteriaFromDefaults: jest.fn(),
+}));
+jest.mock("@/utils/form/selectors/selectorColumns", () => ({
+  buildSelectorDatasourceParams: jest.fn(),
+}));
+jest.mock("@/utils/form/selectors/utils", () => ({
+  buildSelectorDefaultContext: jest.fn(() => ({})),
+}));
+jest.mock("@/utils/contextUtils", () => ({
+  buildEtendoContext: jest.fn(() => ({})),
+}));
+jest.mock("@/hooks/useSelected", () => ({
+  useSelected: () => ({ graph: { getParent: () => null } }),
+}));
+jest.mock("@/contexts/language", () => ({
+  useLanguage: () => ({ language: "en_US" }),
 }));
 
 // Mock the SelectorModal so the search-button tests can observe `isOpen` and
@@ -275,5 +306,182 @@ describe("GridCellEditor — magnifying-glass search button", () => {
       // Restore the suite-wide default so later tests aren't poisoned.
       utils.getFieldReference.mockReturnValue("STRING");
     }
+  });
+});
+
+describe("GridCellEditor — loadOptions selector-definition branch", () => {
+  // Field that mirrors a BusinessPartner-style selector field: TABLEDIR
+  // reference but `field.selector` carries a `_selectorDefinitionId` from the
+  // backend, which is the trigger for the new branch.
+  const SELECTOR_DEFINITION_ID = "A98899B1C75A4F4EBD3414F1B654EFAB";
+  const SELECTOR_COLUMN = "c_bpartner_id";
+  const SELECTOR_FIELD_NAME = "Business Partner";
+  const ENTITY = "BusinessPartner";
+  const FIELD_ID = "82DD3C7755B049EA9D180845CA244600";
+
+  const buildDefinitionField = (overrides: Record<string, unknown> = {}) => ({
+    id: FIELD_ID,
+    name: SELECTOR_FIELD_NAME,
+    columnName: SELECTOR_COLUMN,
+    column: { reference: "19" }, // TABLEDIR — not SELECTOR
+    referencedEntity: ENTITY,
+    selector: {
+      _selectorDefinitionId: SELECTOR_DEFINITION_ID,
+      datasourceName: ENTITY,
+      hasTableRelated: true,
+      valueField: "id",
+      displayField: "_identifier",
+      gridColumns: [],
+    },
+    ...overrides,
+  });
+
+  const buildPropsForLoad = (field: ReturnType<typeof buildDefinitionField>) =>
+    buildProps({
+      col: { columnName: SELECTOR_COLUMN, header: SELECTOR_FIELD_NAME, accessorKey: SELECTOR_COLUMN },
+      fields: [field],
+    });
+
+  const renderAndGetLoadOptions = (field: ReturnType<typeof buildDefinitionField>) => {
+    capturedLoadOptionsRef.current = null;
+    render(<GridCellEditor {...buildPropsForLoad(field)} />);
+    const fn = capturedLoadOptionsRef.current;
+    if (!fn) throw new Error("loadOptions was not captured by the CellEditorFactory probe");
+    return fn;
+  };
+
+  // Fakes for the helpers — reset before each test so call counts don't leak.
+  const mockFetchSelectorDefaultFilters = jest.requireMock("@/utils/form/selectors/defaultFilters")
+    .fetchSelectorDefaultFilters as jest.Mock;
+  const mockBuildCriteriaFromDefaults = jest.requireMock("@/utils/form/selectors/defaultFilters")
+    .buildCriteriaFromDefaults as jest.Mock;
+  const mockBuildSelectorDatasourceParams = jest.requireMock("@/utils/form/selectors/selectorColumns")
+    .buildSelectorDatasourceParams as jest.Mock;
+  const mockDatasourceGet = jest.requireMock("@workspaceui/api-client/src/api/datasource").datasource.get as jest.Mock;
+  const mockDatasourceRequest = jest.requireMock("@workspaceui/api-client/src/api/datasource").datasource.client
+    .request as jest.Mock;
+
+  const DEFAULTS_RESPONSE = { filterExpression: "e.active=true", customer: "true", idFilters: [] };
+  const DEFAULT_CRITERIA = [
+    { fieldName: "filterExpression", operator: "iContains", value: "e.active=true" },
+    { fieldName: "customer", operator: "equals", value: true },
+    { fieldName: "_selectorDefinitionId", operator: "iContains", value: SELECTOR_DEFINITION_ID },
+  ];
+
+  beforeEach(() => {
+    mockFetchSelectorDefaultFilters.mockReset().mockResolvedValue(DEFAULTS_RESPONSE);
+    mockBuildCriteriaFromDefaults.mockReset().mockReturnValue(DEFAULT_CRITERIA);
+    mockBuildSelectorDatasourceParams.mockReset().mockImplementation(({ defaultCriteria }) => ({
+      // Mirror the real helper closely enough: include the criteria array so
+      // the search-query criteria appending logic has something to extend.
+      criteria: [...(defaultCriteria ?? [])],
+      IsSelectorItem: "true",
+      _selectorDefinitionId: SELECTOR_DEFINITION_ID,
+    }));
+    mockDatasourceGet.mockReset().mockResolvedValue({
+      ok: true,
+      data: {
+        response: {
+          data: [{ id: "BP-1", _identifier: "Customer A", name: "Customer A" }],
+        },
+      },
+    });
+    mockDatasourceRequest.mockReset();
+  });
+
+  it("calls fetchSelectorDefaultFilters and datasource.get with the selector criteria + search query", async () => {
+    const loadOptions = renderAndGetLoadOptions(buildDefinitionField());
+
+    const options = await loadOptions(buildDefinitionField(), "cust");
+
+    expect(mockFetchSelectorDefaultFilters).toHaveBeenCalledTimes(1);
+    expect(mockFetchSelectorDefaultFilters).toHaveBeenCalledWith(SELECTOR_DEFINITION_ID, expect.any(Object));
+
+    expect(mockBuildCriteriaFromDefaults).toHaveBeenCalledWith(DEFAULTS_RESPONSE, SELECTOR_DEFINITION_ID);
+
+    expect(mockDatasourceGet).toHaveBeenCalledTimes(1);
+    const [entityArg, paramsArg] = mockDatasourceGet.mock.calls[0];
+    expect(entityArg).toBe(ENTITY);
+    expect(paramsArg.criteria).toEqual([
+      ...DEFAULT_CRITERIA,
+      { fieldName: "_identifier", operator: "iContains", value: "cust" },
+    ]);
+    // Pagination + textMatch params injected before `datasource.get`. Without
+    // these the backend aborts with "Data was tried to be fetched ... without
+    // pagination". `buildParams` auto-prefixes them with `_` on the wire.
+    expect(paramsArg.startRow).toBe(0);
+    expect(paramsArg.endRow).toBe(100);
+    expect(paramsArg.textMatchStyle).toBe("substring");
+    expect(paramsArg.noActiveFilter).toBe(true);
+
+    // gridColumns MUST be empty when building inline params. Otherwise
+    // `getHiddenDefaultCriteria` drops criteria whose fieldName matches a
+    // visible column (e.g. `customer` for the BP selector), leaving the inline
+    // request unfiltered.
+    expect(mockBuildSelectorDatasourceParams).toHaveBeenCalledWith(expect.objectContaining({ gridColumns: [] }));
+
+    // mapResponseToOptions transforms { id, _identifier } into { id, value, label, ... }
+    expect(options).toEqual([expect.objectContaining({ id: "BP-1", value: "BP-1", label: "Customer A" })]);
+  });
+
+  it("does NOT call fetchSelectorDefaultFilters when the field has no _selectorDefinitionId (legacy GET path)", async () => {
+    // No `selector` at all → legacy branch.
+    const legacyField = {
+      id: "F-LEGACY",
+      name: SELECTOR_FIELD_NAME,
+      columnName: SELECTOR_COLUMN,
+      column: { reference: "19", table: "T-1" },
+      referencedEntity: ENTITY,
+    } as ReturnType<typeof buildDefinitionField>;
+    mockDatasourceRequest.mockResolvedValue({ data: { response: { data: [] } } });
+
+    const loadOptions = renderAndGetLoadOptions(legacyField);
+    await loadOptions(legacyField, "x");
+
+    expect(mockFetchSelectorDefaultFilters).not.toHaveBeenCalled();
+    expect(mockDatasourceGet).not.toHaveBeenCalled();
+    expect(mockDatasourceRequest).toHaveBeenCalledTimes(1);
+    const [url, opts] = mockDatasourceRequest.mock.calls[0];
+    expect(typeof url).toBe("string");
+    expect(url).toContain("/datasource/");
+    expect(opts.method).toBe("GET");
+  });
+
+  it("caches the SelectorDefaultFilterActionHandler response across searchQuery changes", async () => {
+    const field = buildDefinitionField();
+    const loadOptions = renderAndGetLoadOptions(field);
+
+    await loadOptions(field, "a");
+    await loadOptions(field, "ab");
+    await loadOptions(field, "abc");
+
+    // Defaults fetched once and reused for the 3 searchQuery variants.
+    expect(mockFetchSelectorDefaultFilters).toHaveBeenCalledTimes(1);
+    expect(mockDatasourceGet).toHaveBeenCalledTimes(3);
+  });
+
+  it("maps the datasource response to options with id, value and label", async () => {
+    mockDatasourceGet.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        response: {
+          data: [
+            { id: "BP-1", _identifier: "Customer A", customer: true },
+            { id: "BP-2", name: "Customer B" }, // no _identifier → falls back to name
+            { id: "BP-3" }, // no name/_identifier → falls back to id
+          ],
+        },
+      },
+    });
+    const field = buildDefinitionField();
+    const loadOptions = renderAndGetLoadOptions(field);
+
+    const options = (await loadOptions(field, "")) as Array<Record<string, unknown>>;
+
+    expect(options).toEqual([
+      expect.objectContaining({ id: "BP-1", value: "BP-1", label: "Customer A", customer: true }),
+      expect.objectContaining({ id: "BP-2", value: "BP-2", label: "Customer B" }),
+      expect.objectContaining({ id: "BP-3", value: "BP-3", label: "BP-3" }),
+    ]);
   });
 });

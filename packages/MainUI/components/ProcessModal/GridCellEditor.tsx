@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { CellEditorFactory } from "../Table/CellEditors";
 import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -27,6 +27,41 @@ import { useTranslation } from "@/hooks/useTranslation";
 import SelectorModal from "../Form/FormView/selectors/SelectorModal";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import {
+  fetchSelectorDefaultFilters,
+  buildCriteriaFromDefaults,
+  type SelectorCriteria,
+  type DefaultFilterResponse,
+} from "@/utils/form/selectors/defaultFilters";
+import { buildSelectorDatasourceParams } from "@/utils/form/selectors/selectorColumns";
+import { buildSelectorDefaultContext } from "@/utils/form/selectors/utils";
+import { buildEtendoContext } from "@/utils/contextUtils";
+import { useSelected } from "@/hooks/useSelected";
+import { useLanguage } from "@/contexts/language";
+
+// Field name used to attach the user's incremental search query as a criteria
+// to selector-definition-backed datasource fetches. Matches the column shown in
+// the inline dropdown (`_identifier`) so it filters by what the user sees.
+const SEARCH_FIELD_NAME = "_identifier";
+
+// Matches the modal-lupa pipeline (`useDatasource` defaults). Capped at 100 so
+// the dropdown stays responsive and aligns with `DEFAULT_PAGE_SIZE` in table
+// constants without re-importing it.
+const PAGE_SIZE = 100;
+
+type SelectorDefaultsCacheEntry = {
+  defaults: DefaultFilterResponse;
+  criteria: SelectorCriteria[];
+};
+
+const loadSelectorDefaults = async (
+  selectorDefinitionId: string,
+  context: Record<string, unknown>
+): Promise<SelectorDefaultsCacheEntry> => {
+  const defaults = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
+  const criteria = buildCriteriaFromDefaults(defaults, selectorDefinitionId);
+  return { defaults, criteria };
+};
 
 // Helper functions extracted to avoid recreation
 // biome-ignore lint/suspicious/noExplicitAny: Dynamic payload structure from datasource API
@@ -191,7 +226,14 @@ const GridCellEditorBase = ({
   const { effectiveRecordValuesRef, parametersRef, tabId, tab, session, fieldReadOnlyMap, shouldSendOrg } =
     useWindowReferenceGridContext();
   const { t } = useTranslation();
+  const { graph } = useSelected();
+  const { language } = useLanguage();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Memoizes the SelectorDefaultFilterActionHandler response per field so that
+  // typing N letters in the dropdown only triggers 1 defaults fetch (not N).
+  // Lives on the component instance; cleared when the editor unmounts.
+  const defaultsCacheRef = useRef<Map<string, Promise<SelectorDefaultsCacheEntry>>>(new Map());
 
   // Find matched field definition
   const matchingField =
@@ -265,9 +307,82 @@ const GridCellEditorBase = ({
     ]
   );
 
+  const loadOptionsViaSelector = useCallback(
+    async (field: any, searchQuery?: string) => {
+      const selectorDefinitionId = field.selector?._selectorDefinitionId as string | undefined;
+      if (!selectorDefinitionId) return [];
+
+      const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
+      if (!targetEntity) return [];
+
+      // Compute the context BEFORE keying the cache: the response of
+      // SelectorDefaultFilterActionHandler depends on the context, so a cache
+      // keyed only by field.id risks serving a stale response built from an
+      // incomplete context (e.g. the editor's first invocation on mount, when
+      // the parent form's record values may not yet be populated). Fingerprinting
+      // the context via `JSON.stringify` makes the cache self-invalidate when
+      // the upstream values change, while still deduplicating keystroke spam
+      // (between letters the context is identical → cache hit).
+      const context = buildSelectorDefaultContext(effectiveRecordValuesRef.current ?? {}, tab ?? null, session);
+      const cacheKey = `${field.id ?? selectorDefinitionId}|${JSON.stringify(context)}`;
+      let cached = defaultsCacheRef.current.get(cacheKey);
+      if (!cached) {
+        cached = loadSelectorDefaults(selectorDefinitionId, context);
+        defaultsCacheRef.current.set(cacheKey, cached);
+      }
+      const { defaults, criteria } = await cached;
+
+      const etendoContext = tab ? buildEtendoContext(tab, graph) : {};
+      const params = buildSelectorDatasourceParams({
+        field,
+        etendoContext,
+        language,
+        sorting: [],
+        currentTab: tab ?? null,
+        formValues: effectiveRecordValuesRef.current ?? {},
+        columnFilters: [],
+        defaultCriteria: criteria,
+        defaultFilterResponse: defaults,
+        // `gridColumns` are intentionally empty here: they're only consumed by
+        // `getHiddenDefaultCriteria` inside `buildSelectorDatasourceParams`,
+        // which drops criteria whose `fieldName` matches a visible column in
+        // the lupa modal grid (e.g. `customer`). The lupa flow re-inserts those
+        // dropped criteria via `preloadFiltersFromCriteria` → `columnFilters` →
+        // `useDatasource`'s criteria stitching. The inline dropdown has no
+        // such UI and skips that pipeline, so we keep ALL criteria on the wire
+        // by giving `getHiddenDefaultCriteria` an empty visible-keys set.
+        gridColumns: [],
+      });
+
+      if (searchQuery) {
+        const existing = Array.isArray(params.criteria) ? (params.criteria as SelectorCriteria[]) : [];
+        params.criteria = [...existing, { fieldName: SEARCH_FIELD_NAME, operator: "iContains", value: searchQuery }];
+      }
+
+      // Pagination + text-match params. `useDatasource → loadData` normally
+      // adds these before calling `datasource.get`; since we call `datasource.get`
+      // directly, we must replicate them or the backend rejects the request
+      // with "Data was tried to be fetched from server without pagination".
+      // Unprefixed keys (`startRow`, `endRow`, `textMatchStyle`, `noActiveFilter`)
+      // are auto-prefixed with `_` by `Datasource.buildParams`.
+      params.startRow = 0;
+      params.endRow = PAGE_SIZE;
+      params.textMatchStyle = "substring";
+      params.noActiveFilter = true;
+
+      const result = (await datasource.get(targetEntity, params)) as { data?: unknown };
+      return mapResponseToOptions(result.data ?? result);
+    },
+    [effectiveRecordValuesRef, tab, session, graph, language]
+  );
+
   const loadOptions = useCallback(
     async (field: any, searchQuery?: string) => {
       try {
+        if (field.selector?._selectorDefinitionId) {
+          return await loadOptionsViaSelector(field, searchQuery);
+        }
+
         const fieldRef = field.column?.reference || field.reference;
         const isSelector = fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
         const selectorId = field.selector?._selectorDefinitionId;
@@ -295,7 +410,7 @@ const GridCellEditorBase = ({
         return [];
       }
     },
-    [tabId, session, effectiveRecordValuesRef, parametersRef]
+    [tabId, session, effectiveRecordValuesRef, parametersRef, shouldSendOrg, loadOptionsViaSelector]
   );
 
   if (!matchingField) {
