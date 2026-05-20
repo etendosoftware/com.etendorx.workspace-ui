@@ -5,6 +5,7 @@ import { useTranslation } from "../../../hooks/useTranslation";
 import "./Login.css";
 import Input from "../Input";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
+import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
@@ -16,6 +17,7 @@ export default function Login({ title, onSubmit }: LoginProps) {
   const [password, setPassword] = useState("");
   const [progressWidth, setProgressWidth] = useState(0);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
 
   const { loginErrorText, setLoginErrorText, loginErrorDescription, setLoginErrorDescription } = useUserContext();
@@ -68,7 +70,12 @@ export default function Login({ title, onSubmit }: LoginProps) {
     async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      await onSubmit(username, password);
+      setIsLoading(true);
+      try {
+        await onSubmit(username, password);
+      } finally {
+        setIsLoading(false);
+      }
     },
     [onSubmit, password, username]
   );
@@ -122,9 +129,9 @@ export default function Login({ title, onSubmit }: LoginProps) {
             type="submit"
             className="mt-6"
             size="large"
-            disabled={!username || !password}
+            disabled={!username || !password || isLoading}
             data-testid="Button__602739">
-            {t("login.buttons.submit")}
+            {isLoading ? <Spinner size={20} color="inherit" /> : t("login.buttons.submit")}
           </Button>
 
           <div className="relative flex items-center my-4">
