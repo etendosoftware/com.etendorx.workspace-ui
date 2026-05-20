@@ -324,6 +324,44 @@ export function resolveSortBy(
 }
 
 /**
+ * Builds a stable, cheap-to-compare key from the scalar entries of an object.
+ * Used by `useMemo` to stabilize prop references that change identity but not
+ * content across parent re-renders (e.g. when a cell edit re-renders the
+ * modal and the same `currentValues` arrives as a fresh object).
+ *
+ * Object/array entries are ignored — they would need full JSON.stringify and
+ * we don't currently rely on nested structure for the consumers (datasource
+ * params, record-context). Adding nested support would slow the hot path
+ * without payoff.
+ */
+export function computeScalarStableKey(values: Record<string, unknown> | null | undefined): string {
+  if (!values) return "";
+  return Object.entries(values)
+    .filter(([, v]) => v !== null && v !== undefined && typeof v !== "object")
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|");
+}
+
+/**
+ * Mirrors Classic SmartClient: marks a record as selected and applies the
+ * default payment amount in a single pass. Reused by the initial sync (so
+ * pre-selected rows render with the default already in place) and by
+ * `handleRowSelection` when the user toggles a row.
+ *
+ * Default precedence: an existing non-zero `payment` wins; otherwise
+ * `expectedAmount` if defined; otherwise `outstanding`; otherwise `0`.
+ *
+ * Returns the same reference when no change is needed so React downstream
+ * memoization can skip work.
+ */
+export function buildSelectedRecord(record: EntityData): EntityData {
+  const hasNonZeroPayment = record.payment != null && Number(record.payment) !== 0;
+  const defaultPayment = hasNonZeroPayment ? record.payment : (record.expectedAmount ?? record.outstanding ?? 0);
+  if (record.obSelected === true && record.payment === defaultPayment) return record;
+  return { ...record, obSelected: true, payment: defaultPayment };
+}
+
+/**
  * Resets payment-related fields on a deselected record.
  * Extracted to reduce cognitive complexity of handleRowSelection.
  */
@@ -1083,20 +1121,24 @@ const WindowReferenceGrid = ({
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
-      const timer = setTimeout(() => {
-        setIsDataReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
+      setIsDataReady(true);
     }
   }, [processConfigLoading, processConfig]);
 
-  // Stabilize effectiveRecordValues — join scalar values (cheaper than full JSON.stringify)
-  const recordValuesKey = Object.entries(effectiveRecordValues || {})
-    .filter(([, v]) => v !== null && v !== undefined && typeof v !== "object")
-    .map(([k, v]) => `${k}:${v}`)
-    .join("|");
+  // Stabilize effectiveRecordValues by hashing its scalar entries — cheaper
+  // than JSON.stringify and good enough for downstream memos.
+  const recordValuesKey = computeScalarStableKey(effectiveRecordValues);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRecordValues = useMemo(() => effectiveRecordValues, [recordValuesKey]);
+
+  // Stabilize currentValues the same way. Without this, editing a grid cell
+  // re-renders the parent modal (via `onSelectionChange`), which hands us a
+  // new `currentValues` reference even though no scalar field actually
+  // changed — and that destabilizes the `datasourceOptions` memo, causing
+  // `useDatasource` to refetch on every keystroke.
+  const currentValuesKey = computeScalarStableKey(currentValues);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableCurrentValues = useMemo(() => currentValues, [currentValuesKey]);
 
   const isFieldVisible = useCallback(
     (field: any) => {
@@ -1239,8 +1281,8 @@ const WindowReferenceGrid = ({
     if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
       mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
     }
-    if (currentValues && Object.keys(currentValues).length > 0) {
-      mergeCurrentValuesIntoParams(currentValues, mergedParams);
+    if (stableCurrentValues && Object.keys(stableCurrentValues).length > 0) {
+      mergeCurrentValuesIntoParams(stableCurrentValues, mergedParams);
     }
     for (const [key, value] of Object.entries(mergedParams)) {
       applyMergedParam(key, value, parameters, options);
@@ -1296,7 +1338,7 @@ const WindowReferenceGrid = ({
     stableFilterExpressions,
     stableRecordValues,
     parameters,
-    currentValues,
+    stableCurrentValues,
     stableWindowReferenceTab,
     fields,
     isImplicitFilterApplied,
@@ -1304,6 +1346,33 @@ const WindowReferenceGrid = ({
     stableRawColumns,
     etendoContext,
   ]);
+
+  // `datasourceOptions` legitimately changes content on cell edits because
+  // the process's payscript (run by `useProcessCallouts` when `gridSelection`
+  // mutates) writes derived totals/validations back into form fields via
+  // `form.setValue`. Those values are folded into the request payload by
+  // `mergeCurrentValuesIntoParams` because the backend needs them to resolve
+  // `@VARIABLE@` placeholders during fetch. But they MUST NOT trigger a
+  // refetch — Classic Etendo fetches the P&E grid once on open and only
+  // refetches on explicit filter/sort/refresh actions. We mirror that by
+  // passing this narrow key to `useDatasource`; after its first fetch
+  // settles, the hook only re-fetches when this key changes (and the
+  // request body still gets the latest `datasourceOptions` because
+  // `params` is read fresh on every fire).
+  const datasourceRefetchKey = useMemo(
+    () =>
+      JSON.stringify({
+        criteria: datasourceOptions.criteria,
+        sortBy: datasourceOptions.sortBy,
+        isSorting: datasourceOptions.isSorting,
+        isImplicitFilterApplied: datasourceOptions.isImplicitFilterApplied,
+        tabId: datasourceOptions.tabId,
+        processId: datasourceOptions.processId,
+        windowId: datasourceOptions.windowId,
+        pageSize: datasourceOptions.pageSize,
+      }),
+    [datasourceOptions]
+  );
 
   // Build extra params for filter options requests (process context needed by Classic datasource)
   const filterExtraParams = useMemo(() => {
@@ -1558,6 +1627,7 @@ const WindowReferenceGrid = ({
     activeColumnFilters: appliedTableFilters,
     skip: shouldSkipFetch,
     isImplicitFilterApplied: isImplicitFilterApplied ?? true,
+    refetchKey: datasourceRefetchKey,
   });
 
   // Ref to track if we have performed initial auto-selection from context
@@ -1650,10 +1720,16 @@ const WindowReferenceGrid = ({
   useEffect(() => {
     // Only update if rawRecords actually changed content
     const rawString = JSON.stringify(rawRecords || []);
-    if (rawString !== rawRecordsStringRef.current) {
-      rawRecordsStringRef.current = rawString;
-      setLocalRecords(rawRecords || []);
-    }
+    if (rawString === rawRecordsStringRef.current) return;
+    rawRecordsStringRef.current = rawString;
+    // Apply the same default-payment logic that `handleRowSelection` runs on
+    // user toggle, but synchronously for rows the backend pre-flagged with
+    // `obSelected=true`. This collapses the legacy "rows arrive → default
+    // appears later" two-step into a single render.
+    const prepared = (rawRecords || []).map((record: EntityData) =>
+      record?.obSelected ? buildSelectedRecord(record) : record
+    );
+    setLocalRecords(prepared);
   }, [rawRecords]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
@@ -1812,14 +1888,10 @@ const WindowReferenceGrid = ({
         const isSelected = newSelection[recordId];
 
         if (isSelected) {
-          // Mirror Classic SmartClient: set obSelected=true and payment=expectedAmount when checked
-          const defaultPayment =
-            record.payment && Number(record.payment) !== 0
-              ? record.payment
-              : (record.expectedAmount ?? record.outstanding ?? 0);
-          if (!record.obSelected || record.payment !== defaultPayment) {
+          const updated = buildSelectedRecord(record);
+          if (updated !== record) {
             recordsChanged = true;
-            return { ...record, obSelected: true, payment: defaultPayment };
+            return updated;
           }
         } else {
           // Aggressively reset amount to 0 if deselected, regardless of current value
@@ -2435,9 +2507,16 @@ const WindowReferenceGrid = ({
 
   const table = useMaterialReactTable(tableOptions);
 
-  // Separate initial loading from filter/refresh loading
-  // Only show loading spinner on initial load, not on filter changes
-  const isInitialLoading = (tabLoading || processConfigLoading || !isDataReady) && !records;
+  // Separate initial loading from filter/refresh loading.
+  // The previous predicate `(... ) && !records` short-circuited as soon as
+  // `localRecords` was initialized to `[]` (truthy in JS), so the empty
+  // table rendered before the first datasource fetch returned, producing a
+  // visible "empty → records → defaults" flash. `rawRecordsStringRef` is
+  // empty until `useDatasource` resolves its first page, which is the
+  // correct signal for "we haven't shown real data yet".
+  const hasReceivedFirstPage = rawRecordsStringRef.current !== "";
+  const isInitialLoading =
+    tabLoading || processConfigLoading || !isDataReady || (datasourceLoading && !hasReceivedFirstPage);
   const error = tabError || processConfigError || datasourceError;
 
   if (isInitialLoading) {

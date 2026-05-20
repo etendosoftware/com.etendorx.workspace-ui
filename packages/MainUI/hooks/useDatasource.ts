@@ -102,6 +102,18 @@ export type UseDatasourceOptions = {
   activeColumnFilters?: MRT_ColumnFiltersState;
   isImplicitFilterApplied?: boolean;
   setIsImplicitFilterApplied?: (value: boolean) => void;
+  /**
+   * Optional override for the refetch-trigger key. When provided, after the
+   * first successful fetch the hook only refetches when this string changes;
+   * `params` is still read fresh on every render so the request body always
+   * reflects the latest values. Use to fold rapidly-changing context into
+   * the payload (e.g. payscript-driven form values) without triggering a
+   * refetch on every change. Until the first fetch completes (`loaded`),
+   * the hook falls back to hashing the full `params` so initialization
+   * updates (e.g. onLoad populating form values) still re-trigger the
+   * pending fetch and make the initial request payload complete.
+   */
+  refetchKey?: string;
 };
 
 export function useDatasource({
@@ -114,6 +126,7 @@ export function useDatasource({
   activeColumnFilters = EMPTY_FILTERS,
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
+  refetchKey,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -122,6 +135,13 @@ export function useDatasource({
 
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
+  // Distinct from `loaded` — that one is also flipped true while `skip` is
+  // active so consumers don't show a spinner during the skip phase. This flag
+  // tracks "has a real fetch completed yet?" and is used by the `refetchKey`
+  // opt-in to know when it's safe to lock the refetch trigger to the narrow
+  // key (vs. the full params hash, which is used during initialization so
+  // onLoad-populated form values can still re-trigger the pending fetch).
+  const [hasFirstFetchCompleted, setHasFirstFetchCompleted] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
@@ -182,9 +202,19 @@ export function useDatasource({
     ]
   );
 
-  // Stabilize params to prevent unnecessary fetches
+  // Stabilize params to prevent unnecessary fetches.
+  // Until the first real fetch completes (`hasFirstFetchCompleted === false`),
+  // use the full JSON.stringify of `params` so initialization-time mutations
+  // (e.g. onLoad populating form values that get folded into the request
+  // body) correctly re-trigger the pending fetch and produce a complete
+  // initial request. After the first fetch settles, if the caller provided
+  // a `refetchKey`, honor it: only re-trigger when that key changes
+  // (filter/sort/etc.), ignoring rapidly-changing context like
+  // payscript-driven form scalars.
+  const stableParamsTriggerKey =
+    !hasFirstFetchCompleted || refetchKey === undefined ? JSON.stringify(params) : refetchKey;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+  const stableParams = useMemo(() => params, [stableParamsTriggerKey]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
@@ -264,6 +294,7 @@ export function useDatasource({
           return survivors.length === 0 ? fetched : [...survivors, ...fetched];
         });
         setLoaded(true);
+        setHasFirstFetchCompleted(true);
       } catch (e) {
         logger.warn(e);
 
