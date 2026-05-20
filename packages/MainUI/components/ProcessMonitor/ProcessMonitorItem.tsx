@@ -48,12 +48,16 @@ export const ProcessMonitorItem = ({ item }: ProcessMonitorItemProps) => {
         alignItems="flex-start"
         secondaryAction={
           hasLog ? (
-            <Tooltip title={expanded ? "Hide log" : "Show log"}>
+            <Tooltip title={expanded ? "Hide log" : "Show log"} data-testid="Tooltip__30fb91">
               <IconButton
                 size="small"
                 onClick={() => setExpanded((v) => !v)}
                 data-testid={`ProcessMonitorItem__toggle__${item.pInstanceId}`}>
-                {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                {expanded ? (
+                  <ExpandLessIcon fontSize="small" data-testid="ExpandLessIcon__30fb91" />
+                ) : (
+                  <ExpandMoreIcon fontSize="small" data-testid="ExpandMoreIcon__30fb91" />
+                )}
               </IconButton>
             </Tooltip>
           ) : null
@@ -61,42 +65,50 @@ export const ProcessMonitorItem = ({ item }: ProcessMonitorItemProps) => {
         data-testid={`ProcessMonitorItem__${item.pInstanceId}`}>
         <ListItemText
           primary={
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, pr: hasLog ? 4 : 0 }}>
-              <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, pr: hasLog ? 4 : 0 }} data-testid="Box__30fb91">
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                noWrap
+                sx={{ flex: 1, minWidth: 0 }}
+                data-testid="Typography__30fb91">
                 {item.processName}
               </Typography>
-              <ProcessStatusBadge status={item.status} />
+              <ProcessStatusBadge status={item.status} data-testid="ProcessStatusBadge__30fb91" />
             </Box>
           }
           secondary={
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" data-testid="Typography__30fb91">
               {formatElapsed(item.startTime)}
             </Typography>
           }
+          data-testid="ListItemText__30fb91"
         />
       </ListItem>
       {hasLog && (
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Collapse in={expanded} timeout="auto" unmountOnExit data-testid="Collapse__30fb91">
           <Box
             sx={{
               mx: 2,
               mb: 1,
               p: 1,
-              bgcolor: "grey.100",
+              bgcolor: "#F5F6FA",
               borderRadius: 1,
               maxHeight: 120,
               overflow: "auto",
-            }}>
+            }}
+            data-testid="Box__30fb91">
             <Typography
               variant="caption"
               component="pre"
-              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", m: 0, fontFamily: "monospace" }}>
+              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", m: 0, fontFamily: "monospace" }}
+              data-testid="Typography__30fb91">
               {item.errorMsg}
             </Typography>
           </Box>
         </Collapse>
       )}
-      <Divider component="li" />
+      <Divider component="li" data-testid="Divider__30fb91" />
     </>
   );
 };

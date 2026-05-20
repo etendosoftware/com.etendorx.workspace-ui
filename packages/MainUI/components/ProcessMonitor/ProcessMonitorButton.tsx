@@ -16,41 +16,44 @@
  */
 "use client";
 import { useState } from "react";
-import { Badge, IconButton, Tooltip } from "@mui/material";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { useBackgroundProcessMonitor } from "@/hooks/useBackgroundProcessMonitor";
 import { ProcessMonitorPanel } from "./ProcessMonitorPanel";
 
-export const ProcessMonitorButton = (_props: React.HTMLAttributes<HTMLDivElement>) => {
+export const ProcessMonitorButton = () => {
   const [panelOpen, setPanelOpen] = useState(false);
   const { items, loading, runningCount, failedCount, refresh } = useBackgroundProcessMonitor();
 
   const badgeCount = runningCount + failedCount;
-  const badgeColor = failedCount > 0 ? "error" : "info";
+  const badgeColor = failedCount > 0 ? "bg-red-500" : "bg-blue-500";
 
   return (
     <>
-      <Tooltip title="Background Processes">
+      <div className="relative">
         <IconButton
-          size="small"
           onClick={() => setPanelOpen(true)}
-          data-testid="ProcessMonitorButton__trigger"
-          sx={{ color: "inherit" }}>
-          <Badge
-            badgeContent={badgeCount > 0 ? badgeCount : undefined}
-            color={badgeColor}
-            data-testid="ProcessMonitorButton__badge">
-            <AccessTimeIcon fontSize="small" />
-          </Badge>
+          tooltip="Background Processes"
+          ariaLabel="Open background process monitor"
+          className="w-10 h-10"
+          data-testid="ProcessMonitorButton__trigger">
+          <ClockIcon data-testid="ClockIcon__ca468f" />
         </IconButton>
-      </Tooltip>
-
+        {badgeCount > 0 && (
+          <span
+            className={`absolute top-0 right-0 ${badgeColor} text-white text-[0.6rem] font-bold rounded-full min-w-[1rem] h-4 flex items-center justify-center px-1 pointer-events-none`}
+            data-testid="ProcessMonitorButton__badge">
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        )}
+      </div>
       <ProcessMonitorPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         items={items}
         loading={loading}
         onRefresh={refresh}
+        data-testid="ProcessMonitorPanel__ca468f"
       />
     </>
   );

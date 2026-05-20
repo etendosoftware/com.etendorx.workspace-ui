@@ -36,7 +36,14 @@ export const ProcessStatusBadge = ({ status }: ProcessStatusBadgeProps) => {
       label={config.label}
       color={config.color}
       icon={
-        status === "RUNNING" ? <CircularProgress size={12} color="inherit" sx={{ ml: "6px !important" }} /> : undefined
+        status === "RUNNING" ? (
+          <CircularProgress
+            size={12}
+            color="inherit"
+            sx={{ ml: "6px !important" }}
+            data-testid="CircularProgress__961534"
+          />
+        ) : undefined
       }
       data-testid={`ProcessStatusBadge__${status}`}
     />
