@@ -633,6 +633,39 @@ describe("Cell Editor Components", () => {
       });
     });
 
+    it("should select all on focus so typing replaces a seeded default value", async () => {
+      const user = userEvent.setup();
+      const field = createMockField({ type: FieldType.NUMBER });
+
+      render(
+        <NumericCellEditor
+          value={0}
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={field}
+          hasError={false}
+          disabled={false}
+        />
+      );
+
+      const input = screen.getByRole("textbox") as HTMLInputElement;
+      expect(input.value).toBe("0");
+
+      // Spy on select so we don't depend on jsdom's selection model.
+      const selectSpy = jest.spyOn(input, "select");
+
+      await user.click(input);
+      expect(selectSpy).toHaveBeenCalled();
+
+      // Simulate the contiguous "select-then-type" UX: when the input has all
+      // text selected, typing replaces it. jsdom doesn't apply selection
+      // semantics in `user.type`, so clear first and then assert the final
+      // onChange call reflects the replacement (not a prepend).
+      await user.clear(input);
+      await user.type(input, "1");
+      expect(mockOnChange).toHaveBeenLastCalledWith(1);
+    });
+
     it("should handle arrow key increment/decrement", async () => {
       const user = userEvent.setup();
       const field = createMockField({ type: FieldType.NUMBER });

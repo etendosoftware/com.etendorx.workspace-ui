@@ -150,7 +150,12 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     onBlur();
   };
 
-  const handleFocus = () => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Select all so the next keystroke replaces the current value. The input is
+    // `text-right` aligned and frequently mounted with a seeded default (e.g. 0
+    // in GL Items P&E), so without this the cursor lands before the digits and
+    // typing prepends instead of replacing (e.g. "0" + "1" → "01" → 10 after parse).
+    e.target.select();
     // Register this cell as focused when it receives focus
     setFocused();
   };
