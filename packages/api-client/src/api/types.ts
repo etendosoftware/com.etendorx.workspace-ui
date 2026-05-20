@@ -1055,3 +1055,22 @@ export interface DatasourceResponse {
     error?: { message: string };
   };
 }
+
+// Background process monitor types
+export type BackgroundProcessStatus = "RUNNING" | "COMPLETED" | "FAILED";
+
+export interface BackgroundProcessItem {
+  pInstanceId: string;
+  processId: string;
+  processName: string;
+  status: BackgroundProcessStatus;
+  startTime: string;
+  updatedTime: string;
+  errorMsg?: string | null;
+  userId: string | null;
+}
+
+export interface BackgroundProcessListResponse {
+  items: BackgroundProcessItem[];
+  totalCount: number;
+}
