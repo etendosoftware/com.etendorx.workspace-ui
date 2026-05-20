@@ -13,16 +13,19 @@ describe("normalizeGridValues", () => {
   });
 
   it("adds grid key for the first main grid entry", () => {
+    // Identity used to be preserved, but `normalizeGridValues` now sanitizes
+    // each grid (strips `_locallyAdded` + UUID `id` from locally-added rows),
+    // so the returned grid is a fresh object with the same content.
     const grid = makeGrid();
     const result = normalizeGridValues({ order_invoice: grid });
-    expect(result.grid).toBe(grid);
-    expect(result.order_invoice).toBe(grid);
+    expect(result.grid).toEqual(grid);
+    expect(result.order_invoice).toEqual(grid);
   });
 
   it("preserves credit_to_use under its original key and does not use it as grid", () => {
     const credit = makeGrid();
     const result = normalizeGridValues({ credit_to_use: credit });
-    expect(result.credit_to_use).toBe(credit);
+    expect(result.credit_to_use).toEqual(credit);
     expect(result.grid).toBeUndefined();
   });
 
@@ -30,16 +33,16 @@ describe("normalizeGridValues", () => {
     const mainGrid = makeGrid();
     const creditGrid = makeGrid({ _selection: [{ id: "c1" }] });
     const result = normalizeGridValues({ order_invoice: mainGrid, credit_to_use: creditGrid });
-    expect(result.grid).toBe(mainGrid);
-    expect(result.order_invoice).toBe(mainGrid);
-    expect(result.credit_to_use).toBe(creditGrid);
+    expect(result.grid).toEqual(mainGrid);
+    expect(result.order_invoice).toEqual(mainGrid);
+    expect(result.credit_to_use).toEqual(creditGrid);
   });
 
   it("uses the first non-credit_to_use grid when multiple grids exist", () => {
     const first = makeGrid();
     const second = makeGrid({ _selection: [{ id: "2" }] });
     const result = normalizeGridValues({ gridA: first, gridB: second });
-    expect(result.grid).toBe(first);
+    expect(result.grid).toEqual(first);
   });
 
   it("returns empty object unchanged", () => {

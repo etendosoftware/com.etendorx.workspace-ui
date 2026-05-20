@@ -179,7 +179,13 @@ describe("GridCellEditor — forceError and onCellEdit", () => {
     expect(document.querySelector(".text-red-500")).toBeNull();
   });
 
-  it("renders the error message div only when a validation message exists", () => {
+  it("does NOT render an error message below the input even when validationError has a message", () => {
+    // Workaround behavior: the red border (forwarded via `hasError` to the
+    // inner editor) is the only validation indicator. The legacy `<div>`
+    // that printed the translated message below the cell was removed —
+    // having two indicators (border + text) looked cluttered inside grid
+    // rows, and the text translation pipeline is not yet wired up for the
+    // payscript-emitted messages.
     render(
       <GridCellEditor
         {...buildProps({
@@ -188,7 +194,8 @@ describe("GridCellEditor — forceError and onCellEdit", () => {
       />
     );
     expect(screen.getByTestId("probe-has-error")).toHaveTextContent("yes");
-    expect(document.querySelector(".text-red-500")).toHaveTextContent("fields.required");
+    expect(screen.queryByText("fields.required")).toBeNull();
+    expect(document.querySelector(".text-red-500")).toBeNull();
   });
 
   it("calls onCellEdit with the column name after each change", () => {

@@ -23,7 +23,6 @@ import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useWindowReferenceGridContext } from "./WindowReferenceGridContext";
-import { useTranslation } from "@/hooks/useTranslation";
 import SelectorModal from "../Form/FormView/selectors/SelectorModal";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -225,7 +224,6 @@ const GridCellEditorBase = ({
 }: GridCellEditorProps) => {
   const { effectiveRecordValuesRef, parametersRef, tabId, tab, session, fieldReadOnlyMap, shouldSendOrg } =
     useWindowReferenceGridContext();
-  const { t } = useTranslation();
   const { graph } = useSelected();
   const { language } = useLanguage();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -420,12 +418,11 @@ const GridCellEditorBase = ({
   // Generate unique IDs for accessibility
   const fieldId = `grid-cell-${row.id}-${col.columnName}`;
 
-  // Validation state. `forceError` lets parents flag a cell as errored without
-  // attaching a message (e.g. mandatory-empty cells in a create-row, where we
-  // want a red border only — no text and no tooltip).
+  // Validation state. Errors render as a red border only (set via `hasError`
+  // on the inner editor). The previous variant also rendered the message
+  // below the input, but that was removed as a UX workaround until a richer
+  // indicator (e.g. tooltip) lands.
   const hasError = !!validationError || forceError === true;
-  const rawErrorMessage = validationError?.message;
-  const errorMessage = rawErrorMessage ? t(rawErrorMessage) : undefined;
 
   const isFieldReadOnly = fieldReadOnlyMap?.[col.columnName] || fieldReadOnlyMap?.[col.accessorKey] || false;
 
@@ -480,7 +477,6 @@ const GridCellEditorBase = ({
           </IconButton>
         )}
       </div>
-      {hasError && errorMessage && <div className="text-xs text-red-500 mt-1">{errorMessage}</div>}
       {isSearchModalOpen && (
         <SelectorModal
           field={matchingField}
