@@ -128,6 +128,11 @@ export function useDatasource({
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
   const fetchInProgressRef = useRef(false);
+  // Tracks whether at least one successful fetch has completed. Used to skip
+  // redundant re-fetches triggered by initialization effects in useTableData
+  // (e.g. setTableColumnSorting, setTableColumnVisibility) that re-run this
+  // effect even when the query params haven't changed.
+  const dataLoadedRef = useRef(false);
   // Tracks the previous "query identity" (everything except page) to detect
   // filter/entity changes. When the query changes while page > 1 we fetch
   // page 1 directly and guard against the re-run caused by setPage(1).
@@ -166,6 +171,7 @@ export function useDatasource({
     setRecords([]);
     setPage(1);
     setHasMoreRecords(true);
+    dataLoadedRef.current = false;
   }, []);
 
   const columnFilterCriteria = useMemo(() => {
@@ -258,6 +264,7 @@ export function useDatasource({
         setHasMoreRecords(data.response.data.length >= safePageSize);
         setRecords((prev) => (targetPage === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
         setLoaded(true);
+        dataLoadedRef.current = true;
       } catch (e) {
         logger.warn(e);
 
@@ -309,18 +316,21 @@ export function useDatasource({
     prevQueryKeyRef.current = queryKey;
 
     setError(undefined);
-    setLoading(true);
 
     if (queryChanged && page !== 1) {
       // Query (filters/search/entity) changed while on a page > 1.
       // Fetch page 1 directly instead of first fetching the wrong page and then
       // resetting — this replaces the old two-request pattern with one correct request.
+      setLoading(true);
       skipPageResetFetchRef.current = true;
       setPage(1);
       setHasMoreRecords(true);
       fetchData(1);
-    } else {
-      // Page-only change (load more) or query changed on page 1 — use current page.
+    } else if (queryChanged || page > 1 || !dataLoadedRef.current) {
+      // Fetch when: query changed on page 1, loading more pages, or initial load.
+      // Skip when: initialization effects re-run this effect with the same query on
+      // page 1 and data is already loaded — avoids redundant loading-state flashes.
+      setLoading(true);
       fetchData();
     }
   }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);

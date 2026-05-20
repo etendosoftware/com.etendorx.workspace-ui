@@ -952,8 +952,14 @@ const DynamicTable = ({
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
 
-  // Focus management for inline editing - tracks which cell should receive initial focus
-  const [initialFocusCell, setInitialFocusCell] = useState<{ rowId: string; columnName: string } | null>(null);
+  // Focus management for inline editing - stored in a ref so that changing the focus target
+  // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all
+  // column defs and re-render every row). Cells still receive the correct value because they
+  // re-render when editingRows changes, and at that point they read the ref synchronously.
+  const initialFocusCellRef = useRef<{ rowId: string; columnName: string } | null>(null);
+  const setInitialFocusCell = useCallback((cell: { rowId: string; columnName: string } | null) => {
+    initialFocusCellRef.current = cell;
+  }, []);
 
   // Debug comparison completed - issue identified and resolved
 
@@ -1178,15 +1184,16 @@ const DynamicTable = ({
         // Use field.name as the validation key to match Save validation and Callout logic
         const validationKey = fieldMapping.field.name || fieldName;
 
-        // Update validation errors in state
-        const currentErrors = editingRows[rowId]?.validationErrors || {};
+        // Read current errors from the ref (always up-to-date) so this callback
+        // doesn't need editingRows in its deps and won't be recreated on every keystroke.
+        const currentErrors = editingRowsRef.current[rowId]?.validationErrors || {};
         editingRowUtils.setRowValidationErrors(rowId, {
           ...currentErrors,
           [validationKey]: validationResult.error,
         });
       });
     },
-    [columnFieldMappings, editingRows, editingRowUtils]
+    [columnFieldMappings, editingRowUtils]
   );
 
   // Create debounced validation function for real-time feedback with performance monitoring
@@ -2354,7 +2361,7 @@ const DynamicTable = ({
           originalCell={originalCell}
           editingRowUtils={editingRowUtils}
           columnFieldMappings={columnFieldMappings}
-          initialFocusCell={initialFocusCell}
+          initialFocusCell={initialFocusCellRef.current}
           session={session}
           keyboardNavigationManager={keyboardNavigationManager}
           handleCellValueChange={handleCellValueChange}
@@ -2382,7 +2389,6 @@ const DynamicTable = ({
     [
       editingRowUtils,
       columnFieldMappings,
-      initialFocusCell,
       session,
       keyboardNavigationManager,
       handleCellValueChange,

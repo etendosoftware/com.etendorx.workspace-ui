@@ -47,6 +47,7 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
+import { parseColumns } from "@/utils/tableColumns";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -169,7 +170,6 @@ export const useTableData = ({
 
   // Parse columns
   const rawColumns = useMemo(() => {
-    const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
@@ -1090,48 +1090,47 @@ export const useTableData = ({
     setPrevShouldUseTreeMode(shouldUseTreeMode);
   }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
 
-  // Update flattened records when tree data changes
+  // Update flattened records when tree data changes.
+  // Non-tree mode reads `records` directly (see displayRecords), so no sync needed there.
   useEffect(() => {
     if (shouldUseTreeMode) {
       const flattened = buildFlattenedRecords(records, expanded, childrenData);
       setFlattenedRecords(flattened);
-    } else {
-      setFlattenedRecords(records);
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  // Initialize column visibility based on tab configuration
+  // Initialize column visibility and default sorting in a single effect so React 18 batches
+  // both setState calls into one re-render instead of two.
   useEffect(() => {
-    if (!isEmptyObject(tableColumnVisibility)) return;
+    const visNeedsInit = isEmptyObject(tableColumnVisibility);
+    const sortNeedsInit = tableColumnSorting.length === 0;
 
-    const initialVisibility: MRT_VisibilityState = {};
-    if (tab.fields) {
+    if (!visNeedsInit && !sortNeedsInit) return;
+
+    if (visNeedsInit && tab.fields) {
+      const initialVisibility: MRT_VisibilityState = {};
       for (const field of Object.values(tab.fields)) {
         if (field.showInGridView !== undefined && field.name) {
           initialVisibility[field.name] = field.showInGridView;
         }
       }
+      setTableColumnVisibility(initialVisibility);
     }
 
-    setTableColumnVisibility(initialVisibility);
-  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
-
-  // Initialize default sorting
-  useEffect(() => {
-    // Only initialize if there's no current sorting
-    if (tableColumnSorting.length === 0 && tab.fields) {
+    if (sortNeedsInit && tab.fields) {
       const defaultSort = getDefaultSort();
-
       if (defaultSort) {
-        setTableColumnSorting([
-          {
-            id: defaultSort.id,
-            desc: defaultSort.desc,
-          },
-        ]);
+        setTableColumnSorting([{ id: defaultSort.id, desc: defaultSort.desc }]);
       }
     }
-  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
+  }, [
+    tab.fields,
+    tableColumnVisibility,
+    tableColumnSorting.length,
+    setTableColumnVisibility,
+    setTableColumnSorting,
+    getDefaultSort,
+  ]);
 
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(
