@@ -18,18 +18,39 @@ jest.mock("../GridCellEditor", () => ({
 // `StableGridCellEditorRenderer` consumes `useWindowReferenceGridContext`, so
 // stub it with a no-op context provider that exposes the validation/error refs
 // the renderer reaches into.
+const mockContextValue: {
+  fieldsRef: { current: any[] };
+  handleRecordChangeRef: { current: any };
+  validations: any[];
+  createRowErrors: Set<string>;
+  clearCellError: jest.Mock;
+  siblingPatchVersion: number;
+} = {
+  fieldsRef: { current: [] },
+  handleRecordChangeRef: { current: null },
+  validations: [],
+  createRowErrors: new Set<string>(),
+  clearCellError: jest.fn(),
+  siblingPatchVersion: 0,
+};
+
 jest.mock("../WindowReferenceGridContext", () => ({
-  useWindowReferenceGridContext: () => ({
-    fieldsRef: { current: [] },
-    handleRecordChangeRef: { current: null },
-    validations: [],
-    createRowErrors: new Set<string>(),
-    clearCellError: jest.fn(),
-  }),
+  useWindowReferenceGridContext: () => mockContextValue,
   WindowReferenceGridProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-import React from "react";
+// MRT_EditActionButtons needs the MaterialReactTable internals to mount. We
+// only care about the *presence* of the chrome vs our custom buttons, so we
+// stub it with a probe.
+jest.mock("material-react-table", () => {
+  const actual = jest.requireActual("material-react-table");
+  return {
+    ...actual,
+    MRT_EditActionButtons: () => <div data-testid="probe-mrt-edit-chrome">chrome</div>,
+  };
+});
+
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import {
@@ -44,6 +65,9 @@ import {
   buildGridCriteria,
   getSortByString,
   GridCellRenderer,
+  shouldRenderCellEditor,
+  renderActionsCell,
+  isPersistedRow,
 } from "../WindowReferenceGrid";
 
 describe("WindowReferenceGrid Utilities", () => {
@@ -242,11 +266,7 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("does not render the editor for a selected locally-added row (confirmed rows are read-only)", () => {
       const fallbackCell = jest.fn(() => <span data-testid="probe-fallback">fb</span>);
-      render(
-        <GridCellRenderer
-          {...buildCellRendererProps({ isSelected: true, locallyAdded: true, fallbackCell })}
-        />
-      );
+      render(<GridCellRenderer {...buildCellRendererProps({ isSelected: true, locallyAdded: true, fallbackCell })} />);
       expect(screen.queryByTestId(EDITOR_PROBE_ID)).toBeNull();
       expect(screen.getByTestId("probe-fallback")).toBeInTheDocument();
     });
@@ -333,6 +353,120 @@ describe("WindowReferenceGrid Utilities", () => {
       );
       expect(screen.getByTestId(EDITOR_PROBE_ID)).toBeInTheDocument();
       expect(screen.queryByTestId("probe-fallback")).toBeNull();
+    });
+  });
+
+  // Pure decision function: selection is the only gate that mounts the editor;
+  // read-only fields and locally-added rows always render as inert.
+  describe("shouldRenderCellEditor", () => {
+    it.each<[string, { isSelected: boolean; isFieldReadOnly: boolean; isLocallyAdded: boolean }, boolean]>([
+      [
+        "selected, not read-only, not locally-added → editor",
+        { isSelected: true, isFieldReadOnly: false, isLocallyAdded: false },
+        true,
+      ],
+      [
+        "selected, locally-added → inert (post-'+' rows are confirmed)",
+        { isSelected: true, isFieldReadOnly: false, isLocallyAdded: true },
+        false,
+      ],
+      ["selected, read-only field → inert", { isSelected: true, isFieldReadOnly: true, isLocallyAdded: false }, false],
+      [
+        "not selected → inert (no selection-based editing)",
+        { isSelected: false, isFieldReadOnly: false, isLocallyAdded: false },
+        false,
+      ],
+      [
+        "not selected, locally-added → inert",
+        { isSelected: false, isFieldReadOnly: false, isLocallyAdded: true },
+        false,
+      ],
+    ])("%s", (_label, args, expected) => {
+      expect(shouldRenderCellEditor(args.isSelected, args.isFieldReadOnly, args.isLocallyAdded)).toBe(expected);
+    });
+  });
+
+  // Row-actions cell: two branches (creating, idle) and the cross-disabling
+  // contract that locks "one row at a time".
+  describe("renderActionsCell", () => {
+    const DELETE_LABEL = "Delete row";
+    const ROW_ID = "row-1";
+
+    const buildArgs = ({
+      rowId = ROW_ID,
+      hasId = true,
+      creatingRowId = null,
+      canDelete = true,
+    }: {
+      rowId?: string;
+      hasId?: boolean;
+      creatingRowId?: string | null;
+      canDelete?: boolean;
+    } = {}) => {
+      const onDelete = jest.fn();
+      const args = {
+        row: { id: rowId, original: hasId ? { id: rowId } : {} },
+        table: {
+          getState: () => ({
+            creatingRow: creatingRowId ? { id: creatingRowId } : null,
+          }),
+        },
+        canDelete,
+        onDelete,
+        deleteRowLabel: DELETE_LABEL,
+      };
+      return { args, onDelete };
+    };
+
+    it("renders an enabled trash button when idle and canDelete is on", () => {
+      const { args, onDelete } = buildArgs();
+      render(renderActionsCell(args) as React.ReactElement);
+      const deleteBtn = screen.getByTestId("WindowReferenceGrid__DeleteRowButton");
+      expect(deleteBtn).not.toBeDisabled();
+      deleteBtn.click();
+      expect(onDelete).toHaveBeenCalledWith(args.row);
+    });
+
+    it("disables trash while another row is being created", () => {
+      const { args } = buildArgs({ creatingRowId: "other-creating" });
+      render(renderActionsCell(args) as React.ReactElement);
+      expect(screen.getByTestId("WindowReferenceGrid__DeleteRowButton")).toBeDisabled();
+    });
+
+    it("renders no trash button when canDelete is false", () => {
+      const { args } = buildArgs({ canDelete: false });
+      const { container } = render(renderActionsCell(args) as React.ReactElement);
+      expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
+      expect(container.querySelector("button")).toBeNull();
+    });
+
+    it("defers to MRT's edit chrome for the creating-row scaffold (no row.original.id)", () => {
+      const { args } = buildArgs({ hasId: false });
+      render(renderActionsCell(args) as React.ReactElement);
+      // MRT_EditActionButtons is the chrome — not our custom trash button.
+      expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
+      expect(screen.getByTestId("probe-mrt-edit-chrome")).toBeInTheDocument();
+    });
+  });
+
+  // Guard composes with `editDisplayMode: "row"` to block any vector that
+  // could put a persisted row into MRT edit-mode (double-click cell-edit,
+  // keyboard shortcuts, external setEditingRow). Only the active create-row
+  // (no `original.id`) must be allowed in.
+  describe("isPersistedRow", () => {
+    it.each<[string, unknown, boolean]>([
+      ["row with original.id (remote record)", { original: { id: "REC-1" } }, true],
+      [
+        "row with original.id from locally-added '+' flow",
+        { original: { id: "local-uuid", _locallyAdded: true } },
+        true,
+      ],
+      ["create-row scaffold (original = {})", { original: {} }, false],
+      ["row with original = null", { original: null }, false],
+      ["row with no original key", {}, false],
+      ["null/undefined row", null, false],
+    ])("%s → %s", (_label, row, expected) => {
+      expect(isPersistedRow(row)).toBe(expected);
     });
   });
 });
