@@ -68,6 +68,8 @@ import {
   shouldRenderCellEditor,
   renderActionsCell,
   isPersistedRow,
+  isValidHqlName,
+  resolveHqlName,
 } from "../WindowReferenceGrid";
 
 describe("WindowReferenceGrid Utilities", () => {
@@ -205,6 +207,51 @@ describe("WindowReferenceGrid Utilities", () => {
     it("uses id as fallback if column not found", () => {
       const sorting = [{ id: "Unknown", desc: true }];
       expect(getSortByString(sorting, mockColumns, false)).toBe("-Unknown");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // HQL property name fallback (Add Payment / GL Items regression)
+  // -------------------------------------------------------------------------
+  // The classic UI sends `_allRows[i].gLItem` (HQL property name). The new UI
+  // metadata exposes that name as the entry key of `tab.fields["gLItem"]`,
+  // never on the field object itself. Without falling back to that key, the
+  // dual-key cell writer produces broken keys like `g/LItem` and the backend
+  // reads null → "id to load is required for loading".
+  describe("isValidHqlName + resolveHqlName — wiring exposed from WindowReferenceGrid", () => {
+    it("rejects display labels and DB columns (slashes, spaces, dots, underscores)", () => {
+      expect(isValidHqlName("g/LItem")).toBe(false);
+      expect(isValidHqlName("G/L Item")).toBe(false);
+      expect(isValidHqlName("orderNo.")).toBe(false);
+      expect(isValidHqlName("c_glitem_id")).toBe(false);
+      expect(isValidHqlName("received_in")).toBe(false);
+    });
+
+    it("accepts canonical HQL camelCase identifiers", () => {
+      expect(isValidHqlName("gLItem")).toBe(true);
+      expect(isValidHqlName("paidOut")).toBe(true);
+      expect(isValidHqlName("receivedIn")).toBe(true);
+    });
+
+    it("prefers the metadata key over a broken hqlName carrying the display label", () => {
+      // Real shape from add-payment metadata: backend ships hqlName="g/LItem"
+      // and columnName="c_glitem_id" but the entry key IS "gLItem".
+      const field = { name: "G/L Item", hqlName: "g/LItem", columnName: "c_glitem_id" };
+      expect(resolveHqlName(field, "gLItem")).toBe("gLItem");
+    });
+
+    it("prefers the metadata key over a DB columnName like 'received_in'", () => {
+      // Real shape from glitem.receivedIn: hqlName matches the key already, but
+      // columnName is the DB snake_case. The resolver must NOT pick it.
+      const field = { hqlName: "receivedIn", columnName: "received_in" };
+      expect(resolveHqlName(field, "receivedIn")).toBe("receivedIn");
+    });
+
+    it("prefers the metadata key over a dotted hqlName (FK navigation path)", () => {
+      // Real shape from order_invoice.salesOrderNo: hqlName="orderNo." but key
+      // is "salesOrderNo".
+      const field = { hqlName: "orderNo.", columnName: "salesOrderNo" };
+      expect(resolveHqlName(field, "salesOrderNo")).toBe("salesOrderNo");
     });
   });
 

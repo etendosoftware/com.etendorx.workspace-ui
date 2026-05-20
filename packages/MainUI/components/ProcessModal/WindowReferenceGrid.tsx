@@ -109,6 +109,41 @@ export function expandKeyVariants(key: string): string[] {
 }
 
 /**
+ * True when `name` looks like a canonical HQL property name: camelCase, leading
+ * lowercase ASCII letter, only `[A-Za-z0-9]` afterward — no underscores, dots,
+ * slashes, or spaces. Etendo's `Sqlc.TransformaNombreColumna` strips all of
+ * those when deriving property names from DB column names, so the canonical
+ * shape is strictly camelCase.
+ *
+ * Rejects DB column names (`c_glitem_id`, `received_in`) and broken display
+ * labels (`"g/LItem"`, `"G/L Item"`, `"orderNo."`).
+ */
+export function isValidHqlName(name: unknown): name is string {
+  return typeof name === "string" && /^[a-z][a-zA-Z0-9]*$/.test(name);
+}
+
+/**
+ * Resolves a grid field's HQL property name. The metadata key in
+ * `tab.fields["<key>"]` is the canonical HQL property name by Etendo
+ * convention — it matches what backend handlers expect (e.g.
+ * `glItem.getString("gLItem")`). `field.hqlName` from the metadata API is
+ * sometimes a broken display label (`"g/LItem"`, `"orderNo."`), and
+ * `field.columnName` is usually the DB snake_case column (`"c_glitem_id"`,
+ * `"received_in"`). When the key looks like a clean HQL identifier, trust it
+ * over the field's self-reported names.
+ *
+ * @param field        the grid column metadata
+ * @param metadataKey  the entry key from `Object.entries(tab.fields)`
+ */
+// biome-ignore lint/suspicious/noExplicitAny: process metadata field is untyped at this layer
+export function resolveHqlName(field: any, metadataKey: string): string {
+  if (isValidHqlName(metadataKey)) return metadataKey;
+  if (isValidHqlName(field?.hqlName)) return field.hqlName;
+  if (isValidHqlName(field?.columnName)) return field.columnName;
+  return metadataKey || "";
+}
+
+/**
  * Looks up the payscript registered for `processId` and applies any
  * declarative `fieldInteractions` rule (e.g. mutually-exclusive columns) that
  * matches `changes`. Mutates `row.original` in place with the sibling patch so
@@ -1089,15 +1124,24 @@ const WindowReferenceGrid = ({
     );
 
     // Parse the filtered fields
-    const parsed = visibleEntries.map(([key, field]: [string, any]) => ({
-      ...field,
-      _key: key, // Store the key to be used as ID
-      // Ensure hqlName is consistent for grid columns
-      hqlName: field.columnName || field.hqlName,
-      label: field.name,
-      // Resolve FieldType so applyNumericMandatoryDefaults can detect numeric fields
-      type: getFieldReference(field.column?.reference || field.reference),
-    }));
+    const parsed = visibleEntries.map(([key, field]: [string, any]) => {
+      // Etendo convention: the metadata key (e.g. "gLItem") IS the HQL property
+      // name. Override `hqlName` with it whenever the metadata API ships a
+      // broken display label (`"g/LItem"`, `"orderNo."`). Preserve `columnName`
+      // — it is the DB snake_case column (`"c_glitem_id"`, `"received_in"`),
+      // which `parseColumns` reads to populate `Column.dbColumnName` for the
+      // dual-key cell write in `GridCellEditor`.
+      const resolvedHqlName = resolveHqlName(field, key);
+      return {
+        ...field,
+        _key: key,
+        hqlName: resolvedHqlName,
+        columnName: field.columnName || field.column?.dBColumnName || resolvedHqlName,
+        label: field.name,
+        // Resolve FieldType so applyNumericMandatoryDefaults can detect numeric fields
+        type: getFieldReference(field.column?.reference || field.reference),
+      };
+    });
     return parsed;
   }, [stableWindowReferenceTab?.fields, isFieldVisible]); // isFieldVisible changes often, but we check result below
 
@@ -1112,10 +1156,14 @@ const WindowReferenceGrid = ({
     if (stableVisibleFields.length > 0) {
       // Map back to column structure expected by SmartClient-like grids
       const enriched = stableVisibleFields.map((field: any) => {
+        // `field.columnName` has already been resolved to the HQL property name
+        // in `visibleFieldsFromTab`; fall back to `_key` defensively for any
+        // future caller that builds a field without going through that map.
+        const colName = field.columnName || field._key;
         return {
-          header: field.name || field.columnName,
-          accessorKey: field.columnName,
-          columnName: field.columnName,
+          header: field.name || colName,
+          accessorKey: colName,
+          columnName: colName,
           type: getFieldReference(field.reference || field.column?.reference),
           // Important properties for column setup
           canHide: true,
@@ -1300,13 +1348,12 @@ const WindowReferenceGrid = ({
       Object.entries(stableWindowReferenceTab.fields)
         .filter(([_, f]) => isFieldVisible(f))
         .map(([key, field]) => {
-          // Check if hqlName looks like a display name (has spaces, starts with uppercase, etc)
-          const isDisplayName =
-            field.hqlName.includes(" ") || field.hqlName.includes(".") || /^[A-Z]/.test(field.hqlName);
-
-          // Only correct if it's a display name, otherwise keep original
-          const actualColumnName = isDisplayName ? field.column?._identifier || key || field.hqlName : field.hqlName;
-
+          // Prefer a canonical HQL prop name (`gLItem`) when present; otherwise
+          // the metadata `key` IS that name by Etendo convention. The previous
+          // heuristic missed `/` (e.g. "G/L Item" → "g/LItem") and preferred
+          // `field.column._identifier` (the DB column, "c_glitem_id"), which
+          // is the wrong shape for HQL-keyed handlers.
+          const actualColumnName = resolveHqlName(field, key);
           return [
             key,
             {
