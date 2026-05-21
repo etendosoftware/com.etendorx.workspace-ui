@@ -20,14 +20,16 @@
 import { useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { TAB_MODES, FORM_MODES } from "@/utils/url/constants";
 
 export default function RecentDocumentsWidget() {
   const { t } = useTranslation();
   const { documents } = useRecentDocuments();
-  const { setWindowActive, setTabFormState, setSelectedRecord } = useWindowContext();
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
 
   const handleClick = useCallback(
     (doc: (typeof documents)[number]) => {
