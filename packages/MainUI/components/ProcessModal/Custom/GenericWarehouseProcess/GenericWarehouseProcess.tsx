@@ -39,7 +39,7 @@ import { ToastContent } from "@/components/ToastContent";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 import { parseSmartClientMessage, INITIAL_CONFIRM_DIALOG, type ConfirmDialogState } from "../shared/processModalUtils";
@@ -91,7 +91,8 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   const { token } = useUserContext();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   // ---------------------------------------------------------------------------
   // State — initialized from schema.initialData

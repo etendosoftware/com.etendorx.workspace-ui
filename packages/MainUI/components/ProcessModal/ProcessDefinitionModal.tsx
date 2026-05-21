@@ -37,7 +37,6 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
-  useWindowContext,
   useUserContext,
   // Hooks
   useProcessConfig,
@@ -84,6 +83,7 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { useWindowStore } from "@/stores/windowStore";
 import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
@@ -226,7 +226,8 @@ function ProcessDefinitionModalContent({
   const { session, token, getCsrfToken } = useUserContext();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;

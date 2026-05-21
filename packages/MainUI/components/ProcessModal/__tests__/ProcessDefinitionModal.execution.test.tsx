@@ -35,8 +35,11 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => require("../testUtils").mockTabContextData,
 }));
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({ triggerRecovery: jest.fn(), isRecoveryLoading: false }),
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: (selector: (s: any) => any) => selector({
+    triggerRecovery: jest.fn(),
+    isRecoveryLoading: false,
+  }),
 }));
 
 jest.mock("@/hooks/useSelected", () => ({

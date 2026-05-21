@@ -27,13 +27,13 @@
 
 import { render, renderHook, waitFor } from "@testing-library/react";
 import { MetadataSynchronizer, useMetadataContext } from "../metadata";
-import { useWindowContext } from "../window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataStore } from "../metadataStore";
 import { useDatasourceContext } from "../datasourceContext";
 import type { Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
-jest.mock("../window");
+jest.mock("@/stores/windowStore");
 jest.mock("../metadataStore");
 jest.mock("../datasourceContext");
 jest.mock("@workspaceui/api-client/src/utils/metadata", () => ({
@@ -43,7 +43,7 @@ jest.mock("@workspaceui/api-client/src/utils/metadata", () => ({
   }),
 }));
 
-const mockUseWindowContext = useWindowContext as jest.MockedFunction<typeof useWindowContext>;
+const mockUseWindowStore = useWindowStore as unknown as jest.Mock;
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;
 const mockUseDatasourceContext = useDatasourceContext as jest.MockedFunction<typeof useDatasourceContext>;
 
@@ -75,44 +75,24 @@ const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
   _identifier: "window_identifier",
 });
 
-// Mock context helpers
-const createMockWindowContextValue = (activeWindow: any = null, isHomeRoute = false) => ({
-  activeWindow,
-  windows: [],
-  getTableState: jest.fn(),
-  getNavigationState: jest.fn(),
-  getActiveWindowIdentifier: jest.fn(),
-  getActiveWindowProperty: jest.fn(),
-  getAllWindowsIdentifiers: jest.fn(),
-  getAllWindows: jest.fn(),
-  getActiveWindow: jest.fn(),
-  getAllState: jest.fn(),
-  setTableFilters: jest.fn(),
-  setTableVisibility: jest.fn(),
-  setTableSorting: jest.fn(),
-  setTableOrder: jest.fn(),
-  setTableImplicitFilterApplied: jest.fn(),
-  setNavigationActiveLevels: jest.fn(),
-  setNavigationActiveTabsByLevel: jest.fn(),
-  setWindowActive: jest.fn(),
-  setWindowInactive: jest.fn(),
-  setAllWindowsInactive: jest.fn(),
-  getTabFormState: jest.fn(),
-  setTabFormState: jest.fn(),
-  clearTabFormState: jest.fn(),
-  getSelectedRecord: jest.fn(),
-  setSelectedRecord: jest.fn(),
-  clearSelectedRecord: jest.fn(),
-  clearChildrenSelections: jest.fn(),
-  setSelectedRecordAndClearChildren: jest.fn(),
-  getNavigationInitialized: jest.fn(),
-  setNavigationInitialized: jest.fn(),
-  isRecoveryLoading: false,
-  recoveryError: null,
-  cleanupWindow: jest.fn(),
-  cleanState: jest.fn(),
-  isHomeRoute,
-});
+// Mock store state helpers
+const mockCleanupWindow = jest.fn();
+
+const createMockWindowStoreState = (activeWindow: any = null) => {
+  const windows: Record<string, any> = {};
+  if (activeWindow) {
+    windows[activeWindow.windowIdentifier] = activeWindow;
+  }
+  return {
+    windows,
+    cleanupWindow: mockCleanupWindow,
+  };
+};
+
+const setWindowStoreState = (activeWindow: any = null) => {
+  const storeState = createMockWindowStoreState(activeWindow);
+  mockUseWindowStore.mockImplementation((selector: (s: any) => any) => selector(storeState));
+};
 
 const createMockActiveWindow = (windowId: string) => ({
   windowId,
@@ -148,7 +128,7 @@ describe("MetadataSynchronizer", () => {
       getWindowError: jest.fn(),
     });
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue());
+    setWindowStoreState();
   });
 
   it("should render without errors", () => {
@@ -163,7 +143,7 @@ describe("MetadataSynchronizer", () => {
   });
 
   it("should not load metadata when no active window", () => {
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(null, true));
+    setWindowStoreState(null);
 
     render(<MetadataSynchronizer />);
 
@@ -171,7 +151,7 @@ describe("MetadataSynchronizer", () => {
   });
 
   it("should load metadata when active window exists and data is not loaded", async () => {
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     render(<MetadataSynchronizer />);
 
@@ -183,7 +163,7 @@ describe("MetadataSynchronizer", () => {
   it("should not load metadata when window data is already loaded", () => {
     const windowMetadata = createMockWindowMetadata("window1");
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     mockUseMetadataStore.mockReturnValue({
       windowsData: { window1: windowMetadata },
@@ -203,7 +183,7 @@ describe("MetadataSynchronizer", () => {
   it("should not load metadata when window is already loading", () => {
     mockIsWindowLoading.mockReturnValue(true);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     render(<MetadataSynchronizer />);
 
@@ -215,7 +195,7 @@ describe("MetadataSynchronizer", () => {
     const loadError = new Error("Failed to load metadata");
     mockLoadWindowData.mockRejectedValue(loadError);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     render(<MetadataSynchronizer />);
 
@@ -262,7 +242,7 @@ describe("useMetadataContext", () => {
       clearDatasource: jest.fn(),
     });
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(null, true));
+    setWindowStoreState(null);
   });
 
   it("should return default values when no active window", () => {
@@ -281,7 +261,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -294,7 +274,7 @@ describe("useMetadataContext", () => {
   it("should return loading state correctly", () => {
     mockIsWindowLoading.mockReturnValue(true);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -305,7 +285,7 @@ describe("useMetadataContext", () => {
     const testError = new Error("Test error");
     mockGetWindowError.mockReturnValue(testError);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -333,7 +313,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -344,7 +324,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
+    setWindowStoreState(createMockActiveWindow("window1"));
 
     const { result } = renderHook(() => useMetadataContext());
 

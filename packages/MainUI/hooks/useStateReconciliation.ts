@@ -19,7 +19,7 @@ import { useCallback, useMemo } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
 import { logger } from "@/utils/logger";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 interface StateReconciliationOptions {
   records: EntityData[];
@@ -95,7 +95,14 @@ const reconcileBothSelections = (urlSelectedId: string, tableSelectionIds: strin
  * Handles conflicts that may arise when URL and table selections become out of sync.
  */
 export const useStateReconciliation = ({ records, tab, windowId, currentWindowId }: StateReconciliationOptions) => {
-  const { clearSelectedRecord, setSelectedRecord, getSelectedRecord } = useWindowContext();
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string) => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+    },
+    []
+  );
   const { graph } = useSelected();
 
   /**

@@ -18,10 +18,10 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { useStateReconciliation } from "../useStateReconciliation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useSelected } from "@/hooks/useSelected";
 
-jest.mock("@/contexts/window");
+jest.mock("@/stores/windowStore");
 jest.mock("@/hooks/useSelected");
 jest.mock("@/utils/logger");
 
@@ -41,11 +41,17 @@ describe("useStateReconciliation", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useWindowContext as jest.Mock).mockReturnValue({
+    const storeState = {
       clearSelectedRecord: mockClearSelectedRecord,
       setSelectedRecord: mockSetSelectedRecord,
-      getSelectedRecord: mockGetSelectedRecord,
-    });
+      windows: {},
+    };
+    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector(storeState)
+    );
+    // Mock getState for imperative getSelectedRecord calls
+    (useWindowStore as any).getState = jest.fn(() => storeState);
+    mockGetSelectedRecord.mockReturnValue(undefined);
     (useSelected as jest.Mock).mockReturnValue({ graph: mockGraph });
   });
 
