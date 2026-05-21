@@ -120,6 +120,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 // Returns the same interface shape as before. All values read from the Zustand
 // store. Components that want selective subscriptions (fewer re-renders) should
 // import useWindowStore directly with a granular selector.
+//
+// @deprecated All production consumers have been migrated to useWindowStore.
+// This hook remains for test backward-compatibility only. New code should
+// import from @/stores/windowStore with targeted selectors.
 // ---------------------------------------------------------------------------
 export const useWindowContext = () => {
   const store = useWindowStore.getState;
