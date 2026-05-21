@@ -16,6 +16,7 @@
  */
 
 import { useCallback } from "react";
+import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "../../hooks/useUserContext";
 import { logger } from "../../utils/logger";
 import Login from "../../components/Forms/Login/Login";
@@ -23,7 +24,9 @@ import Login from "../../components/Forms/Login/Login";
 const DEFAULT_LOGIN_ERROR_TEXT = "Login failed";
 
 export default function LoginScreen() {
-  const { login, setLoginErrorText, setLoginErrorDescription } = useUserContext();
+  const { login } = useUserContext();
+  const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
+  const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
 
   const handleLogin = useCallback(
     async (username: string, password: string) => {

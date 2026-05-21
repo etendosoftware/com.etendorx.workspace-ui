@@ -1,7 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import {
-  mockUserContextState,
   mockTranslationState,
   createFetchMock,
   createFetchRejectMock,
@@ -9,8 +8,8 @@ import {
 
 let currentToken: string | null = "mock-token";
 
-jest.mock("../../hooks/useUserContext", () => ({
-  useUserContext: () => mockUserContextState(currentToken),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ token: currentToken }),
 }));
 
 jest.mock("../../hooks/useTranslation", () => ({

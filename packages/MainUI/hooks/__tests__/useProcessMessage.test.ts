@@ -8,10 +8,8 @@ jest.mock("@/hooks/useTranslation", () => ({
   }),
 }));
 
-jest.mock("../useUserContext", () => ({
-  useUserContext: () => ({
-    token: "test-token",
-  }),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ token: "test-token" }),
 }));
 
 jest.mock("../../contexts/RuntimeConfigContext", () => ({

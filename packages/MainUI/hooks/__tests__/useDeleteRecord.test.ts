@@ -17,6 +17,7 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { useDeleteRecord } from "../useDeleteRecord";
+import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "../useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "../useTranslation";
@@ -24,6 +25,7 @@ import { buildSingleDeleteQueryString } from "@/utils";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 
+jest.mock("@/stores/userStore");
 jest.mock("../useUserContext");
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: {
@@ -50,11 +52,15 @@ describe("useDeleteRecord", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (useUserStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({
+        user: { id: "u1" },
+        setLoginErrorText: jest.fn(),
+        setLoginErrorDescription: jest.fn(),
+      })
+    );
     (useUserContext as jest.Mock).mockReturnValue({
-      user: { id: "u1" },
       logout: mockLogout,
-      setLoginErrorText: jest.fn(),
-      setLoginErrorDescription: jest.fn(),
     });
     (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
     (useTabRefreshContext as jest.Mock).mockReturnValue({ triggerParentRefreshes: mockTriggerParentRefreshes });

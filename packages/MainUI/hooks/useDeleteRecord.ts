@@ -17,6 +17,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { EntityData, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "./useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
@@ -51,7 +52,10 @@ export const useDeleteRecord = ({
 }: UseDeleteRecordParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
-  const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
+  const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
+  const { logout } = useUserContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
   const { onBack } = useToolbarContext();
   const { t } = useTranslation();

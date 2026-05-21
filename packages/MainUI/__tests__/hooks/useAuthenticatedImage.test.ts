@@ -2,15 +2,14 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useAuthenticatedImage } from "../../hooks/useAuthenticatedImage";
 import {
   createMockURL,
-  mockUserContextState,
   createFetchMock,
   createFetchRejectMock,
 } from "../../hooks/test-utils/imageMockHelpers";
 
 let currentToken: string | null = "mock-token";
 
-jest.mock("../../hooks/useUserContext", () => ({
-  useUserContext: () => mockUserContextState(currentToken),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ token: currentToken }),
 }));
 
 describe("useAuthenticatedImage", () => {

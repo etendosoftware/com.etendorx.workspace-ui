@@ -20,7 +20,7 @@
 import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import { CopilotButton, CopilotPopup } from "@workspaceui/componentlibrary/src/components";
@@ -40,18 +40,18 @@ const Navigation: React.FC = () => {
   const { t } = useTranslation();
   const {
     setDefaultConfiguration,
-    currentRole,
-    currentOrganization,
-    profile,
-    currentWarehouse,
-    currentClient,
     changeProfile,
     changePassword,
-    roles,
-    languages,
-    isCopilotInstalled,
   } = useContext(UserContext);
-  const token = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
+  const currentOrganization = useUserStore((s) => s.currentOrganization);
+  const profile = useUserStore((s) => s.profile);
+  const currentWarehouse = useUserStore((s) => s.currentWarehouse);
+  const currentClient = useUserStore((s) => s.currentClient);
+  const roles = useUserStore((s) => s.roles);
+  const languages = useUserStore((s) => s.languages);
+  const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const token = useUserStore((s) => s.token);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
@@ -179,7 +179,7 @@ const Navigation: React.FC = () => {
   }, [getLabels]);
 
   useEffect(() => {
-    if (token?.token) {
+    if (token) {
       if (copilotOpen) {
         handleCopilotClose();
       }
@@ -187,7 +187,7 @@ const Navigation: React.FC = () => {
       invalidateCache();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token?.token]);
+  }, [token]);
 
   useEffect(() => {
     const handleCopilotWithContext = (event: CustomEvent) => {

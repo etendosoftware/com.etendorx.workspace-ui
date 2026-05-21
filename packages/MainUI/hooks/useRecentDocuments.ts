@@ -17,7 +17,7 @@
 
 import { useCallback } from "react";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 export interface RecentDocument {
   id: string;
@@ -33,7 +33,7 @@ const RECENT_DOCUMENTS_KEY = "recentDocuments";
 const MAX_RECENT_DOCUMENTS = 10;
 
 export function useRecentDocuments() {
-  const { currentRole } = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
   const roleId = currentRole?.id ?? "";
 
   const [stored, setStored] = useLocalStorage<Record<string, RecentDocument[]>>(RECENT_DOCUMENTS_KEY, {});
