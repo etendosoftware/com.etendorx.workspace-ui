@@ -26,33 +26,23 @@ jest.mock("@/contexts/ToolbarContext", () => ({
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getChildren: () => [] } }),
 }));
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({
-    activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
-    getTabFormState: jest.fn(),
-    clearChildrenSelections: jest.fn(),
-    getTableState: jest.fn(() => ({
-      filters: [],
-      sorting: [],
-      visibility: {},
-      order: [],
-      implicitFilterApplied: false,
-      advancedCriteria: [],
-    })),
-    getNavigationState: jest.fn(() => ({
-      activeLevels: [],
-      activeTabsByLevel: new Map(),
-    })),
-    setTableFilters: jest.fn(),
-    setTableVisibility: jest.fn(),
-    setTableSorting: jest.fn(),
-    setTableOrder: jest.fn(),
-    setTableImplicitFilterApplied: jest.fn(),
-    setTableAdvancedCriteria: jest.fn(),
-    setNavigationActiveLevels: jest.fn(),
-    setNavigationActiveTabsByLevel: jest.fn(),
-  }),
-}));
+// Initialize Zustand store with a default active window for Toolbar tests
+import { useWindowStore } from "@/stores/windowStore";
+beforeEach(() => {
+  useWindowStore.setState({
+    windows: {
+      "win-id": {
+        windowId: "win-id",
+        windowIdentifier: "win-id",
+        isActive: true,
+        initialized: true,
+        title: "",
+        navigation: { activeLevels: [], activeTabsByLevel: new Map(), initialized: false },
+        tabs: {},
+      },
+    },
+  });
+});
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({
   useProcessExecution: () => ({ executeProcess: jest.fn() }),
 }));
@@ -127,6 +117,10 @@ jest.mock("@workspaceui/componentlibrary/src/components/ActionModal", () => ({
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
   __esModule: true,
   default: () => <div data-testid="confirm-modal" />,
+}));
+
+jest.mock("@/hooks/useAutoApplyDefaultView", () => ({
+  useAutoApplyDefaultView: jest.fn(),
 }));
 
 // Mock sonner

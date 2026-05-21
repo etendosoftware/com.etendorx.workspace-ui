@@ -17,7 +17,6 @@
 
 import { useCallback } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
-import { useWindowContext } from "@/contexts/window";
 import { useWindowStore, DEFAULT_TABLE_STATE, DEFAULT_NAVIGATION_STATE } from "@/stores/windowStore";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -54,18 +53,29 @@ export const useTableStatePersistenceTab = ({
   tabId: string;
   tabLevel?: number;
 }): UseTableStatePersistenceTabReturn => {
-  const {
-    getTableState,
-    getNavigationState,
-    setTableFilters,
-    setTableVisibility,
-    setTableSorting,
-    setTableOrder,
-    setTableImplicitFilterApplied,
-    setTableAdvancedCriteria,
-    setNavigationActiveLevels,
-    setNavigationActiveTabsByLevel,
-  } = useWindowContext();
+  // Zustand store — stable action references
+  const setTableFilters = useWindowStore((s) => s.setTableFilters);
+  const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
+  const setTableSorting = useWindowStore((s) => s.setTableSorting);
+  const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
+  const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
+  const setNavigationActiveLevels = useWindowStore((s) => s.setNavigationActiveLevels);
+  const setNavigationActiveTabsByLevel = useWindowStore((s) => s.setNavigationActiveTabsByLevel);
+
+  // Imperative getters
+  const getTableState = useCallback(
+    (wi: string, tid: string) => {
+      return useWindowStore.getState().windows[wi]?.tabs[tid]?.table ?? DEFAULT_TABLE_STATE;
+    },
+    []
+  );
+  const getNavigationState = useCallback(
+    (wi: string) => {
+      return useWindowStore.getState().windows[wi]?.navigation ?? DEFAULT_NAVIGATION_STATE;
+    },
+    []
+  );
 
   // Subscribe reactively to the Zustand store for table and navigation state
   const currentTableState = useWindowStore(

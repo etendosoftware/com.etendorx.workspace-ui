@@ -54,7 +54,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
@@ -752,7 +752,26 @@ const DynamicTable = ({
     registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
-  const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
+  // Zustand store — reactive value
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+
+  // Zustand store — imperative getters
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string): string | undefined => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+    },
+    []
+  );
+  const getTabFormState = useCallback(
+    (windowIdentifier: string, tabId: string) => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+    },
+    []
+  );
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 

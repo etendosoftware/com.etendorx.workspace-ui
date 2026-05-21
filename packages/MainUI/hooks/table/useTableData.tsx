@@ -29,7 +29,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
-import { useWindowContext } from "../../contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -129,13 +129,35 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const {
-    activeWindow,
-    getTabFormState,
-    getTabInitializedWithDirectLink,
-    setTabInitializedWithDirectLink,
-    getSelectedRecord,
-  } = useWindowContext();
+  // Zustand store — reactive value
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+
+  // Zustand store — stable action references
+  const setTabInitializedWithDirectLink = useWindowStore((s) => s.setTabInitializedWithDirectLink);
+
+  // Zustand store — imperative getters
+  const getTabFormState = useCallback(
+    (windowIdentifier: string, tabId: string) => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+    },
+    []
+  );
+  const getTabInitializedWithDirectLink = useCallback(
+    (windowIdentifier: string, tabId: string): boolean => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
+    },
+    []
+  );
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string): string | undefined => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+    },
+    []
+  );
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 

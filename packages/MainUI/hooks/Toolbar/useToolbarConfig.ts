@@ -32,7 +32,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
 import { getNewTabFormState } from "@/utils/window/utils";
@@ -97,8 +97,27 @@ export const useToolbarConfig = ({
   }, []);
 
   const { tab } = useTabContext();
-  const { activeWindow, clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } =
-    useWindowContext();
+
+  // Zustand store — reactive value
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+
+  // Zustand store — imperative getter
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string): string | undefined => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+    },
+    []
+  );
+
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);

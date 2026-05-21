@@ -26,7 +26,7 @@ import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import type { WindowState } from "@/utils/window/constants";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
@@ -44,7 +44,13 @@ const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, 
 
 export default function WindowTabs() {
   const { t } = useTranslation();
-  const { windows, isHomeRoute, cleanupWindow, setWindowActive, setAllWindowsInactive } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
+  const activeWindow = useMemo(() => windows.find((w) => w.isActive) ?? null, [windows]);
+  const isHomeRoute = !activeWindow;
+  const cleanupWindow = useWindowStore((s) => s.cleanupWindow);
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
   const { windowsData } = useMetadataContext();
 
   const {

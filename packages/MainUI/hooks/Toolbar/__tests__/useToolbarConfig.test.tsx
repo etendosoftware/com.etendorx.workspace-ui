@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { useToolbarConfig } from "../useToolbarConfig";
 import { useTabContext } from "@/contexts/tab";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
@@ -27,7 +27,6 @@ jest.mock("sonner", () => ({
   },
 }));
 jest.mock("@/contexts/tab");
-jest.mock("@/contexts/window");
 jest.mock("@/hooks/useSelectedRecords");
 jest.mock("@/hooks/useSelectedRecord");
 jest.mock("@/hooks/useRecordContext");
@@ -70,10 +69,20 @@ describe("useToolbarConfig", () => {
     jest.clearAllMocks();
 
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: mockActiveWindow,
+    // Set Zustand store state with the active window and action spies
+    useWindowStore.setState({
+      windows: {
+        [mockActiveWindow.windowIdentifier]: {
+          windowId: mockActiveWindow.windowId,
+          windowIdentifier: mockActiveWindow.windowIdentifier,
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
       clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: jest.fn(),
       setSelectedRecord: mockSetSelectedRecord,
       setTabFormState: mockSetTabFormState,
     });

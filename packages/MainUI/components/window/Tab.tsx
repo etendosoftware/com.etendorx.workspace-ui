@@ -34,7 +34,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
@@ -112,19 +112,41 @@ const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
-  const {
-    activeWindow,
-    clearSelectedRecord,
-    getTabFormState,
-    setSelectedRecord,
-    getSelectedRecord,
-    clearTabFormState,
-    setTabFormState,
-    clearChildrenSelections,
-    getTableState,
-    setTableAdvancedCriteria,
-    setAllWindowsInactive,
-  } = useWindowContext();
+  // Zustand store — reactive value
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+  const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+
+  // Zustand store — imperative getters
+  const getTabFormState = useCallback(
+    (windowIdentifier: string, tabId: string) => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+    },
+    []
+  );
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string): string | undefined => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+    },
+    []
+  );
+  const getTableState = useCallback(
+    (windowIdentifier: string, tabId: string) => {
+      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
+    },
+    []
+  );
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
