@@ -17,8 +17,8 @@
 
 "use client";
 
-import { useCallback, useEffect } from "react";
-import { useWindowContext } from "@/contexts/window";
+import { useCallback, useEffect, useMemo } from "react";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTabsStore } from "@/stores/tabsStore";
 
 const DEFAULT_BUTTON_ICON_SIZE = 50;
@@ -36,7 +36,8 @@ const checkIfAtEnd = (scrollRight: number, clientWidth: number, scrollWidth: num
 // ---------------------------------------------------------------------------
 
 export default function TabsProvider({ children }: { children: React.ReactNode }) {
-  const { activeWindow } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
 
   // Refs are pre-created stable objects that never change in the store —
   // no subscription needed, getState() avoids the infinite loop that an

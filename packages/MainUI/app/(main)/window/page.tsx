@@ -16,15 +16,20 @@
  */
 // @data-testid-ignore
 "use client";
+import { useMemo } from "react";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
+  const activeWindow = useMemo(() => windows.find((w) => w.isActive) ?? null, [windows]);
+  const isHomeRoute = !activeWindow;
 
   const shouldShowTabs = windows.length > 0;
 

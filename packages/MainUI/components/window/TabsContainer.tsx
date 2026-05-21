@@ -26,7 +26,7 @@ import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserContext } from "@/hooks/useUserContext";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -159,7 +159,8 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const { activeWindow } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
 
   /**
    * Graph-based tab hierarchy management system with navigation state.

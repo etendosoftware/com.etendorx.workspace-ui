@@ -20,13 +20,13 @@
 import type { ToggleableItem } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import type { MRT_TableInstance, MRT_RowData, MRT_DefinedColumnDef, MRT_VisibilityState } from "material-react-table";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
 import { useTabContext } from "@/contexts/tab";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { isEmptyObject } from "@/utils/commons";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
@@ -49,7 +49,8 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
 }: ColumnVisibilityMenuProps<T>) => {
   const { t } = useTranslation();
   const { tab } = useTabContext();
-  const { activeWindow } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
   const { tableColumnVisibility } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,

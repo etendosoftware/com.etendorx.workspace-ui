@@ -26,14 +26,15 @@ import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 export default function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { windowId, windowIdentifier } = window;
   const { error, loading, getWindowMetadata } = useMetadataContext();
-  const { isRecoveryLoading, recoveryError } = useWindowContext();
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  const recoveryError = useWindowStore((s) => s.recoveryError);
 
   const { t } = useTranslation();
 
