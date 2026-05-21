@@ -78,7 +78,7 @@ const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
 // Mock context helpers
 const createMockWindowContextValue = (activeWindow: any = null, isHomeRoute = false) => ({
   activeWindow,
-  windows: [],
+  windows: activeWindow ? [activeWindow] : [],
   getTableState: jest.fn(),
   getNavigationState: jest.fn(),
   getActiveWindowIdentifier: jest.fn(),

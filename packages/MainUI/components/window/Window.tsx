@@ -27,13 +27,28 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
 import { useWindowContext } from "@/contexts/window";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 
 export default function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { windowId, windowIdentifier } = window;
-  const { error, loading, getWindowMetadata } = useMetadataContext();
+  const { error: metadataError, isWindowLoading, loadWindowData, getWindowMetadata } = useMetadataContext();
   const { isRecoveryLoading, recoveryError } = useWindowContext();
+
+  // Trigger metadata load for THIS window if not yet loaded.
+  // This ensures each mounted window loads its own metadata independently of
+  // the MetadataSynchronizer, which may be focused on another active window.
+  useEffect(() => {
+    if (windowId && !getWindowMetadata(windowId) && !isWindowLoading(windowId)) {
+      loadWindowData(windowId).catch((err) => {
+        console.error("Error loading window metadata:", err);
+      });
+    }
+  }, [windowId, getWindowMetadata, isWindowLoading, loadWindowData]);
+
+  const loading = isWindowLoading(windowId);
+  const error = windowId ? metadataError : undefined;
 
   const { t } = useTranslation();
 
@@ -109,12 +124,17 @@ export default function Window({ window }: { window: WindowState }) {
   }
 
   return (
-    <SelectedProvider
-      tabs={windowData.tabs}
-      windowId={windowId}
+    <CurrentWindowProvider
       windowIdentifier={windowIdentifier}
-      data-testid="SelectedProvider__56042a">
-      <TabsContainer windowData={windowData} data-testid="TabsContainer__56042a" />
-    </SelectedProvider>
+      windowId={windowId}
+      data-testid="CurrentWindowProvider__56042a">
+      <SelectedProvider
+        tabs={windowData.tabs}
+        windowId={windowId}
+        windowIdentifier={windowIdentifier}
+        data-testid="SelectedProvider__56042a">
+        <TabsContainer windowData={windowData} data-testid="TabsContainer__56042a" />
+      </SelectedProvider>
+    </CurrentWindowProvider>
   );
 }

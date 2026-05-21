@@ -44,6 +44,7 @@ import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/se
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { TabFormState } from "@/utils/url/constants";
 import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
 
@@ -264,8 +265,9 @@ export default function useTableSelection(
   options?: UseTableSelectionOptions
 ) {
   const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
-    useWindowContext();
+  const { clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
@@ -302,8 +304,6 @@ export default function useTableSelection(
 
   const debouncedPersistSelection = useDebouncedCallback(persistSelection, KEYBOARD_NAV_DEBOUNCE_MS);
 
-  const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.windowIdentifier;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount

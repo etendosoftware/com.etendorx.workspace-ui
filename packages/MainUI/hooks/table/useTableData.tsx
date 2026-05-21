@@ -30,6 +30,7 @@ import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
 import { useWindowContext } from "../../contexts/window";
+import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -46,6 +47,7 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
+import { parseColumns } from "@/utils/tableColumns";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -129,13 +131,9 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const {
-    activeWindow,
-    getTabFormState,
-    getTabInitializedWithDirectLink,
-    setTabInitializedWithDirectLink,
-    getSelectedRecord,
-  } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const { getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink, getSelectedRecord } =
+    useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 
@@ -151,7 +149,7 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
   } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
@@ -161,23 +159,17 @@ export const useTableData = ({
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
   // its own selection), fall back to the URL-persisted selected record ID for the parent tab.
   // This prevents child tabs from showing an empty table while waiting for the graph to sync.
-  const parentIdFromUrl =
-    parentTab && activeWindow?.windowIdentifier
-      ? getSelectedRecord(activeWindow.windowIdentifier, parentTab.id)
-      : undefined;
+  const parentIdFromUrl = parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
   const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const tabFormState = activeWindow?.windowIdentifier
-    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
-    : undefined;
+  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
   const rawColumns = useMemo(() => {
-    const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
@@ -918,8 +910,6 @@ export const useTableData = ({
   /** Initialize implicit filter state */
   useEffect(() => {
     if (!hasInitializedDirectLink.current) {
-      const windowIdentifier = activeWindow?.windowIdentifier;
-
       const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
@@ -954,14 +944,13 @@ export const useTableData = ({
     tabFormState,
     setTableColumnFilters,
     tableColumnFilters,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     setTabInitializedWithDirectLink,
   ]);
 
   /** Clear ID filter when returning to grid mode from manual navigation */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     // If we are NOT in form mode (meaning we are in grid/table mode)
@@ -989,14 +978,13 @@ export const useTableData = ({
     initialIsFilterApplied,
     isImplicitFilterApplied,
     setIsImplicitFilterApplied,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     getTabInitializedWithDirectLink,
   ]);
 
   /** Detect manual filter removal and clear direct link flag */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
@@ -1007,7 +995,7 @@ export const useTableData = ({
     if (!hasIdFilter && wasInitializedWithDirectLink) {
       setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
     }
-  }, [tableColumnFilters, activeWindow, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
+  }, [tableColumnFilters, windowIdentifier, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
 
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
@@ -1102,48 +1090,47 @@ export const useTableData = ({
     setPrevShouldUseTreeMode(shouldUseTreeMode);
   }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
 
-  // Update flattened records when tree data changes
+  // Update flattened records when tree data changes.
+  // Non-tree mode reads `records` directly (see displayRecords), so no sync needed there.
   useEffect(() => {
     if (shouldUseTreeMode) {
       const flattened = buildFlattenedRecords(records, expanded, childrenData);
       setFlattenedRecords(flattened);
-    } else {
-      setFlattenedRecords(records);
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  // Initialize column visibility based on tab configuration
+  // Initialize column visibility and default sorting in a single effect so React 18 batches
+  // both setState calls into one re-render instead of two.
   useEffect(() => {
-    if (!isEmptyObject(tableColumnVisibility)) return;
+    const visNeedsInit = isEmptyObject(tableColumnVisibility);
+    const sortNeedsInit = tableColumnSorting.length === 0;
 
-    const initialVisibility: MRT_VisibilityState = {};
-    if (tab.fields) {
+    if (!visNeedsInit && !sortNeedsInit) return;
+
+    if (visNeedsInit && tab.fields) {
+      const initialVisibility: MRT_VisibilityState = {};
       for (const field of Object.values(tab.fields)) {
         if (field.showInGridView !== undefined && field.name) {
           initialVisibility[field.name] = field.showInGridView;
         }
       }
+      setTableColumnVisibility(initialVisibility);
     }
 
-    setTableColumnVisibility(initialVisibility);
-  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
-
-  // Initialize default sorting
-  useEffect(() => {
-    // Only initialize if there's no current sorting
-    if (tableColumnSorting.length === 0 && tab.fields) {
+    if (sortNeedsInit && tab.fields) {
       const defaultSort = getDefaultSort();
-
       if (defaultSort) {
-        setTableColumnSorting([
-          {
-            id: defaultSort.id,
-            desc: defaultSort.desc,
-          },
-        ]);
+        setTableColumnSorting([{ id: defaultSort.id, desc: defaultSort.desc }]);
       }
     }
-  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
+  }, [
+    tab.fields,
+    tableColumnVisibility,
+    tableColumnSorting.length,
+    setTableColumnVisibility,
+    setTableColumnSorting,
+    getDefaultSort,
+  ]);
 
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(

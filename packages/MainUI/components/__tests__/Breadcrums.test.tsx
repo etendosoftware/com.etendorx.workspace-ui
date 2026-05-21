@@ -16,11 +16,13 @@ jest.mock("../../hooks/useTranslation", () => ({
   }),
 }));
 
+const mockWindowMetadata = { window$_identifier: "test-window-id", name: "Test Window" };
 jest.mock("../../hooks/useMetadataContext", () => ({
   useMetadataContext: () => ({
-    window: { window$_identifier: "test-window-id", name: "Test Window" },
+    window: mockWindowMetadata,
     windowId: "test-window-id",
     windowIdentifier: "test-window-identifier",
+    getWindowMetadata: jest.fn(() => mockWindowMetadata),
   }),
 }));
 
@@ -36,6 +38,10 @@ jest.mock("@/contexts/window", () => ({
 
 jest.mock("@/hooks/useCurrentRecord");
 jest.mock("@/hooks/useTableStatePersistenceTab");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "test-window-identifier"),
+  useCurrentWindowId: jest.fn(() => "test-window-id"),
+}));
 
 jest.mock("@/contexts/focus", () => ({
   useFocusContext: () => ({
