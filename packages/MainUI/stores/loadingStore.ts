@@ -15,27 +15,22 @@
  *************************************************************************
  */
 
-"use client";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
-import Loading from "@/components/loading";
-import { useLoadingStore } from "@/stores/loadingStore";
-
-export default function GlobalLoading() {
-  const isLoading = useLoadingStore((s) => s.isLoading);
-
-  if (!isLoading) return null;
-
-  return (
-    <Loading
-      className="h-screen w-screen absolute z-100 bg-black/25"
-      customIconProps={{
-        size: 60,
-        thickness: 4,
-        sx: {
-          color: "#1976d2",
-        },
-      }}
-      data-testid="Loading__2eddba"
-    />
-  );
+interface LoadingStore {
+  isLoading: boolean;
+  showLoading: () => void;
+  hideLoading: () => void;
 }
+
+export const useLoadingStore = create<LoadingStore>()(
+  devtools(
+    (set) => ({
+      isLoading: false,
+      showLoading: () => set({ isLoading: true }),
+      hideLoading: () => set({ isLoading: false }),
+    }),
+    { name: "LoadingStore" }
+  )
+);

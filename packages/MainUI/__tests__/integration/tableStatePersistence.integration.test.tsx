@@ -20,6 +20,7 @@ import { renderHook, act } from "@testing-library/react";
 import { jest } from "@jest/globals";
 import WindowProvider, { useWindowContext } from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../../hooks/useTableStatePersistenceTab";
+import { useWindowStore } from "@/stores/windowStore";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 
 // Mock Next.js navigation hooks
@@ -43,6 +44,7 @@ describe("Table State Persistence - Integration Tests", () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
   beforeEach(() => {
+    useWindowStore.setState({ windows: {} });
     mockReplace.mockClear();
     // Clear all search params
     Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
@@ -273,14 +275,10 @@ describe("Table State Persistence - Integration Tests", () => {
   });
 
   describe("Provider Edge Cases", () => {
-    it("should throw error when used outside provider", () => {
-      const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
-
-      expect(() => {
-        renderHook(() => useWindowContext());
-      }).toThrow("useWindowContext must be used within a WindowProvider");
-
-      consoleError.mockRestore();
+    it("should work without provider (Zustand global store)", () => {
+      const { result } = renderHook(() => useWindowContext());
+      expect(result.current.getTableState).toBeDefined();
+      expect(result.current.getAllState()).toEqual({});
     });
 
     it("should handle provider re-mounting", () => {
@@ -305,6 +303,9 @@ describe("Table State Persistence - Integration Tests", () => {
       // Unmount first provider
       unmount1();
 
+      // Reset the global Zustand store (simulates fresh app mount)
+      useWindowStore.setState({ windows: {} });
+
       // Create new provider instance
       const Wrapper2 = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
@@ -316,7 +317,7 @@ describe("Table State Persistence - Integration Tests", () => {
         }
       );
 
-      // State should be reset with new provider
+      // State should be reset after store reset
       expect(result2.current.tableColumnFilters).toEqual([]);
     });
   });

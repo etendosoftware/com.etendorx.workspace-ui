@@ -27,6 +27,7 @@
 
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { MetadataStoreProvider, useMetadataStore } from "../metadataStore";
+import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -105,6 +106,8 @@ const setupMocks = () => {
   jest.clearAllMocks();
   mockMetadata.clearWindowCache = jest.fn();
   mockMetadata.forceWindowReload = jest.fn();
+  // Reset Zustand store between tests
+  useMetadataZustandStore.setState({ windowsData: {}, loadingWindows: {}, errors: {} });
 };
 
 const renderMetadataStoreHook = () => {
@@ -162,7 +165,10 @@ describe("MetadataStoreProvider", () => {
 });
 
 describe("loadWindowData", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should load window metadata successfully", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
@@ -340,7 +346,10 @@ describe("loadWindowData", () => {
 });
 
 describe("getWindowMetadata", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should return undefined for non-existent window", () => {
     const { result } = renderMetadataStoreHook();
@@ -381,7 +390,10 @@ describe("getWindowMetadata", () => {
 });
 
 describe("isWindowLoading", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should return false for non-loading window", () => {
     const { result } = renderMetadataStoreHook();
@@ -440,7 +452,10 @@ describe("isWindowLoading", () => {
 });
 
 describe("getWindowError", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should return undefined for window without error", () => {
     const { result } = renderMetadataStoreHook();
@@ -532,7 +547,10 @@ describe("getWindowError", () => {
 });
 
 describe("Integration scenarios", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should handle complete workflow: load, error, retry, success", async () => {
     const loadError = new Error("Network error");
@@ -627,9 +645,11 @@ describe("Integration scenarios", () => {
       mockUseUserContext.mockReturnValue({ currentRole: { id: "role2" } });
       rerender();
 
-      expect(result.current.windowsData).toEqual({});
-      expect(result.current.loadingWindows).toEqual({});
-      expect(result.current.errors).toEqual({});
+      await waitFor(() => {
+        expect(result.current.windowsData).toEqual({});
+        expect(result.current.loadingWindows).toEqual({});
+        expect(result.current.errors).toEqual({});
+      });
     });
 
     it("should NOT clear state when other currentRole properties change but ID remains same", async () => {

@@ -15,9 +15,10 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 import { useWindowContext } from "@/contexts/window";
+import { useWindowStore, DEFAULT_TABLE_STATE, DEFAULT_NAVIGATION_STATE } from "@/stores/windowStore";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
@@ -66,15 +67,13 @@ export const useTableStatePersistenceTab = ({
     setNavigationActiveTabsByLevel,
   } = useWindowContext();
 
-  // Get current state values
-  const currentTableState = useMemo(
-    () => getTableState(windowIdentifier, tabId),
-    [windowIdentifier, tabId, getTableState]
+  // Subscribe reactively to the Zustand store for table and navigation state
+  const currentTableState = useWindowStore(
+    (s) => s.windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE
   );
 
-  const currentNavigationState = useMemo(
-    () => getNavigationState(windowIdentifier),
-    [windowIdentifier, getNavigationState]
+  const currentNavigationState = useWindowStore(
+    (s) => s.windows[windowIdentifier]?.navigation ?? DEFAULT_NAVIGATION_STATE
   );
 
   // Create React-style setters that support both direct values and updater functions

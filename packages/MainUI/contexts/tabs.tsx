@@ -17,73 +17,54 @@
 
 "use client";
 
-import { createContext, useContext, useMemo, useRef, useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useWindowContext } from "@/contexts/window";
+import { useTabsStore } from "@/stores/tabsStore";
 
-type TabsContextType = {
-  containerRef: React.RefObject<HTMLDivElement>;
-  windowsContainerRef: React.RefObject<HTMLDivElement>;
-  tabRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
-  showLeftScrollButton: boolean;
-  showRightScrollButton: boolean;
-  showRightMenuButton: boolean;
-  handleScrollLeft: (e: React.MouseEvent) => void;
-  handleScrollRight: (e: React.MouseEvent) => void;
-};
-
-const DEFAULT_SCROLL_AMOUNT = 200;
 const DEFAULT_BUTTON_ICON_SIZE = 50;
 const DEFAULT_DEBOUNCE_DELAY = 200;
 
-const checkIfAtStart = (scrollLeft: number) => {
-  return scrollLeft <= 0;
-};
+const checkIfAtStart = (scrollLeft: number) => scrollLeft <= 0;
 
-const checkIfAtEnd = (scrollRight: number, clientWidth: number, scrollWidth: number) => {
-  return scrollRight + clientWidth >= scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
-};
+const checkIfAtEnd = (scrollRight: number, clientWidth: number, scrollWidth: number) =>
+  scrollRight + clientWidth >= scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
 
-const TabsContext = createContext<TabsContextType | undefined>(undefined);
+// ---------------------------------------------------------------------------
+// TabsProvider — manages scroll-state effects and activeWindow scroll-to.
+// Refs and handlers live in the Zustand store; this component only drives
+// the side effects that require DOM access.
+// ---------------------------------------------------------------------------
 
-export default function TabsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function TabsProvider({ children }: { children: React.ReactNode }) {
   const { activeWindow } = useWindowContext();
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const windowsContainerRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
-  const [showRightScrollButton, setShowRightScrollButton] = useState(false);
-  const [showRightMenuButton, setShowRightMenuButton] = useState(false);
+  // Refs are pre-created stable objects that never change in the store —
+  // no subscription needed, getState() avoids the infinite loop that an
+  // object-returning selector would cause (new object reference each render).
+  const { containerRef, windowsContainerRef, tabRefs } = useTabsStore.getState();
+
+  // ── Scroll button visibility helpers ──────────────────────────────────────
 
   const updateScrollButtons = useCallback((clientWidth: number, scrollWidth: number, scrollLeft: number) => {
     const hasHorizontalScroll = scrollWidth > clientWidth;
     if (!hasHorizontalScroll) {
-      setShowLeftScrollButton(false);
-      setShowRightScrollButton(false);
-      setShowRightMenuButton(false);
+      useTabsStore.getState().setScrollButtonsState(false, false, false);
       return;
     }
 
     const isAtStart = checkIfAtStart(scrollLeft);
     const isAtEnd = checkIfAtEnd(scrollLeft, clientWidth, scrollWidth);
-    const showMenuButton = !isAtStart || !isAtEnd;
-
-    setShowLeftScrollButton(!isAtStart);
-    setShowRightScrollButton(!isAtEnd);
-    setShowRightMenuButton(showMenuButton);
+    useTabsStore.getState().setScrollButtonsState(!isAtStart, !isAtEnd, !isAtStart || !isAtEnd);
   }, []);
 
   const updateScrollState = useCallback(() => {
     const container = windowsContainerRef.current;
     if (!container) return;
-
     const { clientWidth, scrollWidth, scrollLeft } = container;
     updateScrollButtons(clientWidth, scrollWidth, scrollLeft);
-  }, [updateScrollButtons]);
+  }, [windowsContainerRef, updateScrollButtons]);
+
+  // ── ResizeObserver — update buttons when the container resizes ────────────
 
   useEffect(() => {
     const container = containerRef.current;
@@ -97,8 +78,7 @@ export default function TabsProvider({
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         const currentWidth = container.clientWidth;
-        const isDrawerWidthChange = currentWidth !== lastWidth;
-        if (isDrawerWidthChange) {
+        if (currentWidth !== lastWidth) {
           lastWidth = currentWidth;
           updateScrollState();
         }
@@ -107,14 +87,15 @@ export default function TabsProvider({
 
     const resizeObserver = new ResizeObserver(debouncedResize);
     resizeObserver.observe(windowsContainer);
-
     updateScrollState();
 
     return () => {
       resizeObserver.disconnect();
       clearTimeout(timeoutId);
     };
-  }, [updateScrollState]);
+  }, [containerRef, windowsContainerRef, updateScrollState]);
+
+  // ── Scroll event — update buttons on manual scroll ────────────────────────
 
   useEffect(() => {
     const container = windowsContainerRef.current;
@@ -127,77 +108,25 @@ export default function TabsProvider({
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [updateScrollButtons]);
+  }, [windowsContainerRef, updateScrollButtons]);
+
+  // ── Scroll active tab into view ───────────────────────────────────────────
 
   useEffect(() => {
     if (!activeWindow) return;
-
     const tabElement = tabRefs.current[activeWindow.windowId];
     const container = windowsContainerRef.current;
-
     if (tabElement && container) {
-      tabElement.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+      tabElement.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
-  }, [activeWindow]);
+  }, [activeWindow, tabRefs, windowsContainerRef]);
 
-  const handleScrollLeft = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (!container) return;
-
-    container.scrollBy({
-      left: -DEFAULT_SCROLL_AMOUNT,
-      behavior: "smooth",
-    });
-  }, []);
-
-  const handleScrollRight = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (!container) return;
-
-    container.scrollBy({
-      left: DEFAULT_SCROLL_AMOUNT,
-      behavior: "smooth",
-    });
-  }, []);
-
-  const value = useMemo<TabsContextType>(
-    () => ({
-      containerRef: containerRef as React.RefObject<HTMLDivElement>,
-      windowsContainerRef: windowsContainerRef as React.RefObject<HTMLDivElement>,
-      tabRefs,
-      showLeftScrollButton,
-      showRightScrollButton,
-      showRightMenuButton,
-      handleScrollLeft,
-      handleScrollRight,
-    }),
-    [
-      containerRef,
-      windowsContainerRef,
-      tabRefs,
-      showLeftScrollButton,
-      showRightScrollButton,
-      showRightMenuButton,
-      handleScrollLeft,
-      handleScrollRight,
-    ]
-  );
-
-  return <TabsContext.Provider value={value}>{children}</TabsContext.Provider>;
+  return <>{children}</>;
 }
 
-export const useTabs = (): TabsContextType => {
-  const context = useContext(TabsContext);
+// ---------------------------------------------------------------------------
+// useTabs — backward-compat hook.
+// New code should import selectors from @/stores/tabsStore directly.
+// ---------------------------------------------------------------------------
 
-  if (context === undefined) {
-    throw new Error("useTabs must be used within a TabsProvider");
-  }
-
-  return context;
-};
+export const useTabs = () => useTabsStore();

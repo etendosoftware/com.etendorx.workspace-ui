@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useFavoritesContext } from "@/contexts/favorites";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 import type { WidgetClass, WidgetInstance } from "@workspaceui/api-client/src/api/dashboard";
 import CTABanner from "./widgets/CTABanner";
 import AddWidgetDialog from "./widgets/AddWidgetDialog";
@@ -71,7 +71,7 @@ export default function Home() {
     updateParams,
   } = useDashboard(currentRole?.id);
 
-  const { subscribeToToggle } = useFavoritesContext();
+  const subscribeToToggle = useFavoritesStore((s) => s.subscribeToToggle);
 
   // Refresh all FAVORITES widgets after a toggle so the chips update immediately.
   const favoritesInstanceIds = useMemo(

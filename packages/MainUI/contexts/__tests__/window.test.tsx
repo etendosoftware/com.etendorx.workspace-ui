@@ -19,6 +19,7 @@
 import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import WindowProvider, { useWindowContext } from "../window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useGlobalUrlStateRecovery } from "@/hooks/useGlobalUrlStateRecovery";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -34,6 +35,7 @@ jest.mock("@/hooks/useGlobalUrlStateRecovery", () => ({
 
 jest.mock("@/utils/window/utils", () => ({
   getWindowIdFromIdentifier: jest.fn((id) => id.split("_")[0]),
+  createDefaultTabState: jest.fn(() => ({ table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: false }, form: {}, level: 0 })),
   ensureTabExists: jest.fn((state, winId, tabId) => {
     if (!state[winId]) state[winId] = { tabs: {} };
     if (!state[winId].tabs[tabId]) state[winId].tabs[tabId] = { table: {} };
@@ -63,6 +65,7 @@ describe("WindowProvider", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useWindowStore.setState({ windows: {}, isRecoveryLoading: false, recoveryError: null, triggerRecovery: () => {} });
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(mockSearchParams);
     (useGlobalUrlStateRecovery as jest.Mock).mockReturnValue({

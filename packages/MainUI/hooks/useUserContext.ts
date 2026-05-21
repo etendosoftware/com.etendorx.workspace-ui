@@ -18,6 +18,26 @@
 import { useContext } from "react";
 import { UserContext } from "../contexts/user";
 
+/**
+ * Backward-compatible hook for accessing the full user context.
+ *
+ * State fields are sourced from the Zustand UserStore (via UserProvider
+ * subscriptions), so all values are reactive and always up-to-date.
+ *
+ * For performance-critical components, prefer importing selectors directly
+ * from `@/stores/userStore` to subscribe only to the slice you need:
+ *
+ * ```tsx
+ * // Only re-renders when token changes
+ * const token = useUserStore((s) => s.token);
+ *
+ * // Multiple fields — use useShallow
+ * import { useShallow } from "zustand/react/shallow";
+ * const { token, currentRole } = useUserStore(
+ *   useShallow((s) => ({ token: s.token, currentRole: s.currentRole }))
+ * );
+ * ```
+ */
 export const useUserContext = () => {
   const context = useContext(UserContext);
 

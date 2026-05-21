@@ -573,8 +573,11 @@ function ProcessDefinitionModalContent({
   const rawFormValues = form.watch();
   // Stabilize reference: only change identity when values actually change (deep equality).
   // Prevents WindowReferenceGrid and display-logic from re-running on every unrelated render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const formValues = useMemo(() => rawFormValues, [JSON.stringify(rawFormValues)]);
+  const formValuesRef = useRef(rawFormValues);
+  if (JSON.stringify(formValuesRef.current) !== JSON.stringify(rawFormValues)) {
+    formValuesRef.current = rawFormValues;
+  }
+  const formValues = formValuesRef.current;
 
   const handleGridUpdate = useCallback(
     (gridName: string, data: unknown) => {

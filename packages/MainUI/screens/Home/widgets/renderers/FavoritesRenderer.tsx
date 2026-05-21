@@ -21,7 +21,7 @@ import { useCallback, useEffect } from "react";
 import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { useFavoritesContext } from "@/contexts/favorites";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
@@ -29,7 +29,7 @@ interface FavoritesRendererProps {
 
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
   const { setWindowActive } = useWindowContext();
-  const { seed } = useFavoritesContext();
+  const seed = useFavoritesStore((s) => s.seed);
 
   useEffect(() => {
     seed(data.items);

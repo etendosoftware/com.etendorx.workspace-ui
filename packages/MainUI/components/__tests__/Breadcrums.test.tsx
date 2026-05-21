@@ -46,15 +46,22 @@ jest.mock("@/contexts/focus", () => ({
 
 // Mock Component Library Breadcrumb to simplify assertions
 const mockFavToggle = jest.fn();
-const mockIsFavorite = jest.fn(() => false);
 let mockMenuIdByWindowId: Map<string, string> = new Map();
+let mockFavoriteWindowIds: Set<string> = new Set();
 
-jest.mock("@/contexts/favorites", () => ({
-  useFavoritesContext: () => ({
-    isFavorite: mockIsFavorite,
-    toggle: mockFavToggle,
-    menuIdByWindowId: mockMenuIdByWindowId,
-  }),
+jest.mock("@/stores/favoritesStore", () => ({
+  useFavoritesStore: (
+    selector: (s: {
+      favoriteWindowIds: Set<string>;
+      toggle: jest.Mock;
+      menuIdByWindowId: Map<string, string>;
+    }) => unknown
+  ) =>
+    selector({
+      favoriteWindowIds: mockFavoriteWindowIds,
+      toggle: mockFavToggle,
+      menuIdByWindowId: mockMenuIdByWindowId,
+    }),
 }));
 
 // Mock Component Library Breadcrumb
@@ -168,7 +175,7 @@ describe("AppBreadcrumb", () => {
     jest.clearAllMocks();
     mockActiveFocusId = null;
     mockMenuIdByWindowId = new Map();
-    mockIsFavorite.mockImplementation(() => false);
+    mockFavoriteWindowIds = new Set();
 
     setupTabsAndWindow();
 

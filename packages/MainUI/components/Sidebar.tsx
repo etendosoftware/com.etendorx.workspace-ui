@@ -23,7 +23,7 @@ import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constan
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
-import { useFavoritesContext } from "@/contexts/favorites";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 
 interface FormData {
   paramUrl: string;
@@ -338,7 +338,11 @@ export default function Sidebar() {
     }
   }, [currentWindowId, pendingWindowId]);
 
-  const { isFavorite, toggle, setMenuMap } = useFavoritesContext();
+  const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
+  const toggle = useFavoritesStore((s) => s.toggle);
+  const setMenuMap = useFavoritesStore((s) => s.setMenuMap);
+  // Reactive: new reference when favoriteWindowIds changes, so FavoritesDrawerContext consumers re-render.
+  const isFavorite = useCallback((windowId: string) => favoriteWindowIds.has(windowId), [favoriteWindowIds]);
 
   // Build windowId→menuId map from the flat menu tree so the breadcrumb
   // can look up the menuId for the current window without prop drilling.

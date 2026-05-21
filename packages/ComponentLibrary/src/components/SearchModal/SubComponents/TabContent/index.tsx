@@ -25,7 +25,7 @@ export const TabContent: React.FC<{ tabsContent: any[]; activeTab: number }> = (
       <>
         {tabsContent.slice(1).map((tab, index) => (
           <SectionContent
-            key={index}
+            key={tab.label}
             section={{ title: tab.label, items: tab.items }}
             isLast={index === tabsContent.length - 2}
             variant="tabs"

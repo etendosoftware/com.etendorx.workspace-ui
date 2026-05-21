@@ -19,6 +19,7 @@ import { render, act } from "@testing-library/react";
 import { ToolbarProvider, useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
+import { useToolbarStore } from "@/stores/toolbarStore";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
@@ -88,6 +89,8 @@ describe("ToolbarContext - Save Wrapping", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset Zustand store between tests to prevent cross-test state leaks
+    useToolbarStore.setState({ byTabId: {} });
   });
 
   it("should wrap onSave to trigger parent refreshes after successful save", async () => {

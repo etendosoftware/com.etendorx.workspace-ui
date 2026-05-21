@@ -16,9 +16,10 @@
  */
 
 import type { ModalProps } from "@mui/material";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 export interface ModalIProps extends Omit<ModalProps, "children" | "open"> {
+  ref?: Ref<HTMLDivElement>;
   height?: string | number;
   width?: string | number;
   posX?: string | number;
