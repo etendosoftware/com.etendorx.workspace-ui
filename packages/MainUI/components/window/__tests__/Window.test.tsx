@@ -92,6 +92,19 @@ jest.mock("../../../stores/windowStore", () => ({
   },
 }));
 
+// Mock useMetadataZustandStore — Window.tsx reads windowData directly from this store.
+// Delegates to mockMetadataContext.getWindowMetadata so tests can override per-test.
+jest.mock("../../../stores/metadataStore", () => ({
+  useMetadataZustandStore: (selector: (s: any) => any) => {
+    const state = {
+      windowsData: new Proxy({}, {
+        get: (_target, prop) => mockMetadataContext.getWindowMetadata(prop as string),
+      }),
+    };
+    return selector(state);
+  },
+}));
+
 // Mock SelectedProvider
 jest.mock("../../../contexts/selected", () => ({
   SelectedProvider: ({
