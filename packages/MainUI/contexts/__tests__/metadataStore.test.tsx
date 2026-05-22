@@ -35,6 +35,11 @@ import { useUserStore } from "@/stores/userStore";
 
 // Mock dependencies
 jest.mock("@workspaceui/api-client/src/api/metadata");
+jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
+  datasource: {
+    get: jest.fn().mockResolvedValue({ ok: true, data: { response: { data: [] } } }),
+  },
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     info: jest.fn(),

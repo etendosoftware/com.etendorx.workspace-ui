@@ -16,6 +16,7 @@
  */
 
 import { logger } from "@/utils/logger";
+import { prefetchStore } from "@/utils/prefetchStore";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type {
   Column,
@@ -230,6 +231,30 @@ export function useDatasource({
 
       fetchInProgressRef.current = true;
       const safePageSize = pageSize ?? 1000;
+
+      // Check if a prefetched response exists for this entity (only for initial page load)
+      const prefetchKey = `ds-${entity}`;
+      const prefetchedPromise = targetPage === 1 ? prefetchStore.get(prefetchKey) : undefined;
+
+      if (prefetchedPromise) {
+        try {
+          const prefetchedResult = await prefetchedPromise as {
+            ok: boolean;
+            data: { response: { data: EntityData[] } };
+          };
+
+          if (prefetchedResult.ok && prefetchedResult.data?.response?.data) {
+            setHasMoreRecords(prefetchedResult.data.response.data.length >= safePageSize);
+            setRecords(prefetchedResult.data.response.data);
+            setLoaded(true);
+            setLoading(false);
+            fetchInProgressRef.current = false;
+            return;
+          }
+        } catch {
+          // Prefetch failed — fall through to normal fetch
+        }
+      }
 
       try {
         const { ok, data } = (await loadData(
