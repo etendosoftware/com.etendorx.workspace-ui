@@ -21,22 +21,17 @@ import { UserContext } from "../contexts/user";
 /**
  * Backward-compatible hook for accessing the full user context.
  *
- * State fields are sourced from the Zustand UserStore (via UserProvider
- * subscriptions), so all values are reactive and always up-to-date.
- *
- * For performance-critical components, prefer importing selectors directly
- * from `@/stores/userStore` to subscribe only to the slice you need:
+ * @deprecated For state reads (token, currentRole, session, etc.), use
+ * `useUserStore` from `@/stores/userStore` with targeted selectors:
  *
  * ```tsx
- * // Only re-renders when token changes
+ * import { useUserStore } from "@/stores/userStore";
  * const token = useUserStore((s) => s.token);
- *
- * // Multiple fields — use useShallow
- * import { useShallow } from "zustand/react/shallow";
- * const { token, currentRole } = useUserStore(
- *   useShallow((s) => ({ token: s.token, currentRole: s.currentRole }))
- * );
  * ```
+ *
+ * This hook is still required for context-only actions: `login`, `logout`,
+ * `changeProfile`, `changePassword`, `setDefaultConfiguration`, `clearUserData`.
+ * Once those actions are moved to the store, this hook can be removed entirely.
  */
 export const useUserContext = () => {
   const context = useContext(UserContext);
