@@ -28,7 +28,7 @@ import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
@@ -67,7 +67,7 @@ const TabsGroupRenderer = ({
   isTopGroup: boolean;
   getActiveTabForLevel: (level: number) => Tab | null;
 }) => {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   // Fetch the record of the parent tab to evaluate THIS level's tabs
   const parentRecord = useSelectedRecord(activeParentTab || undefined);
 

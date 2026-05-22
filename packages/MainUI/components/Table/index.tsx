@@ -68,7 +68,7 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import {
   getDisplayColumnDefOptions,
   getMUITableBodyCellProps,
@@ -695,7 +695,8 @@ const DynamicTable = ({
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
-  const { user, session } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const session = useUserStore((s) => s.session);
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);

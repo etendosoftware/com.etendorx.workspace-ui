@@ -40,16 +40,15 @@ jest.mock("@/app/actions/revalidate", () => ({
   revalidateDopoProcess: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-// Mock the user context to provide a token
-const mockUseUserContext = jest.fn(() => ({
-  token: "test-auth-token-123",
-  session: { userId: "test-user" },
-  getCsrfToken: () => "test-csrf-token",
-}));
-
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => mockUseUserContext(),
-}));
+// Set user store state for token/session (ProcessDefinitionModal reads from useUserStore)
+import { useUserStore } from "@/stores/userStore";
+beforeAll(() => {
+  useUserStore.setState({
+    token: "test-auth-token-123",
+    session: { userId: "test-user" } as any,
+    getCsrfToken: () => "test-csrf-token",
+  });
+});
 
 // Mock other dependencies
 jest.mock("@/contexts/tab", () => ({

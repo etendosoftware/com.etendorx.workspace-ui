@@ -20,14 +20,14 @@
 import type React from "react";
 import { useCallback, useEffect } from "react";
 import { useFavoritesStore } from "@/stores/favoritesStore";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 /**
  * Triggers a role-scoped re-fetch of favorites whenever the current role changes.
  * State lives in Zustand — this provider only handles the role-change side-effect.
  */
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { currentRole } = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
   const roleId = currentRole?.id;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: roleId is a hook-derived value, not a static outer-scope reference

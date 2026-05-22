@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import type { WidgetClass, WidgetInstance } from "@workspaceui/api-client/src/api/dashboard";
 import CTABanner from "./widgets/CTABanner";
@@ -52,7 +52,7 @@ function LoadingSkeleton() {
 
 export default function Home() {
   const { t } = useTranslation();
-  const { currentRole } = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
   const {
     layout,
     widgetData,

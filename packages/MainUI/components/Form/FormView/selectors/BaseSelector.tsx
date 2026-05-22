@@ -19,7 +19,7 @@ o_license.txt
 import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
@@ -163,7 +163,7 @@ const BaseSelectorComp = ({
     );
   }, [tab.fields]);
   const { recordId } = useParams<{ recordId: string }>();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const parentData = useFormParent();
 
   const getParentId = useCallback(() => {

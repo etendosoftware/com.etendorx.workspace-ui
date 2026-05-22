@@ -22,7 +22,7 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -99,7 +99,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
+  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);

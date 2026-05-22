@@ -16,7 +16,7 @@
  */
 
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -90,7 +90,7 @@ export const useToolbarConfig = ({
     t,
   });
 
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
 
   const closeActionModal = useCallback(() => {
     setActionModal((prev) => ({ ...prev, isOpen: false }));

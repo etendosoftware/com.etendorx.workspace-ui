@@ -35,7 +35,7 @@ import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
@@ -151,7 +151,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});

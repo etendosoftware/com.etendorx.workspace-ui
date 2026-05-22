@@ -14,7 +14,7 @@ import { useSearch } from "@/contexts/searchContext";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
 
 // Mock dependencies
@@ -41,7 +41,7 @@ jest.mock("@/contexts/ToolbarContext");
 jest.mock("@/hooks/useDeleteRecord", () => ({
   useDeleteRecord: jest.fn(),
 }));
-jest.mock("@/hooks/useUserContext");
+// useUserStore is a Zustand store — set state directly in beforeEach
 jest.mock("@/utils/logger");
 
 describe("useToolbarConfig", () => {
@@ -110,7 +110,7 @@ describe("useToolbarConfig", () => {
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
     (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
     (useDeleteRecord as jest.Mock).mockReturnValue({ deleteRecord: jest.fn(), loading: false });
-    (useUserContext as jest.Mock).mockReturnValue({ token: "mock-token" });
+    useUserStore.setState({ token: "mock-token" });
   });
 
   it("initializes correctly", () => {

@@ -41,7 +41,7 @@ import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
 import { useWindowStore } from "@/stores/windowStore";
 import type { TabFormState } from "@/utils/url/constants";
@@ -290,7 +290,8 @@ export default function useTableSelection(
     []
   );
 
-  const { setSession, setSessionSyncLoading } = useUserContext();
+  const setSession = useUserStore((s) => s.setSession);
+  const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 

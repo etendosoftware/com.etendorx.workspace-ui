@@ -20,7 +20,7 @@
 import { useEffect } from "react";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import type { MetadataStoreState } from "@/stores/metadataStore";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 // Re-export for backward compatibility
 export type IMetadataStoreContext = MetadataStoreState;
@@ -31,7 +31,7 @@ export type IMetadataStoreContext = MetadataStoreState;
  * State lives in the Zustand store — no React Context needed.
  */
 export function MetadataStoreProvider({ children }: React.PropsWithChildren) {
-  const { currentRole } = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
   const resetForRole = useMetadataZustandStore((s) => s.resetForRole);
 
   // Reset store when role changes to avoid stale metadata in memory.

@@ -20,7 +20,7 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useRecentItems } from "../../../hooks/useRecentItems";
 import { useTranslation } from "../../../hooks/useTranslation";
-import { useUserContext } from "../../../hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import clsx from "clsx";
 import ChevronDown from "../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
@@ -33,7 +33,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const { t } = useTranslation();
-    const { currentRole } = useUserContext();
+    const currentRole = useUserStore((s) => s.currentRole);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleCloseMenu = useCallback(() => {

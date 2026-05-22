@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
@@ -88,7 +88,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   onSuccess,
 }) => {
   const { t } = useTranslation();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const router = useRouter();
   const searchParams = useSearchParams();
   const triggerRecovery = useWindowStore((s) => s.triggerRecovery);

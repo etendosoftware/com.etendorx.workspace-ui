@@ -39,7 +39,7 @@ import {
   downloadAllAttachments,
 } from "@workspaceui/api-client/src/api/attachments";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { AddAttachmentModal } from "./AddAttachmentModal";
 
 const TYPOGRAPHY_TEST_ID = "Typography__ce37c8";
@@ -77,7 +77,8 @@ const AttachmentSection = ({
 }: AttachmentSectionProps) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { session, currentOrganization } = useUserContext();
+  const session = useUserStore((s) => s.session);
+  const currentOrganization = useUserStore((s) => s.currentOrganization);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

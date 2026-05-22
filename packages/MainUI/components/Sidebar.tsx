@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
-import { useUserContext } from "../hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
@@ -164,7 +164,9 @@ const VersionComponent: React.FC<VersionProps> = () => {
  */
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { token, currentRole, prevRole } = useUserContext();
+  const token = useUserStore((s) => s.token);
+  const currentRole = useUserStore((s) => s.currentRole);
+  const prevRole = useUserStore((s) => s.prevRole);
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);

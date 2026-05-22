@@ -1,7 +1,7 @@
 import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
 import { useMemo } from "react";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -53,7 +53,7 @@ export const ProcessParameterSelector = ({
   selectedRecordsCount,
   onFileChange,
 }: ProcessParameterSelectorProps) => {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
   const values = watch(); // Watch all form values for reactive logic evaluation
 

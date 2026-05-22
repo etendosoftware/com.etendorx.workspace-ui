@@ -37,7 +37,6 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
-  useUserContext,
   // Hooks
   useProcessConfig,
   useProcessInitialization,
@@ -84,6 +83,7 @@ import {
   type Field,
 } from "./imports";
 import { useWindowStore } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
 import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
@@ -223,7 +223,9 @@ function ProcessDefinitionModalContent({
   const { graph } = useSelected();
   const { tab, record: tabRecord } = useTabContext();
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
-  const { session, token, getCsrfToken } = useUserContext();
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
+  const getCsrfToken = useUserStore((s) => s.getCsrfToken);
   const router = useRouter();
   const searchParams = useSearchParams();
   const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
