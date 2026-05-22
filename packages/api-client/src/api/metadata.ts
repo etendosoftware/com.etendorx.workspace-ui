@@ -34,6 +34,7 @@ export class Metadata {
   public static loginClient = new Client();
   private static language: string | null = null;
   public static locationClient = new LocationClient();
+  private static pendingRequests = new Map<string, Promise<unknown>>();
 
   public static setBaseUrl() {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
@@ -107,11 +108,22 @@ export class Metadata {
     return Metadata._getToolbar();
   }
 
-  private static async _getToolbar(): Promise<Etendo.ToolbarButton[]> {
-    const response = await Metadata.client.post("meta/toolbar");
-    const data = response.data.response.data;
-    Metadata.cache.set("toolbar", data);
-    return data;
+  private static _getToolbar(): Promise<Etendo.ToolbarButton[]> {
+    const key = "toolbar";
+    const existing = Metadata.pendingRequests.get(key);
+    if (existing) return existing as Promise<Etendo.ToolbarButton[]>;
+
+    const promise = (async () => {
+      const response = await Metadata.client.post("meta/toolbar");
+      const data = response.data.response.data;
+      Metadata.cache.set("toolbar", data);
+      return data;
+    })().finally(() => {
+      Metadata.pendingRequests.delete(key);
+    });
+
+    Metadata.pendingRequests.set(key, promise);
+    return promise;
   }
 
   private static getTabCacheKey(tabId: string): string {
@@ -130,19 +142,27 @@ export class Metadata {
     return `window-${windowId}-${roleId || "default"}`;
   }
 
-  private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
+  private static _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
+    const key = `window-${windowId}`;
+    const existing = Metadata.pendingRequests.get(key);
+    if (existing) return existing as Promise<Etendo.WindowMetadata>;
 
-    if (!ok) {
-      throw new Error("Window not found");
-    }
+    const promise = (async () => {
+      const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
+      if (!ok) {
+        throw new Error("Window not found");
+      }
+      Metadata.cache.set(Metadata.getWindowCacheKey(windowId), data);
+      for (const tab of data.tabs) {
+        Metadata.cache.set(Metadata.getTabCacheKey(tab.id), tab);
+      }
+      return data as Etendo.WindowMetadata;
+    })().finally(() => {
+      Metadata.pendingRequests.delete(key);
+    });
 
-    Metadata.cache.set(Metadata.getWindowCacheKey(windowId), data);
-    for (const tab of data.tabs) {
-      Metadata.cache.set(Metadata.getTabCacheKey(tab.id), tab);
-    }
-
-    return data;
+    Metadata.pendingRequests.set(key, promise);
+    return promise;
   }
 
   public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
@@ -171,12 +191,21 @@ export class Metadata {
     return Metadata._getTab(tabId);
   }
 
-  private static async _getLabels(): Promise<Etendo.Labels> {
-    const { data } = await Metadata.client.request("meta/labels");
+  private static _getLabels(): Promise<Etendo.Labels> {
+    const key = `labels-${Metadata.language}`;
+    const existing = Metadata.pendingRequests.get(key);
+    if (existing) return existing as Promise<Etendo.Labels>;
 
-    Metadata.cache.set(`labels-${Metadata.language}`, data);
+    const promise = (async () => {
+      const { data } = await Metadata.client.request("meta/labels");
+      Metadata.cache.set(`labels-${Metadata.language}`, data);
+      return data;
+    })().finally(() => {
+      Metadata.pendingRequests.delete(key);
+    });
 
-    return data;
+    Metadata.pendingRequests.set(key, promise);
+    return promise;
   }
 
   public static async getLabels(): Promise<Etendo.Labels> {
