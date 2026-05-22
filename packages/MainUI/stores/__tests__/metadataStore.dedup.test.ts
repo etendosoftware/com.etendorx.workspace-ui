@@ -57,3 +57,65 @@ describe("metadataStore loadWindowData deduplication", () => {
     expect(mockMetadata.forceWindowReload).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("metadataStore prefetchWindowData", () => {
+  beforeEach(() => {
+    useMetadataZustandStore.getState().resetForRole();
+    jest.clearAllMocks();
+  });
+
+  it("should return immediately if window data already exists in store", async () => {
+    const mockWindowData = { id: "win-1", tabs: [] };
+    mockMetadata.clearWindowCache.mockImplementation(() => {});
+    mockMetadata.forceWindowReload.mockResolvedValue(mockWindowData as any);
+
+    await useMetadataZustandStore.getState().loadWindowData("win-1");
+
+    mockMetadata.getWindow.mockResolvedValue(mockWindowData as any);
+    await useMetadataZustandStore.getState().prefetchWindowData("win-1");
+
+    expect(mockMetadata.getWindow).not.toHaveBeenCalled();
+  });
+
+  it("should use Metadata.getWindow (non-destructive) instead of forceWindowReload", async () => {
+    const mockWindowData = { id: "win-2", tabs: [] };
+    mockMetadata.getWindow.mockResolvedValue(mockWindowData as any);
+
+    await useMetadataZustandStore.getState().prefetchWindowData("win-2");
+
+    expect(mockMetadata.getWindow).toHaveBeenCalledWith("win-2");
+    expect(mockMetadata.clearWindowCache).not.toHaveBeenCalled();
+    expect(mockMetadata.forceWindowReload).not.toHaveBeenCalled();
+  });
+
+  it("should store result in windowsData on success", async () => {
+    const mockWindowData = { id: "win-3", tabs: [] };
+    mockMetadata.getWindow.mockResolvedValue(mockWindowData as any);
+
+    await useMetadataZustandStore.getState().prefetchWindowData("win-3");
+
+    expect(useMetadataZustandStore.getState().windowsData["win-3"]).toEqual(mockWindowData);
+  });
+
+  it("should silently swallow errors", async () => {
+    mockMetadata.getWindow.mockRejectedValue(new Error("network fail"));
+
+    await expect(
+      useMetadataZustandStore.getState().prefetchWindowData("win-4")
+    ).resolves.toBeUndefined();
+
+    expect(useMetadataZustandStore.getState().windowsData["win-4"]).toBeUndefined();
+  });
+
+  it("should skip if window is already loading", async () => {
+    mockMetadata.clearWindowCache.mockImplementation(() => {});
+    mockMetadata.forceWindowReload.mockReturnValue(new Promise(() => {}));
+
+    useMetadataZustandStore.getState().loadWindowData("win-5");
+
+    mockMetadata.getWindow.mockResolvedValue({ id: "win-5", tabs: [] } as any);
+    await useMetadataZustandStore.getState().prefetchWindowData("win-5");
+
+    expect(mockMetadata.getWindow).not.toHaveBeenCalled();
+  });
+});

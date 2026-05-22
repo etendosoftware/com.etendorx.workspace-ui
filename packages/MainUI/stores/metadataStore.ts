@@ -28,6 +28,7 @@ export interface MetadataStoreState {
   errors: Record<string, Error | undefined>;
 
   loadWindowData: (windowId: string) => Promise<Etendo.WindowMetadata>;
+  prefetchWindowData: (windowId: string) => Promise<void>;
   getWindowMetadata: (windowId: string) => Etendo.WindowMetadata | undefined;
   isWindowLoading: (windowId: string) => boolean;
   getWindowError: (windowId: string) => Error | undefined;
@@ -102,6 +103,30 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
 
         loadingPromises.set(windowId, promise);
         return promise;
+      },
+
+      prefetchWindowData: async (windowId: string): Promise<void> => {
+        const { windowsData, loadingWindows } = get();
+
+        // Skip if already loaded or currently loading
+        if (windowsData[windowId] || loadingWindows[windowId]) {
+          return;
+        }
+
+        try {
+          // Use getWindow (checks localStorage cache first, non-destructive)
+          const data = await Metadata.getWindow(windowId);
+
+          set(
+            (state) => ({
+              windowsData: { ...state.windowsData, [windowId]: data },
+            }),
+            false,
+            "metadata/prefetchWindowData:success",
+          );
+        } catch {
+          // Silently swallow — prefetch failure should not affect UX
+        }
       },
 
       getWindowMetadata: (windowId: string) => {
