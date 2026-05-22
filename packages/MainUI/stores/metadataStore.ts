@@ -20,6 +20,8 @@ import { devtools } from "zustand/middleware";
 import { type Etendo, Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
 
+const loadingPromises = new Map<string, Promise<Etendo.WindowMetadata>>();
+
 export interface MetadataStoreState {
   windowsData: Record<string, Etendo.WindowMetadata>;
   loadingWindows: Record<string, boolean>;
@@ -39,54 +41,67 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
       loadingWindows: {},
       errors: {},
 
-      loadWindowData: async (windowId: string): Promise<Etendo.WindowMetadata> => {
+      loadWindowData: (windowId: string): Promise<Etendo.WindowMetadata> => {
         const { windowsData } = get();
 
         // If already loaded, return cached
         if (windowsData[windowId]) {
-          return windowsData[windowId];
+          return Promise.resolve(windowsData[windowId]);
         }
 
-        try {
-          set(
-            (state) => ({
-              loadingWindows: { ...state.loadingWindows, [windowId]: true },
-              errors: { ...state.errors, [windowId]: undefined },
-            }),
-            false,
-            "metadata/loadWindowData:start",
-          );
-
-          logger.info(`[MetadataStore] Loading metadata for window ${windowId}`);
-
-          Metadata.clearWindowCache(windowId);
-          const newWindowData = await Metadata.forceWindowReload(windowId);
-
-          set(
-            (state) => ({
-              windowsData: { ...state.windowsData, [windowId]: newWindowData },
-              loadingWindows: { ...state.loadingWindows, [windowId]: false },
-            }),
-            false,
-            "metadata/loadWindowData:success",
-          );
-
-          return newWindowData;
-        } catch (err) {
-          const error = err as Error;
-          logger.warn(`[MetadataStore] Error loading window ${windowId}:`, error);
-
-          set(
-            (state) => ({
-              errors: { ...state.errors, [windowId]: error },
-              loadingWindows: { ...state.loadingWindows, [windowId]: false },
-            }),
-            false,
-            "metadata/loadWindowData:error",
-          );
-
-          throw error;
+        // If already fetching, return the in-flight promise
+        const existing = loadingPromises.get(windowId);
+        if (existing) {
+          return existing;
         }
+
+        const promise = (async () => {
+          try {
+            set(
+              (state) => ({
+                loadingWindows: { ...state.loadingWindows, [windowId]: true },
+                errors: { ...state.errors, [windowId]: undefined },
+              }),
+              false,
+              "metadata/loadWindowData:start",
+            );
+
+            logger.info(`[MetadataStore] Loading metadata for window ${windowId}`);
+
+            Metadata.clearWindowCache(windowId);
+            const newWindowData = await Metadata.forceWindowReload(windowId);
+
+            set(
+              (state) => ({
+                windowsData: { ...state.windowsData, [windowId]: newWindowData },
+                loadingWindows: { ...state.loadingWindows, [windowId]: false },
+              }),
+              false,
+              "metadata/loadWindowData:success",
+            );
+
+            return newWindowData;
+          } catch (err) {
+            const error = err as Error;
+            logger.warn(`[MetadataStore] Error loading window ${windowId}:`, error);
+
+            set(
+              (state) => ({
+                errors: { ...state.errors, [windowId]: error },
+                loadingWindows: { ...state.loadingWindows, [windowId]: false },
+              }),
+              false,
+              "metadata/loadWindowData:error",
+            );
+
+            throw error;
+          } finally {
+            loadingPromises.delete(windowId);
+          }
+        })();
+
+        loadingPromises.set(windowId, promise);
+        return promise;
       },
 
       getWindowMetadata: (windowId: string) => {
@@ -101,12 +116,14 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
         return get().errors[windowId];
       },
 
-      resetForRole: () =>
+      resetForRole: () => {
+        loadingPromises.clear();
         set(
           { windowsData: {}, loadingWindows: {}, errors: {} },
           false,
           "metadata/resetForRole",
-        ),
+        );
+      },
     }),
     { name: "MetadataStore" },
   ),
