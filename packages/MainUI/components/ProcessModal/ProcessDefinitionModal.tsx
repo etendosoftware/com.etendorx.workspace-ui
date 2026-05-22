@@ -98,6 +98,7 @@ import {
   groupProcessParametersByFieldGroup,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
+import { buildSuccessBannerMessage } from "./utils/responseBanner";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 
 // ---------------------------------------------------------------------------
@@ -1061,17 +1062,16 @@ function ProcessDefinitionModalContent({
     if (isFinalSuccess) return null;
 
     if (result.keepOpen && result.success) {
-      const rawMsg =
-        typeof result.data === "string"
-          ? result.data
-          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
-      const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
-      const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
+      // Only render the success banner when the server explicitly emitted a
+      // message via `responseActions[].showMsgInProcessView` (Classic UX:
+      // silent on actions like Search that only refresh the grid).
+      const parsed = buildSuccessBannerMessage(result.data, result.isHtml);
+      if (!parsed) return null;
       return (
         <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
           <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
           <div className="border-(--color-active-40) rounded p-2">
-            <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
+            <ToastContent message={parsed.msgText} isHtml={parsed.isHtml} data-testid="ToastContent__761503" />
           </div>
         </div>
       );

@@ -517,6 +517,77 @@ export const shouldRenderCellEditor = (
   return isSelected;
 };
 
+/**
+ * Normalises `windowReferenceTab.fields` (array OR object map) to a plain
+ * array. Centralised because the metadata payload shape varies by caller.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: tab fields shape is heterogeneous
+const collectTabFields = (tab: any): any[] => {
+  const raw = tab?.fields;
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  return Object.values(raw);
+};
+
+/**
+ * Looks up the field metadata that backs a grid column. Returns `undefined`
+ * if no candidate matches any of the four supported key formats.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: column / field types from MRT and AD metadata
+const findFieldForColumn = (fields: any[], col: any): any | undefined => {
+  return fields.find(
+    (f) =>
+      f.columnName === col.accessorKey ||
+      f.inpColumnName === col.accessorKey ||
+      f.hqlName === col.accessorKey ||
+      f.name === col.header
+  );
+};
+
+/**
+ * Decides whether a single column should accept inline editing given its
+ * metadata and the current read-only map. Pure function — exported for unit
+ * testing.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: column / field types from MRT and AD metadata
+export const isColumnEditable = (col: any, fields: any[], fieldReadOnlyMap: Record<string, boolean>): boolean => {
+  if (col.id === "mrt-row-actions" || col.id === "mrt-row-select") return false;
+  if (col.enableEditing === false) return false;
+
+  const field = findFieldForColumn(fields, col);
+  // Unknown columns: trust the explicit `enableEditing` flag and default to
+  // false for plain text/label columns to avoid the "fake editing" vector.
+  if (!field) return col.enableEditing === true;
+
+  if (field.readOnly === true) return false;
+  if (field.isReadOnly === true) return false;
+  if (field.uIPattern === UIPattern.READ_ONLY) return false;
+  if (fieldReadOnlyMap[field.columnName]) return false;
+  if (fieldReadOnlyMap[field.hqlName]) return false;
+
+  return true;
+};
+
+/**
+ * Builds the `enableEditing` predicate consumed by MRT. Returns `true` only
+ * for the active create-row that has at least one editable column. Persisted
+ * rows are always inert (defeats the double-click-edit vector).
+ */
+export const buildEnableEditingPredicate = (
+  // biome-ignore lint/suspicious/noExplicitAny: MRT columns are untyped here
+  finalColumns: any[],
+  // biome-ignore lint/suspicious/noExplicitAny: AD tab metadata is heterogeneous
+  windowReferenceTab: any,
+  fieldReadOnlyMap: Record<string, boolean>
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row instance is untyped here
+): ((row: any) => boolean) => {
+  const fields = collectTabFields(windowReferenceTab);
+  return (row) => {
+    if (isPersistedRow(row)) return false;
+    return finalColumns.some((col) => isColumnEditable(col, fields, fieldReadOnlyMap));
+  };
+};
+
 interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: MRT row
   row: any;
@@ -2310,6 +2381,20 @@ const WindowReferenceGrid = ({
   const enableRowSelectionFromMetadata = windowReferenceTab?.obuiappShowSelect !== false;
   const deleteRowLabel = t("processModal.gridToolbar.deleteRow");
 
+  // The Actions column is rendered iff at least one row would actually paint
+  // a button. Hidden in two cases:
+  //   - canDelete=false AND no add-capability/locally-added row → nothing to render.
+  //   - canDelete=true but `records` is empty → no row to put a trash on.
+  // `enableEditing` is passed as a literal `false` (not a callback) when
+  // canAdd is off, so MRT doesn't insert the column header by itself.
+  const hasLocallyAddedRow = (records || []).some((r) => Boolean((r as { _locallyAdded?: boolean })?._locallyAdded));
+  const hasAnyDeletableRow = canDelete && (records || []).length > 0;
+  const hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow;
+  const enableEditingPredicate = useMemo(
+    () => buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap),
+    [finalColumns, windowReferenceTab, fieldReadOnlyMap]
+  );
+
   const tableOptions: MRT_TableOptions<EntityData> = useMemo(
     () => ({
       muiTablePaperProps: {
@@ -2400,60 +2485,9 @@ const WindowReferenceGrid = ({
       keepNonExistentRowsSelected: true,
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
-      enableEditing: (row) => {
-        // Only the active create-row can be edited. Any row that already has
-        // a persisted id (remote record or one confirmed via the "+" button)
-        // must stay inert to defeat MRT's double-click-edit vector.
-        if (isPersistedRow(row)) return false;
-        // Robust check for row editability based on field metadata
-        const hasEditableField = finalColumns.some((col) => {
-          if (col.id === "mrt-row-actions" || col.id === "mrt-row-select") return false;
-
-          // Check explicit enableEditing flag
-          if (col.enableEditing === false) return false;
-
-          // Find corresponding field in tab definition
-          // windowReferenceTab.fields can be an array or object map depending on context
-          // Determine fields array for validation
-          let fields: any[] = [];
-          if (windowReferenceTab?.fields) {
-            if (Array.isArray(windowReferenceTab.fields)) {
-              fields = windowReferenceTab.fields;
-            } else {
-              fields = Object.values(windowReferenceTab.fields);
-            }
-          }
-
-          const field = fields.find(
-            (f: any) =>
-              f.columnName === col.accessorKey ||
-              f.inpColumnName === col.accessorKey ||
-              f.hqlName === col.accessorKey || // Matches property name like 'businessPartner'
-              f.name === col.header
-          );
-
-          if (!field) {
-            // If we can't find field metadata, assume it follows col.enableEditing
-            // Default to false for unknown text columns to prevent "fake" editing of labels
-            return col.enableEditing === true;
-          }
-
-          // Check Read Only status
-          if (
-            field.readOnly === true ||
-            field.isReadOnly === true ||
-            field.uIPattern === UIPattern.READ_ONLY ||
-            fieldReadOnlyMap[field.columnName] ||
-            fieldReadOnlyMap[field.hqlName]
-          ) {
-            return false;
-          }
-
-          return true; // Found at least one editable field
-        });
-
-        return hasEditableField;
-      },
+      // Passing `false` (not a callback) when canAdd is off prevents MRT
+      // from inserting the Actions column header just to host edit buttons.
+      enableEditing: canAdd ? enableEditingPredicate : false,
       createDisplayMode: "row",
       // Keep MRT's edit-display mode as "row" so a double-click on a cell does
       // NOT activate per-cell editing (which would bypass `shouldRenderCellEditor`
@@ -2461,8 +2495,8 @@ const WindowReferenceGrid = ({
       // gate). Combined with `enableEditing` rejecting rows that already have an
       // `original.id`, no existing row can be entered into edit-mode by the user.
       editDisplayMode: "row",
-      enableRowActions: canDelete,
-      renderRowActions: canDelete
+      enableRowActions: hasAnyActionableRow,
+      renderRowActions: hasAnyActionableRow
         ? ({ row, table }) =>
             renderActionsCell({
               row,
@@ -2502,6 +2536,8 @@ const WindowReferenceGrid = ({
       canDelete,
       deleteRowLabel,
       enableRowSelectionFromMetadata,
+      enableEditingPredicate,
+      hasAnyActionableRow,
     ]
   );
 
