@@ -41,6 +41,7 @@ const Drawer: React.FC<DrawerProps> = ({
   logo,
   title,
   onClick,
+  onItemHover,
   onReportClick,
   onProcessClick,
   RecentlyViewedComponent,
@@ -152,6 +153,7 @@ const Drawer: React.FC<DrawerProps> = ({
           <DrawerItems
             items={searchValue ? filteredItems : items}
             onClick={handleItemClick}
+            onItemHover={onItemHover}
             onReportClick={onReportClick}
             onProcessClick={onProcessClick}
             open={open}
