@@ -238,7 +238,7 @@ export function useDatasource({
 
       if (prefetchedPromise) {
         try {
-          const prefetchedResult = await prefetchedPromise as {
+          const prefetchedResult = (await prefetchedPromise) as {
             ok: boolean;
             data: { response: { data: EntityData[] } };
           };
