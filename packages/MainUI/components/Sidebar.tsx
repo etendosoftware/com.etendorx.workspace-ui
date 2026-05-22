@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
@@ -24,6 +24,7 @@ import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useMetadataZustandStore } from "@/stores/metadataStore";
 
 interface FormData {
   paramUrl: string;
@@ -176,6 +177,26 @@ export default function Sidebar() {
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
+  const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
+  const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
+  const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleItemHover = useCallback(
+    (item: Menu) => {
+      if (item.type !== "Window" || !item.windowId) {
+        return;
+      }
+
+      if (hoverDebounceRef.current) {
+        clearTimeout(hoverDebounceRef.current);
+      }
+
+      hoverDebounceRef.current = setTimeout(() => {
+        prefetchWindowData(item.windowId);
+      }, 150);
+    },
+    [prefetchWindowData]
+  );
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -283,9 +304,11 @@ export default function Sidebar() {
       setPendingWindowId(windowId);
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      // Eager fetch: start metadata loading immediately on click
+      loadWindowData(windowId).catch(() => {});
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [token, ETENDO_BASE_URL, setWindowActive]
+    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData]
   );
 
   /**
@@ -387,6 +410,7 @@ export default function Sidebar() {
           onClick={handleClick}
           onReportClick={handleClick}
           onProcessClick={handleClick}
+          onItemHover={handleItemHover}
           getTranslatedName={getTranslatedName}
           RecentlyViewedComponent={RecentlyViewed}
           VersionComponent={VersionComponent}
