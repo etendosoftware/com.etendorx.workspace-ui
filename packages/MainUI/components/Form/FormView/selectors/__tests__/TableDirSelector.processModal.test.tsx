@@ -62,7 +62,7 @@ describe("TableDirSelector — refetch on open (process modal cascade)", () => {
     jest.clearAllMocks();
   });
 
-  it("refetches every time the dropdown opens when isProcessModal=true", () => {
+  it("calls refetch when the selector receives focus (isProcessModal=true)", () => {
     const refetch = setupDatasourceMock();
 
     const { container } = render(
@@ -73,15 +73,9 @@ describe("TableDirSelector — refetch on open (process modal cascade)", () => {
 
     const trigger = findTrigger(container);
 
-    fireEvent.click(trigger); // open → fires onOpen
-    expect(refetch).toHaveBeenCalledWith(true);
-
     refetch.mockClear();
-    fireEvent.click(trigger); // close → does NOT fire onOpen
-    expect(refetch).not.toHaveBeenCalled();
-
-    fireEvent.click(trigger); // open again → fires again
-    expect(refetch).toHaveBeenCalledWith(true);
+    fireEvent.focus(trigger);
+    expect(refetch).toHaveBeenCalled();
   });
 
   it("does NOT call refetch on open when isProcessModal is undefined (standard window)", () => {

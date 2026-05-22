@@ -1173,6 +1173,7 @@ function ProcessDefinitionModalContent({
       selectedRecordsCount={selectedRecordsCount}
       onFileChange={handleFileChange}
       values={formValues}
+      processId={processId}
       data-testid="ProcessParameterSelector__761503"
     />
   );

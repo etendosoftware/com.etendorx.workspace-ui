@@ -247,28 +247,32 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       expect(screen.getByText("2 table.selection.multiple")).toBeInTheDocument();
     });
 
-    it("should handle filter button click to remove implicit filter", () => {
-      render(<GridTopToolbar {...mockProps} />);
+    it("should handle implicit filter button click to remove implicit filter", () => {
+      const propsWithImplicitFilter = {
+        ...mockProps,
+        initialIsFilterApplied: true,
+        isImplicitFilterApplied: true,
+      };
 
-      const filterButton = screen.getByTestId("MRT_ToggleFiltersButton__ce8544");
+      render(<GridTopToolbar {...propsWithImplicitFilter} />);
+
+      const filterButton = screen.getByTestId("implicit-filter-button");
       fireEvent.click(filterButton);
 
       expect(mockProps.setIsImplicitFilterApplied).toHaveBeenCalledWith(false);
     });
 
-    it("should handle filter button click to clear column filters when implicit filter is not applied", () => {
+    it("should disable the implicit filter button when implicit filter is not applied", () => {
       const propsWithoutImplicitFilter = {
         ...mockProps,
+        initialIsFilterApplied: true,
         isImplicitFilterApplied: false,
       };
 
       render(<GridTopToolbar {...propsWithoutImplicitFilter} />);
 
-      const filterButton = screen.getByTestId("MRT_ToggleFiltersButton__ce8544");
-      fireEvent.click(filterButton);
-
-      expect(mockTable.setColumnFilters).toHaveBeenCalledWith([]);
-      expect(mockProps.handleMRTColumnFiltersChange).toHaveBeenCalledWith([]);
+      const filterButton = screen.getByTestId("implicit-filter-button");
+      expect(filterButton).toBeDisabled();
     });
 
     it("should call handleClearSelections when clear button is clicked", () => {

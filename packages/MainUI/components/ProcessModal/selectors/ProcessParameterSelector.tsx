@@ -1,5 +1,6 @@
-import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
+import type { ProcessParameter, Field, EntityValue } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
+import type { ProcessSelectorContext } from "@/hooks/types";
 import { memo, useMemo } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useFormContext } from "react-hook-form";
@@ -39,6 +40,11 @@ interface ProcessParameterSelectorProps {
   // every selector on every keystroke. Receiving values as a prop lets the parent
   // own the single subscription and React.memo skip re-renders of unaffected selectors.
   values?: Record<string, unknown>;
+  // Process Definition id propagated from `ProcessDefinitionModal`. Combined
+  // with `values`, it lets tabledir selectors build the cascading datasource
+  // payload (`_processDefinitionId`, `_selectorFieldId`, raw form keys) that
+  // Classic emits via `OBSelectorItem.prepareDSRequest`.
+  processId?: string;
 }
 
 import { createProcessExpressionContext } from "../utils/processExpressionUtils";
@@ -51,6 +57,28 @@ import { createProcessExpressionContext } from "../utils/processExpressionUtils"
  */
 const EMPTY_VALUES: Record<string, unknown> = {};
 
+/**
+ * Translates a form-values map keyed by ProcessParameter display names into a
+ * map keyed by raw `dBColumnName`s. Mirrors the Classic pickList payload —
+ * `OB.getParameters().get('received_in')` server-side expects raw keys, not
+ * `"Received In"`. Returns `{}` when `parameters` is empty.
+ */
+export const mapValuesByDBColumnName = (
+  values: Record<string, unknown>,
+  parameters: Record<string, ProcessParameter> | undefined
+): Record<string, EntityValue> => {
+  const out: Record<string, EntityValue> = {};
+  if (!parameters) return out;
+  for (const parameter of Object.values(parameters)) {
+    const dbKey = parameter.dBColumnName;
+    if (!dbKey) continue;
+    const value = values[parameter.name];
+    if (value === undefined) continue;
+    out[dbKey] = value as EntityValue;
+  }
+  return out;
+};
+
 const ProcessParameterSelectorImpl = ({
   parameter,
   logicFields,
@@ -60,6 +88,7 @@ const ProcessParameterSelectorImpl = ({
   selectedRecordsCount,
   onFileChange,
   values = EMPTY_VALUES,
+  processId,
 }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { register } = useFormContext();
@@ -152,6 +181,22 @@ const ProcessParameterSelectorImpl = ({
     return ProcessParameterMapper.getFieldType(parameter);
   }, [parameter]);
 
+  // Built only when the modal supplies a processId. The hook reads this to
+  // emit the process-level cascade payload (raw param keys + meta keys) that
+  // Classic injects from `OBSelectorItem.prepareDSRequest`. Stays `undefined`
+  // for non-process contexts so the standard selector flow is untouched.
+  //
+  // The form is registered with display-name keys (e.g. "Payment Method",
+  // "Invoice Organization") because that's how ProcessParameterMapper sets
+  // `field.hqlName`. Classic's payload uses the raw `dBColumnName` keys
+  // (`payment_method`, `ad_org_id`). We remap here by walking the parameters
+  // metadata: each entry contributes `values[parameter.name]` under its
+  // `dBColumnName`.
+  const processContext = useMemo<ProcessSelectorContext | undefined>(() => {
+    if (!processId) return undefined;
+    return { processId, values: mapValuesByDBColumnName(values, parameters) };
+  }, [processId, values, parameters]);
+
   // Don't render if display logic evaluates to false
   // EXCEPT for auxiliary logic fields (*_readonly_logic, *_display_logic) which need to be in the form
   const isAuxiliaryLogicField =
@@ -243,6 +288,7 @@ const ProcessParameterSelectorImpl = ({
               isProcessModal={true}
               selectedRecordsCount={selectedRecordsCount}
               staticOptions={staticOptions}
+              processContext={processContext}
               data-testid="TableDirSelector__dac06b"
             />
           );
