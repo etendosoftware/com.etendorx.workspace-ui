@@ -183,7 +183,8 @@ export default function Sidebar() {
 
   const handleItemHover = useCallback(
     (item: Menu) => {
-      if (item.type !== "Window" || !item.windowId) {
+      const { windowId } = item;
+      if (item.type !== "Window" || !windowId) {
         return;
       }
 
@@ -192,7 +193,7 @@ export default function Sidebar() {
       }
 
       hoverDebounceRef.current = setTimeout(() => {
-        prefetchWindowData(item.windowId);
+        prefetchWindowData(windowId);
       }, 150);
     },
     [prefetchWindowData]
