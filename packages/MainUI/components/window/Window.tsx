@@ -24,6 +24,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useRef } from "react";
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
