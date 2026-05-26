@@ -21,7 +21,6 @@ import { API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_ERP_PROXY, API_DATA
 import { LocationClient } from "./location";
 import { joinUrl } from "./utils";
 import type * as Etendo from "./types";
-import type { Menu } from "./types";
 
 export type { Etendo };
 
@@ -221,8 +220,8 @@ export class Metadata {
     return Metadata.cache.get<{ fields: Etendo.Column[] }>(Metadata.getTabCacheKey(tabId))?.fields ?? [];
   }
 
-  public static async getMenu(forceRefresh = false): Promise<Menu[]> {
-    const cached = Metadata.cache.get<Menu[]>("OBMenu");
+  public static async getMenu(forceRefresh = false): Promise<Etendo.Menu[]> {
+    const cached = Metadata.cache.get<Etendo.Menu[]>("OBMenu");
     const currentRoleId = localStorage.getItem("currentRoleId");
 
     if (!forceRefresh && cached && cached.length && currentRoleId === Metadata.currentRoleId) {
@@ -246,8 +245,8 @@ export class Metadata {
     await Metadata.getMenu(true);
   }
 
-  public static getCachedMenu(): Menu[] {
-    return Metadata.cache.get<Menu[]>("OBMenu") ?? [];
+  public static getCachedMenu(): Etendo.Menu[] {
+    return Metadata.cache.get<Etendo.Menu[]>("OBMenu") ?? [];
   }
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
