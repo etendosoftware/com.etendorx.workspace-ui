@@ -30,6 +30,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
+import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
@@ -70,6 +71,7 @@ import {
   BUTTON_REFERENCE_ID,
   PROCESS_TYPES,
   isPickAndExecute,
+  PICK_AND_EXECUTE_UI_PATTERN,
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
@@ -896,6 +898,17 @@ function ProcessDefinitionModalContent({
 
     loadProcessMetadata();
   }, [open, processId, button.processDefinition.parameters, type]);
+
+  // Report and Process subtype with uipattern = "Pick and Execute" is not implemented.
+  // Surface a warning and close the modal to avoid a broken render (no Window Reference
+  // parameter → empty grid + no Done payload).
+  useEffect(() => {
+    if (!open) return;
+    if (type !== PROCESS_TYPES.REPORT_AND_PROCESS) return;
+    if (processDefinition?.uIPattern !== PICK_AND_EXECUTE_UI_PATTERN) return;
+    toast.warning(t("process.pickAndExecuteNotImplemented"));
+    onClose();
+  }, [open, type, processDefinition?.uIPattern, t, onClose]);
 
   useEffect(() => {
     if (open) {
