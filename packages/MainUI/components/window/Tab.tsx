@@ -135,6 +135,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
   }, []);
 
+  const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
+  const { hasFormChanges } = useTabContext();
+  const { graph } = useSelected();
+
   // Zustand store — reactive subscriptions (re-render when these change)
   const reactiveTabFormState = useWindowStore((s) =>
     windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
@@ -147,9 +151,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     if (!parentTabId || !windowIdentifier) return undefined;
     return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
   });
-  const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
-  const { hasFormChanges } = useTabContext();
-  const { graph } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
   const token = useUserStore((s) => s.token);
   const selectedRecords = useSelectedRecords(tab);
