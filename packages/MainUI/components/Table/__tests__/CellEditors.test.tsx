@@ -476,7 +476,7 @@ describe("Cell Editor Components", () => {
     it("should render checked checkbox for true value", () => {
       const field = createMockField({ type: FieldType.BOOLEAN });
 
-      render(
+      const { container } = render(
         <BooleanCellEditor
           value={true}
           onChange={mockOnChange}
@@ -488,13 +488,13 @@ describe("Cell Editor Components", () => {
       );
 
       expect(screen.getByRole("checkbox")).toBeChecked();
-      expect(screen.getByText("Yes")).toBeInTheDocument();
+      expect(container.querySelector(".inline-edit-boolean-container svg")).toBeInTheDocument();
     });
 
     it("should render unchecked checkbox for false value", () => {
       const field = createMockField({ type: FieldType.BOOLEAN });
 
-      render(
+      const { container } = render(
         <BooleanCellEditor
           value={false}
           onChange={mockOnChange}
@@ -506,7 +506,7 @@ describe("Cell Editor Components", () => {
       );
 
       expect(screen.getByRole("checkbox")).not.toBeChecked();
-      expect(screen.getByText("No")).toBeInTheDocument();
+      expect(container.querySelector(".inline-edit-boolean-container svg")).not.toBeInTheDocument();
     });
 
     it("should handle string boolean values", () => {
