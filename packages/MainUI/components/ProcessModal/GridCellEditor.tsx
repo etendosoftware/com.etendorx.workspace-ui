@@ -473,7 +473,7 @@ const GridCellEditorBase = ({
             tooltip="Search"
             tooltipPosition="top"
             data-testid={`grid-cell-search-${col.columnName}`}>
-            <SearchIcon className="w-5 h-5 fill-current" />
+            <SearchIcon className="w-5 h-5 fill-current" data-testid="SearchIcon__618d78" />
           </IconButton>
         )}
       </div>
@@ -485,6 +485,7 @@ const GridCellEditorBase = ({
           onSelect={handleModalSelect}
           getValues={() => effectiveRecordValuesRef.current ?? {}}
           currentTab={tab ?? null}
+          data-testid="SelectorModal__618d78"
         />
       )}
     </div>
@@ -505,8 +506,7 @@ export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) =>
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
     prevProps.validationError === nextProps.validationError &&
-    prevProps.forceError === nextProps.forceError &&
-    // Bumped by field-interactions in the parent grid; forces re-render so the
+    prevProps.forceError === nextProps.forceError && // Bumped by field-interactions in the parent grid; forces re-render so the
     // sibling cell re-reads `row.original` after a mutually-exclusive zeroing.
     prevProps.siblingPatchVersion === nextProps.siblingPatchVersion
   );

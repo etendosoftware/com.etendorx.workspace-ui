@@ -1,9 +1,5 @@
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
-import {
-  buildEnableEditingPredicate,
-  isColumnEditable,
-  isPersistedRow,
-} from "../WindowReferenceGrid";
+import { buildEnableEditingPredicate, isColumnEditable, isPersistedRow } from "../WindowReferenceGrid";
 
 describe("isPersistedRow", () => {
   it("returns true when row.original.id is defined and truthy", () => {
@@ -38,9 +34,9 @@ describe("isColumnEditable", () => {
   });
 
   it("returns false when the matched field has READ_ONLY UI pattern", () => {
-    expect(
-      isColumnEditable({ accessorKey: "amount" }, [{ ...baseField, uIPattern: UIPattern.READ_ONLY }], {})
-    ).toBe(false);
+    expect(isColumnEditable({ accessorKey: "amount" }, [{ ...baseField, uIPattern: UIPattern.READ_ONLY }], {})).toBe(
+      false
+    );
   });
 
   it("returns false when the read-only map flags the column", () => {

@@ -131,7 +131,11 @@ export default function Login({ title, onSubmit }: LoginProps) {
             size="large"
             disabled={!username || !password || isLoading}
             data-testid="Button__602739">
-            {isLoading ? <Spinner size={20} color="inherit" /> : t("login.buttons.submit")}
+            {isLoading ? (
+              <Spinner size={20} color="inherit" data-testid="Spinner__602739" />
+            ) : (
+              t("login.buttons.submit")
+            )}
           </Button>
 
           <div className="relative flex items-center my-4">

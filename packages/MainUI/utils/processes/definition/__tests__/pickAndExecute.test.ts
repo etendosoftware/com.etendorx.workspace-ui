@@ -104,8 +104,7 @@ describe("allowsMultipleRecords", () => {
   });
 });
 
-const buildTab = (overrides: Partial<Tab> = {}): Tab =>
-  ({ ...overrides }) as Tab;
+const buildTab = (overrides: Partial<Tab> = {}): Tab => ({ ...overrides }) as Tab;
 
 describe("tabAllowsMultipleSelection", () => {
   it("returns true when obuiappSelectionType is 'M'", () => {

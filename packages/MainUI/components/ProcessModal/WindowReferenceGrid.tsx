@@ -609,7 +609,7 @@ export const renderActionsCell = ({ row, table, canDelete, onDelete, deleteRowLa
   const state = table.getState();
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
-    return <MRT_EditActionButtons row={row} table={table} variant="icon" />;
+    return <MRT_EditActionButtons row={row} table={table} variant="icon" data-testid="MRT_EditActionButtons__ce8544" />;
   }
   const lockedByOther = Boolean(state.creatingRow);
 
@@ -617,14 +617,14 @@ export const renderActionsCell = ({ row, table, canDelete, onDelete, deleteRowLa
     <div className="w-full flex justify-center">
       <div className="w-1/2 flex justify-between">
         {canDelete && (
-          <Tooltip title={deleteRowLabel}>
+          <Tooltip title={deleteRowLabel} data-testid="Tooltip__ce8544">
             <span>
               <IconButton
                 onClick={() => onDelete(row)}
                 aria-label={deleteRowLabel}
                 disabled={lockedByOther}
                 data-testid="WindowReferenceGrid__DeleteRowButton">
-                <TrashIcon className="h-4 w-4" />
+                <TrashIcon className="h-4 w-4" data-testid="TrashIcon__ce8544" />
               </IconButton>
             </span>
           </Tooltip>
@@ -2654,17 +2654,18 @@ export const GridTopToolbar = ({
       </div>
       <div className="flex items-center">
         {canAdd && (
-          <Tooltip title={addRowLabel}>
+          <Tooltip title={addRowLabel} data-testid="Tooltip__ce8544">
             <span>
               <IconButton onClick={handleAddRow} aria-label={addRowLabel} data-testid="GridTopToolbar__AddRowButton">
-                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className="h-4 w-4" data-testid="PlusIcon__ce8544" />
               </IconButton>
             </span>
           </Tooltip>
         )}
         {initialIsFilterApplied && (
           <Tooltip
-            title={t(effectiveImplicitFilter ? "table.tooltips.implicitFilterOn" : "table.tooltips.implicitFilterOff")}>
+            title={t(effectiveImplicitFilter ? "table.tooltips.implicitFilterOn" : "table.tooltips.implicitFilterOff")}
+            data-testid="Tooltip__ce8544">
             <span>
               <IconButton
                 onClick={() => setIsImplicitFilterApplied(false)}
@@ -2672,7 +2673,11 @@ export const GridTopToolbar = ({
                 size="small"
                 sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
                 data-testid="implicit-filter-button">
-                {effectiveImplicitFilter ? <FilterAlt fontSize="small" /> : <FilterAltOff fontSize="small" />}
+                {effectiveImplicitFilter ? (
+                  <FilterAlt fontSize="small" data-testid="FilterAlt__ce8544" />
+                ) : (
+                  <FilterAltOff fontSize="small" data-testid="FilterAltOff__ce8544" />
+                )}
               </IconButton>
             </span>
           </Tooltip>

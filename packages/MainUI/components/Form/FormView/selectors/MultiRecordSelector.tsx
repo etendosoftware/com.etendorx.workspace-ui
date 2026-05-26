@@ -107,7 +107,7 @@ const MultiRecordSelector = ({ field, isReadOnly = false }: MultiRecordSelectorP
             tooltip="Search"
             tooltipPosition="top"
             data-testid={`MultiRecordSelectorOpen__${field.id}`}>
-            <SearchIcon className="w-5 h-5 fill-current" />
+            <SearchIcon className="w-5 h-5 fill-current" data-testid={"SearchIcon__" + field.id} />
           </IconButton>
         )}
       </div>
@@ -121,6 +121,7 @@ const MultiRecordSelector = ({ field, isReadOnly = false }: MultiRecordSelectorP
           initialSelectedIds={initialSelectedIds}
           initialSelectedIdentifiersById={initialSelectedIdentifiersById}
           onMultiSelect={handleConfirm}
+          data-testid={"SelectorModal__" + field.id}
         />
       )}
     </>

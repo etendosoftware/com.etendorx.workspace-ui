@@ -213,9 +213,7 @@ describe("ProcessParameterMapper", () => {
     });
 
     it("should return 'multiselect' for textual 'MultiSelector' / 'Multi Selector'", () => {
-      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "MultiSelector" })).toBe(
-        "multiselect"
-      );
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "MultiSelector" })).toBe("multiselect");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Multi Selector" })).toBe(
         "multiselect"
       );

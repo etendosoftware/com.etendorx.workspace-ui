@@ -1,7 +1,7 @@
 # Pick and Execute (P&E) — Complete Implementation Reference
 
 > **Branch**: `feature/ETP-3751` (target: `epic/ETP-3931`)
-> **Last updated**: 2026-05-20
+> **Last updated**: 2026-05-26
 > **Status**: Feature complete. This document is the authoritative reference for how Pick and Execute works in the new Next.js UI. Read top-to-bottom, it should answer: what is P&E, where does each piece live, what decisions were taken at each layer, and why.
 
 ---
@@ -24,6 +24,11 @@ The implementation reproduces P&E in the new UI with these capabilities:
 10. **Field groups with collapsible sections** — parameters are bucketed by `AD_FieldGroup`; sections honor `AD_FieldGroup.IsCollapsed`.
 11. **Declarative cell-edit reactions** — payscripts declare mutually-exclusive column pairs; the grid zeroes the sibling synchronously, no script round-trip.
 12. **Implicit-filter toggle, auto-select from onLoad, structured `responseActions`** — all wired.
+13. **Multi-record selector parameter** — process parameters typed as `OBUISEL_Multi Selector` render as a chip strip plus a search button; the search opens `SelectorModal` in multi-select mode with checkboxes, pre-populated from the form's CSV value, and confirms a Classic-compatible `"id1,id2,..."` plus `"Label 1, Label 2, ..."` round-trip on the form.
+14. **Cascading process-modal selectors** — tabledir parameters inside a Process Definition modal carry the full form-values snapshot (re-keyed by `dBColumnName`) plus `_processDefinitionId`, `_selectorFieldId`, `_org` / `inpadOrgId` on every datasource fetch, so a dropdown that depends on another parameter live-refilters as soon as the dependency changes.
+15. **Server-gated success banner** — a `keepOpen` response only paints the in-modal success banner when the server emitted text via `responseActions[].showMsgInProcessView`. Silent responses stay silent — matches Classic's behavior on actions like *Search* that only refresh the grid.
+16. **Self-hiding Actions column** — the right-side `mrt-row-actions` column only appears when at least one row would actually paint a button (locally-added row OR `canDelete = true` with a non-empty record set); the previously-empty Actions header is gone.
+17. **Unsupported subtype guard** — opening a classic `ad_process` whose `uIPattern = "OBUIAPP_PickAndExecute"` triggers a warning toast and closes the modal. The classic P&E shape is intentionally **not** implemented in the new UI (the supported shape is the modern `obuiapp_process` flavor); the guard prevents a broken render against productive databases that ever migrate one.
 
 The two halves of the implementation live in:
 
@@ -138,6 +143,14 @@ Emits `fieldGroupCollapsed: true/false` when the parameter belongs to an `AD_Fie
 
 Unchanged from the previous epic. `FULL_TRANSLATABLE` already serializes every column of `OBUIAPP_PROCESS` including `uIPattern`, `isMultiRecord`, and `etmetaPayscriptLogic`. The new test `ProcessDefinitionBuilderPickAndExecuteTest` locks the contract.
 
+### 3.7 `ParameterBuilder` — multi-selector inclusion
+
+`addSelectorInfo` was extended to recognize parameters whose reference id matches `MULTI_SELECTOR_REFERENCE_ID = "87E6CFF8F71548AFA33F181C317970B5"` (the OBUISEL_Multi Selector reference, also exported on `Constants`) and emit the same `selector` JSON block that standard selectors carry: `datasourceName`, `valueField`, `displayField`, `gridColumns`, `defaultFilters`.
+
+**Why**: a Process Definition exposes its parameters in a single shot of metadata. Without this branch, a multi-selector parameter would arrive with `parameter.selector === undefined`, leaving the client with no datasource id, no display field, and no grid columns to drive the picker. The classic `OBSelectorItem` resolves these lazily on first open; the new UI has no equivalent lazy path, so the adapter ships everything the picker needs in the original payload.
+
+This is the backend half of the multi-record selector capability (§7.4 on the client side).
+
 ---
 
 ## 4. API Client Type Surface
@@ -160,7 +173,14 @@ Unchanged from the previous epic. `FULL_TRANSLATABLE` already serializes every c
 | `ProcessParameter` | `fieldGroup?: string` | `OBUIAPP_PARAMETER.AD_FIELDGROUP_ID` | Section grouping |
 | `ProcessParameter` | `fieldGroup$_identifier?: string` | derived | Section display name |
 | `ProcessParameter` | `fieldGroupCollapsed?: boolean` | `AD_FIELDGROUP.IsCollapsed` | Initial section state |
+| `ProcessParameter` | `selector?: SelectorInfo` | adapter emits for `OBUISEL_Multi Selector` | Datasource + columns for multi-record picker |
 | `Session.attributes` | `Record<string, string>` | `DimensionDisplayUtility` | Acct-dim context for expressions |
+
+The client also keeps a small registry of reference codes consumed by `ProcessParameterMapper` to route parameters to renderers. The multi-record entry was added alongside the rest:
+
+| Constant | Value | Renderer |
+|---|---|---|
+| `FIELD_REFERENCE_CODES.MULTI_SELECTOR.id` | `"87E6CFF8F71548AFA33F181C317970B5"` | `MultiRecordSelector` (chip strip + `SelectorModal` in multi-select mode) |
 
 ---
 
@@ -251,6 +271,44 @@ Uncontrolled component (its own file under `components/ProcessModal/components/`
 3. Groups via `groupProcessParametersByFieldGroup`.
 4. For each group, splits members into `scalars` (rendered in a 3-column grid via `ProcessParameterSelector`) and `windowRefs` (rendered stacked, full-width, via `WindowReferenceGrid`).
 5. `_main` is rendered as a plain `<div>`; named groups are wrapped in `CollapsibleSection`.
+
+### 7.4 Multi-record selector parameter
+
+Some process definitions (for example *Not Posted Documents*, parameter `accounting_status`) ship parameters typed as the `OBUISEL_Multi Selector` reference. These are **not** rendered through the normal tabledir / single-select selectors — they need a chip-based picker that opens a modal with a checkbox column and a `Confirm` button. The pipeline:
+
+**Mapper resolution** — `ProcessParameterMapper`:
+- Registers `"MultiSelector"` / `"Multi Selector"` as selector-like reference names (so the mapper's selector detection short-circuits to `selector` field type).
+- Returns `"multiselect"` from `getFieldType()` as soon as `parameter.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id`. The branch is intentionally above the generic `parameter.selector?.datasourceName` fallback because the multi-selector also has a `datasourceName` — without the early return it would route to `TableDirSelector` (single-record) instead of `MultiRecordSelector`.
+- Also indexed in the inverse `FIELD_REFERENCE_TO_TYPE` map so re-lookups (e.g. cell-editor type resolution) are symmetric.
+
+**Renderer** — `MultiRecordSelector` (under `components/Form/FormView/selectors/`):
+- Reads the form pair `field.hqlName` (CSV of IDs) and `field.hqlName$_identifier` (CSV of human-readable labels) and renders one MUI `Chip` per item. Each chip has a delete button (when not read-only) that calls back through `setValue` to persist the shorter selection on both keys.
+- Exposes a search `IconButton` that opens `SelectorModal` in **multi-select mode** (see below). On confirm, the chip set is rebuilt and persisted as `"id1,id2,id3"` / `"Label 1, Label 2, Label 3"` — Classic-compatible because the same encoding is what `OBMultiSelectorItem` serializes server-side.
+- When `field.hqlName$_identifier` is missing (e.g. process defaults hydrate only the IDs), chips fall back to the raw ID as label so the picker never crashes; lazy identifier resolution is deliberately out of scope.
+
+**`SelectorModal` multi-select mode** — the same modal already used for the in-grid lupa now accepts:
+
+| Prop | Effect |
+|---|---|
+| `multiSelect = true` | Switches MRT to multi-row selection; row click toggles selection (no auto-close); footer renders `Cancel` / `Confirm` buttons. |
+| `initialSelectedIds: string[]` | Seeds `MRT_RowSelectionState` so the modal opens with prior selections checked. |
+| `initialSelectedIdentifiersById: Record<string, string>` | Lets `handleConfirmMultiSelect` synthesize `{ id, _identifier }` stubs for IDs the user kept selected but never scrolled into the loaded page. Without this, confirming a long pre-existing selection would lose the human-readable labels for any record not in the current page. |
+| `onMultiSelect: (records: EntityData[]) => void` | Receives the merged selection (loaded rows + synthesized stubs) on confirm. |
+
+The modal also handles selector definitions that ship without any `OBUISEL_SELECTOR_FIELD` rows: when `selector.gridColumns` is empty, it synthesizes a single fallback column on `_identifier` so the user can still pick rows (otherwise only the checkbox column would render, leaving the chooser blank).
+
+**Defaults handling** — `evaluateParameterDefaults` skips any parameter whose reference is `MULTI_SELECTOR`. Some processes carry legacy `defaultValue` expressions like `"N"` / `"Y"` (scalar literals) on multi-selector parameters; Classic's `OBMultiSelectorItem` silently drops such values, and so does the new UI — the picker opens empty, as expected.
+
+**CSV ↔ array bridging at submit** — Classic's `OBPickAndExecuteDataSource` reads multi-selector values as repeated `key=value` form-encoded params (`accounting_status=id1&accounting_status=id2&...`) to drive its `IN (...)` filter. The form stores the same data as a single CSV string. The conversion happens in two places:
+
+1. `applyMergedParam` (in `utils/processes/definition/utils.ts`) — when the value is a string and the matching parameter's reference is `MULTI_SELECTOR`, it splits on `","` and assigns `options[outKey] = string[]`. Empty IDs are filtered out so a stray trailing comma never becomes `accounting_status=`.
+2. `Datasource.createFormData` (in `api-client/src/api/datasource.ts`) — arrays are passed through as arrays (no `Array.join(",")` collapse). The Next.js proxy serializes them as repeated form-urlencoded keys, which is exactly what Classic expects.
+
+The earlier behavior joined arrays into a CSV at the API client layer, which collapsed N values into a single param the backend couldn't decode. The fix is intentionally narrow (only arrays, only at format time) so single-value selectors are unaffected.
+
+**Parameter map lookup hardening** — `applyMergedParam` also accepts form keys shaped as either the parameter's display `name` ("Accounting Status") or its `dBColumnName` ("accounting_status"). Real metadata typically keys the `parameters` map by `dBColumnName`, while tests/legacy callers used display names; the unified lookup tries the direct map index first, then falls back to scanning by either property. Without this, `accounting_status`-keyed form values silently never reach the request payload.
+
+The CSV format and pipeline are unit-tested in `multiSelectorCsv.test.ts`, the mapper branch in `ProcessParameterMapper.test.ts`, and the array-preservation invariant in `utils.test.ts` (sub-suite around `applyMergedParam`).
 
 ---
 
@@ -525,6 +583,17 @@ The previously-existing `handleSaveRow` was removed entirely — MRT's per-row s
 
 **Action column sizing** — `displayColumnDefOptions["mrt-row-actions"]` fixes the column at `100px` non-resizable so the trash + creating-row chrome don't reflow.
 
+**Conditional rendering** — the Actions column is only rendered when at least one row would actually paint a button. Two cases drive it (both pre-computed before building `tableOptions`):
+
+- `hasLocallyAddedRow` — any `records[i]._locallyAdded === true`. Drives the trash icon on confirmed local rows.
+- `hasAnyDeletableRow` — `canDelete && records.length > 0`. Drives the trash icon on remote rows.
+
+`hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow` is passed to both `enableRowActions` and the `renderRowActions` factory. When false, MRT skips the column entirely — no empty header, no padding.
+
+The companion change is on `enableEditing`. The previous implementation always passed a callback, which made MRT reserve the Actions column header even when `canAdd = false` (because MRT inserts the column to host edit buttons whenever editing is conceivably possible). The new code passes a literal `false` when `canAdd = false`, suppressing the column header outright. When `canAdd = true`, the predicate is built by `buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap)` — extracted to a pure module-level helper that delegates per-column to the also-exported `isColumnEditable(col, fields, fieldReadOnlyMap)`. `isPersistedRow(row) → false` still gates first, so persisted rows can never enter edit-mode.
+
+The extraction matters for testability: previously the editable-predicate logic was nested inline and untestable; the helpers are now covered by `WindowReferenceGrid.actionsColumn.test.ts`.
+
 ### 8.12 Mandatory validation for creating rows
 
 Two utilities in `components/ProcessModal/utils/validateMandatoryFields.ts`:
@@ -729,6 +798,54 @@ The Add Payment script (`AddPaymentRulesClean.js`) ships:
 
 `getAllGridRows` accepts both DB and HQL field shapes (`received_in`, `receivedIn`) because `GridCellEditor` writes both — the script reads `row.received_in ?? row.receivedIn ?? 0` to be shape-agnostic.
 
+### 9.6 Cascading process-modal selectors
+
+Inside a Process Definition modal, a `tabledir` parameter frequently depends on the values of other parameters. *Etendo Payment Execution*'s **Financial Account** filters by **Payment Method**; **Add Payment**'s **Receiver Account** filters by **Business Partner**. In Classic Etendo, `OBSelectorItem.prepareDSRequest` injects the full form's raw values plus a small block of meta keys into every datasource fetch the dropdown makes, so the server-side `SelectorDataSourceFilter` can resolve the parameter's validation rule (HQL with `@placeholder@`s).
+
+The new UI reproduces this with a dedicated context type and a build helper that overlays the request body:
+
+```ts
+// hooks/types.ts
+export interface ProcessSelectorContext {
+  processId: string;
+  values: Record<string, EntityValue>;  // raw form values, keyed by dBColumnName
+}
+```
+
+**Construction** — `ProcessParameterSelector` builds the context lazily via `mapValuesByDBColumnName(values, parameters)` before passing it down to `TableDirSelector` and from there into `useTableDirDatasource`. The remap is necessary because react-hook-form registers each parameter under `field.hqlName` (which `ProcessParameterMapper` sets to the parameter's *display name* — "Payment Method") while Classic's payload uses the raw `dBColumnName` (`payment_method`). The helper iterates the `parameters` map and writes each entry's value under its `dBColumnName`; entries with no `dBColumnName` or `undefined` values are skipped (matches Classic's behavior of omitting unset params).
+
+The context is created with `useMemo` and returns `undefined` when `processId` is not provided, so the standard-window tabledir path is never touched.
+
+**Application** — `useTableDirDatasource.body` runs every prior transform first (HQL placeholder resolution, parent-form inheritance, field mappings) and then, when `isProcessModal && processContext`, merges the result of `buildProcessSelectorOverlay(field, processContext)`. The overlay carries:
+
+| Key | Source | Why |
+|---|---|---|
+| `...values` (raw `dBColumnName` keys, e.g. `payment_method`, `received_in`) | the context's `values` map | server-side filter HQL reads them via `OB.getParameters().get('<dbColumnName>')` |
+| `_processDefinitionId` | `processContext.processId` | resolves the selector's validation rule to the right process row |
+| `_selectorFieldId` | `field.id` | disambiguates which selector inside the process is being fetched |
+| `columnName` | `field.columnName \|\| field.hqlName \|\| field.name` | server expects the raw `dBColumnName` of the parameter being fetched |
+| `IsSelectorItem: true` | constant | signals to Classic that this is a selector-item call, not a generic list fetch |
+| `_org`, `inpadOrgId` | `values.ad_org_id` if non-empty | needed by org-scoped HQL placeholders; omitted entirely when the form has no `ad_org_id` yet |
+
+The overlay is applied **last**, after every other transform, so its raw keys overwrite any empty fallbacks the standard pipeline produced. The implementation is exported (`buildProcessSelectorOverlay`) and covered by `buildProcessSelectorOverlay.test.ts` and `useTableDirDatasource.processContext.test.ts`.
+
+**End-to-end consequence**: editing *Payment Method* in *Etendo Payment Execution* causes the *Financial Account* dropdown to refetch with the new `payment_method` value in its body, so the second dropdown live-refilters without the user opening it. No manual refresh, no stale options.
+
+### 9.7 Unsupported subtype guard (`ad_process` × Pick and Execute)
+
+In the ERP, two distinct model rows can carry `uIPattern = "OBUIAPP_PickAndExecute"`:
+
+1. `obuiapp_process` (modern Process Definition) — the supported shape. `WindowReferenceGrid` + `ProcessDefinitionModal` handle it.
+2. `ad_process` (classic Report and Process) — the classic shape. **Intentionally not implemented** in the new UI: this branch lacks the Window Reference parameter the modal needs to render a grid, lacks the Done payload contract, and is not used by any process in the supported product. See `pick-and-execute-testing.md:20-22` for the explicit scope statement.
+
+Productive customer databases or third-party modules can create such a row, in which case the modal would attempt to render a P&E layout against missing metadata and break silently. The guard detects this combination at metadata-arrival time and surfaces a `toast.warning(t("process.pickAndExecuteNotImplemented"))` plus `onClose()`. The effect: a yellow toast appears in the corner ("This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support."), the modal closes before any broken render is visible, and the user is unambiguously told to escalate.
+
+**Why client-side, not in `menuItemDispatch.ts`** — the menu item only carries `type`. The `uIPattern` only arrives after the modal POSTs `meta/report-and-process/{id}`, so the only place the guard can fire is after `processDefinition` is hydrated.
+
+**Why both predicates are required** — `type !== PROCESS_TYPES.REPORT_AND_PROCESS` is the load-bearing guard. Without it, the toast would also fire on the modern `obuiapp_process` flavor that IS supported (since both share the same `uIPattern`).
+
+The implementation lives in a single `useEffect` inside `ProcessDefinitionModal`, dependency-tracked on `[open, type, processDefinition?.uIPattern, t, onClose]`. The translation keys are in `en.ts` / `es.ts` under `process.pickAndExecuteNotImplemented`.
+
 ---
 
 ## 10. Execution Pipeline (`useProcessExecution`)
@@ -768,6 +885,18 @@ Normalizes the `responseActions[]` array from Etendo Classic handlers. Supported
 | `true` | `true` | Stays open | Refreshes |
 | `false` | `true` | Stays open | No refresh |
 
+### 10.4 Success banner — server-gated rendering
+
+When the modal stays open after a retry-style response (`keepOpen && success`), `ProcessDefinitionModal` may paint an in-modal success banner via `<ToastContent>`. Whether it paints is decided by `buildSuccessBannerMessage(data, isHtmlHint)` in `utils/responseBanner.ts`:
+
+- Reads the candidate message via `readBannerRawMessage(data)`, which looks at the three shapes the handler may emit: a bare string, an object with `msgText`, or an object with `message`.
+- Returns `null` if no server-side message is present. The banner is **skipped entirely** in that case (no fallback message, no rendering).
+- Returns `{ msgText, isHtml }` otherwise. `isHtml` is `true` if either the caller passed `isHtml = true` OR the message contains an HTML tag (the regex `/<[a-z][\s\S]*>/i` is preserved from the previous render code so the rendering behavior is byte-equal for messages that paint).
+
+The earlier behavior fell back to `t("process.completedSuccessfully")` when the server sent nothing, which made every keep-open response paint a banner — wrong on actions like *Search* that intentionally update the grid silently. The current behavior matches Classic: the banner is the server's opt-in, not the client's default.
+
+`responseBanner.test.ts` covers all three input shapes plus the silent-skip invariant.
+
 ---
 
 ## 11. Tests
@@ -801,6 +930,19 @@ Normalizes the `responseActions[]` array from Etendo Classic handlers. Supported
 | `hooks/__tests__/useDatasource.test.ts` | `refetchKey` warmup → narrow-key transition; skip branch doesn't flip `hasFirstFetchCompleted` |
 | `__tests__/payscript/addPaymentIntegration.test.ts` | End-to-end payscript: `getAllGridRows`, GL Items contribution, overpayment action |
 | `payscript/engine/__tests__/LogicEngine.test.ts` | `resolveMutualExclusion`; `getAllGridRows` vs `getGridItems` |
+| `components/Form/FormView/selectors/__tests__/MultiRecordSelector.test.tsx` | Chip rendering from CSV; remove; round-trip on confirm |
+| `components/Form/FormView/selectors/__tests__/SelectorModal.multi.test.tsx` | `multiSelect` mode footer; `initialSelectedIds` seeding; stub synthesis for unloaded IDs |
+| `components/Form/FormView/selectors/__tests__/SelectorModal.test.tsx` | Fallback `_identifier` column when `selector.gridColumns` is empty |
+| `components/ProcessModal/mappers/__tests__/ProcessParameterMapper.test.ts` | `multiselect` field-type branch; reference round-trip |
+| `utils/form/selectors/__tests__/multiSelectorCsv.test.ts` | `parseCsvIds` / `parseCsvIdentifiers` / `toCsv` / `toCsvIdentifiers` round-trip |
+| `utils/processes/definition/__tests__/utils.test.ts` | `applyMergedParam` direct-map lookup; multi-selector CSV → array conversion |
+| `utils/process/__tests__/evaluateParameterDefaults.test.ts` | Multi-selector defaults skip (legacy `"N"` literal dropped) |
+| `components/ProcessModal/selectors/__tests__/mapValuesByDBColumnName.test.ts` | Display-name → `dBColumnName` remap; missing-param skip |
+| `components/ProcessModal/hooks/__tests__/buildProcessSelectorOverlay.test.ts` | Overlay meta keys; `_org` / `inpadOrgId` conditional emit |
+| `hooks/datasource/__tests__/useTableDirDatasource.processContext.test.ts` | Overlay is applied last; standard path unaffected when `processContext` is `undefined` |
+| `components/ProcessModal/__tests__/WindowReferenceGrid.actionsColumn.test.ts` | `buildEnableEditingPredicate`, `isColumnEditable`; column auto-hide |
+| `components/ProcessModal/utils/__tests__/responseBanner.test.ts` | All input shapes; silent-skip; HTML detection |
+| `components/Form/FormView/selectors/__tests__/TableDirSelector.processModal.test.tsx` | Process-modal cascade end-to-end |
 
 Run with `pnpm test:mainui` from the repo root.
 
@@ -812,7 +954,7 @@ Run with `pnpm test:mainui` from the repo root.
 | `MenuBuilderTest.java` | `windowType` for P&E + Maintain windows |
 | `WindowBuilderTest.java` | `windowType` passthrough |
 | `TabBuilderTest.java` | `obuiappCanAdd` explicit emit |
-| `ParameterBuilderTest.java` | `fieldGroupCollapsed` from `AD_FieldGroup.IsCollapsed` |
+| `ParameterBuilderTest.java` | `fieldGroupCollapsed` from `AD_FieldGroup.IsCollapsed`; multi-selector `selector` JSON emission |
 | `FieldBuilderWithColumnTest.java` | `gridDisplayLogicExpression` from `displaylogicgrid` (present / null / blank) |
 | `SessionBuilderTest.java` | `attributes` map from `DimensionDisplayUtility` |
 
@@ -834,6 +976,9 @@ packages/MainUI/components/ProcessModal/utils/generateLocalRecordId.ts
 packages/MainUI/components/ProcessModal/utils/validateMandatoryFields.ts
 packages/MainUI/components/ProcessModal/components/CollapsibleSection.tsx
 packages/MainUI/components/ProcessModal/WindowReferenceGridContext.tsx
+packages/MainUI/components/ProcessModal/utils/responseBanner.ts
+packages/MainUI/components/Form/FormView/selectors/MultiRecordSelector.tsx
+packages/MainUI/utils/form/selectors/multiSelectorCsv.ts
 plus the matching __tests__ files
 docs/process/process-definition/add-payment/features-on-js.md
 ```
@@ -842,11 +987,17 @@ docs/process/process-definition/add-payment/features-on-js.md
 
 ```
 packages/api-client/src/api/types.ts                                   UIPattern / WindowType / Tab / ProcessDefinition / ProcessParameter / Field
-packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx     field groups, parameter pipeline, `values` prop wiring
-packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx        the bulk of the implementation (see §8)
+packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx     field groups, parameter pipeline, `values` prop wiring, banner gating, unsupported-subtype guard
+packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx        the bulk of the implementation (see §8); Actions-column gating + extracted `buildEnableEditingPredicate` / `isColumnEditable`
 packages/MainUI/components/ProcessModal/GridCellEditor.tsx             search modal, dual-key writes, default-filters cache, border-only errors
 packages/MainUI/components/ProcessModal/WindowReferenceGridContext.tsx createRowErrors, clearCellError, siblingPatchVersion, tab
 packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts   response parsing extraction, refresh flags
+packages/MainUI/components/ProcessModal/mappers/ProcessParameterMapper.ts  multi-selector reference + `"multiselect"` field type
+packages/MainUI/components/ProcessModal/selectors/ProcessParameterSelector.tsx  multi-selector branch + `processContext` plumbing (`mapValuesByDBColumnName`)
+packages/MainUI/components/Form/FormView/selectors/SelectorModal.tsx   multi-select mode (footer, `initialSelectedIds`, stub synthesis, fallback `_identifier` column)
+packages/MainUI/components/Form/FormView/selectors/TableDirSelector.tsx  `processContext` prop forwarding
+packages/MainUI/components/Form/FormView/selectors/GenericSelector.tsx    multi-selector type dispatch
+packages/MainUI/components/Form/FormView/selectors/BaseSelector.tsx       inline change for multi-selector compatibility
 packages/MainUI/components/Sidebar.tsx                                 menu-dispatch refactor
 packages/MainUI/components/Table/CellEditors/BooleanCellEditor.tsx     onChange signature alignment
 packages/MainUI/components/Table/CellEditors/CellEditorFactory.tsx     selector integration
@@ -855,9 +1006,15 @@ packages/MainUI/components/Table/CellEditors/TableDirCellEditor.tsx    inline be
 packages/MainUI/components/Table/CellEditors/NumericCellEditor.tsx     hasError border, `0` handling
 packages/MainUI/components/Table/EmptyState.tsx                        containerStyle prop
 packages/MainUI/hooks/useDatasource.ts                                 refetchKey, hasFirstFetchCompleted
+packages/MainUI/hooks/datasource/useTableDirDatasource.ts              `processContext`, `buildProcessSelectorOverlay`
+packages/MainUI/hooks/types.ts                                         `ProcessSelectorContext` type
+packages/MainUI/utils/processes/definition/utils.ts                    `applyMergedParam` direct map lookup; multi-selector CSV → array
+packages/MainUI/utils/process/evaluateParameterDefaults.ts             skip defaults for multi-selector parameters
+packages/MainUI/utils/form/constants.ts                                `FIELD_REFERENCE_CODES.MULTI_SELECTOR`
+packages/api-client/src/api/datasource.ts                              preserve arrays as-is in `createFormData` (repeated-key encoding)
 packages/MainUI/payscript/engine/LogicEngine.ts                        FieldInteractionsConfig, resolveMutualExclusion, getAllGridRows
 packages/MainUI/payscript/rules/AddPaymentRulesClean.js                fieldInteractions + GL Items aggregation
-packages/ComponentLibrary/src/locales/en.ts / es.ts                    addRow / deleteRow translations
+packages/ComponentLibrary/src/locales/en.ts / es.ts                    addRow / deleteRow translations + `process.pickAndExecuteNotImplemented`
 ```
 
 ### Adapter — new / modified files
@@ -865,10 +1022,10 @@ packages/ComponentLibrary/src/locales/en.ts / es.ts                    addRow / 
 ```
 src/com/etendoerp/metadata/builders/MenuBuilder.java                  addWindowType
 src/com/etendoerp/metadata/builders/TabBuilder.java                   obuiappCanAdd explicit
-src/com/etendoerp/metadata/builders/ParameterBuilder.java             addFieldGroupCollapsed
+src/com/etendoerp/metadata/builders/ParameterBuilder.java             addFieldGroupCollapsed + multi-selector `selector` JSON emission
 src/com/etendoerp/metadata/builders/FieldBuilder.java                 addGridDisplayLogic
 src/com/etendoerp/metadata/builders/SessionBuilder.java               buildAcctDimensionSessionAttributes
-src/com/etendoerp/metadata/utils/Constants.java                       JSON_WINDOW_TYPE_KEY
+src/com/etendoerp/metadata/utils/Constants.java                       JSON_WINDOW_TYPE_KEY + MULTI_SELECTOR_REFERENCE_ID
 src-test/...                                                          coverage for each of the above
 ```
 
@@ -882,6 +1039,8 @@ src-test/...                                                          coverage f
 4. **Cell-error UX**: validation errors render as border-only (no text below the input). A richer indicator (tooltip / aggregated panel) is the next iteration.
 5. **`getAllGridRows` shape coverage**: scripts must read both DB and HQL key shapes (`received_in ?? receivedIn`) because the editor writes both. Once every script in the codebase migrates to a helper that does the fallback internally, scripts can stop dual-reading.
 6. **Race condition in `useDatasource.refetchKey` warmup**: the design assumes `onLoad`-driven form mutations complete before the first datasource fetch returns. If on a slow connection the fetch resolves first, the narrow `refetchKey` locks in too early and the next param-set change wouldn't refetch. The current design hasn't reproduced this in practice; the fallback would be to latch on first user interaction instead of first fetch.
+7. **Multi-record selector — lazy identifier resolution**: when a process loads with pre-existing IDs but no `$_identifier` CSV, `MultiRecordSelector` falls back to displaying the raw ID as the chip label. Resolving identifiers lazily via the datasource (the way the cell-selector caches `defaultFilters`) is deferred until a real process needs it.
+8. **Unsupported subtype guard — second-level menu trigger**: the guard fires when the modal mounts, which is correct for menu-driven entry. A button-driven entry that re-uses the same `processDefinition` will also re-trigger the toast on every modal mount; this is intentional today (errs on the side of visibility) and can be debounced once a real case demonstrates the need.
 
 ---
 
@@ -914,3 +1073,12 @@ src-test/...                                                          coverage f
 | **`refetchKey`** | Narrow string fed into `useDatasource` to govern when the hook fires a new request. Decouples fetch triggers from request-body content. |
 | **`hasFirstFetchCompleted`** | Internal `useDatasource` flag. While false, the hook hashes the full `params` so initialization mutations re-trigger the pending fetch and the first request body is complete. |
 | **CT-AD-2 / CT-AD-3** | Internal acceptance criteria IDs for single-record clamping and multi-grid isolation. |
+| **Multi-record selector (`MULTI_SELECTOR`)** | Process parameter typed as the `OBUISEL_Multi Selector` reference (`87E6CFF8F71548AFA33F181C317970B5`). Renders as a chip strip + search button; the search opens `SelectorModal` in multi-select mode. Form storage is CSV-of-IDs + CSV-of-identifiers (Classic-compatible). |
+| **`SelectorModal` multi-select mode** | The shared selector modal extended to render a checkbox column, a `Cancel`/`Confirm` footer, and to synthesize `{id, _identifier}` stubs for pre-selected IDs whose rows are not in the currently loaded page. Activated via `multiSelect = true`. |
+| **`ProcessSelectorContext`** | `{ processId, values: Record<dBColumnName, EntityValue> }`. Threaded from `ProcessDefinitionModal` down through `ProcessParameterSelector` → `TableDirSelector` → `useTableDirDatasource` so cascading dropdowns can build their fetch with the same context Classic's `OBSelectorItem.prepareDSRequest` emits. |
+| **`mapValuesByDBColumnName`** | Pure helper that re-keys a form-values map (whose keys are parameter display names — `"Payment Method"`) into a `dBColumnName`-keyed map (`"payment_method"`). Skips entries with no `dBColumnName` or `undefined` value. |
+| **`buildProcessSelectorOverlay`** | Pure helper that produces the request-body overlay applied last in `useTableDirDatasource.body`: raw `dBColumnName` keys plus `_processDefinitionId`, `_selectorFieldId`, `columnName`, `IsSelectorItem`, and conditional `_org` / `inpadOrgId`. |
+| **`buildSuccessBannerMessage`** | Helper in `utils/responseBanner.ts` that returns `{msgText, isHtml}` only when the server emitted a message via `showMsgInProcessView`; returns `null` to suppress the banner on silent keep-open responses. |
+| **`buildEnableEditingPredicate` / `isColumnEditable`** | Pure module-level helpers that decide whether MRT's `enableEditing` should return `true` for a given row. Extracted from `WindowReferenceGrid` for testability. |
+| **`hasAnyActionableRow`** | `hasLocallyAddedRow || (canDelete && records.length > 0)`. Drives whether the right-side Actions column renders at all; when false, MRT omits the column entirely (no empty header). |
+| **Unsupported subtype guard** | A `useEffect` inside `ProcessDefinitionModal` that fires `toast.warning` + `onClose()` when an `ad_process` (Report and Process) is opened with `uIPattern = "OBUIAPP_PickAndExecute"`. The classic P&E shape is not implemented in the new UI; the guard prevents a broken render in productive databases that might host one. |

@@ -33,10 +33,10 @@ const buildField = (overrides: Partial<Field> = {}): Field =>
     id: "F1",
     sequenceNumber: 1,
     ...overrides,
-  } as Field);
+  }) as Field;
 
 const buildRow = (id: string, data: Record<string, unknown> = {}): EntityData =>
-  ({ id, ...data } as unknown as EntityData);
+  ({ id, ...data }) as unknown as EntityData;
 
 describe("useGridRowValidation (single grid)", () => {
   it("reports no invalid selection when nothing is selected", () => {

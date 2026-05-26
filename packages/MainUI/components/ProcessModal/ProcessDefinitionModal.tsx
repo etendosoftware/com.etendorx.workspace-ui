@@ -234,12 +234,9 @@ function ProcessDefinitionModalContent({
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
   const [gridRefreshKeysByGrid, setGridRefreshKeysByGrid] = useState<Record<string, number>>({});
 
-  const setGridRefreshKeyForGrid = useCallback(
-    (gridName: string) => {
-      setGridRefreshKeysByGrid((prev) => ({ ...prev, [gridName]: (prev[gridName] ?? 0) + 1 }));
-    },
-    []
-  );
+  const setGridRefreshKeyForGrid = useCallback((gridName: string) => {
+    setGridRefreshKeysByGrid((prev) => ({ ...prev, [gridName]: (prev[gridName] ?? 0) + 1 }));
+  }, []);
 
   // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
@@ -1128,10 +1125,7 @@ function ProcessDefinitionModalContent({
     []
   );
 
-  const resolveGroupTitle = useCallback(
-    (group: ProcessParameterGroup): string => group.identifier,
-    []
-  );
+  const resolveGroupTitle = useCallback((group: ProcessParameterGroup): string => group.identifier, []);
 
   const isParameterRenderable = useCallback(
     (parameter: ProcessParameter): boolean => {

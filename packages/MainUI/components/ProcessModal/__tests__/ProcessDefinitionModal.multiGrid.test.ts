@@ -30,7 +30,7 @@ import type { GridSelectionStructure } from "../ProcessDefinitionModal";
 import { useGridRowValidation } from "../hooks/useGridRowValidation";
 
 const buildRow = (id: string, data: Record<string, unknown> = {}): EntityData =>
-  ({ id, ...data } as unknown as EntityData);
+  ({ id, ...data }) as unknown as EntityData;
 
 // Simulates the multi-key gridSelection state that ProcessDefinitionModal maintains.
 // Each key is the dBColumnName of one Window Reference parameter.

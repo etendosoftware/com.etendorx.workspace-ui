@@ -20,7 +20,7 @@
 import { useCallback } from "react";
 import Image from "next/image";
 import { useStyle, TEXT_LOGO } from "./styles";
-import BackgroundImage from '@workspaceui/componentlibrary/src/assets/images/backgroundGradient.svg';
+import BackgroundImage from "@workspaceui/componentlibrary/src/assets/images/backgroundGradient.svg";
 import LogoutIcon from "@workspaceui/componentlibrary/src/assets/icons/log-out.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { UserProfileProps } from "./types";
@@ -36,7 +36,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-[9.5rem]">
-      <BackgroundImage className={"absolute h-[9.5rem]"} alt="Background Gradient"/>
+      <BackgroundImage
+        className={"absolute h-[9.5rem]"}
+        alt="Background Gradient"
+        data-testid="BackgroundImage__d71b83"
+      />
       <div className="top-4 right-4 z-10 absolute">
         <IconButton
           tooltip="Log out"

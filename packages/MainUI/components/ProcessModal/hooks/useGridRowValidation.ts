@@ -63,10 +63,7 @@ const collectMandatoryFields = (fields: Record<string, Field> | undefined): Fiel
  * by feeding `compileExpression` + `createSmartContext` per row — same pattern
  * used by {@link useDisplayLogic}.
  */
-const validateGrid = (
-  grid: GridValidationInput,
-  invalidCellsByRow: Map<string, Set<string>>
-): void => {
+const validateGrid = (grid: GridValidationInput, invalidCellsByRow: Map<string, Set<string>>): void => {
   if (!grid.selectedRows.length) return;
   const mandatoryFields = collectMandatoryFields(grid.fields);
   if (!mandatoryFields.length) return;
@@ -86,9 +83,7 @@ const validateGrid = (
   }
 };
 
-export const useGridRowValidation = ({
-  grids,
-}: UseGridRowValidationParams): UseGridRowValidationResult => {
+export const useGridRowValidation = ({ grids }: UseGridRowValidationParams): UseGridRowValidationResult => {
   return useMemo(() => {
     const invalidCellsByRow = new Map<string, Set<string>>();
     for (const grid of grids) {

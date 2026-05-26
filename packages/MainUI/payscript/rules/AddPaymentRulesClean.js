@@ -76,10 +76,7 @@ export const AddPaymentRulesGeneric = (() => {
       // "glitem" is the dBColumnName of the Window Reference parameter for GL Items.
       // _allRows (not _selection) because the grid has obuiappShowSelect=false:
       // every row is meaningful input.
-      const glItemRows = util.getAllGridRows(
-        ["received_in", "paid_out", "receivedIn", "paidOut"],
-        ["glitem"]
-      );
+      const glItemRows = util.getAllGridRows(["received_in", "paid_out", "receivedIn", "paidOut"], ["glitem"]);
       const amountGLItems = calculateGLItemsTotal(util, glItemRows, isSOTrx);
 
       const usedCredit = finalUsedCredit;

@@ -60,9 +60,7 @@ describe("readResponseActions", () => {
 describe("dispatchResponseActions", () => {
   it("normalizes showMsgInProcessView into a processView message action", () => {
     const data = {
-      responseActions: [
-        { showMsgInProcessView: { msgType: "success", msgText: "Done", msgTitle: "OK" } },
-      ],
+      responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Done", msgTitle: "OK" } }],
     };
     expect(dispatchResponseActions(data)).toEqual([
       {
@@ -109,9 +107,7 @@ describe("dispatchResponseActions", () => {
 
   it("normalizes smartclientSay", () => {
     const data = { responseActions: [{ smartclientSay: { message: "<b>hello</b>" } }] };
-    expect(dispatchResponseActions(data)).toEqual([
-      { kind: "smartclientSay", payload: { message: "<b>hello</b>" } },
-    ]);
+    expect(dispatchResponseActions(data)).toEqual([{ kind: "smartclientSay", payload: { message: "<b>hello</b>" } }]);
   });
 
   it("preserves the order of multiple actions and includes every supported kind", () => {
