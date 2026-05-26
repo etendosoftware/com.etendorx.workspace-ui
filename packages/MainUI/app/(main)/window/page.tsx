@@ -73,7 +73,7 @@ export default function Page() {
           style={{
             visibility: shouldShowWindow ? "hidden" : "visible",
             opacity: shouldShowWindow ? 0 : 1,
-            transition: "opacity 150ms ease-in-out",
+            transition: "opacity 200ms ease-out",
             pointerEvents: shouldShowWindow ? "none" : "auto",
           }}>
           <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
@@ -89,7 +89,7 @@ export default function Page() {
               style={{
                 visibility: isVisible ? "visible" : "hidden",
                 opacity: isVisible ? 1 : 0,
-                transition: "opacity 150ms ease-in-out",
+                transition: "opacity 200ms ease-out",
                 pointerEvents: isVisible ? "auto" : "none",
               }}>
               <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
