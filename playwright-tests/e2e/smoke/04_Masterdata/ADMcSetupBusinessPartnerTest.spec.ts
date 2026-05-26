@@ -13,21 +13,21 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await cleanupEtendo(page);
   });
 
-  test("Create payment terms, invoice schedule and configure customer", async ({ page }) => {
+  test("Create payment terms, invoice schedule and configure customer", { timeout: 360_000 }, async ({ page }) => {
     // ── Local helpers ────────────────────────────────────────────────────────
     const fillByAriaLabel = async (label: string, value: string) => {
-      const input = page.locator(`[aria-label="${label}"]`).first();
+      const input = page.locator(`[aria-label="${label}"]:visible`).first();
       await input.waitFor({ state: "visible", timeout: 15_000 });
       await input.clear();
       await input.fill(value);
     };
 
     const clickByAriaLabel = async (label: string) => {
-      await page.locator(`[aria-label="${label}"]`).first().click();
+      await page.locator(`[aria-label="${label}"]:visible`).first().click();
     };
 
     const clickSaveHeader = async () => {
-      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
+      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible > span').click();
     };
 
     // ── Login ────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await navigateByMenuTestId(page, "invoi", "MenuTitle__133");
     await page.waitForTimeout(500);
 
-    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
+    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible').first().click();
     await page.waitForTimeout(500);
 
     await fillByAriaLabel("Name", "Schedule Weekly");

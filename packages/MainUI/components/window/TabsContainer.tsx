@@ -26,7 +26,7 @@ import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
-import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserContext } from "@/hooks/useUserContext";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -156,23 +156,10 @@ const TabsGroupRenderer = ({
 };
 
 export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
-  /**
-   * Multi-window navigation hook providing access to current window state.
-   */
-  const { activeWindow } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
 
-  /**
-   * Graph-based tab hierarchy management system with navigation state.
-   *
-   * Manages:
-   * - activeLevels: Array of currently visible tab levels [0,1] or [1,2] etc.
-   * - activeTabsByLevel: Map of level -> tabId for tracking active tab per level
-   * - setActiveLevel: Function to change visible navigation levels
-   * - setActiveTabsByLevel: Function to update active tab selection per level
-   * - graph: Hierarchical tab structure
-   */
   const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
 
@@ -208,7 +195,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * After F5 refresh, the state is restored from URL, so child tabs appear correctly.
    */
   useEffect(() => {
-    if (!activeWindow?.windowIdentifier || groupedTabs.length === 0) {
+    if (!windowIdentifier || groupedTabs.length === 0) {
       return;
     }
 
@@ -225,7 +212,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
       const firstTab = level0Group[0];
       setActiveTabsByLevel(firstTab);
     }
-  }, [activeWindow?.windowIdentifier, groupedTabs, activeTabsByLevel, setActiveTabsByLevel]);
+  }, [windowIdentifier, groupedTabs, activeTabsByLevel, setActiveTabsByLevel]);
 
   /**
    * Determines which tab should be active for a given hierarchical level.
