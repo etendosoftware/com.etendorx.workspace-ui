@@ -18,15 +18,15 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useTransition, useEffect } from "react";
+import { useCallback, useState, useTransition, useEffect, useRef } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import { useFocusContext } from "@/contexts/focus";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
@@ -38,6 +38,10 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const initialTab = initialActiveTab && tabs.some((t) => t.id === initialActiveTab.id) ? initialActiveTab : tabs[0];
 
   const [current, setCurrent] = useState(initialTab);
+  // Tracks which tab ids have been visited. Mutated synchronously in render so
+  // the newly-active tab is always included without a useEffect delay.
+  const mountedTabIdsRef = useRef<Set<string>>(new Set([initialTab.id]));
+  mountedTabIdsRef.current.add(current.id);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(initialTab.id);
   const [customHeight, setCustomHeight] = useState(50);
@@ -64,10 +68,10 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     }
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
-  const { activeWindow } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
   const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
 
@@ -91,11 +95,15 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         return;
       }
 
+      // Update activeLevels immediately (outside startTransition) so the collapsed state
+      // reflects the new level synchronously — prevents the tab content from briefly
+      // rendering with class="hidden" while the deferred transition is pending.
+      setActiveLevel(tab.tabLevel);
+
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
         setCustomHeight(50);
         setCurrent(tab);
-        setActiveLevel(tab.tabLevel);
 
         // Update the active tab mapping for this level so child tab filtering works correctly
         setActiveTabsByLevel(tab);
@@ -172,20 +180,31 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       customHeight={customHeight}
       data-testid="TabContainer__6fa401">
       {renderTabContent()}
-      {isPending && current.id !== activeTabId ? (
+      {isPending && !mountedTabIdsRef.current.has(activeTabId) ? (
         <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
           <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
           <div className="h-8 w-3/4 bg-(--color-transparent-neutral-10) rounded-md" />
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 h-full min-h-0" onClick={() => current?.id && setFocus(current.id)}>
-          <TabContextProvider
-            tab={current}
-            data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
-            <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
-          </TabContextProvider>
-        </div>
+        // Render every visited tab and toggle visibility with CSS so that
+        // tab state (scroll position, column filters, table data) is preserved
+        // across switches without re-mounting or re-fetching data.
+        tabs.map((tab) => {
+          if (!mountedTabIdsRef.current.has(tab.id)) return null;
+          const isActive = tab.id === current.id;
+          return (
+            <div
+              key={tab.id}
+              className={`flex flex-col flex-1 h-full min-h-0${isActive ? "" : " hidden"}`}
+              onClick={() => isActive && setFocus(tab.id)}
+              onKeyDown={(e) => isActive && (e.key === "Enter" || e.key === " ") && setFocus(tab.id)}>
+              <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab?.id ?? activeTabId ?? "6fa401"}`}>
+                <Tab tab={tab} collapsed={collapsed} data-testid={`Tab__${tab?.id ?? activeTabId ?? "6fa401"}`} />
+              </TabContextProvider>
+            </div>
+          );
+        })
       )}
     </TabContainer>
   );

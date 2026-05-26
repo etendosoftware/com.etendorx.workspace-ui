@@ -32,6 +32,7 @@ import { useWindowContext } from "@/contexts/window";
 import { useFocusContext } from "@/contexts/focus";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useFavoritesContext } from "@/contexts/favorites";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -60,8 +61,11 @@ const StarIcon = ({ filled, ...props }: React.SVGProps<SVGSVGElement> & { filled
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
+  const { window: activeWindowMetadata, getWindowMetadata } = useMetadataContext();
+  const { getTabFormState, clearTabFormState, setAllWindowsInactive, activeWindow } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
+  const window = windowId ? getWindowMetadata(windowId) : activeWindowMetadata;
   const { isFavorite, toggle, menuIdByWindowId } = useFavoritesContext();
   const { activeFocusId, setFocus } = useFocusContext();
 

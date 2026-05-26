@@ -35,6 +35,10 @@ jest.mock("@/contexts/window", () => {
     useWindowContext: jest.fn(),
   };
 });
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "window1_123456789"),
+  useCurrentWindowId: jest.fn(() => "window1"),
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     debug: jest.fn(),

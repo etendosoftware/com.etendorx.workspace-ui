@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
@@ -35,7 +36,8 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { activeWindow, triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const windowId = useCurrentWindowId();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -113,7 +115,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
 
   return (
     <LinkedItems
-      windowId={activeWindow?.windowId || ""}
+      windowId={windowId || ""}
       entityName={entityName}
       recordId={recordId}
       onFetchCategories={handleFetchCategories}
