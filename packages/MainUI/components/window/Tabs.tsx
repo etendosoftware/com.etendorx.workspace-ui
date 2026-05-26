@@ -18,14 +18,13 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useTransition, useEffect, useMemo, useRef } from "react";
+import { useCallback, useState, useTransition, useEffect, useRef } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import { useFocusContext } from "@/contexts/focus";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useWindowStore } from "@/stores/windowStore";
 import TabContextProvider from "@/contexts/tab";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
@@ -69,8 +68,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     }
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
   const windowIdentifier = useCurrentWindowIdentifier();
   const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({

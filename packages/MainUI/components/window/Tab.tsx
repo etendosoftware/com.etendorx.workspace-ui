@@ -113,12 +113,6 @@ const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
-  // Zustand store — reactive value
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
   const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action references

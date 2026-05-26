@@ -78,12 +78,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  // Zustand store — reactive value
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
   const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action/getter references

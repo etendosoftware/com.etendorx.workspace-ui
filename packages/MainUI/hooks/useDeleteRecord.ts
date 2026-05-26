@@ -18,7 +18,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { EntityData, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 import { useUserStore } from "@/stores/userStore";
-import { useUserContext } from "./useUserContext";
+import { useUserContext } from "@/hooks/useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";

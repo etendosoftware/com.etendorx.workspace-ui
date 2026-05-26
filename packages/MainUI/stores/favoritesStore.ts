@@ -39,6 +39,15 @@ interface FavoritesStore {
   fetchForRole: () => Promise<void>;
 }
 
+function toggleInSet(currentSet: Set<string>, windowId: string, forceAdd?: boolean): Set<string> {
+  const next = new Set(currentSet);
+  if (forceAdd === true) next.add(windowId);
+  else if (forceAdd === false) next.delete(windowId);
+  else if (next.has(windowId)) next.delete(windowId);
+  else next.add(windowId);
+  return next;
+}
+
 export const useFavoritesStore = create<FavoritesStore>()(
   devtools(
     (set, get) => ({
@@ -82,30 +91,22 @@ export const useFavoritesStore = create<FavoritesStore>()(
       toggle: async (menuId: string, windowId?: string) => {
         // Optimistic update
         if (windowId) {
-          const next = new Set(get().favoriteWindowIds);
-          if (next.has(windowId)) next.delete(windowId);
-          else next.add(windowId);
-          set({ favoriteWindowIds: next });
+          set({ favoriteWindowIds: toggleInSet(get().favoriteWindowIds, windowId) });
         }
 
         try {
           const result = await toggleFavoriteApi(menuId);
           // Confirm with authoritative server response
           if (windowId) {
-            const next = new Set(get().favoriteWindowIds);
-            if (result.action === "removed") next.delete(windowId);
-            else next.add(windowId);
-            set({ favoriteWindowIds: next });
+            const added = result.action !== "removed";
+            set({ favoriteWindowIds: toggleInSet(get().favoriteWindowIds, windowId, added) });
           }
           for (const fn of toggleListeners) fn();
         } catch (err) {
           logger.warn("[FavoritesStore] Failed to toggle favorite:", err);
           // Revert optimistic update
           if (windowId) {
-            const next = new Set(get().favoriteWindowIds);
-            if (next.has(windowId)) next.delete(windowId);
-            else next.add(windowId);
-            set({ favoriteWindowIds: next });
+            set({ favoriteWindowIds: toggleInSet(get().favoriteWindowIds, windowId) });
           }
         }
       },

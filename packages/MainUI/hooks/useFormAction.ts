@@ -22,7 +22,7 @@ import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { useUserStore } from "@/stores/userStore";
-import { useUserContext } from "./useUserContext";
+import { useUserContext } from "@/hooks/useUserContext";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/utils/session/constants";
 import { useTranslation } from "./useTranslation";

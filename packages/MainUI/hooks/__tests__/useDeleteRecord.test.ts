@@ -18,15 +18,14 @@
 import { renderHook, act } from "@testing-library/react";
 import { useDeleteRecord } from "../useDeleteRecord";
 import { useUserStore } from "@/stores/userStore";
-import { useUserContext } from "../useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "../useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import React from "react";
 
 jest.mock("@/stores/userStore");
-jest.mock("../useUserContext");
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: {
     datasourceServletClient: { request: jest.fn() },
@@ -59,7 +58,7 @@ describe("useDeleteRecord", () => {
         setLoginErrorDescription: jest.fn(),
       })
     );
-    (useUserContext as jest.Mock).mockReturnValue({
+    jest.spyOn(React, "useContext").mockReturnValue({
       logout: mockLogout,
     });
     (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });

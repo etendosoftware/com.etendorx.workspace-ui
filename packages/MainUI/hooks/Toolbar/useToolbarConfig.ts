@@ -99,12 +99,6 @@ export const useToolbarConfig = ({
 
   const { tab } = useTabContext();
 
-  // Zustand store — reactive value
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
   const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action references

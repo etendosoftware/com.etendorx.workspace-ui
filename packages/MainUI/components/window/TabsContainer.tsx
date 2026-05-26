@@ -26,7 +26,6 @@ import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
-import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserStore } from "@/stores/userStore";
@@ -160,8 +159,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
   const windowIdentifier = useCurrentWindowIdentifier();
 
   const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({

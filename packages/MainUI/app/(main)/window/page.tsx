@@ -16,14 +16,13 @@
  */
 // @data-testid-ignore
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useWindowStore } from "@/stores/windowStore";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
-import { useState, useEffect, useRef } from "react";
 
 export default function Page() {
   const windowsObj = useWindowStore((s) => s.windows);
@@ -73,7 +72,7 @@ export default function Page() {
           style={{
             visibility: shouldShowWindow ? "hidden" : "visible",
             opacity: shouldShowWindow ? 0 : 1,
-            transition: "opacity 200ms ease-out",
+            transition: "opacity 150ms ease-in-out",
             pointerEvents: shouldShowWindow ? "none" : "auto",
           }}>
           <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
@@ -89,7 +88,7 @@ export default function Page() {
               style={{
                 visibility: isVisible ? "visible" : "hidden",
                 opacity: isVisible ? 1 : 0,
-                transition: "opacity 200ms ease-out",
+                transition: "opacity 150ms ease-in-out",
                 pointerEvents: isVisible ? "auto" : "none",
               }}>
               <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
