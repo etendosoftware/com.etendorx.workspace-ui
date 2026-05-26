@@ -124,7 +124,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
   const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
 
-  // Zustand store — imperative getters
+  // Zustand store — imperative getters (for use in callbacks/effects, not render)
   const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
   }, []);
@@ -134,6 +134,19 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const getTableState = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
   }, []);
+
+  // Zustand store — reactive subscriptions (re-render when these change)
+  const reactiveTabFormState = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
+  );
+  const reactiveSelectedRecordId = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord : undefined
+  );
+  const parentTabId = graph?.getParent(tab)?.id;
+  const reactiveParentSelectedRecordId = useWindowStore((s) => {
+    if (!parentTabId || !windowIdentifier) return undefined;
+    return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
+  });
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
@@ -166,8 +179,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [tab.tabLevel, acquire]);
 
-  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
-  const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
+  const tabFormState = reactiveTabFormState;
+  const selectedRecordId = reactiveSelectedRecordId;
 
   const currentMode = tabFormState?.mode || TAB_MODES.TABLE;
   const currentRecordId = tabFormState?.recordId || "";
@@ -175,8 +188,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // For child tabs, verify parent has selection before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordId =
-    parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
+  const parentSelectedRecordId = reactiveParentSelectedRecordId;
   const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
