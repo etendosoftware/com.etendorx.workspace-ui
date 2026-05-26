@@ -72,6 +72,7 @@ export default function Page() {
           className="absolute inset-0 flex flex-col overflow-hidden"
           style={{
             visibility: shouldShowWindow ? "hidden" : "visible",
+            opacity: shouldShowWindow ? 0 : 1,
             pointerEvents: shouldShowWindow ? "none" : "auto",
           }}>
           <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
@@ -79,13 +80,15 @@ export default function Page() {
         {windows.map((win) => {
           const isActive = win.windowIdentifier === activeWindow?.windowIdentifier;
           if (!mountedWindows.has(win.windowIdentifier) && !isActive) return null;
+          const isVisible = isActive && !isHomeRoute;
           return (
             <div
               key={win.windowIdentifier}
               className="absolute inset-0 flex flex-col overflow-hidden"
               style={{
-                visibility: isActive && !isHomeRoute ? "visible" : "hidden",
-                pointerEvents: isActive && !isHomeRoute ? "auto" : "none",
+                visibility: isVisible ? "visible" : "hidden",
+                opacity: isVisible ? 1 : 0,
+                pointerEvents: isVisible ? "auto" : "none",
               }}>
               <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
             </div>
