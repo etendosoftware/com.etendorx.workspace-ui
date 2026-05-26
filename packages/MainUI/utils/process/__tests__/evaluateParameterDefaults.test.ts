@@ -17,8 +17,8 @@ jest.mock("@/utils/logger", () => ({
   logger: { debug: jest.fn(), warn: jest.fn() },
 }));
 
-const makeParam = (name: string, defaultValue?: string): ProcessParameter =>
-  ({ name, defaultValue }) as unknown as ProcessParameter;
+const makeParam = (name: string, defaultValue?: string, reference?: string): ProcessParameter =>
+  ({ name, defaultValue, reference }) as unknown as ProcessParameter;
 
 describe("evaluateParameterDefaults", () => {
   const context = { AD_Org_ID: "org-1" };
@@ -74,6 +74,17 @@ describe("evaluateParameterDefaults", () => {
 
   it("handles compilation errors gracefully", () => {
     const params = { p1: makeParam("p1", "fail") };
+    const result = evaluateParameterDefaults(params, context, emptyValues);
+    expect(result).toEqual({});
+  });
+
+  it("skips multi-record selector parameters even when defaultValue evaluates to a non-empty scalar", () => {
+    // Real-world case: NotPostedDocuments.accounting_status carries
+    // defaultValue: '"N"' in metadata. Classic's OBMultiSelectorItem silently
+    // drops scalar defaults; we must do the same so the picker starts empty.
+    const params = {
+      accountingStatus: makeParam("accountingStatus", '"N"', "87E6CFF8F71548AFA33F181C317970B5"),
+    };
     const result = evaluateParameterDefaults(params, context, emptyValues);
     expect(result).toEqual({});
   });

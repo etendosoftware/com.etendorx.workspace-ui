@@ -19,6 +19,7 @@ import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirS
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
 import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
 import { ImageSelector } from "@/components/Form/FormView/selectors/ImageSelector";
+import { MultiRecordSelector } from "@/components/Form/FormView/selectors/MultiRecordSelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
@@ -299,6 +300,15 @@ const ProcessParameterSelectorImpl = ({
 
         case "image":
           return <ImageSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ImageSelector__dac06b" />;
+
+        case "multiselect":
+          return (
+            <MultiRecordSelector
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              data-testid="MultiRecordSelector__dac06b"
+            />
+          );
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {

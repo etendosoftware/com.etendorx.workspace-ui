@@ -1,5 +1,6 @@
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
 /**
@@ -29,6 +30,13 @@ export function evaluateParameterDefaults(
   for (const param of Object.values(parameters)) {
     // Skip if no defaultValue expression
     if (!param.defaultValue) continue;
+
+    // Multi-record selectors only accept CSV-of-IDs values, never scalar
+    // literals like "N" / "Y" that some processes carry as a legacy
+    // `defaultValue` expression (e.g. NotPostedDocuments.accounting_status).
+    // Classic's OBMultiSelectorItem silently drops such values; we do the
+    // same here so the picker starts empty as it does in Classic.
+    if (param.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id) continue;
 
     // Skip if already has a non-empty value in form
     const existingValue = currentValues[param.name];

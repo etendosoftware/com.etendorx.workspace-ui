@@ -194,6 +194,45 @@ describe("SelectorModal", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("synthesizes a fallback `_identifier` column when selector.gridColumns is empty (e.g. multi-selector without OBUISEL_SELECTOR_FIELD rows)", () => {
+    const fieldWithEmptyGridColumns = createMockField({
+      name: "Accounting Status",
+      selector: {
+        datasourceName: "List",
+        gridColumns: [],
+      },
+    });
+
+    const { buildSelectorColumnDefs } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorColumnDefs.mockClear();
+
+    render(
+      <SelectorModal field={fieldWithEmptyGridColumns} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />
+    );
+
+    // The first positional arg should be the synthesized fallback column array
+    const callArgs = buildSelectorColumnDefs.mock.calls[0]?.[0];
+    expect(callArgs).toHaveLength(1);
+    expect(callArgs[0]).toMatchObject({
+      accessorKey: "_identifier",
+      header: "Accounting Status",
+    });
+  });
+
+  it("does NOT synthesize a fallback column when targetEntity is also missing (no datasource → modal cannot fetch anyway)", () => {
+    const bareField = createMockField({
+      referencedEntity: undefined as unknown as string,
+      selector: { gridColumns: [] },
+    });
+
+    const { buildSelectorColumnDefs } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorColumnDefs.mockClear();
+
+    render(<SelectorModal field={bareField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    expect(buildSelectorColumnDefs.mock.calls[0]?.[0]).toEqual([]);
+  });
+
   it("passes correct parameters to datasource hook", () => {
     const { useDatasource } = require("@/hooks/useDatasource");
     useDatasource.mockReturnValue({

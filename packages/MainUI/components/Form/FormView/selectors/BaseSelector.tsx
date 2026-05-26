@@ -511,7 +511,8 @@ const BaseSelectorComp = ({
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
     const isImage = field.column.reference === FIELD_REFERENCE_CODES.IMAGE.id;
     const isRichText = field.column.reference === FIELD_REFERENCE_CODES.RICH_TEXT.id;
-    const isExpandedField = isTextLong || isImage || isRichText;
+    const isMultiSelector = field.column.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id;
+    const isExpandedField = isTextLong || isImage || isRichText || isMultiSelector;
     const containerClasses = isExpandedField ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
 
     return (

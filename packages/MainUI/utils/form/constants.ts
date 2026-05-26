@@ -105,6 +105,9 @@ export const FIELD_REFERENCE_CODES = {
 
   // Rich Text Area — HTML WYSIWYG editor
   RICH_TEXT: { id: "7CB371C13D204EB69BF370217F692999", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Multi-record selector (OBUISEL_Multi Selector Reference)
+  MULTI_SELECTOR: { id: "87E6CFF8F71548AFA33F181C317970B5", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 } as const;
 
 /**
