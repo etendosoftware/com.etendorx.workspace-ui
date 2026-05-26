@@ -19,8 +19,6 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { type Etendo, Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
-import { prefetchStore } from "@/utils/prefetchStore";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
 
 const loadingPromises = new Map<string, Promise<Etendo.WindowMetadata>>();
 
@@ -82,22 +80,6 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
               false,
               "metadata/loadWindowData:success",
             );
-
-            // Prefetch datasources for root-level tabs in parallel
-            if (newWindowData.tabs?.length) {
-              const rootTabs = newWindowData.tabs.filter((tab: any) => !tab.parentTabId);
-              for (const tab of rootTabs) {
-                if (tab.entityName) {
-                  const prefetchPromise = datasource.get(tab.entityName, {
-                    _textMatchStyle: "substring",
-                    startRow: 0,
-                    endRow: 1000,
-                    pageSize: 1000,
-                  });
-                  prefetchStore.set(`ds-${tab.entityName}`, prefetchPromise);
-                }
-              }
-            }
 
             return newWindowData;
           } catch (err) {
@@ -161,7 +143,6 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
 
       resetForRole: () => {
         loadingPromises.clear();
-        prefetchStore.clear();
         set(
           { windowsData: {}, loadingWindows: {}, errors: {} },
           false,
