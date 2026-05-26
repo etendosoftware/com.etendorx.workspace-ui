@@ -98,9 +98,12 @@ jest.mock("../../../stores/windowStore", () => ({
 jest.mock("../../../stores/metadataStore", () => ({
   useMetadataZustandStore: (selector: (s: any) => any) => {
     const state = {
-      windowsData: new Proxy({}, {
-        get: (_target, prop) => mockMetadataContext.getWindowMetadata(prop as string),
-      }),
+      windowsData: new Proxy(
+        {},
+        {
+          get: (_target, prop) => mockMetadataContext.getWindowMetadata(prop as string),
+        }
+      ),
     };
     return selector(state);
   },

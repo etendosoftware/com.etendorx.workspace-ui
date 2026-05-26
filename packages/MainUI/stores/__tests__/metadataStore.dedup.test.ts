@@ -100,9 +100,7 @@ describe("metadataStore prefetchWindowData", () => {
   it("should silently swallow errors", async () => {
     mockMetadata.getWindow.mockRejectedValue(new Error("network fail"));
 
-    await expect(
-      useMetadataZustandStore.getState().prefetchWindowData("win-4")
-    ).resolves.toBeUndefined();
+    await expect(useMetadataZustandStore.getState().prefetchWindowData("win-4")).resolves.toBeUndefined();
 
     expect(useMetadataZustandStore.getState().windowsData["win-4"]).toBeUndefined();
   });

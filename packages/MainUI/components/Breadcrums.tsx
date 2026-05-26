@@ -74,12 +74,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const window = windowId ? getWindowMetadata(windowId) : activeWindowMetadata;
 
   // Zustand store — stable action/getter references
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
   const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);

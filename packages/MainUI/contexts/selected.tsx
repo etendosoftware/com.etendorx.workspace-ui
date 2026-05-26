@@ -87,26 +87,17 @@ export const SelectedProvider = ({
    */
   const setNavigationInitialized = useWindowStore((s) => s.setNavigationInitialized);
 
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
 
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
 
-  const getNavigationInitialized = useCallback(
-    (windowIdentifier: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.navigation?.initialized ?? false;
-    },
-    []
-  );
+  const getNavigationInitialized = useCallback((windowIdentifier: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.navigation?.initialized ?? false;
+  }, []);
 
   /**
    * Navigation state persistence hook for the current window.

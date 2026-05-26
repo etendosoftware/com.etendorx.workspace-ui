@@ -46,9 +46,7 @@ describe("useStateReconciliation", () => {
       setSelectedRecord: mockSetSelectedRecord,
       windows: {},
     };
-    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
-      selector(storeState)
-    );
+    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) => selector(storeState));
     // Mock getState for imperative getSelectedRecord calls
     (useWindowStore as any).getState = jest.fn(() => storeState);
     mockGetSelectedRecord.mockReturnValue(undefined);

@@ -51,7 +51,9 @@ describe("useDisplayLogic", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useUserStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) => selector({ session: mockSession }));
+    (useUserStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({ session: mockSession })
+    );
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: {} });
     (useExpressionDependencies as jest.Mock).mockReturnValue({});
     (compileExpression as jest.Mock).mockReturnValue(jest.fn(() => true));

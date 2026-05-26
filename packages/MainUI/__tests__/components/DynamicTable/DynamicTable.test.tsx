@@ -1123,7 +1123,14 @@ describe("DynamicTable", () => {
           ...s.windows,
           "test-window-id_123456789": {
             ...s.windows["test-window-id_123456789"],
-            tabs: { "test-tab-id": { selectedRecord: "2", form: {}, table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined }, tabLevel: 0 } },
+            tabs: {
+              "test-tab-id": {
+                selectedRecord: "2",
+                form: {},
+                table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+                tabLevel: 0,
+              },
+            },
           },
         },
       }));
@@ -1153,7 +1160,14 @@ describe("DynamicTable", () => {
           ...s.windows,
           "test-window-id_123456789": {
             ...s.windows["test-window-id_123456789"],
-            tabs: { "test-tab-id": { selectedRecord: "1", form: {}, table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined }, tabLevel: 0 } },
+            tabs: {
+              "test-tab-id": {
+                selectedRecord: "1",
+                form: {},
+                table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+                tabLevel: 0,
+              },
+            },
           },
         },
       }));

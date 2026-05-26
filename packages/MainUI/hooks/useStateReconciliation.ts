@@ -97,12 +97,9 @@ const reconcileBothSelections = (urlSelectedId: string, tableSelectionIds: strin
 export const useStateReconciliation = ({ records, tab, windowId, currentWindowId }: StateReconciliationOptions) => {
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
   const { graph } = useSelected();
 
   /**

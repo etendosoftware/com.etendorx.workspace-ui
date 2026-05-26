@@ -96,10 +96,21 @@ jest.mock("@/contexts/tab", () => ({
 }));
 
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (s: any) => any) => selector({
-    windows: { WIN1: { windowId: "WIN1", windowIdentifier: "WIN1", isActive: true, initialized: true, title: "", navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, tabs: {} } },
-    clearTabFormState: mockClearTabFormState,
-  }),
+  useWindowStore: (selector: (s: any) => any) =>
+    selector({
+      windows: {
+        WIN1: {
+          windowId: "WIN1",
+          windowIdentifier: "WIN1",
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
+      clearTabFormState: mockClearTabFormState,
+    }),
 }));
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({

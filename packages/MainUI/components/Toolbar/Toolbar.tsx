@@ -87,12 +87,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action/getter references
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
   const setTableFilters = useWindowStore((s) => s.setTableFilters);
   const setTableVisibility = useWindowStore((s) => s.setTableVisibility);

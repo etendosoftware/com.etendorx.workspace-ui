@@ -177,11 +177,16 @@ export const useWindowContext = () => {
 
       const win = s.windows[activeId];
       switch (propertyName) {
-        case WINDOW_PROPERTY_NAMES.TITLE: return win.title;
-        case WINDOW_PROPERTY_NAMES.IS_ACTIVE: return win.isActive;
-        case WINDOW_PROPERTY_NAMES.WINDOW_IDENTIFIER: return activeId;
-        case WINDOW_PROPERTY_NAMES.TABS: return win.tabs;
-        default: return null;
+        case WINDOW_PROPERTY_NAMES.TITLE:
+          return win.title;
+        case WINDOW_PROPERTY_NAMES.IS_ACTIVE:
+          return win.isActive;
+        case WINDOW_PROPERTY_NAMES.WINDOW_IDENTIFIER:
+          return activeId;
+        case WINDOW_PROPERTY_NAMES.TABS:
+          return win.tabs;
+        default:
+          return null;
       }
     },
     [store]

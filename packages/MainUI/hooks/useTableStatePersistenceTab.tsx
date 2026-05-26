@@ -64,18 +64,12 @@ export const useTableStatePersistenceTab = ({
   const setNavigationActiveTabsByLevel = useWindowStore((s) => s.setNavigationActiveTabsByLevel);
 
   // Imperative getters
-  const getTableState = useCallback(
-    (wi: string, tid: string) => {
-      return useWindowStore.getState().windows[wi]?.tabs[tid]?.table ?? DEFAULT_TABLE_STATE;
-    },
-    []
-  );
-  const getNavigationState = useCallback(
-    (wi: string) => {
-      return useWindowStore.getState().windows[wi]?.navigation ?? DEFAULT_NAVIGATION_STATE;
-    },
-    []
-  );
+  const getTableState = useCallback((wi: string, tid: string) => {
+    return useWindowStore.getState().windows[wi]?.tabs[tid]?.table ?? DEFAULT_TABLE_STATE;
+  }, []);
+  const getNavigationState = useCallback((wi: string) => {
+    return useWindowStore.getState().windows[wi]?.navigation ?? DEFAULT_NAVIGATION_STATE;
+  }, []);
 
   // Subscribe reactively to the Zustand store for table and navigation state
   const currentTableState = useWindowStore(

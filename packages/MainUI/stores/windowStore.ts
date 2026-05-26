@@ -21,12 +21,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import type {
-  WindowContextState,
-  WindowState,
-  TableState,
-  NavigationState,
-} from "@/utils/window/constants";
+import type { WindowContextState, WindowState, TableState, NavigationState } from "@/utils/window/constants";
 import type { TabFormState } from "@/utils/url/constants";
 import { TAB_MODES } from "@/utils/url/constants";
 import { getWindowIdFromIdentifier, createDefaultTabState } from "@/utils/window/utils";
@@ -95,11 +90,26 @@ export interface WindowStore {
   triggerRecovery: () => void;
 
   // ---- Table state setters ------------------------------------------------
-  setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState, tabLevel?: number) => void;
-  setTableVisibility: (windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState, tabLevel?: number) => void;
+  setTableFilters: (
+    windowIdentifier: string,
+    tabId: string,
+    filters: MRT_ColumnFiltersState,
+    tabLevel?: number
+  ) => void;
+  setTableVisibility: (
+    windowIdentifier: string,
+    tabId: string,
+    visibility: MRT_VisibilityState,
+    tabLevel?: number
+  ) => void;
   setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState, tabLevel?: number) => void;
   setTableOrder: (windowIdentifier: string, tabId: string, order: string[], tabLevel?: number) => void;
-  setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean, tabLevel?: number) => void;
+  setTableImplicitFilterApplied: (
+    windowIdentifier: string,
+    tabId: string,
+    isApplied: boolean,
+    tabLevel?: number
+  ) => void;
   setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
 
   // ---- Navigation setters ------------------------------------------------
@@ -121,8 +131,17 @@ export interface WindowStore {
   // ---- Selection ---------------------------------------------------------
   setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string, tabLevel?: number) => void;
   clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
-  clearChildrenSelections: (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging?: boolean) => void;
-  setSelectedRecordAndClearChildren: (windowIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => void;
+  clearChildrenSelections: (
+    windowIdentifier: string,
+    childTabIds: string[],
+    isParentSelectionChanging?: boolean
+  ) => void;
+  setSelectedRecordAndClearChildren: (
+    windowIdentifier: string,
+    tabId: string,
+    recordId: string,
+    childTabIds: string[]
+  ) => void;
 
   // ---- Direct-link init tracking -----------------------------------------
   setTabInitializedWithDirectLink: (windowIdentifier: string, tabId: string, initialized: boolean) => void;
@@ -147,275 +166,367 @@ export const useWindowStore = create<WindowStore>()(
 
       // ---- Table state setters ----------------------------------------
       setTableFilters: (windowIdentifier, tabId, filters, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].table.filters = filters;
-        }, false, "window/setTableFilters"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.filters = filters;
+          },
+          false,
+          "window/setTableFilters"
+        ),
 
       setTableVisibility: (windowIdentifier, tabId, visibility, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          const current = draft.windows[windowIdentifier].tabs[tabId].table.visibility;
-          draft.windows[windowIdentifier].tabs[tabId].table.visibility = { ...current, ...visibility };
-        }, false, "window/setTableVisibility"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            const current = draft.windows[windowIdentifier].tabs[tabId].table.visibility;
+            draft.windows[windowIdentifier].tabs[tabId].table.visibility = { ...current, ...visibility };
+          },
+          false,
+          "window/setTableVisibility"
+        ),
 
       setTableSorting: (windowIdentifier, tabId, sorting, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].table.sorting = sorting;
-        }, false, "window/setTableSorting"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.sorting = sorting;
+          },
+          false,
+          "window/setTableSorting"
+        ),
 
       setTableOrder: (windowIdentifier, tabId, order, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].table.order = order;
-        }, false, "window/setTableOrder"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.order = order;
+          },
+          false,
+          "window/setTableOrder"
+        ),
 
       setTableImplicitFilterApplied: (windowIdentifier, tabId, isApplied, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].table.isImplicitFilterApplied = isApplied;
-        }, false, "window/setTableImplicitFilterApplied"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.isImplicitFilterApplied = isApplied;
+          },
+          false,
+          "window/setTableImplicitFilterApplied"
+        ),
 
       setTableAdvancedCriteria: (windowIdentifier, tabId, criteria, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].table.advancedCriteria = criteria;
-        }, false, "window/setTableAdvancedCriteria"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.advancedCriteria = criteria;
+          },
+          false,
+          "window/setTableAdvancedCriteria"
+        ),
 
       // ---- Navigation setters ------------------------------------------
       setNavigationActiveLevels: (windowIdentifier, activeLevels) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]) {
-            const windowId = getWindowIdFromIdentifier(windowIdentifier);
-            draft.windows[windowIdentifier] = {
-              windowId,
-              windowIdentifier,
-              isActive: false,
-              initialized: true,
-              title: "",
-              navigation: { activeLevels, activeTabsByLevel: new Map(), initialized: false },
-              tabs: {},
-            };
-            return;
-          }
-          draft.windows[windowIdentifier].navigation.activeLevels = activeLevels;
-        }, false, "window/setNavigationActiveLevels"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) {
+              const windowId = getWindowIdFromIdentifier(windowIdentifier);
+              draft.windows[windowIdentifier] = {
+                windowId,
+                windowIdentifier,
+                isActive: false,
+                initialized: true,
+                title: "",
+                navigation: { activeLevels, activeTabsByLevel: new Map(), initialized: false },
+                tabs: {},
+              };
+              return;
+            }
+            draft.windows[windowIdentifier].navigation.activeLevels = activeLevels;
+          },
+          false,
+          "window/setNavigationActiveLevels"
+        ),
 
       setNavigationActiveTabsByLevel: (windowIdentifier, activeTabsByLevel) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]) {
-            const windowId = getWindowIdFromIdentifier(windowIdentifier);
-            draft.windows[windowIdentifier] = {
-              windowId,
-              windowIdentifier,
-              isActive: false,
-              initialized: true,
-              title: "",
-              navigation: { activeLevels: [0], activeTabsByLevel, initialized: false },
-              tabs: {},
-            };
-            return;
-          }
-          draft.windows[windowIdentifier].navigation.activeTabsByLevel = activeTabsByLevel;
-        }, false, "window/setNavigationActiveTabsByLevel"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) {
+              const windowId = getWindowIdFromIdentifier(windowIdentifier);
+              draft.windows[windowIdentifier] = {
+                windowId,
+                windowIdentifier,
+                isActive: false,
+                initialized: true,
+                title: "",
+                navigation: { activeLevels: [0], activeTabsByLevel, initialized: false },
+                tabs: {},
+              };
+              return;
+            }
+            draft.windows[windowIdentifier].navigation.activeTabsByLevel = activeTabsByLevel;
+          },
+          false,
+          "window/setNavigationActiveTabsByLevel"
+        ),
 
       setNavigationInitialized: (windowIdentifier, initialized) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]) return;
-          draft.windows[windowIdentifier].navigation.initialized = initialized;
-        }, false, "window/setNavigationInitialized"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) return;
+            draft.windows[windowIdentifier].navigation.initialized = initialized;
+          },
+          false,
+          "window/setNavigationInitialized"
+        ),
 
       // ---- Window lifecycle ------------------------------------------
       setWindowActive: ({ windowIdentifier, windowData }) =>
-        set((draft) => {
-          // Deactivate all windows
-          for (const winId of Object.keys(draft.windows)) {
-            if (draft.windows[winId]) {
-              draft.windows[winId].isActive = false;
+        set(
+          (draft) => {
+            // Deactivate all windows
+            for (const winId of Object.keys(draft.windows)) {
+              if (draft.windows[winId]) {
+                draft.windows[winId].isActive = false;
+              }
             }
-          }
 
-          if (draft.windows[windowIdentifier]) {
-            draft.windows[windowIdentifier].isActive = true;
-            if (windowData) {
-              Object.assign(draft.windows[windowIdentifier], windowData);
+            if (draft.windows[windowIdentifier]) {
+              draft.windows[windowIdentifier].isActive = true;
+              if (windowData) {
+                Object.assign(draft.windows[windowIdentifier], windowData);
+              }
+            } else {
+              const windowId = getWindowIdFromIdentifier(windowIdentifier);
+              draft.windows[windowIdentifier] = {
+                windowId,
+                windowIdentifier,
+                isActive: true,
+                initialized: windowData?.initialized ?? false,
+                title: windowData?.title ?? "",
+                navigation: windowData?.navigation ?? {
+                  activeLevels: [0],
+                  activeTabsByLevel: new Map(),
+                  initialized: false,
+                },
+                tabs: windowData?.tabs ?? {},
+              };
             }
-          } else {
-            const windowId = getWindowIdFromIdentifier(windowIdentifier);
-            draft.windows[windowIdentifier] = {
-              windowId,
-              windowIdentifier,
-              isActive: true,
-              initialized: windowData?.initialized ?? false,
-              title: windowData?.title ?? "",
-              navigation: windowData?.navigation ?? {
-                activeLevels: [0],
-                activeTabsByLevel: new Map(),
-                initialized: false,
-              },
-              tabs: windowData?.tabs ?? {},
-            };
-          }
-        }, false, "window/setWindowActive"),
+          },
+          false,
+          "window/setWindowActive"
+        ),
 
       setWindowInactive: (windowIdentifier) =>
-        set((draft) => {
-          if (draft.windows[windowIdentifier]) {
-            draft.windows[windowIdentifier].isActive = false;
-          }
-        }, false, "window/setWindowInactive"),
+        set(
+          (draft) => {
+            if (draft.windows[windowIdentifier]) {
+              draft.windows[windowIdentifier].isActive = false;
+            }
+          },
+          false,
+          "window/setWindowInactive"
+        ),
 
       setAllWindowsInactive: () =>
-        set((draft) => {
-          for (const winId of Object.keys(draft.windows)) {
-            if (draft.windows[winId]?.isActive) {
-              draft.windows[winId].isActive = false;
+        set(
+          (draft) => {
+            for (const winId of Object.keys(draft.windows)) {
+              if (draft.windows[winId]?.isActive) {
+                draft.windows[winId].isActive = false;
+              }
             }
-          }
-        }, false, "window/setAllWindowsInactive"),
+          },
+          false,
+          "window/setAllWindowsInactive"
+        ),
 
       cleanupWindow: (windowIdentifier) =>
-        set((draft) => {
-          const windowToDelete = draft.windows[windowIdentifier];
-          if (!windowToDelete) return;
+        set(
+          (draft) => {
+            const windowToDelete = draft.windows[windowIdentifier];
+            if (!windowToDelete) return;
 
-          const wasActive = windowToDelete.isActive;
-          const allIds = Object.keys(draft.windows);
+            const wasActive = windowToDelete.isActive;
+            const allIds = Object.keys(draft.windows);
 
-          delete draft.windows[windowIdentifier];
+            delete draft.windows[windowIdentifier];
 
-          if (wasActive && allIds.length > 1) {
-            const deletedIdx = allIds.indexOf(windowIdentifier);
-            let toActivate: string | null = null;
+            if (wasActive && allIds.length > 1) {
+              const deletedIdx = allIds.indexOf(windowIdentifier);
+              let toActivate: string | null = null;
 
-            if (deletedIdx > 0) {
-              toActivate = allIds[deletedIdx - 1];
-            } else if (deletedIdx < allIds.length - 1) {
-              toActivate = allIds[deletedIdx + 1];
+              if (deletedIdx > 0) {
+                toActivate = allIds[deletedIdx - 1];
+              } else if (deletedIdx < allIds.length - 1) {
+                toActivate = allIds[deletedIdx + 1];
+              }
+
+              if (toActivate && draft.windows[toActivate]) {
+                draft.windows[toActivate].isActive = true;
+              }
             }
-
-            if (toActivate && draft.windows[toActivate]) {
-              draft.windows[toActivate].isActive = true;
-            }
-          }
-        }, false, "window/cleanupWindow"),
+          },
+          false,
+          "window/cleanupWindow"
+        ),
 
       cleanState: () =>
-        set((draft) => {
-          draft.windows = {};
-        }, false, "window/cleanState"),
+        set(
+          (draft) => {
+            draft.windows = {};
+          },
+          false,
+          "window/cleanState"
+        ),
 
       // ---- Form state ------------------------------------------------
       setTabFormState: (windowIdentifier, tabId, formState, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].form = formState;
-        }, false, "window/setTabFormState"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].form = formState;
+          },
+          false,
+          "window/setTabFormState"
+        ),
 
       clearTabFormState: (windowIdentifier, tabId) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]?.tabs[tabId]) return;
-          draft.windows[windowIdentifier].tabs[tabId].form = {};
-        }, false, "window/clearTabFormState"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]?.tabs[tabId]) return;
+            draft.windows[windowIdentifier].tabs[tabId].form = {};
+          },
+          false,
+          "window/clearTabFormState"
+        ),
 
       // ---- Selection -------------------------------------------------
       setSelectedRecord: (windowIdentifier, tabId, recordId, tabLevel = 0) =>
-        set((draft) => {
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
-          draft.windows[windowIdentifier].tabs[tabId].selectedRecord = recordId;
-        }, false, "window/setSelectedRecord"),
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].selectedRecord = recordId;
+          },
+          false,
+          "window/setSelectedRecord"
+        ),
 
       clearSelectedRecord: (windowIdentifier, tabId) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]?.tabs[tabId]) {
-            console.warn(`[clearSelectedRecord] Tab ${tabId} not found in window ${windowIdentifier}`);
-            return;
-          }
-          delete draft.windows[windowIdentifier].tabs[tabId].selectedRecord;
-        }, false, "window/clearSelectedRecord"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]?.tabs[tabId]) {
+              console.warn(`[clearSelectedRecord] Tab ${tabId} not found in window ${windowIdentifier}`);
+              return;
+            }
+            delete draft.windows[windowIdentifier].tabs[tabId].selectedRecord;
+          },
+          false,
+          "window/clearSelectedRecord"
+        ),
 
       clearChildrenSelections: (windowIdentifier, childTabIds, isParentSelectionChanging = false) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]) {
-            console.warn(`[clearChildrenSelections] Window ${windowIdentifier} not found in state`);
-            return;
-          }
-          for (const tabId of childTabIds) {
-            const tab = draft.windows[windowIdentifier].tabs[tabId];
-            if (!tab) continue;
-
-            const isInFormView = tab.form?.mode === TAB_MODES.FORM;
-            const shouldClean = !isInFormView || isParentSelectionChanging;
-
-            if (shouldClean) {
-              if (tab.selectedRecord !== undefined) {
-                delete tab.selectedRecord;
-              }
-              tab.form = {};
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) {
+              console.warn(`[clearChildrenSelections] Window ${windowIdentifier} not found in state`);
+              return;
             }
-          }
-        }, false, "window/clearChildrenSelections"),
+            for (const tabId of childTabIds) {
+              const tab = draft.windows[windowIdentifier].tabs[tabId];
+              if (!tab) continue;
+
+              const isInFormView = tab.form?.mode === TAB_MODES.FORM;
+              const shouldClean = !isInFormView || isParentSelectionChanging;
+
+              if (shouldClean) {
+                if (tab.selectedRecord !== undefined) {
+                  delete tab.selectedRecord;
+                }
+                tab.form = {};
+              }
+            }
+          },
+          false,
+          "window/clearChildrenSelections"
+        ),
 
       setSelectedRecordAndClearChildren: (windowIdentifier, tabId, recordId, childTabIds) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]) {
-            console.warn(`[setSelectedRecordAndClearChildren] Window ${windowIdentifier} not found in state`);
-            return;
-          }
-
-          const previousRecordId = draft.windows[windowIdentifier].tabs[tabId]?.selectedRecord;
-          const isParentSelectionChanging = previousRecordId !== recordId;
-
-          ensureTabExistsDraft(draft.windows, windowIdentifier, tabId);
-          draft.windows[windowIdentifier].tabs[tabId].selectedRecord = recordId;
-
-          for (const childTabId of childTabIds) {
-            const tab = draft.windows[windowIdentifier].tabs[childTabId];
-            if (!tab) continue;
-
-            const isInFormView = tab.form?.mode === TAB_MODES.FORM;
-            const shouldClean = !isInFormView || isParentSelectionChanging;
-
-            if (shouldClean) {
-              if (tab.selectedRecord !== undefined) {
-                delete tab.selectedRecord;
-              }
-              tab.form = {};
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) {
+              console.warn(`[setSelectedRecordAndClearChildren] Window ${windowIdentifier} not found in state`);
+              return;
             }
-          }
-        }, false, "window/setSelectedRecordAndClearChildren"),
+
+            const previousRecordId = draft.windows[windowIdentifier].tabs[tabId]?.selectedRecord;
+            const isParentSelectionChanging = previousRecordId !== recordId;
+
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId);
+            draft.windows[windowIdentifier].tabs[tabId].selectedRecord = recordId;
+
+            for (const childTabId of childTabIds) {
+              const tab = draft.windows[windowIdentifier].tabs[childTabId];
+              if (!tab) continue;
+
+              const isInFormView = tab.form?.mode === TAB_MODES.FORM;
+              const shouldClean = !isInFormView || isParentSelectionChanging;
+
+              if (shouldClean) {
+                if (tab.selectedRecord !== undefined) {
+                  delete tab.selectedRecord;
+                }
+                tab.form = {};
+              }
+            }
+          },
+          false,
+          "window/setSelectedRecordAndClearChildren"
+        ),
 
       // ---- Direct-link init tracking --------------------------------
       setTabInitializedWithDirectLink: (windowIdentifier, tabId, initialized) =>
-        set((draft) => {
-          if (!draft.windows[windowIdentifier]?.tabs[tabId]) return;
-          draft.windows[windowIdentifier].tabs[tabId].initializedWithDirectLink = initialized;
-        }, false, "window/setTabInitializedWithDirectLink"),
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]?.tabs[tabId]) return;
+            draft.windows[windowIdentifier].tabs[tabId].initializedWithDirectLink = initialized;
+          },
+          false,
+          "window/setTabInitializedWithDirectLink"
+        ),
 
       // ---- Bridge actions -------------------------------------------
       _setRecovery: (isLoading, error, triggerFn) =>
-        set((draft) => {
-          draft.isRecoveryLoading = isLoading;
-          draft.recoveryError = error;
-          draft.triggerRecovery = triggerFn;
-        }, false, "window/_setRecovery"),
+        set(
+          (draft) => {
+            draft.isRecoveryLoading = isLoading;
+            draft.recoveryError = error;
+            draft.triggerRecovery = triggerFn;
+          },
+          false,
+          "window/_setRecovery"
+        ),
 
       _initFromRecoveredWindows: (recoveredWindows) =>
-        set((draft) => {
-          const windowsMap: WindowContextState = {};
-          for (const win of recoveredWindows) {
-            if (draft.windows[win.windowIdentifier]) {
-              windowsMap[win.windowIdentifier] = {
-                ...draft.windows[win.windowIdentifier],
-                isActive: false,
-              };
-            } else {
-              windowsMap[win.windowIdentifier] = win;
+        set(
+          (draft) => {
+            const windowsMap: WindowContextState = {};
+            for (const win of recoveredWindows) {
+              if (draft.windows[win.windowIdentifier]) {
+                windowsMap[win.windowIdentifier] = {
+                  ...draft.windows[win.windowIdentifier],
+                  isActive: false,
+                };
+              } else {
+                windowsMap[win.windowIdentifier] = win;
+              }
             }
-          }
-          draft.windows = windowsMap;
-        }, false, "window/_initFromRecoveredWindows"),
+            draft.windows = windowsMap;
+          },
+          false,
+          "window/_initFromRecoveredWindows"
+        ),
     })),
     { name: "WindowStore" }
   )

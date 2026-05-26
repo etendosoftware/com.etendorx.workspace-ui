@@ -131,24 +131,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
 
   // Zustand store — imperative getters
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string): string | undefined => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
-  const getTableState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
-    },
-    []
-  );
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+  const getTableState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
+  }, []);
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();

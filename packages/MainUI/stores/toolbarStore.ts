@@ -114,10 +114,7 @@ interface ToolbarStore {
    */
   setWrappedSave: (tabId: string, fn: (options: SaveOptions) => Promise<boolean>) => void;
 
-  setSaveButtonState: (
-    tabId: string,
-    updater: SaveButtonState | ((prev: SaveButtonState) => SaveButtonState)
-  ) => void;
+  setSaveButtonState: (tabId: string, updater: SaveButtonState | ((prev: SaveButtonState) => SaveButtonState)) => void;
 
   setIsImplicitFilterApplied: (tabId: string, value: boolean) => void;
   setIsAdvancedFilterApplied: (tabId: string, value: boolean) => void;

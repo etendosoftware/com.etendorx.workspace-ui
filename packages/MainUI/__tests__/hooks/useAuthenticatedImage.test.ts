@@ -1,10 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAuthenticatedImage } from "../../hooks/useAuthenticatedImage";
-import {
-  createMockURL,
-  createFetchMock,
-  createFetchRejectMock,
-} from "../../hooks/test-utils/imageMockHelpers";
+import { createMockURL, createFetchMock, createFetchRejectMock } from "../../hooks/test-utils/imageMockHelpers";
 
 let currentToken: string | null = "mock-token";
 

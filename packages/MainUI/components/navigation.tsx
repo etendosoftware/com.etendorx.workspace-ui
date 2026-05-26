@@ -38,11 +38,7 @@ import ConfigurationSection from "./Header/ConfigurationSection";
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
-  const {
-    setDefaultConfiguration,
-    changeProfile,
-    changePassword,
-  } = useContext(UserContext);
+  const { setDefaultConfiguration, changeProfile, changePassword } = useContext(UserContext);
   const currentRole = useUserStore((s) => s.currentRole);
   const currentOrganization = useUserStore((s) => s.currentOrganization);
   const profile = useUserStore((s) => s.profile);

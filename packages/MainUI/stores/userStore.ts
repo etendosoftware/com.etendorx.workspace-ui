@@ -153,8 +153,7 @@ export const useUserStore = create<UserStore>()(
       setCurrentClient: (currentClient) => set({ currentClient }, false, "setCurrentClient"),
 
       currentOrganization: undefined,
-      setCurrentOrganization: (currentOrganization) =>
-        set({ currentOrganization }, false, "setCurrentOrganization"),
+      setCurrentOrganization: (currentOrganization) => set({ currentOrganization }, false, "setCurrentOrganization"),
 
       currentWarehouse: undefined,
       setCurrentWarehouse: (currentWarehouse) => set({ currentWarehouse }, false, "setCurrentWarehouse"),
@@ -164,18 +163,14 @@ export const useUserStore = create<UserStore>()(
       setSession: (sessionOrUpdater) =>
         set(
           (state) => ({
-            session:
-              typeof sessionOrUpdater === "function"
-                ? sessionOrUpdater(state.session)
-                : sessionOrUpdater,
+            session: typeof sessionOrUpdater === "function" ? sessionOrUpdater(state.session) : sessionOrUpdater,
           }),
           false,
           "setSession"
         ),
 
       isSessionSyncLoading: false,
-      setSessionSyncLoading: (isSessionSyncLoading) =>
-        set({ isSessionSyncLoading }, false, "setSessionSyncLoading"),
+      setSessionSyncLoading: (isSessionSyncLoading) => set({ isSessionSyncLoading }, false, "setSessionSyncLoading"),
 
       // ── UI ────────────────────────────────────────────────────────────────
       loginErrorText: "",
@@ -186,8 +181,7 @@ export const useUserStore = create<UserStore>()(
         set({ loginErrorDescription }, false, "setLoginErrorDescription"),
 
       isCopilotInstalled: false,
-      setIsCopilotInstalled: (isCopilotInstalled) =>
-        set({ isCopilotInstalled }, false, "setIsCopilotInstalled"),
+      setIsCopilotInstalled: (isCopilotInstalled) => set({ isCopilotInstalled }, false, "setIsCopilotInstalled"),
 
       // ── Helpers ───────────────────────────────────────────────────────────
       getCsrfToken: () => {

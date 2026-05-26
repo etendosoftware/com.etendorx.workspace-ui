@@ -35,7 +35,11 @@ jest.mock("@/hooks/useGlobalUrlStateRecovery", () => ({
 
 jest.mock("@/utils/window/utils", () => ({
   getWindowIdFromIdentifier: jest.fn((id) => id.split("_")[0]),
-  createDefaultTabState: jest.fn(() => ({ table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: false }, form: {}, level: 0 })),
+  createDefaultTabState: jest.fn(() => ({
+    table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: false },
+    form: {},
+    level: 0,
+  })),
   ensureTabExists: jest.fn((state, winId, tabId) => {
     if (!state[winId]) state[winId] = { tabs: {} };
     if (!state[winId].tabs[tabId]) state[winId].tabs[tabId] = { table: {} };

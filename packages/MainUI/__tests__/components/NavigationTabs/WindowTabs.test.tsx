@@ -134,7 +134,15 @@ describe("WindowTabs", () => {
 
   it("renders home button correctly when isHomeRoute is false", () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "W1", isActive: true, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "W1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
     render(<WindowTabs />);
     const homeButton = screen.getAllByTestId("IconButton__c8117d")[0];
@@ -150,8 +158,24 @@ describe("WindowTabs", () => {
 
   it("renders window tabs", () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "Window 1", isActive: true, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
-      w2: { windowIdentifier: "w2", title: "Window 2", isActive: false, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w2", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "Window 2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -164,7 +188,15 @@ describe("WindowTabs", () => {
 
   it("activates window when tab is clicked", () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "Window 1", isActive: false, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -175,8 +207,24 @@ describe("WindowTabs", () => {
 
   it("closes window when close button is clicked", () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "Window 1", isActive: true, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
-      w2: { windowIdentifier: "w2", title: "Window 2", isActive: false, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w2", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "Window 2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -189,7 +237,15 @@ describe("WindowTabs", () => {
 
   it("optimistically removes window from view when closed", async () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "Window 1", isActive: true, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
 
     const { rerender } = render(<WindowTabs />);
@@ -287,9 +343,33 @@ describe("WindowTabs", () => {
 
   it("renders separator between tabs correctly", () => {
     setWindowStoreState({
-      w1: { windowIdentifier: "w1", title: "W1", isActive: true, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w1", initialized: true },
-      w2: { windowIdentifier: "w2", title: "W2", isActive: false, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w2", initialized: true },
-      w3: { windowIdentifier: "w3", title: "W3", isActive: false, tabs: {}, navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false }, windowId: "w3", initialized: true },
+      w1: {
+        windowIdentifier: "w1",
+        title: "W1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "W2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
+      w3: {
+        windowIdentifier: "w3",
+        title: "W3",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w3",
+        initialized: true,
+      },
     });
 
     const { container } = render(<WindowTabs />);

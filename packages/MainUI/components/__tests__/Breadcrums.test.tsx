@@ -444,7 +444,12 @@ describe("AppBreadcrumb", () => {
       // Build tabs context with form states for the store
       const tabsContext: Record<string, any> = {};
       for (const [tabId, formState] of Object.entries(formStateByTabId)) {
-        tabsContext[tabId] = { form: formState, selectedRecord: undefined, table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined }, tabLevel: 0 };
+        tabsContext[tabId] = {
+          form: formState,
+          selectedRecord: undefined,
+          table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+          tabLevel: 0,
+        };
       }
 
       setupTabsAndWindow({ activeTabs, activeLevels, tabsContext });

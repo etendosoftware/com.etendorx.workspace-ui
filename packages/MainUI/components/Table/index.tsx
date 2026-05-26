@@ -764,18 +764,12 @@ const DynamicTable = ({
   const windowId = useCurrentWindowId();
 
   // Zustand store — imperative getters
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string): string | undefined => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 

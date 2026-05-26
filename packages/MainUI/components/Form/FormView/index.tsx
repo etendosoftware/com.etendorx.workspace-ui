@@ -166,12 +166,9 @@ export function FormView({
   const windowIdentifier = activeWindow?.windowIdentifier;
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
   const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =

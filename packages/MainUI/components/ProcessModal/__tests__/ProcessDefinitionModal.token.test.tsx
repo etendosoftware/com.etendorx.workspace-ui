@@ -64,10 +64,11 @@ jest.mock("@/contexts/tab", () => ({
 }));
 
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (s: any) => any) => selector({
-    triggerRecovery: jest.fn(),
-    isRecoveryLoading: false,
-  }),
+  useWindowStore: (selector: (s: any) => any) =>
+    selector({
+      triggerRecovery: jest.fn(),
+      isRecoveryLoading: false,
+    }),
 }));
 
 jest.mock("@/hooks/useSelected", () => ({

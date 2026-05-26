@@ -266,7 +266,6 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
 
-
   // Zustand store — reactive value
   const windowsObj = useWindowStore((s) => s.windows);
   const activeWindow = useMemo(() => {
@@ -281,18 +280,12 @@ export default function useTableSelection(
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
 
   // Zustand store — imperative getters
-  const getTabFormState = useCallback(
-    (windowIdentifier: string, tabId: string) => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-    },
-    []
-  );
-  const getSelectedRecord = useCallback(
-    (windowIdentifier: string, tabId: string): string | undefined => {
-      return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-    },
-    []
-  );
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
 
   const setSession = useUserStore((s) => s.setSession);
   const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);

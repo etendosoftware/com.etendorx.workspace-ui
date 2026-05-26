@@ -64,7 +64,7 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
                 errors: { ...state.errors, [windowId]: undefined },
               }),
               false,
-              "metadata/loadWindowData:start",
+              "metadata/loadWindowData:start"
             );
 
             logger.info(`[MetadataStore] Loading metadata for window ${windowId}`);
@@ -78,7 +78,7 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
                 loadingWindows: { ...state.loadingWindows, [windowId]: false },
               }),
               false,
-              "metadata/loadWindowData:success",
+              "metadata/loadWindowData:success"
             );
 
             return newWindowData;
@@ -92,7 +92,7 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
                 loadingWindows: { ...state.loadingWindows, [windowId]: false },
               }),
               false,
-              "metadata/loadWindowData:error",
+              "metadata/loadWindowData:error"
             );
 
             throw error;
@@ -122,7 +122,7 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
               windowsData: { ...state.windowsData, [windowId]: data },
             }),
             false,
-            "metadata/prefetchWindowData:success",
+            "metadata/prefetchWindowData:success"
           );
         } catch {
           // Silently swallow — prefetch failure should not affect UX
@@ -143,13 +143,9 @@ export const useMetadataZustandStore = create<MetadataStoreState>()(
 
       resetForRole: () => {
         loadingPromises.clear();
-        set(
-          { windowsData: {}, loadingWindows: {}, errors: {} },
-          false,
-          "metadata/resetForRole",
-        );
+        set({ windowsData: {}, loadingWindows: {}, errors: {} }, false, "metadata/resetForRole");
       },
     }),
-    { name: "MetadataStore" },
-  ),
+    { name: "MetadataStore" }
+  )
 );

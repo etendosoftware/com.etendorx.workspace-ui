@@ -30,11 +30,7 @@ import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
-import type {
-  ISession,
-  ProfileInfo,
-  SessionResponse,
-} from "@workspaceui/api-client/src/api/types";
+import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-client/src/api/types";
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";

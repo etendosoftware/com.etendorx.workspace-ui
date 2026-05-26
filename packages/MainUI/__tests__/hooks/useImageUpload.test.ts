@@ -1,10 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { useImageUpload } from "../../hooks/useImageUpload";
-import {
-  mockTranslationState,
-  createFetchMock,
-  createFetchRejectMock,
-} from "../../hooks/test-utils/imageMockHelpers";
+import { mockTranslationState, createFetchMock, createFetchRejectMock } from "../../hooks/test-utils/imageMockHelpers";
 
 let currentToken: string | null = "mock-token";
 
