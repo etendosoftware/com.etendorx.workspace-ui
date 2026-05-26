@@ -23,7 +23,7 @@ import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type ProcessSelectorContext, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
 import { useUserContext } from "../useUserContext";
-import type { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field, EntityValue } from "@workspaceui/api-client/src/api/types";
 import {
   REFERENCE_IDS,
   PRODUCT_SELECTOR_DEFAULTS,
@@ -35,7 +35,6 @@ import {
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
 const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;

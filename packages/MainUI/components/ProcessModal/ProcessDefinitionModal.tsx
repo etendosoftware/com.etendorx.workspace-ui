@@ -232,11 +232,6 @@ function ProcessDefinitionModalContent({
   const javaClassName = processDefinition.javaClassName;
 
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
-  const [gridRefreshKeysByGrid, setGridRefreshKeysByGrid] = useState<Record<string, number>>({});
-
-  const setGridRefreshKeyForGrid = useCallback((gridName: string) => {
-    setGridRefreshKeysByGrid((prev) => ({ ...prev, [gridName]: (prev[gridName] ?? 0) + 1 }));
-  }, []);
 
   // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
@@ -785,7 +780,6 @@ function ProcessDefinitionModalContent({
     setParameters,
     setShouldTriggerSuccess,
     setGridRefreshKey,
-    setGridRefreshKeyForGrid,
     initialParameters: button.processDefinition.parameters,
     fileParams,
   });

@@ -18,7 +18,7 @@
 import type { ProcessDefinition, ProcessParameter, Tab } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
-export const PICK_AND_EXECUTE_UI_PATTERN = "OBUIAPP_PickAndExecute" as const;
+export const PICK_AND_EXECUTE_UI_PATTERN = "OBUIAPP_PickAndExecute";
 
 const WINDOW_REFERENCE_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
 

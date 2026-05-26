@@ -225,7 +225,7 @@ describe("ProcessParameterMapper", () => {
           ...mockParameter,
           reference: FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
           selector: { datasourceName: "ComboTableDatasourceService" },
-        } as any)
+        })
       ).toBe("multiselect");
     });
   });

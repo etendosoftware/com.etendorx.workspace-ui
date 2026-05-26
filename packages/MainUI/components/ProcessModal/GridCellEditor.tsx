@@ -502,12 +502,13 @@ const GridCellEditorBase = ({
 export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) => {
   return (
     // Important! Re-render if validation status changes
+    // Bumped by field-interactions in the parent grid; forces re-render so the
+    // sibling cell re-reads `row.original` after a mutually-exclusive zeroing.
     prevProps.cell.getValue() === nextProps.cell.getValue() &&
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
     prevProps.validationError === nextProps.validationError &&
-    prevProps.forceError === nextProps.forceError && // Bumped by field-interactions in the parent grid; forces re-render so the
-    // sibling cell re-reads `row.original` after a mutually-exclusive zeroing.
+    prevProps.forceError === nextProps.forceError &&
     prevProps.siblingPatchVersion === nextProps.siblingPatchVersion
   );
 });

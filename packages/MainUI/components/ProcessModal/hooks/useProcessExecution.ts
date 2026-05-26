@@ -66,6 +66,40 @@ interface ExtractedMessage {
 }
 
 // ---------------------------------------------------------------------------
+// Pure helpers for executeJavaProcess
+// ---------------------------------------------------------------------------
+
+const KERNEL_ENDPOINT = "/api/erp/org.openbravo.client.kernel";
+
+const buildKernelEndpoint = (args: {
+  processId?: string;
+  windowId?: string | number;
+  javaClassName?: string;
+}): string => {
+  const qs = new URLSearchParams();
+  if (args.processId) qs.set("processId", args.processId);
+  if (args.windowId !== undefined && args.windowId !== null && args.windowId !== "") {
+    qs.set("windowId", String(args.windowId));
+  }
+  if (args.javaClassName) qs.set("_action", args.javaClassName);
+  return `${KERNEL_ENDPOINT}?${qs.toString()}`;
+};
+
+/** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
+const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Execution failed");
+  }
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Param / return types
 // ---------------------------------------------------------------------------
 
@@ -116,8 +150,6 @@ export interface UseProcessExecutionParams {
   setParameters: (params: any) => void;
   setShouldTriggerSuccess: (value: boolean) => void;
   setGridRefreshKey: (fn: (prev: number) => number) => void;
-  /** Refresh a single grid by its parameter dBColumnName (for refreshGridParameter action) */
-  setGridRefreshKeyForGrid: (gridName: string) => void;
   /** Original button.processDefinition.parameters — used to reset on close */
   initialParameters: Record<string, ProcessParameter>;
   /** File objects from Upload File parameters, keyed by parameter dBColumnName */
@@ -178,7 +210,6 @@ export function useProcessExecution({
   setParameters,
   setShouldTriggerSuccess,
   setGridRefreshKey,
-  setGridRefreshKeyForGrid,
   initialParameters,
   fileParams,
 }: UseProcessExecutionParams): UseProcessExecutionReturn {
@@ -439,43 +470,17 @@ export function useProcessExecution({
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
       try {
-        const baseUrl = "/api/erp/org.openbravo.client.kernel";
-        const queryParams = new URLSearchParams();
-        if (processId) queryParams.set("processId", processId);
-        if (tab?.window) queryParams.set("windowId", tab.window.toString());
-        if (javaClassName) queryParams.set("_action", javaClassName);
-
-        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
         const hasFiles = Object.keys(fileParams).length > 0;
         const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
-        const response = await fetch(apiUrl, requestInit);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Execution failed");
-        }
-
-        let resultData = null;
-        try {
-          resultData = await response.json();
-        } catch {}
-
-        const hasRetryExecution = shouldRetryAfterProcess(resultData);
-        const refreshGrid = shouldRefreshAfterProcess(resultData);
-
+        const resultData = await fetchAndParseJson(apiUrl, requestInit);
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
-        const dispatchedActions = dispatchResponseActions(resultData);
-        for (const action of dispatchedActions) {
-          if (action.kind === "refreshGridParameter" && action.payload.gridName) {
-            setGridRefreshKeyForGrid(action.payload.gridName);
-          }
-        }
-
-        if (hasRetryExecution) {
+        if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
-          if (refreshGrid) {
+          if (shouldRefreshAfterProcess(resultData)) {
             setGridRefreshKey((prev) => prev + 1);
           }
           return;
@@ -499,7 +504,6 @@ export function useProcessExecution({
       setResult,
       setShouldTriggerSuccess,
       setGridRefreshKey,
-      setGridRefreshKeyForGrid,
     ]
   );
 

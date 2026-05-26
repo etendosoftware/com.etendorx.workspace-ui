@@ -20,6 +20,12 @@ import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import CheckIcon from "../../../../ComponentLibrary/src/assets/icons/check.svg";
 
+const resolveBorderColor = (checked: boolean, hasError: boolean, accentColor: string): string => {
+  if (checked) return accentColor;
+  if (hasError) return "#ef4444";
+  return "rgba(0,3,13,0.4)";
+};
+
 const convertToBoolean = (val: unknown): boolean => {
   if (typeof val === "boolean") return val;
   if (typeof val === "string") {
@@ -139,7 +145,7 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
   // Tailwind's `checked:` variant is not reliably generated for this file
   // (JIT content-path issue), so the checked state is expressed via inline styles.
   const accentColor = hasError ? "#dc2626" : "#004ACA";
-  const borderColor = localValue ? accentColor : hasError ? "#ef4444" : "rgba(0,3,13,0.4)";
+  const borderColor = resolveBorderColor(localValue, !!hasError, accentColor);
   const backgroundColor = localValue ? accentColor : "white";
 
   return (
