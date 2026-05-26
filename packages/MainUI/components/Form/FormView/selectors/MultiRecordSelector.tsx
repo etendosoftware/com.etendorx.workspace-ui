@@ -78,8 +78,8 @@ const MultiRecordSelector = ({ field, isReadOnly = false }: MultiRecordSelectorP
         <div className="flex-grow min-w-0 font-['Inter'] font-medium">
           <div
             className={[
-              "w-full flex flex-wrap items-center content-center gap-1",
-              "px-3 py-1 rounded-t tracking-normal min-h-10.5 max-h-24 overflow-y-auto",
+              "w-full flex flex-nowrap items-center gap-1",
+              "px-3 py-1 rounded-t tracking-normal h-10.5 overflow-x-auto overflow-y-hidden",
               "border-0 border-b-2 transition-colors",
               "bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30)",
               "text-(--color-transparent-neutral-80) text-sm leading-5",
@@ -93,6 +93,7 @@ const MultiRecordSelector = ({ field, isReadOnly = false }: MultiRecordSelectorP
                 key={item.id}
                 label={item.label}
                 size="small"
+                className="flex-shrink-0"
                 onDelete={isReadOnly ? undefined : () => handleRemove(item.id)}
                 data-testid={`MultiRecordSelectorChip__${item.id}`}
               />

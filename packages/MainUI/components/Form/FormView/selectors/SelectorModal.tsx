@@ -319,12 +319,30 @@ const SelectorModal = ({
     columns,
     data: records,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     enableColumnFilters: true,
     enableColumnFilterModes: false,
     enableSorting: true,
     enablePagination: false,
     manualFiltering: true,
     manualSorting: true,
+    displayColumnDefOptions: {
+      "mrt-row-select": {
+        size: 48,
+        muiTableHeadCellProps: {
+          align: "center",
+          sx: {
+            backgroundColor: "rgba(0, 3, 13, 0.05)",
+            verticalAlign: "middle",
+            "& .Mui-TableHeadCell-Content": { justifyContent: "center", alignItems: "center" },
+          },
+        },
+        muiTableBodyCellProps: {
+          align: "center",
+          sx: { verticalAlign: "middle" },
+        },
+      },
+    },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
