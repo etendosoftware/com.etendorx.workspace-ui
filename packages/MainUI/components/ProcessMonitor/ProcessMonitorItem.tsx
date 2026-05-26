@@ -20,27 +20,29 @@ import { Box, Collapse, Divider, IconButton, ListItem, ListItemText, Tooltip, Ty
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import type { BackgroundProcessItem } from "@workspaceui/api-client/src/api/types";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ProcessStatusBadge } from "./ProcessStatusBadge";
 
 interface ProcessMonitorItemProps {
   item: BackgroundProcessItem;
 }
 
-function formatElapsed(startTime: string): string {
-  const start = new Date(startTime).getTime();
-  const now = Date.now();
-  const diffMs = now - start;
-  const diffSec = Math.floor(diffMs / 1000);
-  if (diffSec < 60) return `${diffSec}s ago`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  return `${diffHr}h ago`;
-}
-
 export const ProcessMonitorItem = ({ item }: ProcessMonitorItemProps) => {
   const [expanded, setExpanded] = useState(false);
   const hasLog = !!item.errorMsg;
+  const { t } = useTranslation();
+
+  const formatElapsed = (startTime: string): string => {
+    const start = new Date(startTime).getTime();
+    const now = Date.now();
+    const diffMs = now - start;
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 60) return `${diffSec}${t("processMonitor.item.timeAgo.seconds")}`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}${t("processMonitor.item.timeAgo.minutes")}`;
+    const diffHr = Math.floor(diffMin / 60);
+    return `${diffHr}${t("processMonitor.item.timeAgo.hours")}`;
+  };
 
   return (
     <>
@@ -48,7 +50,9 @@ export const ProcessMonitorItem = ({ item }: ProcessMonitorItemProps) => {
         alignItems="flex-start"
         secondaryAction={
           hasLog ? (
-            <Tooltip title={expanded ? "Hide log" : "Show log"} data-testid="Tooltip__30fb91">
+            <Tooltip
+              title={expanded ? t("processMonitor.item.hideLog") : t("processMonitor.item.showLog")}
+              data-testid="Tooltip__30fb91">
               <IconButton
                 size="small"
                 onClick={() => setExpanded((v) => !v)}

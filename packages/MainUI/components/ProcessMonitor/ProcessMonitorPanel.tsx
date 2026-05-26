@@ -23,9 +23,10 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import type { BackgroundProcessItem, BackgroundProcessStatus } from "@workspaceui/api-client/src/api/types";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ProcessMonitorItem } from "./ProcessMonitorItem";
 
-const PROCESS_SCHEDULING_WINDOW_ID = "800016";
+const PROCESS_MONITOR_WINDOW_ID = "EF3E837705944F4DBF398D683D36ACE0";
 
 interface ProcessMonitorPanelProps {
   open: boolean;
@@ -37,22 +38,23 @@ interface ProcessMonitorPanelProps {
 
 type TabFilter = "ALL" | BackgroundProcessStatus;
 
-const TABS: { label: string; value: TabFilter }[] = [
-  { label: "All", value: "ALL" },
-  { label: "Running", value: "RUNNING" },
-  { label: "Completed", value: "COMPLETED" },
-  { label: "Failed", value: "FAILED" },
-];
-
 export const ProcessMonitorPanel = ({ open, onClose, items, loading, onRefresh }: ProcessMonitorPanelProps) => {
   const [activeTab, setActiveTab] = useState<TabFilter>("ALL");
+  const { t } = useTranslation();
   const { setWindowActive } = useWindowContext();
 
-  const handleGoToScheduling = useCallback(() => {
-    const windowIdentifier = getNewWindowIdentifier(PROCESS_SCHEDULING_WINDOW_ID);
-    setWindowActive({ windowIdentifier, windowData: { title: "Process Scheduling", initialized: true } });
+  const handleGoToProcessMonitor = useCallback(() => {
+    const windowIdentifier = getNewWindowIdentifier(PROCESS_MONITOR_WINDOW_ID);
+    setWindowActive({ windowIdentifier, windowData: { title: t("processMonitor.windowTitle"), initialized: true } });
     onClose();
-  }, [setWindowActive, onClose]);
+  }, [setWindowActive, onClose, t]);
+
+  const TABS: { label: string; value: TabFilter }[] = [
+    { label: t("processMonitor.tabs.all"), value: "ALL" },
+    { label: t("processMonitor.tabs.running"), value: "RUNNING" },
+    { label: t("processMonitor.tabs.completed"), value: "COMPLETED" },
+    { label: t("processMonitor.tabs.failed"), value: "FAILED" },
+  ];
 
   const filtered = activeTab === "ALL" ? items : items.filter((i) => i.status === activeTab);
 
@@ -79,9 +81,9 @@ export const ProcessMonitorPanel = ({ open, onClose, items, loading, onRefresh }
         }}
         data-testid="Box__fac9e4">
         <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1 }} data-testid="Typography__fac9e4">
-          Background Processes
+          {t("processMonitor.title")}
         </Typography>
-        <Tooltip title="Refresh" data-testid="Tooltip__fac9e4">
+        <Tooltip title={t("processMonitor.refresh")} data-testid="Tooltip__fac9e4">
           <span>
             <IconButton size="small" onClick={onRefresh} disabled={loading} data-testid="ProcessMonitorPanel__refresh">
               {loading ? (
@@ -113,6 +115,17 @@ export const ProcessMonitorPanel = ({ open, onClose, items, loading, onRefresh }
           />
         ))}
       </Tabs>
+      {/* Footer */}
+      <Box sx={{ borderTop: 1, borderColor: "divider", px: 2, py: 1 }} data-testid="Box__fac9e4">
+        <Button
+          size="small"
+          endIcon={<OpenInNewIcon fontSize="inherit" data-testid="OpenInNewIcon__fac9e4" />}
+          onClick={handleGoToProcessMonitor}
+          sx={{ textTransform: "none" }}
+          data-testid="ProcessMonitorPanel__monitor-link">
+          {t("processMonitor.goToMonitor")}
+        </Button>
+      </Box>
       {/* List */}
       <Box sx={{ flex: 1, overflow: "auto" }} data-testid="Box__fac9e4">
         {filtered.length === 0 ? (
@@ -126,7 +139,7 @@ export const ProcessMonitorPanel = ({ open, onClose, items, loading, onRefresh }
             }}
             data-testid="Box__fac9e4">
             <Typography variant="body2" data-testid="Typography__fac9e4">
-              {loading ? "Loading..." : "No background processes in the last 24 hours"}
+              {loading ? t("processMonitor.empty.loading") : t("processMonitor.empty.noProcesses")}
             </Typography>
           </Box>
         ) : (
@@ -136,17 +149,6 @@ export const ProcessMonitorPanel = ({ open, onClose, items, loading, onRefresh }
             ))}
           </List>
         )}
-      </Box>
-      {/* Footer: link to Process Scheduling window */}
-      <Box sx={{ borderTop: 1, borderColor: "divider", px: 2, py: 1 }} data-testid="Box__fac9e4">
-        <Button
-          size="small"
-          endIcon={<OpenInNewIcon fontSize="inherit" data-testid="OpenInNewIcon__fac9e4" />}
-          onClick={handleGoToScheduling}
-          sx={{ textTransform: "none" }}
-          data-testid="ProcessMonitorPanel__scheduling-link">
-          Go to Process Scheduling
-        </Button>
       </Box>
     </Drawer>
   );

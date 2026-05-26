@@ -771,6 +771,45 @@ const es = {
     continue: "Continuar",
     close: "Cerrar",
   },
+  processMonitor: {
+    title: "Procesos en Segundo Plano",
+    refresh: "Actualizar",
+    tabs: {
+      all: "Todos",
+      running: "En ejecución",
+      completed: "Completados",
+      failed: "Fallidos",
+    },
+    empty: {
+      loading: "Cargando...",
+      noProcesses: "No hay procesos en segundo plano en las últimas 24 horas",
+    },
+    goToMonitor: "Abrir Monitor de Procesos",
+    windowTitle: "Monitor de Procesos",
+    button: {
+      tooltip: "Procesos en Segundo Plano",
+      ariaLabel: "Abrir monitor de procesos en segundo plano",
+    },
+    status: {
+      RUNNING: "En ejecución",
+      COMPLETED: "Completado",
+      FAILED: "Fallido",
+    },
+    item: {
+      showLog: "Ver log",
+      hideLog: "Ocultar log",
+      timeAgo: {
+        seconds: "s atrás",
+        minutes: "m atrás",
+        hours: "h atrás",
+      },
+    },
+    toast: {
+      completedSuffix: "completado exitosamente",
+      failedSuffix: "falló",
+      processError: "El proceso finalizó con errores",
+    },
+  },
   email: {
     title: "Enviar Email",
     to: "Para",

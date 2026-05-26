@@ -19,11 +19,15 @@ import { useCallback, useEffect, useRef, useState, createElement } from "react";
 import { toast } from "sonner";
 import type { BackgroundProcessItem } from "@workspaceui/api-client/src/api/types";
 import { ToastContent } from "@/components/ToastContent";
+import { useUserContext } from "./useUserContext";
+import { useTranslation } from "./useTranslation";
 
 const ACTIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
 export function useBackgroundProcessMonitor() {
+  const { token } = useUserContext();
+  const { t } = useTranslation();
   const [items, setItems] = useState<BackgroundProcessItem[]>([]);
   const [loading, setLoading] = useState(false);
   const prevStatusRef = useRef<Map<string, string>>(new Map());
@@ -31,9 +35,12 @@ export function useBackgroundProcessMonitor() {
   const isMountedRef = useRef(true);
 
   const fetchProcesses = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/process/monitor?status=ALL&hours=24");
+      const res = await fetch("/api/process/monitor?status=ALL&hours=24", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok || !isMountedRef.current) return;
 
       const data: { items?: BackgroundProcessItem[] } = await res.json();
@@ -45,11 +52,11 @@ export function useBackgroundProcessMonitor() {
       for (const item of newItems) {
         const prev = prevStatusRef.current.get(item.pInstanceId);
         if (prev === "RUNNING" && item.status === "COMPLETED") {
-          toast.success(`${item.processName} completed successfully`);
+          toast.success(`${item.processName} ${t("processMonitor.toast.completedSuffix")}`);
         } else if (prev === "RUNNING" && item.status === "FAILED") {
-          toast.error(`${item.processName} failed`, {
+          toast.error(`${item.processName} ${t("processMonitor.toast.failedSuffix")}`, {
             description: createElement(ToastContent, {
-              message: item.errorMsg ?? "Process finished with errors",
+              message: item.errorMsg ?? t("processMonitor.toast.processError"),
             }),
             duration: Number.POSITIVE_INFINITY,
           });
@@ -62,7 +69,7 @@ export function useBackgroundProcessMonitor() {
     } finally {
       if (isMountedRef.current) setLoading(false);
     }
-  }, []);
+  }, [token, t]);
 
   const scheduleNext = useCallback(() => {
     if (!isMountedRef.current) return;

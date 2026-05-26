@@ -17,24 +17,25 @@
 "use client";
 import { Chip, CircularProgress } from "@mui/material";
 import type { BackgroundProcessStatus } from "@workspaceui/api-client/src/api/types";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ProcessStatusBadgeProps {
   status: BackgroundProcessStatus;
 }
 
-const STATUS_CONFIG: Record<BackgroundProcessStatus, { label: string; color: "info" | "success" | "error" }> = {
-  RUNNING: { label: "Running", color: "info" },
-  COMPLETED: { label: "Completed", color: "success" },
-  FAILED: { label: "Failed", color: "error" },
+const STATUS_COLOR: Record<BackgroundProcessStatus, "info" | "success" | "error"> = {
+  RUNNING: "info",
+  COMPLETED: "success",
+  FAILED: "error",
 };
 
 export const ProcessStatusBadge = ({ status }: ProcessStatusBadgeProps) => {
-  const config = STATUS_CONFIG[status];
+  const { t } = useTranslation();
   return (
     <Chip
       size="small"
-      label={config.label}
-      color={config.color}
+      label={t(`processMonitor.status.${status}`)}
+      color={STATUS_COLOR[status]}
       icon={
         status === "RUNNING" ? (
           <CircularProgress

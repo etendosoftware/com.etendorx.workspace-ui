@@ -769,6 +769,45 @@ const en = {
     continue: "Continue",
     close: "Close",
   },
+  processMonitor: {
+    title: "Background Processes",
+    refresh: "Refresh",
+    tabs: {
+      all: "All",
+      running: "Running",
+      completed: "Completed",
+      failed: "Failed",
+    },
+    empty: {
+      loading: "Loading...",
+      noProcesses: "No background processes in the last 24 hours",
+    },
+    goToMonitor: "Open Process Monitor",
+    windowTitle: "Process Monitor",
+    button: {
+      tooltip: "Background Processes",
+      ariaLabel: "Open background process monitor",
+    },
+    status: {
+      RUNNING: "Running",
+      COMPLETED: "Completed",
+      FAILED: "Failed",
+    },
+    item: {
+      showLog: "Show log",
+      hideLog: "Hide log",
+      timeAgo: {
+        seconds: "s ago",
+        minutes: "m ago",
+        hours: "h ago",
+      },
+    },
+    toast: {
+      completedSuffix: "completed successfully",
+      failedSuffix: "failed",
+      processError: "Process finished with errors",
+    },
+  },
   email: {
     title: "Send Email",
     to: "To",

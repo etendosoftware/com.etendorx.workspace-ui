@@ -19,11 +19,13 @@ import { useState } from "react";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { useBackgroundProcessMonitor } from "@/hooks/useBackgroundProcessMonitor";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ProcessMonitorPanel } from "./ProcessMonitorPanel";
 
 export const ProcessMonitorButton = () => {
   const [panelOpen, setPanelOpen] = useState(false);
   const { items, loading, runningCount, failedCount, refresh } = useBackgroundProcessMonitor();
+  const { t } = useTranslation();
 
   const badgeCount = runningCount + failedCount;
   const badgeColor = failedCount > 0 ? "bg-red-500" : "bg-blue-500";
@@ -33,8 +35,8 @@ export const ProcessMonitorButton = () => {
       <div className="relative">
         <IconButton
           onClick={() => setPanelOpen(true)}
-          tooltip="Background Processes"
-          ariaLabel="Open background process monitor"
+          tooltip={t("processMonitor.button.tooltip")}
+          ariaLabel={t("processMonitor.button.ariaLabel")}
           className="w-10 h-10"
           data-testid="ProcessMonitorButton__trigger">
           <ClockIcon data-testid="ClockIcon__ca468f" />
