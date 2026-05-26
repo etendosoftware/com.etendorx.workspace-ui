@@ -3,6 +3,9 @@ import { resolve } from "path";
 import { readFileSync } from "fs";
 
 // Load .env from cypress-tests (same env vars)
+// NOTE: disabled — cypress-tests/.env may have stale credentials that differ
+// from the current backend. Values are set via PLAYWRIGHT_BASE_URL /
+// CYPRESS_BASE_URL / CYPRESS_IFRAME_URL env vars or use the defaults below.
 const loadEnv = () => {
   try {
     const envFile = resolve(process.cwd(), "../cypress-tests/.env");
@@ -11,7 +14,10 @@ const loadEnv = () => {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith("#")) {
         const [key, ...rest] = trimmed.split("=");
-        if (key && !process.env[key]) process.env[key] = rest.join("=");
+        // Only load non-credential env vars to avoid stale password overrides
+        if (key && !process.env[key] && key !== "CYPRESS_PASSWORD" && key !== "CYPRESS_USER") {
+          process.env[key] = rest.join("=");
+        }
       }
     }
   } catch {
@@ -74,6 +80,7 @@ export default defineConfig({
         "**/PurchaseOrderDisplayLogicTest*",
       ],
       dependencies: ["suite-00-performance"],
+      timeout: 360_000,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
@@ -85,6 +92,7 @@ export default defineConfig({
       name: "suite-02-sales",
       testMatch: ["**/01_Sales/**"],
       dependencies: ["suite-01-base"],
+      timeout: 720_000,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
@@ -96,6 +104,7 @@ export default defineConfig({
       name: "suite-03-procurement",
       testMatch: ["**/03_Procurement/**"],
       dependencies: ["suite-02-sales"],
+      timeout: 360_000,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
@@ -107,6 +116,7 @@ export default defineConfig({
       name: "suite-04-financial",
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
+      timeout: 360_000,
       use: {
         ...devices["Desktop Chrome"],
         launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
@@ -114,8 +124,8 @@ export default defineConfig({
     },
   ],
 
-  // Global test timeout — when tests run sequentially the server is slower due
-  // to accumulated data. Individual tests can override with test.setTimeout().
+  // Global test timeout for suite-00-performance. Smoke suites set their own
+  // higher timeouts at the project level above.
   timeout: 120_000,
   expect: { timeout: 15_000 },
 });

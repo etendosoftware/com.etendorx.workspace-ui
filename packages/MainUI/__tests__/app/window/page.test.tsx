@@ -79,8 +79,10 @@ describe("Window Page", () => {
     const homeElement = screen.getByText("Home");
     expect(homeElement).toBeInTheDocument();
 
-    // Check that Window is NOT rendered
-    expect(screen.queryByText("Window")).not.toBeInTheDocument();
+    // Window that was never visited is NOT mounted (keep-in-DOM only applies
+    // to previously visited windows — mountedWindows starts empty)
+    const windowEl = screen.queryByTestId("Window__123");
+    expect(windowEl).not.toBeInTheDocument();
   });
 
   it("renders Window when activeWindow is present and not home route", () => {

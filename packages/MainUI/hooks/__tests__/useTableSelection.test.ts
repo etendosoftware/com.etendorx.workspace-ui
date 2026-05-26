@@ -21,9 +21,14 @@ import useTableSelection from "../useTableSelection";
 import { useSelected } from "@/hooks/useSelected";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 // Mocks
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "win_1"),
+  useCurrentWindowId: jest.fn(() => "win1"),
+}));
 jest.mock("@/utils/logger");
 jest.mock("@/utils/structures", () => ({
   mapBy: jest.fn((arr, key) => {
@@ -113,6 +118,7 @@ describe("useTableSelection", () => {
       setSelectedRecord: mockSetSelectedRecord,
       clearSelectedRecord: mockClearSelectedRecord,
     });
+    (useCurrentWindowId as jest.Mock).mockReturnValue("win-different");
 
     const rowSelection = { r1: true };
     renderHook(() => useTableSelection(mockTab, mockRecords, rowSelection));

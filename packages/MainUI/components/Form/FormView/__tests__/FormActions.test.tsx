@@ -102,6 +102,10 @@ jest.mock("@/stores/windowStore", () => ({
   }),
 }));
 
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "WIN1"),
+}));
+
 jest.mock("@/hooks/useFormValidation", () => ({
   useFormValidation: jest.fn(),
 }));

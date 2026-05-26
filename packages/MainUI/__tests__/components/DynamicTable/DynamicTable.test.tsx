@@ -293,6 +293,11 @@ jest.mock("@/contexts/window", () => ({
   useWindowContext: () => mockMultiWindowURL,
 }));
 
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "test-window-id_123456789"),
+  useCurrentWindowId: jest.fn(() => "test-window-id"),
+}));
+
 // Initialize Zustand store with active window for Table/index.tsx (which uses useWindowStore directly)
 import { useWindowStore } from "@/stores/windowStore";
 beforeEach(() => {

@@ -43,6 +43,9 @@ jest.mock("@/hooks/useDeleteRecord", () => ({
 }));
 // useUserStore is a Zustand store — set state directly in beforeEach
 jest.mock("@/utils/logger");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "windowIdentifier1"),
+}));
 
 describe("useToolbarConfig", () => {
   const mockTab = {
@@ -50,6 +53,7 @@ describe("useToolbarConfig", () => {
     entityName: "TestEntity",
     obuiappCloneChildren: false,
     tabLevel: 0,
+    window: "window1",
   };
 
   const mockActiveWindow = {

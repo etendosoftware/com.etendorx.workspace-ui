@@ -33,6 +33,7 @@ import type { WindowState } from "@/utils/window/constants";
 const mockMetadataContext = {
   error: null,
   loading: false,
+  isWindowLoading: jest.fn().mockReturnValue(false),
   getWindowMetadata: jest.fn().mockReturnValue({
     id: "TestWindow",
     name: "Test Window",
@@ -181,6 +182,7 @@ describe("Window Component Multi-Window Instance Support", () => {
     Object.assign(mockMetadataContext, {
       error: null,
       loading: false,
+      isWindowLoading: jest.fn().mockReturnValue(false),
       getWindowMetadata: jest.fn().mockReturnValue({
         id: "TestWindow",
         name: "Test Window",

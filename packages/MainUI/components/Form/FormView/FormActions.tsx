@@ -48,6 +48,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowIdentifier = activeWindow?.windowIdentifier;
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
@@ -177,12 +178,11 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   }, [refetch, resetFormChanges]);
 
   const handleBack = useCallback(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (windowIdentifier) {
       clearTabFormState(windowIdentifier, tab.id);
     }
     resetFormChanges();
-  }, [activeWindow?.windowIdentifier, clearTabFormState, tab, resetFormChanges]);
+  }, [windowIdentifier, clearTabFormState, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     onNew();

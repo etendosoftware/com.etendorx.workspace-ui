@@ -28,6 +28,10 @@ import { useWindowStore } from "@/stores/windowStore";
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/utils/hooks/useTableSelection/sessionSync");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "window1_123456789"),
+  useCurrentWindowId: jest.fn(() => "window1"),
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     debug: jest.fn(),

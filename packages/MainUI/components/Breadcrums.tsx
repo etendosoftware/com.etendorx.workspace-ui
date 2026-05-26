@@ -60,7 +60,7 @@ const StarIcon = ({ filled, ...props }: React.SVGProps<SVGSVGElement> & { filled
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window, windowId, windowIdentifier } = useMetadataContext();
+  const { window: activeWindowMetadata, getWindowMetadata } = useMetadataContext();
 
   // Zustand store — reactive value
   const windowsObj = useWindowStore((s) => s.windows);
@@ -68,6 +68,10 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+
+  const windowIdentifier = activeWindow?.windowIdentifier;
+  const windowId = activeWindow?.windowId;
+  const window = windowId ? getWindowMetadata(windowId) : activeWindowMetadata;
 
   // Zustand store — stable action/getter references
   const getTabFormState = useCallback(

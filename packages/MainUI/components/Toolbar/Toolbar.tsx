@@ -53,6 +53,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
@@ -83,6 +84,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action/getter references
   const getTabFormState = useCallback(
@@ -112,14 +114,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
-
-  // Table state for Save View feature — reads current grid state to persist
-  const windowIdentifier = activeWindow?.windowIdentifier ?? "";
-  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({
-      windowIdentifier,
-      tabId: tab?.id ?? "",
-    });
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    tableColumnSorting,
+    tableColumnOrder,
+    activeLevels,
+    activeTabsByLevel,
+  } = useTableStatePersistenceTab({
+    windowIdentifier,
+    tabId: tab?.id ?? "",
+  });
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -146,11 +151,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
-    if (!activeWindow || !tab?.id) return false;
-    const navigationState = activeWindow.navigation;
-    // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
-    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
-  }, [activeWindow, tab?.id]);
+    if (!tab?.id) return false;
+    return activeLevels.includes(1) && activeTabsByLevel.has(1);
+  }, [activeLevels, activeTabsByLevel, tab?.id]);
 
   // Manage temporary filter tooltip visibility
   useEffect(() => {
@@ -209,17 +212,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       order: typeof tableColumnOrder;
       implicitFilterApplied: boolean;
     }) => {
-      if (!activeWindow?.windowIdentifier || !tab?.id) return;
-      const wi = activeWindow.windowIdentifier;
+      if (!windowIdentifier || !tab?.id) return;
       const ti = tab.id;
-      setTableFilters(wi, ti, state.filters);
-      setTableVisibility(wi, ti, state.visibility);
-      setTableSorting(wi, ti, state.sorting);
-      setTableOrder(wi, ti, state.order);
-      setTableImplicitFilterApplied(wi, ti, state.implicitFilterApplied);
+      setTableFilters(windowIdentifier, ti, state.filters);
+      setTableVisibility(windowIdentifier, ti, state.visibility);
+      setTableSorting(windowIdentifier, ti, state.sorting);
+      setTableOrder(windowIdentifier, ti, state.order);
+      setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
     },
     [
-      activeWindow?.windowIdentifier,
+      windowIdentifier,
       tab?.id,
       setTableFilters,
       setTableVisibility,
@@ -306,7 +308,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       const childTabs = graph.getChildren(tab);
       const childTabIdsInFormView: string[] = [];
       const hasChildTabs = childTabs && childTabs.length > 0;
-      const windowIdentifier = activeWindow?.windowIdentifier;
 
       if (hasChildTabs && windowIdentifier) {
         childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
@@ -338,7 +339,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isFormView,
     formViewRefetch,
-    activeWindow,
+    windowIdentifier,
     processChildTabsInFormView,
     clearChildrenSelections,
   ]);

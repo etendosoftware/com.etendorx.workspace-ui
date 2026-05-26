@@ -40,6 +40,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowId = activeWindow?.windowId;
   const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
   const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
@@ -119,7 +120,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
 
   return (
     <LinkedItems
-      windowId={activeWindow?.windowId || ""}
+      windowId={windowId || ""}
       entityName={entityName}
       recordId={recordId}
       onFetchCategories={handleFetchCategories}

@@ -384,7 +384,7 @@ export default function Sidebar() {
       }
     }
     const map = new Map<string, string>();
-    collect(menu, map);
+    if (menu?.length) collect(menu, map);
     setMenuMap(map);
   }, [menu, setMenuMap]);
 

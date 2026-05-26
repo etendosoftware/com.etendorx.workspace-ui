@@ -44,6 +44,7 @@ import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/se
 import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { TabFormState } from "@/utils/url/constants";
 import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
 
@@ -265,12 +266,15 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
 
+
   // Zustand store — reactive value
   const windowsObj = useWindowStore((s) => s.windows);
   const activeWindow = useMemo(() => {
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
 
   // Zustand store — stable action references
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
@@ -327,8 +331,6 @@ export default function useTableSelection(
 
   const debouncedPersistSelection = useDebouncedCallback(persistSelection, KEYBOARD_NAV_DEBOUNCE_MS);
 
-  const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.windowIdentifier;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount

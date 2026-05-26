@@ -27,6 +27,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { isEmptyObject } from "@/utils/commons";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
@@ -51,8 +52,9 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const { tab } = useTabContext();
   const windowsObj = useWindowStore((s) => s.windows);
   const activeWindow = useMemo(() => Object.values(windowsObj).find((w) => w.isActive) ?? null, [windowsObj]);
+  const windowIdentifier = useCurrentWindowIdentifier();
   const { tableColumnVisibility } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });

@@ -36,6 +36,7 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
@@ -118,6 +119,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowIdentifier = useCurrentWindowIdentifier();
 
   // Zustand store — stable action references
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
@@ -163,8 +165,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
   // This prevents re-opening the form view after the user explicitly closes it.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
-
-  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const { isFocused, acquire } = useFocusRegion(tab.id, {
     onBlur: async () => {

@@ -163,6 +163,7 @@ export function FormView({
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
+  const windowIdentifier = activeWindow?.windowIdentifier;
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
   const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
   const getSelectedRecord = useCallback(
@@ -253,6 +254,10 @@ export function FormView({
         .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
         .join(",");
 
+      // Evict the entity from the response cache so the fetch below always
+      // returns the post-process/post-save state, not a 30-second-old snapshot.
+      datasource.clearCacheForEntity(tab.entityName);
+
       // Fetch the record first so the graph is updated before refetch() runs.
       // Running them in parallel caused a race: if refetch() completed first, the graph-sync
       // useEffect would compute availableFormData from the stale graph record and cache that
@@ -268,9 +273,7 @@ export function FormView({
         ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       })) as { data: { response?: { data?: EntityData[] } } };
 
-      const currentlySelectedId = activeWindow?.windowIdentifier
-        ? getSelectedRecord(activeWindow.windowIdentifier, tab.id)
-        : null;
+      const currentlySelectedId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : null;
 
       if (currentlySelectedId && currentlySelectedId !== recordId) {
         // Stop right here if the user has navigated or cloned to another record while we fetched.
@@ -295,7 +298,7 @@ export function FormView({
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
     }
-  }, [recordId, tab, graph, refetch, updateRecordInDatasource, activeWindow?.windowIdentifier, getSelectedRecord]);
+  }, [recordId, tab, graph, refetch, updateRecordInDatasource, windowIdentifier, getSelectedRecord]);
 
   useEffect(() => {
     if (registerFormViewRefetch) {
@@ -382,8 +385,6 @@ export function FormView({
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
     if (!windowIdentifier) return null;
 
     if (currentRecordId === NEW_RECORD_ID) {
@@ -412,7 +413,7 @@ export function FormView({
     }
 
     return null;
-  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
+  }, [windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
 
   const { addRecentDocument } = useRecentDocuments();
 
@@ -833,7 +834,6 @@ export function FormView({
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowIdentifier = activeWindow?.windowIdentifier;
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
@@ -916,7 +916,7 @@ export function FormView({
       currentMode,
       graph,
       tab,
-      activeWindow?.windowIdentifier,
+      windowIdentifier,
       showSuccessModal,
       setRecordId,
       setSelectedRecord,
@@ -996,8 +996,8 @@ export function FormView({
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.windowIdentifier && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
+      if (windowIdentifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {
@@ -1006,7 +1006,7 @@ export function FormView({
       }
       setRecordId(newRecordId);
     },
-    [setRecordId, graph, tab, activeWindow, setSelectedRecordAndClearChildren]
+    [setRecordId, graph, tab, windowIdentifier, setSelectedRecordAndClearChildren]
   );
 
   /**
@@ -1032,13 +1032,13 @@ export function FormView({
     setCurrentRecordId(NEW_RECORD_ID);
     setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
 
-    if (activeWindow?.windowIdentifier) {
-      setSelectedRecord(activeWindow.windowIdentifier, tab.id, NEW_RECORD_ID);
+    if (windowIdentifier) {
+      setSelectedRecord(windowIdentifier, tab.id, NEW_RECORD_ID);
       graph.clearSelected(tab);
       graph.clearSelectedMultiple(tab);
     }
     resetFormChanges();
-  }, [activeWindow?.windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
+  }, [windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
 
   /**
    * Context value object containing all form view state and handlers.

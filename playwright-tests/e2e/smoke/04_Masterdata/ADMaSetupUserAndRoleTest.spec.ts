@@ -25,7 +25,7 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     const username = `qa_${Date.now()}`;
     const name = username;
 
-    await loginToEtendo(page, "admin", "admin");
+    await loginToEtendo(page);
     await page.waitForTimeout(1_000);
 
     // Switch to QA role
