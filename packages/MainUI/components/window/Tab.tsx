@@ -258,40 +258,39 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowIdentifier, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
-    if (windowIdentifier) {
-      const currentFormState = getTabFormState(windowIdentifier, tab.id);
-      const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+    if (!windowIdentifier) return;
 
-      if (isInFormView) {
-        if (tab.uIPattern === UIPattern.EDIT_ONLY) {
-          clearTabFormState(windowIdentifier, tab.id);
-          clearSelectedRecord(windowIdentifier, tab.id);
-          graph.clearSelected(tab);
-          return;
-        }
+    const currentFormState = getTabFormState(windowIdentifier, tab.id);
+    const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+
+    if (isInFormView) {
+      if (tab.uIPattern === UIPattern.EDIT_ONLY) {
         clearTabFormState(windowIdentifier, tab.id);
-      } else {
-        if (tab.tabLevel === 0) {
-          // Back on Level 0 Grid navigates Home
-          setAllWindowsInactive();
-          return;
-        }
-
         clearSelectedRecord(windowIdentifier, tab.id);
-
-        // Also clear children if this tab has any
-        const children = graph.getChildren(tab);
-        if (children && children.length > 0) {
-          const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-          if (childIds.length > 0) {
-            clearChildrenSelections(windowIdentifier, childIds);
-          }
-        }
-
-        // Clear graph selection
         graph.clearSelected(tab);
+        return;
       }
+      clearTabFormState(windowIdentifier, tab.id);
+      return;
     }
+
+    if (tab.tabLevel === 0) {
+      setAllWindowsInactive();
+      return;
+    }
+
+    clearSelectedRecord(windowIdentifier, tab.id);
+
+    const childIds =
+      graph
+        .getChildren(tab)
+        ?.filter((c) => c.window === tab.window)
+        .map((c) => c.id) ?? [];
+    if (childIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, childIds);
+    }
+
+    graph.clearSelected(tab);
   }, [
     windowIdentifier,
     clearTabFormState,
