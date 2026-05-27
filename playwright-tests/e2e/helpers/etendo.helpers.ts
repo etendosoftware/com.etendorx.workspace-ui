@@ -468,8 +468,9 @@ export async function navigateToPaymentIn(page: Page) {
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(/Payment In/i)
+    .first()
     .waitFor({ state: "visible", timeout: 15_000 });
 }
 
@@ -494,8 +495,9 @@ async function navigateByMenuLabel(page: Page, searchText: string, menuLabel: Re
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").evaluate((el) => (el as HTMLElement).click());
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(breadcrumbLabel)
+    .first()
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 
