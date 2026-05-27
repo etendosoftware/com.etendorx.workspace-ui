@@ -3,7 +3,7 @@ import { GenericWarehouseProcess } from "../GenericWarehouseProcess";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useBoxManager } from "../../shared/useBoxManager";
 import { createCallAction } from "../warehouseApiHelpers";
 import { executeStringFunction } from "@/utils/functions";
@@ -16,7 +16,7 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
-jest.mock("@/contexts/window");
+jest.mock("@/stores/windowStore");
 jest.mock("../../shared/useBoxManager");
 jest.mock("../warehouseApiHelpers");
 jest.mock("@/utils/functions");
@@ -106,7 +106,9 @@ describe("GenericWarehouseProcess", () => {
     (useUserContext as jest.Mock).mockReturnValue({ token: "fake-token" });
     (useRouter as jest.Mock).mockReturnValue({ replace: jest.fn() });
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
-    (useWindowContext as jest.Mock).mockReturnValue({ triggerRecovery: jest.fn(), isRecoveryLoading: false });
+    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({ triggerRecovery: jest.fn(), isRecoveryLoading: false })
+    );
     (useBoxManager as jest.Mock).mockReturnValue({
       boxCount: 1,
       currentBox: 1,

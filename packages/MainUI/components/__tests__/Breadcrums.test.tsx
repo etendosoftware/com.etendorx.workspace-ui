@@ -27,14 +27,13 @@ jest.mock("../../hooks/useMetadataContext", () => ({
 }));
 
 const mockSetAllWindowsInactive = jest.fn();
+const mockClearTabFormState = jest.fn();
 const mockSetActiveLevel = jest.fn();
 const mockSetFocus = jest.fn();
-const mockUseWindowContext = jest.fn();
 let mockActiveFocusId: string | null = null;
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: (...args: any[]) => mockUseWindowContext(...args),
-}));
+// useWindowStore is used directly — we set state via setState
+import { useWindowStore } from "@/stores/windowStore";
 
 jest.mock("@/hooks/useCurrentRecord");
 jest.mock("@/hooks/useTableStatePersistenceTab");
@@ -52,15 +51,22 @@ jest.mock("@/contexts/focus", () => ({
 
 // Mock Component Library Breadcrumb to simplify assertions
 const mockFavToggle = jest.fn();
-const mockIsFavorite = jest.fn(() => false);
 let mockMenuIdByWindowId: Map<string, string> = new Map();
+let mockFavoriteWindowIds: Set<string> = new Set();
 
-jest.mock("@/contexts/favorites", () => ({
-  useFavoritesContext: () => ({
-    isFavorite: mockIsFavorite,
-    toggle: mockFavToggle,
-    menuIdByWindowId: mockMenuIdByWindowId,
-  }),
+jest.mock("@/stores/favoritesStore", () => ({
+  useFavoritesStore: (
+    selector: (s: {
+      favoriteWindowIds: Set<string>;
+      toggle: jest.Mock;
+      menuIdByWindowId: Map<string, string>;
+    }) => unknown
+  ) =>
+    selector({
+      favoriteWindowIds: mockFavoriteWindowIds,
+      toggle: mockFavToggle,
+      menuIdByWindowId: mockMenuIdByWindowId,
+    }),
 }));
 
 // Mock Component Library Breadcrumb
@@ -123,14 +129,24 @@ const sharedThreeLevelTabs = [
   [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
 ];
 
-const buildWindowContextValue = (overrides: Record<string, any> = {}) => ({
-  activeWindow: { tabs: {}, windowIdentifier: "test-window-identifier" },
-  setAllWindowsInactive: mockSetAllWindowsInactive,
-  getNavigationState: jest.fn(() => undefined),
-  getTabFormState: jest.fn(() => undefined),
-  clearTabFormState: jest.fn(),
-  ...overrides,
-});
+/** Helper: set Zustand store to simulate an active window with given tabs */
+const setWindowStoreState = (tabsContext: Record<string, any> = {}) => {
+  useWindowStore.setState({
+    windows: {
+      "test-window-identifier": {
+        windowId: "test-window-id",
+        windowIdentifier: "test-window-identifier",
+        isActive: true,
+        initialized: true,
+        title: "",
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        tabs: tabsContext,
+      },
+    },
+    setAllWindowsInactive: mockSetAllWindowsInactive,
+    clearTabFormState: mockClearTabFormState,
+  } as any);
+};
 
 // Helper: return a fixed-record mock for 5 hook calls.
 // recordBySlot: index → record value (undefined for unset slots)
@@ -145,12 +161,10 @@ const setupTabsAndWindow = ({
   activeTabs = [[0, "tab-1"]],
   activeLevels = [0],
   tabsContext = {},
-  windowContextOverrides = {},
 }: {
   activeTabs?: [number, string][];
   activeLevels?: number[];
   tabsContext?: Record<string, any>;
-  windowContextOverrides?: Record<string, any>;
 } = {}) => {
   mockedUseTableStatePersistenceTab.mockReturnValue({
     setActiveLevel: mockSetActiveLevel,
@@ -158,15 +172,7 @@ const setupTabsAndWindow = ({
     activeLevels,
   } as any);
 
-  mockUseWindowContext.mockReturnValue(
-    buildWindowContextValue({
-      activeWindow: {
-        tabs: tabsContext,
-        windowIdentifier: "test-window-identifier",
-      },
-      ...windowContextOverrides,
-    })
-  );
+  setWindowStoreState(tabsContext);
 };
 
 describe("AppBreadcrumb", () => {
@@ -174,7 +180,7 @@ describe("AppBreadcrumb", () => {
     jest.clearAllMocks();
     mockActiveFocusId = null;
     mockMenuIdByWindowId = new Map();
-    mockIsFavorite.mockImplementation(() => false);
+    mockFavoriteWindowIds = new Set();
 
     setupTabsAndWindow();
 
@@ -227,14 +233,15 @@ describe("AppBreadcrumb", () => {
     });
 
     it("does not reset tab form state", () => {
-      const mockClearTabFormState = jest.fn();
-      setupTabsAndWindow({ windowContextOverrides: { clearTabFormState: mockClearTabFormState } });
+      const localMockClearTabFormState = jest.fn();
+      setupTabsAndWindow();
+      useWindowStore.setState({ clearTabFormState: localMockClearTabFormState } as any);
 
       renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
       fireEvent.click(screen.getByTestId("item-test-window-id"));
 
-      expect(mockClearTabFormState).not.toHaveBeenCalled();
+      expect(localMockClearTabFormState).not.toHaveBeenCalled();
     });
 
     // Regression: previously this handler called graph.clear / graph.clearSelected, which
@@ -432,22 +439,28 @@ describe("AppBreadcrumb", () => {
       tabs = mockTabs,
     }: BackScenarioConfig) => {
       mockActiveFocusId = focusedTabId;
-      const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn((_, tabId) => formStateByTabId[tabId]);
+      const localMockClearTabFormState = jest.fn();
 
-      setupTabsAndWindow({
-        activeTabs,
-        activeLevels,
-        windowContextOverrides: {
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
-        },
-      });
+      // Build tabs context with form states for the store
+      const tabsContext: Record<string, any> = {};
+      for (const [tabId, formState] of Object.entries(formStateByTabId)) {
+        tabsContext[tabId] = {
+          form: formState,
+          selectedRecord: undefined,
+          table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+          tabLevel: 0,
+        };
+      }
+
+      setupTabsAndWindow({ activeTabs, activeLevels, tabsContext });
+
+      // Override clearTabFormState with local mock for assertion
+      useWindowStore.setState({ clearTabFormState: localMockClearTabFormState } as any);
 
       renderWithTheme(<AppBreadcrumb allTabs={tabs} />);
       fireEvent.click(screen.getByTestId("back-button"));
 
-      return { mockClearTabFormState };
+      return { mockClearTabFormState: localMockClearTabFormState };
     };
 
     const twoLevelActive = {

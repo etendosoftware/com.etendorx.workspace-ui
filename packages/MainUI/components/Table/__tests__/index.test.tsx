@@ -104,14 +104,15 @@ jest.mock("@/hooks/useSelected", () => ({
   }),
 }));
 
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({
-    user: {
-      id: "test-user",
-      name: "Test User",
-    },
-    session: {},
-  }),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) =>
+    selector({
+      user: {
+        id: "test-user",
+        name: "Test User",
+      },
+      session: {},
+    }),
 }));
 
 jest.mock("@/contexts/window", () => ({

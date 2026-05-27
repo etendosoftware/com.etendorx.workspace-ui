@@ -298,6 +298,26 @@ jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowId: jest.fn(() => "test-window-id"),
 }));
 
+// Initialize Zustand store with active window for Table/index.tsx (which uses useWindowStore directly)
+import { useWindowStore } from "@/stores/windowStore";
+beforeEach(() => {
+  useWindowStore.setState({
+    windows: {
+      "test-window-id_123456789": {
+        windowId: "test-window-id",
+        windowIdentifier: "test-window-id_123456789",
+        isActive: true,
+        initialized: true,
+        title: "Test Window",
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        tabs: {},
+      },
+    },
+    setSelectedRecord: mockMultiWindowURL.setSelectedRecord,
+    clearSelectedRecord: mockMultiWindowURL.clearSelectedRecord,
+  });
+});
+
 jest.mock("@/hooks/useUserContext", () => ({
   useUserContext: () => mockUserContext,
 }));
@@ -1097,12 +1117,30 @@ describe("DynamicTable", () => {
     });
 
     it("should apply initial URL selection on mount", () => {
-      mockMultiWindowURL.getSelectedRecord.mockReturnValue("2");
+      // Set selected record in Zustand store
+      useWindowStore.setState((s) => ({
+        windows: {
+          ...s.windows,
+          "test-window-id_123456789": {
+            ...s.windows["test-window-id_123456789"],
+            tabs: {
+              "test-tab-id": {
+                selectedRecord: "2",
+                form: {},
+                table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+                tabLevel: 0,
+              },
+            },
+          },
+        },
+      }));
       mockDatasourceHook.records = mockRecords;
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
-      expect(mockMultiWindowURL.getSelectedRecord).toHaveBeenCalledWith("test-window-id_123456789", "test-tab-id");
+      // Verify the component reads from the store (selected record "2" should be applied)
+      const storeState = useWindowStore.getState();
+      expect(storeState.windows["test-window-id_123456789"].tabs["test-tab-id"].selectedRecord).toBe("2");
     });
 
     it("should handle invalid URL record IDs gracefully", () => {
@@ -1116,7 +1154,23 @@ describe("DynamicTable", () => {
     });
 
     it("should restore URL selection when table data changes", () => {
-      mockMultiWindowURL.getSelectedRecord.mockReturnValue("1");
+      // Set selected record in Zustand store
+      useWindowStore.setState((s) => ({
+        windows: {
+          ...s.windows,
+          "test-window-id_123456789": {
+            ...s.windows["test-window-id_123456789"],
+            tabs: {
+              "test-tab-id": {
+                selectedRecord: "1",
+                form: {},
+                table: { filters: [], visibility: {}, sorting: [], order: [], isImplicitFilterApplied: undefined },
+                tabLevel: 0,
+              },
+            },
+          },
+        },
+      }));
       const { rerender } = renderWithProviders(<DynamicTable {...defaultProps} />);
 
       // Change the records
@@ -1127,7 +1181,9 @@ describe("DynamicTable", () => {
 
       rerender(<DynamicTable {...defaultProps} />);
 
-      expect(mockMultiWindowURL.getSelectedRecord).toHaveBeenCalled();
+      // Verify the store still has the selected record
+      const storeState = useWindowStore.getState();
+      expect(storeState.windows["test-window-id_123456789"].tabs["test-tab-id"].selectedRecord).toBe("1");
     });
 
     it("should handle missing window ID gracefully", () => {

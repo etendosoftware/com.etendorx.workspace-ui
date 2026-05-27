@@ -16,7 +16,7 @@ import { useFormContext } from "react-hook-form";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/language";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import {
   buildSelectorColumnDefs,
   buildDatasourceColumns,
@@ -46,7 +46,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { getValues } = useFormContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
 
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = useMemo(() => {

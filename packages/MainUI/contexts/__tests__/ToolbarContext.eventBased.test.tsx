@@ -33,9 +33,38 @@ jest.mock("@/services/callouts", () => ({
   globalCalloutManager: mockCalloutManager,
 }));
 
+jest.mock("@/contexts/tab");
+jest.mock("@/contexts/TabRefreshContext");
+
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToolbarProvider, useToolbarContext } from "../ToolbarContext";
+import { useTabContext } from "@/contexts/tab";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useToolbarStore } from "@/stores/toolbarStore";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+
+const mockUseTabContext = useTabContext as jest.MockedFunction<typeof useTabContext>;
+const mockUseTabRefreshContext = useTabRefreshContext as jest.MockedFunction<typeof useTabRefreshContext>;
+
+const mockTab: Tab = {
+  id: "event-test-tab",
+  tabLevel: 0,
+  name: "Event Test Tab",
+  window: "test-window",
+  entityName: "TestEntity",
+  title: "Event Test Tab",
+  uIPattern: "STD" as const,
+  parentColumns: [],
+  table: "test_table",
+  fields: {},
+  _identifier: "event-test-identifier",
+  records: {},
+  hqlfilterclause: "",
+  hqlwhereclause: "",
+  sQLWhereClause: "",
+  module: "test-module",
+};
 
 const TestComponent = () => {
   const { saveButtonState, setSaveButtonState } = useToolbarContext();
@@ -62,8 +91,33 @@ describe("ToolbarContext Event-Based Integration", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Reset Zustand store between tests to prevent cross-test state leaks
+    useToolbarStore.setState({ byTabId: {} });
+
     // Reset mock to default state
     mockCalloutManager.isCalloutRunning.mockReturnValue(false);
+
+    // Set up tab/refresh context mocks
+    mockUseTabContext.mockReturnValue({
+      tab: mockTab,
+      record: null,
+      parentTab: null,
+      parentRecord: null,
+      parentRecords: null,
+      hasFormChanges: false,
+      markFormAsChanged: jest.fn(),
+      resetFormChanges: jest.fn(),
+      auxiliaryInputs: {},
+      setAuxiliaryInputs: jest.fn(),
+    });
+
+    mockUseTabRefreshContext.mockReturnValue({
+      registerRefresh: jest.fn(),
+      unregisterRefresh: jest.fn(),
+      triggerParentRefreshes: jest.fn(),
+      triggerCurrentRefresh: jest.fn(),
+      triggerRefresh: jest.fn(),
+    });
 
     // Capture the event listeners
     mockCalloutManager.on.mockImplementation((event: string, callback: () => void) => {

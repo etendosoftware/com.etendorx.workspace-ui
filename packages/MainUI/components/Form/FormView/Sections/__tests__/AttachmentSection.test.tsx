@@ -32,12 +32,13 @@ jest.mock("@/hooks/useTranslation", () => ({
   }),
 }));
 
-// Mock user context
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({
-    session: { adOrgId: "org-123" },
-    currentOrganization: { id: "org-123" },
-  }),
+// Mock user store
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: any) =>
+    selector({
+      session: { adOrgId: "org-123" },
+      currentOrganization: { id: "org-123" },
+    }),
 }));
 
 // Mock components

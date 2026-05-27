@@ -37,8 +37,6 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
-  useWindowContext,
-  useUserContext,
   // Hooks
   useProcessConfig,
   useProcessInitialization,
@@ -84,6 +82,8 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { useWindowStore } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
 import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
@@ -223,10 +223,13 @@ function ProcessDefinitionModalContent({
   const { graph } = useSelected();
   const { tab, record: tabRecord } = useTabContext();
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
-  const { session, token, getCsrfToken } = useUserContext();
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
+  const getCsrfToken = useUserStore((s) => s.getCsrfToken);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;
@@ -573,8 +576,11 @@ function ProcessDefinitionModalContent({
   const rawFormValues = form.watch();
   // Stabilize reference: only change identity when values actually change (deep equality).
   // Prevents WindowReferenceGrid and display-logic from re-running on every unrelated render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const formValues = useMemo(() => rawFormValues, [JSON.stringify(rawFormValues)]);
+  const formValuesRef = useRef(rawFormValues);
+  if (JSON.stringify(formValuesRef.current) !== JSON.stringify(rawFormValues)) {
+    formValuesRef.current = rawFormValues;
+  }
+  const formValues = formValuesRef.current;
 
   const handleGridUpdate = useCallback(
     (gridName: string, data: unknown) => {

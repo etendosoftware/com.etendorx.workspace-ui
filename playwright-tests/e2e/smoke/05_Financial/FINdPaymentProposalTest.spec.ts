@@ -134,13 +134,16 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
 
       // Business Partner: Vendor B
+      // Use :visible to avoid matching the previous invoice's BP field still in DOM
       await page
-        .locator('[aria-describedby="Business Partner-help"]')
+        .locator('[aria-describedby="Business Partner-help"]:visible')
         .locator('div[tabindex="0"]')
+        .first()
         .scrollIntoViewIfNeeded();
       await page
-        .locator('[aria-describedby="Business Partner-help"]')
+        .locator('[aria-describedby="Business Partner-help"]:visible')
         .locator('div[tabindex="0"]')
+        .first()
         .click({ force: true });
       bpSearch = page.locator('input[aria-label="Search options"]');
       await bpSearch.waitFor({ state: "visible", timeout: 15_000 });

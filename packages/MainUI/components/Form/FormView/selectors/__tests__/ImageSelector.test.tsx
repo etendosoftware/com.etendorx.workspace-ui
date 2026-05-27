@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ImageSelector from "../ImageSelector";
 import { useFormContext } from "react-hook-form";
 import { useTabContext } from "@/contexts/tab";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 jest.mock("react-hook-form");
 jest.mock("@/contexts/tab");
-jest.mock("@/hooks/useUserContext");
+jest.mock("@/stores/userStore");
 jest.mock("@/hooks/useAuthenticatedImage");
 jest.mock("@/hooks/useImageUpload");
 jest.mock("@/hooks/useTranslation");
@@ -132,10 +132,12 @@ describe("ImageSelector", () => {
       tab: { id: "tab-123" },
     });
 
-    (useUserContext as jest.Mock).mockReturnValue({
-      session: { "#AD_Org_ID": "org-foo" },
-      currentOrganization: null,
-    });
+    (useUserStore as unknown as jest.Mock).mockImplementation((selector: any) =>
+      selector({
+        session: { "#AD_Org_ID": "org-foo" },
+        currentOrganization: null,
+      })
+    );
 
     (useTranslation as jest.Mock).mockReturnValue({
       t: (k: string) => k,

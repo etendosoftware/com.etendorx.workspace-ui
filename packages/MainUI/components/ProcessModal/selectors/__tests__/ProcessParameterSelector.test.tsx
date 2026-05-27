@@ -13,8 +13,8 @@ jest.mock("@/app/actions/revalidate", () => ({
 }));
 
 // Mock hooks and components
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {} }),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: any) => selector({ session: {} }),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/PasswordSelector", () => ({

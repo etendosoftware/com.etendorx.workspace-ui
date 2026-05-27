@@ -28,7 +28,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { StatusModalState } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { compileExpression } from "./selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
@@ -56,7 +56,7 @@ export function FormHeader({
 }: FormHeaderProps) {
   const theme = useTheme();
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { tab } = useTabContext();
   const { watch } = useFormContext();
   const formData = watch();

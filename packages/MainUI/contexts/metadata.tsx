@@ -22,11 +22,13 @@ import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataStore } from "./metadataStore";
 
 export const MetadataSynchronizer = () => {
-  const { windows, cleanupWindow } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
+  const cleanupWindow = useWindowStore((s) => s.cleanupWindow);
   const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
 
   useEffect(() => {
@@ -47,7 +49,11 @@ export const MetadataSynchronizer = () => {
 };
 
 export const useMetadataContext = (): IMetadataContext => {
-  const { activeWindow } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
   const { getWindowMetadata, isWindowLoading, getWindowError, loadWindowData, windowsData, loadingWindows, errors } =
     useMetadataStore();
   const { removeRecordFromDatasource } = useDatasourceContext();

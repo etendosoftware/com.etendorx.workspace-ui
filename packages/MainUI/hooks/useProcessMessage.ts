@@ -18,7 +18,7 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 
 export interface ProcessMessage {
@@ -29,7 +29,7 @@ export interface ProcessMessage {
 
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const { config } = useRuntimeConfig();
 
   // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat

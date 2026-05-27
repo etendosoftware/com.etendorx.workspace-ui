@@ -17,16 +17,16 @@
 
 import { useEffect, useCallback, useMemo, useRef } from "react";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useApiContext } from "./useApiContext";
 import { logger } from "@/utils/logger";
 
 export const useCopilotClient = () => {
-  const token = useUserContext();
+  const token = useUserStore((s) => s.token);
   const apiUrl = useApiContext();
 
   const initializeClient = useCallback(async () => {
-    const tokenStr = token?.token || "";
+    const tokenStr = token || "";
     const apiUrlStr = apiUrl || "";
     if (!tokenStr || !apiUrlStr) {
       logger.log("CopilotClient: Token or API URL not available yet, skipping initialization");
@@ -36,17 +36,17 @@ export const useCopilotClient = () => {
     logger.log("CopilotClient: Initializing with token and API URL:", apiUrlStr);
     CopilotClient.setBaseUrl();
     CopilotClient.setToken(tokenStr);
-  }, [token?.token, apiUrl]);
+  }, [token, apiUrl]);
 
   const lastInit = useRef<{ token: string; url: string }>({ token: "", url: "" });
   useEffect(() => {
-    const tokenStr = token?.token || "";
+    const tokenStr = token || "";
     const apiUrlStr = apiUrl || "";
     if (!tokenStr || !apiUrlStr) return;
     if (lastInit.current.token === tokenStr && lastInit.current.url === apiUrlStr) return;
     lastInit.current = { token: tokenStr, url: apiUrlStr };
     initializeClient();
-  }, [initializeClient, token?.token, apiUrl]);
+  }, [initializeClient, token, apiUrl]);
 
   const client = useMemo(
     () => ({
@@ -77,9 +77,9 @@ export const useCopilotClient = () => {
       restoreConversation: CopilotClient.restoreConversation,
       permanentDeleteConversation: CopilotClient.permanentDeleteConversation,
       reinitialize: initializeClient,
-      isReady: !!token?.token,
+      isReady: !!token,
     }),
-    [initializeClient, token?.token]
+    [initializeClient, token]
   );
 
   return client;

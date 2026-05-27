@@ -26,9 +26,9 @@ jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
   compileExpression: jest.fn(() => mockCompiledExpr),
 }));
 
-// Mock useUserContext
-jest.mock("../useUserContext", () => ({
-  useUserContext: jest.fn(() => ({ session: {} })),
+// Mock useUserStore
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ session: {} }),
 }));
 
 // Mock useExpressionDependencies — we control what "watched" form values it returns

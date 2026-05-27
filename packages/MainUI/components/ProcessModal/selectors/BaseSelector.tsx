@@ -19,13 +19,13 @@ import Label from "@/components/Label";
 import GenericSelector from "./GenericSelector";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useForm } from "react-hook-form";
 import { logger } from "@/utils/logger";
 
 const BaseSelector = ({ parameter }: { parameter: ProcessParameter }) => {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { getValues } = useForm();
 
   const isReadOnly = useMemo(() => {

@@ -28,11 +28,10 @@ import { useTranslation } from "../hooks/useTranslation";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { NEW_RECORD_ID, TAB_MODES } from "@/utils/url/constants";
 import { useCurrentRecord } from "@/hooks/useCurrentRecord";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useFocusContext } from "@/contexts/focus";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-import { useFavoritesContext } from "@/contexts/favorites";
-import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -62,11 +61,27 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window: activeWindowMetadata, getWindowMetadata } = useMetadataContext();
-  const { getTabFormState, clearTabFormState, setAllWindowsInactive, activeWindow } = useWindowContext();
-  const windowIdentifier = useCurrentWindowIdentifier();
-  const windowId = useCurrentWindowId();
+
+  // Zustand store — reactive value
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+
+  const windowIdentifier = activeWindow?.windowIdentifier;
+  const windowId = activeWindow?.windowId;
   const window = windowId ? getWindowMetadata(windowId) : activeWindowMetadata;
-  const { isFavorite, toggle, menuIdByWindowId } = useFavoritesContext();
+
+  // Zustand store — stable action/getter references
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+  const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
+  const toggle = useFavoritesStore((s) => s.toggle);
+  const menuIdByWindowId = useFavoritesStore((s) => s.menuIdByWindowId);
   const { activeFocusId, setFocus } = useFocusContext();
 
   const { setActiveLevel, activeTabsByLevel, activeLevels } = useTableStatePersistenceTab({
@@ -244,7 +259,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   }, [setAllWindowsInactive]);
 
   const windowMenuId = windowId ? menuIdByWindowId.get(windowId) : undefined;
-  const isCurWindowFav = windowId ? isFavorite(windowId) : false;
+  const isCurWindowFav = windowId ? favoriteWindowIds.has(windowId) : false;
 
   const handleFavToggle = useCallback(() => {
     if (windowMenuId && windowId) toggle(windowMenuId, windowId);

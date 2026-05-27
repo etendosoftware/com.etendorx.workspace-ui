@@ -16,7 +16,7 @@
  */
 
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -32,7 +32,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
@@ -91,15 +91,21 @@ export const useToolbarConfig = ({
     t,
   });
 
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
 
   const closeActionModal = useCallback(() => {
     setActionModal((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
   const { tab } = useTabContext();
-  const { clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } = useWindowContext();
+
   const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
@@ -107,10 +113,10 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
-  const selectedRecordId = useMemo(() => {
+  const selectedRecordId = useWindowStore((s) => {
     if (!windowIdentifier || !tab) return null;
-    return getSelectedRecord(windowIdentifier, tab.id);
-  }, [windowIdentifier, tab, getSelectedRecord]);
+    return s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord ?? null;
+  });
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {

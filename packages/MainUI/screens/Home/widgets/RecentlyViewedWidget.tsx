@@ -21,14 +21,14 @@ import { useCallback } from "react";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useUserContext } from "@/hooks/useUserContext";
-import { useWindowContext } from "@/contexts/window";
+import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 
 export default function RecentlyViewedWidget() {
   const { t } = useTranslation();
-  const { currentRole } = useUserContext();
-  const { setWindowActive } = useWindowContext();
+  const currentRole = useUserStore((s) => s.currentRole);
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const [recentlyViewedItems] = useLocalStorage<Record<string, RecentItem[]>>("recentlyViewedItems", {});
 
   const roleId = currentRole?.id ?? "";
