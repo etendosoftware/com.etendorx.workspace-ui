@@ -106,11 +106,6 @@ export const useToolbarConfig = ({
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
   const setTabFormState = useWindowStore((s) => s.setTabFormState);
 
-  // Zustand store — imperative getter
-  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
-    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
-  }, []);
-
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);

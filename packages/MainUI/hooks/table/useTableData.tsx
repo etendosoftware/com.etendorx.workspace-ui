@@ -137,14 +137,8 @@ export const useTableData = ({
   const setTabInitializedWithDirectLink = useWindowStore((s) => s.setTabInitializedWithDirectLink);
 
   // Zustand store — imperative getters
-  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
-    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
-  }, []);
   const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
-  }, []);
-  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
-    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
   }, []);
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
