@@ -191,7 +191,10 @@ async function navigateSidebarTo(page: Page, searchText: string, menuTestId: str
   // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
   // persistent SSE connections open, so the network never reaches "idle" state.
   // Increase breadcrumb timeout to tolerate slow server responses during parallel runs.
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).first().waitFor({ state: "visible", timeout: 30_000 });
+  // Use :visible on the nav to target only the active window's breadcrumb —
+  // inactive windows stay mounted with visibility:hidden and their breadcrumb
+  // may contain matching text that resolves first in DOM order.
+  await page.locator('nav[aria-label="breadcrumb"]:visible').getByText(tabName).first().waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
