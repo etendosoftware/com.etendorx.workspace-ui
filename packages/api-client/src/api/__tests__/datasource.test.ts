@@ -65,16 +65,21 @@ describe("api/datasource/Datasource", () => {
       expect(mockClient.post).toHaveBeenCalledTimes(1);
     });
 
-    it("fetches data and clears pending request on completion", async () => {
+    it("caches completed responses and re-fetches only after cache clear", async () => {
       const mockData = { ok: true, data: [] };
       mockClient.post.mockResolvedValue(mockData as any);
 
       const result = await datasource.get("Product", { id: "2" });
-
       expect(result).toBe(mockData);
       expect(mockClient.post).toHaveBeenCalledTimes(1);
 
-      // Subsequent request should call post again because first one finished
+      // Subsequent identical request hits the response cache — no new network call
+      const cachedResult = await datasource.get("Product", { id: "2" });
+      expect(cachedResult).toBe(mockData);
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+
+      // After clearing the cache a new network call is made
+      datasource.clearCache();
       await datasource.get("Product", { id: "2" });
       expect(mockClient.post).toHaveBeenCalledTimes(2);
     });

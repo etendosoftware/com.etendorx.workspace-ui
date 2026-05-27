@@ -26,27 +26,22 @@ import { useWindowContext } from "@/contexts/window";
 import { useMetadataStore } from "./metadataStore";
 
 export const MetadataSynchronizer = () => {
-  const { activeWindow, cleanupWindow } = useWindowContext();
+  const { windows, cleanupWindow } = useWindowContext();
   const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
 
   useEffect(() => {
-    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !isWindowLoading(activeWindow.windowId)) {
-      loadWindowData(activeWindow.windowId).catch((error) => {
-        if (error.message?.toLowerCase().includes("not found")) {
-          cleanupWindow(activeWindow.windowIdentifier);
-        } else {
-          console.error(error);
-        }
-      });
+    for (const win of windows) {
+      if (win.windowId && !windowsData[win.windowId] && !isWindowLoading(win.windowId)) {
+        loadWindowData(win.windowId).catch((error) => {
+          if (error.message?.toLowerCase().includes("not found")) {
+            cleanupWindow(win.windowIdentifier);
+          } else {
+            console.error(error);
+          }
+        });
+      }
     }
-  }, [
-    activeWindow?.windowId,
-    activeWindow?.windowIdentifier,
-    windowsData,
-    isWindowLoading,
-    loadWindowData,
-    cleanupWindow,
-  ]);
+  }, [windows, windowsData, isWindowLoading, loadWindowData, cleanupWindow]);
 
   return null;
 };

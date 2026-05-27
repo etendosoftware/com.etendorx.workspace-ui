@@ -35,6 +35,7 @@ import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
@@ -113,7 +114,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const {
-    activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,
@@ -125,6 +125,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTableAdvancedCriteria,
     setAllWindowsInactive,
   } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
@@ -141,8 +142,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
   // This prevents re-opening the form view after the user explicitly closes it.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
-
-  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const { isFocused, acquire } = useFocusRegion(tab.id, {
     onBlur: async () => {

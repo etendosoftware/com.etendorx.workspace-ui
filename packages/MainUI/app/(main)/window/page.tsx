@@ -22,12 +22,30 @@ import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
+import { useState, useEffect, useRef } from "react";
 
 export default function Page() {
   const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
 
-  const shouldShowTabs = windows.length > 0;
+  // Track which windows have been visited at least once.
+  // A window is only mounted after its first visit; subsequent switches just toggle CSS visibility.
+  const [mountedWindows, setMountedWindows] = useState<Set<string>>(new Set());
+  const prevActiveRef = useRef<string | undefined>(undefined);
 
+  useEffect(() => {
+    const id = activeWindow?.windowIdentifier;
+    if (id && id !== prevActiveRef.current) {
+      prevActiveRef.current = id;
+      setMountedWindows((prev) => {
+        if (prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+    }
+  }, [activeWindow?.windowIdentifier]);
+
+  const shouldShowTabs = windows.length > 0;
   const shouldShowWindow = activeWindow && !isHomeRoute;
 
   if (isRecoveryLoading && !activeWindow) {
@@ -41,11 +59,34 @@ export default function Page() {
           <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
         </TabsProvider>
       )}
-      {shouldShowWindow ? (
-        <Window window={activeWindow} data-testid={`Window__${activeWindow.windowIdentifier}`} />
-      ) : (
-        <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
-      )}
+      {/* All windows share the same absolute-positioned layer.
+          Only visibility/pointerEvents toggle on switch — no positioning change,
+          no ResizeObserver trigger, virtualizer never remeasures. */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div
+          className="absolute inset-0 flex flex-col overflow-hidden"
+          style={{
+            visibility: shouldShowWindow ? "hidden" : "visible",
+            pointerEvents: shouldShowWindow ? "none" : "auto",
+          }}>
+          <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
+        </div>
+        {windows.map((win) => {
+          const isActive = win.windowIdentifier === activeWindow?.windowIdentifier;
+          if (!mountedWindows.has(win.windowIdentifier) && !isActive) return null;
+          return (
+            <div
+              key={win.windowIdentifier}
+              className="absolute inset-0 flex flex-col overflow-hidden"
+              style={{
+                visibility: isActive && !isHomeRoute ? "visible" : "hidden",
+                pointerEvents: isActive && !isHomeRoute ? "auto" : "none",
+              }}>
+              <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
