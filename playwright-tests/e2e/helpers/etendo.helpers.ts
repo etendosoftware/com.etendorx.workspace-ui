@@ -194,7 +194,11 @@ async function navigateSidebarTo(page: Page, searchText: string, menuTestId: str
   // Use :visible on the nav to target only the active window's breadcrumb —
   // inactive windows stay mounted with visibility:hidden and their breadcrumb
   // may contain matching text that resolves first in DOM order.
-  await page.locator('nav[aria-label="breadcrumb"]:visible').getByText(tabName).first().waitFor({ state: "visible", timeout: 30_000 });
+  await page
+    .locator('nav[aria-label="breadcrumb"]:visible')
+    .getByText(tabName)
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
