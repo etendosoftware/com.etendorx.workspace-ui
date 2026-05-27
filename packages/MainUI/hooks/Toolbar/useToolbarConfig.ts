@@ -118,10 +118,10 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
-  const selectedRecordId = useMemo(() => {
+  const selectedRecordId = useWindowStore((s) => {
     if (!windowIdentifier || !tab) return null;
-    return getSelectedRecord(windowIdentifier, tab.id);
-  }, [windowIdentifier, tab, getSelectedRecord]);
+    return s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord ?? null;
+  });
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
