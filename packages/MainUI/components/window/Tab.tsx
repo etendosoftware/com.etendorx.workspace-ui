@@ -263,6 +263,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
       if (isInFormView) {
+        if (tab.uIPattern === UIPattern.EDIT_ONLY) {
+          clearTabFormState(windowIdentifier, tab.id);
+          clearSelectedRecord(windowIdentifier, tab.id);
+          graph.clearSelected(tab);
+          return;
+        }
         clearTabFormState(windowIdentifier, tab.id);
       } else {
         if (tab.tabLevel === 0) {
