@@ -192,6 +192,24 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parentSelectedRecordId = reactiveParentSelectedRecordId;
   const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
+  // When the parent record changes, reset child tab state (exit form view, clear selection).
+  // This replaces the implicit re-render that useWindowContext provided in the pre-Zustand architecture.
+  const prevParentRecordRef = useRef<string | undefined>(parentSelectedRecordId);
+  useEffect(() => {
+    const prev = prevParentRecordRef.current;
+    prevParentRecordRef.current = parentSelectedRecordId;
+
+    // Only react to actual changes (not initial mount)
+    if (prev === undefined && parentSelectedRecordId === undefined) return;
+    if (prev === parentSelectedRecordId) return;
+    if (!parentTab || !windowIdentifier) return;
+
+    // Parent changed — clear this child tab's form state and selection
+    clearTabFormState(windowIdentifier, tab.id);
+    clearSelectedRecord(windowIdentifier, tab.id);
+    graph.clearSelected(tab);
+  }, [parentSelectedRecordId, parentTab, windowIdentifier, tab, clearTabFormState, clearSelectedRecord, graph]);
+
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const shouldShowForm =
     hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
