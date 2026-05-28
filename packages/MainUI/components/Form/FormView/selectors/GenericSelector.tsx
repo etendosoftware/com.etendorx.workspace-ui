@@ -47,6 +47,7 @@ import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
 import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
 import { ButtonSelector } from "./ButtonSelector";
+import { LinkSelector } from "./LinkSelector";
 import { RichTextSelector } from "./RichTextSelector";
 import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
@@ -207,10 +208,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return (
           <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
         );
+      case FIELD_REFERENCE_CODES.LINK.id:
+        return <LinkSelector field={effectiveField} isReadOnly={isReadOnly} />;
       // Product Characteristics: always read-only — composed from Product Characteristics window, not editable inline.
-      // This hardcoded readOnly={true} intentionally overrides the isReadOnly prop from GenericSelector.
       case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
-        return <StringSelector field={effectiveField} readOnly={true} data-testid={`StringSelector__prodchar__${field.id}`} />;
+        return (
+          <StringSelector
+            field={effectiveField}
+            readOnly={true}
+            data-testid={`StringSelector__prodchar__${field.id}`}
+          />
+        );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
