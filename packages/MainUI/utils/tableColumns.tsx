@@ -18,9 +18,21 @@
 import type { TranslateFunction } from "@/hooks/types";
 import { getFieldReference } from "@/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
+import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
 import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
+
+// Helper function to render text/memo/richtext cells with truncation and tooltip
+export const renderTextCell = (value: unknown): React.ReactNode => {
+  if (value === null || value === undefined || value === "") return "";
+  const text = String(value);
+  return (
+    <Tooltip title={text} position="top" data-testid="Tooltip__2b5175">
+      <span className="block truncate max-w-full">{text}</span>
+    </Tooltip>
+  );
+};
 
 // Helper function to handle boolean field rendering
 const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: TranslateFunction) => {

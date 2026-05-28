@@ -16,7 +16,7 @@
  */
 
 import React, { useMemo } from "react";
-import { parseColumns } from "@/utils/tableColumns";
+import { parseColumns, renderTextCell } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -242,6 +242,18 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           // Use custom sorting function for datetime fields to sort by actual date value
           // rather than the formatted string representation
           sortingFn: isAuditField ? dateTimeSortingFn : dateSortingFn,
+        };
+      }
+
+      // Text / Memo / Rich Text columns — truncate with tooltip
+      const TEXT_REFERENCE_IDS = new Set(["14", "34", "7CB371C13D204EB69BF370217F692999"]);
+      if (column.column?.reference && TEXT_REFERENCE_IDS.has(column.column.reference)) {
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+            const cellValue = cell?.getValue();
+            return renderTextCell(cellValue);
+          },
         };
       }
 
