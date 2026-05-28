@@ -415,12 +415,13 @@ export const useTableData = ({
 
   // Helper to find parent field name
   const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
+    // SR (Single Record) tabs share the same entity/record as the parent.
+    // Always filter by "id" regardless of parentColumns content.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+      return { fieldName: "id", directReference: true };
+    }
+
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      // SR (Single Record) tabs share the same entity/table as the parent and have
-      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
-      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
-        return { fieldName: "id", directReference: true };
-      }
       return { fieldName: "_dummy", directReference: false };
     }
 

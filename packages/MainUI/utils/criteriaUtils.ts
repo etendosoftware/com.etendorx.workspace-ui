@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import type { Tab, EntityValue } from "@workspaceui/api-client/src/api/types";
+import { type Tab, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
 
 export interface BaseCriteriaOptions {
   tab: Tab;
@@ -97,6 +97,12 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   }
 
   if (parentId && parentId !== "") {
+    // SR tabs share the same entity/record as the parent — filter by id directly.
+    // Unlike normal child tabs, fieldName="id" IS correct here because child.id === parent.id.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY) {
+      return [{ fieldName: "id", value: parentId as EntityValue, operator: "equals" }];
+    }
+
     // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
     // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
     if (tab.disableParentKeyProperty) {

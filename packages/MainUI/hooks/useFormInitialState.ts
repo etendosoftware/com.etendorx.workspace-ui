@@ -34,12 +34,13 @@ type FieldMap = Record<string, Field>;
 
 /**
  * Converts a FIC boolean string value to a JS boolean.
- * Etendo encodes YES_NO (reference "20") columns as "" for false and "Y" for true.
+ * Etendo encodes YES_NO (reference "20") columns as "" for false and "Y" for true
+ * in FIC responses, and "Y"/"N" in column default values.
  * Returns the original string unchanged for non-boolean fields.
  */
 function toBooleanEntityValue(value: string, field: Field | undefined): EntityValue {
   if (field?.column?.reference !== FIELD_REFERENCE_CODES.BOOLEAN.id) return value;
-  if (value === "" || value === "false") return false;
+  if (value === "" || value === "N" || value === "false") return false;
   if (value === "Y" || value === "true") return true;
   return value;
 }
@@ -91,12 +92,23 @@ function applyColumnValues(
   columnValues: FormInitializationResponse["columnValues"],
   fieldsByColumnName: FieldMap,
   fieldsByPropertyFieldKey: FieldMap
-): void {
+): Set<string> {
+  const ficKeys = new Set<string>();
   for (const [key, entry] of Object.entries(columnValues || {})) {
     const field = fieldsByColumnName[key] ?? fieldsByPropertyFieldKey[key];
     const newKey = field?.hqlName ?? key;
     applyColumnValueEntry(acc, newKey, entry, field);
+    // Track fields where FIC provided a meaningful value.
+    // For boolean fields, "" means "no value computed" and should still allow
+    // static defaults to apply. Any other value (including "N", "Y", false, true)
+    // is an explicit answer from the server.
+    const isBooleanEmpty =
+      field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id && entry.value === "";
+    if (!isBooleanEmpty) {
+      ficKeys.add(newKey);
+    }
   }
+  return ficKeys;
 }
 
 /**
@@ -105,15 +117,22 @@ function applyColumnValues(
  * fields whose server-side default was not evaluated).
  * Skips @...@ expressions (column refs, SQL, session vars) — those are handled
  * elsewhere or delegated to the server.
+ *
+ * `ficKeys` contains fields that the FIC explicitly processed. Even if their
+ * converted value is `false` (e.g. boolean `""` → `false`), the FIC "spoke" for
+ * that field and static defaults must not overwrite it.
  */
-function applyStaticDefaults(acc: EntityData, fields: Tab["fields"]): void {
+function applyStaticDefaults(acc: EntityData, fields: Tab["fields"], ficKeys: Set<string>): void {
   for (const field of Object.values(fields)) {
     const dv = field?.column?.defaultValue;
     if (!dv || !field.hqlName) continue;
     if (dv.startsWith("@")) continue;
+    // If FIC explicitly returned a value for this field, respect it — even if the
+    // converted value is `false` for a boolean field.
+    if (ficKeys.has(field.hqlName)) continue;
     const current = acc[field.hqlName];
-    // For YES_NO (boolean) fields, "" from FIC becomes false after toBooleanEntityValue.
-    // Treat false the same as "" — both mean "no value was computed by the server".
+    // For fields NOT in ficKeys, boolean `false` from an empty FIC value ("" → false)
+    // still counts as empty — the server didn't compute a value.
     const isBooleanField = field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id;
     const isEmpty = current === undefined || current === "" || (isBooleanField && current === false);
     if (!isEmpty) continue;
@@ -177,8 +196,8 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
     const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
     applyAuxiliaryInputs(acc, formInitialization.auxiliaryInputValues, fieldsByColumnName);
-    applyColumnValues(acc, formInitialization.columnValues, fieldsByColumnName, fieldsByPropertyFieldKey);
-    applyStaticDefaults(acc, tab.fields);
+    const ficKeys = applyColumnValues(acc, formInitialization.columnValues, fieldsByColumnName, fieldsByPropertyFieldKey);
+    applyStaticDefaults(acc, tab.fields, ficKeys);
     resolveDefaultReferences(acc, tab.fields, fieldsByColumnName);
 
     return { ...parentData, ...acc };
