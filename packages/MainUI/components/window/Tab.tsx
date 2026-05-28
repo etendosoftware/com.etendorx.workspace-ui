@@ -271,13 +271,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
-          // Clear children tabs when deselecting parent record
-          const children = graph.getChildren(tab);
-          if (children && children.length > 0) {
-            const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-            if (childIds.length > 0) {
-              clearChildrenSelections(windowIdentifier, childIds);
+          // Recursively collect ALL descendant tab IDs so deselection cascades through all levels
+          const descendantIds: string[] = [];
+          const collectDescendants = (parentTab: typeof tab) => {
+            const children = graph.getChildren(parentTab);
+            if (!children) return;
+            for (const child of children) {
+              if (child.window === tab.window) {
+                descendantIds.push(child.id);
+                collectDescendants(child);
+              }
             }
+          };
+          collectDescendants(tab);
+          if (descendantIds.length > 0) {
+            clearChildrenSelections(windowIdentifier, descendantIds, true);
           }
 
           setTimeout(() => {
