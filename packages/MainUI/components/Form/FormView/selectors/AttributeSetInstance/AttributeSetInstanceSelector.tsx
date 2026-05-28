@@ -2,6 +2,7 @@ import type React from "react";
 import { useState, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import X from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import AttributeSetInstanceModal from "./AttributeSetInstanceModal";
 import { useProductAttributeSet } from "@/hooks/useProductAttributeSet";
@@ -94,6 +95,18 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
     }
   }, [value, identifier]);
 
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setValue(fieldName, null, { shouldDirty: true, shouldTouch: true });
+      setValue(`${fieldName}$_identifier`, null, { shouldDirty: true });
+      setValue(`${fieldName}_data`, null, { shouldDirty: true });
+      setDisplayValue("");
+      setLastSavedInstanceId(null);
+    },
+    [fieldName, setValue]
+  );
+
   const handleOpenModal = useCallback(() => {
     if (isReadOnly) return;
     setIsModalOpen(true);
@@ -166,6 +179,15 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
               className={`text-sm truncate font-medium ${displayValue ? "text-(--color-transparent-neutral-80)" : "text-baseline-60"}`}>
               {displayValue || "Select attribute..."}
             </span>
+            {value && !isReadOnly && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-0.5 hover:text-gray-600 transition-colors"
+                data-testid={`clear-attr__${field.id}`}>
+                <X className="w-3.5 h-3.5 text-gray-400" />
+              </button>
+            )}
             <SearchOutlined
               fill="currentColor"
               className="w-4 h-4 flex-shrink-0 text-(--color-transparent-neutral-60)"
