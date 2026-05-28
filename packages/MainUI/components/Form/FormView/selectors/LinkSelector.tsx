@@ -50,12 +50,36 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
     setValue(fieldName, value, { shouldValidate: true });
   };
 
+  const handleOpenLink = () => {
+    if (currentValue) {
+      window.open(currentValue, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const linkButton = currentValue ? (
+    <button
+      type="button"
+      onClick={handleOpenLink}
+      className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-blue-600 transition-colors z-10"
+      title="Open link"
+      data-testid={`LinkSelector__open__${field.id}`}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <title>Open link</title>
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
+      </svg>
+    </button>
+  ) : null;
+
   return (
     <TextInput
       {...register(fieldName)}
       field={field}
       setValue={handleSetValue}
       showClearButton={true}
+      endAdornment={linkButton}
       value={currentValue}
       placeholder="https://..."
       data-testid={`LinkSelector__${field.id}`}
