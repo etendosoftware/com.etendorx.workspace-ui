@@ -18,7 +18,7 @@
 import { useCallback } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
@@ -74,7 +74,7 @@ interface HandleKeyDownRedirectProps {
 }
 
 export const useRedirect = () => {
-  const { setWindowActive } = useWindowContext();
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
 
   /**
    * Calls the Etendo Classic ReferencedLink endpoint to resolve the correct

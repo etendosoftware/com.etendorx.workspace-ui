@@ -18,10 +18,10 @@
 "use client";
 
 import Loading from "@/components/loading";
-import { useLoading } from "@/contexts/loading";
+import { useLoadingStore } from "@/stores/loadingStore";
 
 export default function GlobalLoading() {
-  const { isLoading } = useLoading();
+  const isLoading = useLoadingStore((s) => s.isLoading);
 
   if (!isLoading) return null;
 

@@ -9,7 +9,7 @@ import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 export default function Login({ title, onSubmit }: LoginProps) {
   const [username, setUsername] = useState("");
@@ -18,7 +18,10 @@ export default function Login({ title, onSubmit }: LoginProps) {
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const { t } = useTranslation();
 
-  const { loginErrorText, setLoginErrorText, loginErrorDescription, setLoginErrorDescription } = useUserContext();
+  const loginErrorText = useUserStore((s) => s.loginErrorText);
+  const loginErrorDescription = useUserStore((s) => s.loginErrorDescription);
+  const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
+  const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
 
   useEffect(() => {
     if (loginErrorText) {

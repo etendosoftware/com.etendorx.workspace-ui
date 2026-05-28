@@ -29,7 +29,7 @@ import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowContext } from "@/contexts/window";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
@@ -68,7 +68,7 @@ const TabsGroupRenderer = ({
   isTopGroup: boolean;
   getActiveTabForLevel: (level: number) => Tab | null;
 }) => {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   // Fetch the record of the parent tab to evaluate THIS level's tabs
   const parentRecord = useSelectedRecord(activeParentTab || undefined);
 
@@ -157,6 +157,9 @@ const TabsGroupRenderer = ({
 };
 
 export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
+  /**
+   * Multi-window navigation hook providing access to current window state.
+   */
   const windowIdentifier = useCurrentWindowIdentifier();
   const { getSelectedRecord } = useWindowContext();
 

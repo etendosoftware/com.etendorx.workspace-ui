@@ -6,7 +6,7 @@ import { useState, useCallback, useMemo, useRef, type DragEvent, type ChangeEven
 import { useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { useTabContext } from "@/contexts/tab";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -107,7 +107,8 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
   const { t } = useTranslation();
   const { setValue, watch } = useFormContext();
   const { tab } = useTabContext();
-  const { session, currentOrganization } = useUserContext();
+  const session = useUserStore((s) => s.session);
+  const currentOrganization = useUserStore((s) => s.currentOrganization);
   const { uploadImage, deleteUploadedImage, isUploading } = useImageUpload();
 
   const [showPreviewModal, setShowPreviewModal] = useState(false);

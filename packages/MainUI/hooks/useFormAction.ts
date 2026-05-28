@@ -21,7 +21,8 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
+import { useUserContext } from "@/hooks/useUserContext";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/utils/session/constants";
 import { useTranslation } from "./useTranslation";
@@ -70,7 +71,10 @@ export const useFormAction = ({
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
   const lastSaveSucceeded = useRef(false);
-  const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
+  const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
+  const { logout } = useUserContext();
   const { t } = useTranslation();
 
   const userId = user?.id;

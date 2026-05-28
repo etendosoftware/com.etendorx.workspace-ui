@@ -41,9 +41,9 @@ import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useCallback, useEffect, useRef } from "react";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { TabFormState } from "@/utils/url/constants";
 import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
@@ -265,10 +265,24 @@ export default function useTableSelection(
   options?: UseTableSelectionOptions
 ) {
   const { graph } = useSelected();
-  const { clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } = useWindowContext();
+
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
-  const { setSession, setSessionSyncLoading } = useUserContext();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+
+  // Zustand store — imperative getters
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+
+  const setSession = useUserStore((s) => s.setSession);
+  const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 

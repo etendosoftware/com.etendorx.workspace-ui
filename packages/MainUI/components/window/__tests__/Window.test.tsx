@@ -81,33 +81,32 @@ jest.mock("../../../hooks/useGlobalUrlStateRecovery", () => ({
   }),
 }));
 
-// Mock useWindowContext hook
-jest.mock("../../../contexts/window", () => ({
-  useWindowContext: () => ({
-    activeWindow: null,
-    windows: [],
-    setSelectedRecord: jest.fn(),
-    clearSelectedRecord: jest.fn(),
-    getSelectedRecord: jest.fn(() => undefined),
-    getTabFormState: jest.fn(() => undefined),
-    clearChildrenSelections: jest.fn(),
-    setSelectedRecordAndClearChildren: jest.fn(),
-    addWindow: jest.fn(),
-    removeWindow: jest.fn(),
-    updateWindow: jest.fn(),
-    setActiveWindow: jest.fn(),
-    getAllWindows: jest.fn(() => []),
-    getActiveWindow: jest.fn(() => null),
-    getWindow: jest.fn(() => undefined),
-    addTab: jest.fn(),
-    removeTab: jest.fn(),
-    updateTab: jest.fn(),
-    getTab: jest.fn(() => undefined),
-    setTabFormState: jest.fn(),
-    clearTabFormState: jest.fn(),
-    isRecoveryLoading: false,
-    setIsRecoveryLoading: jest.fn(),
-  }),
+// Mock useWindowStore
+jest.mock("../../../stores/windowStore", () => ({
+  useWindowStore: (selector: (s: any) => any) => {
+    const state = {
+      windows: {},
+      isRecoveryLoading: false,
+      recoveryError: null,
+    };
+    return selector(state);
+  },
+}));
+
+// Mock useMetadataZustandStore — Window.tsx reads windowData directly from this store.
+// Delegates to mockMetadataContext.getWindowMetadata so tests can override per-test.
+jest.mock("../../../stores/metadataStore", () => ({
+  useMetadataZustandStore: (selector: (s: any) => any) => {
+    const state = {
+      windowsData: new Proxy(
+        {},
+        {
+          get: (_target, prop) => mockMetadataContext.getWindowMetadata(prop as string),
+        }
+      ),
+    };
+    return selector(state);
+  },
 }));
 
 // Mock SelectedProvider

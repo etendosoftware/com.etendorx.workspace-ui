@@ -18,6 +18,21 @@
 import { useContext } from "react";
 import { UserContext } from "../contexts/user";
 
+/**
+ * Backward-compatible hook for accessing the full user context.
+ *
+ * @deprecated For state reads (token, currentRole, session, etc.), use
+ * `useUserStore` from `@/stores/userStore` with targeted selectors:
+ *
+ * ```tsx
+ * import { useUserStore } from "@/stores/userStore";
+ * const token = useUserStore((s) => s.token);
+ * ```
+ *
+ * This hook is still required for context-only actions: `login`, `logout`,
+ * `changeProfile`, `changePassword`, `setDefaultConfiguration`, `clearUserData`.
+ * Once those actions are moved to the store, this hook can be removed entirely.
+ */
 export const useUserContext = () => {
   const context = useContext(UserContext);
 

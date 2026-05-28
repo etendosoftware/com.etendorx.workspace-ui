@@ -39,7 +39,7 @@ import {
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
-import { usePreferences } from "@/contexts/preferences";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 import useAboutModalOpen from "@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen";
 import { useAboutModal } from "@/hooks/about/useAboutModal";
 
@@ -47,7 +47,8 @@ const DENSITY_STYLES_OPTIONS = { small: "small-scale", default: "default-scale",
 
 const ConfigurationSection: React.FC = () => {
   const { t } = useTranslation();
-  const { customFaviconColor, setCustomFaviconColor } = usePreferences();
+  const customFaviconColor = usePreferencesStore((s) => s.customFaviconColor);
+  const setCustomFaviconColor = usePreferencesStore((s) => s.setCustomFaviconColor);
   const [density, setDensity] = useLocalStorage(DENSITY_KEY, "");
   const [sections, setSections] = useState<ISection[]>([]);
 

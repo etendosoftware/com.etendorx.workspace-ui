@@ -17,10 +17,15 @@
 
 import { renderHook, act } from "@testing-library/react";
 import LoadingProvider, { useLoading } from "../loading";
+import { useLoadingStore } from "@/stores/loadingStore";
 import type { ReactNode } from "react";
 
-describe("LoadingContext", () => {
+describe("LoadingContext (backward-compat wrapper)", () => {
   const wrapper = ({ children }: { children: ReactNode }) => <LoadingProvider>{children}</LoadingProvider>;
+
+  beforeEach(() => {
+    useLoadingStore.setState({ isLoading: false });
+  });
 
   it("should provide initial loading state as false", () => {
     const { result } = renderHook(() => useLoading(), { wrapper });
@@ -121,18 +126,6 @@ describe("LoadingContext", () => {
     expect(result.current.isLoading).toBe(true);
   });
 
-  it("should throw error when used outside provider", () => {
-    // Suppress console.error for this test
-    const originalError = console.error;
-    console.error = jest.fn();
-
-    expect(() => {
-      renderHook(() => useLoading());
-    }).toThrow("useLoading must be used within a LoadingProvider");
-
-    console.error = originalError;
-  });
-
   it("should maintain stable function references", () => {
     const { result, rerender } = renderHook(() => useLoading(), { wrapper });
 
@@ -145,27 +138,25 @@ describe("LoadingContext", () => {
     expect(result.current.hideLoading).toBe(hideLoadingRef);
   });
 
-  it("should work with multiple consumers sharing the same provider", () => {
-    // Create a shared provider instance
+  it("should work with multiple consumers sharing the same store", () => {
     let sharedShowLoading: (() => void) | null = null;
     let sharedHideLoading: (() => void) | null = null;
 
     const { result: result1 } = renderHook(() => useLoading(), { wrapper });
 
-    // Capture the shared functions
     sharedShowLoading = result1.current.showLoading;
     sharedHideLoading = result1.current.hideLoading;
 
     expect(result1.current.isLoading).toBe(false);
 
     act(() => {
-      sharedShowLoading!();
+      sharedShowLoading?.();
     });
 
     expect(result1.current.isLoading).toBe(true);
 
     act(() => {
-      sharedHideLoading!();
+      sharedHideLoading?.();
     });
 
     expect(result1.current.isLoading).toBe(false);
@@ -226,5 +217,26 @@ describe("LoadingContext", () => {
 
     expect(result.current.isLoading).toBe(stateAfterFirstCall);
     expect(result.current.isLoading).toBe(false);
+  });
+});
+
+describe("LoadingStore (Zustand)", () => {
+  beforeEach(() => {
+    useLoadingStore.setState({ isLoading: false });
+  });
+
+  it("should toggle loading state", () => {
+    expect(useLoadingStore.getState().isLoading).toBe(false);
+
+    act(() => useLoadingStore.getState().showLoading());
+    expect(useLoadingStore.getState().isLoading).toBe(true);
+
+    act(() => useLoadingStore.getState().hideLoading());
+    expect(useLoadingStore.getState().isLoading).toBe(false);
+  });
+
+  it("should be accessible outside React components", () => {
+    useLoadingStore.getState().showLoading();
+    expect(useLoadingStore.getState().isLoading).toBe(true);
   });
 });

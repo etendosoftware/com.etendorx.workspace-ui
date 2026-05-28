@@ -17,6 +17,7 @@
 
 import { render, act, waitFor } from "@testing-library/react";
 import { PreferencesProvider, usePreferences } from "@/contexts/preferences";
+import { usePreferencesStore, FAVICON_BADGE_KEY } from "@/stores/preferencesStore";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -89,7 +90,7 @@ interface MockLinkElement {
 const mockLink: MockLinkElement = { rel: "icon", href: "" };
 document.querySelector = jest.fn(() => mockLink) as unknown as typeof document.querySelector;
 
-describe("PreferencesContext", () => {
+describe("PreferencesContext (backward-compat wrapper)", () => {
   let contextValue: ReturnType<typeof usePreferences>;
 
   const TestComponent = () => {
@@ -109,19 +110,10 @@ describe("PreferencesContext", () => {
     jest.clearAllMocks();
     localStorageMock.clear();
     mockLink.href = "";
+    usePreferencesStore.setState({ customFaviconColor: null });
   });
 
   describe("usePreferences hook", () => {
-    it("should throw error when used outside provider", () => {
-      const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
-
-      expect(() => {
-        render(<TestComponent />);
-      }).toThrow("usePreferences must be used within a PreferencesProvider");
-
-      consoleError.mockRestore();
-    });
-
     it("should provide context values", async () => {
       renderWithProvider();
 
@@ -140,7 +132,7 @@ describe("PreferencesContext", () => {
       renderWithProvider();
 
       await waitFor(() => {
-        expect(localStorageMock.getItem).toHaveBeenCalledWith("settings.favicon_badge");
+        expect(localStorageMock.getItem).toHaveBeenCalledWith(FAVICON_BADGE_KEY);
         expect(contextValue.customFaviconColor).toBe("#E53935");
       });
     });
@@ -166,7 +158,7 @@ describe("PreferencesContext", () => {
         contextValue.setCustomFaviconColor("#1E88E5");
       });
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("settings.favicon_badge", "#1E88E5");
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(FAVICON_BADGE_KEY, "#1E88E5");
     });
 
     it("should remove from localStorage when color is null", async () => {
@@ -181,7 +173,7 @@ describe("PreferencesContext", () => {
         contextValue.setCustomFaviconColor(null);
       });
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("settings.favicon_badge");
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith(FAVICON_BADGE_KEY);
     });
   });
 
@@ -202,5 +194,41 @@ describe("PreferencesContext", () => {
         expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalled();
       });
     });
+  });
+});
+
+describe("PreferencesStore (Zustand)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorageMock.clear();
+    usePreferencesStore.setState({ customFaviconColor: null });
+  });
+
+  it("should start with null color", () => {
+    expect(usePreferencesStore.getState().customFaviconColor).toBeNull();
+  });
+
+  it("should set color and persist to localStorage", () => {
+    act(() => {
+      usePreferencesStore.getState().setCustomFaviconColor("#1E88E5");
+    });
+
+    expect(usePreferencesStore.getState().customFaviconColor).toBe("#1E88E5");
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(FAVICON_BADGE_KEY, "#1E88E5");
+  });
+
+  it("should remove from localStorage when set to null", () => {
+    act(() => {
+      usePreferencesStore.getState().setCustomFaviconColor("#1E88E5");
+      usePreferencesStore.getState().setCustomFaviconColor(null);
+    });
+
+    expect(usePreferencesStore.getState().customFaviconColor).toBeNull();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith(FAVICON_BADGE_KEY);
+  });
+
+  it("should be accessible outside React components", () => {
+    usePreferencesStore.getState().setCustomFaviconColor("#E53935");
+    expect(usePreferencesStore.getState().customFaviconColor).toBe("#E53935");
   });
 });

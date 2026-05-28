@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import * as React from "react";
+import { useState, type SyntheticEvent } from "react";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
@@ -26,10 +26,10 @@ interface TabsMUIProps {
   tabArray: TabContent[];
 }
 const TabsMUI = ({ tabArray }: TabsMUIProps) => {
-  const [value, setValue] = React.useState("0");
+  const [value, setValue] = useState("0");
   const theme = useTheme();
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
+  const handleChange = (_event: SyntheticEvent, newValue: string) => {
     setValue(newValue);
   };
 

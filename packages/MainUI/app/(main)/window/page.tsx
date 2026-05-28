@@ -16,16 +16,20 @@
  */
 // @data-testid-ignore
 "use client";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
-import { useState, useEffect, useRef } from "react";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
+  const activeWindow = useMemo(() => windows.find((w) => w.isActive) ?? null, [windows]);
+  const isHomeRoute = !activeWindow;
 
   // Track which windows have been visited at least once.
   // A window is only mounted after its first visit; subsequent switches just toggle CSS visibility.
@@ -67,6 +71,8 @@ export default function Page() {
           className="absolute inset-0 flex flex-col overflow-hidden"
           style={{
             visibility: shouldShowWindow ? "hidden" : "visible",
+            opacity: shouldShowWindow ? 0 : 1,
+            transition: "opacity 150ms ease-in-out",
             pointerEvents: shouldShowWindow ? "none" : "auto",
           }}>
           <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
@@ -74,13 +80,16 @@ export default function Page() {
         {windows.map((win) => {
           const isActive = win.windowIdentifier === activeWindow?.windowIdentifier;
           if (!mountedWindows.has(win.windowIdentifier) && !isActive) return null;
+          const isVisible = isActive && !isHomeRoute;
           return (
             <div
               key={win.windowIdentifier}
               className="absolute inset-0 flex flex-col overflow-hidden"
               style={{
-                visibility: isActive && !isHomeRoute ? "visible" : "hidden",
-                pointerEvents: isActive && !isHomeRoute ? "auto" : "none",
+                visibility: isVisible ? "visible" : "hidden",
+                opacity: isVisible ? 1 : 0,
+                transition: "opacity 150ms ease-in-out",
+                pointerEvents: isVisible ? "auto" : "none",
               }}>
               <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
             </div>

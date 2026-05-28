@@ -34,9 +34,9 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
-import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
@@ -113,24 +113,46 @@ const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
-  const {
-    clearSelectedRecord,
-    getTabFormState,
-    setSelectedRecord,
-    getSelectedRecord,
-    clearTabFormState,
-    setTabFormState,
-    clearChildrenSelections,
-    getTableState,
-    setTableAdvancedCriteria,
-    setAllWindowsInactive,
-  } = useWindowContext();
   const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+  const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+
+  // Zustand store — imperative getters (for use in callbacks/effects, not render)
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+  const getTableState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
+  }, []);
+
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
+
+  // Zustand store — reactive subscriptions (re-render when these change)
+  const reactiveTabFormState = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
+  );
+  const reactiveSelectedRecordId = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord : undefined
+  );
+  const parentTabId = graph?.getParent(tab)?.id;
+  const reactiveParentSelectedRecordId = useWindowStore((s) => {
+    if (!parentTabId || !windowIdentifier) return undefined;
+    return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
+  });
   const { unregisterRefresh } = useTabRefreshContext();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
@@ -158,8 +180,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [tab.tabLevel, acquire]);
 
-  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
-  const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
+  const tabFormState = reactiveTabFormState;
+  const selectedRecordId = reactiveSelectedRecordId;
 
   const currentMode = tabFormState?.mode || TAB_MODES.TABLE;
   const currentRecordId = tabFormState?.recordId || "";
@@ -167,9 +189,26 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // For child tabs, verify parent has selection before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordId =
-    parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
+  const parentSelectedRecordId = reactiveParentSelectedRecordId;
   const parentHasSelection = !parentTab || !!parentSelectedRecordId;
+
+  // When the parent record changes, reset child tab state (exit form view, clear selection).
+  // This replaces the implicit re-render that useWindowContext provided in the pre-Zustand architecture.
+  const prevParentRecordRef = useRef<string | undefined>(parentSelectedRecordId);
+  useEffect(() => {
+    const prev = prevParentRecordRef.current;
+    prevParentRecordRef.current = parentSelectedRecordId;
+
+    // Only react to actual changes (not initial mount)
+    if (prev === undefined && parentSelectedRecordId === undefined) return;
+    if (prev === parentSelectedRecordId) return;
+    if (!parentTab || !windowIdentifier) return;
+
+    // Parent changed — clear this child tab's form state and selection
+    clearTabFormState(windowIdentifier, tab.id);
+    clearSelectedRecord(windowIdentifier, tab.id);
+    graph.clearSelected(tab);
+  }, [parentSelectedRecordId, parentTab, windowIdentifier, tab, clearTabFormState, clearSelectedRecord, graph]);
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const shouldShowForm =

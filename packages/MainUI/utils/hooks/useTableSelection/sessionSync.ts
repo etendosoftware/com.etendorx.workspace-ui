@@ -33,7 +33,7 @@ export interface SessionSyncOptions {
   selectedRecords: EntityData[];
   parentId?: string;
   setSession: (updater: (prev: ISession) => ISession) => void;
-  setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setSessionSyncLoading: (loading: boolean) => void;
 }
 
 export const syncSelectedRecordsToSession = async ({
