@@ -35,6 +35,7 @@ export interface DrawerProps {
   logo?: string | React.ReactNode;
   title: string;
   onClick: NavigateFn;
+  onItemHover?: NavigateFn;
   onReportClick: NavigateFn;
   onProcessClick: NavigateFn;
   // Mock Props
@@ -65,6 +66,7 @@ export interface MenuTitleProps {
 export interface DrawerSectionProps extends React.PropsWithChildren {
   item: Menu;
   onClick: NavigateFn;
+  onItemHover?: NavigateFn;
   onReportClick?: NavigateFn;
   onProcessClick?: NavigateFn;
   open?: boolean;
@@ -106,6 +108,7 @@ export interface SearchIndex {
 export interface DrawerItemsProps {
   items: Menu[];
   onClick: NavigateFn;
+  onItemHover?: NavigateFn;
   onReportClick?: NavigateFn;
   onProcessClick?: NavigateFn;
   open: boolean;

@@ -55,7 +55,7 @@ import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 import { saveRecord } from "../Table/utils/saveOperations";
 import type { SaveOperation } from "../Table/types/inlineEditing";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { GridCellEditor } from "./GridCellEditor";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { getFieldReference } from "@/utils";
@@ -681,7 +681,9 @@ const WindowReferenceGrid = ({
   }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
-  const { user, session, currentClient } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const session = useUserStore((s) => s.session);
+  const currentClient = useUserStore((s) => s.currentClient);
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);

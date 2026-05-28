@@ -24,7 +24,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 import {
@@ -56,7 +56,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   const [loading, setLoading] = useState(!!windowIdentifier && !toolbarCache.has(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { tab, parentRecord, parentTab, auxiliaryInputs } = useTabContext();
   const selectedItems = useSelectedRecords(tab);
   const {

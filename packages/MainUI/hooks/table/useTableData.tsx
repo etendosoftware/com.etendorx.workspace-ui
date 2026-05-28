@@ -29,7 +29,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
-import { useWindowContext } from "../../contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
@@ -132,8 +132,14 @@ export const useTableData = ({
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const windowIdentifier = useCurrentWindowIdentifier();
-  const { getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink, getSelectedRecord } =
-    useWindowContext();
+
+  // Zustand store — stable action references
+  const setTabInitializedWithDirectLink = useWindowStore((s) => s.setTabInitializedWithDirectLink);
+
+  // Zustand store — imperative getters
+  const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
+  }, []);
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 
@@ -159,13 +165,20 @@ export const useTableData = ({
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
   // its own selection), fall back to the URL-persisted selected record ID for the parent tab.
   // This prevents child tabs from showing an empty table while waiting for the graph to sync.
-  const parentIdFromUrl = parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
+  // Reactive subscription — re-render when parent selection changes in the store
+  const parentIdFromUrl = useWindowStore((s) => {
+    if (!parentTab || !windowIdentifier) return undefined;
+    return s.windows[windowIdentifier]?.tabs[parentTab.id]?.selectedRecord;
+  });
   const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
+  // Reactive subscription — re-render when form state changes
+  const tabFormState = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
+  );
   const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns

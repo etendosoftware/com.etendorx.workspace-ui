@@ -20,7 +20,7 @@ import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } fr
 import { logger } from "@/utils/logger";
 import { parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
 import type { RawSavedViewRecord } from "@/utils/savedViews/types";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
@@ -43,7 +43,7 @@ interface UseAutoApplyDefaultViewParams {
  * once per window open session (keyed by windowIdentifier + tabId).
  */
 export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }: UseAutoApplyDefaultViewParams): void {
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const appliedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {

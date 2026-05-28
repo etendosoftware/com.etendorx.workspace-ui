@@ -22,7 +22,7 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -56,7 +56,7 @@ import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -82,19 +82,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const {
-    getTabFormState,
-    clearChildrenSelections,
-    setTableFilters,
-    setTableVisibility,
-    setTableSorting,
-    setTableOrder,
-    setTableImplicitFilterApplied,
-  } = useWindowContext();
   const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action/getter references
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+  const setTableFilters = useWindowStore((s) => s.setTableFilters);
+  const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
+  const setTableSorting = useWindowStore((s) => s.setTableSorting);
+  const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
+  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);

@@ -27,7 +27,7 @@ import {
 import { useCallback, useMemo, useReducer, useEffect, useRef } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useCurrentRecord } from "./useCurrentRecord";
 import {
   buildFormInitializationPayload,
@@ -96,7 +96,8 @@ export type useFormInitialization = State & {
  *
  */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
-  const { setSession, setSessionSyncLoading } = useUserContext();
+  const setSession = useUserStore((s) => s.setSession);
+  const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { error, formInitialization, loading } = state;

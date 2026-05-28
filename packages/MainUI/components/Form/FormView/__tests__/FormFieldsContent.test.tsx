@@ -29,8 +29,8 @@ jest.mock("react-hook-form", () => ({
   })),
 }));
 
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: jest.fn(() => ({ session: {} })),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: any) => selector({ session: {} }),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({

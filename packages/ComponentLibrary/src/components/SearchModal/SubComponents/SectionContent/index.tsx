@@ -39,8 +39,8 @@ export const SectionContent: React.FC<{ section: Section; isLast: boolean; varia
               <ArrowForwardIcon sx={styles.arrowIcon} />
             </Box>
             <Box sx={styles.itemsContainer}>
-              {section.items.map((item, index) => (
-                <ItemContent key={index} item={item} />
+              {section.items.map((item) => (
+                <ItemContent key={item.name} item={item} />
               ))}
             </Box>
           </Box>

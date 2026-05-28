@@ -23,6 +23,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
   ({
     items,
     onClick,
+    onItemHover,
     open,
     expandedItems,
     toggleItemExpansion,
@@ -46,6 +47,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
                   key={item.id}
                   item={item}
                   onClick={onClick}
+                  onItemHover={onItemHover}
                   onReportClick={onReportClick}
                   onProcessClick={onProcessClick}
                   open={open}

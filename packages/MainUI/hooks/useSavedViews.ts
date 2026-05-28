@@ -20,7 +20,7 @@ import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } fr
 import { logger } from "@/utils/logger";
 import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
 import type { ParsedSavedView, RawSavedViewRecord } from "@/utils/savedViews/types";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 const BASE_URL = "/api/meta/saved-views";
 
@@ -71,7 +71,7 @@ export interface UseSavedViewsReturn {
 }
 
 export function useSavedViews(): UseSavedViewsReturn {
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const [views, setViews] = useState<ParsedSavedView[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

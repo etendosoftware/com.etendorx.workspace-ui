@@ -138,6 +138,14 @@ export interface SelectorColumn {
   [key: string]: unknown;
 }
 
+export interface SelectorOutField {
+  type: "field" | "calloutInput";
+  selectorFieldProperty: string;
+  targetColumnName?: string | null;
+  targetHqlName?: string | null;
+  suffix?: string | null;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -166,6 +174,7 @@ export interface Field {
     hasTableRelated?: boolean;
     hasProcessDefinitionRelated?: boolean;
     gridColumns?: SelectorColumn[];
+    outFields?: SelectorOutField[];
     [key: string]: unknown;
   };
   refList: RefListField[];

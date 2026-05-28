@@ -18,7 +18,7 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { useLanguage } from "../contexts/language";
 
@@ -42,7 +42,7 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const { config } = useRuntimeConfig();
   const { language } = useLanguage();
 

@@ -16,13 +16,14 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { useLoading } from "../contexts/loading";
+import { useLoadingStore } from "@/stores/loadingStore";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { CurrentRole, Menu } from "@workspaceui/api-client/src/api/types";
 
 export const useMenu = (token: string | null, currentRole?: CurrentRole, language?: string | null) => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
-  const { showLoading, hideLoading } = useLoading();
+  const showLoading = useLoadingStore((s) => s.showLoading);
+  const hideLoading = useLoadingStore((s) => s.hideLoading);
 
   const fetchMenu = useCallback(
     async (forceRefresh = false) => {

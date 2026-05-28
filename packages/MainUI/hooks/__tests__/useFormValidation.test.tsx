@@ -20,8 +20,6 @@ import { renderHook } from "@testing-library/react";
 import { useFormValidation } from "../useFormValidation";
 import { FormProvider, useForm } from "react-hook-form";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
-import type { IUserContext } from "../../contexts/types";
-
 // Mock de compileExpression
 jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
   compileExpression: jest.fn((_expression: string) => {
@@ -30,27 +28,9 @@ jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
   }),
 }));
 
-// Mock del useUserContext
-jest.mock("../useUserContext", () => ({
-  useUserContext: jest.fn(() => ({
-    user: {} as IUserContext["user"],
-    login: jest.fn(),
-    changeProfile: jest.fn(),
-    token: "mock-token",
-    roles: [],
-    currentRole: undefined,
-    prevRole: undefined,
-    profile: { name: "Test User", email: "test@test.com", image: "" },
-    currentWarehouse: undefined,
-    currentClient: undefined,
-    currentOrganization: undefined,
-    setToken: jest.fn(),
-    clearUserData: jest.fn(),
-    setDefaultConfiguration: jest.fn(),
-    languages: [],
-    session: {},
-    setSession: jest.fn(),
-  })),
+// Mock useUserStore
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ session: {} }),
 }));
 
 // Helper function to create mock fields with required properties

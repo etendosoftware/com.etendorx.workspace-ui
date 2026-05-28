@@ -87,9 +87,11 @@ jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getSelectedMultiple: () => [] } }),
 }));
 
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {}, token: "mock-token", getCsrfToken: () => "mock-csrf-token" }),
-}));
+// ProcessDefinitionModal reads from useUserStore (Zustand) — set state before tests
+const { useUserStore } = jest.requireActual("@/stores/userStore");
+beforeAll(() => {
+  useUserStore.setState({ session: {}, token: "mock-token", getCsrfToken: () => "mock-csrf-token" });
+});
 
 jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
   useProcessConfig: () => ({ fetchConfig: jest.fn(), loading: false, error: null, config: {} }),
