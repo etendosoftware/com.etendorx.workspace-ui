@@ -18,7 +18,7 @@ export const TextAreaInput = ({
   showClearButton = true,
   onClear,
   setValue,
-  rows,
+  rows = 3,
   ...props
 }: TextAreaInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -48,9 +48,9 @@ export const TextAreaInput = ({
     const paddingLeft = leftIcon ? "pl-10" : "pl-3";
     const paddingRight = showClearButton || rightIcon ? "pr-10" : "pr-3";
 
-    const baseClasses = `w-full ${paddingLeft} ${paddingRight} py-2 rounded-t tracking-normal resize-y
+    const baseClasses = `w-full ${paddingLeft} ${paddingRight} py-2 rounded-t tracking-normal resize-none
       border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30)
-      text-(--color-transparent-neutral-80) font-medium text-sm leading-5 max-h-40 overflow-y-auto
+      text-(--color-transparent-neutral-80) font-medium text-sm leading-5 overflow-y-auto
       focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none
       hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)`;
 
