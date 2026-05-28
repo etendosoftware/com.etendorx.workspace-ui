@@ -176,6 +176,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             data-testid="AttributeSetInstanceSelector__6e80fa"
           />
         );
+      case FIELD_REFERENCE_CODES.MEMO.id:
       case FIELD_REFERENCE_CODES.TEXT_LONG.id:
         return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.IMAGE.id:
@@ -206,6 +207,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return (
           <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
         );
+      // Product Characteristics: always read-only — composed from Product Characteristics window, not editable inline.
+      // This hardcoded readOnly={true} intentionally overrides the isReadOnly prop from GenericSelector.
+      case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
+        return <StringSelector field={effectiveField} readOnly={true} data-testid={`StringSelector__prodchar__${field.id}`} />;
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
