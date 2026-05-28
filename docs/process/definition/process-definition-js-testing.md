@@ -22,10 +22,10 @@ files. That logic:
 Therefore this logic **cannot be reused** and must be rewritten. Before planning that rewrite we
 need to know **how many** processes carry it and **where** each file lives.
 
-The migration target (out of this document's scope) is three columns the `com.etendoerp.metadata`
-module added to `obuiapp_process`: `em_etmeta_onload`, `em_etmeta_onprocess`, and
-`em_etmeta_payscript_logic` (the "EM_Etmeta_Payscript Logic" field, where the business logic will
-go).
+The migration target (detailed in §4) is six columns the `com.etendoerp.metadata` module added
+to the metadata tables: four on `obuiapp_process` (`em_etmeta_onload`, `em_etmeta_onprocess`,
+`em_etmeta_on_refresh`, `em_etmeta_payscript_logic`) and two on `obuiapp_parameter`
+(`em_etmeta_on_parameter_change`, `em_etmeta_on_grid_load`).
 
 ---
 
@@ -59,11 +59,172 @@ Three **declarative signals** capture it (their union):
 | 2 | **Action-type parameter** | a parameter whose value references an action registered in JS via `OB.Utilities.Action.set('<name>', …)` — process-specific actions only |
 | 3 | **Hardcoded `processId`** | a `.js` file containing a 32-hex id matching an `obuiapp_process_id` |
 
-Detected exclusions → see §7.
+Detected exclusions → see §8.
 
 ---
 
-## 4. Executive summary
+## 4. The five JavaScript hook points
+
+Before discussing the inventory, this section explains **what each of the five DB columns
+actually does at runtime** in the classic UI, so the migration target on the new UI (Next.js)
+can be planned with the right semantics. Three columns live on the process itself
+(`obuiapp_process`); two live on each parameter (`obuiapp_parameter`).
+
+Across all five, the stored value is a **JavaScript namespace** (e.g. `OB.APRM.AddPayment.onLoad`).
+The classic UI resolves that namespace at runtime against the global `OB.*` object built from the
+files registered by `ComponentProvider`. The function is then invoked with a well-defined argument
+list that depends on the hook (see below).
+
+The new-UI counterpart is **six fields** added by the `com.etendoerp.metadata` module: one
+direct migration target per classic hook (§4.1–4.2) plus a sixth field on the process
+(`em_etmeta_payscript_logic`) for the **shared module body** — helpers, constants and state
+that all hooks reference (§4.3).
+
+### 4.1 Process level — `obuiapp_process`
+
+#### `on_load_function` — modal opening
+Runs **once, when the process modal/dialog opens**, after the parameter widgets have been built
+but before the user can interact with them. Its job is to **initialize the dialog**: set defaults
+that depend on the calling context (selected record, current role, organisation, system date),
+pre-populate grids, hide/show or enable/disable parameters that don't apply to this context, and
+load any reference data the user will need.
+
+Typical signature: `OB.<Module>.<Process>.onLoad(view)`, where `view` is the process view object
+(holds the parameter inputs, the parent record, and helpers to mutate them). Side effects are
+performed against `view` (e.g. `view.theForm.getItem('<param>').setValue(...)`). Return value is
+not used to gate anything; the dialog opens regardless.
+
+Migration target: **`em_etmeta_onload`**.
+
+#### `clientsidevalidation` — pre-submit validation
+Runs **when the user clicks "Done"/"OK"** to submit the process, **before** the server call.
+Its job is to **decide whether the submission proceeds**: validate cross-parameter business rules
+(e.g. "amount cannot exceed pending"), check selected grid rows, optionally show confirmations or
+error messages. If validation fails it must **abort the submission**.
+
+Typical signature: `OB.<Module>.<Process>.onProcess(view, actionHandler)` (the exact name varies).
+The function returns `false` (or invokes a "stop" callback) to cancel; `true`/no return means
+"proceed and call the server-side process". This is the last hook before the request leaves the
+browser, so it is also used for last-mile transformations of the payload.
+
+Migration target: **`em_etmeta_onprocess`**.
+
+#### `on_refresh_function` — re-render / re-evaluation
+Runs when the process view is **re-evaluated** after its initial load — typically after a
+significant change that forces a recomputation of derived state across multiple parameters at
+once (rather than the single-field reaction that `onchangefunction` covers). In practice it is
+used much less than the other two hooks and many processes leave it empty.
+
+Typical signature: `OB.<Module>.<Process>.onRefresh(view)`. Side effects on `view`; return value
+not used to gate.
+
+Migration target: **`em_etmeta_on_refresh`** — a process-level field added to `obuiapp_process`
+by the `com.etendoerp.metadata` module, sibling of `em_etmeta_onload` and `em_etmeta_onprocess`.
+A dedicated column is preferred over collapsing this hook into the shared body, both for symmetry
+with the classic schema and to keep the migration mapping mechanically 1:1.
+
+### 4.2 Parameter level — `obuiapp_parameter`
+
+These two columns exist **per parameter** of a given process. They are the channel through which
+"changing field A reacts on field B" is expressed declaratively in metadata. The same process
+can declare many of them (e.g. `AddPayment` has 16 parameters with `onchangefunction` /
+`ongridloadfunction`, all pointing into the shared file `ob-aprm-addPayment.js`).
+
+#### `onchangefunction` — parameter value changed
+Fires **when the user changes the value of that specific parameter** in the process modal
+(analogous to a form field's `onChange`). Its job is to **react to that single change**: update
+dependent parameters (recompute a total, refresh a selector's filter, toggle visibility/enabled),
+cascade defaults, fetch related data, etc.
+
+Typical signature: `OB.<Module>.<Process>.<paramHandler>(item, view, form, grid, editRow)` —
+classic SmartClient form callback. The handler receives the changed item plus enough context
+to read other parameters and write to them.
+
+This is **where most of the per-parameter business logic lives**, and is the reason the
+parameter-level columns dominate by count (23 out of the 31 column-signal processes).
+
+Migration target: **`em_etmeta_on_parameter_change`** — a parameter-level field already added to
+`obuiapp_parameter` by the `com.etendoerp.metadata` module. Each parameter carries its own
+script; shared helpers continue to live in the process-level `em_etmeta_payscript_logic`.
+
+#### `ongridloadfunction` — grid rows loaded
+Applies to parameters whose UI is a **grid** (a tabular selector with multiple rows, as in
+"select invoices to pay"). Runs **each time the grid loads (or reloads) its rows**, before
+they are shown to the user.
+
+Its job is to **decorate/transform the loaded rows** before display: format cells, compute
+derived columns (e.g. a "payment amount" column initialised from "pending amount"), set
+row-level visual state (read-only, highlighted), or pre-select rows according to a rule.
+
+Typical signature: `OB.<Module>.<Process>.<paramHandler>(grid, view, parameters)` where `grid`
+is the SmartClient grid widget.
+
+Migration target: **`em_etmeta_on_grid_load`** — a parameter-level field already added to
+`obuiapp_parameter` by the `com.etendoerp.metadata` module (sibling of
+`em_etmeta_on_parameter_change`).
+
+### 4.3 The shared module body — `em_etmeta_payscript_logic`
+
+The five hooks above are **entry points**, not the whole logic. In the classic UI, every process
+file mixes those entry points with **internal helpers, constants, and module-level state** that
+the hooks call into. A representative case is `ob-aprm-addPayment.js` (1,935 lines, 53 top-level
+declarations under `OB.APRM.AddPayment.*`): only ~18 of those declarations are metadata-referenced
+entry points; the remaining ~35 are helpers such as `updateTotal`, `distributeAmount`,
+`getConvertedAmount`, `tryToUpdateActualExpected`, `applyBankAmountToConverted`, each invoked from
+several hooks. None of them fits inside any one hook field.
+
+**`em_etmeta_payscript_logic`** (process-level, on `obuiapp_process`) is the home for that
+**shared module body**. Its concrete role on the new UI is:
+
+- **Shared helpers** invoked by multiple hooks of the same process (e.g. `updateTotal` called by
+  three different `onChange` handlers).
+- **Module-level constants and lookups** (status codes, conversion tables) loaded once and read
+  by many hooks.
+- **Closure-scoped state** that must persist across hook invocations within the same dialog
+  session (caches, "already-warned" flags, debouncers).
+- **Type-like definitions** the hooks rely on (small classes/objects encapsulating computations).
+
+What it is **not**: it is not "all the process code". The five hook fields carry the entry
+points; `payscript_logic` carries the shared infrastructure they reference. For trivial processes
+with a single hook and no internal helpers (most of the **9 easy** processes in §6) this field
+can stay **NULL**. For the **4 hard** and most of the **medium** processes — where 50%+ of the
+file's lines are shared helpers — populating this field is essential; otherwise the helpers
+would have to be duplicated across every hook that uses them, defeating the migration.
+
+The runtime contract is straightforward: the new-UI process runner evaluates `payscript_logic`
+once into a module scope, then compiles each hook field as a function within that same scope,
+so hooks can reference helpers by bare name (no global pollution, no duplication).
+
+### 4.4 Why two levels exist
+
+The two-level layout is **deliberate**, not an accident of history. The process-level hooks
+describe the **lifecycle of the dialog as a whole** (open, submit, refresh); the parameter-level
+hooks describe **reactive bindings between fields** (change of A affects B). A single process
+can therefore combine an `onLoad` (initialise the dialog) with multiple `onchangefunction`
+handlers (react to each field) without those concerns leaking into each other.
+
+In the classic UI, all hooks of a given process typically point into the **same `.js` file**
+(a shared namespace like `OB.APRM.AddPayment.*`), which acts as a module of related handlers
+sharing helpers and local state. That file-level cohesion is what the migration must preserve:
+splitting one process across many disconnected scripts in the new UI would break the shared
+helpers and make the logic much harder to read. The full migration target reproduces this layout
+faithfully:
+
+| Classic column | New-UI field | Table | Role |
+|---|---|---|---|
+| `on_load_function` | `em_etmeta_onload` | `obuiapp_process` | Lifecycle: open |
+| `clientsidevalidation` | `em_etmeta_onprocess` | `obuiapp_process` | Lifecycle: submit |
+| `on_refresh_function` | `em_etmeta_on_refresh` | `obuiapp_process` | Lifecycle: re-evaluate |
+| `onchangefunction` | `em_etmeta_on_parameter_change` | `obuiapp_parameter` | Reactive: value changed |
+| `ongridloadfunction` | `em_etmeta_on_grid_load` | `obuiapp_parameter` | Reactive: grid rows loaded |
+| *(no classic counterpart — shared body)* | `em_etmeta_payscript_logic` | `obuiapp_process` | Shared helpers / constants / module state |
+
+Five hook fields for entry points + one body field for shared infrastructure: the same shape as
+the classic single-file module, expressed declaratively in metadata.
+
+---
+
+## 5. Executive summary
 
 | Metric | Value |
 |---|---|
@@ -73,7 +234,7 @@ Detected exclusions → see §7.
 | ↳ additional via signal 3 (`processId`) | 6 |
 | ↳ with an extra file via signal 2 (action) | 1 (Etendo Payment Execution → `payment-action-popup.js`) |
 | Without process JS | 204 |
-| Processes inside a `dist.js` bundle (to review, §6) | ~12 (warehouse mgmt / CRM) |
+| Processes inside a `dist.js` bundle (to review, §7) | ~12 (warehouse mgmt / CRM) |
 | Distinct `.js` files to migrate (high confidence) | 33 |
 | Total legacy JS to migrate (distinct files) | **~7,600 lines · ~250 KB** |
 | Largest files | `ob-aprm-addPayment.js` (1,935 lines), `OBWPACK_PackingComponent.js` (1,033), `OBWPL_ValidateComponent.js` (714) |
@@ -84,11 +245,11 @@ Detected exclusions → see §7.
 
 > **Completeness note:** signal 1 has near-perfect precision; signals 2 and 3 extend coverage to
 > non-columnar bindings. Processes whose logic lives in minified `dist.js` bundles of recent
-> modules are listed separately (§6) and require manual review.
+> modules are listed separately (§7) and require manual review.
 
 ---
 
-## 5. Defined Processes with legacy JS to migrate (37)
+## 6. Defined Processes with legacy JS to migrate (37)
 
 `Signal`: 1=columns, 2=action, 3=processId. Paths are relative to `erp/`. "⚠ deploy" = only
 available as a deployed copy under `WebContent/web/…` (module source not checked out).
@@ -146,12 +307,12 @@ Distribution: **9 easy · 24 medium · 4 hard.**
   `etfra-showHideDocumentNo.js` (shared by the 4 ETFRA reports).
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
-  overcounts; the "Total legacy JS" in §4 (~7,600 lines · ~250 KB) sums **distinct** files once.
+  overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
   `ob-onchange-functions.js` is counted whole though only its aging functions are in scope.
 
 ---
 
-## 6. Processes inside a `dist.js` bundle — manual review required
+## 7. Processes inside a `dist.js` bundle — manual review required
 
 The process id appears **only** inside a per-module minified bundle
 (`com.etendoerp.advanced.warehouse.management/dist.js`, `com.etendoerp.crm/dist.js`), not in an
@@ -166,7 +327,7 @@ must be reviewed before deciding whether it belongs to the classic migration sco
 
 ---
 
-## 7. Detected scope exclusions
+## 8. Detected scope exclusions
 
 JS files reviewed and **discarded** for not targeting a Defined Process intentionally/specifically:
 
@@ -180,9 +341,9 @@ JS files reviewed and **discarded** for not targeting a Defined Process intentio
 
 ---
 
-## 8. Full inventory (241 processes)
+## 9. Full inventory (241 processes)
 
-`JS scope` = **Yes** if the process is in §5. Rows are ordered by module (column omitted for compactness).
+`JS scope` = **Yes** if the process is in §6. Rows are ordered by module (column omitted for compactness).
 
 | id | name | JS scope |
 |---|---|---|
@@ -430,7 +591,7 @@ JS files reviewed and **discarded** for not targeting a Defined Process intentio
 
 ---
 
-## 9. QA representative sample (10 processes)
+## 10. QA representative sample (10 processes)
 
 Developers must implement and verify all **37** in-scope processes. To keep QA effort bounded
 while still exercising every relevant dimension, the following **10 processes** form a
@@ -511,13 +672,14 @@ representative sample. Selection rationale:
 
 ---
 
-## 10. Next steps (out of this inventory's scope)
+## 11. Next steps (out of this inventory's scope)
 
 - **Modules without local source** (marked ⚠ deploy: bpsettlement, financial.reports.advanced,
   verifactu, vat.regularization, remittance, pickinglist): clone their source to access the
   original `.js` before migrating.
-- **Review the `dist.js` bundles** of §6 to confirm which carry migratable classic process logic.
-- **Target design decision**: `onLoad`→`em_etmeta_onload`, validation/execution→
-  `em_etmeta_onprocess`, and business logic (including parameter `onChange`)→
-  `em_etmeta_payscript_logic`. Still to decide whether parameter-level logic is concentrated in
-  `em_etmeta_payscript_logic` or a per-parameter field is introduced (see implementation plan).
+- **Review the `dist.js` bundles** of §7 to confirm which carry migratable classic process logic.
+- **Target schema is now complete** (six fields, see §4.4 mapping table): no further design
+  decisions blocking the migration. Per-parameter entry points live in
+  `em_etmeta_on_parameter_change` / `em_etmeta_on_grid_load`; shared helpers in
+  `em_etmeta_payscript_logic`; lifecycle hooks in `em_etmeta_onload` / `em_etmeta_onprocess` /
+  `em_etmeta_on_refresh`.
