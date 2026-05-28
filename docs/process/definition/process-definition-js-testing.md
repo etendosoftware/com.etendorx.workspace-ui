@@ -430,7 +430,88 @@ JS files reviewed and **discarded** for not targeting a Defined Process intentio
 
 ---
 
-## 9. Next steps (out of this inventory's scope)
+## 9. QA representative sample (10 processes)
+
+Developers must implement and verify all **37** in-scope processes. To keep QA effort bounded
+while still exercising every relevant dimension, the following **10 processes** form a
+representative sample. Selection rationale:
+
+- **All 3 signals** covered (1, 1+combo, 2, 3).
+- **All 5 mechanisms** covered (`on_load_function`, `clientsidevalidation`, `on_refresh_function`,
+  `onchangefunction`, `ongridloadfunction`).
+- **All 3 difficulty tiers** (easy, medium, hard).
+- **Multiple `uipattern` types**: PickAndExecute, A, M, OBUIAPP_Report.
+- **Both source-availability flavors**: module checked out vs `⚠ deploy` (deployed copy only).
+- **Diverse functional areas**: payments, jobs, reports, warehouse, VAT, period management.
+
+| # | id | name | diff. | signal | mechanisms / why representative |
+|---|---|---|---|---|---|
+| 1 | 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | easy | 1 | `on_load_function` + `clientsidevalidation` only — minimal smoke test for the two main process-level hooks. Module source present. |
+| 2 | C044DDAA929E40D780C36154FBB968F7 | Create Invoices from Orders | easy | 1 | `onchangefunction` ×1 only — smallest file (15 lines); isolates param-level onChange in a clean module. `A` type. |
+| 3 | 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | easy | 1 | `on_load_function` + `ongridloadfunction` ×1 — covers `ongridloadfunction` and the `⚠ deploy` source path. |
+| 4 | 154CB4F9274A479CB38A285E16984539 | Find Transactions to Match | medium | **1,3** | `clientsidevalidation` only at the process level **and** detected also by `processId` — exercises **signal combo (1+3)**. |
+| 5 | EB4C4053F3B94A17A08D1DD7E89CEB7E | Aging Balance Process Definition for Payables | medium | 1 | `onchangefunction` ×5 in an **`OBUIAPP_Report`** process; lives in a **shared core utilities** file (`ob-onchange-functions.js`) — exercises partial-file migration. |
+| 6 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | medium | 1 | The **only** process with `on_refresh_function`, plus `on_load_function` + `clientsidevalidation` — the only way to test the refresh hook. |
+| 7 | 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | medium | **1,2** | The **only signal-2** case: `onchangefunction` ×2 **plus** an action-parameter (`EAPM_Popup`) registered via `OB.Utilities.Action.set` → migrates **two distinct files**. |
+| 8 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | medium | **3** | Pure signal-3: classic JS that **hardcodes a `processId`** (no metadata column). `uipattern = M`. Validates the processId-binding migration path. |
+| 9 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | hard | 3 | Signal-3 hard case with **two files** (`OBWPACK_PackingComponent.js` + `OBWPACK_Process.js`, 1.201 lines combined). Warehouse module, `A` type. |
+| 10 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | hard | 1 | The crown jewel: **all four signal-1 mechanisms at once** (`on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3) in the **largest file** (1.935 lines). Single test that flexes every code path. |
+
+### Coverage matrix (what each pick exercises)
+
+| Dimension | Picks |
+|---|---|
+| `on_load_function` | 1, 3, 6, 10 |
+| `clientsidevalidation` | 1, 4, 6, 10 |
+| `on_refresh_function` | **6** (only one) |
+| `onchangefunction` | 2, 5, 7, 10 |
+| `ongridloadfunction` | 3, 10 |
+| signal 1 pure | 1, 2, 3, 5, 6, 10 |
+| signal 1+3 combo | 4 |
+| signal 1+2 combo (action) | 7 |
+| signal 3 pure (processId) | 8, 9 |
+| easy / medium / hard | 1,2,3 / 4,5,6,7,8 / 9,10 |
+| `uipattern` | PE: 1,4,5,6,7 · A: 2,3,9,10 · M: 8 · Report: 5 |
+| ⚠ deploy source | 3 |
+| Multi-file process | 7 (2 files), 9 (2 files), 10 (effectively 1 file but with shared module utilities) |
+
+### Suggested QA focus per pick
+
+- **#1 Validate Costing Rule** — Open the process modal, verify `onLoad` populates defaults; trigger
+  `clientsidevalidation` (e.g., with invalid input) and confirm the migrated logic blocks execution.
+- **#2 Create Invoices from Orders** — Change the affected parameter and verify the `onChange`
+  callback updates the dependent field exactly as the classic UI did.
+- **#3 VAT Regularization** — Verify `onLoad` runs at modal open **and** the grid-load callback
+  populates the parameter grid correctly. Confirms the migration toolchain can handle modules
+  whose source is only available as a deployed copy.
+- **#4 Find Transactions to Match** — Trigger `clientsidevalidation` from the modal; separately
+  verify the process is reachable from the place where its `processId` is hardcoded (matches the
+  same `ob-aprm-findTransaction.js` flow).
+- **#5 Aging Balance Payables** — Report-and-Process flow: change each of the 5 affected
+  parameters and verify each `onChange` fires. Confirm only the aging functions of the shared
+  `ob-onchange-functions.js` were migrated, not the whole file.
+- **#6 Match Statement** — Three checks: `onLoad`, `clientsidevalidation`, and especially
+  `on_refresh_function` (e.g., after a child process completes). This is the **only** chance to
+  validate the refresh-hook migration.
+- **#7 Etendo Payment Execution** — Two distinct things to verify: (a) the `Received In`/`Paid Out`
+  parameters fire `onChange`; (b) the action button registered via `EAPM_Popup` opens the migrated
+  popup with the right parameters.
+- **#8 Open Close Periods** — Open/close a period and verify the popup launched from the
+  hardcoded `processId` works identically. Pure non-columnar binding.
+- **#9 Manage Packing Action** — Verify barcode/packing flows that span both
+  `OBWPACK_PackingComponent.js` and `OBWPACK_Process.js`. Largest single-process JS effort other
+  than AddPayment.
+- **#10 Add Payment** — Full regression: open modal, validate every default; change each of the
+  16 parameters with `onChange`/`onGridLoad` and verify dependent fields/grids update; submit and
+  ensure `clientsidevalidation` runs server-side correctly. Practically a re-run of the classic
+  AddPayment test suite against the new UI.
+
+> Passing this sample provides high confidence that the migration is sound for the remaining 27
+> processes, because each of them is structurally equivalent to one of the patterns covered here.
+
+---
+
+## 10. Next steps (out of this inventory's scope)
 
 - **Modules without local source** (marked ⚠ deploy: bpsettlement, financial.reports.advanced,
   verifactu, vat.regularization, remittance, pickinglist): clone their source to access the
