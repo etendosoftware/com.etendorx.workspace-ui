@@ -105,6 +105,15 @@ export const FIELD_REFERENCE_CODES = {
 
   // Rich Text Area — HTML WYSIWYG editor
   RICH_TEXT: { id: "7CB371C13D204EB69BF370217F692999", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Memo — large text area (same rendering as Text)
+  MEMO: { id: "34", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Link — URL field, renders as clickable hyperlink in read-only
+  LINK: { id: "800101", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Product Characteristics — always read-only concatenated description
+  PRODUCT_CHARACTERISTICS: { id: "C632F1CFF5A1453EB28BDF44A70478F8", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 } as const;
 
 /**

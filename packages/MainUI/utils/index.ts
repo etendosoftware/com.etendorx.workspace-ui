@@ -35,6 +35,10 @@ export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
     case FIELD_REFERENCE_CODES.STRING.id:
+    case FIELD_REFERENCE_CODES.MEMO.id:
+    case FIELD_REFERENCE_CODES.TEXT_LONG.id:
+    case FIELD_REFERENCE_CODES.LINK.id:
+    case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
       return FieldType.TEXT;
     case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
     case FIELD_REFERENCE_CODES.PRODUCT.id:
