@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import { cloneElement, type FC, type ReactElement, type CSSProperties } from "react";
 import MenuItem from "@mui/material/MenuItem";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -24,7 +24,7 @@ import { useStyle } from "./styles";
 import type { SortableItemProps } from "./DragModal.types";
 import type { SxProps, Theme } from "@mui/material/styles";
 
-const SortableItem: React.FC<SortableItemProps> = ({ id, person, item, onToggle, icon }) => {
+const SortableItem: FC<SortableItemProps> = ({ id, person, item, onToggle, icon }) => {
   const currentItem = item || person;
   const { sx, styles } = useStyle();
 
@@ -44,7 +44,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, person, item, onToggle,
     <MenuItem ref={setNodeRef} style={style} sx={menuItemSx} {...attributes} {...listeners} disableRipple>
       <div style={styles.sortableItemContainer}>
         <div style={styles.sortableItemLeftContainer}>
-          {React.cloneElement(icon as React.ReactElement<{ style?: React.CSSProperties }>, {
+          {cloneElement(icon as ReactElement<{ style?: CSSProperties }>, {
             style: styles.dragStyles,
           })}
           <span className="person-label" style={styles.sortableItemLabel} title={currentItem?.label}>

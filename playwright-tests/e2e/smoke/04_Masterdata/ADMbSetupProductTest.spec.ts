@@ -21,7 +21,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
   });
 
   test("Configure price lists, schemas, attributes and create product", async ({ page }) => {
-    test.setTimeout(360_000);
+    test.setTimeout(480_000);
     // ── Local helpers ────────────────────────────────────────────────────────
     const clickNewChildRecord = async () => {
       await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible > span').click();

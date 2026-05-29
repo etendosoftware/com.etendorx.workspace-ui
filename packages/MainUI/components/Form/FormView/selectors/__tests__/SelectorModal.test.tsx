@@ -29,8 +29,8 @@ jest.mock("@/contexts/tab", () => ({
 jest.mock("@/contexts/language", () => ({
   useLanguage: jest.fn(),
 }));
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: jest.fn(),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: jest.fn(),
 }));
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: jest.fn(),
@@ -84,8 +84,8 @@ describe("SelectorModal", () => {
     const { useLanguage } = require("@/contexts/language");
     useLanguage.mockReturnValue(createMockLanguageContext());
 
-    const { useUserContext } = require("@/hooks/useUserContext");
-    useUserContext.mockReturnValue(createMockUserContext());
+    const { useUserStore } = require("@/stores/userStore");
+    useUserStore.mockImplementation((selector: any) => selector(createMockUserContext()));
 
     const { useSelected } = require("@/hooks/useSelected");
     useSelected.mockReturnValue({ graph: {} });

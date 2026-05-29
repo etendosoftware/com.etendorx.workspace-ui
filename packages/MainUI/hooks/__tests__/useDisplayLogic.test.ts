@@ -18,14 +18,14 @@
 
 import { renderHook } from "@testing-library/react";
 import useDisplayLogic from "../useDisplayLogic";
-import { useUserContext } from "../useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { useExpressionDependencies } from "../useExpressionDependencies";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
 
 // Mocks
-jest.mock("../useUserContext");
+jest.mock("@/stores/userStore");
 jest.mock("@/contexts/tab");
 jest.mock("../useExpressionDependencies");
 jest.mock("@/components/Form/FormView/selectors/BaseSelector");
@@ -51,7 +51,9 @@ describe("useDisplayLogic", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useUserContext as jest.Mock).mockReturnValue({ session: mockSession });
+    (useUserStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({ session: mockSession })
+    );
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: {} });
     (useExpressionDependencies as jest.Mock).mockReturnValue({});
     (compileExpression as jest.Mock).mockReturnValue(jest.fn(() => true));

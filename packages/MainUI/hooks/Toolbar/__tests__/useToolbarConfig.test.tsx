@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { useToolbarConfig } from "../useToolbarConfig";
 import { useTabContext } from "@/contexts/tab";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
@@ -14,7 +14,7 @@ import { useSearch } from "@/contexts/searchContext";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
 
 // Mock dependencies
@@ -27,7 +27,6 @@ jest.mock("sonner", () => ({
   },
 }));
 jest.mock("@/contexts/tab");
-jest.mock("@/contexts/window");
 jest.mock("@/hooks/useSelectedRecords");
 jest.mock("@/hooks/useSelectedRecord");
 jest.mock("@/hooks/useRecordContext");
@@ -42,7 +41,7 @@ jest.mock("@/contexts/ToolbarContext");
 jest.mock("@/hooks/useDeleteRecord", () => ({
   useDeleteRecord: jest.fn(),
 }));
-jest.mock("@/hooks/useUserContext");
+// useUserStore is a Zustand store — set state directly in beforeEach
 jest.mock("@/utils/logger");
 jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: jest.fn(() => "windowIdentifier1"),
@@ -74,10 +73,20 @@ describe("useToolbarConfig", () => {
     jest.clearAllMocks();
 
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: mockActiveWindow,
+    // Set Zustand store state with the active window and action spies
+    useWindowStore.setState({
+      windows: {
+        [mockActiveWindow.windowIdentifier]: {
+          windowId: mockActiveWindow.windowId,
+          windowIdentifier: mockActiveWindow.windowIdentifier,
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
       clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: jest.fn(),
       setSelectedRecord: mockSetSelectedRecord,
       setTabFormState: mockSetTabFormState,
     });
@@ -105,7 +114,7 @@ describe("useToolbarConfig", () => {
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
     (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
     (useDeleteRecord as jest.Mock).mockReturnValue({ deleteRecord: jest.fn(), loading: false });
-    (useUserContext as jest.Mock).mockReturnValue({ token: "mock-token" });
+    useUserStore.setState({ token: "mock-token" });
   });
 
   it("initializes correctly", () => {

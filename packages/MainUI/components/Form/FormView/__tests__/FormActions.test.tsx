@@ -95,12 +95,22 @@ jest.mock("@/contexts/tab", () => ({
   }),
 }));
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({
-    activeWindow: { windowIdentifier: "WIN1" },
-    clearTabFormState: mockClearTabFormState,
-  }),
-  WindowProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: (selector: (s: any) => any) =>
+    selector({
+      windows: {
+        WIN1: {
+          windowId: "WIN1",
+          windowIdentifier: "WIN1",
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
+      clearTabFormState: mockClearTabFormState,
+    }),
 }));
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({

@@ -191,7 +191,14 @@ async function navigateSidebarTo(page: Page, searchText: string, menuTestId: str
   // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
   // persistent SSE connections open, so the network never reaches "idle" state.
   // Increase breadcrumb timeout to tolerate slow server responses during parallel runs.
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).waitFor({ state: "visible", timeout: 30_000 });
+  // Use :visible on the nav to target only the active window's breadcrumb —
+  // inactive windows stay mounted with visibility:hidden and their breadcrumb
+  // may contain matching text that resolves first in DOM order.
+  await page
+    .locator('nav[aria-label="breadcrumb"]:visible')
+    .getByText(tabName)
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
@@ -465,8 +472,9 @@ export async function navigateToPaymentIn(page: Page) {
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(/Payment In/i)
+    .first()
     .waitFor({ state: "visible", timeout: 15_000 });
 }
 
@@ -491,8 +499,9 @@ async function navigateByMenuLabel(page: Page, searchText: string, menuLabel: Re
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").evaluate((el) => (el as HTMLElement).click());
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(breadcrumbLabel)
+    .first()
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 

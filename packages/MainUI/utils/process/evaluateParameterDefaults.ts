@@ -12,7 +12,7 @@ import { logger } from "@/utils/logger";
  * isn't called to provide default values.
  *
  * @param parameters - Record of process parameters to evaluate
- * @param context - Session context (typically from useUserContext)
+ * @param context - Session context (typically from useUserStore)
  * @param currentValues - Current form values
  * @returns Object with evaluated default values keyed by parameter name
  *

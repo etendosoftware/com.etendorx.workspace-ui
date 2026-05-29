@@ -15,12 +15,11 @@
  *************************************************************************
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
-import { useWindowContext } from "@/contexts/window";
-import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
+import { useWindowStore } from "@/stores/windowStore";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
@@ -36,8 +35,14 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
-  const windowId = useCurrentWindowId();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+  const windowId = activeWindow?.windowId;
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {

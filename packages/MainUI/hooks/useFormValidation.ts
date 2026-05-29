@@ -19,7 +19,7 @@ import { useMemo, useCallback } from "react";
 import { useFormContext } from "react-hook-form";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { createSmartContext } from "@/utils/expressions";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
@@ -60,7 +60,7 @@ interface ValidationSummary {
  */
 export const useFormValidation = (tab: Tab) => {
   const { getValues } = useFormContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
 
   /**
    * Filter and memoize required fields that need validation

@@ -21,8 +21,6 @@
 
 // --- Contexts ---
 export { useTabContext } from "@/contexts/tab";
-export { useWindowContext } from "@/contexts/window";
-export { useUserContext } from "@/hooks/useUserContext";
 
 // --- Custom hooks ---
 export { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig";

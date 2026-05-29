@@ -19,7 +19,7 @@ import { useFormContext } from "react-hook-form";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/language";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import {
   buildSelectorColumnDefs,
   buildDatasourceColumns,
@@ -102,7 +102,7 @@ const SelectorModal = ({
   const { language } = useLanguage();
   // `useFormContext()` returns `null` outside a FormProvider — handle that.
   const formCtx = useFormContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
 
   const getValues = getValuesProp ?? formCtx?.getValues ?? ((): Record<string, unknown> => ({}));
   const currentTab = currentTabProp ?? tabFromContext ?? null;

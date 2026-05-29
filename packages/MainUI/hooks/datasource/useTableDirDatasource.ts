@@ -22,8 +22,8 @@ import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type ProcessSelectorContext, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
-import { useUserContext } from "../useUserContext";
 import type { Field, EntityValue } from "@workspaceui/api-client/src/api/types";
+import { useUserStore } from "@/stores/userStore";
 import {
   REFERENCE_IDS,
   PRODUCT_SELECTOR_DEFAULTS,
@@ -160,7 +160,7 @@ export const useTableDirDatasource = ({
 
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
-  const { currentWarehouse } = useUserContext();
+  const currentWarehouse = useUserStore((s) => s.currentWarehouse);
 
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
     // 1. Generic mapping using parentTab metadata (if available)

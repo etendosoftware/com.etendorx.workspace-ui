@@ -19,9 +19,9 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { createContext, useEffect, useMemo } from "react";
+import { createContext, useCallback, useEffect, useMemo } from "react";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 /**
  * Context interface for managing tab selection and navigation state.
@@ -81,9 +81,23 @@ export const SelectedProvider = ({
   windowIdentifier: string;
 }>) => {
   /**
-   * Window context providing form state management and navigation initialization.
+   * Window store providing form state management and navigation initialization.
+   * Actions are stable references from the store. Getters read imperatively from
+   * the current state snapshot — no reactive subscription needed.
    */
-  const { getTabFormState, getSelectedRecord, getNavigationInitialized, setNavigationInitialized } = useWindowContext();
+  const setNavigationInitialized = useWindowStore((s) => s.setNavigationInitialized);
+
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+
+  const getNavigationInitialized = useCallback((windowIdentifier: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.navigation?.initialized ?? false;
+  }, []);
 
   /**
    * Navigation state persistence hook for the current window.

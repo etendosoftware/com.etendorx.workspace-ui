@@ -71,29 +71,28 @@ export interface IUserContext {
   currentWarehouse: CurrentWarehouse | undefined;
   currentClient: CurrentClient | undefined;
   currentOrganization: CurrentOrganization | undefined;
-  setToken: React.Dispatch<React.SetStateAction<string | null>>;
+  setToken: (token: string | null) => void;
   clearUserData: () => void;
   setDefaultConfiguration: (config: DefaultConfiguration) => Promise<void>;
   languages: LanguageOption[];
   session: ISession;
-  setSession: React.Dispatch<React.SetStateAction<ISession>>;
+  setSession: (sessionOrUpdater: ISession | ((prev: ISession) => ISession)) => void;
   /** Indicates if session sync operations are loading */
   isSessionSyncLoading: boolean;
   /** Setter for session sync loading state */
-  setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setSessionSyncLoading: (loading: boolean) => void;
   /** Indicates if Copilot is installed */
   isCopilotInstalled: boolean;
   /** Setter for Copilot installed state */
-  setIsCopilotInstalled: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsCopilotInstalled: (installed: boolean) => void;
   /** Text to show when login fails */
   loginErrorText: string;
   /** Setter for login error text */
-  setLoginErrorText: React.Dispatch<React.SetStateAction<string>>;
+  setLoginErrorText: (text: string) => void;
   /** Description for login error */
   loginErrorDescription: string;
   /** Setter for login error description */
-  /** Setter for login error description */
-  setLoginErrorDescription: React.Dispatch<React.SetStateAction<string>>;
+  setLoginErrorDescription: (description: string) => void;
   /** Returns the current CSRF token from the session */
   getCsrfToken: () => string;
 }

@@ -19,8 +19,8 @@ import { renderHook, act } from "@testing-library/react";
 import { useSavedViews } from "../useSavedViews";
 
 jest.mock("@/utils/logger");
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: jest.fn(() => ({ token: "test-token" })),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (s: any) => any) => selector({ token: "test-token" }),
 }));
 
 // ---------------------------------------------------------------------------

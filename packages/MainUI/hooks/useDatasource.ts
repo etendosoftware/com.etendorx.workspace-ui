@@ -249,8 +249,6 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    const hasUserFilters = searchCriteriaArray.length > 0 || columnFilterCriteria.length > 0;
-
     const finalParams: any = {
       ...stableParams,
       ...idParams,

@@ -54,8 +54,7 @@ import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
-import { useWindowContext } from "@/contexts/window";
-import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
@@ -159,8 +158,17 @@ export function FormView({
   const justSavedFromNewRef = useRef(false);
 
   const { graph } = useSelected();
-  const { setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
-  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+  const windowIdentifier = activeWindow?.windowIdentifier;
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =

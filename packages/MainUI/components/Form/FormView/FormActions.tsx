@@ -26,8 +26,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
-import { useWindowContext } from "@/contexts/window";
-import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 interface FormActionsProps {
@@ -44,8 +43,13 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
-  const { clearTabFormState } = useWindowContext();
-  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+  const windowIdentifier = activeWindow?.windowIdentifier;
+  const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();

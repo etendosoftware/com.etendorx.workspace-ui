@@ -17,7 +17,8 @@
 
 // @data-testid-ignore
 "use client";
-import { useWindowContext } from "@/contexts/window";
+import { useMemo } from "react";
+import { useWindowStore } from "@/stores/windowStore";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import MenuItem from "@/components/NavigationTabs/MenuTabs/MenuItem";
 
@@ -28,7 +29,8 @@ interface MenuTabsProps {
 }
 
 export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps) {
-  const { windows } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} data-testid={`Menu__${windows[0]?.windowId ?? "8b7d80"}`}>

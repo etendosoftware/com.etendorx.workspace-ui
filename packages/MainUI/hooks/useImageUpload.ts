@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTranslation } from "./useTranslation";
 
 interface UploadImageParams {
@@ -48,7 +48,7 @@ function parseCallbackFromHtml(html: string): UploadResult | null {
 }
 
 export const useImageUpload = (): UseImageUploadReturn => {
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);

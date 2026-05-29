@@ -2,13 +2,15 @@ import { render, screen } from "@testing-library/react";
 import ColumnVisibilityMenu from "../ColumnVisibilityMenu";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import type React from "react";
 
 jest.mock("@/hooks/useTranslation");
 jest.mock("@/contexts/tab");
-jest.mock("@/contexts/window");
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: jest.fn(),
+}));
 jest.mock("@/hooks/useTableStatePersistenceTab");
 
 jest.mock("@workspaceui/componentlibrary/src/components/Menu", () => ({
@@ -35,8 +37,11 @@ describe("ColumnVisibilityMenu", () => {
   beforeEach(() => {
     (useTranslation as jest.Mock).mockReturnValue({ t: (s: string) => s });
     (useTabContext as jest.Mock).mockReturnValue({ tab: { id: "tab1" } });
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowIdentifier: "win1" },
+    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) => {
+      const state = {
+        windows: { win1: { windowIdentifier: "win1", isActive: true } },
+      };
+      return selector(state);
     });
     (useTableStatePersistenceTab as jest.Mock).mockReturnValue({
       tableColumnVisibility: { col1: true },

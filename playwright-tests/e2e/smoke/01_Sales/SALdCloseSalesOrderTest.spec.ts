@@ -34,8 +34,9 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
       .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
       .evaluate((el) => (el as HTMLElement).click());
     await page
-      .locator('nav[aria-label="breadcrumb"]')
+      .locator('nav[aria-label="breadcrumb"]:visible')
       .getByText(/Sales Order/i)
+      .first()
       .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────

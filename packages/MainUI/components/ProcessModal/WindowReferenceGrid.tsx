@@ -61,7 +61,7 @@ import Loading from "../loading";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { GridCellEditor } from "./GridCellEditor";
 import { getPayScriptRules } from "./callouts/genericPayScriptCallout";
 import { resolveMutualExclusion } from "@/payscript/engine/LogicEngine";
@@ -1086,7 +1086,9 @@ const WindowReferenceGrid = ({
   }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
-  const { user, session } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const session = useUserStore((s) => s.session);
+  const currentClient = useUserStore((s) => s.currentClient);
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);

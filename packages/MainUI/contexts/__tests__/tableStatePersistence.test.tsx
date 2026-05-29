@@ -17,9 +17,14 @@
 
 import { act, renderHook } from "@testing-library/react";
 import WindowProvider, { useWindowContext } from "../window";
+import { useWindowStore } from "@/stores/windowStore";
 
 describe("TableStatePersistenceContext", () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
+
+  beforeEach(() => {
+    useWindowStore.setState({ windows: {} });
+  });
 
   it("should provide context values", () => {
     const { result } = renderHook(() => useWindowContext(), { wrapper });
@@ -142,9 +147,9 @@ describe("TableStatePersistenceContext", () => {
     expect(result.current.getTableState("window2", "tab1").filters).toEqual(filters3);
   });
 
-  it("should throw error when used outside provider", () => {
-    expect(() => {
-      renderHook(() => useWindowContext());
-    }).toThrow("useWindowContext must be used within a WindowProvider");
+  it("should work without provider (Zustand global store)", () => {
+    const { result } = renderHook(() => useWindowContext());
+    expect(result.current.getTableState).toBeDefined();
+    expect(result.current.getAllState()).toEqual({});
   });
 });

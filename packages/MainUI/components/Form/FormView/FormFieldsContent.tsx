@@ -16,7 +16,7 @@
  */
 
 import { useFormContext } from "react-hook-form";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { FormMode, type Field, type Tab } from "@workspaceui/api-client/src/api/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
@@ -64,7 +64,7 @@ export function FormFields({
   isReadOnly,
 }: FormFieldsProps) {
   const { watch } = useFormContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const [noteCount, setNoteCount] = useState(initialNoteCount);
   const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =

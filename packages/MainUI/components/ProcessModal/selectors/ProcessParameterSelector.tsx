@@ -2,7 +2,7 @@ import type { ProcessParameter, Field, EntityValue } from "@workspaceui/api-clie
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
 import type { ProcessSelectorContext } from "@/hooks/types";
 import { memo, useMemo } from "react";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -91,8 +91,9 @@ const ProcessParameterSelectorImpl = ({
   values = EMPTY_VALUES,
   processId,
 }: ProcessParameterSelectorProps) => {
-  const { session } = useUserContext();
-  const { register } = useFormContext();
+  const session = useUserStore((s) => s.session);
+  const { watch, register } = useFormContext();
+  const values = watch(); // Watch all form values for reactive logic evaluation
 
   // Map ProcessParameter to Field interface for FormView selector compatibility
   const mappedField = useMemo(() => {
