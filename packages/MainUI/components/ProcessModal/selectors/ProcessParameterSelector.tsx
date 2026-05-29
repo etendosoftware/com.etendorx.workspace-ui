@@ -93,7 +93,6 @@ const ProcessParameterSelectorImpl = ({
 }: ProcessParameterSelectorProps) => {
   const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
-  const values = watch(); // Watch all form values for reactive logic evaluation
 
   // Map ProcessParameter to Field interface for FormView selector compatibility
   const mappedField = useMemo(() => {
