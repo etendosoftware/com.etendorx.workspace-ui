@@ -46,11 +46,17 @@ const TREE_REFERENCE_IDS: Set<string> = new Set([
 const isTreeReferenceColumn = (column: Column): boolean =>
   !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
 
-const isBooleanType = (column: Column): boolean =>
-  column.type === "boolean" || column.column?._identifier === "YesNo";
+const isBooleanType = (column: Column): boolean => column.type === "boolean" || column.column?._identifier === "YesNo";
 
 const supportsDropdown = (column: Column): boolean =>
   isBooleanType(column) || isTreeReferenceColumn(column) || ColumnFilterUtils.supportsDropdownFilter(column);
+
+const isCustomJsEnabled = (column: Column): boolean => Boolean(column.customJs && column.customJs.trim().length > 0);
+
+const TEXT_REFERENCE_IDS: Set<string> = new Set(["14", "34", "7CB371C13D204EB69BF370217F692999"]);
+
+const isTextReferenceColumn = (column: Column): boolean =>
+  !!column.column?.reference && TEXT_REFERENCE_IDS.has(column.column.reference);
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -202,7 +208,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       const isBooleanColumn = isBooleanType(column);
       const isDateColumn = shouldFormatDateColumn(column);
       const supportsDropdownFilter = supportsDropdown(column);
-      const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
+      const isCustomJsColumn = isCustomJsEnabled(column);
 
       // --- Initialize filterState for booleans if it doesn't exist ---
       let filterState = columnFilterStates?.find((f) => f.id === column.id);
@@ -260,8 +266,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       }
 
       // Text / Memo / Rich Text columns — truncate with tooltip
-      const TEXT_REFERENCE_IDS = new Set(["14", "34", "7CB371C13D204EB69BF370217F692999"]);
-      if (column.column?.reference && TEXT_REFERENCE_IDS.has(column.column.reference)) {
+      if (isTextReferenceColumn(column)) {
         columnConfig = {
           ...columnConfig,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
