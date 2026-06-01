@@ -19,6 +19,7 @@ import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/a
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
+import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
 
 /**
  * Auth credentials required to build the process context.
@@ -117,6 +118,17 @@ export interface ProcessScriptContext {
    * module-namespace writes persist across onLoad / onProcess / onChange / onRefresh.
    */
   OB: OBShim;
+
+  /**
+   * Promise-based modal dialogs (`confirm` / `warn` / `say`) plus the `isc`
+   * namespace shim, for migrated scripts that gate flow on a user decision.
+   * `confirm` resolves to `true` (OK) / `false` (Cancel); the classic callback
+   * shape is also honoured. See {@link DialogScriptApi}.
+   */
+  confirm: DialogScriptApi["confirm"];
+  warn: DialogScriptApi["warn"];
+  say: DialogScriptApi["say"];
+  isc: DialogScriptApi["isc"];
 }
 
 /**
@@ -203,7 +215,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     return handleResponse<T>(response);
   };
 
-  return { callAction, callDatasource, callServlet, OB };
+  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */

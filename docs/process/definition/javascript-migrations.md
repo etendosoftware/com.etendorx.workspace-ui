@@ -75,6 +75,7 @@ Closed work that ships today, with evidence:
 | `OB.*` shim — `PropertyStore.get`/`set`, `I18N.getLabel`, `Format.*`, `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`, `Styles.MessageBar`, `TestRegistry.register`, module-namespace writes | [utils/ob/](../../../packages/MainUI/utils/ob/) (shared per modal via [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) `buildProcessScriptContext`) | DONE |
 | `showMsgInProcessView` response action (toast on success/warning/error) | [useProcessExecution.ts:679-696](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts#L679-L696) | DONE |
 | Parameter-level hooks compiled + bound to form items / grid lifecycle | [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (onParameterChange via central `form.watch`), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) (onGridLoad on data-arrived), proxies in [scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts) | DONE (§4.12; audited-sufficient proxies, §4.13 shared scope deferred) |
+| Modal dialogs — promise-based `confirm` / `warn` / `say` (+ `isc` shim) injected into every hook context | [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) (singleton queue + script API, folded into `buildProcessScriptContext`), [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (renders via `ActionModal`, mounted in [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)) | DONE (§4.6; plain-text message, advanced button/HTML deferred) |
 | All other capabilities in §4 | n/a | MISSING or PARTIAL as flagged below |
 
 ---
@@ -316,7 +317,40 @@ without `await`.
 
 **Backend requirement.** None.
 
-**Coverage status.** MISSING.
+**Coverage status.** DONE. Promise-based `confirm` / `warn` / `say` (plus `ask` alias and the `isc`
+namespace) are implemented in [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts)
+and rendered by [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx).
+They are injected into every hook context by `buildProcessScriptContext`
+([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)), so onLoad / onProcess /
+onParameterChange / onGridLoad / onRefresh all receive them.
+
+**Implementation notes (delivered).**
+
+- **Imperative API, React-free.** `dialogs.ts` owns a singleton FIFO request queue (one dialog at a
+  time, faithful to the classic single modal) and the script-facing helpers. Being React-free it is
+  importable by the pure `buildProcessScriptContext`; the helpers are spread into the returned context
+  (`confirm`, `warn`, `say`, `isc`), shadowing the native `window.confirm` inside compiled hooks.
+- **Promise + classic callback.** Every helper returns a Promise (`confirm`/`ask` → `boolean`,
+  `warn`/`say` → `void`) and never blocks the event loop. The overloaded classic shapes are honoured:
+  the 2nd argument may be a callback **or** an options object, with an optional trailing callback —
+  `confirm(message, callback)` and `confirm(message, options, callback)` both work and still receive
+  the boolean. Migrated scripts typically `await` instead.
+- **Reuses the visual shell.** `ProcessDialogHost` subscribes to the queue via `useSyncExternalStore`
+  and renders the existing [ActionModal](../../../packages/ComponentLibrary/src/components/ActionModal/index.tsx)
+  (title / message / variant buttons / overlay). No new dialog chrome was built. The host is mounted
+  **inside** `ProcessDefinitionModal` (lifecycle bound to the process modal), not globally.
+- **Safe defaults.** If no host is mounted (modal closed) the call resolves to `false` and logs; on
+  host unmount with a dialog still pending, `clearDialogs` resolves it to `false` — never an accidental
+  OK on a destructive branch. `confirm` shows OK + Cancel; `warn` / `say` show a single acknowledge
+  button.
+- **Audited-sufficient scope.** `options.title` is supported (with per-kind default titles); advanced
+  classic options (`toolbarButtons` / `buttons` with custom `click`) are ignored. Messages render as
+  **plain text** — rich HTML in dialogs is deferred to align with the §4.7 message-bar sanitizer; the
+  in-scope process `confirm` messages are plain i18n labels.
+- **Tests.** [dialogs.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/dialogs.test.ts)
+  (resolution, callback/options shapes, `isc`/`ask` mirroring, FIFO queue, no-host default, clear) and
+  [ProcessDialogHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDialogHost.test.tsx)
+  (render, accept/cancel, single-button info dialog, unmount resolves pending).
 
 **Unlocks.** Validate Costing Rule, Match Statement, AddPayment (uses confirm before submitting
 in some branches), and any onLoad that confirms before running an expensive backend call.
@@ -808,7 +842,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 1. **[BE] §5.1 + §5.2 — Lock the JSON contract.** ✅ **DONE.** No new production code; audit + test only. Added contract-locking tests asserting all six `etmeta*` keys are always present (with JSON `null` when the column is empty) on every payload: `ProcessDefinitionBuilderTest#testToJSONKeepsAllProcessEtmetaKeysPresentWhenColumnsEmpty` (the four process-level keys, including the `eTMETAOnload`→`etmetaOnload` rename) and `ParameterBuilderTest#toJSONKeepsParameterLevelEtmetaHooksWhenPopulated` / `#toJSONKeepsParameterLevelEtmetaHooksPresentWhenColumnsEmpty` (the two parameter-level keys, populated and null). Locks the foundation for every FE consumer downstream.
 2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` left as traceable deferred stubs. Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
 3. **[FE] §4.12 — Parameter-level hook execution.** ✅ **DONE.** `etmetaOnParameterChange` is compiled once per parameter and bound from a single `form.watch` subscription in [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (mounted by [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)), invoked as `(item, view, form, grid)` with three loop/overload guards (value diff, re-entrancy, ~250 ms debounce). `etmetaOnGridLoad` is compiled per grid parameter and fired on the data-arrived effect of [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) as `(grid, view, parameters)`. The `item`/`form`/`view`/`grid` proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) are audited-sufficient — every other classic method throws a traceable "not implemented yet". Compile helper: [compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts). See §4.12 implementation notes. Unlocks the column-signal processes whose hook bodies are self-contained; helper-dependent ones unlock fully with step 10 (§4.13). Built on §4.8; §4.13 shared scope intentionally deferred.
-4. **[FE] §4.6 — Modal dialogs.** Promise-based `confirm` / `warn` / `say` exposed under both names. Small, blocks every flow-gating onLoad / onProc.
+4. **[FE] §4.6 — Modal dialogs.** ✅ **DONE.** Promise-based `confirm` / `warn` / `say` (+ `ask` alias and `isc` namespace) implemented in [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) as a React-free singleton FIFO queue + script API, injected into every hook context via `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)). Rendered by [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (reusing `ActionModal`, mounted inside [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Returns Promises (never blocks) and also honours the classic `(message, callback)` / `(message, options, callback)` shapes; safe `false` default when no host / on unmount. Plain-text messages and advanced button/HTML customization deferred. Tests: [dialogs.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/dialogs.test.ts), [ProcessDialogHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDialogHost.test.tsx). See §4.6 implementation notes.
 5. **[FE] §4.7 — In-modal message bar.** `<MessageBar>` element inside the modal + `view.messageBar.setMessage` / `.hide()` handle. Moderate; needed by most onProcess scripts that report status without dispatching `responseActions`.
 6. **[FE] §4.10 — Action JSON dispatcher.** Extend the existing `extractResponseMessage` path into a `dispatchResponseAction(action, ctx)` covering every classic action type (`showMsgInView`, `refreshGrid`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `setSelectorValueFromRecord`, `openDirectTab`, `smartclientSay`, `custom`), and wire `OB.Utilities.Action.executeJSON` / `.execute` to it. Moderate.
 7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** Thin wrapper over `callAction` that emulates the classic callback contract. Cheap once §4.8 lands. Unlocks every script that calls a server action handler.
@@ -827,6 +861,35 @@ After step 4 (§4.6), **all 9 easy processes are mostly feasible** modulo §4.12
 (§4.9), **the 24 medium processes are mostly feasible** modulo the per-process additions. The
 last three steps (§4.3 / §4.4 / §4.5) gate Match Statement and the 4 hard processes (AddPayment,
 ManagePacking pair, both Validate Barcode Action variants).
+
+### Tech debt — `onLoad` is evaluated twice (warehouse-process detection)
+
+**Change needed.** Stop running each process's `onLoad` body twice. Today it is executed once by
+`useWarehousePlugin` ([useWarehousePlugin.ts](../../../packages/MainUI/components/ProcessModal/Custom/GenericWarehouseProcess/useWarehousePlugin.ts))
+purely to detect a "warehouse process" (its `onLoad` returns `{ type: "warehouseProcess", … }` and
+the modal then renders `GenericWarehouseProcess` instead of the parameter form), and a second time by
+`ProcessDefinitionModal` ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx))
+to populate the normal form's dynamic parameters/defaults. The detection path uses a **reduced
+context** (`callAction`, `fetchDatasource`, `OB`, `fetch` only).
+
+Preferred fix: **evaluate `onLoad` once with the full script context and share the result** between
+the warehouse-detection branch and the normal form branch. Acceptable alternative: detect warehouse
+processes by a **declarative marker** (an AD flag / field) so non-warehouse processes never enter the
+detection path at all.
+
+**Objective / why.** A normal process (e.g. Add Payment) currently runs its `onLoad` an extra time in
+a crippled sandbox just to conclude "not a warehouse process", which: (a) **duplicates side effects**
+(dialogs from §4.6, datasource calls), and (b) **logs a spurious `[useWarehousePlugin] onLoad
+evaluation failed` error on every open** for any `onLoad` that uses capabilities absent from the
+reduced context (`confirm`/`warn`/`say`, `callDatasource`, `callServlet`, `Metadata`, …). A single
+full-context evaluation removes both the wasted execution and the false-error noise.
+
+**How to test.** (1) Attach an `onLoad` that calls `say("opened")` (or `await confirm(...)`) to a
+normal process and open it — the dialog must appear **once** and the console must show **no**
+`[useWarehousePlugin] onLoad evaluation failed`. (2) Open an actual warehouse process and confirm it
+still renders `GenericWarehouseProcess` (detection unbroken). (3) Confirm a normal process still gets
+its `onLoad`-populated defaults. (4) Unit-test that the shared evaluation runs `onLoad` exactly once
+(spy on `executeStringFunction`).
 
 ---
 

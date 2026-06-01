@@ -90,6 +90,7 @@ import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
 import WindowReferenceGrid from "./WindowReferenceGrid";
+import ProcessDialogHost from "./ProcessDialogHost";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
@@ -1473,9 +1474,13 @@ function ProcessDefinitionModalContent({
   return (
     <>
       {open && !isFinalSuccess && (
-        <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
-          {renderModalContent()}
-        </Modal>
+        <>
+          <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
+            {renderModalContent()}
+          </Modal>
+          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
+          <ProcessDialogHost />
+        </>
       )}
     </>
   );
