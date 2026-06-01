@@ -337,10 +337,27 @@ it. Severity is one of `isc.OBMessageBar.TYPE_INFO` / `TYPE_SUCCESS` / `TYPE_WAR
 
 **New-UI requirement.** A `<MessageBar>` UI element rendered inside the modal layout
 ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)),
-its state managed by the modal so scripts can mutate it through a `view.messageBar` handle
-exposing `setMessage(severity, title, text)` / `hide()`. The banner must support raw HTML content
-since classic scripts inject `<a>`-based "never show again" affordances (Match Statement). HTML
-sanitization must run server-side or via a strict allowlist on the client.
+its state managed by the modal so scripts can mutate it through a `view.messageBar` handle.
+Final signature (resolved in §9.4):
+
+```ts
+view.messageBar.setMessage(
+  severity: 'info' | 'success' | 'warning' | 'error',
+  title: string | null,
+  text: string,                          // sanitized HTML, formatting tags only
+  actions?: Array<{ label: string; onClick: () => void }>
+): void;
+view.messageBar.hide(): void;
+```
+
+- `text` is rendered through a **DOMPurify**-based sanitizer with a locked allowlist (formatting
+  tags only: `b`, `i`, `em`, `strong`, `br`, `span`, `p`, `ul`, `ol`, `li`, `code`; no `<a>`, no
+  `<script>`, no inputs, no `style` attribute, no `on*` handlers). The sanitizer config is
+  immutable and not exposed to migrated scripts.
+- `actions` render as real React buttons inside the banner. Classic patterns that used inline
+  `<a href="#" onclick="...">` (e.g. Match Statement's "never show again") must be rewritten as
+  `actions` entries; `onClick` is a closure in the module scope (§4.13).
+- See §9.4 for the full sanitization policy, rationale, and dependency justification.
 
 **Backend requirement.** None.
 
@@ -755,31 +772,273 @@ When all 10 pass, every §4 capability has at least one process exercising it.
 
 ## §9. Open investigations
 
-1. **`dist.js` bundle processes** from inventory §7 (12 processes across Advanced Warehouse
-   Management, CRM, Warehouse Packing). The classic JS is only available as a minified bundle,
-   not as readable source. Required follow-up: clone the source modules so the bundles can be
-   un-minified, and run the §4 surface scan against them; the capability set above may need
-   additional entries.
+1. **`dist.js` bundle processes** from inventory §7 — **RESOLVED (out of scope by nature)**.
+
+   **Original concern.** 12 processes (8 `ETAWIM_*` + 3 `ETCRM_*` + 1 `OBWPACK_CompletePackingHeader`)
+   were flagged in inventory §7 because their JS lived only inside a per-module minified `dist.js`
+   bundle (`com.etendoerp.advanced.warehouse.management/dist.js`,
+   `com.etendoerp.crm/dist.js`), not in a readable classic `.js` file. The pending question was
+   whether the source was recoverable so the §4 surface scan could be run and the capability set
+   confirmed.
+
+   **Investigation outcome.** Source-recovery investigation confirmed:
+   - `org.openbravo.warehouse.packing` (1 process — `OBWPACK_CompletePackingHeader`) has its
+     full source available locally; this process moves to the standard self-contained migration
+     regime alongside the 21 files of §9.5. It is **removed from §9.1 scope** and treated as
+     part of the normal in-scope set.
+   - For the other 11 processes (`ETAWIM_*` + `ETCRM_*`), the upstream source repositories
+     (`bitbucket.org:koodu_software/com.etendoerp.advanced.warehouse.management.git`,
+     `bitbucket.org:koodu_software/com.etendoerp.crm.git`) were inspected and **confirmed to
+     ship only the same `dist.js` artifact** that lives under
+     `/erp/WebContent/web/com.etendoerp.{advanced.warehouse.management,crm}/dist.js` — byte-for-byte
+     identical. No human-readable source is distributed.
+
+   **Critical finding — these are not classic JS processes.** Inspection of the bundle head
+   reveals the bundle is **React Native mobile-app code**, not classic SmartClient / `OB.*` JS:
+
+   ```js
+   // dist.js head (both bundles)
+   Object.defineProperty(exports, '__esModule', { value: true });
+   var React = require('react');
+   var stack = require('@react-navigation/stack');
+   var i18n = require('i18n-js');
+   var dateFns = require('date-fns');
+   var etendoUiLibrary = require('etendo-ui-library');
+   var reactNative = require('react-native');
+   ```
+
+   Inline base64 source maps are embedded (`//# sourceMappingURL=data:application/json;base64,...`)
+   so the original code is technically recoverable, but the recovered code is React Native — not
+   classic JS.
+
+   **Implication.** The 11 processes appear in `OBUIAPP_PROCESS` because Etendo's mobile module
+   registers its action handlers through the classic Defined Process metadata system to reuse the
+   server-side infrastructure (Java `ActionHandler`, permissions, configuration). The **frontend
+   side** of these processes, however, lives entirely inside a **separate Etendo mobile
+   application**, not in classic SmartClient UI and not in the new Next.js UI. There is no
+   "classic JS" to migrate, because there was never a classic UI representation of these
+   processes — only the mobile RN one.
+
+   **Decision.** The 11 `ETAWIM_*` + `ETCRM_*` processes are **out of scope of ETP-3748
+   definitively**, not deferred. They are removed from the in-scope set of inventory §6
+   (effective scope becomes 26 processes / 22 classic JS files, since `OBWPACK_CompletePackingHeader`
+   stays in scope and the other 11 leave it). Concretely:
+
+   - **ETP-3748 mission is**: provide full classic-JS-support in the new Next.js process modal.
+   - **These 11 processes do not have classic JS**: they have React Native components that run in
+     a different application stack.
+   - **The §4 capability set does not apply** to React Native code — RN uses none of the surfaces
+     defined in §4.1–§4.13 (`view.theForm`, `view.messageBar`, `OB.RemoteCallManager`,
+     `isc.ClassFactory`, embedded SmartClient grid, etc.).
+   - **A future migration of the mobile UI to the new web UI**, if ever pursued, would be a
+     separate epic with its own design, its own capability matrix, and its own staging — not a
+     continuation of ETP-3748. That work is not scoped here and is not blocking.
+
+   **Per-process feasibility matrix update.** The §6 feasibility matrix retains the row labels
+   for these 11 processes for historical reference but marks them as **OUT-OF-SCOPE (mobile RN)**
+   in a dedicated column value, distinct from YES / WITH-X / NO. The reduced scope (26 processes
+   = original 37 minus 11 RN-only) is the authoritative working set for ETP-3748 priority order
+   in §7.
+
+   **Confirmation reference.** The bundle head signature
+   (`@react-navigation/stack` + `react-native` + `etendo-ui-library` requires) is the proof the
+   code is React Native. Anyone questioning the resolution should re-inspect those imports;
+   they are unambiguous. The source-availability negative result was confirmed by direct
+   comparison: each `dist.js` shipped in `/erp/WebContent/web/` is byte-identical to the
+   `dist.js` in its module's upstream Bitbucket repo.
 2. **`processRecords.js`-shared family** (5 processes: Create Inverse Invoice/Order, Process
-   Orders / Shipment / Invoices). The same file is referenced by 5 process ids. Confirm whether
-   a single migration covers all five (preferred) or each id needs its own copy of the relevant
-   subset.
-3. **`ob-onchange-functions.js` partial migration.** The full file is large but only the
-   `OB.OnChange.agingProcessDefinition*` entries are in scope. Confirm before starting that
-   migrating just those is sufficient and the rest of the file's exports are not needed
-   elsewhere in the new UI (likely true given the new UI uses different mechanisms).
-4. **HTML sanitization policy for `view.messageBar.setMessage`.** Match Statement injects an
-   anchor-link-with-inline-onclick to deliver the "never show this again" affordance. Either
-   port the HTML through a strict allowlist (block `onclick`, use a React-handled click handler)
-   or change the migrated code to use a structured message. Decide before §4.7 implementation.
-5. **`OB.<Module>.<Process>` namespace globals vs per-modal scope.** Two processes share the
-   same OB namespace prefix (e.g. all `OB.APRM.*`) only because classic loaded all APRM files
-   globally; the new UI evaluates one process at a time. The §4.13 shared scope per-process is
-   sufficient — but document explicitly that **inter-process namespace sharing is not supported**
-   in the new UI. If any classic file relies on calling a function defined by *another* process
-   file (the §4-M coupling check ruled this out for the sample but should be confirmed for the
-   remaining 27 processes), that file needs its helpers duplicated.
-6. **PayScript DSL vs JS-function-expression dispatch on `etmetaPayscriptLogic`.** The §4.13
-   contract treats the column as either DSL or JS depending on body shape. Decide on the
-   detection rule (e.g. "starts with `{` → DSL, starts with `function`/`(` → JS module body";
-   or an explicit `/// payscript-dsl` / `/// js-module` shebang).
+   Orders / Shipment / Invoices) — **RESOLVED**.
+   - **Decision:** clone the migrated JS into each of the 5 process rows. No shared-loading
+     mechanism (extra metadata table, builder-side concatenation, client-side scope composition)
+     will be introduced, and **no canonical copy will be maintained in the `/client` repo**.
+     Each process owns its own self-contained copy of the relevant subset of `processRecords.js`
+     in its `em_etmeta_*` columns.
+   - **Rationale:** N=5 is small and bounded; these processes are legacy in migration mode, not
+     in active development, and the historical change rate of `processRecords.js` is near zero.
+     Introducing a shared-module mechanism is disproportionate to the problem size, and the
+     decision is reversible — a shared mechanism can be retrofitted later without rework of the
+     cloned code. Per-process self-containment also keeps blast-radius narrow: a bug in one
+     copy does not silently break the other four, and debugging a process only requires reading
+     that process's own metadata.
+   - **Trade-off acknowledged:** any future fix to the shared logic must be applied 5 times
+     manually. This cost is accepted in exchange for zero architectural change. The 5 affected
+     process ids are listed in inventory §6 row "Process Records family"; that list is the
+     authoritative reference if a future fix needs to be propagated.
+3. **`ob-onchange-functions.js` partial migration** — **RESOLVED**.
+   - **Decision:** migrate **only the code that is actually used** by an in-scope process. For
+     `ob-onchange-functions.js` that means only the `OB.OnChange.agingProcessDefinition*` entries
+     identified in inventory §6. The remaining exports of the file are not migrated.
+   - **Generalized rule for the whole migration:** dead code is not migrated. If a function,
+     branch, or helper is reachable from no in-scope hook (onLoad / onProcess / onRefresh /
+     onChange / onGridLoad of any of the 37 processes), it stays out. This applies file-by-file,
+     not just to `ob-onchange-functions.js`.
+   - **Confidence requirement:** before dropping any block, confirm it is unreachable from the
+     in-scope set via static reference search (`grep` for the symbol across the classic JS tree
+     and across the 37 process bodies). If a symbol is referenced from outside the in-scope set
+     only, it is out-of-scope by definition and safe to drop. If reachability is ambiguous, the
+     default is to migrate the block (be conservative when in doubt).
+   - **Rationale:** the goal of ETP-3748 is 100% behavioural reproduction of the **in-scope**
+     processes, not a 1:1 port of every legacy file. Dead code adds maintenance surface, bloats
+     the `em_etmeta_*` columns, and obscures the active logic during code review.
+4. **HTML sanitization policy for `view.messageBar.setMessage`** — **RESOLVED**.
+   - **Decision:** sanitize the `text` argument with **DOMPurify** under a strict allowlist, and
+     extend the `setMessage` signature with a structured `actions` parameter for any clickable
+     affordance. The classic `<a href="#" onclick="...">` pattern is **not** carried over.
+   - **Sanitizer configuration (immutable, defined once):**
+     - `ALLOWED_TAGS`: `b`, `i`, `em`, `strong`, `br`, `span`, `p`, `ul`, `ol`, `li`, `code`
+       (formatting only — **no `<a>`, no `<script>`, no `<iframe>`, no `<form>`, no inputs**).
+     - `ALLOWED_ATTR`: `class` only.
+     - `FORBID_ATTR`: `style`, `srcdoc`, `formaction`, every `on*` event handler attribute.
+     - `ALLOWED_URI_REGEXP`: `^(https?|mailto):` (defense in depth; with `<a>` forbidden no
+       URI attribute should reach the sanitizer, but this guards against future allowlist relaxation).
+   - **Final `setMessage` signature:**
+     ```ts
+     view.messageBar.setMessage(
+       severity: 'info' | 'success' | 'warning' | 'error',
+       title: string | null,
+       text: string,                          // sanitized HTML, formatting tags only
+       actions?: Array<{ label: string; onClick: () => void }>
+     ): void;
+     ```
+     Actions render as real React buttons inside the banner; `onClick` is a closure in the
+     migrated script's lexical scope (§4.13), not a `new Function(...)`-compiled string.
+   - **Migration rule for classic inline-onclick links:** rewrite as an `actions` entry. The
+     Match Statement "never show again" anchor is the canonical example and is covered by this
+     rewrite (see §4.7).
+   - **Rationale:** the only motivation for `<a>` + inline `onclick` in classic was to attach a
+     clickable handler to message text; the structured `actions` parameter covers that 100%
+     without HTML rendering of links, eliminates `javascript:`-URL and tabnabbing surface, and
+     keeps the click handler in a real React closure with access to `view`, `form`, `OB.*` and
+     the module-scope helpers. Allowlist sanitization on `text` covers the *formatting* use
+     case (`<b>`, `<br>`, etc.) without exposing the script-execution surface. The two concerns
+     are decoupled.
+   - **Dependency cost:** one new client-side dependency (`dompurify`, ~20 kB gzipped, widely
+     audited, no transitive dependencies). Wrap in a single helper exposing only the locked
+     config; do not let migrated scripts call the sanitizer with custom options.
+   - **Cross-reference:** the full signature, lifecycle, and React banner component are
+     specified in §4.7. The §4.7 surface description must be kept in sync with this decision.
+5. **`OB.<Module>.<Process>` namespace globals vs per-modal scope** — **RESOLVED**.
+   - **Decision:** no architectural support for cross-process global namespaces will be added.
+     Each process is migrated into its own per-modal scope (§4.13 shared module scope per-process
+     is the unit of sharing). Helpers shared across files of the same conceptual cluster are
+     duplicated into each member of the cluster, not loaded once via a global mechanism.
+   - **Evidence (empirical, full scan of the 33 in-scope files persisted at
+     `/tmp/namespace-coupling-report.md`):**
+     - **21 of 33 files (64%) are completely self-contained** — declare their own namespace,
+       define all their methods, call only those methods internally. Zero cross-file edges.
+     - **3 namespace-sharing clusters** exist, covering 9 files total:
+       - **ETFRA** — 4 files (`etfra-onchange.js`, `etfra-showDatesFields.js`,
+         `etfra-showHideDimensions.js`, `etfra-showHideDocumentNo.js`), 6 edges.
+       - **OBFBPS** — 2 files (`ob-obfbps-addpayments.js`, `ob-obfbps-addinvoices.js`), 1 edge.
+       - **REM** — 2 files (`ob-rem-utilities.js`, `rem_addinvandord_utilities.js`), 1 edge.
+     - **Total cross-file edges: 8.** **Cross-file method calls: 0.** All 8 edges are
+       references to the namespace *object* (the `OB.<NS> = OB.<NS> || {}` extension pattern),
+       not actual function invocations from one file to another. The "sharing" in classic is
+       conventional (multiple files extending the same global object because classic loaded
+       them all globally), not functional (no file depends on another file's *function* to run).
+   - **Migration strategy per category:**
+     - **The 21 self-contained files:** straight clone into each process's own
+       `em_etmeta_payscript_logic`. No coordination needed.
+     - **The 3 clusters (ETFRA / OBFBPS / REM):** the unified helper set of the cluster is
+       copied into each member process's `em_etmeta_payscript_logic`. Same per-process
+       self-containment as the 21, applied at cluster granularity. One canonical merged body
+       per cluster, manually replicated to each member row. Net: 3 one-time merges, then the
+       same per-process clone discipline as §9.2.
+   - **Rationale:** a global-helpers mechanism (new metadata table, runtime resolver, scope
+     composition) would require backend + frontend architectural change to solve a problem
+     whose real shape is 3 small clusters with **0 functional dependencies**. The 8 reported
+     edges collapse to "different files extend the same namespace object" — a pattern that
+     ceases to exist the moment each process is in its own scope, because each migrated
+     process can simply own the merged code outright. The migration becomes simpler, not
+     harder, by dropping the classic global-loading assumption entirely.
+   - **Trade-off acknowledged:** identical to §9.2 — future fixes to a cluster's shared logic
+     must be applied to N member rows. For these 3 clusters that means at most 4
+     duplications (ETFRA). Accepted in exchange for zero architectural change. The 3 cluster
+     memberships above are the authoritative reference if a future fix needs to propagate.
+   - **Confirmation rule (no further investigation needed):** the report at
+     `/tmp/namespace-coupling-report.md` is the final coupling census for the 33 in-scope
+     files. New in-scope additions (e.g. if §9.1 `dist.js` un-minification surfaces new files)
+     must be re-scanned with the same procedure to confirm they fit either the "self-contained"
+     or "small cluster" category before the clone-on-migration default applies.
+6. **PayScript DSL vs JS-module-body dispatch on `etmetaPayscriptLogic`** — **RESOLVED**.
+
+   **Constraint:** the four process rows that already ship `em_etmeta_payscript_logic` content
+   in production (Pick Goods Shipments, Create Packing Header, Select Payments PE, Assign)
+   must keep working **without content modification**. The detection rule is designed around
+   that constraint.
+
+   **Current shipped content shapes (from dataset XML scan):**
+
+   | Process | Module | First chars of body | Shape |
+   |---|---|---|---|
+   | Pick Goods Shipments | `org.openbravo.warehouse.packing` | `({ onScan: async ... })` | Handler-registry object expression |
+   | Create Packing Header | `org.openbravo.warehouse.packing` | `({ onScan: async ... })` | Handler-registry object expression |
+   | Select Payments PE | `org.openbravo.module.remittance` | `{ id: "...", compute: ... }` | Declarative rule object |
+   | Assign | `org.openbravo.warehouse.pickinglist` | `{ id: "...", compute: ... }` | Declarative rule object |
+
+   All four begin with `{` or `(` — they are **expressions evaluating to an object**, which is
+   the structural invariant of PayScript DSL. A JS module body (the §4.13 use case) begins
+   with **declarations or statements** (`const`, `let`, `var`, `function`, `class`, `import`,
+   `"use strict"`, etc.), never with `{` or `(` as the first significant token.
+
+   **Decision — two-tier classifier:**
+
+   1. **Tier 1 — Explicit marker (opt-in, no ambiguity).** If the first non-blank, non-comment
+      line of the body is one of:
+      - `// @payscript` or `/* @payscript */` → classify as **PayScript DSL**
+      - `// @module-scope` or `/* @module-scope */` → classify as **JS module body**
+
+      The marker takes precedence over the structural rule. Authors who want unambiguous
+      classification (or tooling that parses the column) use the marker; everyone else relies
+      on Tier 2.
+
+   2. **Tier 2 — Structural fallback (default, classifies existing content).** Strip leading
+      whitespace and leading line/block comments. Look at the first remaining significant
+      character:
+      - `{` or `(` → **PayScript DSL** (expression form returning a config object).
+      - Anything else → **JS module body** (declarations / statements).
+
+   **Validation after classification:**
+   - **DSL path:** evaluate the body via `new Function("return " + body)()`. If the result is
+     not a non-null object, raise a clear modal-open-time error pointing to §4.13:
+     *"em_etmeta_payscript_logic classified as PayScript DSL but did not evaluate to an
+     object. Add `// @module-scope` if this is a JS module body."*
+   - **Module path:** evaluate the body via `new Function(body)()` inside the shared §4.13
+     lexical scope. Helpers declared inside become visible to the five hook bodies (onLoad,
+     onProcess, onRefresh, onChange, onGridLoad) compiled within the same scope. Runtime
+     errors surface at hook invocation time, like any other migrated JS.
+
+   **Impact on existing data — zero content modification required:**
+
+   | Existing process | Starts with | Tier 2 classifies as | Modification needed |
+   |---|---|---|---|
+   | Pick Goods Shipments | `(` | DSL | **None** |
+   | Create Packing Header | `(` | DSL | **None** |
+   | Select Payments PE | `{` | DSL | **None** |
+   | Assign | `{` | DSL | **None** |
+
+   All four continue to work under the new classifier without any change to their shipped
+   dataset XML. Recommended (not required) post-resolution hygiene: add a `// @payscript`
+   marker as the first line of each of the four existing bodies, to make the classification
+   explicit and forward-compatible with future Tier-2 rule adjustments. The marker can be
+   shipped as a follow-up patch to each respective module's `OBUIAPP_PROCESS.xml`.
+
+   **Known edge cases (and their resolution):**
+   - **Module body with `"use strict"` directive:** starts with `"` → Tier 2 → module body. ✅
+   - **Module body with leading header comment:** comment is skipped before Tier 2 inspection → first significant char is the next declaration → module body. ✅
+   - **DSL written as an IIFE-style arrow returning an object** (e.g. `(() => ({...}))()`):
+     starts with `(` → Tier 2 → DSL → evaluates → object → passes validation. ✅
+   - **Module body that begins with a parenthesized expression** (e.g. an IIFE
+     `(function(){...})();` followed by declarations): starts with `(` → Tier 2 misclassifies
+     as DSL. **Resolution:** author must use the explicit `// @module-scope` marker. This
+     case is documented as the one scenario where Tier 1 is required; in practice migrated
+     module bodies start with `const`/`let`/`function` declarations, not IIFEs, so the case
+     is rare.
+
+   **Backend requirement.** None. The column already exists and is already serialized verbatim by
+   `ProcessDefinitionBuilder`. The classifier runs entirely on the client.
+
+   **Cross-reference:** §4.13 defines the lexical scope semantics for the module-body path.
+   §9.6 (this section) defines only the discrimination rule; the scope-sharing contract
+   between the body and the five hook columns lives in §4.13 and must stay in sync with
+   any future change to this classifier.
