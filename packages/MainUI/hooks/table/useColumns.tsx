@@ -187,7 +187,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       const isReference = isEntityReference(fieldReference);
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
       const isDateColumn = shouldFormatDateColumn(column);
-      const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+      const isTreeColumn =
+        column.column?.reference === FIELD_REFERENCE_CODES.TREE_REFERENCE.id ||
+        column.column?.reference === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id;
+      const supportsDropdownFilter =
+        isBooleanColumn || isTreeColumn || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
       // --- Initialize filterState for booleans if it doesn't exist ---
