@@ -1,6 +1,18 @@
+/*
+ * DO NOT add `@import "<pkg>/path.css"` here for CSS coming from node_modules.
+ * Tailwind v4's Oxide scanner resolves these imports itself, and silently aborts
+ * the whole CSS pipeline when `.git/` is absent (Docker build context excludes it).
+ * Result: Tailwind output disappears in Docker while still working locally.
+ * See https://github.com/tailwindlabs/tailwindcss/issues/17080
+ *
+ * Import third-party CSS from TS/TSX instead (e.g. in app/layout.tsx):
+ *   import "react-grid-layout/css/styles.css";
+ * That path goes through Webpack's resolver, bypasses Oxide, and is Docker-safe.
+ *
+ * Project-local CSS (siblings of this file, component-level .css) is fine to
+ * `@import` here — only node_modules CSS triggers the bug.
+ */
 @import "tailwindcss";
-@import "react-grid-layout/css/styles.css";
-@import "react-resizable/css/styles.css";
 @source "../../../ComponentLibrary/src";
 
 @theme {
