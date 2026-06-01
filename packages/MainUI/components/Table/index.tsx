@@ -80,6 +80,7 @@ import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
@@ -683,6 +684,29 @@ const getHierarchyIcon = (
   }
 
   return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+};
+
+/** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
+const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
+  const props = (mrtColumn.columnDef as any)._treeFilterProps;
+  if (!props) return null;
+  return (
+    <TreeColumnFilter
+      column={props.column}
+      entityName={props.entityName}
+      tabId={props.tabId}
+      onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
+        const colId = props.column.id || props.column.columnName;
+        props.onFilterChange((prev: ColumnFiltersState) => {
+          const filtered = prev.filter((f: { id: string }) => f.id !== colId);
+          if (selectedOptions && selectedOptions.length > 0) {
+            return [...filtered, { id: colId, value: selectedOptions }];
+          }
+          return filtered;
+        });
+      }}
+    />
+  );
 };
 
 const DynamicTable = ({
@@ -2450,24 +2474,14 @@ const DynamicTable = ({
         ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id
       ) {
         column.enableColumnFilter = true;
-        const colRef = col;
-        column.Filter = () => (
-          <TreeColumnFilter
-            column={colRef}
-            entityName={tab.entityName}
-            tabId={tab.id}
-            onSelectionChange={(_selectedIds, selectedOptions) => {
-              const colId = colRef.id || colRef.columnName;
-              handleMRTColumnFiltersChange((prev: ColumnFiltersState) => {
-                const filtered = prev.filter((f) => f.id !== colId);
-                if (selectedOptions && selectedOptions.length > 0) {
-                  return [...filtered, { id: colId, value: selectedOptions }];
-                }
-                return filtered;
-              });
-            }}
-          />
-        );
+        // Store props on column for the stable TreeColumnFilterWrapper to read
+        (column as any)._treeFilterProps = {
+          column: col,
+          entityName: tab.entityName,
+          tabId: tab.id,
+          onFilterChange: handleMRTColumnFiltersChange,
+        };
+        column.Filter = TreeColumnFilterWrapper;
       }
 
       return column;

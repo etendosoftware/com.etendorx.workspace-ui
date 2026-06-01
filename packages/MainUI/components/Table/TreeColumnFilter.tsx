@@ -45,6 +45,11 @@ const TREE_REFERENCE_CONFIG: Record<string, { datasourceId: string; existsQuery:
   },
 };
 
+const getNodeTextClass = (selectable: boolean, isSelected: boolean): string => {
+  if (!selectable) return "font-semibold text-baseline-60";
+  return isSelected ? "text-dynamic-dark font-medium" : "text-baseline-90";
+};
+
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
   marginRight: "0.5rem",
@@ -460,16 +465,7 @@ function TreeColumnFilterCmp({
                 disableRipple
               />
             )}
-            <span
-              className={`truncate ${
-                selectable
-                  ? isSelected
-                    ? "text-dynamic-dark font-medium"
-                    : "text-baseline-90"
-                  : "font-semibold text-baseline-60"
-              }`}>
-              {identifier}
-            </span>
+            <span className={`truncate ${getNodeTextClass(selectable, isSelected)}`}>{identifier}</span>
           </li>
         );
       });

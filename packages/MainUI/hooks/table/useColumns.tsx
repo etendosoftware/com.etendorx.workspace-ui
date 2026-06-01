@@ -38,6 +38,14 @@ import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateF
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 
+const TREE_REFERENCE_IDS = new Set([
+  FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
+  FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
+]);
+
+const isTreeReferenceColumn = (column: Column): boolean =>
+  !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
+
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onDateTextFilterChange?: (columnId: string, filterValue: string) => void;
@@ -187,11 +195,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       const isReference = isEntityReference(fieldReference);
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
       const isDateColumn = shouldFormatDateColumn(column);
-      const isTreeColumn =
-        column.column?.reference === FIELD_REFERENCE_CODES.TREE_REFERENCE.id ||
-        column.column?.reference === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id;
       const supportsDropdownFilter =
-        isBooleanColumn || isTreeColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+        isBooleanColumn || isTreeReferenceColumn(column) || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
       // --- Initialize filterState for booleans if it doesn't exist ---

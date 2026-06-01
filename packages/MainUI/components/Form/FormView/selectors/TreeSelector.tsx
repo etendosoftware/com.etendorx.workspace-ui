@@ -46,6 +46,11 @@ interface TreeSelectorProps {
 
 const isNodeSelectable = (node: TreeNode): boolean => !node.isCharacteristic;
 
+const getNodeTextClass = (selectable: boolean, isSelected: boolean): string => {
+  if (!selectable) return "font-semibold text-baseline-60";
+  return isSelected ? "text-dynamic-dark font-medium" : "text-baseline-90";
+};
+
 function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const { t } = useTranslation();
   const { register, setValue, watch } = useFormContext();
@@ -410,16 +415,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
               </button>
             )}
             {!node.hasChildren && <span className="w-4 flex-shrink-0" />}
-            <span
-              className={`truncate ${
-                selectable
-                  ? isSelected
-                    ? "text-dynamic-dark font-medium"
-                    : "text-baseline-90"
-                  : "font-semibold text-baseline-60"
-              }`}>
-              {identifier}
-            </span>
+            <span className={`truncate ${getNodeTextClass(selectable, isSelected)}`}>{identifier}</span>
           </span>
           {isSelected && <CheckIcon className="fade-in-left flex-shrink-0" height={16} width={16} />}
         </li>

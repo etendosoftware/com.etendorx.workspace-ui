@@ -489,26 +489,33 @@ export class LegacyColumnFilterUtils {
     return result;
   }
 
+  private static buildExistsQueryCriteria(
+    fieldName: string,
+    values: unknown[],
+    existsQuery: string
+  ): BaseCriteria[] {
+    const ids = values
+      .filter((v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic)
+      .map((v) => String((v as { id: unknown }).id));
+    if (ids.length === 0) return [];
+    return [
+      {
+        fieldName,
+        operator: "exists",
+        value: ids,
+        existsQuery,
+        isProductCharacteristicsCriteria: true,
+      } as unknown as BaseCriteria,
+    ];
+  }
+
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
     // Check for special existsQuery criteria (e.g. Product Characteristics tree filter)
     const firstObj = typeof values[0] === "object" && values[0] !== null ? (values[0] as Record<string, unknown>) : null;
     if (firstObj?.existsQuery) {
-      const existsQuery = String(firstObj.existsQuery);
-      const ids = values
-        .filter((v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic)
-        .map((v) => String((v as { id: unknown }).id));
-      if (ids.length === 0) return [];
-      return [
-        {
-          fieldName,
-          operator: "exists",
-          value: ids,
-          existsQuery,
-          isProductCharacteristicsCriteria: true,
-        } as unknown as BaseCriteria,
-      ];
+      return LegacyColumnFilterUtils.buildExistsQueryCriteria(fieldName, values, String(firstObj.existsQuery));
     }
 
     // Extract actual values from FilterOption objects if present
