@@ -2473,7 +2473,7 @@ const DynamicTable = ({
       if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
         column.enableColumnFilter = true;
         // Store props on column for the stable TreeColumnFilterWrapper to read
-        (column as any)._treeFilterProps = {
+        (column as Record<string, unknown>)._treeFilterProps = {
           column: col,
           entityName: tab.entityName,
           tabId: tab.id,

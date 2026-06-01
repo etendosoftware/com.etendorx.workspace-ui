@@ -507,6 +507,24 @@ export class LegacyColumnFilterUtils {
     ];
   }
 
+  private static extractFilterValues(values: unknown[]): { actualValues: unknown[]; isTextSearch: boolean } {
+    let isTextSearch = false;
+    const actualValues = values.map((val) => {
+      if (typeof val === "object" && val !== null && "value" in val) {
+        if ((val as Record<string, unknown>).isTextSearch) isTextSearch = true;
+        return (val as { value: unknown }).value;
+      }
+      return val;
+    });
+    return { actualValues, isTextSearch };
+  }
+
+  private static resolveFilterOperator(isTextSearch: boolean, column: Column): "iContains" | "iEquals" | "equals" {
+    if (isTextSearch) return "iContains";
+    if (ColumnFilterUtils.isTableDirColumn(column)) return "iEquals";
+    return "equals";
+  }
+
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
@@ -517,18 +535,7 @@ export class LegacyColumnFilterUtils {
       return LegacyColumnFilterUtils.buildExistsQueryCriteria(fieldName, values, String(firstObj.existsQuery));
     }
 
-    // Extract actual values from FilterOption objects if present
-    // This supports both new format (FilterOption[]) and legacy format (string[])
-    let isTextSearch = false;
-    const actualValues = values.map((val) => {
-      // If it's a FilterOption object with a value property, extract it
-      if (typeof val === "object" && val !== null && "value" in val) {
-        if ((val as any).isTextSearch) isTextSearch = true;
-        return (val as { value: unknown }).value;
-      }
-      // Otherwise use the value as-is (backward compatibility with string[])
-      return val;
-    });
+    const { actualValues, isTextSearch } = LegacyColumnFilterUtils.extractFilterValues(values);
 
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
@@ -540,14 +547,7 @@ export class LegacyColumnFilterUtils {
       }
     }
 
-    let operator: "iContains" | "iEquals" | "equals";
-    if (isTextSearch) {
-      operator = "iContains";
-    } else if (ColumnFilterUtils.isTableDirColumn(column)) {
-      operator = "iEquals";
-    } else {
-      operator = "equals";
-    }
+    const operator = LegacyColumnFilterUtils.resolveFilterOperator(isTextSearch, column);
 
     // SmartClient sends list/select equals criteria with value as an array (e.g. ["FATAL"]),
     // even for single selections. Classic datasources like OBPickAndExecuteDataSource require this.

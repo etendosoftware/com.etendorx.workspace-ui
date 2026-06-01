@@ -46,6 +46,12 @@ const TREE_REFERENCE_IDS: Set<string> = new Set([
 const isTreeReferenceColumn = (column: Column): boolean =>
   !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
 
+const isBooleanType = (column: Column): boolean =>
+  column.type === "boolean" || column.column?._identifier === "YesNo";
+
+const supportsDropdown = (column: Column): boolean =>
+  isBooleanType(column) || isTreeReferenceColumn(column) || ColumnFilterUtils.supportsDropdownFilter(column);
+
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onDateTextFilterChange?: (columnId: string, filterValue: string) => void;
@@ -193,10 +199,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     return originalColumns.map((column: Column) => {
       const fieldReference = getFieldReference(column.column?.reference);
       const isReference = isEntityReference(fieldReference);
-      const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+      const isBooleanColumn = isBooleanType(column);
       const isDateColumn = shouldFormatDateColumn(column);
-      const supportsDropdownFilter =
-        isBooleanColumn || isTreeReferenceColumn(column) || ColumnFilterUtils.supportsDropdownFilter(column);
+      const supportsDropdownFilter = supportsDropdown(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
       // --- Initialize filterState for booleans if it doesn't exist ---
