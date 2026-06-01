@@ -30,6 +30,16 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { buildFlatTreeList, type TreeNode } from "@/utils/form/treeUtils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+/**
+ * Maps reference IDs to their tree datasource IDs.
+ * In Classic, these are hardcoded in ob-formitem-characteristics.js.
+ * The backend metadata API does not expose this relationship.
+ */
+const TREE_DATASOURCE_BY_REFERENCE: Record<string, string> = {
+  [FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id]: "BE2735798ECC4EF88D131F16F1C4EC72",
+};
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
@@ -113,10 +123,11 @@ function TreeColumnFilterCmp({
       if (!column) return;
       setSelfLoading(true);
       try {
-        // Prefer column's own datasource/selector ID (e.g. tree datasource for Product Characteristics)
-        // Fall back to entity name with _distinct for columns without a specific datasource
-        const columnDatasourceId = column.datasourceId || column.selectorDefinitionId;
-        const distinctField = ((column as Record<string, unknown>).filterFieldName as string) || column.columnName;
+        // Resolve datasource: check reference-specific mapping, then column metadata, then entity _distinct
+        const refDatasourceId = column.column?.reference
+          ? TREE_DATASOURCE_BY_REFERENCE[column.column.reference]
+          : undefined;
+        const columnDatasourceId = refDatasourceId || column.datasourceId || column.selectorDefinitionId;
 
         const result = columnDatasourceId
           ? await fetchFilterOptions({
@@ -129,7 +140,7 @@ function TreeColumnFilterCmp({
               datasourceId: entityName || "",
               searchQuery,
               limit: 100,
-              distinctField,
+              distinctField: ((column as Record<string, unknown>).filterFieldName as string) || column.columnName,
               tabId,
             });
 
