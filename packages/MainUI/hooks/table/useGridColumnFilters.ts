@@ -18,6 +18,15 @@
 import { useCallback, useRef } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+const TREE_REFERENCE_IDS = new Set([
+  FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
+  FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
+]);
+
+const isTreeReferenceColumn = (column: Column): boolean =>
+  !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
 import type { MRT_ColumnFiltersState } from "material-react-table";
 import {
   ColumnFilterUtils,
@@ -122,6 +131,21 @@ export const useGridColumnFilters = ({
         });
       }
 
+      // Tree reference columns (e.g. Product Characteristics) — load from datasource like TableDir
+      if (isTreeReferenceColumn(column) && entityName) {
+        return loadTableDirFilterOptions({
+          column,
+          columnId,
+          searchQuery,
+          tabId,
+          entityName,
+          fetchFilterOptions,
+          setFilterOptions,
+          isImplicitFilterApplied,
+          extraParams,
+        });
+      }
+
       return [];
     },
     [columns, fetchFilterOptions, setFilterOptions, tabId, entityName, extraParams]
@@ -142,7 +166,11 @@ export const useGridColumnFilters = ({
         return [];
       }
 
-      if (!ColumnFilterUtils.isTableDirColumn(column) && !(column.type === FieldType.TABLEDIR && entityName)) {
+      if (
+        !ColumnFilterUtils.isTableDirColumn(column) &&
+        !(column.type === FieldType.TABLEDIR && entityName) &&
+        !isTreeReferenceColumn(column)
+      ) {
         return [];
       }
 

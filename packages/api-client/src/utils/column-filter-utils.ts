@@ -23,6 +23,8 @@ export interface FilterOption {
   label: string;
   value: string;
   isTextSearch?: boolean;
+  parentId?: string;
+  isCharacteristic?: boolean;
 }
 
 export interface ColumnFilterState {
