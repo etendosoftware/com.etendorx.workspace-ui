@@ -15,7 +15,14 @@
  *************************************************************************
  */
 
-import { buildFlatTreeList, getNodeTextClass, buildNodeMap, filterVisibleNodes, type TreeNode } from "../treeUtils";
+import {
+  buildFlatTreeList,
+  getNodeTextClass,
+  buildNodeMap,
+  filterVisibleNodes,
+  buildTreeFromFilterOptions,
+  type TreeNode,
+} from "../treeUtils";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 describe("buildFlatTreeList", () => {
@@ -178,5 +185,42 @@ describe("filterVisibleNodes", () => {
       const result = filterVisibleNodes(treeNodes, nodeMap, "", new Set());
       expect(result).toHaveLength(3);
     });
+  });
+});
+
+describe("buildTreeFromFilterOptions", () => {
+  it("should build tree hierarchy from filter options", () => {
+    const options = [
+      { id: "ROOT", label: "Cola", value: "Cola", isCharacteristic: true },
+      { id: "C1", label: "Uva", value: "Uva", parentId: "ROOT" },
+      { id: "C2", label: "Manzana", value: "Manzana", parentId: "ROOT" },
+    ];
+    const result = buildTreeFromFilterOptions(options);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toMatchObject({ id: "ROOT", depth: 0, hasChildren: true, filterValue: "Cola" });
+    expect(result[1]).toMatchObject({ id: "C1", depth: 1, hasChildren: false, filterValue: "Uva" });
+    expect(result[2]).toMatchObject({ id: "C2", depth: 1, hasChildren: false, filterValue: "Manzana" });
+  });
+
+  it("should handle flat options without parentId", () => {
+    const options = [
+      { id: "A", label: "Alpha", value: "alpha" },
+      { id: "B", label: "Beta", value: "beta" },
+    ];
+    const result = buildTreeFromFilterOptions(options);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ depth: 0, hasChildren: false });
+    expect(result[1]).toMatchObject({ depth: 0, hasChildren: false });
+  });
+
+  it("should return empty array for empty options", () => {
+    expect(buildTreeFromFilterOptions([])).toEqual([]);
+  });
+
+  it("should preserve filterValue from original option", () => {
+    const options = [{ id: "X", label: "Display", value: "actual-value" }];
+    const result = buildTreeFromFilterOptions(options);
+    expect(result[0].filterValue).toBe("actual-value");
+    expect(result[0]._identifier).toBe("Display");
   });
 });

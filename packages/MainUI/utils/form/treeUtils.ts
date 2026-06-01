@@ -83,6 +83,25 @@ export function buildFlatTreeList(records: EntityData[]): TreeNode[] {
   return result;
 }
 
+export interface TreeFilterNode extends TreeNode {
+  filterValue: string;
+}
+
+/** Builds tree hierarchy from filter options that have parentId. */
+export function buildTreeFromFilterOptions(
+  options: { id: string; label: string; value: string; parentId?: string | null; isCharacteristic?: boolean }[]
+): TreeFilterNode[] {
+  const records = options.map((opt) => ({
+    id: opt.id,
+    _identifier: opt.label,
+    parentId: opt.parentId ?? null,
+    isCharacteristic: opt.isCharacteristic ?? false,
+    filterValue: opt.value,
+  }));
+  const nodes = buildFlatTreeList(records);
+  return nodes as TreeFilterNode[];
+}
+
 /** Returns the CSS class for a tree node label based on selectability and selection state. */
 export function getNodeTextClass(selectable: boolean, isSelected: boolean): string {
   if (!selectable) return "font-semibold text-baseline-60";

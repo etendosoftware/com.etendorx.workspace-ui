@@ -29,13 +29,7 @@ import { useDebouncedCallback } from "./utils/performanceOptimizations";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
-import {
-  buildFlatTreeList,
-  buildNodeMap,
-  filterVisibleNodes,
-  getNodeTextClass,
-  type TreeNode,
-} from "@/utils/form/treeUtils";
+import { buildNodeMap, buildTreeFromFilterOptions, filterVisibleNodes, getNodeTextClass } from "@/utils/form/treeUtils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 /**
@@ -59,10 +53,6 @@ const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   },
 }));
 
-interface TreeFilterNode extends TreeNode {
-  filterValue: string;
-}
-
 interface TreeColumnFilterProps {
   options?: FilterOption[];
   selectedValues?: string[];
@@ -78,22 +68,6 @@ interface TreeColumnFilterProps {
   column?: Column;
   entityName?: string;
   tabId?: string;
-}
-
-/**
- * Builds tree hierarchy from FilterOptions that have parentId.
- * Returns a flat, depth-annotated list for rendering.
- */
-function buildTreeFromOptions(options: FilterOption[]): TreeFilterNode[] {
-  const records = options.map((opt) => ({
-    id: opt.id,
-    _identifier: opt.label,
-    parentId: opt.parentId ?? null,
-    isCharacteristic: opt.isCharacteristic ?? false,
-    filterValue: opt.value,
-  }));
-  const nodes = buildFlatTreeList(records);
-  return nodes as TreeFilterNode[];
 }
 
 function TreeColumnFilterCmp({
@@ -174,7 +148,7 @@ function TreeColumnFilterCmp({
   const portalRef = useRef<HTMLDivElement>(null);
 
   // Build tree hierarchy from options
-  const treeNodes = useMemo(() => buildTreeFromOptions(options), [options]);
+  const treeNodes = useMemo(() => buildTreeFromFilterOptions(options), [options]);
 
   const nodeMap = useMemo(() => buildNodeMap(treeNodes), [treeNodes]);
 
