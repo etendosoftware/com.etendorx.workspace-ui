@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { buildFlatTreeList } from "../treeUtils";
+import { buildFlatTreeList, getNodeTextClass, buildNodeMap, filterVisibleNodes, type TreeNode } from "../treeUtils";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 describe("buildFlatTreeList", () => {
@@ -102,6 +102,81 @@ describe("buildFlatTreeList", () => {
       customProp: "val",
       depth: 0,
       hasChildren: false,
+    });
+  });
+});
+
+describe("getNodeTextClass", () => {
+  it("should return non-selectable style when not selectable", () => {
+    expect(getNodeTextClass(false, false)).toBe("font-semibold text-baseline-60");
+    expect(getNodeTextClass(false, true)).toBe("font-semibold text-baseline-60");
+  });
+
+  it("should return selected style when selectable and selected", () => {
+    expect(getNodeTextClass(true, true)).toBe("text-dynamic-dark font-medium");
+  });
+
+  it("should return default style when selectable and not selected", () => {
+    expect(getNodeTextClass(true, false)).toBe("text-baseline-90");
+  });
+});
+
+describe("buildNodeMap", () => {
+  it("should build a map from tree nodes", () => {
+    const nodes: TreeNode[] = [
+      { id: "A", _identifier: "Alpha", depth: 0, hasChildren: false },
+      { id: "B", _identifier: "Beta", depth: 0, hasChildren: false },
+    ];
+    const map = buildNodeMap(nodes);
+    expect(map.size).toBe(2);
+    expect(map.get("A")?._identifier).toBe("Alpha");
+    expect(map.get("B")?._identifier).toBe("Beta");
+  });
+
+  it("should return empty map for empty array", () => {
+    expect(buildNodeMap([]).size).toBe(0);
+  });
+});
+
+describe("filterVisibleNodes", () => {
+  const treeNodes: TreeNode[] = [
+    { id: "ROOT", _identifier: "Cola", depth: 0, hasChildren: true, isCharacteristic: true },
+    { id: "C1", _identifier: "Uva", depth: 1, hasChildren: false, parentId: "ROOT" },
+    { id: "C2", _identifier: "Manzana", depth: 1, hasChildren: false, parentId: "ROOT" },
+  ];
+  const nodeMap = buildNodeMap(treeNodes);
+
+  describe("search filtering", () => {
+    it("should filter by search term and keep ancestors", () => {
+      const result = filterVisibleNodes(treeNodes, nodeMap, "uva", new Set());
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe("ROOT");
+      expect(result[1].id).toBe("C1");
+    });
+
+    it("should return only matching node when search matches root", () => {
+      const result = filterVisibleNodes(treeNodes, nodeMap, "cola", new Set());
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ROOT");
+    });
+
+    it("should return empty when no match", () => {
+      const result = filterVisibleNodes(treeNodes, nodeMap, "nonexistent", new Set());
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe("collapse filtering", () => {
+    it("should hide children of collapsed nodes", () => {
+      const collapsed = new Set(["ROOT"]);
+      const result = filterVisibleNodes(treeNodes, nodeMap, "", collapsed);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ROOT");
+    });
+
+    it("should show all nodes when nothing is collapsed", () => {
+      const result = filterVisibleNodes(treeNodes, nodeMap, "", new Set());
+      expect(result).toHaveLength(3);
     });
   });
 });
