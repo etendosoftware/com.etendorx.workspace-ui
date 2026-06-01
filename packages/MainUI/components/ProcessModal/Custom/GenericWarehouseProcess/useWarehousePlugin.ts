@@ -54,9 +54,9 @@ export interface UseWarehousePluginResult {
 
 interface UseWarehousePluginOptions {
   processId: string;
-  /** Raw string from processDefinition.onLoad — may be empty if not yet in AD */
+  /** Raw string from processDefinition.etmetaOnload (em_etmeta_onload column) — may be empty if not yet in AD */
   onLoadCode: string | undefined;
-  /** Raw string from processDefinition.onProcess — may be empty if not yet in AD */
+  /** Raw string from processDefinition.etmetaOnprocess (em_etmeta_onprocess column) — may be empty if not yet in AD */
   onProcessCode: string | undefined;
   /** processDefinition object passed as first arg to onLoad */
   processDefinition: Record<string, unknown>;

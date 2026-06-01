@@ -68,7 +68,7 @@ import type {
 interface GenericWarehouseProcessProps {
   schema: WarehouseProcessSchema;
   payscriptPlugin: WarehousePayScriptPlugin | null;
-  /** Raw onProcess function string from processDefinition.onProcess */
+  /** Raw onProcess function string from processDefinition.etmetaOnprocess */
   onProcessCode: string | undefined;
   processId: string;
   onClose: () => void;

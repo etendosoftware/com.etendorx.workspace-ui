@@ -3,7 +3,7 @@ import { isBulkCompletionProcess } from "../bulkCompletionUtils";
 describe("isBulkCompletionProcess", () => {
   const makeProcess = (overrides = {}) =>
     ({
-      onLoad: undefined,
+      etmetaOnload: null,
       isMultiRecord: "Y",
       ...overrides,
     }) as any;
@@ -12,8 +12,8 @@ describe("isBulkCompletionProcess", () => {
     return Object.fromEntries(params.map((p, i) => [i, p])) as any;
   };
 
-  it("returns false when onLoad is already defined", () => {
-    const process = makeProcess({ onLoad: "some script" });
+  it("returns false when etmetaOnload is already defined", () => {
+    const process = makeProcess({ etmetaOnload: "some script" });
     const params = makeParams([{ name: "DocAction", dBColumnName: "DocAction" }]);
     expect(isBulkCompletionProcess(process, params)).toBe(false);
   });

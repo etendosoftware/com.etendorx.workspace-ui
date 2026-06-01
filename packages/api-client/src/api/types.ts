@@ -906,8 +906,14 @@ export interface ProcessDefinition extends Record<string, unknown> {
   name: string;
   javaClassName: string;
   parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
+  // Lifecycle hook bodies migrated from the classic OBUIAPP_Process columns
+  // (em_etmeta_onload / em_etmeta_onprocess / em_etmeta_on_refresh) plus the
+  // shared module body (em_etmeta_payscript_logic). All four are nullable in
+  // the DB and emitted as JSON null when unset.
+  etmetaOnload: string | null;
+  etmetaOnprocess: string | null;
+  etmetaOnRefresh: string | null;
+  etmetaPayscriptLogic: string | null;
 }
 
 export interface Labels {

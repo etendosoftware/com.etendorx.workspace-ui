@@ -80,7 +80,14 @@ export interface UseProcessExecutionParams {
   javaClassName: string | undefined;
   windowId: string | number;
   tabId: string;
-  onProcess: any;
+  /** Body of em_etmeta_onprocess column, evaluated as a function expression on submit. */
+  etmetaOnprocess: string | null | undefined;
+  /**
+   * Pre-compiled body of em_etmeta_on_refresh. Attached to the view-arg passed
+   * to the string function so migrated code can call view.onRefreshFunction(view)
+   * exactly like classic SmartClient does.
+   */
+  onRefreshFunction: ((view: unknown) => unknown) | undefined;
   // Context
   tab: Tab | undefined;
   record: EntityData | undefined;
@@ -147,7 +154,8 @@ export function useProcessExecution({
   javaClassName,
   windowId,
   tabId,
-  onProcess,
+  etmetaOnprocess,
+  onRefreshFunction,
   tab,
   record,
   initialState,
@@ -624,12 +632,12 @@ export function useProcessExecution({
         return;
       }
 
-      if (!onProcess && javaClassName) {
+      if (!etmetaOnprocess && javaClassName) {
         await handleDirectJavaProcessExecute(actionValue);
         return;
       }
 
-      if (!onProcess || !tab) return;
+      if (!etmetaOnprocess || !tab) return;
 
       startTransition(async () => {
         const formValues = form.getValues();
@@ -644,12 +652,18 @@ export function useProcessExecution({
           tabId: tab?.id || tabId || "",
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
+          // Mirrors classic SmartClient view.onRefreshFunction so migrated
+          // scripts can refresh the modal grid/form after async actions.
+          // TODO: when nested Process Definition modals are supported, also
+          // auto-call parentView.onRefreshFunction(parentView) here on success,
+          // matching ob-parameter-window-view.js:436-439 in classic.
+          onRefreshFunction,
           ...completePayload,
         };
 
         try {
           const stringFnResult = await executeStringFunction(
-            onProcess,
+            etmetaOnprocess,
             { Metadata, OB: createOBShim(), ...processScriptContext },
             button.processDefinition,
             stringFunctionPayload
@@ -687,7 +701,8 @@ export function useProcessExecution({
       hasWindowReference,
       handleWindowReferenceExecute,
       handleDirectJavaProcessExecute,
-      onProcess,
+      etmetaOnprocess,
+      onRefreshFunction,
       javaClassName,
       tab,
       tabId,

@@ -64,8 +64,8 @@ export const isBulkCompletionProcess = (
   processDefinition: ProcessDefinition,
   parameters: ProcessParameters
 ): boolean => {
-  // If onLoad is already defined in metadata, don't override it
-  if (processDefinition.onLoad) {
+  // If etmetaOnload is already defined in metadata, don't override it
+  if (processDefinition.etmetaOnload) {
     return false;
   }
 

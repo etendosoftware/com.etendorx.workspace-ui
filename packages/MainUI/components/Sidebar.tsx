@@ -106,8 +106,10 @@ const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton |
       description: item.description || "",
       javaClassName: "",
       parameters: {},
-      onLoad: "",
-      onProcess: "",
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as unknown as ProcessDefinitionButton;
 };

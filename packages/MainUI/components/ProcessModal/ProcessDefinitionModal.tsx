@@ -92,6 +92,7 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
+import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 
 const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
   const [expanded, setExpanded] = useState(true);
@@ -232,7 +233,7 @@ function ProcessDefinitionModalContent({
   const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
-  const { onProcess, onLoad } = processDefinition;
+  const { etmetaOnprocess, etmetaOnload, etmetaOnRefresh } = processDefinition;
 
   // Build the reusable process script context (auth-aware HTTP helpers)
   // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
@@ -240,12 +241,25 @@ function ProcessDefinitionModalContent({
     () => buildProcessScriptContext({ token: token || "", getCsrfToken }),
     [token, getCsrfToken]
   );
+
+  // Compile etmetaOnRefresh once into a callable so we can attach it to the
+  // "view" argument passed into onLoad/onProcess (mirrors classic's
+  // view.onRefreshFunction; see processView.ts). undefined when the column is null.
+  const onRefreshFunction: OnRefreshFunction | undefined = useMemo(
+    () =>
+      compileOnRefreshFunction(etmetaOnRefresh, {
+        Metadata,
+        OB: createOBShim(),
+        ...processScriptContext,
+      }),
+    [etmetaOnRefresh, processScriptContext]
+  );
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
 
-  // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
+  // Warehouse plugin — evaluated only when etmetaOnload returns type: 'warehouseProcess'
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
 
   const {
@@ -255,8 +269,8 @@ function ProcessDefinitionModalContent({
     loading: warehousePluginLoading,
   } = useWarehousePlugin({
     processId,
-    onLoadCode: onLoad,
-    onProcessCode: typeof onProcess === "string" ? onProcess : undefined,
+    onLoadCode: etmetaOnload ?? undefined,
+    onProcessCode: typeof etmetaOnprocess === "string" ? etmetaOnprocess : undefined,
     processDefinition: processDefinition as Record<string, unknown>,
     selectedRecords: selectedRecordsForPlugin as { id: string }[],
     token: token ?? "",
@@ -300,20 +314,12 @@ function ProcessDefinitionModalContent({
   );
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
-  // Register PayScript DSL if available in process definition
+  // Register PayScript DSL if available in process definition.
+  // Source: em_etmeta_payscript_logic column → etmetaPayscriptLogic property.
   useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-        setRulesRegistered(true);
-      }
+    if (processDefinition.id && processDefinition.etmetaPayscriptLogic) {
+      registerPayScriptDSL(processDefinition.id, processDefinition.etmetaPayscriptLogic);
+      setRulesRegistered(true);
     }
   }, [processDefinition]);
 
@@ -746,7 +752,8 @@ function ProcessDefinitionModalContent({
     javaClassName,
     windowId,
     tabId,
-    onProcess,
+    etmetaOnprocess,
+    onRefreshFunction,
     tab,
     record: record ?? undefined,
     initialState: initialState ?? undefined,
@@ -911,7 +918,7 @@ function ProcessDefinitionModalContent({
       try {
         setLoading(true);
 
-        const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
+        const effectiveOnLoad = etmetaOnload || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
 
         if (effectiveOnLoad && tab) {
           const result = await executeStringFunction(
@@ -923,6 +930,9 @@ function ProcessDefinitionModalContent({
               tabId: tab.id || "",
               tableId: tab.table || "",
               parentRecord: recordValues,
+              // Mirrors classic SmartClient view.onRefreshFunction so migrated
+              // scripts can call view.onRefreshFunction(view) to rebuild the modal.
+              onRefreshFunction,
             }
           );
 
@@ -942,7 +952,8 @@ function ProcessDefinitionModalContent({
     fetchOptions();
   }, [
     button.processDefinition,
-    onLoad,
+    etmetaOnload,
+    onRefreshFunction,
     open,
     selectedRecords,
     recordValues,
@@ -1225,7 +1236,7 @@ function ProcessDefinitionModalContent({
     (hasWindowReference && !gridSelection);
 
   const renderModalContent = () => {
-    if (warehousePluginLoading && onLoad) {
+    if (warehousePluginLoading && etmetaOnload) {
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">

@@ -156,8 +156,12 @@ export interface ProcessDefinition extends Record<string, unknown> {
   description?: string;
   javaClassName: string;
   parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
+  // See @workspaceui/api-client/types#ProcessDefinition for the column origin
+  // of each hook. Null when the metadata column is empty.
+  etmetaOnload: string | null;
+  etmetaOnprocess: string | null;
+  etmetaOnRefresh: string | null;
+  etmetaPayscriptLogic: string | null;
 }
 export interface ResponseMessage {
   msgText: string;

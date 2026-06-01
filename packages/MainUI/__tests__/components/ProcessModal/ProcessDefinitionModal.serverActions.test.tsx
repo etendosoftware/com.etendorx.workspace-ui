@@ -178,8 +178,10 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
       id: "P123",
       javaClassName: "com.test.Demo",
       parameters: {},
-      onLoad: "",
-      onProcess: "",
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as any;
 

@@ -128,7 +128,7 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     return render(<ProcessDefinitionModal button={button} open={true} onClose={mockClose} onSuccess={mockSuccess} />);
   };
 
-  test("Direct Java Process Execution (no onProcess, javaClassName present)", async () => {
+  test("Direct Java Process Execution (no etmetaOnprocess, javaClassName present)", async () => {
     const directJavaButton = {
       name: "Java Process",
       processDefinition: {
@@ -136,7 +136,7 @@ describe("ProcessDefinitionModal Execution Flows", () => {
         name: "Test Java Process",
         javaClassName: "com.test.TestProcess",
         parameters: {},
-        onProcess: null, // No JS handler
+        etmetaOnprocess: null, // No JS handler
       },
     };
 
