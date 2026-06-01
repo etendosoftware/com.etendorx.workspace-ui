@@ -45,6 +45,8 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.SELECTOR.id:
     case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
+    case FIELD_REFERENCE_CODES.ASSIGNMENT.id:
+    case FIELD_REFERENCE_CODES.TREE_REFERENCE.id:
       return FieldType.TABLEDIR;
     case FIELD_REFERENCE_CODES.DATE.id:
       return FieldType.DATE;
