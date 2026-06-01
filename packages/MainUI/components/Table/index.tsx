@@ -79,6 +79,8 @@ import {
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
+import { TreeColumnFilter } from "./TreeColumnFilter";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -2441,6 +2443,34 @@ const DynamicTable = ({
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
 
+      // Tree reference columns get a tree-aware dropdown filter instead of text
+      const ref = col.column?.reference;
+      if (
+        ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id ||
+        ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id
+      ) {
+        column.enableColumnFilter = true;
+        const colRef = col;
+        column.Filter = () => (
+          <TreeColumnFilter
+            column={colRef}
+            entityName={tab.entityName}
+            tabId={tab.id}
+            onSelectionChange={(selectedIds) => {
+              const colId = colRef.id || colRef.columnName;
+              const selectedOptions = selectedIds.map((id) => ({ id, label: id, value: id }));
+              handleMRTColumnFiltersChange((prev: ColumnFiltersState) => {
+                const filtered = prev.filter((f) => f.id !== colId);
+                if (selectedOptions.length > 0) {
+                  return [...filtered, { id: colId, value: selectedOptions }];
+                }
+                return filtered;
+              });
+            }}
+          />
+        );
+      }
+
       return column;
     });
 
@@ -2506,7 +2536,7 @@ const DynamicTable = ({
     }
 
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
+  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility, tab.entityName, tab.id, handleMRTColumnFiltersChange]);
 
   // Helper function to check if a row is being edited
 

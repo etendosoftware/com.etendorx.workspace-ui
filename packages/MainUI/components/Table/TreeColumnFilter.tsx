@@ -26,7 +26,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "../Form/FormView/selectors/components/DropdownPortal";
 import SearchInput from "../Form/FormView/selectors/components/Select/SearchInput";
 import { useDebouncedCallback } from "./utils/performanceOptimizations";
+import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { buildFlatTreeList, type TreeNode } from "@/utils/form/treeUtils";
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -42,8 +44,8 @@ interface TreeFilterNode extends TreeNode {
 }
 
 interface TreeColumnFilterProps {
-  options: FilterOption[];
-  selectedValues: string[];
+  options?: FilterOption[];
+  selectedValues?: string[];
   onSelectionChange: (selectedIds: string[]) => void;
   onSearch?: (term: string) => void;
   onFocus?: () => void;
@@ -52,6 +54,10 @@ interface TreeColumnFilterProps {
   hasMore?: boolean;
   placeholder?: string;
   filterState?: ColumnFilterState;
+  /** When provided, the component loads its own data using useColumnFilterData */
+  column?: Column;
+  entityName?: string;
+  tabId?: string;
 }
 
 /**
@@ -71,13 +77,16 @@ function buildTreeFromOptions(options: FilterOption[]): TreeFilterNode[] {
 }
 
 function TreeColumnFilterCmp({
-  options,
-  selectedValues,
+  options: externalOptions,
+  selectedValues: externalSelectedValues,
   onSelectionChange,
   onSearch,
   onFocus,
-  loading = false,
+  loading: externalLoading = false,
   placeholder = "Select options...",
+  column,
+  entityName,
+  tabId,
 }: TreeColumnFilterProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,6 +95,42 @@ function TreeColumnFilterCmp({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
+
+  // Self-loading mode: fetch data using useColumnFilterData when column/entityName are provided
+  const isSelfLoading = !!column && !!entityName;
+  const { fetchFilterOptions } = useColumnFilterData();
+  const [selfLoadedOptions, setSelfLoadedOptions] = useState<FilterOption[]>([]);
+  const [selfLoading, setSelfLoading] = useState(false);
+  const [selfLoaded, setSelfLoaded] = useState(false);
+  const [selfSelectedValues, setSelfSelectedValues] = useState<string[]>([]);
+
+  const options = isSelfLoading ? selfLoadedOptions : (externalOptions ?? []);
+  const selectedValues = isSelfLoading ? selfSelectedValues : (externalSelectedValues ?? []);
+  const loading = isSelfLoading ? selfLoading : externalLoading;
+
+  const loadSelfOptions = useCallback(
+    async (searchQuery?: string) => {
+      if (!entityName || !column) return;
+      setSelfLoading(true);
+      try {
+        const distinctField = ((column as Record<string, unknown>).filterFieldName as string) || column.columnName;
+        const result = await fetchFilterOptions({
+          datasourceId: entityName,
+          searchQuery,
+          limit: 100,
+          distinctField,
+          tabId,
+        });
+        setSelfLoadedOptions(result);
+        setSelfLoaded(true);
+      } catch {
+        setSelfLoadedOptions([]);
+      } finally {
+        setSelfLoading(false);
+      }
+    },
+    [entityName, column, tabId, fetchFilterOptions]
+  );
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -153,40 +198,47 @@ function TreeColumnFilterCmp({
       const newSelection = selectedValues.includes(id)
         ? selectedValues.filter((v) => v !== id)
         : [...selectedValues, id];
+      if (isSelfLoading) setSelfSelectedValues(newSelection);
       onSelectionChange(newSelection);
     },
-    [selectedValues, onSelectionChange]
+    [selectedValues, onSelectionChange, isSelfLoading]
   );
 
   const handleSingleSelect = useCallback(
     (id: string) => {
+      if (isSelfLoading) setSelfSelectedValues([id]);
       onSelectionChange([id]);
       setIsOpen(false);
       setHighlightedIndex(-1);
       setSearchTerm("");
     },
-    [onSelectionChange]
+    [onSelectionChange, isSelfLoading]
   );
 
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (isSelfLoading) setSelfSelectedValues([]);
       onSelectionChange([]);
       setIsOpen(false);
       setSearchTerm("");
     },
-    [onSelectionChange]
+    [onSelectionChange, isSelfLoading]
   );
 
   const handleClick = useCallback(() => {
     setIsOpen((prev) => {
       if (!prev) {
         setIsFetchingInitial(true);
-        onFocus?.();
+        if (isSelfLoading && !selfLoaded) {
+          loadSelfOptions();
+        } else {
+          onFocus?.();
+        }
       }
       return !prev;
     });
-  }, [onFocus]);
+  }, [onFocus, isSelfLoading, selfLoaded, loadSelfOptions]);
 
   // Keyboard: arrow keys skip non-selectable nodes
   const selectableIndices = useMemo(() => {
@@ -242,10 +294,14 @@ function TreeColumnFilterCmp({
 
   const handleOnSearch = useCallback(
     (term: string) => {
-      onSearch?.(term);
+      if (isSelfLoading) {
+        loadSelfOptions(term);
+      } else {
+        onSearch?.(term);
+      }
       setIsDebouncing(false);
     },
-    [onSearch]
+    [onSearch, isSelfLoading, loadSelfOptions]
   );
   const debouncedSearch = useDebouncedCallback(handleOnSearch, 500);
 
