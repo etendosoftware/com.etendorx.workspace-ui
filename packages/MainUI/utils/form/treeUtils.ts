@@ -82,3 +82,56 @@ export function buildFlatTreeList(records: EntityData[]): TreeNode[] {
 
   return result;
 }
+
+/** Returns the CSS class for a tree node label based on selectability and selection state. */
+export function getNodeTextClass(selectable: boolean, isSelected: boolean): string {
+  if (!selectable) return "font-semibold text-baseline-60";
+  return isSelected ? "text-dynamic-dark font-medium" : "text-baseline-90";
+}
+
+/** Builds a Map<id, TreeNode> for O(1) parent lookups. */
+export function buildNodeMap<T extends TreeNode>(nodes: T[]): Map<string, T> {
+  const map = new Map<string, T>();
+  for (const node of nodes) map.set(node.id as string, node);
+  return map;
+}
+
+/**
+ * Filters tree nodes for search (keeping ancestor chain) or collapse state.
+ * When searchTerm is provided, keeps matching nodes + their ancestors.
+ * When no searchTerm, hides children of collapsed nodes.
+ */
+export function filterVisibleNodes<T extends TreeNode>(
+  treeNodes: T[],
+  nodeMap: Map<string, T>,
+  searchTerm: string,
+  collapsedNodes: Set<string>
+): T[] {
+  if (searchTerm) {
+    const lowerSearch = searchTerm.toLowerCase();
+    const matchIds = new Set(
+      treeNodes.filter((n) => (n._identifier as string).toLowerCase().includes(lowerSearch)).map((n) => n.id as string)
+    );
+    const keepIds = new Set(matchIds);
+    for (const node of treeNodes) {
+      if (matchIds.has(node.id as string)) {
+        let current: T | undefined = node;
+        while (current?.parentId && typeof current.parentId === "string") {
+          keepIds.add(current.parentId as string);
+          current = nodeMap.get(current.parentId as string);
+        }
+      }
+    }
+    return treeNodes.filter((n) => keepIds.has(n.id as string));
+  }
+
+  return treeNodes.filter((node) => {
+    let parentId = node.parentId as string | undefined;
+    while (parentId) {
+      if (collapsedNodes.has(parentId)) return false;
+      const parent = nodeMap.get(parentId);
+      parentId = parent?.parentId as string | undefined;
+    }
+    return true;
+  });
+}

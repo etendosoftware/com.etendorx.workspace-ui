@@ -29,7 +29,13 @@ import { useDebouncedCallback } from "./utils/performanceOptimizations";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
-import { buildFlatTreeList, type TreeNode } from "@/utils/form/treeUtils";
+import {
+  buildFlatTreeList,
+  buildNodeMap,
+  filterVisibleNodes,
+  getNodeTextClass,
+  type TreeNode,
+} from "@/utils/form/treeUtils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 /**
@@ -43,11 +49,6 @@ const TREE_REFERENCE_CONFIG: Record<string, { datasourceId: string; existsQuery:
     existsQuery:
       "exists (from ProductCharacteristicValue v where e = v.product and v.characteristicValue.id in ($value))",
   },
-};
-
-const getNodeTextClass = (selectable: boolean, isSelected: boolean): string => {
-  if (!selectable) return "font-semibold text-baseline-60";
-  return isSelected ? "text-dynamic-dark font-medium" : "text-baseline-90";
 };
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -175,49 +176,12 @@ function TreeColumnFilterCmp({
   // Build tree hierarchy from options
   const treeNodes = useMemo(() => buildTreeFromOptions(options), [options]);
 
-  // Node map for O(1) parent lookups
-  const nodeMap = useMemo(() => {
-    const map = new Map<string, TreeFilterNode>();
-    for (const node of treeNodes) map.set(node.id as string, node);
-    return map;
-  }, [treeNodes]);
+  const nodeMap = useMemo(() => buildNodeMap(treeNodes), [treeNodes]);
 
-  // Filter: search + collapse
-  const visibleNodes = useMemo(() => {
-    let filtered = treeNodes;
-
-    if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      const matchIds = new Set(
-        treeNodes
-          .filter((n) => (n._identifier as string).toLowerCase().includes(lowerSearch))
-          .map((n) => n.id as string)
-      );
-      const keepIds = new Set(matchIds);
-      for (const node of treeNodes) {
-        if (matchIds.has(node.id as string)) {
-          let current: TreeFilterNode | undefined = node;
-          while (current?.parentId && typeof current.parentId === "string") {
-            keepIds.add(current.parentId as string);
-            current = nodeMap.get(current.parentId as string);
-          }
-        }
-      }
-      filtered = filtered.filter((n) => keepIds.has(n.id as string));
-    } else {
-      filtered = filtered.filter((node) => {
-        let parentId = node.parentId as string | undefined;
-        while (parentId) {
-          if (collapsedNodes.has(parentId)) return false;
-          const parent = nodeMap.get(parentId);
-          parentId = parent?.parentId as string | undefined;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [treeNodes, searchTerm, collapsedNodes, nodeMap]);
+  const visibleNodes = useMemo(
+    () => filterVisibleNodes(treeNodes, nodeMap, searchTerm, collapsedNodes),
+    [treeNodes, nodeMap, searchTerm, collapsedNodes]
+  );
 
   const toggleCollapse = useCallback((nodeId: string) => {
     setCollapsedNodes((prev) => {

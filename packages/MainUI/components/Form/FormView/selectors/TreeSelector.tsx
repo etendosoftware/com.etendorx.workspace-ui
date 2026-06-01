@@ -25,7 +25,13 @@ import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circ
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
-import { buildFlatTreeList, type TreeNode } from "@/utils/form/treeUtils";
+import {
+  buildFlatTreeList,
+  buildNodeMap,
+  filterVisibleNodes,
+  getNodeTextClass,
+  type TreeNode,
+} from "@/utils/form/treeUtils";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
@@ -46,11 +52,6 @@ interface TreeSelectorProps {
 
 const isNodeSelectable = (node: TreeNode): boolean => !node.isCharacteristic;
 
-const getNodeTextClass = (selectable: boolean, isSelected: boolean): string => {
-  if (!selectable) return "font-semibold text-baseline-60";
-  return isSelected ? "text-dynamic-dark font-medium" : "text-baseline-90";
-};
-
 function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const { t } = useTranslation();
   const { register, setValue, watch } = useFormContext();
@@ -70,14 +71,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     return buildFlatTreeList(recordData);
   }, [options]);
 
-  // Lookup map for O(1) parent resolution in filters
-  const nodeMap = useMemo(() => {
-    const map = new Map<string, TreeNode>();
-    for (const node of treeNodes) {
-      map.set(node.id as string, node);
-    }
-    return map;
-  }, [treeNodes]);
+  const nodeMap = useMemo(() => buildNodeMap(treeNodes), [treeNodes]);
 
   // --- UI state ---
   const [isOpen, setIsOpen] = useState(false);
@@ -96,44 +90,10 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
 
   const handleSearchChange = useSearchHandler();
 
-  // --- Visible nodes: search filter + collapse filter ---
-  const visibleNodes = useMemo(() => {
-    let filtered = treeNodes;
-
-    if (searchTerm) {
-      // Search: keep matches + their ancestor chain for context
-      const lowerSearch = searchTerm.toLowerCase();
-      const matchIds = new Set(
-        treeNodes
-          .filter((n) => (n._identifier as string).toLowerCase().includes(lowerSearch))
-          .map((n) => n.id as string)
-      );
-      const keepIds = new Set(matchIds);
-      for (const node of treeNodes) {
-        if (matchIds.has(node.id as string)) {
-          let current: TreeNode | undefined = node;
-          while (current?.parentId && typeof current.parentId === "string") {
-            keepIds.add(current.parentId);
-            current = nodeMap.get(current.parentId);
-          }
-        }
-      }
-      filtered = filtered.filter((n) => keepIds.has(n.id as string));
-    } else {
-      // No search: apply collapse filter — hide children of collapsed parents
-      filtered = filtered.filter((node) => {
-        let parentId = node.parentId as string | undefined;
-        while (parentId) {
-          if (collapsedNodes.has(parentId)) return false;
-          const parent = nodeMap.get(parentId);
-          parentId = parent?.parentId as string | undefined;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [treeNodes, searchTerm, collapsedNodes, nodeMap]);
+  const visibleNodes = useMemo(
+    () => filterVisibleNodes(treeNodes, nodeMap, searchTerm, collapsedNodes),
+    [treeNodes, nodeMap, searchTerm, collapsedNodes]
+  );
 
   // --- Selectable nodes only (for keyboard nav index) ---
   const selectableIndices = useMemo(() => {
