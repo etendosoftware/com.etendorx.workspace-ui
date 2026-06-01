@@ -19,6 +19,7 @@ import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasou
 import type {
   Field,
   ProcessAction,
+  ProcessDefinition,
   RefListField,
   EntityData,
   EntityValue,
@@ -76,7 +77,10 @@ export interface ProcessResponse {
       msgText: string;
     };
   }>;
+  /** Default true when absent. Triggers a parent grid refresh in Etendo Classic. */
   refreshParent?: boolean;
+  /** Default false when absent. Keeps the popup open so the user can re-execute. */
+  retryExecution?: boolean;
   showInIframe?: boolean;
   iframeUrl?: string;
 }
@@ -191,6 +195,8 @@ export interface WindowReferenceGridProps {
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
   showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
+  /** Parent process definition. Used for P&E layout detection; grid selection mode is driven by `windowReferenceTab.obuiappSelectionType`. */
+  processDefinition?: ProcessDefinition;
 }
 
 export type RowProps = (props: {

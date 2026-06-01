@@ -51,6 +51,7 @@ const CellEditorFactoryComponent: FC<CellEditorFactoryProps> = ({
   columnId,
   keyboardNavigationManager,
   shouldAutoFocus = false,
+  showTooltip = true,
   ...editorProps
 }) => {
   // Get error message for tooltip display
@@ -119,7 +120,7 @@ const CellEditorFactoryComponent: FC<CellEditorFactoryProps> = ({
   return (
     <div className={`cell-editor-wrapper ${editorProps.hasError ? "cell-validation-error" : ""}`}>
       {renderEditor()}
-      {editorProps.hasError && errorMessage && (
+      {editorProps.hasError && errorMessage && showTooltip && (
         <div className="cell-error-tooltip" {...errorAttributes}>
           {errorMessage}
         </div>

@@ -193,6 +193,10 @@ export class ProcessParameterMapper {
       "Upload File": FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
       UploadFile: FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
 
+      // Multi-record selector
+      MultiSelector: FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+      "Multi Selector": FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+
       // String/Text (default)
       String: "10", // Text reference
       Text: "10",
@@ -238,6 +242,8 @@ export class ProcessParameterMapper {
       "Image",
       "Upload File",
       "UploadFile",
+      "MultiSelector",
+      "Multi Selector",
     ];
 
     return (
@@ -261,6 +267,13 @@ export class ProcessParameterMapper {
     // tries to fetch from a datasource and fails.
     if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
       return "list";
+    }
+
+    // Multi-record selector is also checked early: the parameter carries a
+    // selector with datasourceName, but it must route to MultiRecordSelector
+    // (which itself opens the modal), not to TableDirSelector.
+    if (reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id) {
+      return "multiselect";
     }
 
     if (parameter.selector?.datasourceName) {
@@ -296,6 +309,7 @@ export class ProcessParameterMapper {
     [FIELD_REFERENCE_CODES.PATTRIBUTE.id, "pattribute"],
     [FIELD_REFERENCE_CODES.IMAGE.id, "image"],
     [FIELD_REFERENCE_CODES.UPLOAD_FILE.id, "uploadfile"],
+    [FIELD_REFERENCE_CODES.MULTI_SELECTOR.id, "multiselect"],
   ]);
 
   /**

@@ -23,6 +23,8 @@ import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constan
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
+import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
+import { type ExtendedMenu, MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 
@@ -114,15 +116,23 @@ const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton |
   } as unknown as ProcessDefinitionButton;
 };
 
-const getManualProcessConfig = (item: Menu, token: string | null, baseUrl: string): ManualProcessResult | null => {
-  if (item.type === "Process" && item.processId) {
+/**
+ * Gets the iframe configuration for legacy manual processes (Process/Form types).
+ * Process Definition entries are handled separately via ProcessDefinitionModal.
+ */
+const getManualProcessConfig = (
+  item: ExtendedMenu,
+  token: string | null,
+  baseUrl: string
+): ManualProcessResult | null => {
+  if (item.type === MENU_ITEM_TYPES.PROCESS && item.processId) {
     return {
       url: buildProcessUrl(item.processId, token, baseUrl),
       size: "default",
     };
   }
 
-  if (item.type === "Form" && item.formId) {
+  if (item.type === MENU_ITEM_TYPES.FORM && item.formId) {
     // Prefer formUrl from backend; fall back to data.json for older backend versions
     const formPath = item.formUrl ?? (formsData as Record<string, FormData>)[item.formId]?.paramUrl;
     if (!formPath) return null;
@@ -228,12 +238,27 @@ export default function Sidebar() {
   }, []);
 
   /**
+   * Opens the ProcessDefinitionModal for a process-like menu intent. Centralises
+   * the state setters so the click handler stays focused on dispatch.
+   *
+   * @param button       The minimal {@link ProcessDefinitionButton} to display.
+   * @param processType  Modal mode (Process Definition or Report and Process).
+   */
+  const openProcessModal = useCallback((button: ProcessDefinitionButton, processType: ProcessType) => {
+    setSelectedProcessDefinitionButton(button);
+    setProcessType(processType);
+    setShowProcessDefinitionModal(true);
+  }, []);
+
+  /**
    * Handles menu item clicks and window navigation.
    *
    * Manages different navigation scenarios:
-   * 1. ProcessDefinition items: Opens ProcessDefinitionModal (new implementation)
-   * 2. Process/Form items: Opens ProcessIframeModal (legacy implementation)
-   * 3. Window items: Opens/activates window using multi-window system
+   * 1. Pick and Execute items: Opens ProcessDefinitionModal (P&E branch)
+   * 2. ProcessDefinition / Report and Process items: Opens ProcessDefinitionModal (generic branch)
+   * 3. Process / Form items: Opens ProcessIframeModal (legacy implementation)
+   * 4. ProcessManual / Report items: Opens Etendo Classic in a popup or new tab
+   * 5. Window items: Opens/activates window using multi-window system
    *
    * Features optimistic UI updates by immediately setting pendingWindowId
    * for visual feedback before state synchronization completes.
@@ -242,21 +267,16 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
-      // Check if this is a ProcessDefinition item that should use the new modal
-      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(item);
-      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(item);
-      const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
+      const extendedItem = item as ExtendedMenu;
 
-      if (isProcessMenuItem) {
-        const processButton = mapMenuToProcessDefinitionButton(item);
-        if (processButton) {
-          setSelectedProcessDefinitionButton(processButton);
-          setShowProcessDefinitionModal(true);
-          setProcessType(
-            isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
-          );
-          return;
-        }
+      const intent = resolveMenuClickIntent(extendedItem);
+      if (intent.kind === MENU_CLICK_INTENT_KINDS.PICK_AND_EXECUTE) {
+        openProcessModal(intent.button, PROCESS_TYPES.PROCESS_DEFINITION);
+        return;
+      }
+      if (intent.kind === MENU_CLICK_INTENT_KINDS.PROCESS_DEFINITION) {
+        openProcessModal(intent.button, intent.processType);
+        return;
       }
 
       // Handle legacy manual processes (Form) as external popup
@@ -266,9 +286,10 @@ export default function Sidebar() {
         return;
       }
 
-      // Handle ProcessManual items - open in Etendo Classic
+      // Handle ProcessManual / Report items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
-      if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
+      const isClassicProcess = item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
+      if (isClassicProcess && processUrl) {
         const classicUrl = buildEtendoClassicBookmarkUrl({
           baseUrl: ETENDO_BASE_URL,
           processUrl,
@@ -276,13 +297,10 @@ export default function Sidebar() {
           token: token,
           kioskMode: true,
         });
-        // Open in js modal
         if (item.isModalProcess) {
           window.open(classicUrl, "Test", "width=950,height=700");
           return;
         }
-
-        // Fallback: Open in new tab
         window.open(classicUrl, "_blank");
         return;
       }
@@ -294,7 +312,7 @@ export default function Sidebar() {
         return;
       }
 
-      if (item.type !== "Window") {
+      if (item.type !== MENU_ITEM_TYPES.WINDOW) {
         return;
       }
 
@@ -311,7 +329,7 @@ export default function Sidebar() {
       loadWindowData(windowId).catch(() => {});
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData]
+    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData, openProcessModal]
   );
 
   /**
@@ -425,7 +443,6 @@ export default function Sidebar() {
           open={showProcessDefinitionModal}
           onClose={handleCloseProcessDefinitionModal}
           button={selectedProcessDefinitionButton}
-          keepOpenOnSuccess
           data-testid="ProcessDefinitionModal__sidebar"
         />
       </>

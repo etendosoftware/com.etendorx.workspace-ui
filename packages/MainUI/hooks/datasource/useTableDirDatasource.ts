@@ -20,8 +20,9 @@ import { logger } from "@/utils/logger";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
-import { FieldName, type UseTableDirDatasourceParams } from "../types";
+import { FieldName, type ProcessSelectorContext, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
+import type { Field, EntityValue } from "@workspaceui/api-client/src/api/types";
 import { useUserStore } from "@/stores/userStore";
 import {
   REFERENCE_IDS,
@@ -34,13 +35,70 @@ import {
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
 const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
 const INP_FIELD_PATTERN = /^inp/;
 const PROCESS_PARAM_KEY_PATTERN = /^[a-z]\w*$/;
 const HQL_PARAM_PATTERN = /@([^@]+)@/g;
+
+// Process selector overlay keys (mirror Classic's pickList payload).
+const PROCESS_META_KEY_PROCESS_ID = "_processDefinitionId";
+const PROCESS_META_KEY_SELECTOR_FIELD_ID = "_selectorFieldId";
+const PROCESS_META_KEY_COLUMN_NAME = "columnName";
+const PROCESS_META_KEY_IS_SELECTOR_ITEM = "IsSelectorItem";
+const PROCESS_PARAM_AD_ORG_ID = "ad_org_id";
+const PROCESS_META_KEY_ORG = "_org";
+const PROCESS_META_KEY_INP_AD_ORG_ID = "inpadOrgId";
+
+/**
+ * Returns true when the value is a non-empty primitive worth forwarding as the
+ * org context. Mirrors Classic's behavior of omitting `_org` when the form has
+ * no `ad_org_id` value yet.
+ */
+const hasUsableOrgValue = (value: unknown): boolean => {
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string" && value === "") return false;
+  return true;
+};
+
+/**
+ * Builds the Process-Modal selector overlay merged on top of the standard
+ * request body when the hook is fed an explicit `ProcessSelectorContext`.
+ *
+ * The overlay carries everything Classic injects from
+ * `OBSelectorItem.prepareDSRequest`:
+ *   - Raw process parameter keys (e.g. `payment_method`, `received_in`).
+ *   - Meta keys (`_processDefinitionId`, `_selectorFieldId`, `columnName`,
+ *     `IsSelectorItem`).
+ *   - Optional org aliases (`_org`, `inpadOrgId`) derived from `ad_org_id`.
+ *
+ * Without this overlay, server-side `SelectorDataSourceFilter` cannot resolve
+ * the parameter's validation rule or evaluate its HQL placeholders.
+ */
+export const buildProcessSelectorOverlay = (
+  field: Field,
+  processContext: ProcessSelectorContext
+): Record<string, unknown> => {
+  const { processId, values } = processContext;
+  // ProcessParameterMapper sets `field.hqlName = parameter.name` (display
+  // name) and `field.columnName = parameter.dBColumnName`. Classic's payload
+  // sends the raw dBColumnName, so prefer `columnName` first.
+  const columnName = field.columnName || field.hqlName || field.name;
+  const overlay: Record<string, unknown> = {
+    ...values,
+    [PROCESS_META_KEY_PROCESS_ID]: processId,
+    [PROCESS_META_KEY_SELECTOR_FIELD_ID]: field.id,
+    [PROCESS_META_KEY_COLUMN_NAME]: columnName,
+    [PROCESS_META_KEY_IS_SELECTOR_ITEM]: true,
+  };
+  const adOrgId = values[PROCESS_PARAM_AD_ORG_ID];
+  if (hasUsableOrgValue(adOrgId)) {
+    overlay[PROCESS_META_KEY_ORG] = adOrgId;
+    overlay[PROCESS_META_KEY_INP_AD_ORG_ID] = adOrgId;
+  }
+  return overlay;
+};
 
 /**
  * Builds the filtered form values to include in a SelectorDataSourceFilter context.
@@ -75,6 +133,7 @@ export const useTableDirDatasource = ({
   isProcessModal = false,
   staticOptions,
   selectedRecordsCount,
+  processContext,
 }: UseTableDirDatasourceParams) => {
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
@@ -322,12 +381,23 @@ export const useTableDirDatasource = ({
 
       finalBody = applyFieldMappings(finalBody);
 
+      // 4. Process-Modal selector overlay: merge AFTER all other transforms so
+      // the raw process-parameter keys (e.g. payment_method, received_in) and
+      // the meta keys (_processDefinitionId, _selectorFieldId, columnName,
+      // IsSelectorItem, _org, inpadOrgId) overwrite any empty fallbacks
+      // produced upstream. Only runs when the caller explicitly provided a
+      // `processContext`, so the standard-window selector path stays intact.
+      if (isProcessModal && processContext) {
+        finalBody = { ...finalBody, ...buildProcessSelectorOverlay(field, processContext) };
+      }
+
       return finalBody;
     },
     [
       transformFormValues,
       getValues,
       invoiceContext,
+      field,
       field.id,
       field.selector,
       field.module,
@@ -341,6 +411,7 @@ export const useTableDirDatasource = ({
       selectorId,
       parentData,
       selectedRecordsCount,
+      processContext,
     ]
   );
 

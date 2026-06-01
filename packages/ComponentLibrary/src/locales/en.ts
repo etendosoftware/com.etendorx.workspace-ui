@@ -309,6 +309,14 @@ const en = {
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",
     executionTimeout: "Process execution timed out. Please try again.",
+    pickAndExecuteNotImplemented:
+      "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
+  },
+  processModal: {
+    gridToolbar: {
+      addRow: "Add row",
+      deleteRow: "Delete row",
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

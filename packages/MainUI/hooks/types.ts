@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import type { EntityData, Field, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type {
   TranslationKeys,
   Translations,
@@ -32,6 +32,19 @@ export enum FieldName {
   COLUMN_NAME = "columnName",
 }
 
+/**
+ * Stable snapshot of a Process Definition modal's form state plus its process
+ * id. Threaded down from the modal to selector hooks so cascading dropdowns
+ * (e.g. Payment Method → Financial Account inside "Etendo Payment Execution")
+ * can build their datasource fetch with the same context that Classic emits:
+ * raw process-parameter keys plus `_processDefinitionId`, `_selectorFieldId`,
+ * `columnName`, `IsSelectorItem`, `_org`, `inpadOrgId`.
+ */
+export interface ProcessSelectorContext {
+  processId: string;
+  values: Record<string, EntityValue>;
+}
+
 export interface UseTableDirDatasourceParams {
   field: Field;
   tab?: Tab;
@@ -40,6 +53,7 @@ export interface UseTableDirDatasourceParams {
   isProcessModal?: boolean;
   staticOptions?: Array<{ id: string; name: string; [key: string]: unknown }>;
   selectedRecordsCount?: number;
+  processContext?: ProcessSelectorContext;
 }
 
 export interface ContextItem {

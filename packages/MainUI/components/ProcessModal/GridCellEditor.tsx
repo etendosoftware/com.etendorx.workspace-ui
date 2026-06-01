@@ -15,14 +15,52 @@
  *************************************************************************
  */
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { CellEditorFactory } from "../Table/CellEditors";
 import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useWindowReferenceGridContext } from "./WindowReferenceGridContext";
-import { useTranslation } from "@/hooks/useTranslation";
+import SelectorModal from "../Form/FormView/selectors/SelectorModal";
+import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import {
+  fetchSelectorDefaultFilters,
+  buildCriteriaFromDefaults,
+  type SelectorCriteria,
+  type DefaultFilterResponse,
+} from "@/utils/form/selectors/defaultFilters";
+import { buildSelectorDatasourceParams } from "@/utils/form/selectors/selectorColumns";
+import { buildSelectorDefaultContext } from "@/utils/form/selectors/utils";
+import { buildEtendoContext } from "@/utils/contextUtils";
+import { useSelected } from "@/hooks/useSelected";
+import { useLanguage } from "@/contexts/language";
+
+// Field name used to attach the user's incremental search query as a criteria
+// to selector-definition-backed datasource fetches. Matches the column shown in
+// the inline dropdown (`_identifier`) so it filters by what the user sees.
+const SEARCH_FIELD_NAME = "_identifier";
+
+// Matches the modal-lupa pipeline (`useDatasource` defaults). Capped at 100 so
+// the dropdown stays responsive and aligns with `DEFAULT_PAGE_SIZE` in table
+// constants without re-importing it.
+const PAGE_SIZE = 100;
+
+type SelectorDefaultsCacheEntry = {
+  defaults: DefaultFilterResponse;
+  criteria: SelectorCriteria[];
+};
+
+const loadSelectorDefaults = async (
+  selectorDefinitionId: string,
+  context: Record<string, unknown>
+): Promise<SelectorDefaultsCacheEntry> => {
+  const defaults = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
+  const criteria = buildCriteriaFromDefaults(defaults, selectorDefinitionId);
+  return { defaults, criteria };
+};
 
 // Helper functions extracted to avoid recreation
 // biome-ignore lint/suspicious/noExplicitAny: Dynamic payload structure from datasource API
@@ -153,16 +191,47 @@ export interface GridCellEditorProps {
   onRecordChange?: (row: any, changes: any) => void;
   // biome-ignore lint/suspicious/noExplicitAny: validation object
   validationError?: any;
+  /**
+   * When true, paints the cell as errored even without a `validationError`.
+   * Used by P&E grids to flag empty mandatory fields in a create-row.
+   */
+  forceError?: boolean;
+  /** Notified after each edit; lets parents clear per-cell create-row errors. */
+  onCellEdit?: (columnName: string) => void;
+  /**
+   * Monotonic counter from the grid context bumped whenever a field-interaction
+   * sibling patch is applied (e.g. mutually-exclusive column zeroed). Not read
+   * in the component body — its sole purpose is to invalidate the surrounding
+   * `memo` comparator so the cell re-renders and re-reads `row.original`. See
+   * `WindowReferenceGridContext.siblingPatchVersion`.
+   */
+  siblingPatchVersion?: number;
 }
 
 /**
  * Optimized Grid Cell Editor component
  * Uses context for shared grid data and refs for dynamic data to prevent unnecessary re-renders
  */
-const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validationError }: GridCellEditorProps) => {
-  const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap, shouldSendOrg } =
+const GridCellEditorBase = ({
+  cell,
+  row,
+  col,
+  fields,
+  onRecordChange,
+  validationError,
+  forceError,
+  onCellEdit,
+}: GridCellEditorProps) => {
+  const { effectiveRecordValuesRef, parametersRef, tabId, tab, session, fieldReadOnlyMap, shouldSendOrg } =
     useWindowReferenceGridContext();
-  const { t } = useTranslation();
+  const { graph } = useSelected();
+  const { language } = useLanguage();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Memoizes the SelectorDefaultFilterActionHandler response per field so that
+  // typing N letters in the dropdown only triggers 1 defaults fetch (not N).
+  // Lives on the component instance; cleared when the editor unmounts.
+  const defaultsCacheRef = useRef<Map<string, Promise<SelectorDefaultsCacheEntry>>>(new Map());
 
   // Find matched field definition
   const matchingField =
@@ -177,6 +246,15 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
   const handleChange = useCallback(
     (newValue: any, selectedOption?: any) => {
       row.original[col.columnName] = newValue;
+      // Mirror to the DB column name so the display reads the user's edit.
+      // parseColumns puts the HQL/property name on `col.columnName` and the DB
+      // name on `col.dbColumnName`; `getRawCellValue` (used by the column's
+      // accessorFn) reads `value[dbColumnName] ?? value[hqlName]`. Initial 0s
+      // seeded by handleAddRow under the DB key would otherwise shadow user
+      // edits via the `??` chain (since 0 is not nullish).
+      if (col.dbColumnName && col.dbColumnName !== col.columnName) {
+        row.original[col.dbColumnName] = newValue;
+      }
 
       // Identifier update logic for TableDir/Search
       if (
@@ -186,8 +264,11 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
           reference === FIELD_REFERENCE_CODES.PRODUCT ||
           reference === FIELD_REFERENCE_CODES.SELECTOR)
       ) {
-        const identifierKey = `${col.columnName}$_identifier`;
-        row.original[identifierKey] = selectedOption.label || selectedOption._identifier;
+        const identifierLabel = selectedOption.label || selectedOption._identifier;
+        row.original[`${col.columnName}$_identifier`] = identifierLabel;
+        if (col.dbColumnName && col.dbColumnName !== col.columnName) {
+          row.original[`${col.dbColumnName}$_identifier`] = identifierLabel;
+        }
       }
 
       // Notify parent of change
@@ -201,13 +282,105 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
       }
 
       cell.row._valuesCache[cell.column.id] = newValue;
+
+      // Tell the parent that this cell has been touched so create-row
+      // mandatory errors can be dismissed per cell. Use `dbColumnName` (the DB
+      // column name) when present — it's the key stored in `createRowErrors`.
+      // `col.columnName` here is the parsed HQL camelCase name, so falling
+      // back to it preserves behavior for callers that don't supply dbColumnName.
+      if (onCellEdit) {
+        onCellEdit(col.dbColumnName ?? col.columnName);
+      }
     },
-    [col.columnName, fieldType, reference, onRecordChange, cell.column.id, cell.row._valuesCache, row]
+    [
+      col.columnName,
+      col.dbColumnName,
+      fieldType,
+      reference,
+      onRecordChange,
+      onCellEdit,
+      cell.column.id,
+      cell.row._valuesCache,
+      row,
+    ]
+  );
+
+  const loadOptionsViaSelector = useCallback(
+    async (field: any, searchQuery?: string) => {
+      const selectorDefinitionId = field.selector?._selectorDefinitionId as string | undefined;
+      if (!selectorDefinitionId) return [];
+
+      const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
+      if (!targetEntity) return [];
+
+      // Compute the context BEFORE keying the cache: the response of
+      // SelectorDefaultFilterActionHandler depends on the context, so a cache
+      // keyed only by field.id risks serving a stale response built from an
+      // incomplete context (e.g. the editor's first invocation on mount, when
+      // the parent form's record values may not yet be populated). Fingerprinting
+      // the context via `JSON.stringify` makes the cache self-invalidate when
+      // the upstream values change, while still deduplicating keystroke spam
+      // (between letters the context is identical → cache hit).
+      const context = buildSelectorDefaultContext(effectiveRecordValuesRef.current ?? {}, tab ?? null, session);
+      const cacheKey = `${field.id ?? selectorDefinitionId}|${JSON.stringify(context)}`;
+      let cached = defaultsCacheRef.current.get(cacheKey);
+      if (!cached) {
+        cached = loadSelectorDefaults(selectorDefinitionId, context);
+        defaultsCacheRef.current.set(cacheKey, cached);
+      }
+      const { defaults, criteria } = await cached;
+
+      const etendoContext = tab ? buildEtendoContext(tab, graph) : {};
+      const params = buildSelectorDatasourceParams({
+        field,
+        etendoContext,
+        language,
+        sorting: [],
+        currentTab: tab ?? null,
+        formValues: effectiveRecordValuesRef.current ?? {},
+        columnFilters: [],
+        defaultCriteria: criteria,
+        defaultFilterResponse: defaults,
+        // `gridColumns` are intentionally empty here: they're only consumed by
+        // `getHiddenDefaultCriteria` inside `buildSelectorDatasourceParams`,
+        // which drops criteria whose `fieldName` matches a visible column in
+        // the lupa modal grid (e.g. `customer`). The lupa flow re-inserts those
+        // dropped criteria via `preloadFiltersFromCriteria` → `columnFilters` →
+        // `useDatasource`'s criteria stitching. The inline dropdown has no
+        // such UI and skips that pipeline, so we keep ALL criteria on the wire
+        // by giving `getHiddenDefaultCriteria` an empty visible-keys set.
+        gridColumns: [],
+      });
+
+      if (searchQuery) {
+        const existing = Array.isArray(params.criteria) ? (params.criteria as SelectorCriteria[]) : [];
+        params.criteria = [...existing, { fieldName: SEARCH_FIELD_NAME, operator: "iContains", value: searchQuery }];
+      }
+
+      // Pagination + text-match params. `useDatasource → loadData` normally
+      // adds these before calling `datasource.get`; since we call `datasource.get`
+      // directly, we must replicate them or the backend rejects the request
+      // with "Data was tried to be fetched from server without pagination".
+      // Unprefixed keys (`startRow`, `endRow`, `textMatchStyle`, `noActiveFilter`)
+      // are auto-prefixed with `_` by `Datasource.buildParams`.
+      params.startRow = 0;
+      params.endRow = PAGE_SIZE;
+      params.textMatchStyle = "substring";
+      params.noActiveFilter = true;
+
+      const result = (await datasource.get(targetEntity, params)) as { data?: unknown };
+      return mapResponseToOptions(result.data ?? result);
+    },
+    [effectiveRecordValuesRef, tab, session, graph, language]
   );
 
   const loadOptions = useCallback(
     async (field: any, searchQuery?: string) => {
       try {
+        if (field.selector?._selectorDefinitionId) {
+          return await loadOptionsViaSelector(field, searchQuery);
+        }
+
         const fieldRef = field.column?.reference || field.reference;
         const isSelector = fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
         const selectorId = field.selector?._selectorDefinitionId;
@@ -235,7 +408,7 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
         return [];
       }
     },
-    [tabId, session, effectiveRecordValuesRef, parametersRef]
+    [tabId, session, effectiveRecordValuesRef, parametersRef, shouldSendOrg, loadOptionsViaSelector]
   );
 
   if (!matchingField) {
@@ -245,31 +418,76 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
   // Generate unique IDs for accessibility
   const fieldId = `grid-cell-${row.id}-${col.columnName}`;
 
-  // Validation state
-  const hasError = !!validationError;
-  const rawErrorMessage = validationError?.message;
-  const errorMessage = rawErrorMessage ? t(rawErrorMessage) : undefined;
+  // Validation state. Errors render as a red border only (set via `hasError`
+  // on the inner editor). The previous variant also rendered the message
+  // below the input, but that was removed as a UX workaround until a richer
+  // indicator (e.g. tooltip) lands.
+  const hasError = !!validationError || forceError === true;
 
   const isFieldReadOnly = fieldReadOnlyMap?.[col.columnName] || fieldReadOnlyMap?.[col.accessorKey] || false;
 
+  // Magnifying-glass: identical predicate to GenericSelector.tsx (form mode).
+  const hasTableRelated = matchingField.selector?.hasTableRelated === true;
+  const showSearchButton = hasTableRelated && !isFieldReadOnly;
+
+  // Mirror GenericSelector.handleSelect: resolve the real ID via `valueField`,
+  // synthesize an option carrying the displayable identifier, then route the
+  // selection through the same `handleChange` used by the dropdown editor —
+  // that keeps `$_identifier` propagation and `onRecordChange` notification
+  // unified across both paths.
+  const handleModalSelect = (record: EntityData) => {
+    const valueField = matchingField.selector?.valueField as string | undefined;
+    const displayField = matchingField.selector?.displayField as string | undefined;
+    const resolvedId = (valueField ? record[valueField] : record.id) as string | undefined;
+    if (!resolvedId) return;
+    const label = (displayField ? record[displayField] : record._identifier) as string | undefined;
+    const option = { id: resolvedId, value: resolvedId, label: label ?? "", ...record };
+    handleChange(resolvedId, option);
+  };
+
   return (
-    <div className="w-full min-w-[200px]" title={errorMessage}>
-      <CellEditorFactory
-        fieldType={fieldType}
-        value={cell.getValue()}
-        onChange={handleChange}
-        field={{ ...matchingField, type: fieldType }}
-        rowId={row.id}
-        columnId={cell.column.id}
-        loadOptions={loadOptions}
-        disabled={isFieldReadOnly}
-        hasError={hasError}
-        onBlur={() => {}}
-        id={fieldId}
-        name={col.columnName}
-        data-testid={`grid-cell-editor-${col.columnName}`}
-      />
-      {hasError && <div className="text-xs text-red-500 mt-1">{errorMessage}</div>}
+    <div className="w-full">
+      <div className="flex w-full items-center gap-1">
+        <div className="flex-grow min-w-0">
+          <CellEditorFactory
+            fieldType={fieldType}
+            value={row.original[col.columnName]}
+            onChange={handleChange}
+            field={{ ...matchingField, type: fieldType }}
+            rowId={row.id}
+            columnId={cell.column.id}
+            loadOptions={loadOptions}
+            disabled={isFieldReadOnly}
+            hasError={hasError}
+            showTooltip={false}
+            onBlur={() => {}}
+            id={fieldId}
+            name={col.columnName}
+            data-testid={`grid-cell-editor-${col.columnName}`}
+          />
+        </div>
+        {showSearchButton && (
+          <IconButton
+            onClick={() => setIsSearchModalOpen(true)}
+            className="w-8 h-8 flex-shrink-0"
+            tooltip="Search"
+            tooltipPosition="top"
+            data-testid={`grid-cell-search-${col.columnName}`}>
+            <SearchIcon className="w-5 h-5 fill-current" data-testid="SearchIcon__618d78" />
+          </IconButton>
+        )}
+      </div>
+      {isSearchModalOpen && (
+        <SelectorModal
+          field={matchingField}
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          onSelect={handleModalSelect}
+          getValues={() => effectiveRecordValuesRef.current ?? {}}
+          currentTab={tab ?? null}
+          data-testid="SelectorModal__618d78"
+        />
+      )}
     </div>
   );
 };
@@ -284,10 +502,14 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
 export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) => {
   return (
     // Important! Re-render if validation status changes
+    // Bumped by field-interactions in the parent grid; forces re-render so the
+    // sibling cell re-reads `row.original` after a mutually-exclusive zeroing.
     prevProps.cell.getValue() === nextProps.cell.getValue() &&
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
-    prevProps.validationError === nextProps.validationError
+    prevProps.validationError === nextProps.validationError &&
+    prevProps.forceError === nextProps.forceError &&
+    prevProps.siblingPatchVersion === nextProps.siblingPatchVersion
   );
 });
 

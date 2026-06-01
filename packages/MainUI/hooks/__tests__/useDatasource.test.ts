@@ -87,4 +87,81 @@ describe("useDatasource hook", () => {
 
     expect(result.current.records).toHaveLength(0);
   });
+
+  describe("locally-added rows survive refetches", () => {
+    // Reproduces the Add Payment / GL Items bug: the user creates a row, the
+    // PayScript fires and changes form values, those values feed into
+    // datasourceOptions, the hook refetches with new params, and (before the fix)
+    // the locally-added row was wiped because page-1 replaced records entirely.
+
+    it("preserves `_locallyAdded` rows when a refetch returns no matching id", async () => {
+      const { result, rerender } = renderHook(
+        ({ params }: { params: Record<string, unknown> }) => useDatasource({ entity: mockEntity, params }),
+        { initialProps: { params: { tabId: "T1" } } }
+      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      act(() => {
+        result.current.addRecordLocally({ id: "local-1", name: "GL Item draft", _locallyAdded: true });
+      });
+      expect(result.current.records.some((r) => r.id === "local-1")).toBe(true);
+
+      // PayScript-style refetch trigger: a new params reference reusing the
+      // page-1 replace path. Server still returns the original record set.
+      rerender({ params: { tabId: "T1", amount_gl_items: "-50.00" } });
+      await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(2));
+
+      expect(result.current.records.some((r) => r.id === "local-1")).toBe(true);
+      expect(result.current.records.some((r) => r.id === "1")).toBe(true);
+    });
+
+    it("drops `_locallyAdded` row if the same id arrives from the server (avoids duplicates)", async () => {
+      (datasource.get as jest.Mock)
+        .mockResolvedValueOnce({ ok: true, data: { response: { data: [] } } })
+        .mockResolvedValueOnce({
+          ok: true,
+          data: { response: { data: [{ id: "local-1", name: "Now on server" }] } },
+        });
+
+      const { result, rerender } = renderHook(
+        ({ params }: { params: Record<string, unknown> }) => useDatasource({ entity: mockEntity, params }),
+        { initialProps: { params: { tabId: "T1" } } }
+      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      act(() => {
+        result.current.addRecordLocally({ id: "local-1", name: "Draft", _locallyAdded: true });
+      });
+
+      rerender({ params: { tabId: "T1", x: 1 } });
+      await waitFor(() => {
+        const rows = result.current.records.filter((r) => r.id === "local-1");
+        expect(rows).toHaveLength(1);
+        expect(rows[0].name).toBe("Now on server");
+      });
+    });
+
+    it("does not preserve non-`_locallyAdded` rows on refetch (no behaviour change for server-driven rows)", async () => {
+      (datasource.get as jest.Mock)
+        .mockResolvedValueOnce({ ok: true, data: { response: { data: mockRecords } } })
+        .mockResolvedValueOnce({ ok: true, data: { response: { data: [{ id: "99", name: "Refreshed" }] } } });
+
+      const { result, rerender } = renderHook(
+        ({ params }: { params: Record<string, unknown> }) => useDatasource({ entity: mockEntity, params }),
+        { initialProps: { params: { tabId: "T1" } } }
+      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // No `_locallyAdded` flag → record should be replaced like before.
+      act(() => {
+        result.current.addRecordLocally({ id: "transient", name: "Just appended" });
+      });
+
+      rerender({ params: { tabId: "T1", x: 1 } });
+      await waitFor(() => {
+        expect(result.current.records.some((r) => r.id === "99")).toBe(true);
+        expect(result.current.records.some((r) => r.id === "transient")).toBe(false);
+      });
+    });
+  });
 });

@@ -312,6 +312,14 @@ const es = {
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
+    pickAndExecuteNotImplemented:
+      "El proceso tiene UI Pattern igual a 'Pick and Execute' y no está implementado. Contactarse con soporte.",
+  },
+  processModal: {
+    gridToolbar: {
+      addRow: "Agregar fila",
+      deleteRow: "Eliminar fila",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
