@@ -112,6 +112,13 @@ export const FIELD_REFERENCE_CODES = {
   // Link — URL field, renders as clickable hyperlink in read-only
   LINK: { id: "800101", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
+  // Assignment — resource assignment FK (ref 33 in Classic).
+  // Uses TableDirDomainType in Classic; mapped to TableDirSelector.
+  ASSIGNMENT: { id: "33", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Tree Reference — hierarchical FK selector (e.g. Characteristic Values)
+  TREE_REFERENCE: { id: "8C57A4A2E05F4261A1FADF47C30398AD", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
   // Product Characteristics — always read-only concatenated description
   PRODUCT_CHARACTERISTICS: { id: "C632F1CFF5A1453EB28BDF44A70478F8", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 } as const;
