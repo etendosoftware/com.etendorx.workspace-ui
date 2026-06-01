@@ -2456,12 +2456,11 @@ const DynamicTable = ({
             column={colRef}
             entityName={tab.entityName}
             tabId={tab.id}
-            onSelectionChange={(selectedIds) => {
+            onSelectionChange={(_selectedIds, selectedOptions) => {
               const colId = colRef.id || colRef.columnName;
-              const selectedOptions = selectedIds.map((id) => ({ id, label: id, value: id }));
               handleMRTColumnFiltersChange((prev: ColumnFiltersState) => {
                 const filtered = prev.filter((f) => f.id !== colId);
-                if (selectedOptions.length > 0) {
+                if (selectedOptions && selectedOptions.length > 0) {
                   return [...filtered, { id: colId, value: selectedOptions }];
                 }
                 return filtered;

@@ -33,12 +33,16 @@ import { buildFlatTreeList, type TreeNode } from "@/utils/form/treeUtils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 /**
- * Maps reference IDs to their tree datasource IDs.
+ * Maps reference IDs to their tree datasource IDs and HQL exists queries.
  * In Classic, these are hardcoded in ob-formitem-characteristics.js.
  * The backend metadata API does not expose this relationship.
  */
-const TREE_DATASOURCE_BY_REFERENCE: Record<string, string> = {
-  [FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id]: "BE2735798ECC4EF88D131F16F1C4EC72",
+const TREE_REFERENCE_CONFIG: Record<string, { datasourceId: string; existsQuery: string }> = {
+  [FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id]: {
+    datasourceId: "BE2735798ECC4EF88D131F16F1C4EC72",
+    existsQuery:
+      "exists (from ProductCharacteristicValue v where e = v.product and v.characteristicValue.id in ($value))",
+  },
 };
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -56,7 +60,7 @@ interface TreeFilterNode extends TreeNode {
 interface TreeColumnFilterProps {
   options?: FilterOption[];
   selectedValues?: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
+  onSelectionChange: (selectedIds: string[], selectedOptions?: FilterOption[]) => void;
   onSearch?: (term: string) => void;
   onFocus?: () => void;
   onLoadMore?: () => void;
@@ -124,9 +128,8 @@ function TreeColumnFilterCmp({
       setSelfLoading(true);
       try {
         // Resolve datasource: check reference-specific mapping, then column metadata, then entity _distinct
-        const refDatasourceId = column.column?.reference
-          ? TREE_DATASOURCE_BY_REFERENCE[column.column.reference]
-          : undefined;
+        const refConfig = column.column?.reference ? TREE_REFERENCE_CONFIG[column.column.reference] : undefined;
+        const refDatasourceId = refConfig?.datasourceId;
         const columnDatasourceId = refDatasourceId || column.datasourceId || column.selectorDefinitionId;
 
         const result = columnDatasourceId
@@ -144,7 +147,11 @@ function TreeColumnFilterCmp({
               tabId,
             });
 
-        setSelfLoadedOptions(result);
+        // Attach existsQuery to options so criteria builder can use it for special filter format
+        const enrichedResult = refConfig?.existsQuery
+          ? result.map((opt) => ({ ...opt, existsQuery: refConfig.existsQuery }))
+          : result;
+        setSelfLoadedOptions(enrichedResult);
         setSelfLoaded(true);
       } catch {
         setSelfLoadedOptions([]);
@@ -216,33 +223,35 @@ function TreeColumnFilterCmp({
     });
   }, []);
 
+  const getSelectedOptions = useCallback((ids: string[]) => options.filter((opt) => ids.includes(opt.id)), [options]);
+
   const handleToggle = useCallback(
     (id: string) => {
       const newSelection = selectedValues.includes(id)
         ? selectedValues.filter((v) => v !== id)
         : [...selectedValues, id];
       if (isSelfLoading) setSelfSelectedValues(newSelection);
-      onSelectionChange(newSelection);
+      onSelectionChange(newSelection, getSelectedOptions(newSelection));
     },
-    [selectedValues, onSelectionChange, isSelfLoading]
+    [selectedValues, onSelectionChange, isSelfLoading, getSelectedOptions]
   );
 
   const handleSingleSelect = useCallback(
     (id: string) => {
       if (isSelfLoading) setSelfSelectedValues([id]);
-      onSelectionChange([id]);
+      onSelectionChange([id], getSelectedOptions([id]));
       setIsOpen(false);
       setHighlightedIndex(-1);
       setSearchTerm("");
     },
-    [onSelectionChange, isSelfLoading]
+    [onSelectionChange, isSelfLoading, getSelectedOptions]
   );
 
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (isSelfLoading) setSelfSelectedValues([]);
-      onSelectionChange([]);
+      onSelectionChange([], []);
       setIsOpen(false);
       setSearchTerm("");
     },

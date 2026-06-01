@@ -25,6 +25,8 @@ export interface FilterOption {
   isTextSearch?: boolean;
   parentId?: string;
   isCharacteristic?: boolean;
+  /** HQL exists subquery for special filter criteria (e.g. Product Characteristics) */
+  existsQuery?: string;
 }
 
 export interface ColumnFilterState {
