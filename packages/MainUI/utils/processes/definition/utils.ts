@@ -17,6 +17,8 @@
 
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { createOBShim } from "@/utils/ob/obShim";
+import type { OBShim } from "@/utils/ob/types";
 
 /**
  * Auth credentials required to build the process context.
@@ -24,6 +26,10 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 export interface ProcessContextCredentials {
   token: string;
   getCsrfToken: () => string;
+  /** Raw label resolver (e.g. `useLanguage().getLabel`) for `OB.I18N.getLabel`. */
+  getLabel?: (key: string) => string;
+  /** Current UI language code, for `OB.Format.*` locale-derived defaults. */
+  language?: string | null;
 }
 
 /**
@@ -104,6 +110,13 @@ export interface ProcessScriptContext {
     payload?: Record<string, unknown>,
     options?: CallServletOptions
   ) => Promise<ProcessContextResponse<T>>;
+
+  /**
+   * The `OB.*` compatibility shim (translations, formatting, action registry,
+   * property store, …). A single instance per modal so action registration and
+   * module-namespace writes persist across onLoad / onProcess / onChange / onRefresh.
+   */
+  OB: OBShim;
 }
 
 /**
@@ -118,7 +131,11 @@ export interface ProcessScriptContext {
  * await executeStringFunction(onLoad, { Metadata, ...ctx }, processDefinition, args);
  */
 export function buildProcessScriptContext(credentials: ProcessContextCredentials): ProcessScriptContext {
-  const { token, getCsrfToken } = credentials;
+  const { token, getCsrfToken, getLabel, language } = credentials;
+
+  // One shared OB shim per modal: the action registry and namespace writes
+  // performed in one hook stay visible to the others.
+  const OB = createOBShim({ getLabel, language });
 
   const authHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json;charset=UTF-8",
@@ -186,7 +203,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     return handleResponse<T>(response);
   };
 
-  return { callAction, callDatasource, callServlet };
+  return { callAction, callDatasource, callServlet, OB };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */

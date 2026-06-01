@@ -50,8 +50,8 @@ Where the **runtime substrate** for JS hooks lives today on the client:
 - [hooks/useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts) — compiles + calls `etmetaOnprocess` on Execute click.
 - [processView.ts](../../../packages/MainUI/components/ProcessModal/processView.ts) — `compileOnRefreshFunction` helper.
 - [utils/functions.ts](../../../packages/MainUI/utils/functions.ts) — `compileStringFunction` / `executeStringFunction` runtime (single-function compile, context injection via `new Function`).
-- [utils/processes/definition/utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) — `buildProcessScriptContext` exposes `callAction` / `callDatasource` / `callServlet` to migrated scripts.
-- [utils/propertyStore.ts](../../../packages/MainUI/utils/propertyStore.ts) — `createOBShim()` exposes `OB.PropertyStore.get`.
+- [utils/processes/definition/utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) — `buildProcessScriptContext` exposes `callAction` / `callDatasource` / `callServlet` plus the shared `OB` shim to migrated scripts.
+- [utils/ob/](../../../packages/MainUI/utils/ob/) — `createOBShim()` builds the `OB.*` namespace (PropertyStore, I18N, Format, Utilities, Styles, …); see §4.8.
 
 Each gap below names which side of the wire it must be filled on. **The vast majority of work is
 on the client**; the metadata module is already very close to complete because the `DataToJsonConverter`
@@ -72,7 +72,7 @@ Closed work that ships today, with evidence:
 | `executeStringFunction` / `compileStringFunction` runtime (single-fn compile, context injection) | [functions.ts:55-87](../../../packages/MainUI/utils/functions.ts#L55-L87) | DONE |
 | PayScript DSL registration on modal open | [ProcessDefinitionModal.tsx:310-315](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx#L310-L315) | DONE |
 | Promise-based `callAction` / `callDatasource` / `callServlet` HTTP helpers | [utils.ts:120-190](../../../packages/MainUI/utils/processes/definition/utils.ts#L120-L190) | DONE |
-| `OB.PropertyStore.get` shim | [propertyStore.ts:79-94](../../../packages/MainUI/utils/propertyStore.ts#L79-L94) | DONE |
+| `OB.*` shim — `PropertyStore.get`/`set`, `I18N.getLabel`, `Format.*`, `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`, `Styles.MessageBar`, `TestRegistry.register`, module-namespace writes | [utils/ob/](../../../packages/MainUI/utils/ob/) (shared per modal via [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) `buildProcessScriptContext`) | DONE |
 | `showMsgInProcessView` response action (toast on success/warning/error) | [useProcessExecution.ts:679-696](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts#L679-L696) | DONE |
 | Parameter-level hooks compiled + bound to form items / grid lifecycle | nothing yet — DB columns and API payload present, client never reads them | NOT STARTED |
 | All other capabilities in §4 | n/a | MISSING or PARTIAL as flagged below |
@@ -373,7 +373,8 @@ process completion) via `extractResponseMessage`; an in-modal banner does not ex
 
 **What classic does.** The global `OB.*` object is the canonical entry point for translations,
 remote calls, format helpers, action registration, style constants, datasource creation, and
-property access. Today the new UI only exposes `OB.PropertyStore.get` ([propertyStore.ts:79-94](../../../packages/MainUI/utils/propertyStore.ts#L79-L94)).
+property access. Before this step the new UI only exposed `OB.PropertyStore.get`; the core shim is
+now implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) (see Coverage status below).
 
 **Classic APIs covered.**
 
@@ -410,11 +411,41 @@ every API above. Backings:
 
 **Backend requirement.** None.
 
-**Coverage status.** HEAVILY MISSING. Today only `OB.PropertyStore.get`.
+**Coverage status.** DONE (core shim). Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/):
+`PropertyStore.get`/`set`, `I18N.getLabel` (with `%n` substitution), `Format.*`,
+`Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`,
+`Styles.MessageBar`, `TestRegistry.register` (no-op) and tolerant module-namespace writes.
+The APIs scoped to later steps remain deferred — `RemoteCallManager.call` (§4.9),
+`Datasource.create` (§4.11) and `Utilities.Action.executeJSON` (§4.10) are exposed as stubs that
+throw a traceable "not implemented yet" error pointing to their step.
+
+**Implementation notes (delivered).**
+
+- **One shared `OB` per modal.** `createOBShim(deps)` is built once inside `buildProcessScriptContext`
+  ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)) and reaches onLoad /
+  onProcess / onChange / onRefresh through the existing `...processScriptContext` spread, so the
+  action registry and `OB.<Module>.<Process>` namespace writes persist across hooks (this also lays
+  the groundwork for §4.13). The previous per-call `createOBShim()` sites were removed.
+- **`JSToOBMasked` — simple, audit-gated.** A `grep` of every in-scope process confirmed all calls
+  pass `OB.Format.defaultNumericMask` (standard `#,##0.00`-style mask) and never an exotic literal
+  mask, so a ~25-line deterministic implementation ([number.ts](../../../packages/MainUI/utils/ob/number.ts))
+  replaces the classic `OBPlainToOBMasked` chain. It honours the mask's min/max decimals and the
+  given separators; masks with literal symbols are explicitly out of scope (documented in its JSDoc).
+- **Namespace auto-vivify = plain object + idiomatic guard (no Proxy).** `OB` is a plain extensible
+  object; migrated scripts keep the `OB.APRM = OB.APRM || {}` guard before nesting. `if (OB.Foo)`
+  still reads `undefined` for unknown keys.
+- **`I18N.getLabel`** resolves the template via the language-context dictionary and applies classic
+  positional `%n` substitution; unknown keys fall back to the key itself (new-UI convention).
+- **`Format.*`** derives the decimal/grouping symbols from the current language via
+  `Intl.NumberFormat`; grouping size 3 and the default numeric mask are constants.
 
 **Unlocks.** Essentially every process in §6 except the trivial onChange-only ones. The shim is
 the foundation: any other capability that returns JS-side data (§4.7 message bar uses `OB.Styles`,
 §4.10 actions uses `OB.Utilities.Action`, §4.11 datasource uses `OB.Datasource`) depends on it.
+
+**Tests.** [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/) — one suite per
+module (i18n, format, number, action, utilities, styles, obShim) plus `setStoredPreference` coverage
+in [propertyStore.test.ts](../../../packages/MainUI/utils/__tests__/propertyStore.test.ts).
 
 ---
 
@@ -722,8 +753,8 @@ Cheap-to-expensive, with **BE** (backend, `com.etendoerp.metadata`) and **FE** (
 `client/`) tags. Final ordering is the user's call; this is the recommended sequence based on
 the unlock tallies in §6 and dependency relationships between capabilities.
 
-1. **[BE] §5.1 + §5.2 — Lock the JSON contract.** No new code; **only audit + test**. Add tests in `ProcessDefinitionBuilderTest` / `ParameterBuilderTest` asserting that all six `etmeta*` keys are always present (with `null` when empty) on every payload. Locks the foundation for every FE consumer downstream.
-2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). Small, blocks ~30 processes for messaging/formatting/namespace registration.
+1. **[BE] §5.1 + §5.2 — Lock the JSON contract.** ✅ **DONE.** No new production code; audit + test only. Added contract-locking tests asserting all six `etmeta*` keys are always present (with JSON `null` when the column is empty) on every payload: `ProcessDefinitionBuilderTest#testToJSONKeepsAllProcessEtmetaKeysPresentWhenColumnsEmpty` (the four process-level keys, including the `eTMETAOnload`→`etmetaOnload` rename) and `ParameterBuilderTest#toJSONKeepsParameterLevelEtmetaHooksWhenPopulated` / `#toJSONKeepsParameterLevelEtmetaHooksPresentWhenColumnsEmpty` (the two parameter-level keys, populated and null). Locks the foundation for every FE consumer downstream.
+2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` left as traceable deferred stubs. Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
 3. **[FE] §4.12 — Parameter-level hook execution.** Compile + bind `etmetaOnParameterChange` and `etmetaOnGridLoad` in [ProcessParameterSelector.tsx](../../../packages/MainUI/components/ProcessModal/selectors/ProcessParameterSelector.tsx). Unlocks 23 of the 31 column-signal processes. Requires §4.8 (the script body uses `OB.*` helpers freely) and a minimal §4.2 form-item proxy on `view.theForm`.
 4. **[FE] §4.6 — Modal dialogs.** Promise-based `confirm` / `warn` / `say` exposed under both names. Small, blocks every flow-gating onLoad / onProc.
 5. **[FE] §4.7 — In-modal message bar.** `<MessageBar>` element inside the modal + `view.messageBar.setMessage` / `.hide()` handle. Moderate; needed by most onProcess scripts that report status without dispatching `responseActions`.

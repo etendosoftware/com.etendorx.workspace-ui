@@ -43,7 +43,6 @@ import { appendWindowToUrl } from "@/utils/url/utils";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { createOBShim } from "@/utils/propertyStore";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
 import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
 import {
@@ -670,7 +669,8 @@ export function useProcessExecution({
         try {
           const stringFnResult = await executeStringFunction(
             etmetaOnprocess,
-            { Metadata, OB: createOBShim(), ...processScriptContext },
+            // OB arrives via processScriptContext (single shared instance per modal).
+            { Metadata, ...processScriptContext },
             button.processDefinition,
             stringFunctionPayload
           );

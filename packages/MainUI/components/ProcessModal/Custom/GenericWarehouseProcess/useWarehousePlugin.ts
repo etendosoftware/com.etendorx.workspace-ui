@@ -34,7 +34,8 @@ import { executeStringFunction } from "@/utils/functions";
 import { getPayScriptRules } from "@/components/ProcessModal/callouts/genericPayScriptCallout";
 import { logger } from "@/utils/logger";
 import { createCallAction, createFetchDatasource } from "./warehouseApiHelpers";
-import { createOBShim } from "@/utils/propertyStore";
+import { createOBShim } from "@/utils/ob/obShim";
+import { useLanguage } from "@/contexts/language";
 import type { WarehouseProcessSchema, WarehousePayScriptPlugin } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -79,9 +80,14 @@ export function useWarehousePlugin({
   const [schema, setSchema] = useState<WarehouseProcessSchema | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { getLabel, language } = useLanguage();
 
   const effectiveOnLoad = onLoadCode;
   const effectiveOnProcess = onProcessCode;
+
+  // Shared OB shim instance for this plugin's scripts (I18N/Format closed over
+  // the current language; PropertyStore, Action, etc.).
+  const ob = useMemo(() => createOBShim({ getLabel, language }), [getLabel, language]);
 
   // Sandboxed helpers for entity lookups and ERP kernel calls.
   // Created via shared factory functions to avoid duplication with GenericWarehouseProcess.
@@ -104,7 +110,7 @@ export function useWarehousePlugin({
         const context = {
           callAction,
           fetchDatasource,
-          OB: createOBShim(), // OB.PropertyStore.get(key) — reads preferences from localStorage
+          OB: ob, // full OB.* shim (PropertyStore, I18N, Format, …)
           fetch: undefined, // explicitly blocked — use callAction / fetchDatasource instead
         };
 

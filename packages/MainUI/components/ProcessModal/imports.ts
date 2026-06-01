@@ -60,7 +60,7 @@ export {
   DEFAULT_BULK_COMPLETION_ONLOAD,
 } from "@/utils/process/bulkCompletionUtils";
 export { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
-export { createOBShim } from "@/utils/propertyStore";
+export { createOBShim } from "@/utils/ob/obShim";
 export { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 export { parseSmartClientMessage } from "./Custom/shared/processModalUtils";
 

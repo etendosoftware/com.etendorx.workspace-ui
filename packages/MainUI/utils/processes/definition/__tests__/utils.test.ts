@@ -177,6 +177,12 @@ describe("Process Definition Utils", () => {
       expect(ctx.callServlet).toBeInstanceOf(Function);
     });
 
+    it("should expose the shared OB shim", () => {
+      const ctx = buildProcessScriptContext(credentials);
+      expect(ctx.OB.PropertyStore).toBeDefined();
+      expect(typeof ctx.OB.I18N.getLabel).toBe("function");
+    });
+
     it("callAction should POST to kernel endpoint with auth headers", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
