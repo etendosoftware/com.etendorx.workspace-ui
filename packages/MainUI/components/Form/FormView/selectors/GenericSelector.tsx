@@ -49,6 +49,7 @@ import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFi
 import { ButtonSelector } from "./ButtonSelector";
 import { LinkSelector } from "./LinkSelector";
 import { RichTextSelector } from "./RichTextSelector";
+import { TreeSelector } from "./TreeSelector";
 import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -110,6 +111,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id: // Selector rendered as navigable link
       case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
       case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
+      // Assignment (ref 33): uses TableDirDomainType in Classic — resource assignment FK
+      case FIELD_REFERENCE_CODES.ASSIGNMENT.id:
         return (
           <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />
         );
@@ -219,6 +222,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             data-testid={`StringSelector__prodchar__${field.id}`}
           />
         );
+      // Tree Reference: hierarchical FK selector (e.g. Characteristic Values)
+      case FIELD_REFERENCE_CODES.TREE_REFERENCE.id:
+        return <TreeSelector field={effectiveField} isReadOnly={isReadOnly} />;
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
