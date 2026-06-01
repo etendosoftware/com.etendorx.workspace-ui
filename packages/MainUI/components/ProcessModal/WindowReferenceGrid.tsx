@@ -80,6 +80,8 @@ import {
   buildFilterCriteriaEntry,
   normalizeContextKey,
 } from "@/utils/processes/definition/utils";
+import { logger } from "@/utils/logger";
+import { createGridProxy, createViewProxy } from "@/utils/processes/definition/scriptProxies";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -1040,6 +1042,9 @@ const WindowReferenceGrid = ({
   showTitle = true,
   onClose,
   processDefinition,
+  onGridLoadHook,
+  gridLoadFormHandle,
+  messageBar,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1803,7 +1808,22 @@ const WindowReferenceGrid = ({
       record?.obSelected ? buildSelectedRecord(record) : record
     );
     setLocalRecords(prepared);
-  }, [rawRecords]);
+
+    // Parameter-level onGridLoad: fire once per datasource payload (mirrors the
+    // classic grid `dataArrived` hook). `grid` exposes the loaded rows + initial
+    // selection; `view.theForm` lets the script read sibling parameter values.
+    if (onGridLoadHook && gridLoadFormHandle && messageBar) {
+      const selectedRecords = prepared.filter((record: EntityData) => Boolean(record?.obSelected));
+      const grid = createGridProxy({ rows: prepared, selectedRecords });
+      const view = createViewProxy(gridLoadFormHandle, parameters, { messageBar, grid });
+      grid.view = view;
+      try {
+        onGridLoadHook(grid, view, parameters);
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] onGridLoad failed", error);
+      }
+    }
+  }, [rawRecords, onGridLoadHook, gridLoadFormHandle, messageBar, parameters]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
   // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.

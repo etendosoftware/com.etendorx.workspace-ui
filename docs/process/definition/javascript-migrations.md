@@ -74,7 +74,7 @@ Closed work that ships today, with evidence:
 | Promise-based `callAction` / `callDatasource` / `callServlet` HTTP helpers | [utils.ts:120-190](../../../packages/MainUI/utils/processes/definition/utils.ts#L120-L190) | DONE |
 | `OB.*` shim — `PropertyStore.get`/`set`, `I18N.getLabel`, `Format.*`, `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`, `Styles.MessageBar`, `TestRegistry.register`, module-namespace writes | [utils/ob/](../../../packages/MainUI/utils/ob/) (shared per modal via [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) `buildProcessScriptContext`) | DONE |
 | `showMsgInProcessView` response action (toast on success/warning/error) | [useProcessExecution.ts:679-696](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts#L679-L696) | DONE |
-| Parameter-level hooks compiled + bound to form items / grid lifecycle | nothing yet — DB columns and API payload present, client never reads them | NOT STARTED |
+| Parameter-level hooks compiled + bound to form items / grid lifecycle | [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (onParameterChange via central `form.watch`), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) (onGridLoad on data-arrived), proxies in [scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts) | DONE (§4.12; audited-sufficient proxies, §4.13 shared scope deferred) |
 | All other capabilities in §4 | n/a | MISSING or PARTIAL as flagged below |
 
 ---
@@ -604,10 +604,62 @@ the column is empty. Audit: extend the existing tests for `ProcessDefinitionBuil
 absence/null assertions for `etmetaOnParameterChange` / `etmetaOnGridLoad` on a parameter that
 carries them and on one that doesn't.
 
-**Coverage status.** MISSING (frontend only — backend already serves the data).
+**Coverage status.** DONE (core wiring + audited-sufficient proxies). Implemented in:
+[scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts),
+[compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts),
+[useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts),
+plus the wiring in [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)
+and [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx).
+Both fields are exposed on `ProcessParameter` ([types.ts](../../../packages/api-client/src/api/types.ts)).
+Tests: [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts),
+[compileParameterHook.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/compileParameterHook.test.ts),
+[useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx).
+
+**Implementation notes (delivered).**
+
+- **Centralised onParameterChange, not per-selector.** Each parameter's `etmetaOnParameterChange` is
+  compiled once and bound from a single `form.watch` subscription in `useParameterChangeHooks`
+  (mounted by the modal), rather than wiring every selector. The hook fires with
+  `(item, view, form, grid)` and `grid = null` for scalar parameters. The grid-cell variant
+  (`item.rowNum` / `item.columnName`) is supported by `createItemProxy` extras but is only populated
+  once the grid-cell onChange path is wired.
+- **Firing semantics — `watch` + diff + re-entrancy + debounce (no per-selector blur wiring).** Classic
+  fires on the item's *blur*; the new UI's form is `mode: "onChange"`, but the real commit timing comes
+  from each selector: `NumericSelector` commits on blur, and select / boolean / date / datetime /
+  tabledir / list commit once per discrete selection, so only free-text (`GenericSelector`) commits per
+  keystroke. Three guards make this safe and blur-like: (1) a value diff — fire only when the committed
+  value actually changed; (2) a re-entrancy guard — a hook's own `item.setValue` does not recursively
+  re-fire that parameter; (3) a trailing ~250 ms debounce — coalesces free-text keystroke bursts into a
+  single call. Net effect: discrete selectors fire once immediately, numeric fires on blur, text fires
+  once the typing settles, and loops are impossible. A literal per-selector `onBlur` wiring was
+  considered and rejected: it is distributed across every selector and semantically ambiguous for
+  discrete selectors that have no meaningful blur.
+- **onGridLoad fires per datasource payload.** Bound to `WindowReferenceGrid`'s data-arrived effect (the
+  rawRecords-changed sync), it runs once per load with `(grid, view, parameters)` — mirroring the classic
+  grid `dataArrived` hook (which also fires on reload, e.g. the empty-result message in
+  `productCharacteristicsProcess.testOnGridLoad`). `grid.view.theForm` is wired so the script can read
+  sibling parameter values.
+- **Audited-sufficient proxies (no full §4.1/§4.2/§4.3 yet).** `item` / `form` / `view` / `grid` proxies
+  implement only the methods the in-scope migrated scripts actually call (`item.getValue`/`setValue`,
+  `form.getItem`/`getValues`/`redraw`, `view.theForm`/`messageBar`, `grid.getData().getLength()`/
+  `getSelectedRecords`/`getRecord`/`getRecordIndex`/`data`), backed by react-hook-form and the grid's
+  loaded rows + selection. Every other classic method on these proxies is a stub that throws
+  `"<api> is not implemented yet"` (same convention as the deferred `OB.*` stubs), so an unported script
+  fails clearly instead of with a cryptic "undefined is not a function". The full view/form/grid
+  contracts (dynamic field add/remove, `grid.setEditValue`, selection mutation, filter editor, …) land
+  with §4.1 / §4.2 / §4.3.
+- **§4.13 shared scope deferred.** Parameter hooks receive `OB.*`, `callAction`/`callDatasource`/
+  `callServlet` and the proxies, but do **not** yet resolve bare-name helpers nor
+  `OB.<Module>.<Process>.*` from `em_etmeta_payscript_logic`. Bodies migrated for this step must be
+  self-contained or use the implemented APIs; the shared module scope lands with §4.13 (which §7 orders
+  after this step).
+- **`view.messageBar` is a temporary backing.** It delegates to the modal's toast notifications (mapped
+  by severity) until the real sticky in-modal banner of §4.7 replaces it. This only avoids `undefined`
+  on `view.messageBar.setMessage(...)`; the visual treatment is §4.7.
 
 **Unlocks.** All 23 column-signal-1 processes that use parameter-level mechanisms (every process
-with `onchangefunction ×N` or `ongridloadfunction ×N` in the inventory §6 table).
+with `onchangefunction ×N` or `ongridloadfunction ×N` in the inventory §6 table) whose hook bodies are
+self-contained; processes whose hooks rely on shared `payscript_logic` helpers unlock fully with §4.13.
 
 ---
 
@@ -755,7 +807,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 
 1. **[BE] §5.1 + §5.2 — Lock the JSON contract.** ✅ **DONE.** No new production code; audit + test only. Added contract-locking tests asserting all six `etmeta*` keys are always present (with JSON `null` when the column is empty) on every payload: `ProcessDefinitionBuilderTest#testToJSONKeepsAllProcessEtmetaKeysPresentWhenColumnsEmpty` (the four process-level keys, including the `eTMETAOnload`→`etmetaOnload` rename) and `ParameterBuilderTest#toJSONKeepsParameterLevelEtmetaHooksWhenPopulated` / `#toJSONKeepsParameterLevelEtmetaHooksPresentWhenColumnsEmpty` (the two parameter-level keys, populated and null). Locks the foundation for every FE consumer downstream.
 2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` left as traceable deferred stubs. Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
-3. **[FE] §4.12 — Parameter-level hook execution.** Compile + bind `etmetaOnParameterChange` and `etmetaOnGridLoad` in [ProcessParameterSelector.tsx](../../../packages/MainUI/components/ProcessModal/selectors/ProcessParameterSelector.tsx). Unlocks 23 of the 31 column-signal processes. Requires §4.8 (the script body uses `OB.*` helpers freely) and a minimal §4.2 form-item proxy on `view.theForm`.
+3. **[FE] §4.12 — Parameter-level hook execution.** ✅ **DONE.** `etmetaOnParameterChange` is compiled once per parameter and bound from a single `form.watch` subscription in [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (mounted by [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)), invoked as `(item, view, form, grid)` with three loop/overload guards (value diff, re-entrancy, ~250 ms debounce). `etmetaOnGridLoad` is compiled per grid parameter and fired on the data-arrived effect of [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) as `(grid, view, parameters)`. The `item`/`form`/`view`/`grid` proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) are audited-sufficient — every other classic method throws a traceable "not implemented yet". Compile helper: [compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts). See §4.12 implementation notes. Unlocks the column-signal processes whose hook bodies are self-contained; helper-dependent ones unlock fully with step 10 (§4.13). Built on §4.8; §4.13 shared scope intentionally deferred.
 4. **[FE] §4.6 — Modal dialogs.** Promise-based `confirm` / `warn` / `say` exposed under both names. Small, blocks every flow-gating onLoad / onProc.
 5. **[FE] §4.7 — In-modal message bar.** `<MessageBar>` element inside the modal + `view.messageBar.setMessage` / `.hide()` handle. Moderate; needed by most onProcess scripts that report status without dispatching `responseActions`.
 6. **[FE] §4.10 — Action JSON dispatcher.** Extend the existing `extractResponseMessage` path into a `dispatchResponseAction(action, ctx)` covering every classic action type (`showMsgInView`, `refreshGrid`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `setSelectorValueFromRecord`, `openDirectTab`, `smartclientSay`, `custom`), and wire `OB.Utilities.Action.executeJSON` / `.execute` to it. Moderate.

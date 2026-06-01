@@ -96,6 +96,9 @@ import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
 import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
+import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
+import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import { createFormHandle, type MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -578,6 +581,36 @@ function ProcessDefinitionModalContent({
     formValuesRef.current = rawFormValues;
   }
   const formValues = formValuesRef.current;
+
+  // Parameter-level migrated JS hooks. `onParameterChange` is bound centrally to
+  // value changes; `onGridLoad` is compiled per grid parameter and handed to its
+  // WindowReferenceGrid. Both share the process-level hooks' script context.
+  const scriptHookContext = useMemo(() => ({ Metadata, ...processScriptContext }), [processScriptContext]);
+  const scriptFormHandle = useMemo(() => createFormHandle(form), [form]);
+  const messageBar = useMemo<MessageBarHandle>(() => {
+    const toastBySeverity: Record<string, (message: string) => void> = {
+      error: toast.error,
+      warning: toast.warning,
+      success: toast.success,
+      info: toast.info,
+    };
+    return {
+      setMessage: (severity, _title, text) => (toastBySeverity[String(severity).toLowerCase()] ?? toast)(text),
+      hide: () => toast.dismiss(),
+    };
+  }, []);
+
+  useParameterChangeHooks({ form, parameters, context: scriptHookContext, messageBar });
+
+  const gridLoadHooks = useMemo(() => {
+    const map = new Map<string, CompiledParameterHook | null>();
+    for (const param of Object.values(parameters)) {
+      if (param.etmetaOnGridLoad) {
+        map.set(param.id || param.name, compileParameterHook(param.etmetaOnGridLoad, scriptHookContext));
+      }
+    }
+    return map;
+  }, [parameters, scriptHookContext]);
 
   const handleGridUpdate = useCallback(
     (gridName: string, data: unknown) => {
@@ -1219,6 +1252,9 @@ function ProcessDefinitionModalContent({
         showTitle={false}
         onClose={onClose}
         processDefinition={button.processDefinition}
+        onGridLoadHook={gridLoadHooks.get(parameter.id || parameter.name) ?? null}
+        gridLoadFormHandle={scriptFormHandle}
+        messageBar={messageBar}
         data-testid="WindowReferenceGrid__761503"
       />
     );

@@ -924,6 +924,13 @@ export type ProcessParameter = {
    * When false or undefined, the field group starts expanded.
    */
   fieldGroupCollapsed?: boolean;
+  // Parameter-level hook bodies migrated from the classic OBUIAPP_Parameter
+  // columns (em_etmeta_on_parameter_change / em_etmeta_on_grid_load). Both are
+  // nullable in the DB and emitted as JSON null when unset. onParameterChange
+  // binds to the parameter's value-change event; onGridLoad binds to an embedded
+  // grid parameter's data-arrived event.
+  etmetaOnParameterChange?: string | null;
+  etmetaOnGridLoad?: string | null;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

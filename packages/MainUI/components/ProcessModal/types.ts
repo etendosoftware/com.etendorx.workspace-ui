@@ -16,6 +16,8 @@
  */
 
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
+import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import type { FormHandle, MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
 import type {
   Field,
   ProcessAction,
@@ -184,6 +186,12 @@ export interface WindowReferenceGridProps {
   showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
   /** Parent process definition. Used for P&E layout detection; grid selection mode is driven by `windowReferenceTab.obuiappSelectionType`. */
   processDefinition?: ProcessDefinition;
+  /** Compiled `etmetaOnGridLoad` hook for this grid parameter (null when unset). Invoked once per datasource load. */
+  onGridLoadHook?: CompiledParameterHook | null;
+  /** Form adapter used to build the `view`/`form` proxies passed to `onGridLoad`. */
+  gridLoadFormHandle?: FormHandle;
+  /** Backing for `view.messageBar` inside `onGridLoad`. */
+  messageBar?: MessageBarHandle;
 }
 
 export type RowProps = (props: {
