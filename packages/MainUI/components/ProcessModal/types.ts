@@ -154,19 +154,6 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  description?: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
-  // See @workspaceui/api-client/types#ProcessDefinition for the column origin
-  // of each hook. Null when the metadata column is empty.
-  etmetaOnload: string | null;
-  etmetaOnprocess: string | null;
-  etmetaOnRefresh: string | null;
-  etmetaPayscriptLogic: string | null;
-}
 export interface ResponseMessage {
   msgText: string;
   msgTitle: string;

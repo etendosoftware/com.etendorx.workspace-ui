@@ -936,6 +936,7 @@ export type ProcessParameters = Record<string, ProcessParameter>;
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
+  description?: string;
   javaClassName: string;
   parameters: ProcessParameters;
   // Lifecycle hook bodies migrated from the classic OBUIAPP_Process columns
