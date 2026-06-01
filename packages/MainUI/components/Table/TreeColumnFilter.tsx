@@ -110,17 +110,29 @@ function TreeColumnFilterCmp({
 
   const loadSelfOptions = useCallback(
     async (searchQuery?: string) => {
-      if (!entityName || !column) return;
+      if (!column) return;
       setSelfLoading(true);
       try {
+        // Prefer column's own datasource/selector ID (e.g. tree datasource for Product Characteristics)
+        // Fall back to entity name with _distinct for columns without a specific datasource
+        const columnDatasourceId = column.datasourceId || column.selectorDefinitionId;
         const distinctField = ((column as Record<string, unknown>).filterFieldName as string) || column.columnName;
-        const result = await fetchFilterOptions({
-          datasourceId: entityName,
-          searchQuery,
-          limit: 100,
-          distinctField,
-          tabId,
-        });
+
+        const result = columnDatasourceId
+          ? await fetchFilterOptions({
+              datasourceId: String(columnDatasourceId),
+              selectorDefinitionId: column.selectorDefinitionId as string | undefined,
+              searchQuery,
+              limit: 100,
+            })
+          : await fetchFilterOptions({
+              datasourceId: entityName || "",
+              searchQuery,
+              limit: 100,
+              distinctField,
+              tabId,
+            });
+
         setSelfLoadedOptions(result);
         setSelfLoaded(true);
       } catch {
