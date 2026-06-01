@@ -198,9 +198,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // there's no need to fall back to currentRecordId (which may be stale during the
   // render cycle before the reset effect clears it).
   const isSrTab = tab.uIPattern === UIPattern.EDIT_ONLY && tab.defaultEditMode;
-  const effectiveRecordId = isSrTab && parentSelectedRecordId
-    ? parentSelectedRecordId
-    : currentRecordId;
+  const effectiveRecordId = isSrTab && parentSelectedRecordId ? parentSelectedRecordId : currentRecordId;
 
   // When the parent record changes, reset child tab state (exit form view, clear selection).
   // This replaces the implicit re-render that useWindowContext provided in the pre-Zustand architecture.
@@ -225,7 +223,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const isSrDefaultForm = isSrTab && parentHasSelection;
   const shouldShowForm =
-    isSrDefaultForm || hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
+    isSrDefaultForm ||
+    hasFormViewState ||
+    isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(

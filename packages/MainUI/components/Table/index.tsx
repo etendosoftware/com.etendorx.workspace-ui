@@ -705,6 +705,7 @@ const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<Ent
           return filtered;
         });
       }}
+      data-testid="TreeColumnFilter__8ca888"
     />
   );
 };
@@ -2469,10 +2470,7 @@ const DynamicTable = ({
 
       // Tree reference columns get a tree-aware dropdown filter instead of text
       const ref = col.column?.reference;
-      if (
-        ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id ||
-        ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id
-      ) {
+      if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
         column.enableColumnFilter = true;
         // Store props on column for the stable TreeColumnFilterWrapper to read
         (column as any)._treeFilterProps = {
@@ -2549,7 +2547,16 @@ const DynamicTable = ({
     }
 
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility, tab.entityName, tab.id, handleMRTColumnFiltersChange]);
+  }, [
+    baseColumns,
+    shouldUseTreeMode,
+    renderActionsColumnCell,
+    renderDataColumnCell,
+    tableColumnVisibility,
+    tab.entityName,
+    tab.id,
+    handleMRTColumnFiltersChange,
+  ]);
 
   // Helper function to check if a row is being edited
 

@@ -102,8 +102,7 @@ function applyColumnValues(
     // For boolean fields, "" means "no value computed" and should still allow
     // static defaults to apply. Any other value (including "N", "Y", false, true)
     // is an explicit answer from the server.
-    const isBooleanEmpty =
-      field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id && entry.value === "";
+    const isBooleanEmpty = field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id && entry.value === "";
     if (!isBooleanEmpty) {
       ficKeys.add(newKey);
     }
@@ -196,7 +195,12 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
     const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
     applyAuxiliaryInputs(acc, formInitialization.auxiliaryInputValues, fieldsByColumnName);
-    const ficKeys = applyColumnValues(acc, formInitialization.columnValues, fieldsByColumnName, fieldsByPropertyFieldKey);
+    const ficKeys = applyColumnValues(
+      acc,
+      formInitialization.columnValues,
+      fieldsByColumnName,
+      fieldsByPropertyFieldKey
+    );
     applyStaticDefaults(acc, tab.fields, ficKeys);
     resolveDefaultReferences(acc, tab.fields, fieldsByColumnName);
 

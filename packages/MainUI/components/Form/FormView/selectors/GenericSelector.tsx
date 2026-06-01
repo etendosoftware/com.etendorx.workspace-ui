@@ -212,7 +212,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
         );
       case FIELD_REFERENCE_CODES.LINK.id:
-        return <LinkSelector field={effectiveField} isReadOnly={isReadOnly} />;
+        return (
+          <LinkSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={"LinkSelector__" + field.id} />
+        );
       // Product Characteristics: always read-only — composed from Product Characteristics window, not editable inline.
       case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
         return (
@@ -224,7 +226,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       // Tree Reference: hierarchical FK selector (e.g. Characteristic Values)
       case FIELD_REFERENCE_CODES.TREE_REFERENCE.id:
-        return <TreeSelector field={effectiveField} isReadOnly={isReadOnly} />;
+        return (
+          <TreeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={"TreeSelector__" + field.id} />
+        );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }

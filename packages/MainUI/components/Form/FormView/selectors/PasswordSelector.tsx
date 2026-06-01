@@ -68,7 +68,7 @@ export const PasswordSelector = (
         data-testid={`eye-toggle__${props.field.id}`}
         onClick={() => setShowPassword((prev) => !prev)}
         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors z-10">
-        <EyeIcon open={showPassword} />
+        <EyeIcon open={showPassword} data-testid="EyeIcon__1b1414" />
       </button>
     ) : null;
 

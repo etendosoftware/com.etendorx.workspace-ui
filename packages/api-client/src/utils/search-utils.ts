@@ -489,13 +489,11 @@ export class LegacyColumnFilterUtils {
     return result;
   }
 
-  private static buildExistsQueryCriteria(
-    fieldName: string,
-    values: unknown[],
-    existsQuery: string
-  ): BaseCriteria[] {
+  private static buildExistsQueryCriteria(fieldName: string, values: unknown[], existsQuery: string): BaseCriteria[] {
     const ids = values
-      .filter((v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic)
+      .filter(
+        (v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic
+      )
       .map((v) => String((v as { id: unknown }).id));
     if (ids.length === 0) return [];
     return [
@@ -513,7 +511,8 @@ export class LegacyColumnFilterUtils {
     if (values.length === 0) return [];
 
     // Check for special existsQuery criteria (e.g. Product Characteristics tree filter)
-    const firstObj = typeof values[0] === "object" && values[0] !== null ? (values[0] as Record<string, unknown>) : null;
+    const firstObj =
+      typeof values[0] === "object" && values[0] !== null ? (values[0] as Record<string, unknown>) : null;
     if (firstObj?.existsQuery) {
       return LegacyColumnFilterUtils.buildExistsQueryCriteria(fieldName, values, String(firstObj.existsQuery));
     }

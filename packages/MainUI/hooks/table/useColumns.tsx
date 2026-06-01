@@ -38,7 +38,7 @@ import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateF
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 
-const TREE_REFERENCE_IDS = new Set([
+const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
   FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
 ]);

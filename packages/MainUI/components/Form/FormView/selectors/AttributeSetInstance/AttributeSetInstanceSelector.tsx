@@ -185,7 +185,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
                 onClick={handleClear}
                 className="p-0.5 hover:text-gray-600 transition-colors"
                 data-testid={`clear-attr__${field.id}`}>
-                <X className="w-3.5 h-3.5 text-gray-400" />
+                <X className="w-3.5 h-3.5 text-gray-400" data-testid={"X__" + field.id} />
               </button>
             )}
             <SearchOutlined

@@ -11,7 +11,7 @@ import { TreeColumnFilter } from "./TreeColumnFilter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
-const TREE_REFERENCE_IDS = new Set([
+const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
   FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
 ]);
@@ -114,6 +114,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
         hasMore={filterState?.hasMore || false}
         placeholder={`Filter ${column.name || column.columnName}...`}
         filterState={filterState}
+        data-testid="TreeColumnFilter__a8fea9"
       />
     );
   }

@@ -62,9 +62,16 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
       onClick={handleOpenLink}
       className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-blue-600 transition-colors z-10"
       title="Open link"
-      data-testid={`LinkSelector__open__${field.id}`}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      data-testid={`LinkSelector__open__${field.id}`}>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round">
         <title>Open link</title>
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
         <polyline points="15 3 21 3 21 9" />

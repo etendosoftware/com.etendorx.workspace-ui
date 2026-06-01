@@ -88,8 +88,8 @@ function buildTreeFromOptions(options: FilterOption[]): TreeFilterNode[] {
   const records = options.map((opt) => ({
     id: opt.id,
     _identifier: opt.label,
-    parentId: opt.parentId,
-    isCharacteristic: opt.isCharacteristic,
+    parentId: opt.parentId ?? null,
+    isCharacteristic: opt.isCharacteristic ?? false,
     filterValue: opt.value,
   }));
   const nodes = buildFlatTreeList(records);

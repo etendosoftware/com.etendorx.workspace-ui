@@ -86,9 +86,7 @@ describe("buildFlatTreeList", () => {
   it("should handle single node", () => {
     const records: EntityData[] = [{ id: "ONLY", _identifier: "Only Node" }];
     const result = buildFlatTreeList(records);
-    expect(result).toEqual([
-      expect.objectContaining({ id: "ONLY", depth: 0, hasChildren: false }),
-    ]);
+    expect(result).toEqual([expect.objectContaining({ id: "ONLY", depth: 0, hasChildren: false })]);
   });
 
   it("should preserve all original record properties", () => {

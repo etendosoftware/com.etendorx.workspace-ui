@@ -20,7 +20,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
-const TREE_REFERENCE_IDS = new Set([
+const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
   FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
 ]);
