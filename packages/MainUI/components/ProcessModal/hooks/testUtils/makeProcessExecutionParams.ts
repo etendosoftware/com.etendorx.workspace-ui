@@ -14,7 +14,7 @@ export const makeParams = (overrides: Record<string, unknown> = {}) => ({
   record: undefined,
   initialState: undefined,
   selectedRecords: [],
-  processScriptContext: {},
+  scriptContext: {},
   button: { processDefinition: { id: "PDef-001", parameters: {} } },
   parameters: {},
   form: { getValues: jest.fn(() => ({})) } as any,

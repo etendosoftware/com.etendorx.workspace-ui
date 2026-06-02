@@ -101,6 +101,19 @@ describe("useParameterChangeHooks", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  it("resolves a shared module-scope helper by bare name from the injected context", () => {
+    const updateTotal = jest.fn();
+    const { change, flush } = setup(
+      { p1: param("p1", "(item) => updateTotal(item.getValue())") },
+      { updateTotal } // helper spread into the hook context, as moduleScope does
+    );
+
+    change("p1", "hello");
+    flush();
+
+    expect(updateTotal).toHaveBeenCalledWith("hello");
+  });
+
   it("delegates an item mutation to the field controller", () => {
     const fieldController = makeController();
     const { change, flush } = setup({ p1: param("p1", "(item) => item.setRequired(false)") }, {}, fieldController);

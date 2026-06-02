@@ -108,6 +108,7 @@ import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/definition/moduleScope";
 import { createFormHandle, type FieldController } from "@/utils/processes/definition/scriptProxies";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import {
@@ -154,6 +155,9 @@ export const FALLBACK_RESULT = {};
 
 /** Reference ID for window reference field types */
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
+
+/** Stable empty reference used when a process has no shared module scope. */
+const EMPTY_MODULE_SCOPE: Record<string, unknown> = {};
 
 // ---------------------------------------------------------------------------
 // evaluateWindowReferenceDisplay — display-logic evaluation for grid params
@@ -270,17 +274,40 @@ function ProcessDefinitionModalContent({
     [token, getCsrfToken, getLabel, language]
   );
 
+  // Shared module scope: when em_etmeta_payscript_logic holds a JS module body
+  // (declarations, not a PayScript DSL expression), evaluate it once per open so
+  // its helpers/constants/state are visible to every hook. The body runs with the
+  // shared OB shim in context, so its OB.<NS>.* registrations persist too. DSL
+  // bodies (the existing case) keep their registry path untouched.
+  const { moduleScope, isPayscriptDsl } = useMemo(() => {
+    const body = processDefinition.etmetaPayscriptLogic;
+    if (!open || !body || !body.trim()) {
+      return { moduleScope: EMPTY_MODULE_SCOPE, isPayscriptDsl: false };
+    }
+    if (classifyPayscriptBody(body) === "dsl") {
+      return { moduleScope: EMPTY_MODULE_SCOPE, isPayscriptDsl: true };
+    }
+    return {
+      moduleScope: evaluateModuleScope(body, { Metadata, ...processScriptContext }),
+      isPayscriptDsl: false,
+    };
+  }, [open, processDefinition.etmetaPayscriptLogic, processScriptContext]);
+
+  // Single script context shared by every migrated hook (onLoad / onProcess /
+  // onRefresh / onParameterChange / onGridLoad). Module-scope helpers are spread
+  // last so they resolve by bare name; reserved context names (OB, callAction,
+  // messageBar, …) must not be redeclared as helpers.
+  const scriptHookContext = useMemo(
+    () => ({ Metadata, ...processScriptContext, ...moduleScope }),
+    [processScriptContext, moduleScope]
+  );
+
   // Compile etmetaOnRefresh once into a callable so we can attach it to the
   // "view" argument passed into onLoad/onProcess (mirrors classic's
   // view.onRefreshFunction; see processView.ts). undefined when the column is null.
   const onRefreshFunction: OnRefreshFunction | undefined = useMemo(
-    () =>
-      compileOnRefreshFunction(etmetaOnRefresh, {
-        Metadata,
-        // OB arrives via processScriptContext (single shared instance per modal).
-        ...processScriptContext,
-      }),
-    [etmetaOnRefresh, processScriptContext]
+    () => compileOnRefreshFunction(etmetaOnRefresh, scriptHookContext),
+    [etmetaOnRefresh, scriptHookContext]
   );
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
@@ -348,14 +375,15 @@ function ProcessDefinitionModalContent({
   );
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
-  // Register PayScript DSL if available in process definition.
-  // Source: em_etmeta_payscript_logic column → etmetaPayscriptLogic property.
+  // Register PayScript DSL if the em_etmeta_payscript_logic column holds a DSL
+  // expression. JS module bodies take the shared-scope path instead (see the
+  // moduleScope memo above) and must not be registered as DSL.
   useEffect(() => {
-    if (processDefinition.id && processDefinition.etmetaPayscriptLogic) {
+    if (processDefinition.id && isPayscriptDsl && processDefinition.etmetaPayscriptLogic) {
       registerPayScriptDSL(processDefinition.id, processDefinition.etmetaPayscriptLogic);
       setRulesRegistered(true);
     }
-  }, [processDefinition]);
+  }, [processDefinition, isPayscriptDsl]);
 
   useEffect(() => {
     let active = true;
@@ -630,8 +658,8 @@ function ProcessDefinitionModalContent({
 
   // Parameter-level migrated JS hooks. `onParameterChange` is bound centrally to
   // value changes; `onGridLoad` is compiled per grid parameter and handed to its
-  // WindowReferenceGrid. Both share the process-level hooks' script context.
-  const scriptHookContext = useMemo(() => ({ Metadata, ...processScriptContext }), [processScriptContext]);
+  // WindowReferenceGrid. Both share `scriptHookContext` (built above) with the
+  // process-level hooks, so module-scope helpers resolve here too.
   const scriptFormHandle = useMemo(() => createFormHandle(form), [form]);
 
   // Live `parameters` snapshot for the controller's synchronous reads (getValueMap),
@@ -861,7 +889,7 @@ function ProcessDefinitionModalContent({
     record: record ?? undefined,
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
-    processScriptContext,
+    scriptContext: scriptHookContext,
     button,
     parameters,
     form,
@@ -1072,7 +1100,7 @@ function ProcessDefinitionModalContent({
         if (effectiveOnLoad && tab) {
           const result = await executeStringFunction(
             effectiveOnLoad,
-            { Metadata, ...processScriptContext },
+            scriptHookContext,
             button.processDefinition,
             {
               selectedRecords,
@@ -1108,7 +1136,7 @@ function ProcessDefinitionModalContent({
     recordValues,
     tab,
     isBulkCompletion,
-    processScriptContext,
+    scriptHookContext,
     warehousePluginLoading,
     warehouseSchema,
     handleOnLoadResult,

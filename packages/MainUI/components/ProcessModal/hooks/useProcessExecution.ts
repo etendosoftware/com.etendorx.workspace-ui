@@ -42,7 +42,6 @@ import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
 import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
 import {
@@ -122,7 +121,12 @@ export interface UseProcessExecutionParams {
   record: EntityData | undefined;
   initialState: Record<string, any> | undefined;
   selectedRecords: EntityData[];
-  processScriptContext: any;
+  /**
+   * Script context shared by every migrated hook ({ Metadata, ...processScriptContext,
+   * ...moduleScope }). Used as the onProcess injection context so module-scope helpers
+   * resolve by bare name on submit too.
+   */
+  scriptContext: Record<string, unknown>;
   // biome-ignore lint/suspicious/noExplicitAny: button shape varies by process type
   button: any;
   parameters: Record<string, ProcessParameter>;
@@ -189,7 +193,7 @@ export function useProcessExecution({
   record,
   initialState,
   selectedRecords,
-  processScriptContext,
+  scriptContext,
   button,
   parameters,
   form,
@@ -670,8 +674,9 @@ export function useProcessExecution({
         try {
           const stringFnResult = await executeStringFunction(
             etmetaOnprocess,
-            // OB arrives via processScriptContext (single shared instance per modal).
-            { Metadata, ...processScriptContext },
+            // Shared hook context: OB (single instance per modal) plus module-scope
+            // helpers, so onProcess resolves bare-name helpers like the other hooks.
+            scriptContext,
             button.processDefinition,
             stringFunctionPayload
           );
@@ -726,7 +731,7 @@ export function useProcessExecution({
       selectedRecords,
       form,
       parameters,
-      processScriptContext,
+      scriptContext,
       resolveDocAction,
       availableButtons,
       setResult,
