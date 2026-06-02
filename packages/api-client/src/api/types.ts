@@ -892,6 +892,10 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
+  /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
+  sequenceNumber?: number;
+  /** Raw DB column name from AD_PROCESS_PARA.dbcolumnname. */
+  dBColumnName?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

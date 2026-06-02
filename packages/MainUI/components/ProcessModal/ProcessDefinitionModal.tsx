@@ -1118,7 +1118,13 @@ function ProcessDefinitionModalContent({
         }
         return true;
       })
-      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+      .sort((a, b) => {
+        // "sequenceNumber" is set explicitly by the backend builder;
+        // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
+        const seqA = Number((a as any).sequenceNumber ?? (a as any).seqno) || 0;
+        const seqB = Number((b as any).sequenceNumber ?? (b as any).seqno) || 0;
+        return seqA - seqB;
+      });
 
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
