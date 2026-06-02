@@ -42,6 +42,12 @@ export interface OBShimDeps {
    * stays free of any React-layer dependency. Returns `true` when handled.
    */
   dispatchBuiltinAction?: (name: string, payload: unknown) => boolean;
+  /**
+   * Performs the kernel action call backing `OB.RemoteCallManager.call`
+   * (e.g. the modal's `callAction`). Injected so `utils/ob` stays free of any
+   * React / fetch layer. Resolves with the parsed response body as `data`.
+   */
+  remoteCall?: (handler: string, params: Record<string, unknown>) => Promise<{ data: unknown }>;
 }
 
 export interface OBI18N {
@@ -98,9 +104,28 @@ export interface OBTestRegistry {
   register: (name: string, obj?: unknown) => void;
 }
 
+/** Minimal classic RPC response sentinel; scripts check `status < 0` for errors. */
+export type RemoteCallResponse = { status: number };
+/** Minimal classic RPC request sentinel exposing the caller context. */
+export type RemoteCallRequest = { clientContext?: unknown };
+/** Classic `OB.RemoteCallManager.call` callback shape. */
+export type RemoteCallback = (response: RemoteCallResponse, data: unknown, request: RemoteCallRequest) => void;
+
 export interface OBRemoteCallManager {
-  /** Not implemented yet — throws when called. */
-  call: (...args: unknown[]) => never;
+  /**
+   * Calls a server action handler and invokes `callback(response, data, request)`
+   * with the classic contract. `requestParams` is accepted for compatibility but
+   * not used for routing; `errorCallback` (when a function) receives transport
+   * failures instead of `callback`.
+   */
+  call: (
+    actionName: string,
+    data?: Record<string, unknown>,
+    requestParams?: unknown,
+    callback?: RemoteCallback,
+    callerContext?: unknown,
+    errorCallback?: RemoteCallback
+  ) => void;
 }
 
 export interface OBDatasource {

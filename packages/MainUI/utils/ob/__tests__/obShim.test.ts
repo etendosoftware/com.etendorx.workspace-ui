@@ -75,9 +75,23 @@ describe("createOBShim", () => {
     expect(() => createOBShim().TestRegistry.register("x", {})).not.toThrow();
   });
 
-  it("throws from the not-yet-implemented RemoteCallManager / Datasource stubs", () => {
-    const ob = createOBShim();
-    expect(() => ob.RemoteCallManager.call()).toThrow(/RemoteCallManager.call is not implemented/);
-    expect(() => ob.Datasource.create()).toThrow(/Datasource.create is not implemented/);
+  it("throws from the not-yet-implemented Datasource.create stub", () => {
+    expect(() => createOBShim().Datasource.create()).toThrow(/Datasource.create is not implemented/);
+  });
+
+  it("throws from RemoteCallManager.call when built without a remoteCall transport", () => {
+    expect(() => createOBShim().RemoteCallManager.call("handler")).toThrow(/requires a remoteCall dependency/);
+  });
+
+  it("routes RemoteCallManager.call through the injected remoteCall", async () => {
+    const remoteCall = jest.fn().mockResolvedValue({ data: { ok: true } });
+    const callback = jest.fn();
+    const ob = createOBShim({ remoteCall });
+
+    ob.RemoteCallManager.call("handler", { a: 1 }, {}, callback);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(remoteCall).toHaveBeenCalledWith("handler", { a: 1 });
+    expect(callback).toHaveBeenCalledWith({ status: 0 }, { ok: true }, { clientContext: undefined });
   });
 });

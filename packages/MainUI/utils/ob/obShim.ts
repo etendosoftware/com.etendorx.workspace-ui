@@ -20,12 +20,12 @@ import { createAction } from "./action";
 import { createFormat } from "./format";
 import { createI18N } from "./i18n";
 import { JSToOBMasked } from "./number";
+import { createRemoteCallManager } from "./remoteCallManager";
 import { createStyles } from "./styles";
 import type { OBPropertyStore, OBShim, OBShimDeps } from "./types";
 import { generateRandomString } from "./utilities";
 
-/** Error messages for the APIs not yet implemented in this shim. */
-const REMOTE_CALL_DEFERRED = "OB.RemoteCallManager.call is not implemented yet";
+/** Error message for the API not yet implemented in this shim. */
 const DATASOURCE_CREATE_DEFERRED = "OB.Datasource.create is not implemented yet";
 
 /**
@@ -59,9 +59,9 @@ function createPropertyStore(): OBPropertyStore {
  * and shared across onLoad / onProcess / onChange / onRefresh, so the action
  * registry and any module-namespace writes (`OB.APRM = OB.APRM || {}`) persist
  * across hooks. `Utilities.Action.executeJSON` routes built-in action types to
- * the host through `deps.dispatchBuiltinAction`. `RemoteCallManager.call` and
- * `Datasource.create` are not implemented yet and are exposed as stubs that
- * throw a traceable error.
+ * the host through `deps.dispatchBuiltinAction`, and `RemoteCallManager.call`
+ * runs through `deps.remoteCall`. `Datasource.create` is not implemented yet and
+ * is exposed as a stub that throws a traceable error.
  *
  * @example
  * // Inside a migrated onLoad / onProcess script:
@@ -84,11 +84,7 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
         /* no-op: test infrastructure is not migrated */
       },
     },
-    RemoteCallManager: {
-      call: (): never => {
-        throw new Error(REMOTE_CALL_DEFERRED);
-      },
-    },
+    RemoteCallManager: createRemoteCallManager({ remoteCall: deps.remoteCall }),
     Datasource: {
       create: (): never => {
         throw new Error(DATASOURCE_CREATE_DEFERRED);

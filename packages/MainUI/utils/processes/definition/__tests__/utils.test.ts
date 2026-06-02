@@ -218,6 +218,48 @@ describe("Process Definition Utils", () => {
       expect(calledUrl).toContain("&foo=bar");
     });
 
+    it("OB.RemoteCallManager.call should route through callAction and invoke the callback", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ message: { severity: "success" } }),
+      });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.RemoteCallManager.call("com.example.Handler", { a: 1 }, {}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/erp/org.openbravo.client.kernel?_action=com.example.Handler"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+            "X-CSRF-Token": "csrf-123",
+          }),
+        })
+      );
+      expect(callback).toHaveBeenCalledWith(
+        { status: 0 },
+        { message: { severity: "success" } },
+        { clientContext: undefined }
+      );
+    });
+
+    it("OB.RemoteCallManager.call should report a transport failure as a negative status", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        text: async () => "Server Error",
+      });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.RemoteCallManager.call("com.example.Handler", {}, {}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(callback).toHaveBeenCalledWith({ status: -1 }, null, { clientContext: undefined });
+    });
+
     it("callDatasource should POST to datasource endpoint", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,

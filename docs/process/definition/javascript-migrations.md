@@ -483,9 +483,9 @@ every API above. Backings:
 `PropertyStore.get`/`set`, `I18N.getLabel` (with `%n` substitution), `Format.*`,
 `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`,
 `Styles.MessageBar`, `TestRegistry.register` (no-op) and tolerant module-namespace writes.
-The APIs scoped to later steps remain deferred — `RemoteCallManager.call` (§4.9) and
-`Datasource.create` (§4.11) are exposed as stubs that throw a traceable "not implemented yet" error
-pointing to their step. (`Utilities.Action.executeJSON` is now implemented — see §4.10.)
+`Datasource.create` (§4.11) remains deferred — exposed as a stub that throws a traceable
+"not implemented yet" error pointing to its step. (`Utilities.Action.executeJSON` is now implemented
+— see §4.10; `RemoteCallManager.call` is now implemented — see §4.9.)
 
 **Implementation notes (delivered).**
 
@@ -550,7 +550,42 @@ bridge.
 
 **Backend requirement.** None.
 
-**Coverage status.** MISSING.
+**Coverage status.** DONE.
+
+**Implementation notes (delivered).**
+
+- **Factory module, React-free.** `createRemoteCallManager(deps)`
+  ([remoteCallManager.ts](../../../packages/MainUI/utils/ob/remoteCallManager.ts)) mirrors the
+  `createAction` / `createI18N` factory pattern: the transport is injected as `deps.remoteCall` so
+  `utils/ob` stays free of any React / `fetch` layer. `buildProcessScriptContext`
+  ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)) wires
+  `remoteCall = (handler, params) => callAction(handler, params)`, reaching the same kernel endpoint
+  (`POST org.openbravo.client.kernel?_action=<handler>`) the classic RPC posts to — so the shim was
+  moved to run after `callAction` is declared.
+- **Classic callback contract.** `call(actionName, data, requestParams, callback, callerContext, errorCallback)`
+  fires `remoteCall(actionName, data ?? {})` and:
+  - On resolve → `callback({ status: 0 }, result.data, { clientContext: callerContext })` — `data` is
+    the parsed JSON body.
+  - On reject (transport / non-OK HTTP) → `errorCallback` when a function, otherwise `callback`, with
+    `{ status: -1 }` so classic `response.status < 0` branches keep working.
+- **Business error vs transport error.** A business error arrives as a normal HTTP 200 response with
+  `data.message.severity === 'error'`; it flows through the success path and the script inspects
+  `data`, exactly like classic. Only a rejected `callAction` lowers `status` below zero.
+- **`requestParams` (3rd arg)** is accepted for signature compatibility but not used for routing: the
+  kernel call is always a POST (action handlers are POST). The classic `httpMethod`/GET override is
+  intentionally out of scope.
+- **No transport = traceable throw.** A shim built without `remoteCall` (e.g. `createOBShim()` with no
+  deps, as in isolated tests) throws `"OB.RemoteCallManager.call requires a remoteCall dependency"`
+  rather than failing silently. In production the dependency is always injected.
+- **Fire-and-forget / reentrancy.** `call` returns `void` (like classic) and always chains `.catch`
+  (no unhandled rejection). Each call is an independent promise with no shared state, so nested
+  callbacks (common in AddPayment) are reentrant by construction.
+
+**Tests.** [remoteCallManager.test.ts](../../../packages/MainUI/utils/ob/__tests__/remoteCallManager.test.ts)
+(success / failure / errorCallback routing / caller context / missing-data / no-transport),
+plus integration coverage in [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts)
+and [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts)
+(routes through `callAction`; transport failure → negative status).
 
 **Unlocks.** Every process that calls a server action handler from JS: at minimum Validate
 Costing Rule, Match Statement, FindTransaction, AddPayment, AddTransaction, FundsTransfer, Set
@@ -923,12 +958,12 @@ Cheap-to-expensive, with **BE** (backend, `com.etendoerp.metadata`) and **FE** (
 the unlock tallies in §6 and dependency relationships between capabilities.
 
 1. **[BE] §5.1 + §5.2 — Lock the JSON contract.** ✅ **DONE.** No new production code; audit + test only. Added contract-locking tests asserting all six `etmeta*` keys are always present (with JSON `null` when the column is empty) on every payload: `ProcessDefinitionBuilderTest#testToJSONKeepsAllProcessEtmetaKeysPresentWhenColumnsEmpty` (the four process-level keys, including the `eTMETAOnload`→`etmetaOnload` rename) and `ParameterBuilderTest#toJSONKeepsParameterLevelEtmetaHooksWhenPopulated` / `#toJSONKeepsParameterLevelEtmetaHooksPresentWhenColumnsEmpty` (the two parameter-level keys, populated and null). Locks the foundation for every FE consumer downstream.
-2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` left as traceable deferred stubs. Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
+2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); at the time `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` were left as traceable deferred stubs (`Action.executeJSON` since done in §4.10, `RemoteCallManager.call` in §4.9; `Datasource.create` still deferred to §4.11). Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
 3. **[FE] §4.12 — Parameter-level hook execution.** ✅ **DONE.** `etmetaOnParameterChange` is compiled once per parameter and bound from a single `form.watch` subscription in [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (mounted by [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)), invoked as `(item, view, form, grid)` with three loop/overload guards (value diff, re-entrancy, ~250 ms debounce). `etmetaOnGridLoad` is compiled per grid parameter and fired on the data-arrived effect of [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) as `(grid, view, parameters)`. The `item`/`form`/`view`/`grid` proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) are audited-sufficient — every other classic method throws a traceable "not implemented yet". Compile helper: [compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts). See §4.12 implementation notes. Unlocks the column-signal processes whose hook bodies are self-contained; helper-dependent ones unlock fully with step 10 (§4.13). Built on §4.8; §4.13 shared scope intentionally deferred.
 4. **[FE] §4.6 — Modal dialogs.** ✅ **DONE.** Promise-based `confirm` / `warn` / `say` (+ `ask` alias and `isc` namespace) implemented in [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) as a React-free singleton FIFO queue + script API, injected into every hook context via `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)). Rendered by [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (reusing `ActionModal`, mounted inside [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Returns Promises (never blocks) and also honours the classic `(message, callback)` / `(message, options, callback)` shapes; safe `false` default when no host / on unmount. Plain-text messages and advanced button/HTML customization deferred. Tests: [dialogs.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/dialogs.test.ts), [ProcessDialogHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDialogHost.test.tsx). See §4.6 implementation notes.
 5. **[FE] §4.7 — In-modal message bar.** ✅ **DONE.** `ProcessMessageBar` banner driven by a singleton store ([messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts) + [ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx)), replacing the temporary §4.12 toast backing. `text` sanitized by DOMPurify ([sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts)); `actions` as React buttons. The handle is exposed both as a top-level `messageBar` context key (process-level hooks) and as `view.messageBar` (parameter/grid proxies). See §4.7 implementation notes. Tests under `utils/processes/definition/__tests__/` and `components/ProcessModal/__tests__/`.
 6. **[FE] §4.10 — Action JSON dispatcher.** ✅ **DONE.** A pure router `dispatchResponseAction(action, ctx)` ([responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts)) covers every classic action type (`showMsgInProcessView`, `showMsgInView`, `openDirectTab`, `refreshGrid`, `refreshGridParameter`, `setSelectorValueFromRecord`, `smartclientSay`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `custom`), fed by a React-free singleton store ([actionDispatcherStore.ts](../../../packages/MainUI/utils/processes/definition/actionDispatcherStore.ts)) that the modal registers handlers into ([useActionDispatchContext.ts](../../../packages/MainUI/components/ProcessModal/hooks/useActionDispatchContext.ts)). `OB.Utilities.Action.executeJSON` is registry-first then routes built-ins via dependency injection ([action.ts](../../../packages/MainUI/utils/ob/action.ts)); the onProcess return path also dispatches the non-message actions (excluding `message`/`openDirectTab`, kept on the existing flow). Reports use a token-authenticated fetch→Blob→open/download ([reportActions.ts](../../../packages/MainUI/utils/processes/definition/reportActions.ts)). See §4.10 implementation notes. Tests under `utils/ob/__tests__/`, `utils/processes/definition/__tests__/` and `components/ProcessModal/utils/__tests__/`.
-7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** Thin wrapper over `callAction` that emulates the classic callback contract. Cheap once §4.8 lands. Unlocks every script that calls a server action handler.
+7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** ✅ **DONE.** React-free factory `createRemoteCallManager(deps)` ([remoteCallManager.ts](../../../packages/MainUI/utils/ob/remoteCallManager.ts)) wrapping the injected `callAction` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); emulates the classic `(response, data, request)` callback with `{ status: 0 }` on success / `{ status: -1 }` on transport failure (routed to `errorCallback` when provided), preserving `clientContext`. Tests in [remoteCallManager.test.ts](../../../packages/MainUI/utils/ob/__tests__/remoteCallManager.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.9 implementation notes. Unlocks every script that calls a server action handler.
 8. **[FE] §4.11 — Datasource façade.** `OB.Datasource.create(config)` returning a `{fetchData}` object backed by `callDatasource`. Moderate.
 9. **[FE] §4.2 — Form-item full API.** Programmatic mutation surface on `view.theForm.getItem(name)`. Moderate; depends on react-hook-form primitives.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** Evaluate the body once into a module scope; compile each hook within that scope; auto-vivify under `OB.<Module>.<Process>`. Straightforward but invasive (touches every hook compile site).

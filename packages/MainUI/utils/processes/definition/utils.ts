@@ -156,12 +156,6 @@ export interface ProcessScriptContext {
 export function buildProcessScriptContext(credentials: ProcessContextCredentials): ProcessScriptContext {
   const { token, getCsrfToken, getLabel, language } = credentials;
 
-  // One shared OB shim per modal: the action registry and namespace writes
-  // performed in one hook stay visible to the others. Built-in action types
-  // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
-  // through the dispatch store (registered by the modal while it is mounted).
-  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction });
-
   const authHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json;charset=UTF-8",
     Authorization: `Bearer ${token}`,
@@ -227,6 +221,14 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     });
     return handleResponse<T>(response);
   };
+
+  // One shared OB shim per modal: the action registry and namespace writes
+  // performed in one hook stay visible to the others. Built-in action types
+  // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
+  // through the dispatch store (registered by the modal while it is mounted).
+  // OB.RemoteCallManager.call runs through the same kernel call as callAction.
+  const remoteCall = (handler: string, params: Record<string, unknown>) => callAction(handler, params);
+  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall });
 
   return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar };
 }
