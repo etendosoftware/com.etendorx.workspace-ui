@@ -381,7 +381,7 @@ function ProcessDefinitionModalContent({
       }
 
       const individualMapped = individualButtons.map((p) => ({
-        value: p.dBColumnName,
+        value: p.dBColumnName ?? "",
         label: p.name,
       }));
       buttons.push(...individualMapped);
