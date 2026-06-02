@@ -894,8 +894,8 @@ export type ProcessParameter = {
   selector?: SelectorInfo;
   /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
   sequenceNumber?: number;
-  /** Raw DB column name from AD_PROCESS_PARA.dbcolumnname. */
-  dBColumnName?: string;
+  /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
+  dBColumnName: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

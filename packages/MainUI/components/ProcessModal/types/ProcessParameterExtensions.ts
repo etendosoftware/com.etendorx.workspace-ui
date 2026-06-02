@@ -16,7 +16,7 @@ export interface ExtendedProcessParameter extends Omit<ProcessParameter, keyof R
   window?: any; // WindowMetadata type
 
   // Additional properties found in API responses
-  dBColumnName?: string;
+  dBColumnName: string;
   displayLogic?: string;
   description?: string;
   help?: string;
