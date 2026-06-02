@@ -271,13 +271,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
-          // Clear children tabs when deselecting parent record
-          const children = graph.getChildren(tab);
-          if (children && children.length > 0) {
-            const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-            if (childIds.length > 0) {
-              clearChildrenSelections(windowIdentifier, childIds);
+          // Recursively collect ALL descendant tab IDs so deselection cascades through all levels
+          const descendantIds: string[] = [];
+          const collectDescendants = (parentTab: typeof tab) => {
+            const children = graph.getChildren(parentTab);
+            if (!children) return;
+            for (const child of children) {
+              if (child.window === tab.window) {
+                descendantIds.push(child.id);
+                collectDescendants(child);
+              }
             }
+          };
+          collectDescendants(tab);
+          if (descendantIds.length > 0) {
+            clearChildrenSelections(windowIdentifier, descendantIds, true);
           }
 
           setTimeout(() => {
@@ -297,34 +305,37 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowIdentifier, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
-    if (windowIdentifier) {
-      const currentFormState = getTabFormState(windowIdentifier, tab.id);
-      const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+    if (!windowIdentifier) return;
 
-      if (isInFormView) {
-        clearTabFormState(windowIdentifier, tab.id);
-      } else {
-        if (tab.tabLevel === 0) {
-          // Back on Level 0 Grid navigates Home
-          setAllWindowsInactive();
-          return;
-        }
+    const currentFormState = getTabFormState(windowIdentifier, tab.id);
+    const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
+    if (isInFormView) {
+      clearTabFormState(windowIdentifier, tab.id);
+      if (tab.uIPattern === UIPattern.EDIT_ONLY) {
         clearSelectedRecord(windowIdentifier, tab.id);
-
-        // Also clear children if this tab has any
-        const children = graph.getChildren(tab);
-        if (children && children.length > 0) {
-          const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-          if (childIds.length > 0) {
-            clearChildrenSelections(windowIdentifier, childIds);
-          }
-        }
-
-        // Clear graph selection
         graph.clearSelected(tab);
       }
+      return;
     }
+
+    if (tab.tabLevel === 0) {
+      setAllWindowsInactive();
+      return;
+    }
+
+    clearSelectedRecord(windowIdentifier, tab.id);
+
+    const childIds =
+      graph
+        .getChildren(tab)
+        ?.filter((c) => c.window === tab.window)
+        .map((c) => c.id) ?? [];
+    if (childIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, childIds);
+    }
+
+    graph.clearSelected(tab);
   }, [
     windowIdentifier,
     clearTabFormState,

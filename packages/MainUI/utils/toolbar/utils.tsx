@@ -119,6 +119,17 @@ const isVisibleButton = (
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
   const isSaveViewButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
 
+  const uIPattern = tab?.uIPattern;
+  const isNewForSrOrEd =
+    button.action === TOOLBAR_BUTTONS_ACTIONS.NEW &&
+    (uIPattern === UIPattern.EDIT_ONLY || uIPattern === UIPattern.EDIT_AND_DELETE_ONLY);
+  const isWriteActionForRo =
+    uIPattern === UIPattern.READ_ONLY &&
+    (button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.DELETE ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD);
+
   return (
     !isFindButtonInFormView &&
     !isSaveButtonInNonFormView &&
@@ -126,7 +137,9 @@ const isVisibleButton = (
     !isToggleTreeView &&
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
-    !isSaveViewButtonInFormView
+    !isSaveViewButtonInFormView &&
+    !isNewForSrOrEd &&
+    !isWriteActionForRo
   );
 };
 

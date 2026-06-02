@@ -2621,6 +2621,19 @@ const DynamicTable = ({
             return;
           }
 
+          // ED: auto-save the currently editing row when the user clicks a different row
+          if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
+            const editingIds = editingRowUtils.getEditingRowIds();
+            if (editingIds.length > 0 && !editingIds.includes(rowId)) {
+              const editingRowId = editingIds[0];
+              const editingRowData = editingRowUtils.getEditingRowData(editingRowId);
+              if (editingRowData?.hasUnsavedChanges) {
+                handleSaveRow(editingRowId);
+                return;
+              }
+            }
+          }
+
           // Don't allow row selection changes while editing (to prevent accidental data loss)
           if (isEditing) {
             return;
@@ -2739,6 +2752,16 @@ const DynamicTable = ({
           };
         })(),
 
+        onBlur: (e: React.FocusEvent<HTMLTableRowElement>) => {
+          if (uIPattern !== UIPatternEnum.EDIT_AND_DELETE_ONLY) return;
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            const blurEditingData = editingRowUtils.getEditingRowData(rowId);
+            if (blurEditingData?.hasUnsavedChanges) {
+              handleSaveRow(rowId);
+            }
+          }
+        },
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -2769,6 +2792,8 @@ const DynamicTable = ({
       dropTarget,
       getNodeDragProps,
       getNodeDropProps,
+      uIPattern,
+      handleSaveRow,
     ]
   );
 

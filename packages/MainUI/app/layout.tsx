@@ -20,6 +20,8 @@ import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import ApiProviderWrapper from "@/contexts/api/wrapper";
 import "./styles/global.css";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import ThemeProvider from "@workspaceui/componentlibrary/src/components/ThemeProvider";
 import LanguageProvider from "@/contexts/language";
 import UserProvider from "@/contexts/user";
