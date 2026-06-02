@@ -20,6 +20,8 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
 import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import type { MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
 
 /**
  * Auth credentials required to build the process context.
@@ -129,6 +131,14 @@ export interface ProcessScriptContext {
   warn: DialogScriptApi["warn"];
   say: DialogScriptApi["say"];
   isc: DialogScriptApi["isc"];
+
+  /**
+   * In-modal sticky message banner. `messageBar.setMessage(severity, title, text,
+   * actions?)` shows one banner at a time (sanitized HTML body); `.hide()` clears
+   * it. The same handle is exposed as `view.messageBar` inside the parameter/grid
+   * proxies, so process-level hooks (which have no `view`) use `messageBar.*`.
+   */
+  messageBar: MessageBarHandle;
 }
 
 /**
@@ -215,7 +225,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     return handleResponse<T>(response);
   };
 
-  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi };
+  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */

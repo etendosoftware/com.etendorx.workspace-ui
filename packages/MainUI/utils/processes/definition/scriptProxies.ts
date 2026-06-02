@@ -51,9 +51,15 @@ export function createFormHandle(form: UseFormReturn): FormHandle {
   };
 }
 
-/** In-modal message banner backing `view.messageBar` (real banner lands later). */
+/** A clickable affordance rendered as a real button inside the message bar. */
+export interface MessageBarAction {
+  label: string;
+  onClick: () => void;
+}
+
+/** In-modal message banner backing `view.messageBar`. */
 export interface MessageBarHandle {
-  setMessage: (severity: string, title: string | null, text: string) => void;
+  setMessage: (severity: string, title: string | null, text: string, actions?: MessageBarAction[]) => void;
   hide: () => void;
 }
 

@@ -76,6 +76,7 @@ Closed work that ships today, with evidence:
 | `showMsgInProcessView` response action (toast on success/warning/error) | [useProcessExecution.ts:679-696](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts#L679-L696) | DONE |
 | Parameter-level hooks compiled + bound to form items / grid lifecycle | [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (onParameterChange via central `form.watch`), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) (onGridLoad on data-arrived), proxies in [scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts) | DONE (§4.12; audited-sufficient proxies, §4.13 shared scope deferred) |
 | Modal dialogs — promise-based `confirm` / `warn` / `say` (+ `isc` shim) injected into every hook context | [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) (singleton queue + script API, folded into `buildProcessScriptContext`), [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (renders via `ActionModal`, mounted in [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)) | DONE (§4.6; plain-text message, advanced button/HTML deferred) |
+| In-modal message bar — `messageBar` / `view.messageBar` (`setMessage(severity, title, text, actions?)` / `hide()`), sanitized HTML | [messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts) + [sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts) (singleton + DOMPurify), [ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx) (banner, mounted in [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)) | DONE (§4.7; replaces the temporary §4.12 toast backing) |
 | All other capabilities in §4 | n/a | MISSING or PARTIAL as flagged below |
 
 ---
@@ -395,8 +396,38 @@ view.messageBar.hide(): void;
 
 **Backend requirement.** None.
 
-**Coverage status.** MISSING. Today, `react-toastify` is used for global toasts (success/error on
-process completion) via `extractResponseMessage`; an in-modal banner does not exist.
+**Coverage status.** DONE. Implemented as a singleton store +
+[ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx) host
+mounted at the top of the modal body, replacing the temporary toast backing left by §4.12. Files:
+[messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts),
+[sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts),
+[ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx),
+handle type in [scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts),
+injection in [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts). Tests:
+[messageBarStore.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/messageBarStore.test.ts),
+[sanitizeHtml.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/sanitizeHtml.test.ts),
+[ProcessMessageBar.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessMessageBar.test.tsx).
+
+**Implementation notes (delivered).**
+
+- **Store + host pattern (mirrors §4.6 dialogs).** A React-free singleton store
+  (`setMessage`/`hide`/`subscribe`/`getState`, one message at a time — replace, no queue) is consumed
+  by `ProcessMessageBar` via `useSyncExternalStore`. The host is mounted at the top of the modal's
+  scrollable body, above `renderResponse()`/`renderParameters()`, and clears the message on unmount
+  (modal close). This **replaces the temporary toast backing** introduced in §4.12.
+- **Visual reuse.** The banner reuses the modal's existing banner visual language
+  (`border-l-4 bg-gray-50` + `<h4>` title) with per-severity CSS tokens
+  (`--color-{success,warning,error}-main`, `--color-etendo-main` for info) and ComponentLibrary SVG
+  icons. `title` is plain text; `text` is sanitized HTML; `actions` are real React buttons; a close
+  button calls `hide()`.
+- **Sanitization (§9.4).** `text` is sanitized by a single `sanitizeMessageHtml` helper wrapping
+  DOMPurify with the locked allowlist (formatting tags only; `class` the only attribute; `<a>`/`on*`/
+  `style` forbidden). The config is internal and not exposed to scripts.
+- **Dual access (no §4.1 scope creep).** The same singleton handle is injected into the script context
+  as a top-level `messageBar` key (so process-level `onLoad`/`onProcess`/`onRefresh`, which receive no
+  `view`, call `messageBar.setMessage(...)`) **and** is exposed as `view.messageBar` inside the
+  parameter/grid proxies (§4.12). Both reach the same banner. The full process-level `view` object
+  stays deferred to §4.1.
 
 **Unlocks.** Match Statement, AddPayment, AddTransaction, Validate Costing Rule, Aging Balance
 (via `OB.OnChange.agingProcessDefinition*`), VAT Regularization, ETFRA family.
@@ -687,9 +718,10 @@ Tests: [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definiti
   `OB.<Module>.<Process>.*` from `em_etmeta_payscript_logic`. Bodies migrated for this step must be
   self-contained or use the implemented APIs; the shared module scope lands with §4.13 (which §7 orders
   after this step).
-- **`view.messageBar` is a temporary backing.** It delegates to the modal's toast notifications (mapped
-  by severity) until the real sticky in-modal banner of §4.7 replaces it. This only avoids `undefined`
-  on `view.messageBar.setMessage(...)`; the visual treatment is §4.7.
+- **`view.messageBar` is the real in-modal banner (§4.7, delivered).** It was initially a temporary
+  toast backing; §4.7 replaced it with the sticky `ProcessMessageBar` banner backed by a singleton
+  store. The same handle is also injected as a top-level `messageBar` context key for process-level
+  hooks that have no `view`.
 
 **Unlocks.** All 23 column-signal-1 processes that use parameter-level mechanisms (every process
 with `onchangefunction ×N` or `ongridloadfunction ×N` in the inventory §6 table) whose hook bodies are
@@ -843,7 +875,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 2. **[FE] §4.8 — `OB.*` shim extension** (`I18N`, `Format`, `Utilities.Number`, `Utilities.Action.{set,execute}` *(executeJSON in §4.10)*, `Styles`, `Utilities.generateRandomString`, `PropertyStore.set`, namespace auto-vivify). ✅ **DONE.** Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/) as a single `OB` instance per modal folded into `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); `RemoteCallManager.call`/`Datasource.create`/`Action.executeJSON` left as traceable deferred stubs. Tests in [utils/ob/__tests__/](../../../packages/MainUI/utils/ob/__tests__/). See §4.8 implementation notes. Unblocks ~30 processes for messaging/formatting/namespace registration.
 3. **[FE] §4.12 — Parameter-level hook execution.** ✅ **DONE.** `etmetaOnParameterChange` is compiled once per parameter and bound from a single `form.watch` subscription in [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (mounted by [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)), invoked as `(item, view, form, grid)` with three loop/overload guards (value diff, re-entrancy, ~250 ms debounce). `etmetaOnGridLoad` is compiled per grid parameter and fired on the data-arrived effect of [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) as `(grid, view, parameters)`. The `item`/`form`/`view`/`grid` proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) are audited-sufficient — every other classic method throws a traceable "not implemented yet". Compile helper: [compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts). See §4.12 implementation notes. Unlocks the column-signal processes whose hook bodies are self-contained; helper-dependent ones unlock fully with step 10 (§4.13). Built on §4.8; §4.13 shared scope intentionally deferred.
 4. **[FE] §4.6 — Modal dialogs.** ✅ **DONE.** Promise-based `confirm` / `warn` / `say` (+ `ask` alias and `isc` namespace) implemented in [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) as a React-free singleton FIFO queue + script API, injected into every hook context via `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)). Rendered by [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (reusing `ActionModal`, mounted inside [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Returns Promises (never blocks) and also honours the classic `(message, callback)` / `(message, options, callback)` shapes; safe `false` default when no host / on unmount. Plain-text messages and advanced button/HTML customization deferred. Tests: [dialogs.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/dialogs.test.ts), [ProcessDialogHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDialogHost.test.tsx). See §4.6 implementation notes.
-5. **[FE] §4.7 — In-modal message bar.** `<MessageBar>` element inside the modal + `view.messageBar.setMessage` / `.hide()` handle. Moderate; needed by most onProcess scripts that report status without dispatching `responseActions`.
+5. **[FE] §4.7 — In-modal message bar.** ✅ **DONE.** `ProcessMessageBar` banner driven by a singleton store ([messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts) + [ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx)), replacing the temporary §4.12 toast backing. `text` sanitized by DOMPurify ([sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts)); `actions` as React buttons. The handle is exposed both as a top-level `messageBar` context key (process-level hooks) and as `view.messageBar` (parameter/grid proxies). See §4.7 implementation notes. Tests under `utils/processes/definition/__tests__/` and `components/ProcessModal/__tests__/`.
 6. **[FE] §4.10 — Action JSON dispatcher.** Extend the existing `extractResponseMessage` path into a `dispatchResponseAction(action, ctx)` covering every classic action type (`showMsgInView`, `refreshGrid`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `setSelectorValueFromRecord`, `openDirectTab`, `smartclientSay`, `custom`), and wire `OB.Utilities.Action.executeJSON` / `.execute` to it. Moderate.
 7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** Thin wrapper over `callAction` that emulates the classic callback contract. Cheap once §4.8 lands. Unlocks every script that calls a server action handler.
 8. **[FE] §4.11 — Datasource façade.** `OB.Datasource.create(config)` returning a `{fetchData}` object backed by `callDatasource`. Moderate.

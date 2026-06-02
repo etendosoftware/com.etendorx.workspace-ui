@@ -91,6 +91,7 @@ import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessDialogHost from "./ProcessDialogHost";
+import ProcessMessageBar from "./ProcessMessageBar";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
@@ -99,7 +100,8 @@ import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView"
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
-import { createFormHandle, type MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
+import { createFormHandle } from "@/utils/processes/definition/scriptProxies";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -588,19 +590,8 @@ function ProcessDefinitionModalContent({
   // WindowReferenceGrid. Both share the process-level hooks' script context.
   const scriptHookContext = useMemo(() => ({ Metadata, ...processScriptContext }), [processScriptContext]);
   const scriptFormHandle = useMemo(() => createFormHandle(form), [form]);
-  const messageBar = useMemo<MessageBarHandle>(() => {
-    const toastBySeverity: Record<string, (message: string) => void> = {
-      error: toast.error,
-      warning: toast.warning,
-      success: toast.success,
-      info: toast.info,
-    };
-    return {
-      setMessage: (severity, _title, text) => (toastBySeverity[String(severity).toLowerCase()] ?? toast)(text),
-      hide: () => toast.dismiss(),
-    };
-  }, []);
-
+  // `view.messageBar` / `messageBar` is the in-modal banner (rendered by
+  // <ProcessMessageBar/>); the same singleton handle reaches every hook.
   useParameterChangeHooks({ form, parameters, context: scriptHookContext, messageBar });
 
   const gridLoadHooks = useMemo(() => {
@@ -1388,6 +1379,8 @@ function ProcessDefinitionModalContent({
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
+              {/* In-modal message bar driven by migrated scripts (view.messageBar / messageBar). */}
+              <ProcessMessageBar />
               <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 {(loading || initializationLoading) && !result && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
