@@ -1121,8 +1121,8 @@ function ProcessDefinitionModalContent({
       .sort((a, b) => {
         // "sequenceNumber" is set explicitly by the backend builder;
         // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
-        const seqA = Number((a as any).sequenceNumber ?? (a as any).seqno) || 0;
-        const seqB = Number((b as any).sequenceNumber ?? (b as any).seqno) || 0;
+        const seqA = Number(a.sequenceNumber ?? a.seqno) || 0;
+        const seqB = Number(b.sequenceNumber ?? b.seqno) || 0;
         return seqA - seqB;
       });
 
