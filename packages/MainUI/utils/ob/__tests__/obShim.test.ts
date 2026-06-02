@@ -75,8 +75,24 @@ describe("createOBShim", () => {
     expect(() => createOBShim().TestRegistry.register("x", {})).not.toThrow();
   });
 
-  it("throws from the not-yet-implemented Datasource.create stub", () => {
-    expect(() => createOBShim().Datasource.create()).toThrow(/Datasource.create is not implemented/);
+  it("returns a Datasource façade whose fetchData throws when built without a transport", () => {
+    const ds = createOBShim().Datasource.create({ dataURL: "/a/b/MyEntity" });
+    expect(() => ds.fetchData({})).toThrow(/requires a fetchDatasource dependency/);
+  });
+
+  it("routes Datasource.create(...).fetchData through the injected fetchDatasource", async () => {
+    const rows = [{ id: 1 }];
+    const fetchDatasource = jest.fn().mockResolvedValue({
+      data: { response: { status: 0, data: rows, totalRows: 1 } },
+    });
+    const callback = jest.fn();
+    const ob = createOBShim({ fetchDatasource });
+
+    ob.Datasource.create({ dataURL: "/a/b/MyEntity" }).fetchData({}, callback);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchDatasource).toHaveBeenCalledWith("MyEntity", expect.objectContaining({ _operationType: "fetch" }));
+    expect(callback).toHaveBeenCalledWith({ status: 0, totalRows: 1 }, rows, { criteria: {} });
   });
 
   it("throws from RemoteCallManager.call when built without a remoteCall transport", () => {

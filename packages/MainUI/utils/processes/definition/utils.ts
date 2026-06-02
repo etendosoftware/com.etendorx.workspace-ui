@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { createOBShim } from "@/utils/ob/obShim";
@@ -227,8 +228,13 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
   // through the dispatch store (registered by the modal while it is mounted).
   // OB.RemoteCallManager.call runs through the same kernel call as callAction.
+  // OB.Datasource.create runs through the api-client datasource (the same path
+  // the grid and selectors use): it builds the full datasource request params
+  // and resolves CSRF server-side, which the raw callDatasource proxy does not.
   const remoteCall = (handler: string, params: Record<string, unknown>) => callAction(handler, params);
-  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall });
+  const fetchDatasource = (entity: string, payload: Record<string, unknown>) =>
+    datasource.get(entity, payload) as Promise<{ data: unknown }>;
+  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource });
 
   return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar };
 }

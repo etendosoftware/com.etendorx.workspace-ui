@@ -17,6 +17,7 @@
 
 import { getStoredPreferences, setStoredPreference } from "@/utils/propertyStore";
 import { createAction } from "./action";
+import { createDatasourceManager } from "./datasource";
 import { createFormat } from "./format";
 import { createI18N } from "./i18n";
 import { JSToOBMasked } from "./number";
@@ -24,9 +25,6 @@ import { createRemoteCallManager } from "./remoteCallManager";
 import { createStyles } from "./styles";
 import type { OBPropertyStore, OBShim, OBShimDeps } from "./types";
 import { generateRandomString } from "./utilities";
-
-/** Error message for the API not yet implemented in this shim. */
-const DATASOURCE_CREATE_DEFERRED = "OB.Datasource.create is not implemented yet";
 
 /**
  * Builds the `OB.PropertyStore` namespace. `get` reads a preference (with a
@@ -59,9 +57,9 @@ function createPropertyStore(): OBPropertyStore {
  * and shared across onLoad / onProcess / onChange / onRefresh, so the action
  * registry and any module-namespace writes (`OB.APRM = OB.APRM || {}`) persist
  * across hooks. `Utilities.Action.executeJSON` routes built-in action types to
- * the host through `deps.dispatchBuiltinAction`, and `RemoteCallManager.call`
- * runs through `deps.remoteCall`. `Datasource.create` is not implemented yet and
- * is exposed as a stub that throws a traceable error.
+ * the host through `deps.dispatchBuiltinAction`, `RemoteCallManager.call` runs
+ * through `deps.remoteCall`, and `Datasource.create` runs through
+ * `deps.fetchDatasource`.
  *
  * @example
  * // Inside a migrated onLoad / onProcess script:
@@ -85,10 +83,6 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
       },
     },
     RemoteCallManager: createRemoteCallManager({ remoteCall: deps.remoteCall }),
-    Datasource: {
-      create: (): never => {
-        throw new Error(DATASOURCE_CREATE_DEFERRED);
-      },
-    },
+    Datasource: createDatasourceManager({ fetchDatasource: deps.fetchDatasource }),
   };
 }

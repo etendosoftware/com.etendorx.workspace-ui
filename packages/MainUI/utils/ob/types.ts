@@ -48,6 +48,12 @@ export interface OBShimDeps {
    * React / fetch layer. Resolves with the parsed response body as `data`.
    */
   remoteCall?: (handler: string, params: Record<string, unknown>) => Promise<{ data: unknown }>;
+  /**
+   * Performs the datasource fetch backing `OB.Datasource.create(...).fetchData`
+   * (e.g. the modal's `callDatasource`). Injected so `utils/ob` stays free of
+   * any React / fetch layer. Resolves with the parsed response body as `data`.
+   */
+  fetchDatasource?: (entity: string, payload: Record<string, unknown>) => Promise<{ data: unknown }>;
 }
 
 export interface OBI18N {
@@ -128,9 +134,40 @@ export interface OBRemoteCallManager {
   ) => void;
 }
 
+/** Minimal classic datasource response sentinel; scripts check `status < 0` for errors. */
+export type DatasourceResponse = { status: number; totalRows: number };
+/** Minimal classic datasource request sentinel exposing the criteria back to the callback. */
+export type DatasourceRequest = { criteria?: unknown };
+/** Classic `dataSource.fetchData` callback shape. */
+export type DatasourceCallback = (response: DatasourceResponse, data: unknown[], request: DatasourceRequest) => void;
+
+/** Subset of the classic `OB.Datasource.create` config consumed by the façade. */
+export interface DatasourceConfig {
+  /** Classic datasource URL; its last path segment is the entity name. */
+  dataURL?: string;
+  /** Explicit entity name (fallback when no `dataURL` is given). */
+  entity?: string;
+  /** Alternate explicit entity name (fallback). */
+  dataSource?: string;
+  /** Extra request params merged into every `fetchData` payload. */
+  requestProperties?: { params?: Record<string, unknown> };
+  [key: string]: unknown;
+}
+
+export interface OBDatasourceInstance {
+  /**
+   * Imperative fetch. `criteria` is sent in the request payload (the classic
+   * `fetchData(callback)` overload is also honoured); `callback(response, data,
+   * request)` receives `{ status, totalRows }`, the row array, and `{ criteria }`.
+   */
+  fetchData: (criteria?: unknown, callback?: DatasourceCallback) => void;
+  /** Preloads client-only records; once set, `fetchData` resolves from them. */
+  setCacheData: (records: unknown[]) => void;
+}
+
 export interface OBDatasource {
-  /** Not implemented yet — throws when called. */
-  create: (...args: unknown[]) => never;
+  /** Creates a REST datasource façade backed by the injected `fetchDatasource`. */
+  create: (config?: DatasourceConfig) => OBDatasourceInstance;
 }
 
 /**

@@ -483,9 +483,9 @@ every API above. Backings:
 `PropertyStore.get`/`set`, `I18N.getLabel` (with `%n` substitution), `Format.*`,
 `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`,
 `Styles.MessageBar`, `TestRegistry.register` (no-op) and tolerant module-namespace writes.
-`Datasource.create` (§4.11) remains deferred — exposed as a stub that throws a traceable
-"not implemented yet" error pointing to its step. (`Utilities.Action.executeJSON` is now implemented
-— see §4.10; `RemoteCallManager.call` is now implemented — see §4.9.)
+No `OB.*` methods remain deferred: `Utilities.Action.executeJSON` is implemented (see §4.10),
+`RemoteCallManager.call` is implemented (see §4.9), and `Datasource.create` is implemented
+(see §4.11) — all routed through injected transports rather than throwing stubs.
 
 **Implementation notes (delivered).**
 
@@ -709,8 +709,65 @@ purpose in classic is to bypass the cache, which the new UI handles by always re
 
 **Backend requirement.** None.
 
-**Coverage status.** PARTIAL — the underlying HTTP layer (`callDatasource`) exists; the
-`OB.Datasource` façade does not.
+**Coverage status.** DONE — the `OB.Datasource` façade is implemented over the proven api-client
+datasource layer (the same path the grid and selectors use).
+
+**Implementation notes (delivered).**
+
+- A React-free factory module `createDatasourceManager(deps)`
+  ([datasource.ts](../../../packages/MainUI/utils/ob/datasource.ts)) builds the `OB.Datasource`
+  namespace, mirroring the dependency-injection pattern of `createRemoteCallManager` (§4.9). The
+  transport is injected as `deps.fetchDatasource`, so `utils/ob` stays free of any React / fetch
+  layer. `buildProcessScriptContext`
+  ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)) wires it to the
+  **api-client `datasource.get(entity, options)`** singleton
+  ([datasource.ts](../../../packages/api-client/src/api/datasource.ts)) — no backend change.
+- **Why the api-client path, not the raw `callDatasource` proxy.** The first cut routed through
+  `callDatasource` → `POST /api/datasource/<entity>` (the `[entity]` proxy) with a JSON body and the
+  CSRF token in a browser header. In the new UI the CSRF token lives server-side, so that header is
+  usually empty, and the classic datasource servlet rejected the request with
+  `{ response: { status: -4, error: { message: "InvalidCSRFToken" } } }`. The request body was also
+  too thin (`{ _operationType: "fetch", criteria: {} }`) to resolve real data. The grid never uses
+  that proxy: it calls `datasource.get` → `POST /api/datasource` (no entity in the path), which (a)
+  injects the CSRF token server-side from the session store and (b) runs `buildParams` to produce the
+  full flat request (`_noCount`, `_operationType`, `_startRow`/`_endRow`, `_constructor: "AdvancedCriteria"`,
+  `_textMatchStyle`, `operator`, criteria serialized as JSON, plus the datasource's own
+  `requestProperties.params`). Routing the façade through `datasource.get` fixes both at once and
+  reuses the exact request-building the grid relies on. (`callAction`/§4.9 is unaffected: its
+  `/api/erp` route already injects CSRF server-side and the kernel accepts JSON.)
+- `create(config)` returns a `{ fetchData, setCacheData }` façade. The entity is resolved once from
+  the last path segment of the classic `dataURL` (e.g.
+  `.../org.openbravo.service.datasource/CharacteristicValue` → `CharacteristicValue`), falling back
+  to an explicit `entity` / `dataSource` field. `config.requestProperties.params` are merged into
+  every fetch payload (and then scaffolded by `buildParams`).
+- **Pagination is mandatory.** The server aborts unpaged manual datasource fetches
+  (`"Data was tried to be fetched ... without pagination ... Request was aborted"`), and the classic
+  SmartClient framework always paged automatically. The façade therefore supplies a bounded default
+  window (`_startRow: 0`, `_endRow: 100`), overridable per datasource via
+  `config.requestProperties.params` (e.g. a larger `_endRow`).
+- `fetchData(criteria, callback)` keeps the classic callback contract `(response, data, request)`:
+  on success it parses the reply envelope `{ response: { status, data, totalRows } }` and invokes
+  `callback({ status, totalRows }, rows, { criteria })`; the envelope `status` is passed through, so
+  a business error (HTTP 200 with a negative status) reaches the script unchanged. A transport
+  failure (rejected fetch) invokes `callback({ status: -1, totalRows: 0 }, [], { criteria })`, so
+  classic `response.status < 0` branches keep working. The classic `fetchData(callback)` overload
+  (callback as first argument) is also honoured.
+- `setCacheData(records)` mirrors a classic client-only datasource: once set, `fetchData` resolves
+  from the cached records without hitting the network.
+- The classic "dummy criterion" cache-bypass trick is unnecessary — `fetchData` re-queries when no
+  client cache is set. Note the api-client keeps a short response cache (30 s TTL) and de-duplicates
+  identical `(entity, params)` requests, exactly as for the grid; `setCacheData` overrides it on the
+  client side, and `datasource.clearCacheForEntity(entity)` is available if a hard refetch is ever
+  required. If the shim is built without a `fetchDatasource` transport (a wiring bug), `fetchData`
+  throws a traceable error instead of failing silently; production always injects it.
+
+**Tests.** [datasource.test.ts](../../../packages/MainUI/utils/ob/__tests__/datasource.test.ts)
+covers the module (success routing, entity resolution from `dataURL` / `entity` / `dataSource`,
+param + criteria merge, the `fetchData(callback)` overload, `setCacheData`, transport failure,
+missing-transport throw, and reply-envelope defaults / business status pass-through).
+[obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts) and
+[utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts) assert
+the wiring through `createOBShim` and `buildProcessScriptContext`.
 
 **Unlocks.** ProductCharacteristics (defines its own datasource), AddPayment (refetches
 business-partner data), PeriodControl, Match Statement (datasource swap), createFromOrders.
@@ -964,7 +1021,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 5. **[FE] §4.7 — In-modal message bar.** ✅ **DONE.** `ProcessMessageBar` banner driven by a singleton store ([messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts) + [ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx)), replacing the temporary §4.12 toast backing. `text` sanitized by DOMPurify ([sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts)); `actions` as React buttons. The handle is exposed both as a top-level `messageBar` context key (process-level hooks) and as `view.messageBar` (parameter/grid proxies). See §4.7 implementation notes. Tests under `utils/processes/definition/__tests__/` and `components/ProcessModal/__tests__/`.
 6. **[FE] §4.10 — Action JSON dispatcher.** ✅ **DONE.** A pure router `dispatchResponseAction(action, ctx)` ([responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts)) covers every classic action type (`showMsgInProcessView`, `showMsgInView`, `openDirectTab`, `refreshGrid`, `refreshGridParameter`, `setSelectorValueFromRecord`, `smartclientSay`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `custom`), fed by a React-free singleton store ([actionDispatcherStore.ts](../../../packages/MainUI/utils/processes/definition/actionDispatcherStore.ts)) that the modal registers handlers into ([useActionDispatchContext.ts](../../../packages/MainUI/components/ProcessModal/hooks/useActionDispatchContext.ts)). `OB.Utilities.Action.executeJSON` is registry-first then routes built-ins via dependency injection ([action.ts](../../../packages/MainUI/utils/ob/action.ts)); the onProcess return path also dispatches the non-message actions (excluding `message`/`openDirectTab`, kept on the existing flow). Reports use a token-authenticated fetch→Blob→open/download ([reportActions.ts](../../../packages/MainUI/utils/processes/definition/reportActions.ts)). See §4.10 implementation notes. Tests under `utils/ob/__tests__/`, `utils/processes/definition/__tests__/` and `components/ProcessModal/utils/__tests__/`.
 7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** ✅ **DONE.** React-free factory `createRemoteCallManager(deps)` ([remoteCallManager.ts](../../../packages/MainUI/utils/ob/remoteCallManager.ts)) wrapping the injected `callAction` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); emulates the classic `(response, data, request)` callback with `{ status: 0 }` on success / `{ status: -1 }` on transport failure (routed to `errorCallback` when provided), preserving `clientContext`. Tests in [remoteCallManager.test.ts](../../../packages/MainUI/utils/ob/__tests__/remoteCallManager.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.9 implementation notes. Unlocks every script that calls a server action handler.
-8. **[FE] §4.11 — Datasource façade.** `OB.Datasource.create(config)` returning a `{fetchData}` object backed by `callDatasource`. Moderate.
+8. **[FE] §4.11 — Datasource façade.** ✅ **DONE.** React-free factory `createDatasourceManager(deps)` ([datasource.ts](../../../packages/MainUI/utils/ob/datasource.ts)) exposing `OB.Datasource.create(config)` → `{ fetchData, setCacheData }`, backed by the injected `callDatasource` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); entity resolved from `dataURL`, classic `(response, data, request)` callback with `{ status, totalRows }` (envelope status passed through, transport failure → `status: -1`), `setCacheData` for client-only datasources. Tests in [datasource.test.ts](../../../packages/MainUI/utils/ob/__tests__/datasource.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.11 implementation notes. Unlocks scripts that build ad-hoc datasources (ProductCharacteristics, AddPayment, Match Statement, createFromOrders).
 9. **[FE] §4.2 — Form-item full API.** Programmatic mutation surface on `view.theForm.getItem(name)`. Moderate; depends on react-hook-form primitives.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** Evaluate the body once into a module scope; compile each hook within that scope; auto-vivify under `OB.<Module>.<Process>`. Straightforward but invasive (touches every hook compile site).
 11. **[FE] §4.1 — `view` object completion.** Expose the remaining view properties / methods (`popupButtons`, `cancelButton`, `parentWindow`, `parentElement`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `refresh`, `getView(tabId)`, `sourceView`, `callerField`). Large; some properties (footer-button programmability) require new modal-chrome plumbing.

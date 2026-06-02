@@ -12,6 +12,7 @@ import {
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 describe("Process Definition Utils", () => {
@@ -287,6 +288,39 @@ describe("Process Definition Utils", () => {
 
       const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0];
       expect(calledUrl).toContain("_startRow=0");
+    });
+
+    it("OB.Datasource.create(...).fetchData should route through the api-client datasource", async () => {
+      const rows = [{ id: 1 }];
+      const getSpy = jest
+        .spyOn(datasource, "get")
+        .mockResolvedValue({ data: { response: { status: 0, data: rows, totalRows: 1 } } });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.Datasource.create({ dataURL: "/openbravo/org.openbravo.service.datasource/MyEntity" }).fetchData(
+        {},
+        callback
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(getSpy).toHaveBeenCalledWith("MyEntity", expect.objectContaining({ _operationType: "fetch" }));
+      expect(callback).toHaveBeenCalledWith({ status: 0, totalRows: 1 }, rows, { criteria: {} });
+
+      getSpy.mockRestore();
+    });
+
+    it("OB.Datasource.create(...).fetchData should report a transport failure as a negative status", async () => {
+      const getSpy = jest.spyOn(datasource, "get").mockRejectedValue(new Error("Server Error"));
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.Datasource.create({ dataURL: "/a/b/MyEntity" }).fetchData({}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(callback).toHaveBeenCalledWith({ status: -1, totalRows: 0 }, [], { criteria: {} });
+
+      getSpy.mockRestore();
     });
 
     it("callServlet should POST to given path", async () => {
