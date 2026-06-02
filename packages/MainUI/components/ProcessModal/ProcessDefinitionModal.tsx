@@ -86,6 +86,7 @@ import {
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
 import { useLanguage } from "@/contexts/language";
+import { useOptionalDatasourceContext } from "@/contexts/datasourceContext";
 import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
@@ -99,6 +100,7 @@ import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProces
 import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
+import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import { createFormHandle } from "@/utils/processes/definition/scriptProxies";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
@@ -221,6 +223,7 @@ function ProcessDefinitionModalContent({
   const { getLabel, language } = useLanguage();
   const { graph } = useSelected();
   const { tab, record: tabRecord } = useTabContext();
+  const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const session = useUserStore((s) => s.session);
   const token = useUserStore((s) => s.token);
@@ -297,6 +300,12 @@ function ProcessDefinitionModalContent({
   // Ref (not state) to store _filterExpressions returned by JS onLoad scripts.
   // Using a ref avoids triggering re-renders that would cause infinite loops.
   const onLoadFilterExpressionsRef = useRef<Record<string, Record<string, string>>>({});
+
+  // Identity of the open session for which onLoad already ran. onLoad must run
+  // once per open (classic semantics: the popup's onLoad fires once), keyed on
+  // stable record ids — NOT object references — so a parent-grid refetch
+  // triggered by a script (e.g. refreshGrid) cannot re-fire onLoad in a loop.
+  const onLoadIdentityRef = useRef<string | null>(null);
 
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
@@ -823,6 +832,27 @@ function ProcessDefinitionModalContent({
     fileParams,
   });
 
+  // Register the action-dispatch handlers so migrated scripts
+  // (OB.Utilities.Action.executeJSON) and the onProcess return path can turn
+  // each classic response-action type into a side effect while this modal is open.
+  useActionDispatchContext({
+    // refreshGrid refetches the launching tab's grid (targeted, no reopen) —
+    // never onSuccess, which closes/reloads the modal and would loop from onLoad.
+    refreshParentGrid: useCallback(() => {
+      if (tab?.id) refetchDatasource?.(tab.id);
+    }, [refetchDatasource, tab?.id]),
+    refreshModalGrid: useCallback(() => setGridRefreshKey((prev) => prev + 1), [setGridRefreshKey]),
+    navigateToTab: handleNavigateToTab,
+    token: token ?? "",
+  });
+
+  // Start each modal open with a clean message bar. The bar's lifetime is owned
+  // here (not by ProcessMessageBar's unmount), so a message set by onLoad/onChange
+  // survives the loading-spinner ↔ form transitions that mount/unmount the host.
+  useEffect(() => {
+    if (open) messageBar.hide();
+  }, [open]);
+
   // -------------------------------------------------------------------------
   // useEffect — onLoad execution
   // -------------------------------------------------------------------------
@@ -946,6 +976,9 @@ function ProcessDefinitionModalContent({
       setParameters(button.processDefinition.parameters);
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
+    } else {
+      // Allow onLoad to run again the next time the modal opens.
+      onLoadIdentityRef.current = null;
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -957,6 +990,17 @@ function ProcessDefinitionModalContent({
         setLoading(false);
         return;
       }
+
+      // Run onLoad once per open session (keyed on the selected record ids, which
+      // are stable across refetches). This prevents a script-triggered parent-grid
+      // refresh from re-firing onLoad — which would loop, since onLoad depends on
+      // the parent record/selection data that the refresh replaces.
+      const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
+      if (onLoadIdentityRef.current === onLoadIdentity) {
+        setLoading(false);
+        return;
+      }
+      onLoadIdentityRef.current = onLoadIdentity;
 
       try {
         setLoading(true);

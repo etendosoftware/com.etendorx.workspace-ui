@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { FC, SVGProps } from "react";
 import InfoIcon from "../../../ComponentLibrary/src/assets/icons/info.svg";
 import CheckCircleIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -48,14 +48,13 @@ const SEVERITY_STYLES: Record<
  * `view.messageBar` / `messageBar`. Subscribes to the singleton store and shows
  * one sticky banner at a time, reusing the modal's existing banner visual
  * language (left-border accent on a neutral background). Mounted inside the
- * process modal, so on unmount the pending message is cleared.
+ * process modal. The message lifetime is owned by the modal (cleared on open),
+ * not by this host: the host can unmount/remount during the modal's loading
+ * transitions, so clearing here would wipe a message a script just set.
  */
 export default function ProcessMessageBar() {
   const { t } = useTranslation();
   const state = useSyncExternalStore(subscribeMessageBar, getMessageBarState, getMessageBarState);
-
-  // Clear the banner when the modal (and thus this host) unmounts.
-  useEffect(() => () => messageBar.hide(), []);
 
   if (!state) return null;
 

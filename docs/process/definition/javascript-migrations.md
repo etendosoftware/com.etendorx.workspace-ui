@@ -413,8 +413,11 @@ injection in [utils.ts](../../../packages/MainUI/utils/processes/definition/util
 - **Store + host pattern (mirrors §4.6 dialogs).** A React-free singleton store
   (`setMessage`/`hide`/`subscribe`/`getState`, one message at a time — replace, no queue) is consumed
   by `ProcessMessageBar` via `useSyncExternalStore`. The host is mounted at the top of the modal's
-  scrollable body, above `renderResponse()`/`renderParameters()`, and clears the message on unmount
-  (modal close). This **replaces the temporary toast backing** introduced in §4.12.
+  scrollable body, above `renderResponse()`/`renderParameters()`. The message lifetime is owned by the
+  modal (cleared on each open via an effect in `ProcessDefinitionModal`), **not** by the host's
+  unmount: the host mounts/unmounts during the modal's loading-spinner ↔ form transitions, so clearing
+  on its unmount wiped messages a script set in `onLoad`/`onChange` (fixed while wiring §4.10). This
+  **replaces the temporary toast backing** introduced in §4.12.
 - **Visual reuse.** The banner reuses the modal's existing banner visual language
   (`border-l-4 bg-gray-50` + `<h4>` title) with per-severity CSS tokens
   (`--color-{success,warning,error}-main`, `--color-etendo-main` for info) and ComponentLibrary SVG
@@ -480,9 +483,9 @@ every API above. Backings:
 `PropertyStore.get`/`set`, `I18N.getLabel` (with `%n` substitution), `Format.*`,
 `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`,
 `Styles.MessageBar`, `TestRegistry.register` (no-op) and tolerant module-namespace writes.
-The APIs scoped to later steps remain deferred — `RemoteCallManager.call` (§4.9),
-`Datasource.create` (§4.11) and `Utilities.Action.executeJSON` (§4.10) are exposed as stubs that
-throw a traceable "not implemented yet" error pointing to their step.
+The APIs scoped to later steps remain deferred — `RemoteCallManager.call` (§4.9) and
+`Datasource.create` (§4.11) are exposed as stubs that throw a traceable "not implemented yet" error
+pointing to their step. (`Utilities.Action.executeJSON` is now implemented — see §4.10.)
 
 **Implementation notes (delivered).**
 
@@ -591,11 +594,59 @@ mid-execution (not only on modal close).
 **Backend requirement.** None. Action JSON is server-emitted by existing action handlers; no
 adapter changes there.
 
-**Coverage status.** PARTIAL (1 of 9 action types covered).
+**Coverage status.** DONE. `OB.Utilities.Action.executeJSON` is wired and every classic action
+type is routed to a new-UI side effect (see the table below). `OB.Utilities.Action.set` / `.execute`
+were already covered in §4.8.
+
+**Implementation notes (delivered).**
+
+- **Pure parser + pure router, React-free store.** The existing pure parser
+  `dispatchResponseActions(data) → DispatchedAction[]`
+  ([responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts))
+  was extended with the two report action types, and `dispatchSingle` was exported so a lone
+  `{ name: payload }` entry from `executeJSON` runs through the same logic. A new pure router
+  `dispatchResponseAction(action, ctx)` (a single flat switch, no nested ternaries) delegates each
+  `kind` to a named handler on an `ActionDispatchContext`. A singleton store
+  ([actionDispatcherStore.ts](../../../packages/MainUI/utils/processes/definition/actionDispatcherStore.ts))
+  holds the active context — the same store/host pattern used by the dialogs (§4.6) and the message
+  bar (§4.7). The process modal registers the live handlers on mount
+  ([useActionDispatchContext.ts](../../../packages/MainUI/components/ProcessModal/hooks/useActionDispatchContext.ts))
+  and clears them on unmount.
+- **`executeJSON` is registry-first.** Each entry runs its function registered via
+  `OB.Utilities.Action.set` if present, otherwise the built-in handler for that type. The built-in
+  `custom` action is seeded into the registry and invokes `paramObj.func` only when it is a function
+  (the classic string-eval form is intentionally dropped for security). `utils/ob` stays free of any
+  React dependency: the shim receives `dispatchBuiltinAction` by injection through `createOBShim`
+  ([obShim.ts](../../../packages/MainUI/utils/ob/obShim.ts) / [action.ts](../../../packages/MainUI/utils/ob/action.ts)),
+  wired from `buildProcessScriptContext`.
+- **Dual entry, no double effect.** Migrated scripts call `executeJSON` directly; in addition the
+  onProcess return path dispatches the returned actions through `dispatchProcessReturnActions`
+  ([useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts)),
+  which **excludes** the `message` and `openDirectTab` kinds — those keep driving the existing
+  success/banner/navigation flow, so they are never applied twice.
+- **Action type → new-UI effect:** `showMsgInProcessView` → message bar (§4.7); `showMsgInView` →
+  toast; `openDirectTab` → `handleNavigateToTab`; `refreshGrid` → targeted refetch of the launching
+  tab's grid via `refetchDatasource(tab.id)` (NOT the `onSuccess` success handler — that closes/reloads
+  the modal and, when `refreshGrid` is dispatched from `onLoad`, reopens it and re-runs `onLoad` in an
+  infinite loop; `refetchDatasource` only re-runs the grid's data fetch and leaves the selection graph
+  untouched, so `onLoad` does not re-fire); `refreshGridParameter` → modal grid refresh key;
+  `smartclientSay` → dialog `say` (§4.6);
+  `OBUIAPP_browseReport` / `OBUIAPP_downloadReport` → token-authenticated fetch → Blob → open /
+  download ([reportActions.ts](../../../packages/MainUI/utils/processes/definition/reportActions.ts);
+  the new UI authenticates with a Bearer token, so a plain `window.open(url)` cannot be used);
+  `setSelectorValueFromRecord` → best-effort no-op with a warning (the standalone process modal has no
+  caller selector field; effective once a process is launched from a selector — §4.1/§4.3).
 
 **Unlocks.** Match Statement (Match Statement OnLoad handler returns `responseActions`),
 AddPayment (returns `refreshGrid` + `openDirectTab` after submission), AddTransaction,
 Etendo Payment Execution, ProductCharacteristics, every process that downloads a report.
+
+**Tests.** [responseActionDispatcher.test.ts](../../../packages/MainUI/components/ProcessModal/utils/__tests__/responseActionDispatcher.test.ts)
+(parser + router + `buildReportActionUrl`),
+[actionDispatcherStore.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/actionDispatcherStore.test.ts),
+[reportActions.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/reportActions.test.ts),
+[action.test.ts](../../../packages/MainUI/utils/ob/__tests__/action.test.ts) and
+[obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts).
 
 ---
 
@@ -876,7 +927,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 3. **[FE] §4.12 — Parameter-level hook execution.** ✅ **DONE.** `etmetaOnParameterChange` is compiled once per parameter and bound from a single `form.watch` subscription in [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts) (mounted by [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)), invoked as `(item, view, form, grid)` with three loop/overload guards (value diff, re-entrancy, ~250 ms debounce). `etmetaOnGridLoad` is compiled per grid parameter and fired on the data-arrived effect of [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx) as `(grid, view, parameters)`. The `item`/`form`/`view`/`grid` proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) are audited-sufficient — every other classic method throws a traceable "not implemented yet". Compile helper: [compileParameterHook.ts](../../../packages/MainUI/utils/processes/definition/compileParameterHook.ts). See §4.12 implementation notes. Unlocks the column-signal processes whose hook bodies are self-contained; helper-dependent ones unlock fully with step 10 (§4.13). Built on §4.8; §4.13 shared scope intentionally deferred.
 4. **[FE] §4.6 — Modal dialogs.** ✅ **DONE.** Promise-based `confirm` / `warn` / `say` (+ `ask` alias and `isc` namespace) implemented in [dialogs.ts](../../../packages/MainUI/utils/processes/definition/dialogs.ts) as a React-free singleton FIFO queue + script API, injected into every hook context via `buildProcessScriptContext` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)). Rendered by [ProcessDialogHost.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDialogHost.tsx) (reusing `ActionModal`, mounted inside [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Returns Promises (never blocks) and also honours the classic `(message, callback)` / `(message, options, callback)` shapes; safe `false` default when no host / on unmount. Plain-text messages and advanced button/HTML customization deferred. Tests: [dialogs.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/dialogs.test.ts), [ProcessDialogHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessDialogHost.test.tsx). See §4.6 implementation notes.
 5. **[FE] §4.7 — In-modal message bar.** ✅ **DONE.** `ProcessMessageBar` banner driven by a singleton store ([messageBarStore.ts](../../../packages/MainUI/utils/processes/definition/messageBarStore.ts) + [ProcessMessageBar.tsx](../../../packages/MainUI/components/ProcessModal/ProcessMessageBar.tsx)), replacing the temporary §4.12 toast backing. `text` sanitized by DOMPurify ([sanitizeHtml.ts](../../../packages/MainUI/utils/processes/definition/sanitizeHtml.ts)); `actions` as React buttons. The handle is exposed both as a top-level `messageBar` context key (process-level hooks) and as `view.messageBar` (parameter/grid proxies). See §4.7 implementation notes. Tests under `utils/processes/definition/__tests__/` and `components/ProcessModal/__tests__/`.
-6. **[FE] §4.10 — Action JSON dispatcher.** Extend the existing `extractResponseMessage` path into a `dispatchResponseAction(action, ctx)` covering every classic action type (`showMsgInView`, `refreshGrid`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `setSelectorValueFromRecord`, `openDirectTab`, `smartclientSay`, `custom`), and wire `OB.Utilities.Action.executeJSON` / `.execute` to it. Moderate.
+6. **[FE] §4.10 — Action JSON dispatcher.** ✅ **DONE.** A pure router `dispatchResponseAction(action, ctx)` ([responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts)) covers every classic action type (`showMsgInProcessView`, `showMsgInView`, `openDirectTab`, `refreshGrid`, `refreshGridParameter`, `setSelectorValueFromRecord`, `smartclientSay`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `custom`), fed by a React-free singleton store ([actionDispatcherStore.ts](../../../packages/MainUI/utils/processes/definition/actionDispatcherStore.ts)) that the modal registers handlers into ([useActionDispatchContext.ts](../../../packages/MainUI/components/ProcessModal/hooks/useActionDispatchContext.ts)). `OB.Utilities.Action.executeJSON` is registry-first then routes built-ins via dependency injection ([action.ts](../../../packages/MainUI/utils/ob/action.ts)); the onProcess return path also dispatches the non-message actions (excluding `message`/`openDirectTab`, kept on the existing flow). Reports use a token-authenticated fetch→Blob→open/download ([reportActions.ts](../../../packages/MainUI/utils/processes/definition/reportActions.ts)). See §4.10 implementation notes. Tests under `utils/ob/__tests__/`, `utils/processes/definition/__tests__/` and `components/ProcessModal/utils/__tests__/`.
 7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** Thin wrapper over `callAction` that emulates the classic callback contract. Cheap once §4.8 lands. Unlocks every script that calls a server action handler.
 8. **[FE] §4.11 — Datasource façade.** `OB.Datasource.create(config)` returning a `{fetchData}` object backed by `callDatasource`. Moderate.
 9. **[FE] §4.2 — Form-item full API.** Programmatic mutation surface on `view.theForm.getItem(name)`. Moderate; depends on react-hook-form primitives.

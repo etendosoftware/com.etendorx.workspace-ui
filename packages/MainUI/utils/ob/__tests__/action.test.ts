@@ -15,9 +15,10 @@
  *************************************************************************
  */
 
-import { ACTION_EXECUTE_JSON_DEFERRED, createAction } from "../action";
+import { createAction } from "../action";
 
 const ACTION_NAME = "myAction";
+const BUILTIN_NAME = "refreshGrid";
 
 describe("createAction", () => {
   it("registers an action and executes it with params", () => {
@@ -62,7 +63,71 @@ describe("createAction", () => {
     }
   });
 
-  it("throws from the deferred executeJSON stub", () => {
-    expect(() => createAction().executeJSON()).toThrow(ACTION_EXECUTE_JSON_DEFERRED);
+  describe("executeJSON", () => {
+    it("runs a registered action for a matching entry (registry-first)", () => {
+      const action = createAction();
+      const fn = jest.fn();
+      action.set(ACTION_NAME, fn);
+
+      expect(action.executeJSON([{ [ACTION_NAME]: { x: 1 } }])).toBe(true);
+      expect(fn).toHaveBeenCalledWith({ x: 1 });
+    });
+
+    it("normalizes a single object argument into a one-entry array", () => {
+      const action = createAction();
+      const fn = jest.fn();
+      action.set(ACTION_NAME, fn);
+
+      action.executeJSON({ [ACTION_NAME]: { y: 2 } });
+      expect(fn).toHaveBeenCalledWith({ y: 2 });
+    });
+
+    it("routes a built-in (unregistered) entry to dispatchBuiltinAction", () => {
+      const dispatchBuiltinAction = jest.fn(() => true);
+      const action = createAction({ dispatchBuiltinAction });
+
+      action.executeJSON([{ [BUILTIN_NAME]: { foo: "bar" } }]);
+      expect(dispatchBuiltinAction).toHaveBeenCalledWith(BUILTIN_NAME, { foo: "bar" });
+    });
+
+    it("invokes the built-in custom action's function form", () => {
+      const action = createAction();
+      const func = jest.fn();
+
+      action.executeJSON([{ custom: { func, text: "hi" } }]);
+      expect(func).toHaveBeenCalledWith({ func, text: "hi" });
+    });
+
+    it("dispatches multiple entries in order", () => {
+      const dispatchBuiltinAction = jest.fn(() => true);
+      const action = createAction({ dispatchBuiltinAction });
+      const fn = jest.fn();
+      action.set(ACTION_NAME, fn);
+
+      action.executeJSON([{ [ACTION_NAME]: { a: 1 } }, { [BUILTIN_NAME]: { b: 2 } }]);
+      expect(fn).toHaveBeenCalledWith({ a: 1 });
+      expect(dispatchBuiltinAction).toHaveBeenCalledWith(BUILTIN_NAME, { b: 2 });
+    });
+
+    it("defers the whole dispatch by the given delay", () => {
+      jest.useFakeTimers();
+      try {
+        const dispatchBuiltinAction = jest.fn(() => true);
+        const action = createAction({ dispatchBuiltinAction });
+
+        action.executeJSON([{ [BUILTIN_NAME]: {} }], undefined, 500);
+        expect(dispatchBuiltinAction).not.toHaveBeenCalled();
+
+        jest.advanceTimersByTime(500);
+        expect(dispatchBuiltinAction).toHaveBeenCalledWith(BUILTIN_NAME, {});
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("does nothing for an unknown built-in when no host is wired", () => {
+      const action = createAction();
+      expect(action.executeJSON([{ unknownType: {} }])).toBe(true);
+    });
   });
 });

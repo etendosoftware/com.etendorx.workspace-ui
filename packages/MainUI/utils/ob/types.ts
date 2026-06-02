@@ -36,6 +36,12 @@ export interface OBShimDeps {
   getLabel?: (key: string) => string;
   /** Current UI language code (e.g. `"en_US"`, `"es_ES"`). */
   language?: string | null;
+  /**
+   * Routes a built-in action type (everything not registered via
+   * `Action.set`) to the host's side-effect handlers. Injected so `utils/ob`
+   * stays free of any React-layer dependency. Returns `true` when handled.
+   */
+  dispatchBuiltinAction?: (name: string, payload: unknown) => boolean;
 }
 
 export interface OBI18N {
@@ -62,8 +68,12 @@ export interface OBUtilitiesNumber {
 export interface OBAction {
   set: (name: string, action: ActionFn) => boolean;
   execute: (name: string, params?: unknown, delay?: number) => unknown;
-  /** Not implemented yet — throws when called. */
-  executeJSON: (...args: unknown[]) => never;
+  /**
+   * Dispatches an action JSON array (or a single action object). Each entry
+   * `{ name: payload }` runs its registered function (via `set`) or, failing
+   * that, the built-in handler for that type. Returns `true` once processed.
+   */
+  executeJSON: (jsonArray: unknown, threadId?: unknown, delay?: number, processView?: unknown) => boolean;
 }
 
 export interface OBUtilities {

@@ -17,21 +17,40 @@
 
 import type { ActionFn, OBAction } from "./types";
 
-/** Error thrown by the not-yet-implemented `executeJSON` stub. */
-export const ACTION_EXECUTE_JSON_DEFERRED = "OB.Utilities.Action.executeJSON is not implemented yet";
+/** Name of the built-in `custom` action (invokes `paramObj.func`). */
+const CUSTOM_ACTION_NAME = "custom";
 
 interface ActionEntry {
   name: string;
   action: ActionFn;
 }
 
+/** Dependencies wiring built-in action types to the host's side effects. */
+export interface CreateActionDeps {
+  /**
+   * Routes a built-in action type (one not registered via `set`) to the host.
+   * Returns `true` when the type was handled. Optional so the shim still builds
+   * (and `executeJSON` degrades to registry-only) when no host is wired.
+   */
+  dispatchBuiltinAction?: (name: string, payload: unknown) => boolean;
+}
+
+/** Reads `payload.func` as a callable, or `undefined` when it is not a function. */
+function getCustomFunction(payload: unknown): ActionFn | undefined {
+  if (payload && typeof payload === "object" && typeof (payload as { func?: unknown }).func === "function") {
+    return (payload as { func: ActionFn }).func;
+  }
+  return undefined;
+}
+
 /**
  * Builds the `OB.Utilities.Action` namespace with a private registry. Because a
  * single `OB` instance is shared across a process modal's hooks (onLoad /
  * onProcess / onChange), an action registered by one hook is visible to the
- * others. Mirrors classic `set` / `execute`; `executeJSON` is not implemented yet.
+ * others. Mirrors classic `set` / `execute` / `executeJSON`: registered actions
+ * win; otherwise built-in types are routed to the host via `dispatchBuiltinAction`.
  */
-export function createAction(): OBAction {
+export function createAction(deps: CreateActionDeps = {}): OBAction {
   const registry: ActionEntry[] = [];
 
   const set = (name: string, action: ActionFn): boolean => {
@@ -54,8 +73,37 @@ export function createAction(): OBAction {
     return entry ? entry.action(params) : false;
   };
 
-  const executeJSON = (): never => {
-    throw new Error(ACTION_EXECUTE_JSON_DEFERRED);
+  // Seed the built-in `custom` action so registry-first dispatch covers it,
+  // matching classic. Only the function form of `func` is supported; the
+  // classic string-eval form is intentionally dropped (security).
+  set(CUSTOM_ACTION_NAME, (params) => {
+    const fn = getCustomFunction(params);
+    if (fn) fn(params);
+    return true;
+  });
+
+  /** Runs one `{ name: payload }` entry: registered action first, then built-in. */
+  const dispatchEntry = (name: string, payload: unknown): void => {
+    const isRegistered = registry.some((item) => item.name === name && typeof item.action === "function");
+    if (isRegistered) {
+      execute(name, payload);
+      return;
+    }
+    deps.dispatchBuiltinAction?.(name, payload);
+  };
+
+  const executeJSON = (jsonArray: unknown, _threadId?: unknown, delay?: number, _processView?: unknown): boolean => {
+    if (typeof delay === "number") {
+      setTimeout(() => executeJSON(jsonArray), delay);
+      return true;
+    }
+    const entries = Array.isArray(jsonArray) ? jsonArray : [jsonArray];
+    for (const entry of entries) {
+      if (!entry || typeof entry !== "object") continue;
+      const [name, payload] = Object.entries(entry as Record<string, unknown>)[0] ?? [];
+      if (name) dispatchEntry(name, payload);
+    }
+    return true;
   };
 
   return { set, execute, executeJSON };

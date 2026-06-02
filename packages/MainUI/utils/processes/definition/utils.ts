@@ -19,6 +19,7 @@ import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/a
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
+import { dispatchBuiltinAction } from "@/utils/processes/definition/actionDispatcherStore";
 import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import type { MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
@@ -156,8 +157,10 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   const { token, getCsrfToken, getLabel, language } = credentials;
 
   // One shared OB shim per modal: the action registry and namespace writes
-  // performed in one hook stay visible to the others.
-  const OB = createOBShim({ getLabel, language });
+  // performed in one hook stay visible to the others. Built-in action types
+  // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
+  // through the dispatch store (registered by the modal while it is mounted).
+  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction });
 
   const authHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json;charset=UTF-8",

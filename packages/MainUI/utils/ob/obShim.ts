@@ -58,9 +58,10 @@ function createPropertyStore(): OBPropertyStore {
  * A single instance is created per process modal (via `buildProcessScriptContext`)
  * and shared across onLoad / onProcess / onChange / onRefresh, so the action
  * registry and any module-namespace writes (`OB.APRM = OB.APRM || {}`) persist
- * across hooks. `RemoteCallManager.call`, `Datasource.create` and
- * `Utilities.Action.executeJSON` are not implemented yet and are exposed as
- * stubs that throw a traceable error.
+ * across hooks. `Utilities.Action.executeJSON` routes built-in action types to
+ * the host through `deps.dispatchBuiltinAction`. `RemoteCallManager.call` and
+ * `Datasource.create` are not implemented yet and are exposed as stubs that
+ * throw a traceable error.
  *
  * @example
  * // Inside a migrated onLoad / onProcess script:
@@ -74,7 +75,7 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
     Format: createFormat(deps.language),
     Utilities: {
       Number: { JSToOBMasked },
-      Action: createAction(),
+      Action: createAction({ dispatchBuiltinAction: deps.dispatchBuiltinAction }),
       generateRandomString,
     },
     Styles: createStyles(),

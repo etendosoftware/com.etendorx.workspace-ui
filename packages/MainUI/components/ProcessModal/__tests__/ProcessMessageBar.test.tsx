@@ -62,15 +62,15 @@ describe("ProcessMessageBar", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("clears the message when unmounted", () => {
+  it("keeps the message across an unmount/remount (lifetime owned by the modal)", () => {
     const { unmount } = render(<ProcessMessageBar />);
     act(() => {
       messageBar.setMessage("info", null, "Pending");
     });
     unmount();
-    expect(messageBar).toBeDefined();
-    // Re-render a fresh host: the store was cleared on unmount, so nothing shows.
+    // The host no longer clears on unmount, so the store keeps the message and a
+    // freshly mounted host shows it again (survives the modal's loading swaps).
     render(<ProcessMessageBar />);
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Pending")).toBeInTheDocument();
   });
 });

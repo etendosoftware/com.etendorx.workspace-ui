@@ -57,6 +57,13 @@ describe("createOBShim", () => {
     expect(ob.Utilities.Action.execute("a")).toBe("done");
   });
 
+  it("routes executeJSON built-ins through the injected dispatchBuiltinAction", () => {
+    const dispatchBuiltinAction = jest.fn(() => true);
+    const ob = createOBShim({ dispatchBuiltinAction });
+    ob.Utilities.Action.executeJSON([{ refreshGrid: {} }]);
+    expect(dispatchBuiltinAction).toHaveBeenCalledWith("refreshGrid", {});
+  });
+
   it("tolerates module-namespace writes (OB.APRM = {})", () => {
     const ob = createOBShim();
     ob.APRM = {};

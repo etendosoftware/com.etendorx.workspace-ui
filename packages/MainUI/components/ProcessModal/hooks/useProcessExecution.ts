@@ -51,6 +51,7 @@ import {
   findFirstMessage,
   findFirstOpenDirectTab,
 } from "../utils/responseActionDispatcher";
+import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -676,6 +677,13 @@ export function useProcessExecution({
           );
 
           const result = stringFnResult?.data ?? stringFnResult;
+
+          // Dispatch the non-message response actions (refreshGrid,
+          // refreshGridParameter, setSelectorValueFromRecord, report) before the
+          // success-close runs and possibly unmounts the modal. The message and
+          // openDirectTab kinds are intentionally left to the flow below.
+          dispatchProcessReturnActions(result);
+
           const responseMessage = extractResponseMessage(result);
 
           const msgType = responseMessage.msgType;
