@@ -26,8 +26,10 @@
  * clearly instead of with a cryptic "undefined is not a function".
  */
 
-import type { UseFormReturn } from "react-hook-form";
-import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { FieldValues, UseFormReturn, UseFormSetValue } from "react-hook-form";
+import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { updateSelectorValue } from "@/utils/form/selectors/utils";
+import type { DynamicParameter } from "./utils";
 
 // ---------------------------------------------------------------------------
 // Dependencies (structural subsets, so tests can pass plain mocks)
@@ -70,6 +72,24 @@ export interface GridState {
 }
 
 export type ParametersMap = Record<string, ProcessParameter>;
+
+/**
+ * Bridge the proxies use to mutate the modal's reactive state. Supplied by the
+ * process modal (which owns the parameters / logic-field stores and the form
+ * instance); absent in contexts that only read (e.g. plain unit tests), where
+ * the corresponding classic methods stay deferred. Keeps the proxies pure
+ * adapters with no React / state dependency of their own.
+ */
+export interface FieldController {
+  setRequired: (name: string, required: boolean) => void;
+  setDisabled: (name: string, disabled: boolean) => void;
+  setDisplayed: (name: string, displayed: boolean) => void;
+  setValueMap: (name: string, map: unknown) => void;
+  getValueMap: (name: string) => ListOption[];
+  addField: (field: DynamicParameter) => void;
+  removeField: (target: number | string) => void;
+  focusField: (name: string) => void;
+}
 
 // ---------------------------------------------------------------------------
 // Proxy shapes
@@ -127,6 +147,29 @@ const DEFERRED_ITEM_METHODS = [
 
 const DEFERRED_FORM_METHODS = ["getField", "getFields", "addField", "removeField", "focusInItem", "hideItem"] as const;
 
+/**
+ * Classic methods that become live once a `FieldController` is injected. The
+ * remaining names stay deferred even with a controller because later migration
+ * steps own them (`item.fetchData` and `item.canvas` belong to the embedded
+ * grid; `getElementValue` is outside this surface).
+ */
+const LIVE_ITEM_METHODS: readonly string[] = [
+  "setRequired",
+  "setDisabled",
+  "show",
+  "hide",
+  "clearValue",
+  "setValueMap",
+  "getValueMap",
+  "setValueFromRecord",
+  "redraw",
+];
+const LIVE_FORM_METHODS: readonly string[] = [...DEFERRED_FORM_METHODS];
+
+/** Deferred sets that remain when a controller IS present (single source of truth). */
+const DEFERRED_ITEM_METHODS_WITH_CONTROLLER = DEFERRED_ITEM_METHODS.filter((m) => !LIVE_ITEM_METHODS.includes(m));
+const DEFERRED_FORM_METHODS_WITH_CONTROLLER = DEFERRED_FORM_METHODS.filter((m) => !LIVE_FORM_METHODS.includes(m));
+
 const DEFERRED_VIEW_METHODS = [
   "getContextInfo",
   "refresh",
@@ -170,6 +213,66 @@ function assignDeferred(target: Record<string, unknown>, prefix: string, methods
   }
 }
 
+/** Reads the id of a record for `setValueFromRecord`, mirroring classic precedence. */
+function recordId(record: Record<string, unknown> | undefined): unknown {
+  if (!record) return "";
+  return record.id ?? record.value ?? "";
+}
+
+/**
+ * Assigns the live `item` mutation methods, delegating each to the injected
+ * controller (or the form handle for value-only operations). One statement per
+ * method keeps the cognitive complexity flat.
+ */
+function assignLiveItemMethods(
+  item: ItemProxy,
+  form: FormHandle,
+  paramName: string,
+  controller: FieldController
+): void {
+  item.setRequired = (required = true) => controller.setRequired(paramName, required);
+  item.setDisabled = (disabled = true) => controller.setDisabled(paramName, disabled);
+  item.show = () => controller.setDisplayed(paramName, true);
+  item.hide = () => controller.setDisplayed(paramName, false);
+  item.setValueMap = (map: unknown) => controller.setValueMap(paramName, map);
+  item.getValueMap = () => controller.getValueMap(paramName);
+  item.clearValue = () => form.setValue(paramName, null, { shouldDirty: true, shouldValidate: true });
+  item.setValueFromRecord = (record: Record<string, unknown> | undefined) =>
+    updateSelectorValue(form.setValue as unknown as UseFormSetValue<FieldValues>, paramName, recordId(record), record);
+  item.redraw = () => {
+    // No-op: react-hook-form re-renders reactively on value changes.
+  };
+}
+
+/**
+ * Assigns the live `form` mutation methods. Item accessors thread the controller
+ * so the returned items are themselves mutable; structural changes (add / remove
+ * / focus) and visibility delegate to the controller.
+ */
+function assignLiveFormMethods(
+  formProxy: FormProxy,
+  form: FormHandle,
+  parameters: ParametersMap | undefined,
+  controller: FieldController
+): void {
+  const getFields = () =>
+    Object.values(parameters ?? {}).map((parameter) => createItemProxy(form, parameter.name, {}, controller));
+  formProxy.getFields = getFields;
+  formProxy.getField = (index: number) => getFields()[index];
+  formProxy.hideItem = (name: string) => controller.setDisplayed(resolveFormKey(name, parameters), false);
+  formProxy.addField = (field: DynamicParameter) => controller.addField(field);
+  formProxy.removeField = (target: number | string) => controller.removeField(target);
+  formProxy.focusInItem = (name: string) => controller.focusField(resolveFormKey(name, parameters));
+  formProxy.markForRedraw = () => {
+    // No-op: react-hook-form re-renders reactively on value changes.
+  };
+  Object.defineProperty(formProxy, "values", {
+    get: () => form.getValues(),
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Form-key resolution
 // ---------------------------------------------------------------------------
@@ -194,8 +297,18 @@ export function resolveFormKey(name: string, parameters: ParametersMap | undefin
 // Proxy factories
 // ---------------------------------------------------------------------------
 
-/** Builds the `item` proxy for a single form key. */
-export function createItemProxy(form: FormHandle, paramName: string, extras: ItemProxyExtras = {}): ItemProxy {
+/**
+ * Builds the `item` proxy for a single form key. When a `controller` is given,
+ * the classic mutation methods (`setRequired`, `setDisabled`, `show` / `hide`,
+ * `setValueMap` / `getValueMap`, `clearValue`, `setValueFromRecord`, `redraw`)
+ * become live; otherwise every classic method stays deferred.
+ */
+export function createItemProxy(
+  form: FormHandle,
+  paramName: string,
+  extras: ItemProxyExtras = {},
+  controller?: FieldController
+): ItemProxy {
   const item: ItemProxy = {
     name: paramName,
     getValue: () => form.getValues(paramName),
@@ -203,20 +316,39 @@ export function createItemProxy(form: FormHandle, paramName: string, extras: Ite
   };
   if (extras.rowNum !== undefined) item.rowNum = extras.rowNum;
   if (extras.columnName !== undefined) item.columnName = extras.columnName;
-  assignDeferred(item, "item", DEFERRED_ITEM_METHODS);
+  if (controller) {
+    assignLiveItemMethods(item, form, paramName, controller);
+    assignDeferred(item, "item", DEFERRED_ITEM_METHODS_WITH_CONTROLLER);
+  } else {
+    assignDeferred(item, "item", DEFERRED_ITEM_METHODS);
+  }
   return item;
 }
 
-/** Builds the `form` proxy backed by react-hook-form. */
-export function createFormProxy(form: FormHandle, parameters: ParametersMap | undefined): FormProxy {
+/**
+ * Builds the `form` proxy backed by react-hook-form. With a `controller` the
+ * structural / visibility methods (`getItem` items become mutable too,
+ * `hideItem`, `getField` / `getFields`, `addField` / `removeField`,
+ * `focusInItem`, `markForRedraw`, `values`) become live; otherwise they defer.
+ */
+export function createFormProxy(
+  form: FormHandle,
+  parameters: ParametersMap | undefined,
+  controller?: FieldController
+): FormProxy {
   const formProxy: FormProxy = {
-    getItem: (name: string) => createItemProxy(form, resolveFormKey(name, parameters)),
+    getItem: (name: string) => createItemProxy(form, resolveFormKey(name, parameters), {}, controller),
     getValues: () => form.getValues(),
     redraw: () => {
       // No-op: react-hook-form re-renders reactively on value changes.
     },
   };
-  assignDeferred(formProxy, "form", DEFERRED_FORM_METHODS);
+  if (controller) {
+    assignLiveFormMethods(formProxy, form, parameters, controller);
+    assignDeferred(formProxy, "form", DEFERRED_FORM_METHODS_WITH_CONTROLLER);
+  } else {
+    assignDeferred(formProxy, "form", DEFERRED_FORM_METHODS);
+  }
   return formProxy;
 }
 
@@ -237,10 +369,10 @@ export function createGridProxy(state: GridState): GridProxy {
 export function createViewProxy(
   form: FormHandle,
   parameters: ParametersMap | undefined,
-  deps: { messageBar: MessageBarHandle; grid?: GridProxy }
+  deps: { messageBar: MessageBarHandle; grid?: GridProxy; controller?: FieldController }
 ): ViewProxy {
   const view: ViewProxy = {
-    theForm: createFormProxy(form, parameters),
+    theForm: createFormProxy(form, parameters, deps.controller),
     messageBar: deps.messageBar,
   };
   if (deps.grid) view.viewGrid = deps.grid;

@@ -52,6 +52,12 @@ export {
   buildProcessScriptContext,
   applyGridSelection,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
 } from "@/utils/processes/definition/utils";
 export { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 export { buildProcessParameters } from "@/utils/process/processPayloadMapper";

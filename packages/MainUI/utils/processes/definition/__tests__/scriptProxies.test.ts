@@ -1,5 +1,5 @@
 import type { UseFormReturn } from "react-hook-form";
-import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import {
   createFormHandle,
   createFormProxy,
@@ -8,6 +8,7 @@ import {
   createViewProxy,
   notImplemented,
   resolveFormKey,
+  type FieldController,
   type FormHandle,
   type MessageBarHandle,
 } from "../scriptProxies";
@@ -35,6 +36,21 @@ const makeFormHandle = (initial: Record<string, unknown> = {}) => {
   };
   return { handle, values, setValue };
 };
+
+/** FieldController of jest spies, with an in-memory value-map store for getValueMap. */
+const makeController = (valueMaps: Record<string, ListOption[]> = {}): FieldController => ({
+  setRequired: jest.fn(),
+  setDisabled: jest.fn(),
+  setDisplayed: jest.fn(),
+  setValueMap: jest.fn(),
+  getValueMap: jest.fn((name: string) => valueMaps[name] ?? []),
+  addField: jest.fn(),
+  removeField: jest.fn(),
+  focusField: jest.fn(),
+});
+
+/** Casts a proxy method (typed `unknown` through the index signature) to a callable. */
+const call = (fn: unknown) => fn as (...args: unknown[]) => unknown;
 
 describe("scriptProxies", () => {
   describe("notImplemented", () => {
@@ -187,6 +203,98 @@ describe("scriptProxies", () => {
       const fullView = createViewProxy(handle, PARAMETERS, { messageBar, grid: fullGrid });
       hook?.(fullGrid, fullView, PARAMETERS);
       expect(messageBar.setMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("createItemProxy with a FieldController", () => {
+    it("delegates the visibility / state mutations to the controller", () => {
+      const controller = makeController();
+      const { handle } = makeFormHandle({ amount: 1 });
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      call(item.setRequired)();
+      call(item.setRequired)(false);
+      call(item.setDisabled)();
+      call(item.show)();
+      call(item.hide)();
+
+      expect(controller.setRequired).toHaveBeenNthCalledWith(1, "amount", true);
+      expect(controller.setRequired).toHaveBeenNthCalledWith(2, "amount", false);
+      expect(controller.setDisabled).toHaveBeenCalledWith("amount", true);
+      expect(controller.setDisplayed).toHaveBeenNthCalledWith(1, "amount", true);
+      expect(controller.setDisplayed).toHaveBeenNthCalledWith(2, "amount", false);
+    });
+
+    it("routes setValueMap / getValueMap through the controller", () => {
+      const options: ListOption[] = [{ id: "a", value: "a", label: "A" }];
+      const controller = makeController({ amount: options });
+      const { handle } = makeFormHandle();
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      call(item.setValueMap)({ a: "A" });
+      expect(controller.setValueMap).toHaveBeenCalledWith("amount", { a: "A" });
+      expect(call(item.getValueMap)()).toEqual(options);
+    });
+
+    it("clears the value and sets a value from a record via the form handle", () => {
+      const controller = makeController();
+      const { handle, setValue } = makeFormHandle({ amount: 5 });
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      call(item.clearValue)();
+      expect(setValue).toHaveBeenCalledWith("amount", null, { shouldDirty: true, shouldValidate: true });
+
+      call(item.setValueFromRecord)({ id: "X", _identifier: "Label X" });
+      expect(setValue).toHaveBeenCalledWith("amount", "X", { shouldValidate: true, shouldDirty: true });
+      expect(setValue).toHaveBeenCalledWith("amount_data", { id: "X", _identifier: "Label X" });
+      expect(setValue).toHaveBeenCalledWith("amount$_identifier", "Label X", {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    });
+
+    it("keeps grid-owned methods deferred even with a controller", () => {
+      const controller = makeController();
+      const { handle } = makeFormHandle();
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      expect(() => call(item.fetchData)()).toThrow("item.fetchData is not implemented yet");
+      expect(() => call(item.getElementValue)()).toThrow("item.getElementValue is not implemented yet");
+    });
+  });
+
+  describe("createFormProxy with a FieldController", () => {
+    it("hides an item by dBColumnName and exposes mutable items", () => {
+      const controller = makeController();
+      const { handle } = makeFormHandle({ currency: "USD" });
+      const form = createFormProxy(handle, PARAMETERS, controller);
+
+      call(form.hideItem)("c_currency_id");
+      expect(controller.setDisplayed).toHaveBeenCalledWith("currency", false);
+
+      call(call(form.getItem)("currency").setRequired)(false);
+      expect(controller.setRequired).toHaveBeenCalledWith("currency", false);
+    });
+
+    it("exposes getFields / getField / values and structural mutations", () => {
+      const controller = makeController();
+      const { handle } = makeFormHandle({ amount: 1, currency: "USD" });
+      const form = createFormProxy(handle, PARAMETERS, controller);
+
+      const fields = call(form.getFields)() as Array<{ name: string }>;
+      expect(fields.map((f) => f.name)).toEqual(["amount", "currency"]);
+      expect((call(form.getField)(0) as { name: string }).name).toBe("amount");
+      expect(form.values).toEqual({ amount: 1, currency: "USD" });
+
+      const field = { name: "extra", reference: "10" };
+      call(form.addField)(field);
+      expect(controller.addField).toHaveBeenCalledWith(field);
+
+      call(form.removeField)(1);
+      expect(controller.removeField).toHaveBeenCalledWith(1);
+
+      call(form.focusInItem)("amount");
+      expect(controller.focusField).toHaveBeenCalledWith("amount");
     });
   });
 });

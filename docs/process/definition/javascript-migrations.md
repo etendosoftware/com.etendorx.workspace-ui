@@ -166,15 +166,61 @@ on demand. The form is the SmartClient `DynamicForm` accessible at `view.theForm
 
 **Backend requirement.** None.
 
-**Coverage status.** PARTIAL. The current view-arg exposes none of these; mutation today happens
-through the `_dynamicParameters` and `_filterExpressions` return contract on the onLoad result
-([utils.ts:287-318](../../../packages/MainUI/utils/processes/definition/utils.ts#L287-L318)),
-which is a *declarative* path — the *imperative* form-item API is missing.
+**Coverage status.** DONE (form-item surface that has no later-step home; the grid handle and
+view back-pointers are deferred — see the scope note below). The imperative API is live on
+`view.theForm` / `getItem(name)`, delivered through a `FieldController` the modal injects into the
+parameter-change proxies; the declarative `_dynamicParameters` / `_filterExpressions` onLoad path is
+unchanged and complementary.
 
-**Unlocks.** All onLoad scripts that mutate the form, and all onChange scripts (parameter-level
-hooks rely heavily on cross-parameter mutation). Most relevant in §6: AddPayment, AddTransaction,
-FundsTransfer, FindTransaction, Aging Balance, processRecords family, ProductCharacteristics,
-PeriodControl.
+**Implementation notes (delivered).**
+
+- **`FieldController` bridge, proxies stay pure.** The classic surface lives on the `item` / `form`
+  proxies in [scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts).
+  Mutations delegate to a `FieldController` the modal owns
+  ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx));
+  it is threaded into the onChange runner
+  ([useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts)).
+  The proxies keep no React/state dependency: when no controller is injected (plain tests, and the
+  onGridLoad path for now) the classic methods stay deferred, so this change is **purely additive**.
+- **Reuses the existing reactive mechanisms — no selector change.** `setRequired` flips
+  `parameters[name].mandatory` (drives both the asterisk and the submit gate, which read it
+  directly); `setDisabled` / `show` / `hide` write `${name}.readonly` / `${name}.display` into a
+  `scriptLogicFields` store merged **last** into the modal's `logicFields` (read by the selector's
+  readonly/display memos, script wins over server defaults); `setValueMap` replaces
+  `parameters[name].refList` (the list selector re-renders its options). All flows ride code that
+  already existed, so `ProcessParameterSelector` is untouched.
+- **Reused helpers.** `setValueFromRecord` delegates to `updateSelectorValue` (writes the id,
+  `_data` and `$_identifier` keys, identical to the §4.10 `setSelectorValueFromRecord` action);
+  `addField` reuses `injectDynamicParameters`; `removeField` accepts a name or a positional index;
+  `clearValue` empties via the form handle. Small pure reducers (`withFlag` / `withMandatory` /
+  `withRefList` / `normalizeValueMap` / `addDynamicParameter` / `removeParameter`) live next to the
+  onLoad reducers in [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts) and
+  short-circuit to the same reference on a no-op to avoid needless renders.
+- **Scope boundary (capabilities owned by later steps are deferred).** `item.canvas` /
+  `item.canvas.viewGrid` / `item.canvas.markForRedraw` and `item.fetchData` (selector refetch — no
+  script-reachable handle today) belong to the embedded-grid step and stay deferred there;
+  `form.view` / `form.paramWindow` (reaching the hosting view) land with the `view`-completion step.
+  `onGridLoad` (WindowReferenceGrid) keeps its form methods deferred this step (no in-scope grid-load
+  script mutates the form); enabling it later is a one-line `createViewProxy({ controller })` change.
+- **Limitations.** `setValueMap` targets list / combo parameters whose options come from `refList`
+  (classic `valueMap` semantics); datasource-backed selects fetch their own options. `setRequired`
+  is fully enforced (asterisk + submit gate), not cosmetic — there is no separate react-hook-form
+  required rule to toggle. `focusInItem` is best-effort: a DOM lookup by field name (reliable for the
+  modal's selectors) with react-hook-form `setFocus` as fallback.
+- **Tests.**
+  [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts)
+  (controller delegation for every item/form method, value-from-record key writes, still-deferred
+  throws, no-controller back-compat),
+  [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts)
+  (the pure reducers + `normalizeValueMap` shapes),
+  [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx)
+  (a hook's `item.setRequired` / `form.hideItem` reach the controller; graceful degradation with no
+  controller).
+
+**Unlocks.** All onChange scripts that mutate sibling fields (toggle required / disabled /
+visibility, swap dropdown options, clear a value, set a value from a record, inject / remove fields,
+focus a field). Most relevant in §6: AddPayment, AddTransaction, FundsTransfer, FindTransaction,
+Aging Balance, processRecords family, ProductCharacteristics, PeriodControl.
 
 ---
 
@@ -1022,7 +1068,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 6. **[FE] §4.10 — Action JSON dispatcher.** ✅ **DONE.** A pure router `dispatchResponseAction(action, ctx)` ([responseActionDispatcher.ts](../../../packages/MainUI/components/ProcessModal/utils/responseActionDispatcher.ts)) covers every classic action type (`showMsgInProcessView`, `showMsgInView`, `openDirectTab`, `refreshGrid`, `refreshGridParameter`, `setSelectorValueFromRecord`, `smartclientSay`, `OBUIAPP_browseReport`, `OBUIAPP_downloadReport`, `custom`), fed by a React-free singleton store ([actionDispatcherStore.ts](../../../packages/MainUI/utils/processes/definition/actionDispatcherStore.ts)) that the modal registers handlers into ([useActionDispatchContext.ts](../../../packages/MainUI/components/ProcessModal/hooks/useActionDispatchContext.ts)). `OB.Utilities.Action.executeJSON` is registry-first then routes built-ins via dependency injection ([action.ts](../../../packages/MainUI/utils/ob/action.ts)); the onProcess return path also dispatches the non-message actions (excluding `message`/`openDirectTab`, kept on the existing flow). Reports use a token-authenticated fetch→Blob→open/download ([reportActions.ts](../../../packages/MainUI/utils/processes/definition/reportActions.ts)). See §4.10 implementation notes. Tests under `utils/ob/__tests__/`, `utils/processes/definition/__tests__/` and `components/ProcessModal/utils/__tests__/`.
 7. **[FE] §4.9 — `OB.RemoteCallManager.call` callback adapter.** ✅ **DONE.** React-free factory `createRemoteCallManager(deps)` ([remoteCallManager.ts](../../../packages/MainUI/utils/ob/remoteCallManager.ts)) wrapping the injected `callAction` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); emulates the classic `(response, data, request)` callback with `{ status: 0 }` on success / `{ status: -1 }` on transport failure (routed to `errorCallback` when provided), preserving `clientContext`. Tests in [remoteCallManager.test.ts](../../../packages/MainUI/utils/ob/__tests__/remoteCallManager.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.9 implementation notes. Unlocks every script that calls a server action handler.
 8. **[FE] §4.11 — Datasource façade.** ✅ **DONE.** React-free factory `createDatasourceManager(deps)` ([datasource.ts](../../../packages/MainUI/utils/ob/datasource.ts)) exposing `OB.Datasource.create(config)` → `{ fetchData, setCacheData }`, backed by the injected `callDatasource` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); entity resolved from `dataURL`, classic `(response, data, request)` callback with `{ status, totalRows }` (envelope status passed through, transport failure → `status: -1`), `setCacheData` for client-only datasources. Tests in [datasource.test.ts](../../../packages/MainUI/utils/ob/__tests__/datasource.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.11 implementation notes. Unlocks scripts that build ad-hoc datasources (ProductCharacteristics, AddPayment, Match Statement, createFromOrders).
-9. **[FE] §4.2 — Form-item full API.** Programmatic mutation surface on `view.theForm.getItem(name)`. Moderate; depends on react-hook-form primitives.
+9. **[FE] §4.2 — Form-item full API.** ✅ **DONE.** Imperative mutation surface on `view.theForm` / `getItem(name)` delivered through a `FieldController` the modal injects into the parameter-change proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts)): item `setRequired` / `setDisabled` / `show` / `hide` / `clearValue` / `setValueMap` / `getValueMap` / `setValueFromRecord` / `redraw`, and form `hideItem` / `getField` / `getFields` / `addField` / `removeField` / `focusInItem` / `values` / `markForRedraw`. Rides the existing reactive mechanisms (`parameters.mandatory`, the merged `logicFields`, `parameters.refList`) so `ProcessParameterSelector` is untouched; additive (no controller → methods stay deferred). Scope rule applied: `item.canvas` / `viewGrid` / `item.fetchData` defer to step 12 (§4.3), `form.view` / `paramWindow` to step 11 (§4.1). Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx). See §4.2 implementation notes.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** Evaluate the body once into a module scope; compile each hook within that scope; auto-vivify under `OB.<Module>.<Process>`. Straightforward but invasive (touches every hook compile site).
 11. **[FE] §4.1 — `view` object completion.** Expose the remaining view properties / methods (`popupButtons`, `cancelButton`, `parentWindow`, `parentElement`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `refresh`, `getView(tabId)`, `sourceView`, `callerField`). Large; some properties (footer-button programmability) require new modal-chrome plumbing.
 12. **[FE] §4.3 — Embedded interactive grid.** Programmable grid surface on `view.theForm.getItem('<param>').canvas.viewGrid` (selection, edit values, datasource swap, filter API, lifecycle callbacks). Large. Blocker for Match Statement / AddPayment / AddTransaction full ports.

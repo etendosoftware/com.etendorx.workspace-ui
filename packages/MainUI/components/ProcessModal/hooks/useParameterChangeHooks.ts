@@ -24,6 +24,7 @@ import {
   createFormHandle,
   createItemProxy,
   createViewProxy,
+  type FieldController,
   type MessageBarHandle,
 } from "@/utils/processes/definition/scriptProxies";
 
@@ -43,6 +44,8 @@ export interface UseParameterChangeHooksParams {
   context: Record<string, unknown>;
   /** Backing for `view.messageBar`. */
   messageBar: MessageBarHandle;
+  /** Bridge that makes the form-item mutation API (`setRequired` / `show` / …) live. */
+  fieldController?: FieldController;
 }
 
 /**
@@ -61,6 +64,7 @@ export function useParameterChangeHooks({
   parameters,
   context,
   messageBar,
+  fieldController,
 }: UseParameterChangeHooksParams): void {
   const compiledHooks = useMemo(() => {
     const map = new Map<string, CompiledParameterHook>();
@@ -87,8 +91,8 @@ export function useParameterChangeHooks({
     const runHook = (name: string, hook: CompiledParameterHook) => {
       firing.add(name);
       try {
-        const item = createItemProxy(formHandle, name);
-        const view = createViewProxy(formHandle, parameters, { messageBar });
+        const item = createItemProxy(formHandle, name, {}, fieldController);
+        const view = createViewProxy(formHandle, parameters, { messageBar, controller: fieldController });
         hook(item, view, view.theForm, null);
       } catch (error) {
         logger.error(`[useParameterChangeHooks] onParameterChange failed for "${name}"`, error);
@@ -134,5 +138,5 @@ export function useParameterChangeHooks({
       }
       timers.clear();
     };
-  }, [compiledHooks, form, parameters, messageBar]);
+  }, [compiledHooks, form, parameters, messageBar, fieldController]);
 }

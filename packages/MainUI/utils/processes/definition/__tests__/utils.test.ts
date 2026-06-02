@@ -9,6 +9,12 @@ import {
   injectDynamicParameters,
   applyStaticParameterValues,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
@@ -456,6 +462,100 @@ describe("Process Definition Utils", () => {
 
       const result = applyStaticParameterValues(param, "a");
       expect(result).not.toBe(param);
+    });
+  });
+
+  describe("form-item reducers", () => {
+    const params = (): ParametersMap =>
+      ({
+        amount: { name: "amount", mandatory: false, refList: [] },
+        currency: { name: "currency", mandatory: true, refList: [{ value: "USD", label: "USD" }] },
+      }) as unknown as ParametersMap;
+
+    describe("withFlag", () => {
+      it("sets a flag and returns a new reference", () => {
+        const prev = { "a.display": true };
+        const next = withFlag(prev, "a.readonly", true);
+        expect(next).toEqual({ "a.display": true, "a.readonly": true });
+        expect(next).not.toBe(prev);
+      });
+
+      it("short-circuits to the same reference when unchanged", () => {
+        const prev = { "a.readonly": true };
+        expect(withFlag(prev, "a.readonly", true)).toBe(prev);
+      });
+    });
+
+    describe("withMandatory", () => {
+      it("toggles mandatory immutably", () => {
+        const prev = params();
+        const next = withMandatory(prev, "amount", true);
+        expect(next.amount.mandatory).toBe(true);
+        expect(next).not.toBe(prev);
+        expect(prev.amount.mandatory).toBe(false);
+      });
+
+      it("short-circuits when missing or unchanged", () => {
+        const prev = params();
+        expect(withMandatory(prev, "unknown", true)).toBe(prev);
+        expect(withMandatory(prev, "currency", true)).toBe(prev);
+      });
+    });
+
+    describe("withRefList", () => {
+      it("replaces refList immutably", () => {
+        const prev = params();
+        const next = withRefList(prev, "amount", [{ id: "x", value: "x", label: "X" }]);
+        expect(next.amount.refList).toEqual([{ id: "x", value: "x", label: "X" }]);
+        expect(next).not.toBe(prev);
+      });
+
+      it("short-circuits when the parameter is missing", () => {
+        const prev = params();
+        expect(withRefList(prev, "unknown", [])).toBe(prev);
+      });
+    });
+
+    describe("normalizeValueMap", () => {
+      it("maps an object to ListOption[]", () => {
+        expect(normalizeValueMap({ a: "A", b: "B" })).toEqual([
+          { id: "a", value: "a", label: "A" },
+          { id: "b", value: "b", label: "B" },
+        ]);
+      });
+
+      it("normalizes an array of strings and of option objects", () => {
+        expect(normalizeValueMap(["x"])).toEqual([{ id: "x", value: "x", label: "x" }]);
+        expect(normalizeValueMap([{ value: "y", label: "Y" }])).toEqual([{ id: "y", value: "y", label: "Y" }]);
+      });
+
+      it("returns an empty list for nullish / primitive input", () => {
+        expect(normalizeValueMap(null)).toEqual([]);
+        expect(normalizeValueMap(undefined)).toEqual([]);
+        expect(normalizeValueMap(42)).toEqual([]);
+      });
+    });
+
+    describe("addDynamicParameter / removeParameter", () => {
+      it("adds a dynamic parameter immutably", () => {
+        const prev = params();
+        const next = addDynamicParameter(prev, { name: "extra", reference: "10" });
+        expect(next.extra).toBeDefined();
+        expect(next).not.toBe(prev);
+        expect(prev.extra).toBeUndefined();
+      });
+
+      it("removes by name and by positional index", () => {
+        const prev = params();
+        expect(removeParameter(prev, "amount").amount).toBeUndefined();
+        expect(removeParameter(prev, 1).currency).toBeUndefined();
+      });
+
+      it("short-circuits on unknown or out-of-range targets", () => {
+        const prev = params();
+        expect(removeParameter(prev, "unknown")).toBe(prev);
+        expect(removeParameter(prev, 9)).toBe(prev);
+      });
     });
   });
 

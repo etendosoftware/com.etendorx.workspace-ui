@@ -29,7 +29,7 @@
  *
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { FormProvider, useForm, useFormState } from "react-hook-form";
+import { FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -54,6 +54,12 @@ import {
   buildProcessScriptContext,
   applyGridSelection,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
   evaluateParameterDefaults,
   isBulkCompletionProcess,
   DEFAULT_BULK_COMPLETION_ONLOAD,
@@ -102,7 +108,7 @@ import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
-import { createFormHandle } from "@/utils/processes/definition/scriptProxies";
+import { createFormHandle, type FieldController } from "@/utils/processes/definition/scriptProxies";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
@@ -197,6 +203,27 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
   }
   return isDisplayed;
 };
+
+/**
+ * Best-effort keyboard focus for a migrated `form.focusInItem(name)` call. The
+ * modal's selectors render a real input with a `name` attribute, so a DOM lookup
+ * is the reliable path; react-hook-form's `setFocus` is the fallback for inputs
+ * that forward a ref.
+ */
+function focusFormField(form: UseFormReturn, name: string): void {
+  if (typeof document !== "undefined") {
+    const element = document.querySelector(`[name="${name}"]`);
+    if (element instanceof HTMLElement) {
+      element.focus();
+      return;
+    }
+  }
+  try {
+    form.setFocus(name as never);
+  } catch {
+    // Best-effort: nothing focusable matched the requested item.
+  }
+}
 
 // ---------------------------------------------------------------------------
 // ProcessDefinitionModalContent
@@ -471,15 +498,22 @@ function ProcessDefinitionModalContent({
   // These take precedence over the static initialization values.
   const [calloutLogicFields, setCalloutLogicFields] = useState<Record<string, boolean>>({});
 
-  // Combined view: static defaults + dynamic callout updates (callout wins on conflict)
+  // Display / readonly flags toggled imperatively by migrated scripts (item.show /
+  // hide / setDisabled). Merged last so a script's explicit choice wins.
+  const [scriptLogicFields, setScriptLogicFields] = useState<Record<string, boolean>>({});
+
+  // Combined view: static defaults < dynamic callout updates < script overrides.
   const logicFields = useMemo(
-    () => ({ ...staticLogicFields, ...calloutLogicFields }),
-    [staticLogicFields, calloutLogicFields]
+    () => ({ ...staticLogicFields, ...calloutLogicFields, ...scriptLogicFields }),
+    [staticLogicFields, calloutLogicFields, scriptLogicFields]
   );
 
-  // Reset callout logic fields when the modal closes
+  // Reset callout + script logic fields when the modal closes
   useEffect(() => {
-    if (!open) setCalloutLogicFields({});
+    if (!open) {
+      setCalloutLogicFields({});
+      setScriptLogicFields({});
+    }
   }, [open]);
 
   const isBulkCompletion = useMemo(
@@ -599,9 +633,37 @@ function ProcessDefinitionModalContent({
   // WindowReferenceGrid. Both share the process-level hooks' script context.
   const scriptHookContext = useMemo(() => ({ Metadata, ...processScriptContext }), [processScriptContext]);
   const scriptFormHandle = useMemo(() => createFormHandle(form), [form]);
+
+  // Live `parameters` snapshot for the controller's synchronous reads (getValueMap),
+  // avoiding a stale closure without rebuilding the controller on every change.
+  const parametersRef = useRef(parameters);
+  useEffect(() => {
+    parametersRef.current = parameters;
+  }, [parameters]);
+
+  // Imperative bridge backing the form-item API (item.setRequired / setDisabled /
+  // show / hide / setValueMap / form.addField / ...). Built from stable setters,
+  // refs and the form instance, so its identity is stable and the onChange
+  // subscription below never re-subscribes.
+  const fieldController = useMemo<FieldController>(
+    () => ({
+      setRequired: (name, required) => setParameters((prev) => withMandatory(prev, name, required)),
+      setDisabled: (name, disabled) => setScriptLogicFields((prev) => withFlag(prev, `${name}.readonly`, disabled)),
+      setDisplayed: (name, displayed) => setScriptLogicFields((prev) => withFlag(prev, `${name}.display`, displayed)),
+      setValueMap: (name, map) => setParameters((prev) => withRefList(prev, name, normalizeValueMap(map))),
+      getValueMap: (name) => parametersRef.current[name]?.refList ?? [],
+      addField: (field) => setParameters((prev) => addDynamicParameter(prev, field)),
+      removeField: (target) => setParameters((prev) => removeParameter(prev, target)),
+      focusField: (name) => focusFormField(form, name),
+    }),
+    [form]
+  );
+
   // `view.messageBar` / `messageBar` is the in-modal banner (rendered by
   // <ProcessMessageBar/>); the same singleton handle reaches every hook.
-  useParameterChangeHooks({ form, parameters, context: scriptHookContext, messageBar });
+  // onGridLoad (WindowReferenceGrid) intentionally keeps its form methods
+  // deferred this step; only onChange receives the imperative controller.
+  useParameterChangeHooks({ form, parameters, context: scriptHookContext, messageBar, fieldController });
 
   const gridLoadHooks = useMemo(() => {
     const map = new Map<string, CompiledParameterHook | null>();

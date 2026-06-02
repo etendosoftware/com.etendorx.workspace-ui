@@ -16,7 +16,7 @@
  */
 
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
@@ -310,6 +310,91 @@ export function applyStaticParameterValues(param: ProcessParameter, rawValues: u
     updated.refList = updated.refList.filter((opt) => newOptions.includes(opt.value));
   }
   return updated;
+}
+
+/**
+ * Sets a boolean UI flag in an immutable flag map. Short-circuits to the same
+ * reference when the value is unchanged, so a no-op never triggers a re-render.
+ */
+export function withFlag(prev: Record<string, boolean>, key: string, value: boolean): Record<string, boolean> {
+  if (prev[key] === value) return prev;
+  return { ...prev, [key]: value };
+}
+
+/**
+ * Returns the parameters map with `name`'s `mandatory` flag set. Short-circuits
+ * to the same reference when the parameter is missing or already at that value.
+ */
+export function withMandatory(prev: ParametersMap, name: string, required: boolean): ParametersMap {
+  const parameter = prev[name];
+  if (!parameter || parameter.mandatory === required) return prev;
+  const updated = { ...parameter };
+  updated.mandatory = required;
+  return { ...prev, [name]: updated };
+}
+
+/**
+ * Returns the parameters map with `name`'s `refList` (dropdown options) replaced.
+ * Short-circuits to the same reference when the parameter is missing.
+ */
+export function withRefList(prev: ParametersMap, name: string, refList: ListOption[]): ParametersMap {
+  const parameter = prev[name];
+  if (!parameter) return prev;
+  const updated = { ...parameter };
+  updated.refList = refList;
+  return { ...prev, [name]: updated };
+}
+
+/** Normalizes a single classic value-map entry into a `ListOption`. */
+function toListOption(entry: unknown): ListOption {
+  if (typeof entry === "string") {
+    return { id: entry, value: entry, label: entry };
+  }
+  const option = entry as Partial<ListOption>;
+  const value = option.value ?? option.id ?? "";
+  return { id: option.id ?? value, value, label: option.label ?? String(value) };
+}
+
+/**
+ * Normalizes a classic dropdown value-map into the new-UI `ListOption[]`.
+ * Accepts an array (of strings or option-like objects) or a plain `{ id: label }`
+ * object; anything else (null / undefined / primitive) yields an empty list.
+ */
+export function normalizeValueMap(map: unknown): ListOption[] {
+  if (Array.isArray(map)) {
+    return map.map(toListOption);
+  }
+  if (map && typeof map === "object") {
+    return Object.entries(map as Record<string, unknown>).map(([key, label]) => ({
+      id: key,
+      value: key,
+      label: String(label),
+    }));
+  }
+  return [];
+}
+
+/**
+ * Returns the parameters map with a dynamically-injected parameter added,
+ * reusing the same mapping as the onLoad `_dynamicParameters` contract.
+ */
+export function addDynamicParameter(prev: ParametersMap, field: DynamicParameter): ParametersMap {
+  const next = { ...prev };
+  injectDynamicParameters([field], next);
+  return next;
+}
+
+/**
+ * Returns the parameters map with one parameter removed. `target` may be the
+ * parameter name or a numeric position (classic `removeField(index)`); an
+ * out-of-range or unknown target short-circuits to the same reference.
+ */
+export function removeParameter(prev: ParametersMap, target: number | string): ParametersMap {
+  const name = typeof target === "number" ? Object.keys(prev)[target] : target;
+  if (!name || !prev[name]) return prev;
+  const next = { ...prev };
+  delete next[name];
+  return next;
 }
 
 /** Keys from the onLoad result that are handled separately and must not be treated as parameter values */
