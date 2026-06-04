@@ -168,6 +168,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         readOnlyLogicExpression: column.readOnlyLogicExpression,
         isReferencedWindowAccessible: column.isReferencedWindowAccessible,
         isAuditField: column.isAuditField,
+        isSelectionColumn: column.isSelectionColumn,
         accessorFn: (v: Record<string, unknown>) => {
           const reference = getFieldReference(column.column?.reference);
 

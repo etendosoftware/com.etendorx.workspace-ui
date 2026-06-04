@@ -29,10 +29,11 @@ export function useSelectorFilterHandlers({
   } = useColumnFilters({ columns: datasourceColumns });
 
   const handleTextFilterChange = useCallback(
-    (columnId: string, filterValue: string) => {
+    (columnId: string, filterValue: string | { text: string; operator: string }) => {
+      const textValue = typeof filterValue === "object" ? filterValue.text : filterValue;
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
-        return [...filtered, { id: columnId, value: filterValue?.trim() || "" }];
+        return [...filtered, { id: columnId, value: textValue?.trim() ? filterValue : "" }];
       });
     },
     [setColumnFilters]

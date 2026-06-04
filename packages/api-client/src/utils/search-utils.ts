@@ -17,7 +17,7 @@
 
 import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
 import type { ColumnFilterState } from "./column-filter-utils";
-import { ColumnFilterUtils } from "./column-filter-utils";
+import { ColumnFilterUtils, isTextFilterValue } from "./column-filter-utils";
 
 type FormattedValue = string | number | null;
 
@@ -841,6 +841,12 @@ export class LegacyColumnFilterUtils {
   }
 
   private static processFilterValue(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    if (isTextFilterValue(value)) {
+      const trimmed = value.text.trim();
+      if (!trimmed) return [];
+      return [{ fieldName, operator: value.operator, value: trimmed }];
+    }
+
     if (LegacyColumnFilterUtils.isRangeObject(value)) {
       return LegacyColumnFilterUtils.handleRangeFilter(
         fieldName,

@@ -162,7 +162,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
       await navigateToFinancialAccount(page);
 
       // ── Step 8: Search and select Spain Cashbook ──────────────────────────────
-      const filterName = page.locator('input.w-full[placeholder="Filter Name..."]');
+      const filterName = page.locator('input[placeholder="Filter Name..."]');
       await filterName.waitFor({ state: "visible", timeout: 30_000 });
       await filterName.clear();
       await filterName.fill("Spain Cashbook");
@@ -222,7 +222,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
       await navigateToPaymentOut(page);
 
       // Filter by payment number
-      const filterDocNo = page.locator('input.w-full[placeholder="Filter Document No...."]:visible');
+      const filterDocNo = page.locator('input[placeholder="Filter Document No...."]:visible');
       await filterDocNo.waitFor({ state: "visible", timeout: 10_000 });
       await filterDocNo.clear();
       await filterDocNo.fill(paymentNumber);

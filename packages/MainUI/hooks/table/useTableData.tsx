@@ -237,9 +237,9 @@ export const useTableData = ({
       // Always use columnName as the filter ID for consistency
       const filterKey = column?.columnName || columnId;
 
-      // For date filters, pass the value as a string (not as FilterOption array)
-      // This preserves range filter detection (e.g., "2025-09-29 - 2025-09-30")
-      const mrtFilter = filterValue?.trim()
+      const hasContent = Boolean(filterValue?.trim());
+
+      const mrtFilter = hasContent
         ? {
             id: filterKey,
             value: filterValue,
