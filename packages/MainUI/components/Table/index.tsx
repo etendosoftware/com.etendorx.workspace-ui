@@ -2603,12 +2603,14 @@ const DynamicTable = ({
       }
 
       // Conditional styling for document status
-      const docStatus = (record as Record<string, unknown>).docStatus as string | undefined;
-      const isActive = (record as Record<string, unknown>).active;
-      if (docStatus === "VO") {
-        rowClassName = [rowClassName, "table-row-voided"].filter(Boolean).join(" ");
+      const VOIDED_STATUS = "VO";
+      const recordData = record as Record<string, unknown> | undefined;
+      const docStatus = recordData?.docStatus as string | undefined;
+      const isActive = recordData?.active;
+      if (docStatus === VOIDED_STATUS) {
+        rowClassName = `${rowClassName} table-row-voided`.trim();
       } else if (isActive === false || isActive === "N") {
-        rowClassName = [rowClassName, "table-row-inactive"].filter(Boolean).join(" ");
+        rowClassName = `${rowClassName} table-row-inactive`.trim();
       }
 
       // Determine drop target overlay styling for drag and drop interactions
