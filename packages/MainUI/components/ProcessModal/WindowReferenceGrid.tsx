@@ -1114,12 +1114,11 @@ const WindowReferenceGrid = ({
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
   const handleDateTextFilterChange = useCallback(
-    (columnId: string, filterValue: string | { text: string; operator: string }) => {
+    (columnId: string, filterValue: string) => {
       const column = stableRawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
       const filterKey = column?.id || columnId;
 
-      const textValue = typeof filterValue === "object" ? filterValue.text : filterValue;
-      const mrtFilter = textValue?.trim() ? { id: filterKey, value: filterValue } : null;
+      const mrtFilter = filterValue?.trim() ? { id: filterKey, value: filterValue } : null;
 
       setAppliedTableFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== filterKey);

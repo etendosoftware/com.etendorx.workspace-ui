@@ -3067,6 +3067,8 @@ const DynamicTable = ({
         selectedRecords: t("table.counter.selectedRecords"),
         recordsLoaded: t("table.counter.recordsLoaded"),
       };
+      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+      // that Etendo Classic shows in the quick-filter bar above the grid.
       const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
       return (
         <>

@@ -43,7 +43,7 @@ function buildMinimalColumn(col: SelectorColumn, filterType: FilterType): Column
 }
 
 interface BuildSelectorColumnDefsOptions {
-  onTextFilterChange: (columnId: string, value: string | { text: string; operator: string }) => void;
+  onTextFilterChange: (columnId: string, value: string) => void;
   onBooleanFilterChange: (columnId: string, selectedOptions: FilterOption[]) => void;
   onDropdownFilterChange?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
