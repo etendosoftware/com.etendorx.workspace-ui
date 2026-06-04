@@ -47,6 +47,7 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
 
 interface UseTableDataParams {
@@ -415,9 +416,9 @@ export const useTableData = ({
 
   // Helper to find parent field name
   const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
-    // SR (Single Record) tabs share the same entity/record as the parent.
-    // Always filter by "id" regardless of parentColumns content.
-    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+    // True 1:1 SR tabs share the same PK as the parent — filter by "id".
+    // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab)) {
       return { fieldName: "id", directReference: true };
     }
 

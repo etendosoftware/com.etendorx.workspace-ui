@@ -16,6 +16,7 @@
  */
 
 import { type Tab, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 export interface BaseCriteriaOptions {
   tab: Tab;
@@ -97,9 +98,9 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   }
 
   if (parentId && parentId !== "") {
-    // SR tabs share the same entity/record as the parent — filter by id directly.
-    // Unlike normal child tabs, fieldName="id" IS correct here because child.id === parent.id.
-    if (tab.uIPattern === UIPattern.EDIT_ONLY) {
+    // True 1:1 SR tabs share the same PK as the parent — filter by id directly.
+    // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && isSrOneToOneExtension(tab)) {
       return [{ fieldName: "id", value: parentId as EntityValue, operator: "equals" }];
     }
 
