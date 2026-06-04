@@ -55,6 +55,7 @@ import {
   createFormHandle,
   createViewProxy,
   type FieldController,
+  type GridResolver,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
@@ -139,6 +140,8 @@ export interface UseProcessExecutionParams {
   viewController?: ViewController;
   viewData?: ViewData;
   fieldController?: FieldController;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside onProcess. */
+  gridResolver?: GridResolver;
   // biome-ignore lint/suspicious/noExplicitAny: button shape varies by process type
   button: any;
   parameters: Record<string, ProcessParameter>;
@@ -209,6 +212,7 @@ export function useProcessExecution({
   viewController,
   viewData,
   fieldController,
+  gridResolver,
   button,
   parameters,
   form,
@@ -677,6 +681,7 @@ export function useProcessExecution({
           messageBar,
           controller: fieldController,
           viewController,
+          gridResolver,
           data: viewData,
           hookData: {
             _buttonValue: actionValue || "DONE",
@@ -759,6 +764,7 @@ export function useProcessExecution({
       viewController,
       viewData,
       fieldController,
+      gridResolver,
       resolveDocAction,
       availableButtons,
       setResult,

@@ -302,7 +302,63 @@ reached via `view.theForm.getItem('<paramName>').canvas.viewGrid`.
 **Backend requirement.** None. The grid datasource configuration is already covered by today's
 process-definition payload.
 
-**Coverage status.** MISSING. WindowReferenceGrid renders rows but exposes no programmable surface.
+**Coverage status.** DONE (programmable surface delivered; the filter-editor methods and a couple of
+lifecycle callbacks are best-effort — see the limitations below). The grid handle is live on
+`view.theForm.getItem('<paramName>').canvas.viewGrid` and as the first argument of `onGridLoad`, both
+resolving to the same object.
+
+**Implementation notes (delivered).**
+
+- **`GridController` bridge, one handle reached two ways.** A per-grid `GridController`
+  ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) mirrors the
+  `FieldController` / `ViewController`: each embedded grid builds one and registers it with the modal,
+  which keeps a `Map<paramName, GridController>` and exposes a `GridResolver`. `createGridProxy(state,
+  controller?)` is read-only over the snapshot when no controller is present (the plain `onGridLoad`
+  arg and unit tests) and fully live when one is — so the grid the script reaches via
+  `view.theForm.getItem('<param>').canvas.viewGrid` and the grid handed to `onGridLoad` are the **same
+  live object**. Without a controller every mutation method still throws a traceable "not implemented
+  yet", so the change is purely additive.
+- **The controller reuses the grid's own handlers — script == user.** `createEmbeddedGridController`
+  ([WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx))
+  is a pure adapter over live getters: selection routes through `handleRowSelection` /
+  `handleClearSelections`, edits through `handleRecordChange`, refetch through the datasource
+  `refetch`, and rows/criteria/fields are read live each call. A script `setEditValue` / `selectRecord`
+  therefore follows the exact same path as a user interaction.
+- **Edit-value overlay.** `setEditValue(rowIndex, col, value)` resolves the row by index and merges the
+  change into the loaded records via `handleRecordChange`; `getEditedCell` / `getEditValues` read it
+  back from the same records. This is decoupled from the in-cell editing widget (which today only edits
+  the create-row), so scripts can read/write any row's values.
+- **Chained lifecycle callbacks.** `grid.dataArrived = fn` / `grid.selectionChanged = fn` are
+  assignable properties routed to multi-subscriber sinks on the controller (every subscriber is kept,
+  de-duped by reference, and fired): `dataArrived` on each datasource payload, `selectionChanged` on
+  each selection change.
+- **Criteria helper.** `addSelectedIDsToCriteria` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts))
+  is a pure reducer that merges the live selection ids into an advanced-criteria object as an
+  `id inSet (…)` sub-criterion (no-op when there is nothing to add).
+- **`onGridLoad` upgraded.** The `view.theForm` inside `onGridLoad` now receives the `FieldController`
+  and the `GridResolver` too (previously deferred), so form-item mutations and the grid handle both
+  work from a grid-load body.
+- **Breaking-change analysis.** Zero migrated `onGridLoad` bodies exist in the DB, and all grid methods
+  + `item.canvas` were throwing before, so nothing migrated invoked them successfully — the change is
+  strictly additive. A partially-migrated body that called `canvas.viewGrid` was throwing-and-caught
+  and now becomes live (the intended effect).
+- **Limitations.** `filterByEditor` / `setFilterEditorCriteria` stay deferred (the new grid applies
+  filters reactively and has no SmartClient filter-editor handle to drive); `removeRecordClick` and
+  `dataProperties.transformData` are not wired (no equivalent slot in the new render model). None of
+  these is owned by a later step; they are documented gaps, not regressions.
+- **Tests.**
+  [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts)
+  (live grid-method delegation, the still-deferred filter-editor methods, `item.canvas` resolution via
+  `gridResolver`, callback routing, back-compat throws),
+  [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts)
+  (`addSelectedIDsToCriteria`),
+  [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx)
+  (`createEmbeddedGridController`: reads, selection/edit routing, criteria + chained subscribers),
+  [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx)
+  (an onChange reaching `view.theForm.getItem(...).canvas.viewGrid`).
+
+**Deferred to later steps.** Per-row component plugin → step 13 (§4.4); nested-process modal +
+`view.openProcess` → step 14 (§4.5).
 
 **Unlocks.** Match Statement, AddPayment, AddTransaction, Find Transactions, Add Credit Payments,
 Add Invoices, Select Invoices and Orders, Select Payments Pick and Edit, Service Order Line
@@ -1160,7 +1216,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 9. **[FE] §4.2 — Form-item full API.** ✅ **DONE.** Imperative mutation surface on `view.theForm` / `getItem(name)` delivered through a `FieldController` the modal injects into the parameter-change proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts)): item `setRequired` / `setDisabled` / `show` / `hide` / `clearValue` / `setValueMap` / `getValueMap` / `setValueFromRecord` / `redraw`, and form `hideItem` / `getField` / `getFields` / `addField` / `removeField` / `focusInItem` / `values` / `markForRedraw`. Rides the existing reactive mechanisms (`parameters.mandatory`, the merged `logicFields`, `parameters.refList`) so `ProcessParameterSelector` is untouched; additive (no controller → methods stay deferred). Scope rule applied: `item.canvas` / `viewGrid` / `item.fetchData` defer to step 12 (§4.3), `form.view` / `paramWindow` to step 11 (§4.1). Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx). See §4.2 implementation notes.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** ✅ **DONE.** Body classified per §9.6 and evaluated once into a module scope (`moduleScope.ts`); the resulting helpers are spread into a single shared `scriptHookContext` consumed by all five hooks; `OB.<Module>.<Process>` access works via the body's own namespace self-registration on the shared shim. DSL bodies keep their existing path unchanged. See [moduleScope.ts](../../../packages/MainUI/utils/processes/definition/moduleScope.ts) + [tests](../../../packages/MainUI/utils/processes/definition/__tests__/moduleScope.test.ts).
 11. **[FE] §4.1 — `view` object completion.** ✅ **DONE.** One canonical `view` ([createViewProxy](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) is reached uniformly as the second argument of every hook — positionally for `onChange`/`onGridLoad`, and as the second arg of `onLoad`/`onProcess` ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts)) with the legacy data fields merged onto it (additive — verified against the 12 migrated `onLoad`/`onProcess` and 3 `onChange` bodies in the live DB). Read-only data (`windowId`, `callerField`, `parentWindow`, `sourceView`, `activeView`, `getContextInfo`, `getView`) is always present; lifecycle actions (`refresh`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `selectAllRecords`, `getSelection`) and footer chrome (`popupButtons`, `cancelButton`, the close `X`) delegate to a `ViewController` the modal owns (mirror of the `FieldController`), via a `scriptButtonState` store for the footer. Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx), [useProcessExecution.onProcessView.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.onProcessView.test.tsx). See §4.1 implementation notes. **Deferred to step 14 (§4.5):** `view.openProcess` / `standardWindow.openProcess` and the nested-popup `callerField` (still throwing).
-12. **[FE] §4.3 — Embedded interactive grid.** Programmable grid surface on `view.theForm.getItem('<param>').canvas.viewGrid` (selection, edit values, datasource swap, filter API, lifecycle callbacks). Large. Blocker for Match Statement / AddPayment / AddTransaction full ports.
+12. **[FE] §4.3 — Embedded interactive grid.** ✅ **DONE.** Programmable grid handle on `view.theForm.getItem('<param>').canvas.viewGrid` (and as the first arg of `onGridLoad`), both resolving to one live object via a per-grid `GridController` the modal registers (mirror of `FieldController`/`ViewController`). Live surface: selection (`getSelectedRecords`/`select`/`deselect`/`selectSingleRecord`/`deselectAll`/`userSelectAll`), row access (`getRecord`/`getRecordIndex`/`getEditedRecord`/`getTotalRows`/`data.*`), edit-value overlay (`setEditValue`/`getEditValues`/`getEditedCell`), data/lifecycle (`invalidateCache`/`fetchData`), criteria (`getCriteria`/`addSelectedIDsToCriteria`), `getFieldByColumnName`, and chained `dataArrived`/`selectionChanged` callbacks — all reusing the grid's existing handlers ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx), [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts), [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Additive (0 onGridLoad bodies in DB; methods previously threw). `filterByEditor`/`setFilterEditorCriteria`/`transformData`/`removeRecordClick` are documented best-effort gaps. Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx). See §4.3 implementation notes. Unblocks Match Statement / AddPayment / AddTransaction grid manipulation.
 13. **[FE] §4.4 — Per-row grid plugin.** Declarative row-action registration keyed by `(processId, parameterId)`. Depends on step 12.
 14. **[FE] §4.5 — Nested-process modal stack.** Modal stack + `view.openProcess(params)` + auto-fire of parent's `onRefreshFunction` on child close. Depends on step 12 (the canonical case launches a nested process from a row component).
 15. **[FE/BE] Bug — a process that carries `etmetaOnload` is shown as a multi-parameter form even when classic renders a single field.** ⚠️ **PENDING — pre-existing bug, not introduced by §4.13** (confirmed during §4.13 testing: the defect reproduces independently of the shared-module-scope wiring). **Where it was seen.** The "Bulk Completion" button (field `EM_ETBLKC_Bulkcompletion` / `798183D32B024B7BA686C75122375798`) bound to `OBUIAPP_Process` "Process Invoices" (`272C8D38EF3245BF882E623CE92AB4E7`, `com.smf.jobs.defaults.ProcessInvoices`). **Symptom.** When the process payload carries a value in `etmetaOnload`, it *also* arrives with a populated `parameters` set (`DocAction`, `Void Date`, `Void Accounting Date`, `Supplier Reference`) and the new modal renders the full parameter form; when `etmetaOnload` is `null` the payload arrives with `parameters: {}` and the modal shows a single field. Compare the two captured payloads: [bulk-completion-with-on-load.json](../../../../bulk-completion/bulk-completion-with-on-load.json) vs [bulk-completion-without-on-load.json](../../../../bulk-completion/bulk-completion-without-on-load.json). **Expected.** Classic shows only the single button/field for this process — it has **no** legacy "On Load" function for the old UI — so the migrated modal must not surface a parameter form here; it should match the classic single-field behaviour regardless of whether `etmetaOnload` is set. **To investigate (after the capability steps).** Why `etmetaOnload` presence correlates with a populated `parameters` payload (BE serialization), and where the modal decides between the single-field button flow and the full parameter-form flow (FE) — then align the new UI with classic. **Do not fix now**; tracked for the end of the migration.

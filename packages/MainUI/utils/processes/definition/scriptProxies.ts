@@ -118,6 +118,48 @@ export interface ViewController {
   setCloseHidden: (hidden: boolean) => void;
 }
 
+/**
+ * Per-grid bridge a single embedded grid (`WindowReferenceGrid`) exposes so the
+ * `viewGrid` proxy methods become live. Mirrors `FieldController` /
+ * `ViewController`: absent in plain tests (and the read-only `onGridLoad` path),
+ * where the corresponding classic methods stay deferred. Keeps the grid proxy a
+ * pure adapter with no React dependency. The modal registers one controller per
+ * grid parameter and the proxies reach it through a `GridResolver`.
+ */
+export interface GridController {
+  // Selection
+  getSelectedRecords: () => EntityData[];
+  selectRecord: (index: number) => void;
+  deselectRecord: (index: number) => void;
+  selectSingleRecord: (record: EntityData) => void;
+  deselectAllRecords: () => void;
+  userSelectAllRecords: () => void;
+  // Row access
+  getRows: () => EntityData[];
+  getRecord: (index: number) => EntityData | undefined;
+  getRecordIndex: (record: EntityData) => number;
+  getEditedRecord: (index: number) => EntityData | undefined;
+  getTotalRows: () => number;
+  // Edit values (overlay merged into the loaded rows)
+  setEditValue: (rowIndex: number, colName: string, value: unknown) => void;
+  getEditValues: (rowIndex: number) => Record<string, unknown>;
+  getEditedCell: (rowIndex: number, colName: string) => unknown;
+  // Data / lifecycle
+  invalidateCache: () => void;
+  fetchData: (criteria?: unknown) => void;
+  // Criteria
+  getCriteria: () => unknown;
+  addSelectedIDsToCriteria: (criteria: unknown, preserveSelected?: boolean) => unknown;
+  // Column metadata
+  getFieldByColumnName: (colName: string) => unknown;
+  // Lifecycle callbacks (chained: every subscriber is kept and fired)
+  onDataArrived: (fn: (rows: EntityData[]) => void) => void;
+  onSelectionChanged: (fn: (selection: EntityData[]) => void) => void;
+}
+
+/** Resolves the live `GridController` for a parameter name (undefined when none). */
+export type GridResolver = (paramName: string) => GridController | undefined;
+
 /** Identity of the field/button that launched the process (`view.callerField`). */
 export interface CallerField extends Record<string, unknown> {
   id?: string;
@@ -144,10 +186,18 @@ export interface ViewData {
 // Proxy shapes
 // ---------------------------------------------------------------------------
 
+/** Underlying widget handle of a form item; `viewGrid` is the embedded grid. */
+export interface CanvasProxy extends Record<string, unknown> {
+  viewGrid?: GridProxy;
+  markForRedraw: () => void;
+}
+
 export interface ItemProxy extends Record<string, unknown> {
   name: string;
   getValue: () => unknown;
   setValue: (value: unknown) => void;
+  /** Live only for grid parameters (when a `GridResolver` is injected). */
+  canvas?: CanvasProxy;
 }
 
 export interface FormProxy extends Record<string, unknown> {
@@ -162,6 +212,22 @@ export interface GridProxy extends Record<string, unknown> {
   getRecord: (index: number) => EntityData | undefined;
   getRecordIndex: (record: EntityData) => number;
   data: { localData: EntityData[]; allRows: EntityData[]; totalRows: number };
+  /** Methods below are live only when a `GridController` backs the proxy. */
+  getEditedRecord?: (index: number) => EntityData | undefined;
+  getTotalRows?: () => number;
+  selectRecord?: (index: number) => void;
+  deselectRecord?: (index: number) => void;
+  selectSingleRecord?: (record: EntityData) => void;
+  deselectAllRecords?: () => void;
+  userSelectAllRecords?: () => void;
+  setEditValue?: (rowIndex: number, colName: string, value: unknown) => void;
+  getEditValues?: (rowIndex: number) => Record<string, unknown>;
+  getEditedCell?: (rowIndex: number, colName: string) => unknown;
+  invalidateCache?: () => void;
+  fetchData?: (criteria?: unknown) => void;
+  getCriteria?: () => unknown;
+  addSelectedIDsToCriteria?: (criteria: unknown, preserveSelected?: boolean) => unknown;
+  getFieldByColumnName?: (colName: string) => unknown;
 }
 
 export interface ViewProxy extends Record<string, unknown> {
@@ -274,6 +340,39 @@ const DEFERRED_GRID_METHODS = [
   "getFieldByColumnName",
 ] as const;
 
+/**
+ * Grid methods that become live once a `GridController` is injected. The two
+ * filter-editor methods stay deferred even with a controller: the new grid
+ * applies filters reactively and has no SmartClient filter-editor handle to
+ * drive, so they remain best-effort/unsupported (documented limitation).
+ */
+const LIVE_GRID_METHODS: readonly string[] = [
+  "getEditedRecord",
+  "getTotalRows",
+  "selectRecord",
+  "deselectRecord",
+  "selectSingleRecord",
+  "deselectAllRecords",
+  "userSelectAllRecords",
+  "setEditValue",
+  "getEditValues",
+  "getEditedCell",
+  "invalidateCache",
+  "fetchData",
+  "getCriteria",
+  "addSelectedIDsToCriteria",
+  "getFieldByColumnName",
+];
+
+/** Deferred set that remains when a controller IS present (single source of truth). */
+const DEFERRED_GRID_METHODS_WITH_CONTROLLER = DEFERRED_GRID_METHODS.filter((m) => !LIVE_GRID_METHODS.includes(m));
+
+/** Classic grid lifecycle callbacks assigned as properties (`grid.dataArrived = fn`). */
+const GRID_CALLBACK_PROPS = ["dataArrived", "selectionChanged"] as const;
+
+/** Stable empty grid state for proxies whose data is served live by a controller. */
+const EMPTY_GRID_STATE: GridState = { rows: [], selectedRecords: [] };
+
 /** Throws a traceable error for a classic API not covered by this step. */
 export function notImplemented(api: string): never {
   throw new Error(`${api} is not implemented yet`);
@@ -326,10 +425,13 @@ function assignLiveFormMethods(
   formProxy: FormProxy,
   form: FormHandle,
   parameters: ParametersMap | undefined,
-  controller: FieldController
+  controller: FieldController,
+  gridResolver?: GridResolver
 ): void {
   const getFields = () =>
-    Object.values(parameters ?? {}).map((parameter) => createItemProxy(form, parameter.name, {}, controller));
+    Object.values(parameters ?? {}).map((parameter) =>
+      createItemProxy(form, parameter.name, {}, controller, gridResolver)
+    );
   formProxy.getFields = getFields;
   formProxy.getField = (index: number) => getFields()[index];
   formProxy.hideItem = (name: string) => controller.setDisplayed(resolveFormKey(name, parameters), false);
@@ -376,11 +478,35 @@ export function resolveFormKey(name: string, parameters: ParametersMap | undefin
  * `setValueMap` / `getValueMap`, `clearValue`, `setValueFromRecord`, `redraw`)
  * become live; otherwise every classic method stays deferred.
  */
+/**
+ * Attaches `item.canvas` for grid parameters. With a `gridResolver` the
+ * `canvas.viewGrid` handle is live when the parameter has a registered grid and
+ * defers otherwise; without a resolver, accessing `canvas` throws a traceable
+ * error (the embedded grid is only reachable from the modal).
+ */
+function assignItemCanvas(item: ItemProxy, paramName: string, gridResolver?: GridResolver): void {
+  if (!gridResolver) {
+    Object.defineProperty(item, "canvas", {
+      get: () => notImplemented("item.canvas"),
+      enumerable: true,
+      configurable: true,
+    });
+    return;
+  }
+  item.canvas = {
+    viewGrid: createGridProxy(EMPTY_GRID_STATE, gridResolver(paramName)),
+    markForRedraw: () => {
+      // No-op: the grid re-renders reactively from the modal's state.
+    },
+  };
+}
+
 export function createItemProxy(
   form: FormHandle,
   paramName: string,
   extras: ItemProxyExtras = {},
-  controller?: FieldController
+  controller?: FieldController,
+  gridResolver?: GridResolver
 ): ItemProxy {
   const item: ItemProxy = {
     name: paramName,
@@ -395,6 +521,7 @@ export function createItemProxy(
   } else {
     assignDeferred(item, "item", DEFERRED_ITEM_METHODS);
   }
+  assignItemCanvas(item, paramName, gridResolver);
   return item;
 }
 
@@ -407,17 +534,18 @@ export function createItemProxy(
 export function createFormProxy(
   form: FormHandle,
   parameters: ParametersMap | undefined,
-  controller?: FieldController
+  controller?: FieldController,
+  gridResolver?: GridResolver
 ): FormProxy {
   const formProxy: FormProxy = {
-    getItem: (name: string) => createItemProxy(form, resolveFormKey(name, parameters), {}, controller),
+    getItem: (name: string) => createItemProxy(form, resolveFormKey(name, parameters), {}, controller, gridResolver),
     getValues: () => form.getValues(),
     redraw: () => {
       // No-op: react-hook-form re-renders reactively on value changes.
     },
   };
   if (controller) {
-    assignLiveFormMethods(formProxy, form, parameters, controller);
+    assignLiveFormMethods(formProxy, form, parameters, controller, gridResolver);
     assignDeferred(formProxy, "form", DEFERRED_FORM_METHODS_WITH_CONTROLLER);
   } else {
     assignDeferred(formProxy, "form", DEFERRED_FORM_METHODS);
@@ -425,8 +553,73 @@ export function createFormProxy(
   return formProxy;
 }
 
-/** Builds the `grid` proxy backed by the loaded rows and current selection. */
-export function createGridProxy(state: GridState): GridProxy {
+/**
+ * Re-points the read-only accessors and assigns the live mutation/data methods,
+ * each delegating to the injected controller so the proxy reflects the modal's
+ * current grid state. One statement per method keeps the complexity flat.
+ */
+function assignLiveGridMethods(grid: GridProxy, controller: GridController): void {
+  grid.getData = () => ({ getLength: () => controller.getRows().length });
+  grid.getSelectedRecords = () => controller.getSelectedRecords();
+  grid.getRecord = (index) => controller.getRecord(index);
+  grid.getRecordIndex = (record) => controller.getRecordIndex(record);
+  grid.getEditedRecord = (index) => controller.getEditedRecord(index);
+  grid.getTotalRows = () => controller.getTotalRows();
+  grid.selectRecord = (index) => controller.selectRecord(index);
+  grid.deselectRecord = (index) => controller.deselectRecord(index);
+  grid.selectSingleRecord = (record) => controller.selectSingleRecord(record);
+  grid.deselectAllRecords = () => controller.deselectAllRecords();
+  grid.userSelectAllRecords = () => controller.userSelectAllRecords();
+  grid.setEditValue = (rowIndex, colName, value) => controller.setEditValue(rowIndex, colName, value);
+  grid.getEditValues = (rowIndex) => controller.getEditValues(rowIndex);
+  grid.getEditedCell = (rowIndex, colName) => controller.getEditedCell(rowIndex, colName);
+  grid.invalidateCache = () => controller.invalidateCache();
+  grid.fetchData = (criteria) => controller.fetchData(criteria);
+  grid.getCriteria = () => controller.getCriteria();
+  grid.addSelectedIDsToCriteria = (criteria, preserveSelected) =>
+    controller.addSelectedIDsToCriteria(criteria, preserveSelected);
+  grid.getFieldByColumnName = (colName) => controller.getFieldByColumnName(colName);
+  Object.defineProperty(grid, "data", {
+    get: () => {
+      const rows = controller.getRows();
+      return { localData: rows, allRows: rows, totalRows: controller.getTotalRows() };
+    },
+    enumerable: true,
+    configurable: true,
+  });
+}
+
+/** Defines a chained callback property (`grid.dataArrived = fn`) routed to the controller. */
+function defineGridCallbackProp(
+  grid: GridProxy,
+  name: string,
+  register: (fn: (rows: EntityData[]) => void) => void
+): void {
+  let last: ((rows: EntityData[]) => void) | undefined;
+  Object.defineProperty(grid, name, {
+    get: () => last,
+    set: (fn) => {
+      last = fn;
+      if (typeof fn === "function") register(fn);
+    },
+    enumerable: true,
+    configurable: true,
+  });
+}
+
+/** Wires the classic lifecycle callback properties to the controller's subscriber sinks. */
+function assignGridCallbacks(grid: GridProxy, controller: GridController): void {
+  defineGridCallbackProp(grid, GRID_CALLBACK_PROPS[0], controller.onDataArrived);
+  defineGridCallbackProp(grid, GRID_CALLBACK_PROPS[1], controller.onSelectionChanged);
+}
+
+/**
+ * Builds the `grid` proxy. Without a controller it is read-only over the given
+ * `state` (the plain `onGridLoad` snapshot and unit tests), and every mutation
+ * method defers. With a `GridController` the full surface becomes live, served
+ * from the modal's current grid state, and the lifecycle callbacks are wired.
+ */
+export function createGridProxy(state: GridState, controller?: GridController): GridProxy {
   const gridProxy: GridProxy = {
     getData: () => ({ getLength: () => state.rows.length }),
     getSelectedRecords: () => state.selectedRecords,
@@ -434,7 +627,13 @@ export function createGridProxy(state: GridState): GridProxy {
     getRecordIndex: (record: EntityData) => state.rows.findIndex((row) => row.id === record?.id),
     data: { localData: state.rows, allRows: state.rows, totalRows: state.rows.length },
   };
-  assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS);
+  if (controller) {
+    assignLiveGridMethods(gridProxy, controller);
+    assignGridCallbacks(gridProxy, controller);
+    assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS_WITH_CONTROLLER);
+  } else {
+    assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS);
+  }
   return gridProxy;
 }
 
@@ -499,13 +698,14 @@ export function createViewProxy(
     grid?: GridProxy;
     controller?: FieldController;
     viewController?: ViewController;
+    gridResolver?: GridResolver;
     data?: ViewData;
     hookData?: Record<string, unknown>;
   }
 ): ViewProxy {
   const view = {
     ...(deps.hookData ?? {}),
-    theForm: createFormProxy(form, parameters, deps.controller),
+    theForm: createFormProxy(form, parameters, deps.controller, deps.gridResolver),
     messageBar: deps.messageBar,
   } as ViewProxy;
   if (deps.grid) view.viewGrid = deps.grid;

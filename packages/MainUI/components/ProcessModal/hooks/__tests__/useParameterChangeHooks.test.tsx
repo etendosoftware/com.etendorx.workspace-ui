@@ -2,7 +2,13 @@ import { act, renderHook } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
-import type { FieldController, FooterButtonHandle, ViewController } from "@/utils/processes/definition/scriptProxies";
+import type {
+  FieldController,
+  FooterButtonHandle,
+  GridController,
+  GridResolver,
+  ViewController,
+} from "@/utils/processes/definition/scriptProxies";
 import { useParameterChangeHooks } from "../useParameterChangeHooks";
 
 jest.mock("@/utils/logger", () => ({
@@ -47,12 +53,13 @@ function setup(
   parameters: Record<string, ProcessParameter>,
   context: Record<string, unknown>,
   fieldController?: FieldController,
-  viewController?: ViewController
+  viewController?: ViewController,
+  gridResolver?: GridResolver
 ) {
   const formHook = renderHook(() => useForm({ defaultValues: { p1: "", p2: "" } }));
   const form = formHook.result.current;
   const hookRender = renderHook(() =>
-    useParameterChangeHooks({ form, parameters, context, messageBar, fieldController, viewController })
+    useParameterChangeHooks({ form, parameters, context, messageBar, fieldController, viewController, gridResolver })
   );
   const change = (name: string, value: unknown) => act(() => form.setValue(name, value, { shouldDirty: true }));
   const flush = () => act(() => jest.advanceTimersByTime(300));
@@ -194,5 +201,43 @@ describe("useParameterChangeHooks", () => {
 
     expect(viewController.refresh).toHaveBeenCalled();
     expect(doneButton.hide).toHaveBeenCalled();
+  });
+
+  it("reaches a registered grid via view.theForm.getItem(...).canvas.viewGrid", () => {
+    const selected = [{ id: "r1" }];
+    const gridController = {
+      getSelectedRecords: jest.fn(() => selected),
+      selectRecord: jest.fn(),
+      deselectRecord: jest.fn(),
+      selectSingleRecord: jest.fn(),
+      deselectAllRecords: jest.fn(),
+      userSelectAllRecords: jest.fn(),
+      getRows: jest.fn(() => selected),
+      getRecord: jest.fn(),
+      getRecordIndex: jest.fn(() => 0),
+      getEditedRecord: jest.fn(),
+      getTotalRows: jest.fn(() => 1),
+      setEditValue: jest.fn(),
+      getEditValues: jest.fn(() => ({})),
+      getEditedCell: jest.fn(),
+      invalidateCache: jest.fn(),
+      fetchData: jest.fn(),
+      getCriteria: jest.fn(),
+      addSelectedIDsToCriteria: jest.fn(),
+      getFieldByColumnName: jest.fn(),
+      onDataArrived: jest.fn(),
+      onSelectionChanged: jest.fn(),
+    } as GridController;
+    const gridResolver: GridResolver = jest.fn(() => gridController);
+    const body = `(item, view) => {
+      view.theForm.getItem('p1').canvas.viewGrid.invalidateCache();
+    }`;
+    const { change, flush } = setup({ p1: param("p1", body) }, {}, undefined, undefined, gridResolver);
+
+    change("p1", "go");
+    flush();
+
+    expect(gridResolver).toHaveBeenCalledWith("p1");
+    expect(gridController.invalidateCache).toHaveBeenCalled();
   });
 });

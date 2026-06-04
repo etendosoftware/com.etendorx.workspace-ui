@@ -112,8 +112,11 @@ import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/de
 import {
   createFormHandle,
   createViewProxy,
+  resolveFormKey,
   type FieldController,
   type FooterButtonHandle,
+  type GridController,
+  type GridResolver,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
@@ -790,10 +793,26 @@ function ProcessDefinitionModalContent({
     [tab?.id, refetchDatasource, setGridRefreshKey, selectedRecords, setGridSelection, availableButtons]
   );
 
+  // Registry of the embedded grids' programmable handles, keyed by parameter
+  // name. Each WindowReferenceGrid registers/unregisters its controller; the
+  // resolver below lets any hook reach a grid through
+  // `view.theForm.getItem('<param>').canvas.viewGrid`.
+  const gridControllersRef = useRef<Map<string, GridController>>(new Map());
+  const registerGrid = useCallback((paramKey: string, controller: GridController) => {
+    gridControllersRef.current.set(paramKey, controller);
+  }, []);
+  const unregisterGrid = useCallback((paramKey: string) => {
+    gridControllersRef.current.delete(paramKey);
+  }, []);
+  // Reads the live registry by-invocation (via parametersRef), so its identity is
+  // stable and proxies need not rebuild when grids mount/unmount.
+  const gridResolver = useCallback<GridResolver>(
+    (name) => gridControllersRef.current.get(resolveFormKey(name, parametersRef.current)),
+    []
+  );
+
   // `view.messageBar` / `messageBar` is the in-modal banner (rendered by
   // <ProcessMessageBar/>); the same singleton handle reaches every hook.
-  // onGridLoad (WindowReferenceGrid) intentionally keeps its form methods
-  // deferred this step; only onChange receives the imperative controller.
   useParameterChangeHooks({
     form,
     parameters,
@@ -802,6 +821,7 @@ function ProcessDefinitionModalContent({
     fieldController,
     viewController,
     viewData,
+    gridResolver,
   });
 
   const gridLoadHooks = useMemo(() => {
@@ -1003,6 +1023,7 @@ function ProcessDefinitionModalContent({
     scriptContext: scriptHookContext,
     viewController,
     viewData,
+    gridResolver,
     button,
     parameters,
     form,
@@ -1232,6 +1253,7 @@ function ProcessDefinitionModalContent({
             messageBar,
             controller: fieldController,
             viewController,
+            gridResolver,
             data: viewData,
             hookData: {
               selectedRecords,
@@ -1283,6 +1305,7 @@ function ProcessDefinitionModalContent({
     fieldController,
     viewController,
     viewData,
+    gridResolver,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1526,6 +1549,10 @@ function ProcessDefinitionModalContent({
         messageBar={messageBar}
         viewController={viewController}
         viewData={viewData}
+        onRegisterGrid={registerGrid}
+        onUnregisterGrid={unregisterGrid}
+        fieldController={fieldController}
+        gridResolver={gridResolver}
         data-testid="WindowReferenceGrid__761503"
       />
     );

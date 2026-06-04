@@ -18,7 +18,10 @@
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
 import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import type {
+  FieldController,
   FormHandle,
+  GridController,
+  GridResolver,
   MessageBarHandle,
   ViewController,
   ViewData,
@@ -201,6 +204,14 @@ export interface WindowReferenceGridProps {
   viewController?: ViewController;
   /** Read-only environment data surfaced on the `view` inside `onGridLoad`. */
   viewData?: ViewData;
+  /** Publishes this grid's programmable handle to the modal registry (keyed by parameter name). */
+  onRegisterGrid?: (paramKey: string, controller: GridController) => void;
+  /** Removes this grid's handle from the modal registry on unmount. */
+  onUnregisterGrid?: (paramKey: string) => void;
+  /** Makes `view.theForm` item mutations live inside `onGridLoad`. */
+  fieldController?: FieldController;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside `onGridLoad`. */
+  gridResolver?: GridResolver;
 }
 
 export type RowProps = (props: {

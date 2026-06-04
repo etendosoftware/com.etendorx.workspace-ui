@@ -11,6 +11,8 @@ import {
   type FieldController,
   type FooterButtonHandle,
   type FormHandle,
+  type GridController,
+  type GridResolver,
   type MessageBarHandle,
   type ViewController,
   type ViewData,
@@ -63,6 +65,32 @@ const makeViewController = (footerButtons: FooterButtonHandle[] = []): ViewContr
   getFooterButtons: jest.fn(() => footerButtons),
   setCancelHidden: jest.fn(),
   setCloseHidden: jest.fn(),
+});
+
+/** GridController of jest spies, overridable per test for the read accessors. */
+const makeGridController = (overrides: Partial<GridController> = {}): GridController => ({
+  getSelectedRecords: jest.fn(() => []),
+  selectRecord: jest.fn(),
+  deselectRecord: jest.fn(),
+  selectSingleRecord: jest.fn(),
+  deselectAllRecords: jest.fn(),
+  userSelectAllRecords: jest.fn(),
+  getRows: jest.fn(() => []),
+  getRecord: jest.fn(),
+  getRecordIndex: jest.fn(() => -1),
+  getEditedRecord: jest.fn(),
+  getTotalRows: jest.fn(() => 0),
+  setEditValue: jest.fn(),
+  getEditValues: jest.fn(() => ({})),
+  getEditedCell: jest.fn(),
+  invalidateCache: jest.fn(),
+  fetchData: jest.fn(),
+  getCriteria: jest.fn(),
+  addSelectedIDsToCriteria: jest.fn(),
+  getFieldByColumnName: jest.fn(),
+  onDataArrived: jest.fn(),
+  onSelectionChanged: jest.fn(),
+  ...overrides,
 });
 
 /** Casts a proxy method (typed `unknown` through the index signature) to a callable. */
@@ -396,6 +424,115 @@ describe("scriptProxies", () => {
 
       call(form.focusInItem)("amount");
       expect(controller.focusField).toHaveBeenCalledWith("amount");
+    });
+  });
+
+  describe("createGridProxy with a GridController", () => {
+    it("serves read accessors live from the controller", () => {
+      const rows = [row("1"), row("2")];
+      const controller = makeGridController({
+        getRows: jest.fn(() => rows),
+        getSelectedRecords: jest.fn(() => [row("2")]),
+        getTotalRows: jest.fn(() => rows.length),
+        getRecord: jest.fn((i: number) => rows[i]),
+        getRecordIndex: jest.fn(() => 1),
+        getEditedCell: jest.fn(() => 42),
+      });
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+
+      expect(grid.getData().getLength()).toBe(2);
+      expect(grid.getSelectedRecords()).toEqual([row("2")]);
+      expect(grid.getRecord(0)).toEqual(row("1"));
+      expect((grid.getRecordIndex as (r: EntityData) => number)(row("2"))).toBe(1);
+      expect(grid.data.totalRows).toBe(2);
+      expect(grid.data.localData).toEqual(rows);
+      expect((grid.getEditedCell as (i: number, c: string) => unknown)(0, "amount")).toBe(42);
+    });
+
+    it("delegates the live mutation/lifecycle methods to the controller", () => {
+      const controller = makeGridController();
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+
+      call(grid.setEditValue)(0, "amount", 10);
+      expect(controller.setEditValue).toHaveBeenCalledWith(0, "amount", 10);
+      call(grid.selectRecord)(1);
+      expect(controller.selectRecord).toHaveBeenCalledWith(1);
+      call(grid.deselectRecord)(2);
+      expect(controller.deselectRecord).toHaveBeenCalledWith(2);
+      call(grid.invalidateCache)();
+      expect(controller.invalidateCache).toHaveBeenCalled();
+      call(grid.fetchData)({ any: true });
+      expect(controller.fetchData).toHaveBeenCalledWith({ any: true });
+      call(grid.getCriteria)();
+      expect(controller.getCriteria).toHaveBeenCalled();
+      call(grid.addSelectedIDsToCriteria)({ operator: "and" }, false);
+      expect(controller.addSelectedIDsToCriteria).toHaveBeenCalledWith({ operator: "and" }, false);
+      call(grid.getFieldByColumnName)("amount_col");
+      expect(controller.getFieldByColumnName).toHaveBeenCalledWith("amount_col");
+    });
+
+    it("routes the chained lifecycle callbacks to the controller sinks", () => {
+      const controller = makeGridController();
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+      const onArrived = jest.fn();
+      const onSelected = jest.fn();
+
+      (grid as Record<string, unknown>).dataArrived = onArrived;
+      (grid as Record<string, unknown>).selectionChanged = onSelected;
+
+      expect(controller.onDataArrived).toHaveBeenCalledWith(onArrived);
+      expect(controller.onSelectionChanged).toHaveBeenCalledWith(onSelected);
+      // The property reads back the last assigned function (classic chaining).
+      expect((grid as Record<string, unknown>).dataArrived).toBe(onArrived);
+    });
+
+    it("keeps the filter-editor methods deferred even with a controller", () => {
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, makeGridController());
+      expect(() => (grid.filterByEditor as () => void)()).toThrow("grid.filterByEditor is not implemented yet");
+      expect(() => (grid.setFilterEditorCriteria as () => void)()).toThrow(
+        "grid.setFilterEditorCriteria is not implemented yet"
+      );
+    });
+  });
+
+  describe("item.canvas / gridResolver", () => {
+    it("exposes a live viewGrid when the resolver returns a controller", () => {
+      const { handle } = makeFormHandle();
+      const controller = makeGridController();
+      const resolver: GridResolver = jest.fn(() => controller);
+      const item = createItemProxy(handle, "amount", {}, undefined, resolver);
+
+      expect(resolver).toHaveBeenCalledWith("amount");
+      const viewGrid = item.canvas?.viewGrid;
+      call(viewGrid?.setEditValue)(0, "amount", 5);
+      expect(controller.setEditValue).toHaveBeenCalledWith(0, "amount", 5);
+      expect(() => item.canvas?.markForRedraw()).not.toThrow();
+    });
+
+    it("defers viewGrid methods when the parameter has no registered grid", () => {
+      const { handle } = makeFormHandle();
+      const resolver: GridResolver = jest.fn(() => undefined);
+      const item = createItemProxy(handle, "amount", {}, undefined, resolver);
+      expect(() => (item.canvas?.viewGrid?.setEditValue as () => void)()).toThrow(
+        "grid.setEditValue is not implemented yet"
+      );
+    });
+
+    it("throws on canvas access when no resolver is injected (back-compat)", () => {
+      const { handle } = makeFormHandle();
+      const item = createItemProxy(handle, "amount");
+      expect(() => item.canvas).toThrow("item.canvas is not implemented yet");
+    });
+
+    it("reaches the grid through view.theForm.getItem(...).canvas.viewGrid", () => {
+      const { handle } = makeFormHandle({ amount: 1 });
+      const messageBar: MessageBarHandle = { setMessage: jest.fn(), hide: jest.fn() };
+      const controller = makeGridController({ getSelectedRecords: jest.fn(() => [row("9")]) });
+      const resolver: GridResolver = jest.fn(() => controller);
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, gridResolver: resolver });
+
+      const viewGrid = view.theForm.getItem("amount").canvas?.viewGrid;
+      expect(viewGrid?.getSelectedRecords()).toEqual([row("9")]);
     });
   });
 });

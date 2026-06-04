@@ -365,6 +365,45 @@ export function withCloseHidden(prev: ScriptButtonState, hidden: boolean): Scrip
   return { ...prev, closeHidden: hidden };
 }
 
+/** Default combinator and the id-set operator used when merging grid criteria. */
+const CRITERIA_AND_OPERATOR = "and";
+const CRITERIA_ID_IN_SET_OPERATOR = "inSet";
+const CRITERIA_ID_FIELD = "id";
+
+/** A SmartClient-style advanced criteria object the embedded grid scripts read/build. */
+export interface GridCriteria extends Record<string, unknown> {
+  operator?: string;
+  criteria?: unknown[];
+}
+
+/** Returns a shallow copy of an advanced-criteria object, or an empty one when absent. */
+function normalizeCriteria(criteria: unknown): GridCriteria {
+  if (criteria && typeof criteria === "object") return { ...(criteria as GridCriteria) };
+  return {};
+}
+
+/**
+ * Merges the given record ids into an advanced-criteria object as an `id IN (…)`
+ * sub-criterion, mirroring the classic grid `addSelectedIDsToCriteria`. Returns
+ * the criteria unchanged when there is nothing to add (no ids or not preserving
+ * the selection), so callers can pass the result straight through.
+ */
+export function addSelectedIDsToCriteria(
+  criteria: unknown,
+  selectedIds: string[],
+  preserveSelected = true
+): GridCriteria {
+  const base = normalizeCriteria(criteria);
+  if (!preserveSelected || selectedIds.length === 0) return base;
+  const idCriterion = {
+    fieldName: CRITERIA_ID_FIELD,
+    operator: CRITERIA_ID_IN_SET_OPERATOR,
+    value: selectedIds,
+  };
+  const existing = Array.isArray(base.criteria) ? base.criteria : [];
+  return { ...base, operator: base.operator ?? CRITERIA_AND_OPERATOR, criteria: [...existing, idCriterion] };
+}
+
 /**
  * Returns the parameters map with `name`'s `mandatory` flag set. Short-circuits
  * to the same reference when the parameter is missing or already at that value.

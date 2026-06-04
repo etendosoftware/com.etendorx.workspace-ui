@@ -26,6 +26,7 @@ import {
   type EntityData,
   type EntityValue,
   type Column,
+  type Field,
   type Tab,
   type Criteria,
   UIPattern,
@@ -79,9 +80,11 @@ import {
   applyMergedParam,
   buildFilterCriteriaEntry,
   normalizeContextKey,
+  addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
 import { logger } from "@/utils/logger";
 import { createGridProxy, createViewProxy } from "@/utils/processes/definition/scriptProxies";
+import type { GridController } from "@/utils/processes/definition/scriptProxies";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -1022,6 +1025,95 @@ const deepMergeFilterExpressions = (
   return merged;
 };
 
+/** Live grid handles the embedded-grid controller reads at call time. */
+export interface EmbeddedGridApi {
+  rows: EntityData[];
+  refetch?: () => void;
+  criteria: unknown;
+  fields?: Field[];
+  handleRowSelection: (
+    updater: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)
+  ) => void;
+  handleClearSelections: () => void;
+  // biome-ignore lint/suspicious/noExplicitAny: row/changes mirror handleRecordChange's loose shape
+  handleRecordChange: (row: any, changes: any) => void;
+}
+
+/**
+ * Builds the programmable grid handle exposed to migrated scripts via
+ * `view.theForm.getItem('<param>').canvas.viewGrid` (and as the first arg of
+ * `onGridLoad`). It is a pure adapter over live getters: `getApi` returns the
+ * current rows / datasource handles, `getSelected` the current selection, and
+ * the two subscriber arrays collect chained lifecycle callbacks. Selection,
+ * edit and refetch all reuse the grid's existing handlers, so script mutations
+ * follow the exact same path as user interactions.
+ */
+export function createEmbeddedGridController(
+  getApi: () => EmbeddedGridApi,
+  getSelected: () => EntityData[],
+  dataArrivedSubs: Array<(rows: EntityData[]) => void>,
+  selectionChangedSubs: Array<(selection: EntityData[]) => void>
+): GridController {
+  const rows = () => getApi().rows;
+  const setSelectedById = (id: string, isSelected: boolean) =>
+    getApi().handleRowSelection((prev) => ({ ...prev, [id]: isSelected }));
+  return {
+    getSelectedRecords: getSelected,
+    selectRecord: (index) => {
+      const record = rows()[index];
+      if (record) setSelectedById(String(record.id), true);
+    },
+    deselectRecord: (index) => {
+      const record = rows()[index];
+      if (record) setSelectedById(String(record.id), false);
+    },
+    selectSingleRecord: (record) => {
+      getApi().handleClearSelections();
+      if (record) setSelectedById(String(record.id), true);
+    },
+    deselectAllRecords: () => getApi().handleClearSelections(),
+    userSelectAllRecords: () => {
+      const all: MRT_RowSelectionState = {};
+      for (const record of rows()) all[String(record.id)] = true;
+      getApi().handleRowSelection(all);
+    },
+    getRows: rows,
+    getRecord: (index) => rows()[index],
+    getRecordIndex: (record) => rows().findIndex((row) => String(row.id) === String(record?.id)),
+    getEditedRecord: (index) => rows()[index],
+    getTotalRows: () => rows().length,
+    setEditValue: (rowIndex, colName, value) => {
+      const record = rows()[rowIndex];
+      if (record) getApi().handleRecordChange(record, { [colName]: value });
+    },
+    getEditValues: (rowIndex) => (rows()[rowIndex] as Record<string, unknown>) ?? {},
+    getEditedCell: (rowIndex, colName) => (rows()[rowIndex] as Record<string, unknown>)?.[colName],
+    invalidateCache: () => {
+      getApi().refetch?.();
+    },
+    fetchData: () => {
+      getApi().refetch?.();
+    },
+    getCriteria: () => getApi().criteria,
+    addSelectedIDsToCriteria: (criteria, preserveSelected = true) =>
+      addSelectedIDsToCriteria(
+        criteria,
+        getSelected().map((record) => String(record.id)),
+        preserveSelected
+      ),
+    getFieldByColumnName: (colName) =>
+      (getApi().fields ?? []).find(
+        (field) => field.columnName === colName || field.hqlName === colName || field.inputName === colName
+      ),
+    onDataArrived: (fn) => {
+      if (!dataArrivedSubs.includes(fn)) dataArrivedSubs.push(fn);
+    },
+    onSelectionChanged: (fn) => {
+      if (!selectionChangedSubs.includes(fn)) selectionChangedSubs.push(fn);
+    },
+  };
+}
+
 const WindowReferenceGrid = ({
   parameter,
   tabId,
@@ -1047,6 +1139,10 @@ const WindowReferenceGrid = ({
   messageBar,
   viewController,
   viewData,
+  onRegisterGrid,
+  onUnregisterGrid,
+  fieldController,
+  gridResolver,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1788,6 +1884,13 @@ const WindowReferenceGrid = ({
   const [localRecords, setLocalRecords] = useState<EntityData[]>([]);
   const rawRecordsStringRef = useRef<string>("");
 
+  // Programmable grid handle plumbing (declared here so the data-arrived effect
+  // below can reach them; the controller itself is built further down once its
+  // selection/edit handlers exist, and stored into `gridControllerRef`).
+  const gridControllerRef = useRef<GridController | null>(null);
+  const dataArrivedSubsRef = useRef<Array<(rows: EntityData[]) => void>>([]);
+  const selectionChangedSubsRef = useRef<Array<(selection: EntityData[]) => void>>([]);
+
   // Bumped by `handleRecordChange` whenever `applyFieldInteractions` produces a
   // non-empty sibling patch. Threaded through the grid context so each
   // GridCellEditor sees a new value and its `memo` comparator invalidates,
@@ -1811,16 +1914,24 @@ const WindowReferenceGrid = ({
     );
     setLocalRecords(prepared);
 
-    // Parameter-level onGridLoad: fire once per datasource payload (mirrors the
-    // classic grid `dataArrived` hook). `grid` exposes the loaded rows + initial
-    // selection; `view.theForm` lets the script read sibling parameter values.
+    // Notify any script-registered `grid.dataArrived` subscribers (mirrors the
+    // classic grid lifecycle hook), independently of whether an onGridLoad body
+    // exists — a script may have subscribed from onLoad via the grid handle.
+    for (const fn of dataArrivedSubsRef.current) fn(prepared);
+
+    // Parameter-level onGridLoad: fire once per datasource payload. `grid` is the
+    // programmable handle (same one reachable via `view.theForm.getItem(...)`),
+    // so reading rows/selection and mutating the grid both work; `view.theForm`
+    // lets the script read sibling parameter values.
     if (onGridLoadHook && gridLoadFormHandle && messageBar) {
       const selectedRecords = prepared.filter((record: EntityData) => Boolean(record?.obSelected));
-      const grid = createGridProxy({ rows: prepared, selectedRecords });
+      const grid = createGridProxy({ rows: prepared, selectedRecords }, gridControllerRef.current ?? undefined);
       const view = createViewProxy(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
+        controller: fieldController,
         viewController,
+        gridResolver,
         data: viewData,
       });
       grid.view = view;
@@ -1830,7 +1941,17 @@ const WindowReferenceGrid = ({
         logger.error("[WindowReferenceGrid] onGridLoad failed", error);
       }
     }
-  }, [rawRecords, onGridLoadHook, gridLoadFormHandle, messageBar, parameters, viewController, viewData]);
+  }, [
+    rawRecords,
+    onGridLoadHook,
+    gridLoadFormHandle,
+    messageBar,
+    parameters,
+    viewController,
+    viewData,
+    fieldController,
+    gridResolver,
+  ]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
   // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.
@@ -2283,6 +2404,62 @@ const WindowReferenceGrid = ({
   useEffect(() => {
     handleRecordChangeRef.current = handleRecordChange;
   }, [handleRecordChange]);
+
+  // --- Programmable grid handle (view.theForm.getItem('<param>').canvas.viewGrid)
+  // Live handles the controller reads at call time, refreshed every render so the
+  // controller identity stays stable (the modal keeps it in a registry) while it
+  // always operates on the current rows / selection / datasource handles.
+  const gridApiRef = useRef({
+    rows: localRecords,
+    refetch,
+    criteria: datasourceOptions?.criteria,
+    fields,
+    handleRowSelection,
+    handleClearSelections,
+    handleRecordChange,
+  });
+  gridApiRef.current = {
+    rows: localRecords,
+    refetch,
+    criteria: datasourceOptions?.criteria,
+    fields,
+    handleRowSelection,
+    handleClearSelections,
+    handleRecordChange,
+  };
+
+  const gridController = useMemo<GridController>(
+    () =>
+      createEmbeddedGridController(
+        () => gridApiRef.current,
+        () => Array.from(persistentSelectionRef.current.values()),
+        dataArrivedSubsRef.current,
+        selectionChangedSubsRef.current
+      ),
+    []
+  );
+  gridControllerRef.current = gridController;
+
+  // Register this grid's controller with the modal so scripts reach it through
+  // `view.theForm.getItem('<param>').canvas.viewGrid`. Keyed by parameter name
+  // (the key `resolveFormKey` maps item lookups to).
+  useEffect(() => {
+    if (!onRegisterGrid) return;
+    onRegisterGrid(parameter.name, gridController);
+    return () => onUnregisterGrid?.(parameter.name);
+  }, [onRegisterGrid, onUnregisterGrid, parameter.name, gridController]);
+
+  // Notify script `selectionChanged` subscribers on every selection change
+  // (skipping the initial mount so it mirrors a user/programmatic toggle).
+  const selectionChangedReadyRef = useRef(false);
+  useEffect(() => {
+    if (!selectionChangedReadyRef.current) {
+      selectionChangedReadyRef.current = true;
+      return;
+    }
+    const selection = Array.from(persistentSelectionRef.current.values());
+    for (const fn of selectionChangedSubsRef.current) fn(selection);
+  }, [rowSelection]);
 
   // Context value for GridCellEditor components (defined here to capture handleRecordChangeRef)
   const gridContextValue = useMemo(

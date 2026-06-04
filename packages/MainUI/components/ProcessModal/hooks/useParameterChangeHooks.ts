@@ -25,6 +25,7 @@ import {
   createItemProxy,
   createViewProxy,
   type FieldController,
+  type GridResolver,
   type MessageBarHandle,
   type ViewController,
   type ViewData,
@@ -52,6 +53,8 @@ export interface UseParameterChangeHooksParams {
   viewController?: ViewController;
   /** Read-only environment data surfaced on the `view`. */
   viewData?: ViewData;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` to a live grid handle. */
+  gridResolver?: GridResolver;
 }
 
 /**
@@ -73,6 +76,7 @@ export function useParameterChangeHooks({
   fieldController,
   viewController,
   viewData,
+  gridResolver,
 }: UseParameterChangeHooksParams): void {
   const compiledHooks = useMemo(() => {
     const map = new Map<string, CompiledParameterHook>();
@@ -99,11 +103,12 @@ export function useParameterChangeHooks({
     const runHook = (name: string, hook: CompiledParameterHook) => {
       firing.add(name);
       try {
-        const item = createItemProxy(formHandle, name, {}, fieldController);
+        const item = createItemProxy(formHandle, name, {}, fieldController, gridResolver);
         const view = createViewProxy(formHandle, parameters, {
           messageBar,
           controller: fieldController,
           viewController,
+          gridResolver,
           data: viewData,
         });
         hook(item, view, view.theForm, null);
@@ -151,5 +156,5 @@ export function useParameterChangeHooks({
       }
       timers.clear();
     };
-  }, [compiledHooks, form, parameters, messageBar, fieldController, viewController, viewData]);
+  }, [compiledHooks, form, parameters, messageBar, fieldController, viewController, viewData, gridResolver]);
 }

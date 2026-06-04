@@ -70,7 +70,10 @@ import {
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
+  createEmbeddedGridController,
+  type EmbeddedGridApi,
 } from "../WindowReferenceGrid";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 describe("WindowReferenceGrid Utilities", () => {
   describe("extractActualValue", () => {
@@ -514,6 +517,82 @@ describe("WindowReferenceGrid Utilities", () => {
       ["null/undefined row", null, false],
     ])("%s → %s", (_label, row, expected) => {
       expect(isPersistedRow(row)).toBe(expected);
+    });
+  });
+
+  describe("createEmbeddedGridController", () => {
+    const rec = (id: string, extra: Record<string, unknown> = {}): EntityData => ({ id, ...extra }) as EntityData;
+
+    const makeApi = (over: Partial<EmbeddedGridApi> = {}) => {
+      const api: EmbeddedGridApi = {
+        rows: [rec("1", { amount: 5 }), rec("2", { amount: 7 })],
+        refetch: jest.fn(),
+        criteria: { operator: "and" },
+        fields: [{ columnName: "amount_col", hqlName: "amount" }] as unknown as EmbeddedGridApi["fields"],
+        handleRowSelection: jest.fn(),
+        handleClearSelections: jest.fn(),
+        handleRecordChange: jest.fn(),
+        ...over,
+      };
+      return api;
+    };
+
+    it("reads rows, edited cells and total live from the api getter", () => {
+      const api = makeApi();
+      const controller = createEmbeddedGridController(
+        () => api,
+        () => [rec("2")],
+        [],
+        []
+      );
+      expect(controller.getTotalRows()).toBe(2);
+      expect(controller.getRecord(0)).toEqual(rec("1", { amount: 5 }));
+      expect(controller.getRecordIndex(rec("2"))).toBe(1);
+      expect(controller.getSelectedRecords()).toEqual([rec("2")]);
+      expect(controller.getEditedCell(1, "amount")).toBe(7);
+      expect(controller.getFieldByColumnName("amount_col")).toEqual({ columnName: "amount_col", hqlName: "amount" });
+    });
+
+    it("routes selection and edit through the grid's own handlers", () => {
+      const api = makeApi();
+      const controller = createEmbeddedGridController(
+        () => api,
+        () => [],
+        [],
+        []
+      );
+      controller.setEditValue(0, "amount", 99);
+      expect(api.handleRecordChange).toHaveBeenCalledWith(rec("1", { amount: 5 }), { amount: 99 });
+
+      controller.selectRecord(1);
+      const updater = (api.handleRowSelection as jest.Mock).mock.calls[0][0];
+      expect(updater({})).toEqual({ "2": true });
+
+      controller.deselectAllRecords();
+      expect(api.handleClearSelections).toHaveBeenCalled();
+
+      controller.invalidateCache();
+      expect(api.refetch).toHaveBeenCalled();
+    });
+
+    it("builds id criteria from the live selection and chains lifecycle subscribers", () => {
+      const api = makeApi();
+      const dataArrivedSubs: Array<(rows: EntityData[]) => void> = [];
+      const controller = createEmbeddedGridController(
+        () => api,
+        () => [rec("a"), rec("b")],
+        dataArrivedSubs,
+        []
+      );
+      const merged = controller.addSelectedIDsToCriteria({ operator: "and" }, true) as {
+        criteria: Array<Record<string, unknown>>;
+      };
+      expect(merged.criteria).toEqual([{ fieldName: "id", operator: "inSet", value: ["a", "b"] }]);
+
+      const sub = jest.fn();
+      controller.onDataArrived(sub);
+      controller.onDataArrived(sub); // de-duped by reference
+      expect(dataArrivedSubs).toEqual([sub]);
     });
   });
 });

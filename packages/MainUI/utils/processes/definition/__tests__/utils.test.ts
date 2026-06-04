@@ -20,6 +20,7 @@ import {
   withCancelHidden,
   withCloseHidden,
   EMPTY_SCRIPT_BUTTON_STATE,
+  addSelectedIDsToCriteria,
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
@@ -762,6 +763,32 @@ describe("Process Definition Utils", () => {
       const options: any = {};
       applyMergedParam("accounting_status", "", parameters, options);
       expect(options.accounting_status).toBeUndefined();
+    });
+  });
+
+  describe("addSelectedIDsToCriteria", () => {
+    const SELECTED = ["a", "b"];
+
+    it("merges an id inSet sub-criterion into an existing criteria object", () => {
+      const result = addSelectedIDsToCriteria({ operator: "or", criteria: [{ fieldName: "x" }] }, SELECTED);
+      expect(result.operator).toBe("or");
+      expect(result.criteria).toEqual([
+        { fieldName: "x" },
+        { fieldName: "id", operator: "inSet", value: SELECTED },
+      ]);
+    });
+
+    it("defaults to an `and` combinator when starting from empty criteria", () => {
+      const result = addSelectedIDsToCriteria(undefined, SELECTED);
+      expect(result).toEqual({
+        operator: "and",
+        criteria: [{ fieldName: "id", operator: "inSet", value: SELECTED }],
+      });
+    });
+
+    it("returns the normalized criteria unchanged when there is nothing to add", () => {
+      expect(addSelectedIDsToCriteria({ operator: "and" }, [])).toEqual({ operator: "and" });
+      expect(addSelectedIDsToCriteria({ operator: "and" }, SELECTED, false)).toEqual({ operator: "and" });
     });
   });
 });
