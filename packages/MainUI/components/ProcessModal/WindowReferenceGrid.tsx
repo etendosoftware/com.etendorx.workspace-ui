@@ -633,7 +633,7 @@ export const renderActionsCell = ({
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
     return (
-        <MRT_EditActionButtons row={row} table={table} variant="icon" data-testid="MRT_EditActionButtons__ce8544" />
+        <MRT_EditActionButtons row={row} table={table}  variant="icon" data-testid="MRT_EditActionButtons__ce8544" />
     );
   }
   const lockedByOther = Boolean(state.creatingRow);

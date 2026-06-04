@@ -116,6 +116,23 @@ export interface ViewController {
   getFooterButtons: () => FooterButtonHandle[];
   setCancelHidden: (hidden: boolean) => void;
   setCloseHidden: (hidden: boolean) => void;
+  /** Launches a nested process modal layered on top of the current one. */
+  openProcess: (params: OpenProcessParams) => void;
+}
+
+/**
+ * Parameters accepted by `view.openProcess` / `view.standardWindow.openProcess`,
+ * matching the classic launch shape. Only `processId` is required; the rest are
+ * captured so the nested-modal context can be enriched later without changing
+ * this script-facing surface.
+ */
+export interface OpenProcessParams {
+  processId: string;
+  windowId?: string;
+  windowTitle?: string;
+  externalParams?: Record<string, unknown>;
+  callerField?: CallerField;
+  paramWindow?: unknown;
 }
 
 /** Built-in icon presets for a row-action button. */
@@ -202,6 +219,8 @@ export interface CallerField extends Record<string, unknown> {
   name?: string;
   columnId?: string;
   record?: EntityData;
+  /** The launcher's view, so a nested script can reach `view.callerField.view`. */
+  view?: unknown;
 }
 
 /**
@@ -292,6 +311,9 @@ export interface ViewProxy extends Record<string, unknown> {
   popupButtons?: { members: FooterButtonHandle[] };
   cancelButton?: { hide: () => void; show: () => void };
   parentElement?: { parentElement: { closeButton: { hide: () => void; show: () => void } } };
+  /** Nested-process launch (live only with a controller); `standardWindow` is the classic alias. */
+  openProcess?: (params: OpenProcessParams) => void;
+  standardWindow?: { openProcess: (params: OpenProcessParams) => void };
 }
 
 /** Optional extras for the grid-cell variant of the onChange hook. */
@@ -353,11 +375,11 @@ const LIVE_VIEW_METHODS = [
   "getSelection",
 ] as const;
 
-/** Owned by the nested-process modal step; stays deferred even with a controller. */
-const NESTED_VIEW_METHODS = ["openProcess"] as const;
+/** Method name for the nested-process launch; shared across the proxy wiring. */
+const OPEN_PROCESS = "openProcess";
 
 /** Full deferred set used when no controller is present (`getContextInfo` is always live). */
-const DEFERRED_VIEW_METHODS = [...LIVE_VIEW_METHODS, ...NESTED_VIEW_METHODS] as const;
+const DEFERRED_VIEW_METHODS = [...LIVE_VIEW_METHODS, OPEN_PROCESS] as const;
 
 const DEFERRED_GRID_METHODS = [
   "setEditValue",
@@ -706,6 +728,12 @@ function assignViewActions(view: ViewProxy, controller: ViewController): void {
   view.getSelection = () => controller.getSelection();
 }
 
+/** Nested-process launch plus the classic `standardWindow.openProcess` alias. */
+function assignNestedViewActions(view: ViewProxy, controller: ViewController): void {
+  view.openProcess = (params) => controller.openProcess(params);
+  view.standardWindow = { openProcess: (params) => controller.openProcess(params) };
+}
+
 /** Footer chrome handles (`popupButtons` / `cancelButton` / the close `X`). */
 function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
   view.popupButtons = { members: controller.getFooterButtons() };
@@ -728,7 +756,8 @@ function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
  * set for grid-typed parameters. Read-only data and `getContextInfo` / `getView`
  * are always present; the lifecycle actions and footer chrome become live only
  * when a `ViewController` is injected, and stay deferred (throwing stubs)
- * otherwise. `openProcess` is always deferred (owned by the nested-modal step).
+ * otherwise. `openProcess` (and its `standardWindow` alias) is live with a
+ * controller and deferred without one.
  *
  * `hookData` carries the plain data fields the onLoad / onProcess scripts read
  * directly off their second argument (`selectedRecords`, `recordIds`, …). It is
@@ -760,7 +789,7 @@ export function createViewProxy(
   if (deps.viewController) {
     assignViewActions(view, deps.viewController);
     assignFooterChrome(view, deps.viewController);
-    assignDeferred(view, "view", NESTED_VIEW_METHODS);
+    assignNestedViewActions(view, deps.viewController);
   } else {
     assignDeferred(view, "view", DEFERRED_VIEW_METHODS);
   }

@@ -691,10 +691,9 @@ export function useProcessExecution({
             entityName: tab.entityName,
             recordIds: selectedRecords?.map((r) => r.id),
             // Mirrors classic SmartClient view.onRefreshFunction so migrated
-            // scripts can refresh the modal grid/form after async actions.
-            // TODO: when nested Process Definition modals are supported, also
-            // auto-call parentView.onRefreshFunction(parentView) here on success,
-            // matching ob-parameter-window-view.js:436-439 in classic.
+            // scripts can refresh the modal grid/form after async actions. The
+            // parent's refresh after a nested process closes is wired through the
+            // process stack (ProcessStackHost fires the launcher's onRefreshFunction).
             onRefreshFunction,
             ...completePayload,
           },

@@ -129,6 +129,7 @@ import {
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { pushProcess } from "@/utils/processes/definition/processStack";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -296,6 +297,7 @@ function ProcessDefinitionModalContent({
   type,
   keepOpenOnSuccess,
   contextRecord,
+  windowId: windowIdProp,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { getLabel, language } = useLanguage();
@@ -523,7 +525,7 @@ function ProcessDefinitionModalContent({
 
   const windowReferenceTab = firstWindowReferenceParam?.window?.tabs?.[0] as Tab;
   const tabId = windowReferenceTab?.id || "";
-  const windowId = tab?.window || "";
+  const windowId = tab?.window || windowIdProp || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -789,8 +791,27 @@ function ProcessDefinitionModalContent({
       getFooterButtons: () => availableButtons.map((btn) => makeFooterButtonHandle(btn, setScriptButtonState)),
       setCancelHidden: (hidden) => setScriptButtonState((prev) => withCancelHidden(prev, hidden)),
       setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
+      // Layer a nested process modal on top; on its close (X or success) the host
+      // fires this (parent) view's onRefreshFunction, mirroring classic behaviour.
+      openProcess: (params) =>
+        pushProcess({
+          ...params,
+          windowId: params.windowId ?? windowId,
+          callerField: { ...(params.callerField ?? viewData.callerField), view: viewData },
+          onClose: () => onRefreshFunction?.(viewData),
+        }),
     }),
-    [tab?.id, refetchDatasource, setGridRefreshKey, selectedRecords, setGridSelection, availableButtons]
+    [
+      tab?.id,
+      refetchDatasource,
+      setGridRefreshKey,
+      selectedRecords,
+      setGridSelection,
+      availableButtons,
+      windowId,
+      viewData,
+      onRefreshFunction,
+    ]
   );
 
   // Registry of the embedded grids' programmable handles, keyed by parameter

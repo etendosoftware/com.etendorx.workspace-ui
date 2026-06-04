@@ -132,6 +132,10 @@ export interface ProcessDefinitionModalProps {
   keepOpenOnSuccess?: boolean;
   /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
   contextRecord?: Record<string, unknown>;
+  /** Window id for a programmatically-opened process (e.g. a nested launch) when no TabContext supplies one. */
+  windowId?: string;
+  /** Window title for a programmatically-opened process (e.g. a nested launch). */
+  windowTitle?: string;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {

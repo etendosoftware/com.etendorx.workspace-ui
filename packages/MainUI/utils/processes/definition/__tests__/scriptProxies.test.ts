@@ -65,7 +65,11 @@ const makeViewController = (footerButtons: FooterButtonHandle[] = []): ViewContr
   getFooterButtons: jest.fn(() => footerButtons),
   setCancelHidden: jest.fn(),
   setCloseHidden: jest.fn(),
+  openProcess: jest.fn(),
 });
+
+/** Reused launch params for the openProcess tests. */
+const OPEN_PROCESS_PARAMS = { processId: "P-1", windowId: "W-1", windowTitle: "Nested" } as const;
 
 /** GridController of jest spies, overridable per test for the read accessors. */
 const makeGridController = (overrides: Partial<GridController> = {}): GridController => ({
@@ -292,10 +296,24 @@ describe("scriptProxies", () => {
       expect(viewController.setCloseHidden).toHaveBeenCalledWith(true);
     });
 
-    it("keeps openProcess deferred even with a controller (owned by the nested-modal step)", () => {
+    it("defers openProcess and exposes no standardWindow alias without a controller", () => {
       const { handle } = makeFormHandle();
-      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController: makeViewController() });
+      const view = createViewProxy(handle, PARAMETERS, { messageBar });
       expect(() => (view.openProcess as () => void)()).toThrow("view.openProcess is not implemented yet");
+      expect(view.standardWindow).toBeUndefined();
+    });
+
+    it("makes openProcess live with a controller and delegates it (incl. the standardWindow alias)", () => {
+      const { handle } = makeFormHandle();
+      const viewController = makeViewController();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController });
+
+      view.openProcess?.(OPEN_PROCESS_PARAMS);
+      view.standardWindow?.openProcess(OPEN_PROCESS_PARAMS);
+
+      expect(viewController.openProcess).toHaveBeenCalledTimes(2);
+      expect(viewController.openProcess).toHaveBeenNthCalledWith(1, OPEN_PROCESS_PARAMS);
+      expect(viewController.openProcess).toHaveBeenNthCalledWith(2, OPEN_PROCESS_PARAMS);
     });
 
     it("merges hookData onto the view without shadowing the canonical surface", () => {
