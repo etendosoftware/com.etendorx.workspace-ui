@@ -118,6 +118,40 @@ export interface ViewController {
   setCloseHidden: (hidden: boolean) => void;
 }
 
+/** Built-in icon presets for a row-action button. */
+export type RowActionIcon = "search" | "add" | "clearRight";
+
+/** Shared icon-preset literals so the proxy and the grid renderer agree on names. */
+export const ICON_PRESET = {
+  SEARCH: "search",
+  ADD: "add",
+  CLEAR_RIGHT: "clearRight",
+} as const;
+
+/** Context handed to a row-action button click and to the row renderer. */
+export interface RowActionContext {
+  record: EntityData;
+  view: ViewProxy;
+  grid: GridProxy;
+}
+
+/** One inline icon-button (or a separator) drawn in a grid row. */
+export interface RowActionButton {
+  icon: RowActionIcon;
+  prompt?: string;
+  disabled?: boolean;
+  /** Runs when the button is clicked. */
+  action?: (ctx: RowActionContext) => void;
+}
+
+/** Declarative descriptor a row renderer returns for a single row. */
+export interface RowActionDescriptor {
+  buttons: RowActionButton[];
+}
+
+/** Callback registered via `grid.setRowActions`; returns nothing to draw no buttons. */
+export type RowActionRenderer = (ctx: RowActionContext) => RowActionDescriptor | null | undefined;
+
 /**
  * Per-grid bridge a single embedded grid (`WindowReferenceGrid`) exposes so the
  * `viewGrid` proxy methods become live. Mirrors `FieldController` /
@@ -152,6 +186,8 @@ export interface GridController {
   addSelectedIDsToCriteria: (criteria: unknown, preserveSelected?: boolean) => unknown;
   // Column metadata
   getFieldByColumnName: (colName: string) => unknown;
+  // Per-row component plugin (declarative inline buttons)
+  setRowActions: (renderer: RowActionRenderer) => void;
   // Lifecycle callbacks (chained: every subscriber is kept and fired)
   onDataArrived: (fn: (rows: EntityData[]) => void) => void;
   onSelectionChanged: (fn: (selection: EntityData[]) => void) => void;
@@ -228,6 +264,9 @@ export interface GridProxy extends Record<string, unknown> {
   getCriteria?: () => unknown;
   addSelectedIDsToCriteria?: (criteria: unknown, preserveSelected?: boolean) => unknown;
   getFieldByColumnName?: (colName: string) => unknown;
+  /** Registers a per-row renderer; `setRecordComponent` is a classic-vocabulary alias. */
+  setRowActions?: (renderer: RowActionRenderer) => void;
+  setRecordComponent?: (renderer: RowActionRenderer) => void;
 }
 
 export interface ViewProxy extends Record<string, unknown> {
@@ -338,6 +377,8 @@ const DEFERRED_GRID_METHODS = [
   "getCriteria",
   "addSelectedIDsToCriteria",
   "getFieldByColumnName",
+  "setRowActions",
+  "setRecordComponent",
 ] as const;
 
 /**
@@ -362,6 +403,8 @@ const LIVE_GRID_METHODS: readonly string[] = [
   "getCriteria",
   "addSelectedIDsToCriteria",
   "getFieldByColumnName",
+  "setRowActions",
+  "setRecordComponent",
 ];
 
 /** Deferred set that remains when a controller IS present (single source of truth). */
@@ -579,6 +622,8 @@ function assignLiveGridMethods(grid: GridProxy, controller: GridController): voi
   grid.addSelectedIDsToCriteria = (criteria, preserveSelected) =>
     controller.addSelectedIDsToCriteria(criteria, preserveSelected);
   grid.getFieldByColumnName = (colName) => controller.getFieldByColumnName(colName);
+  grid.setRowActions = (renderer) => controller.setRowActions(renderer);
+  grid.setRecordComponent = (renderer) => controller.setRowActions(renderer);
   Object.defineProperty(grid, "data", {
     get: () => {
       const rows = controller.getRows();

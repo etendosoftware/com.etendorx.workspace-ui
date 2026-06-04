@@ -19,6 +19,8 @@ import { FilterAlt, FilterAltOff } from "@mui/icons-material";
 import { IconButton, Tooltip } from "@mui/material";
 import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import TrashIcon from "../../../ComponentLibrary/src/assets/icons/trash.svg";
+import SearchIcon from "../../../ComponentLibrary/src/assets/icons/search.svg";
+import XIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
@@ -83,8 +85,14 @@ import {
   addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
 import { logger } from "@/utils/logger";
-import { createGridProxy, createViewProxy } from "@/utils/processes/definition/scriptProxies";
-import type { GridController } from "@/utils/processes/definition/scriptProxies";
+import { createGridProxy, createViewProxy, ICON_PRESET } from "@/utils/processes/definition/scriptProxies";
+import type {
+  GridController,
+  RowActionButton,
+  RowActionContext,
+  RowActionDescriptor,
+  RowActionRenderer,
+} from "@/utils/processes/definition/scriptProxies";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -602,39 +610,50 @@ interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: handleDeleteRow signature
   onDelete: (row: any) => void;
   deleteRowLabel: string;
+  /** Script-registered row buttons drawn before the delete icon on idle rows. */
+  leadingActions?: React.ReactNode;
 }
 
 /**
  * Row-actions renderer for the P&E grids. Two branches:
  *  - creating row → defer to MRT's built-in Save/Cancel chrome.
- *  - idle row → render trash icon, disabled while another row is being
- *    created (locks the "one row at a time" contract).
+ *  - idle row → render the script row buttons (if any) followed by the trash
+ *    icon, disabled while another row is being created (locks the "one row at a
+ *    time" contract).
  */
-export const renderActionsCell = ({ row, table, canDelete, onDelete, deleteRowLabel }: RenderActionsCellArgs) => {
+export const renderActionsCell = ({
+  row,
+  table,
+  canDelete,
+  onDelete,
+  deleteRowLabel,
+  leadingActions,
+}: RenderActionsCellArgs) => {
   const state = table.getState();
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
-    return <MRT_EditActionButtons row={row} table={table} variant="icon" data-testid="MRT_EditActionButtons__ce8544" />;
+    return (
+        <MRT_EditActionButtons row={row} table={table} variant="icon" data-testid="MRT_EditActionButtons__ce8544" />
+    );
   }
   const lockedByOther = Boolean(state.creatingRow);
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="w-1/2 flex justify-between">
-        {canDelete && (
-          <Tooltip title={deleteRowLabel} data-testid="Tooltip__ce8544">
-            <span>
-              <IconButton
-                onClick={() => onDelete(row)}
-                aria-label={deleteRowLabel}
-                disabled={lockedByOther}
-                data-testid="WindowReferenceGrid__DeleteRowButton">
-                <TrashIcon className="h-4 w-4" data-testid="TrashIcon__ce8544" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-      </div>
+    <div className="w-full flex justify-center items-center gap-1">
+      {leadingActions}
+      {canDelete && (
+        <Tooltip title={deleteRowLabel} data-testid="Tooltip__ce8544">
+          <span>
+            <IconButton
+              onClick={() => onDelete(row)}
+              aria-label={deleteRowLabel}
+              disabled={lockedByOther}
+              data-testid="WindowReferenceGrid__DeleteRowButton">
+              <TrashIcon className="h-4 w-4" data-testid="TrashIcon__ce8544" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
     </div>
   );
 };
@@ -729,6 +748,73 @@ export const GridCellRenderer = (props: any) => {
   }
 
   return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
+};
+
+// --- Per-row component plugin (declarative inline buttons) -----------------
+
+const ROW_ACTIONS_COLUMN_ID = "script-row-actions";
+/** Widened size of the leading actions column when it also hosts script buttons. */
+const ACTIONS_COLUMN_SIZE_WITH_SCRIPT = 200;
+const ACTIONS_COLUMN_SIZE_DEFAULT = 100;
+const ROW_ACTION_ICON_CLASS = "h-4 w-4";
+
+/** Maps a declarative icon preset to its SVG component (no chained ternaries). */
+const ROW_ACTION_ICONS: Record<string, typeof PlusIcon> = {
+  [ICON_PRESET.SEARCH]: SearchIcon,
+  [ICON_PRESET.ADD]: PlusIcon,
+  [ICON_PRESET.CLEAR_RIGHT]: XIcon,
+};
+
+/** Renders one declarative row-action button; an unknown icon preset renders nothing. */
+const RowActionButtonView = ({ button, onActivate }: { button: RowActionButton; onActivate: () => void }) => {
+  const Icon = ROW_ACTION_ICONS[button.icon];
+  if (!Icon) return null;
+  const label = button.prompt ?? button.icon;
+  // Stop propagation so the button never reaches the row-level selection toggle.
+  const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (button.disabled) return;
+    onActivate();
+  };
+  return (
+    <Tooltip title={button.prompt ?? ""} data-testid="RowActionTooltip__ce8544">
+      <span>
+        <IconButton
+          onClick={handleClick}
+          aria-label={label}
+          disabled={button.disabled}
+          data-testid="WindowReferenceGrid__RowActionButton">
+          <Icon className={ROW_ACTION_ICON_CLASS} />
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+};
+
+/**
+ * Renders the inline row-action buttons declared by a migrated row renderer.
+ * Returns a fragment (no wrapping element) so the buttons sit as direct siblings
+ * of the delete icon in the leading actions cell — one centered, evenly-spaced row.
+ */
+export const RowActionsCell = ({
+  buttons,
+  onActivate,
+}: {
+  buttons: RowActionButton[];
+  onActivate: (index: number) => void;
+}) => {
+  if (buttons.length === 0) return null;
+  return (
+    <>
+      {buttons.map((button, index) => (
+        <RowActionButtonView
+          key={`${ROW_ACTIONS_COLUMN_ID}-${index}`}
+          button={button}
+          onActivate={() => onActivate(index)}
+        />
+      ))}
+    </>
+  );
 };
 
 export const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
@@ -1037,6 +1123,7 @@ export interface EmbeddedGridApi {
   handleClearSelections: () => void;
   // biome-ignore lint/suspicious/noExplicitAny: row/changes mirror handleRecordChange's loose shape
   handleRecordChange: (row: any, changes: any) => void;
+  setRowActions: (renderer: RowActionRenderer) => void;
 }
 
 /**
@@ -1105,6 +1192,7 @@ export function createEmbeddedGridController(
       (getApi().fields ?? []).find(
         (field) => field.columnName === colName || field.hqlName === colName || field.inputName === colName
       ),
+    setRowActions: (renderer) => getApi().setRowActions(renderer),
     onDataArrived: (fn) => {
       if (!dataArrivedSubs.includes(fn)) dataArrivedSubs.push(fn);
     },
@@ -1891,6 +1979,17 @@ const WindowReferenceGrid = ({
   const dataArrivedSubsRef = useRef<Array<(rows: EntityData[]) => void>>([]);
   const selectionChangedSubsRef = useRef<Array<(selection: EntityData[]) => void>>([]);
 
+  // Per-row component plugin: a migrated script registers a renderer via
+  // `grid.setRowActions(...)`. The renderer lives in a ref (replacing it needs
+  // no re-render); `hasRowActions` flips once on first registration to add the
+  // inline-buttons column. Without a renderer no column is added (additive).
+  const rowActionsRendererRef = useRef<RowActionRenderer | null>(null);
+  const [hasRowActions, setHasRowActions] = useState(false);
+  const registerRowActions = useCallback((renderer: RowActionRenderer) => {
+    rowActionsRendererRef.current = renderer;
+    setHasRowActions(true);
+  }, []);
+
   // Bumped by `handleRecordChange` whenever `applyFieldInteractions` produces a
   // non-empty sibling patch. Threaded through the grid context so each
   // GridCellEditor sees a new value and its `memo` comparator invalidates,
@@ -2409,7 +2508,7 @@ const WindowReferenceGrid = ({
   // Live handles the controller reads at call time, refreshed every render so the
   // controller identity stays stable (the modal keeps it in a registry) while it
   // always operates on the current rows / selection / datasource handles.
-  const gridApiRef = useRef({
+  const gridApiRef = useRef<EmbeddedGridApi>({
     rows: localRecords,
     refetch,
     criteria: datasourceOptions?.criteria,
@@ -2417,6 +2516,7 @@ const WindowReferenceGrid = ({
     handleRowSelection,
     handleClearSelections,
     handleRecordChange,
+    setRowActions: registerRowActions,
   });
   gridApiRef.current = {
     rows: localRecords,
@@ -2426,6 +2526,7 @@ const WindowReferenceGrid = ({
     handleRowSelection,
     handleClearSelections,
     handleRecordChange,
+    setRowActions: registerRowActions,
   };
 
   const gridController = useMemo<GridController>(
@@ -2492,6 +2593,74 @@ const WindowReferenceGrid = ({
     ]
   );
 
+  // Builds the {record, view, grid} context for a row-action renderer/button,
+  // reusing the exact proxies the onGridLoad path builds so script mutations
+  // follow the same live grid handle.
+  const buildRowActionContext = useCallback(
+    (record: EntityData): RowActionContext | null => {
+      if (!gridLoadFormHandle || !messageBar) return null;
+      const selectedRecords = Array.from(persistentSelectionRef.current.values());
+      const grid = createGridProxy({ rows: localRecords, selectedRecords }, gridControllerRef.current ?? undefined);
+      const view = createViewProxy(gridLoadFormHandle, parameters, {
+        messageBar,
+        grid,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+      });
+      grid.view = view;
+      return { record, view, grid };
+    },
+    [gridLoadFormHandle, messageBar, localRecords, parameters, fieldController, viewController, gridResolver, viewData]
+  );
+
+  // Calls the registered renderer for one row; a throw is logged and yields no
+  // buttons so the row (and the table) keep rendering.
+  const evaluateRowActions = useCallback(
+    (record: EntityData): RowActionDescriptor | null => {
+      const renderer = rowActionsRendererRef.current;
+      if (!renderer) return null;
+      const ctx = buildRowActionContext(record);
+      if (!ctx) return null;
+      try {
+        return renderer(ctx) ?? null;
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] row action renderer failed", error);
+        return null;
+      }
+    },
+    [buildRowActionContext]
+  );
+
+  // Runs a button's action with a fresh context; a throw is logged, not fatal.
+  const runRowAction = useCallback(
+    (button: RowActionButton, record: EntityData) => {
+      if (button.disabled || !button.action) return;
+      const ctx = buildRowActionContext(record);
+      if (!ctx) return;
+      try {
+        button.action(ctx);
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] row action failed", error);
+      }
+    },
+    [buildRowActionContext]
+  );
+
+  const renderRowActionsCell = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: MRT cell render args
+    ({ row }: any) => {
+      const record = row.original as EntityData;
+      const descriptor = evaluateRowActions(record);
+      if (!descriptor || descriptor.buttons.length === 0) return null;
+      return (
+        <RowActionsCell buttons={descriptor.buttons} onActivate={(index) => runRowAction(descriptor.buttons[index], record)} />
+      );
+    },
+    [evaluateRowActions, runRowAction]
+  );
+
   const finalColumns = useMemo(() => {
     const windowReferenceTab = parameter.window?.tabs?.[0];
     let fields: any[] = [];
@@ -2503,7 +2672,7 @@ const WindowReferenceGrid = ({
       }
     }
 
-    return columns
+    const mappedColumns = columns
       .filter((c) => c.id !== "actions")
       .map((col) => {
         // Identify if column corresponds to a Read-Only field
@@ -2555,6 +2724,10 @@ const WindowReferenceGrid = ({
 
         return newCol;
       });
+
+    // The script row-action buttons are rendered inside the leading actions
+    // column (see `renderRowActions`), not as a trailing column.
+    return mappedColumns;
   }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2701,23 +2874,32 @@ const WindowReferenceGrid = ({
       // gate). Combined with `enableEditing` rejecting rows that already have an
       // `original.id`, no existing row can be entered into edit-mode by the user.
       editDisplayMode: "row",
-      enableRowActions: hasAnyActionableRow,
-      renderRowActions: hasAnyActionableRow
-        ? ({ row, table }) =>
-            renderActionsCell({
-              row,
-              table,
-              canDelete,
-              onDelete: handleDeleteRow,
-              deleteRowLabel,
-            })
-        : undefined,
+      enableRowActions: hasAnyActionableRow || hasRowActions,
+      renderRowActions:
+        hasAnyActionableRow || hasRowActions
+          ? ({ row, table }) =>
+              renderActionsCell({
+                row,
+                table,
+                canDelete,
+                onDelete: handleDeleteRow,
+                deleteRowLabel,
+                // Script buttons render on real rows only; the create-row
+                // scaffold keeps MRT's Save/Cancel chrome.
+                leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
+              })
+          : undefined,
       positionActionsColumn: "first",
       displayColumnDefOptions: {
         "mrt-row-actions": {
-          size: 100,
-          minSize: 100,
+          size: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          minSize: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
           enableResizing: false,
+          // Center the "Actions" header label over the centered icon row.
+          muiTableHeadCellProps: {
+            // align: "center",
+            sx: { "& .Mui-TableHeadCell-Content": { justifyContent: "center" } },
+          },
         },
       },
       onCreatingRowSave: handleCreateRow,
@@ -2744,6 +2926,8 @@ const WindowReferenceGrid = ({
       enableRowSelectionFromMetadata,
       enableEditingPredicate,
       hasAnyActionableRow,
+      hasRowActions,
+      renderRowActionsCell,
     ]
   );
 

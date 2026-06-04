@@ -71,9 +71,11 @@ import {
   isValidHqlName,
   resolveHqlName,
   createEmbeddedGridController,
+  RowActionsCell,
   type EmbeddedGridApi,
 } from "../WindowReferenceGrid";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { RowActionButton } from "@/utils/processes/definition/scriptProxies";
 
 describe("WindowReferenceGrid Utilities", () => {
   describe("extractActualValue", () => {
@@ -497,6 +499,42 @@ describe("WindowReferenceGrid Utilities", () => {
       expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
       expect(screen.getByTestId("probe-mrt-edit-chrome")).toBeInTheDocument();
     });
+
+    it("renders leading script actions before the delete button on an idle row", () => {
+      const { args } = buildArgs();
+      render(
+        renderActionsCell({
+          ...args,
+          leadingActions: <button type="button" data-testid="leading-probe" />,
+        }) as React.ReactElement
+      );
+      expect(screen.getByTestId("leading-probe")).toBeInTheDocument();
+      expect(screen.getByTestId("WindowReferenceGrid__DeleteRowButton")).toBeInTheDocument();
+    });
+
+    it("ignores leadingActions on the creating-row scaffold (chrome only)", () => {
+      const { args } = buildArgs({ hasId: false });
+      render(
+        renderActionsCell({
+          ...args,
+          leadingActions: <button type="button" data-testid="leading-probe" />,
+        }) as React.ReactElement
+      );
+      expect(screen.queryByTestId("leading-probe")).toBeNull();
+      expect(screen.getByTestId("probe-mrt-edit-chrome")).toBeInTheDocument();
+    });
+
+    it("renders leading script actions even when the row is not deletable", () => {
+      const { args } = buildArgs({ canDelete: false });
+      render(
+        renderActionsCell({
+          ...args,
+          leadingActions: <button type="button" data-testid="leading-probe" />,
+        }) as React.ReactElement
+      );
+      expect(screen.getByTestId("leading-probe")).toBeInTheDocument();
+      expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
+    });
   });
 
   // Guard composes with `editDisplayMode: "row"` to block any vector that
@@ -532,6 +570,7 @@ describe("WindowReferenceGrid Utilities", () => {
         handleRowSelection: jest.fn(),
         handleClearSelections: jest.fn(),
         handleRecordChange: jest.fn(),
+        setRowActions: jest.fn(),
         ...over,
       };
       return api;
@@ -593,6 +632,90 @@ describe("WindowReferenceGrid Utilities", () => {
       controller.onDataArrived(sub);
       controller.onDataArrived(sub); // de-duped by reference
       expect(dataArrivedSubs).toEqual([sub]);
+    });
+
+    it("delegates setRowActions to the grid's own registration handler", () => {
+      const api = makeApi();
+      const controller = createEmbeddedGridController(
+        () => api,
+        () => [],
+        [],
+        []
+      );
+      const renderer = jest.fn();
+      controller.setRowActions(renderer);
+      expect(api.setRowActions).toHaveBeenCalledWith(renderer);
+    });
+  });
+
+  describe("RowActionsCell", () => {
+    const ROW_ACTION_BUTTON = "WindowReferenceGrid__RowActionButton";
+    const SEARCH_LABEL = "Search";
+
+    const buttons = (...items: RowActionButton[]) => items;
+
+    it("renders one button per declarative entry with prompts as accessible labels", () => {
+      const onActivate = jest.fn();
+      render(
+        <RowActionsCell
+          buttons={buttons(
+            { icon: "search", prompt: SEARCH_LABEL, action: jest.fn() },
+            { icon: "add", prompt: "Add", action: jest.fn() },
+            { icon: "clearRight", prompt: "Clear", action: jest.fn() }
+          )}
+          onActivate={onActivate}
+        />
+      );
+      const renderedButtons = screen.getAllByTestId(ROW_ACTION_BUTTON);
+      expect(renderedButtons).toHaveLength(3);
+      expect(renderedButtons[0]).toHaveAttribute("aria-label", SEARCH_LABEL);
+    });
+
+    it("calls onActivate with the button index and stops the row-click from firing", () => {
+      const onActivate = jest.fn();
+      const onRowClick = jest.fn();
+      render(
+        // biome-ignore lint/a11y/useKeyWithClickEvents: row-click container is a test stand-in
+        <div onClick={onRowClick} data-testid="row-stand-in">
+          <RowActionsCell
+            buttons={buttons({ icon: "add", prompt: "Add", action: jest.fn() })}
+            onActivate={onActivate}
+          />
+        </div>
+      );
+      screen.getByTestId(ROW_ACTION_BUTTON).click();
+      expect(onActivate).toHaveBeenCalledWith(0);
+      expect(onRowClick).not.toHaveBeenCalled();
+    });
+
+    it("disables a button flagged disabled and does not activate it on click", () => {
+      const onActivate = jest.fn();
+      render(
+        <RowActionsCell
+          buttons={buttons({ icon: "clearRight", prompt: "Clear", disabled: true, action: jest.fn() })}
+          onActivate={onActivate}
+        />
+      );
+      const button = screen.getByTestId(ROW_ACTION_BUTTON);
+      expect(button).toBeDisabled();
+      button.click();
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it("renders nothing when there are no buttons", () => {
+      const { container } = render(<RowActionsCell buttons={[]} onActivate={jest.fn()} />);
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it("skips a button with an unknown icon preset (no ghost button)", () => {
+      render(
+        <RowActionsCell
+          // Stale/removed preset (e.g. the old "separator") must not paint an empty button.
+          buttons={[{ icon: "separator" as unknown as RowActionButton["icon"], prompt: "x" }, { icon: "add", prompt: "Add" }]}
+          onActivate={jest.fn()}
+        />
+      );
+      expect(screen.getAllByTestId(ROW_ACTION_BUTTON)).toHaveLength(1);
     });
   });
 });

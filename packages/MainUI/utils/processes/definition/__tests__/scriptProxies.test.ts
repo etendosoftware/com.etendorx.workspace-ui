@@ -88,6 +88,7 @@ const makeGridController = (overrides: Partial<GridController> = {}): GridContro
   getCriteria: jest.fn(),
   addSelectedIDsToCriteria: jest.fn(),
   getFieldByColumnName: jest.fn(),
+  setRowActions: jest.fn(),
   onDataArrived: jest.fn(),
   onSelectionChanged: jest.fn(),
   ...overrides,
@@ -197,6 +198,12 @@ describe("scriptProxies", () => {
     it("throws from deferred methods", () => {
       const grid = createGridProxy(state);
       expect(() => (grid.setEditValue as () => void)()).toThrow("grid.setEditValue is not implemented yet");
+    });
+
+    it("defers setRowActions and setRecordComponent without a controller", () => {
+      const grid = createGridProxy(state);
+      expect(() => (grid.setRowActions as () => void)()).toThrow("grid.setRowActions is not implemented yet");
+      expect(() => (grid.setRecordComponent as () => void)()).toThrow("grid.setRecordComponent is not implemented yet");
     });
   });
 
@@ -492,6 +499,19 @@ describe("scriptProxies", () => {
       expect(() => (grid.setFilterEditorCriteria as () => void)()).toThrow(
         "grid.setFilterEditorCriteria is not implemented yet"
       );
+    });
+
+    it("delegates setRowActions and its setRecordComponent alias to the controller", () => {
+      const controller = makeGridController();
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+      const renderer = jest.fn();
+
+      call(grid.setRowActions)(renderer);
+      call(grid.setRecordComponent)(renderer);
+
+      expect(controller.setRowActions).toHaveBeenCalledTimes(2);
+      expect(controller.setRowActions).toHaveBeenNthCalledWith(1, renderer);
+      expect(controller.setRowActions).toHaveBeenNthCalledWith(2, renderer);
     });
   });
 

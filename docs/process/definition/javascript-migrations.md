@@ -384,11 +384,56 @@ whose callback receives `{record, view, parentGrid}` and returns either a React 
 declarative descriptor `{ buttons: [{ icon, prompt, action: (ctx) => void }, ...] }`. The new UI
 must expose a small declarative API (since arbitrary React elements from a `new Function`-compiled
 script is not reasonable; declarative button descriptors are). Built-in icon presets must cover
-classic's `search`, `add`, `clearRight` button types and a separator type.
+classic's `search`, `add`, `clearRight` button types.
 
 **Backend requirement.** None.
 
-**Coverage status.** MISSING.
+**Coverage status.** DONE.
+
+**Implementation notes (delivered).**
+
+- **Declarative API on the grid handle.** A migrated script registers a per-row renderer via
+  `grid.setRowActions(renderer)` (classic-vocabulary alias `grid.setRecordComponent`). The handle is
+  the same one reached from the first arg of `onGridLoad` and from
+  `view.theForm.getItem('<param>').canvas.viewGrid`, so the registration is implicitly keyed per grid
+  parameter — no external registry. `setRowActions` is a `GridController` method that becomes live when
+  the modal injects the controller and stays deferred (throwing `"… is not implemented yet"`) without
+  it, exactly like the other grid methods
+  ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)).
+- **Renderer + descriptor shape.** The renderer receives `{record, view, grid}` and returns a
+  declarative `{ buttons: [{ icon, prompt, disabled?, action }] }` (or `null`/`undefined` to draw
+  nothing). Arbitrary React from a `new Function`-compiled body is intentionally not supported; only
+  declarative descriptors are. Icon presets cover classic's `search` / `add` / `clearRight` (no
+  separator preset — the icons render evenly spaced). Each button's `action` receives the same
+  `{record, view, grid}` context, built from the live proxies (`createGridProxy` / `createViewProxy`).
+- **Rendering.** The inline buttons render inside the grid's **leading "Actions" column**
+  (`mrt-row-actions`, `positionActionsColumn: "first"`), composed before the built-in delete/save chrome
+  via `renderActionsCell`'s `leadingActions` slot — one consistent actions column on the left, not a
+  trailing column. The column is enabled when the row is deletable/addable **or** a script renderer is
+  registered (`enableRowActions: hasAnyActionableRow || hasRowActions`) and is widened when it hosts
+  script buttons. Script buttons appear on real rows only; the create-row scaffold keeps MRT's
+  Save/Cancel chrome. With no renderer registered nothing changes
+  ([WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx)).
+  A button click stops propagation so it never toggles the row-level selection. A disabled button is
+  rendered disabled and never fires. A throwing renderer or action is caught and logged, so the row and
+  table keep rendering.
+- **Action surface today.** An action can run RPC (`OB.RemoteCallManager`), set the message bar,
+  `view.refresh()`, `grid.invalidateCache()` / `fetchData()` and mutate the selection. Launching a
+  nested process modal (`view.openProcess` / classic `standardWindow.openProcess`) stays deferred and
+  throws `"view.openProcess is not implemented yet"` (caught/logged), to be completed in §4.5.
+- **Breaking-change analysis.** Strictly additive: there was no per-row slot before, no migrated script
+  registers one, and without a registered renderer the grid is byte-for-byte unchanged.
+- **Tests.**
+  [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts)
+  (`setRowActions`/`setRecordComponent` delegate to the controller with a controller, throw deferred
+  without one),
+  [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx)
+  (`createEmbeddedGridController.setRowActions` delegates to the grid's registration handler; the
+  `RowActionsCell` renders one button per entry with prompts as labels,
+  calls `onActivate` with the index while stopping the row click, disables flagged buttons,
+  and renders nothing for an empty descriptor; `renderActionsCell` renders the script `leadingActions`
+  before the delete button on idle rows and even when the row is not deletable, but ignores them on the
+  create-row scaffold).
 
 **Unlocks.** Match Statement (canonical case), and any future process that wants per-row actions
 on its embedded grid.
@@ -1217,7 +1262,7 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** ✅ **DONE.** Body classified per §9.6 and evaluated once into a module scope (`moduleScope.ts`); the resulting helpers are spread into a single shared `scriptHookContext` consumed by all five hooks; `OB.<Module>.<Process>` access works via the body's own namespace self-registration on the shared shim. DSL bodies keep their existing path unchanged. See [moduleScope.ts](../../../packages/MainUI/utils/processes/definition/moduleScope.ts) + [tests](../../../packages/MainUI/utils/processes/definition/__tests__/moduleScope.test.ts).
 11. **[FE] §4.1 — `view` object completion.** ✅ **DONE.** One canonical `view` ([createViewProxy](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) is reached uniformly as the second argument of every hook — positionally for `onChange`/`onGridLoad`, and as the second arg of `onLoad`/`onProcess` ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts)) with the legacy data fields merged onto it (additive — verified against the 12 migrated `onLoad`/`onProcess` and 3 `onChange` bodies in the live DB). Read-only data (`windowId`, `callerField`, `parentWindow`, `sourceView`, `activeView`, `getContextInfo`, `getView`) is always present; lifecycle actions (`refresh`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `selectAllRecords`, `getSelection`) and footer chrome (`popupButtons`, `cancelButton`, the close `X`) delegate to a `ViewController` the modal owns (mirror of the `FieldController`), via a `scriptButtonState` store for the footer. Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx), [useProcessExecution.onProcessView.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.onProcessView.test.tsx). See §4.1 implementation notes. **Deferred to step 14 (§4.5):** `view.openProcess` / `standardWindow.openProcess` and the nested-popup `callerField` (still throwing).
 12. **[FE] §4.3 — Embedded interactive grid.** ✅ **DONE.** Programmable grid handle on `view.theForm.getItem('<param>').canvas.viewGrid` (and as the first arg of `onGridLoad`), both resolving to one live object via a per-grid `GridController` the modal registers (mirror of `FieldController`/`ViewController`). Live surface: selection (`getSelectedRecords`/`select`/`deselect`/`selectSingleRecord`/`deselectAll`/`userSelectAll`), row access (`getRecord`/`getRecordIndex`/`getEditedRecord`/`getTotalRows`/`data.*`), edit-value overlay (`setEditValue`/`getEditValues`/`getEditedCell`), data/lifecycle (`invalidateCache`/`fetchData`), criteria (`getCriteria`/`addSelectedIDsToCriteria`), `getFieldByColumnName`, and chained `dataArrived`/`selectionChanged` callbacks — all reusing the grid's existing handlers ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx), [utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts), [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)). Additive (0 onGridLoad bodies in DB; methods previously threw). `filterByEditor`/`setFilterEditorCriteria`/`transformData`/`removeRecordClick` are documented best-effort gaps. Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx). See §4.3 implementation notes. Unblocks Match Statement / AddPayment / AddTransaction grid manipulation.
-13. **[FE] §4.4 — Per-row grid plugin.** Declarative row-action registration keyed by `(processId, parameterId)`. Depends on step 12.
+13. **[FE] §4.4 — Per-row grid plugin.** ✅ **DONE.** Declarative per-row component plugin on the embedded grid. A migrated script registers a row renderer via `grid.setRowActions(renderer)` (alias `grid.setRecordComponent`) — the same grid handle reached from `onGridLoad` and `view.theForm.getItem('<param>').canvas.viewGrid`, so it is implicitly keyed per grid parameter (no external registry). The renderer receives `{record, view, grid}` and returns a declarative `{ buttons: [{ icon, prompt, disabled?, action }] }`; icon presets cover classic's `search`/`add`/`clearRight` (no separator; icons render evenly spaced). The buttons render in the grid's leading "Actions" column (combined with the built-in delete/save chrome), enabled only when a renderer is registered or the row is deletable/addable (additive; no renderer ⇒ no change). Button clicks stop row-selection propagation; disabled buttons never fire; a throwing renderer/action is caught and logged. Actions can run RPC / message bar / `view.refresh()` / grid refetch / selection; `view.openProcess` (nested modal) stays deferred to §4.5 ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [WindowReferenceGrid.tsx](../../../packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx)). Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts) and [WindowReferenceGrid.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/WindowReferenceGrid.test.tsx). See §4.4 implementation notes. Depends on step 12.
 14. **[FE] §4.5 — Nested-process modal stack.** Modal stack + `view.openProcess(params)` + auto-fire of parent's `onRefreshFunction` on child close. Depends on step 12 (the canonical case launches a nested process from a row component).
 15. **[FE/BE] Bug — a process that carries `etmetaOnload` is shown as a multi-parameter form even when classic renders a single field.** ⚠️ **PENDING — pre-existing bug, not introduced by §4.13** (confirmed during §4.13 testing: the defect reproduces independently of the shared-module-scope wiring). **Where it was seen.** The "Bulk Completion" button (field `EM_ETBLKC_Bulkcompletion` / `798183D32B024B7BA686C75122375798`) bound to `OBUIAPP_Process` "Process Invoices" (`272C8D38EF3245BF882E623CE92AB4E7`, `com.smf.jobs.defaults.ProcessInvoices`). **Symptom.** When the process payload carries a value in `etmetaOnload`, it *also* arrives with a populated `parameters` set (`DocAction`, `Void Date`, `Void Accounting Date`, `Supplier Reference`) and the new modal renders the full parameter form; when `etmetaOnload` is `null` the payload arrives with `parameters: {}` and the modal shows a single field. Compare the two captured payloads: [bulk-completion-with-on-load.json](../../../../bulk-completion/bulk-completion-with-on-load.json) vs [bulk-completion-without-on-load.json](../../../../bulk-completion/bulk-completion-without-on-load.json). **Expected.** Classic shows only the single button/field for this process — it has **no** legacy "On Load" function for the old UI — so the migrated modal must not surface a parameter form here; it should match the classic single-field behaviour regardless of whether `etmetaOnload` is set. **To investigate (after the capability steps).** Why `etmetaOnload` presence correlates with a populated `parameters` payload (BE serialization), and where the modal decides between the single-field button flow and the full parameter-form flow (FE) — then align the new UI with classic. **Do not fix now**; tracked for the end of the migration.
 
