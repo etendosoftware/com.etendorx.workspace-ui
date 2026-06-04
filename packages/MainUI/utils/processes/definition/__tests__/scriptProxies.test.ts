@@ -9,8 +9,11 @@ import {
   notImplemented,
   resolveFormKey,
   type FieldController,
+  type FooterButtonHandle,
   type FormHandle,
   type MessageBarHandle,
+  type ViewController,
+  type ViewData,
 } from "../scriptProxies";
 import { compileParameterHook } from "../compileParameterHook";
 
@@ -47,6 +50,19 @@ const makeController = (valueMaps: Record<string, ListOption[]> = {}): FieldCont
   addField: jest.fn(),
   removeField: jest.fn(),
   focusField: jest.fn(),
+});
+
+/** ViewController of jest spies, with a configurable footer-button list. */
+const makeViewController = (footerButtons: FooterButtonHandle[] = []): ViewController => ({
+  refresh: jest.fn(),
+  fireOnPause: jest.fn(),
+  handleReadOnlyLogic: jest.fn(),
+  handleButtonsStatus: jest.fn(),
+  getSelection: jest.fn(() => []),
+  selectAllRecords: jest.fn(),
+  getFooterButtons: jest.fn(() => footerButtons),
+  setCancelHidden: jest.fn(),
+  setCloseHidden: jest.fn(),
 });
 
 /** Casts a proxy method (typed `unknown` through the index signature) to a callable. */
@@ -172,10 +188,95 @@ describe("scriptProxies", () => {
       expect(withGrid.viewGrid).toBe(grid);
     });
 
-    it("throws from deferred methods", () => {
+    it("throws from action methods when no viewController is given", () => {
       const { handle } = makeFormHandle();
       const view = createViewProxy(handle, PARAMETERS, { messageBar });
       expect(() => (view.refresh as () => void)()).toThrow("view.refresh is not implemented yet");
+      expect(() => (view.selectAllRecords as () => void)()).toThrow("view.selectAllRecords is not implemented yet");
+    });
+
+    it("exposes read-only environment data and the context accessors regardless of controller", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const data: ViewData = {
+        windowId: "W-1",
+        callerField: { id: "F-1", name: "MyButton", columnId: "C-1", record: row("rec-1") },
+        activeTabId: "T-1",
+        parentRecord: { docStatus: "DR", amount: 1 },
+      };
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, data });
+
+      expect(view.windowId).toBe("W-1");
+      expect(view.callerField?.record).toEqual(row("rec-1"));
+      expect(view.activeView?.tabId).toBe("T-1");
+      // Context = parent record overlaid with the live parameter values.
+      expect(view.getContextInfo()).toEqual({ docStatus: "DR", amount: 7 });
+      // getView returns this view for the active tab, a minimal handle otherwise.
+      expect(view.getView("T-1")).toBe(view);
+      expect(view.getView("OTHER")).toEqual({ tabId: "OTHER" });
+    });
+
+    it("delegates the action methods to the viewController", () => {
+      const { handle } = makeFormHandle();
+      const viewController = makeViewController();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController });
+
+      (view.refresh as (f?: boolean, k?: boolean) => void)(true, false);
+      (view.fireOnPause as (id: string, fn: () => void, d: number) => void)("id", () => {}, 50);
+      (view.handleReadOnlyLogic as () => void)();
+      (view.handleButtonsStatus as () => void)();
+      (view.selectAllRecords as () => void)();
+      (view.getSelection as () => EntityData[])();
+
+      expect(viewController.refresh).toHaveBeenCalledWith(true, false);
+      expect(viewController.fireOnPause).toHaveBeenCalledWith("id", expect.any(Function), 50);
+      expect(viewController.handleReadOnlyLogic).toHaveBeenCalled();
+      expect(viewController.handleButtonsStatus).toHaveBeenCalled();
+      expect(viewController.selectAllRecords).toHaveBeenCalled();
+      expect(viewController.getSelection).toHaveBeenCalled();
+    });
+
+    it("wires the footer chrome to the viewController", () => {
+      const { handle } = makeFormHandle();
+      const doneButton: FooterButtonHandle = {
+        _buttonValue: "DONE",
+        title: "Done",
+        hide: jest.fn(),
+        show: jest.fn(),
+        setDisabled: jest.fn(),
+      };
+      const viewController = makeViewController([doneButton]);
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController });
+
+      expect(view.popupButtons?.members).toEqual([doneButton]);
+      view.popupButtons?.members.find((b) => b._buttonValue === "DONE")?.hide();
+      expect(doneButton.hide).toHaveBeenCalled();
+
+      view.cancelButton?.hide();
+      expect(viewController.setCancelHidden).toHaveBeenCalledWith(true);
+      view.parentElement?.parentElement.closeButton.hide();
+      expect(viewController.setCloseHidden).toHaveBeenCalledWith(true);
+    });
+
+    it("keeps openProcess deferred even with a controller (owned by the nested-modal step)", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController: makeViewController() });
+      expect(() => (view.openProcess as () => void)()).toThrow("view.openProcess is not implemented yet");
+    });
+
+    it("merges hookData onto the view without shadowing the canonical surface", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        viewController: makeViewController(),
+        data: { windowId: "W-9" },
+        hookData: { selectedRecords: [row("a")], recordIds: ["a"], windowId: "ignored" },
+      });
+      // Legacy data fields are reachable directly off the view (arg2 = view).
+      expect(view.selectedRecords).toEqual([row("a")]);
+      expect(view.recordIds).toEqual(["a"]);
+      // The canonical surface wins over any colliding hookData key.
+      expect(view.windowId).toBe("W-9");
+      expect(typeof view.refresh).toBe("function");
     });
   });
 

@@ -109,7 +109,22 @@ import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/definition/moduleScope";
-import { createFormHandle, type FieldController } from "@/utils/processes/definition/scriptProxies";
+import {
+  createFormHandle,
+  createViewProxy,
+  type FieldController,
+  type FooterButtonHandle,
+  type ViewController,
+  type ViewData,
+} from "@/utils/processes/definition/scriptProxies";
+import {
+  withButtonDisabled,
+  withButtonHidden,
+  withCancelHidden,
+  withCloseHidden,
+  EMPTY_SCRIPT_BUTTON_STATE,
+  type ScriptButtonState,
+} from "@/utils/processes/definition/utils";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
@@ -227,6 +242,35 @@ function focusFormField(form: UseFormReturn, name: string): void {
   } catch {
     // Best-effort: nothing focusable matched the requested item.
   }
+}
+
+type ButtonStateUpdater = (updater: (prev: ScriptButtonState) => ScriptButtonState) => void;
+
+/**
+ * Wraps a footer action button as the SmartClient-style handle migrated scripts
+ * reach through `view.popupButtons.members`. Each mutation routes through the
+ * modal's `scriptButtonState` so the footer re-renders accordingly.
+ */
+function makeFooterButtonHandle(
+  button: { value: string; label: string },
+  setButtonState: ButtonStateUpdater
+): FooterButtonHandle {
+  return {
+    _buttonValue: button.value,
+    title: button.label,
+    hide: () => setButtonState((prev) => withButtonHidden(prev, button.value, true)),
+    show: () => setButtonState((prev) => withButtonHidden(prev, button.value, false)),
+    setDisabled: (disabled = true) => setButtonState((prev) => withButtonDisabled(prev, button.value, disabled)),
+  };
+}
+
+/** Returns the grid-selection structure with every loaded row selected. */
+function selectAllGridRows(prev: GridSelectionStructure): GridSelectionStructure {
+  const next: GridSelectionStructure = {};
+  for (const [gridName, grid] of Object.entries(prev)) {
+    next[gridName] = { ...grid, _selection: [...grid._allRows] };
+  }
+  return next;
 }
 
 // ---------------------------------------------------------------------------
@@ -530,6 +574,14 @@ function ProcessDefinitionModalContent({
   // hide / setDisabled). Merged last so a script's explicit choice wins.
   const [scriptLogicFields, setScriptLogicFields] = useState<Record<string, boolean>>({});
 
+  // Footer-button visibility/enablement toggled imperatively by migrated scripts
+  // (view.popupButtons / view.cancelButton / the close X). Reset on each open.
+  const [scriptButtonState, setScriptButtonState] = useState<ScriptButtonState>(EMPTY_SCRIPT_BUTTON_STATE);
+
+  // Pending view.fireOnPause callbacks, keyed by id so a later call for the same
+  // id replaces the earlier pending one. Cleared when the modal closes.
+  const onPauseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   // Combined view: static defaults < dynamic callout updates < script overrides.
   const logicFields = useMemo(
     () => ({ ...staticLogicFields, ...calloutLogicFields, ...scriptLogicFields }),
@@ -687,11 +739,70 @@ function ProcessDefinitionModalContent({
     [form]
   );
 
+  // Read-only environment data surfaced on the `view` (pure values; no controller
+  // needed). The same object reaches every hook via the canonical view builder.
+  const viewData = useMemo<ViewData>(
+    () => ({
+      windowId,
+      callerField: {
+        id: button.processDefinition.fieldId as string | undefined,
+        name: (button.processDefinition.fieldName ?? button.name) as string | undefined,
+        columnId: button.processDefinition.columnId as string | undefined,
+        record: record ?? undefined,
+      },
+      parentWindow: tab ?? undefined,
+      sourceView: tab ?? undefined,
+      parentRecord: recordValues ?? (record as Record<string, unknown>) ?? undefined,
+      activeTabId: tab?.id,
+    }),
+    [windowId, button, record, recordValues, tab]
+  );
+
+  // Lifecycle actions + footer chrome behind the `view`. Mirrors fieldController:
+  // each method delegates to a real modal handle, so the proxies stay pure.
+  const viewController = useMemo<ViewController>(
+    () => ({
+      refresh: () => {
+        if (tab?.id) refetchDatasource?.(tab.id);
+        setGridRefreshKey((prev) => prev + 1);
+      },
+      fireOnPause: (id, fn, delay) => {
+        const timers = onPauseTimersRef.current;
+        const pending = timers.get(id);
+        if (pending) clearTimeout(pending);
+        timers.set(
+          id,
+          setTimeout(() => {
+            timers.delete(id);
+            fn();
+          }, delay)
+        );
+      },
+      // Force a recompute of the reactive stores the form/footer already read.
+      handleReadOnlyLogic: () => setScriptLogicFields((prev) => ({ ...prev })),
+      handleButtonsStatus: () => setScriptButtonState((prev) => ({ ...prev })),
+      getSelection: () => selectedRecords as EntityData[],
+      selectAllRecords: () => setGridSelection((prev) => selectAllGridRows(prev)),
+      getFooterButtons: () => availableButtons.map((btn) => makeFooterButtonHandle(btn, setScriptButtonState)),
+      setCancelHidden: (hidden) => setScriptButtonState((prev) => withCancelHidden(prev, hidden)),
+      setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
+    }),
+    [tab?.id, refetchDatasource, setGridRefreshKey, selectedRecords, setGridSelection, availableButtons]
+  );
+
   // `view.messageBar` / `messageBar` is the in-modal banner (rendered by
   // <ProcessMessageBar/>); the same singleton handle reaches every hook.
   // onGridLoad (WindowReferenceGrid) intentionally keeps its form methods
   // deferred this step; only onChange receives the imperative controller.
-  useParameterChangeHooks({ form, parameters, context: scriptHookContext, messageBar, fieldController });
+  useParameterChangeHooks({
+    form,
+    parameters,
+    context: scriptHookContext,
+    messageBar,
+    fieldController,
+    viewController,
+    viewData,
+  });
 
   const gridLoadHooks = useMemo(() => {
     const map = new Map<string, CompiledParameterHook | null>();
@@ -890,6 +1001,8 @@ function ProcessDefinitionModalContent({
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
     scriptContext: scriptHookContext,
+    viewController,
+    viewData,
     button,
     parameters,
     form,
@@ -939,9 +1052,23 @@ function ProcessDefinitionModalContent({
   // Start each modal open with a clean message bar. The bar's lifetime is owned
   // here (not by ProcessMessageBar's unmount), so a message set by onLoad/onChange
   // survives the loading-spinner ↔ form transitions that mount/unmount the host.
+  // The script-driven footer state is reset on the same open so it never leaks
+  // between sessions.
   useEffect(() => {
-    if (open) messageBar.hide();
+    if (open) {
+      messageBar.hide();
+      setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
+    }
   }, [open]);
+
+  // Clear any pending view.fireOnPause callbacks when the modal unmounts.
+  useEffect(() => {
+    const timers = onPauseTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
 
   // -------------------------------------------------------------------------
   // useEffect — onLoad execution
@@ -1098,11 +1225,15 @@ function ProcessDefinitionModalContent({
         const effectiveOnLoad = etmetaOnload || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
 
         if (effectiveOnLoad && tab) {
-          const result = await executeStringFunction(
-            effectiveOnLoad,
-            scriptHookContext,
-            button.processDefinition,
-            {
+          // The onLoad second argument is the canonical view: it carries the
+          // data fields the migrated scripts read (selectedRecords, tabId, …) and
+          // the full view surface (theForm, messageBar, refresh, windowId, …).
+          const onLoadView = createViewProxy(createFormHandle(form), parameters, {
+            messageBar,
+            controller: fieldController,
+            viewController,
+            data: viewData,
+            hookData: {
               selectedRecords,
               tabId: tab.id || "",
               tableId: tab.table || "",
@@ -1110,7 +1241,14 @@ function ProcessDefinitionModalContent({
               // Mirrors classic SmartClient view.onRefreshFunction so migrated
               // scripts can call view.onRefreshFunction(view) to rebuild the modal.
               onRefreshFunction,
-            }
+            },
+          });
+
+          const result = await executeStringFunction(
+            effectiveOnLoad,
+            scriptHookContext,
+            button.processDefinition,
+            onLoadView
           );
 
           if (result) {
@@ -1140,6 +1278,11 @@ function ProcessDefinitionModalContent({
     warehousePluginLoading,
     warehouseSchema,
     handleOnLoadResult,
+    form,
+    parameters,
+    fieldController,
+    viewController,
+    viewData,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1381,6 +1524,8 @@ function ProcessDefinitionModalContent({
         onGridLoadHook={gridLoadHooks.get(parameter.id || parameter.name) ?? null}
         gridLoadFormHandle={scriptFormHandle}
         messageBar={messageBar}
+        viewController={viewController}
+        viewData={viewData}
         data-testid="WindowReferenceGrid__761503"
       />
     );
@@ -1502,13 +1647,15 @@ function ProcessDefinitionModalContent({
                   <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                disabled={isPending}>
-                <CloseIcon data-testid="CloseIcon__761503" />
-              </button>
+              {!scriptButtonState.closeHidden && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                  disabled={isPending}>
+                  <CloseIcon data-testid="CloseIcon__761503" />
+                </button>
+              )}
             </div>
 
             {/* Content */}
@@ -1532,15 +1679,17 @@ function ProcessDefinitionModalContent({
             <div className="flex gap-3 justify-end mx-3 my-3">
               {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && (
                 <>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={handleClose}
-                    disabled={isPending}
-                    className="w-49"
-                    data-testid="CancelButton__761503">
-                    {t("common.cancel")}
-                  </Button>
+                  {!scriptButtonState.cancelHidden && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      disabled={isPending}
+                      className="w-49"
+                      data-testid="CancelButton__761503">
+                      {t("common.cancel")}
+                    </Button>
+                  )}
                   <Button
                     variant="filled"
                     size="large"
@@ -1554,31 +1703,38 @@ function ProcessDefinitionModalContent({
                 </>
               )}
 
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && !isPending && (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={handleClose}
-                  className="w-49"
-                  data-testid="CloseButton__761503">
-                  {t("common.close")}
-                </Button>
-              )}
+              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                (!result || !isFinalSuccess) &&
+                !isPending &&
+                !scriptButtonState.cancelHidden && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={handleClose}
+                    className="w-49"
+                    data-testid="CloseButton__761503">
+                    {t("common.close")}
+                  </Button>
+                )}
 
               {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
                 ((!result || !isFinalSuccess) && availableButtons.length > 0
-                  ? availableButtons.map((btn) => (
-                      <Button
-                        key={btn.value}
-                        variant="filled"
-                        size="large"
-                        onClick={() => handleExecute(btn.value)}
-                        disabled={Boolean(isActionButtonDisabled)}
-                        className="w-49"
-                        data-testid={`ExecuteButton_${btn.value}__761503`}>
-                        {btn.label}
-                      </Button>
-                    ))
+                  ? availableButtons
+                      .filter((btn) => !scriptButtonState.hiddenValues[btn.value])
+                      .map((btn) => (
+                        <Button
+                          key={btn.value}
+                          variant="filled"
+                          size="large"
+                          onClick={() => handleExecute(btn.value)}
+                          disabled={
+                            Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
+                          }
+                          className="w-49"
+                          data-testid={`ExecuteButton_${btn.value}__761503`}>
+                          {btn.label}
+                        </Button>
+                      ))
                   : (!result || !isFinalSuccess) && (
                       <Button
                         variant="filled"

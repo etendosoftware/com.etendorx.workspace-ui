@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
-import type { FieldController } from "@/utils/processes/definition/scriptProxies";
+import type { FieldController, FooterButtonHandle, ViewController } from "@/utils/processes/definition/scriptProxies";
 import { useParameterChangeHooks } from "../useParameterChangeHooks";
 
 jest.mock("@/utils/logger", () => ({
@@ -26,6 +26,19 @@ const makeController = (): FieldController => ({
   focusField: jest.fn(),
 });
 
+/** ViewController of jest spies, with a configurable footer-button list. */
+const makeViewController = (footerButtons: FooterButtonHandle[] = []): ViewController => ({
+  refresh: jest.fn(),
+  fireOnPause: jest.fn(),
+  handleReadOnlyLogic: jest.fn(),
+  handleButtonsStatus: jest.fn(),
+  getSelection: jest.fn(() => []),
+  selectAllRecords: jest.fn(),
+  getFooterButtons: jest.fn(() => footerButtons),
+  setCancelHidden: jest.fn(),
+  setCloseHidden: jest.fn(),
+});
+
 /**
  * Mounts a real react-hook-form instance plus the hook under test, sharing the
  * same `form` reference. Returns helpers to drive value changes.
@@ -33,12 +46,13 @@ const makeController = (): FieldController => ({
 function setup(
   parameters: Record<string, ProcessParameter>,
   context: Record<string, unknown>,
-  fieldController?: FieldController
+  fieldController?: FieldController,
+  viewController?: ViewController
 ) {
   const formHook = renderHook(() => useForm({ defaultValues: { p1: "", p2: "" } }));
   const form = formHook.result.current;
   const hookRender = renderHook(() =>
-    useParameterChangeHooks({ form, parameters, context, messageBar, fieldController })
+    useParameterChangeHooks({ form, parameters, context, messageBar, fieldController, viewController })
   );
   const change = (name: string, value: unknown) => act(() => form.setValue(name, value, { shouldDirty: true }));
   const flush = () => act(() => jest.advanceTimersByTime(300));
@@ -158,5 +172,27 @@ describe("useParameterChangeHooks", () => {
     flush();
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("reaches the viewController from a hook calling view.refresh / view.popupButtons", () => {
+    const doneButton: FooterButtonHandle = {
+      _buttonValue: "DONE",
+      title: "Done",
+      hide: jest.fn(),
+      show: jest.fn(),
+      setDisabled: jest.fn(),
+    };
+    const viewController = makeViewController([doneButton]);
+    const body = `(item, view) => {
+      view.refresh();
+      view.popupButtons.members.find((b) => b._buttonValue === 'DONE').hide();
+    }`;
+    const { change, flush } = setup({ p1: param("p1", body) }, {}, undefined, viewController);
+
+    change("p1", "go");
+    flush();
+
+    expect(viewController.refresh).toHaveBeenCalled();
+    expect(doneButton.hide).toHaveBeenCalled();
   });
 });

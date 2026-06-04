@@ -17,7 +17,12 @@
 
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
 import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
-import type { FormHandle, MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
+import type {
+  FormHandle,
+  MessageBarHandle,
+  ViewController,
+  ViewData,
+} from "@/utils/processes/definition/scriptProxies";
 import type {
   Field,
   ProcessAction,
@@ -192,6 +197,10 @@ export interface WindowReferenceGridProps {
   gridLoadFormHandle?: FormHandle;
   /** Backing for `view.messageBar` inside `onGridLoad`. */
   messageBar?: MessageBarHandle;
+  /** Bridge that makes the `view` action methods + footer chrome live inside `onGridLoad`. */
+  viewController?: ViewController;
+  /** Read-only environment data surfaced on the `view` inside `onGridLoad`. */
+  viewData?: ViewData;
 }
 
 export type RowProps = (props: {

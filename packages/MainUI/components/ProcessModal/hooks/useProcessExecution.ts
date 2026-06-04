@@ -51,6 +51,14 @@ import {
   findFirstOpenDirectTab,
 } from "../utils/responseActionDispatcher";
 import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
+import {
+  createFormHandle,
+  createViewProxy,
+  type FieldController,
+  type ViewController,
+  type ViewData,
+} from "@/utils/processes/definition/scriptProxies";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -127,6 +135,10 @@ export interface UseProcessExecutionParams {
    * resolve by bare name on submit too.
    */
   scriptContext: Record<string, unknown>;
+  /** View-level bridge + read-only data, so onProcess's second arg is the canonical view. */
+  viewController?: ViewController;
+  viewData?: ViewData;
+  fieldController?: FieldController;
   // biome-ignore lint/suspicious/noExplicitAny: button shape varies by process type
   button: any;
   parameters: Record<string, ProcessParameter>;
@@ -194,6 +206,9 @@ export function useProcessExecution({
   initialState,
   selectedRecords,
   scriptContext,
+  viewController,
+  viewData,
+  fieldController,
   button,
   parameters,
   form,
@@ -655,21 +670,30 @@ export function useProcessExecution({
 
         const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
 
-        const stringFunctionPayload = {
-          _buttonValue: actionValue || "DONE",
-          buttonValue: actionValue || "DONE",
-          windowId: tab.window,
-          tabId: tab?.id || tabId || "",
-          entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
-          // Mirrors classic SmartClient view.onRefreshFunction so migrated
-          // scripts can refresh the modal grid/form after async actions.
-          // TODO: when nested Process Definition modals are supported, also
-          // auto-call parentView.onRefreshFunction(parentView) here on success,
-          // matching ob-parameter-window-view.js:436-439 in classic.
-          onRefreshFunction,
-          ...completePayload,
-        };
+        // The onProcess second argument is the canonical view: it carries the
+        // data fields the migrated scripts read (recordIds, windowId, DocAction,
+        // …) and the full view surface (theForm, messageBar, refresh, …).
+        const processView = createViewProxy(createFormHandle(form), parameters, {
+          messageBar,
+          controller: fieldController,
+          viewController,
+          data: viewData,
+          hookData: {
+            _buttonValue: actionValue || "DONE",
+            buttonValue: actionValue || "DONE",
+            windowId: tab.window,
+            tabId: tab?.id || tabId || "",
+            entityName: tab.entityName,
+            recordIds: selectedRecords?.map((r) => r.id),
+            // Mirrors classic SmartClient view.onRefreshFunction so migrated
+            // scripts can refresh the modal grid/form after async actions.
+            // TODO: when nested Process Definition modals are supported, also
+            // auto-call parentView.onRefreshFunction(parentView) here on success,
+            // matching ob-parameter-window-view.js:436-439 in classic.
+            onRefreshFunction,
+            ...completePayload,
+          },
+        });
 
         try {
           const stringFnResult = await executeStringFunction(
@@ -678,7 +702,7 @@ export function useProcessExecution({
             // helpers, so onProcess resolves bare-name helpers like the other hooks.
             scriptContext,
             button.processDefinition,
-            stringFunctionPayload
+            processView
           );
 
           const result = stringFnResult?.data ?? stringFnResult;
@@ -732,6 +756,9 @@ export function useProcessExecution({
       form,
       parameters,
       scriptContext,
+      viewController,
+      viewData,
+      fieldController,
       resolveDocAction,
       availableButtons,
       setResult,

@@ -322,6 +322,50 @@ export function withFlag(prev: Record<string, boolean>, key: string, value: bool
 }
 
 /**
+ * Footer-button visibility/enablement toggled imperatively by migrated scripts
+ * (`view.popupButtons` / `view.cancelButton` / the close `X`). Keyed by the
+ * action button's value; the cancel/close flags are modal-wide.
+ */
+export interface ScriptButtonState {
+  hiddenValues: Record<string, boolean>;
+  disabledValues: Record<string, boolean>;
+  cancelHidden: boolean;
+  closeHidden: boolean;
+}
+
+/** Stable empty reference, so the reset effect never builds a fresh object. */
+export const EMPTY_SCRIPT_BUTTON_STATE: ScriptButtonState = {
+  hiddenValues: {},
+  disabledValues: {},
+  cancelHidden: false,
+  closeHidden: false,
+};
+
+/** Sets an action button's hidden flag; short-circuits on a no-op (absent = false). */
+export function withButtonHidden(prev: ScriptButtonState, value: string, hidden: boolean): ScriptButtonState {
+  if ((prev.hiddenValues[value] ?? false) === hidden) return prev;
+  return { ...prev, hiddenValues: { ...prev.hiddenValues, [value]: hidden } };
+}
+
+/** Sets an action button's disabled flag; short-circuits on a no-op (absent = false). */
+export function withButtonDisabled(prev: ScriptButtonState, value: string, disabled: boolean): ScriptButtonState {
+  if ((prev.disabledValues[value] ?? false) === disabled) return prev;
+  return { ...prev, disabledValues: { ...prev.disabledValues, [value]: disabled } };
+}
+
+/** Sets the cancel button's hidden flag; short-circuits on a no-op. */
+export function withCancelHidden(prev: ScriptButtonState, hidden: boolean): ScriptButtonState {
+  if (prev.cancelHidden === hidden) return prev;
+  return { ...prev, cancelHidden: hidden };
+}
+
+/** Sets the close (`X`) button's hidden flag; short-circuits on a no-op. */
+export function withCloseHidden(prev: ScriptButtonState, hidden: boolean): ScriptButtonState {
+  if (prev.closeHidden === hidden) return prev;
+  return { ...prev, closeHidden: hidden };
+}
+
+/**
  * Returns the parameters map with `name`'s `mandatory` flag set. Short-circuits
  * to the same reference when the parameter is missing or already at that value.
  */

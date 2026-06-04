@@ -127,13 +127,66 @@ on the new UI as the view-arg dictionary constructed at [ProcessDefinitionModal.
 **Backend requirement.** None. The view object is constructed entirely on the client from data
 already in the process-definition / tab-context payload.
 
-**Coverage status.** PARTIAL. Today only `onRefreshFunction` is wired; the remaining ~16 view
-properties / methods are absent.
+**Coverage status.** DONE (everything except the footer-button **launch** of a nested process and
+the nested-popup `callerField`, which belong to the nested-modal step — see the scope note below).
 
-**Unlocks (when complete).** Any process that touches the view object beyond the form items
-themselves: Match Statement, AddPayment, AddTransaction, FindTransaction, Aging Balance,
-ProductCharacteristics, PeriodControl, the Packing pair, ValidateCostingRule. Effectively
-**most processes in §6 except the trivial onChange-only ones**.
+**Implementation notes (delivered).**
+
+- **Real hook contracts (verified against the live DB, `OBUIAPP_Process` / `OBUIAPP_Parameter`).**
+  The migrated scripts are `onLoad: async (process, payload)`, `onProcess: async (process, params)`,
+  `onChange: (item, view, form, grid)`, `onGridLoad: (grid, view, parameters)`. The second positional
+  argument is the "view-arg" in every case. 12 processes already ship `onLoad`/`onProcess`
+  (Add Payment, Create Packing/Header, Process Orders, the Picking List family, Funds Transfer,
+  Select Invoices and Orders, Validate Picking List, Assign and Group) and 3 Add Payment parameters
+  ship `onChange`.
+- **One canonical `view`, reached uniformly as the second argument.** A single builder
+  ([createViewProxy](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) produces
+  the `view` for all five hooks. `onChange`/`onGridLoad` already receive it positionally; for
+  `onLoad`/`onProcess` the second argument **is** that same `view`, with the plain data fields the
+  scripts read (`selectedRecords`, `recordIds`, `windowId`, `tabId`, `tableId`, `parentRecord`,
+  `onRefreshFunction`, `entityName`, `buttonValue`, `_buttonValue`, `DocAction`, …) merged onto it via
+  the builder's `hookData`. The canonical surface always wins over a colliding data key, so no view
+  method can be shadowed.
+- **Breaking-change analysis → zero rotura.** Because the second-argument shape is preserved (the
+  legacy data fields stay reachable as `view.selectedRecords` / `view.recordIds` / …), the 12 migrated
+  `onLoad`/`onProcess` and the 3 `onChange` only *gain* capabilities. The change is strictly additive.
+- **`ViewController`, mirror of `FieldController`.** The lifecycle actions and footer chrome delegate
+  to a `ViewController` the modal supplies; absent it (plain unit tests) the action methods stay
+  deferred (throwing stubs), so the proxies remain pure adapters. Read-only data and
+  `getContextInfo()` / `getView()` are always present (pure values).
+  - **Read-only data (immediate):** `windowId`, `callerField` (`{ id, name, columnId, record }` of the
+    launching button/field), `parentWindow`, `sourceView`, `activeView.tabId`, `getContextInfo()`
+    (parent record overlaid with the live parameter values).
+  - **Actions bound to React handles:** `refresh` (refetch the launching grid + bump the modal grid),
+    `fireOnPause` (debounced `setTimeout` map keyed by id, cleared on close),
+    `handleReadOnlyLogic` / `handleButtonsStatus` (recompute the reactive stores the form/footer
+    already read), `getSelection` (the launching selection), `selectAllRecords` (selects every loaded
+    embedded-grid row).
+  - **Footer chrome:** `popupButtons.members` (each `{ _buttonValue, title, hide(), show(),
+    setDisabled() }`), `cancelButton.hide()/show()`, `parentElement.parentElement.closeButton.hide()`.
+    These route through a `scriptButtonState` store merged last into the footer render (the
+    "script wins" pattern from `scriptLogicFields`), and the store resets on each modal open.
+- **`getView(tabId)` is best-effort.** Only the current view is reachable from the modal: a matching
+  `tabId` (or none) returns this view; any other id returns a minimal `{ tabId }` handle.
+- **Scope deferred to the nested-modal step (§4.5 / step 14):** `view.openProcess(params)` and
+  `view.standardWindow.openProcess` stay deferred (still throwing), and the nested-popup `callerField`
+  (pointing back to the launcher) lands there too. The top-level `callerField` (the launching button)
+  is provided now.
+- **Tests.**
+  [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts)
+  (read-only data + context accessors, controller-backed actions, footer chrome, `openProcess` still
+  deferred, `hookData` merge precedence),
+  [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts)
+  (the button-state reducers),
+  [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx)
+  (an onChange reaching `view.refresh` / `view.popupButtons`),
+  [useProcessExecution.onProcessView.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.onProcessView.test.tsx)
+  (onProcess's second arg carries both the legacy data fields and the view surface).
+
+**Unlocks.** Any process that touches the view object beyond the form items themselves: Match
+Statement, AddPayment, AddTransaction, FindTransaction, Aging Balance, ProductCharacteristics,
+PeriodControl, the Packing pair, ValidateCostingRule. Effectively **most processes in §6 except the
+trivial onChange-only ones**.
 
 ---
 
@@ -1106,10 +1159,11 @@ the unlock tallies in §6 and dependency relationships between capabilities.
 8. **[FE] §4.11 — Datasource façade.** ✅ **DONE.** React-free factory `createDatasourceManager(deps)` ([datasource.ts](../../../packages/MainUI/utils/ob/datasource.ts)) exposing `OB.Datasource.create(config)` → `{ fetchData, setCacheData }`, backed by the injected `callDatasource` ([utils.ts](../../../packages/MainUI/utils/processes/definition/utils.ts)); entity resolved from `dataURL`, classic `(response, data, request)` callback with `{ status, totalRows }` (envelope status passed through, transport failure → `status: -1`), `setCacheData` for client-only datasources. Tests in [datasource.test.ts](../../../packages/MainUI/utils/ob/__tests__/datasource.test.ts), [obShim.test.ts](../../../packages/MainUI/utils/ob/__tests__/obShim.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts). See §4.11 implementation notes. Unlocks scripts that build ad-hoc datasources (ProductCharacteristics, AddPayment, Match Statement, createFromOrders).
 9. **[FE] §4.2 — Form-item full API.** ✅ **DONE.** Imperative mutation surface on `view.theForm` / `getItem(name)` delivered through a `FieldController` the modal injects into the parameter-change proxies ([scriptProxies.ts](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts), [ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useParameterChangeHooks.ts](../../../packages/MainUI/components/ProcessModal/hooks/useParameterChangeHooks.ts)): item `setRequired` / `setDisabled` / `show` / `hide` / `clearValue` / `setValueMap` / `getValueMap` / `setValueFromRecord` / `redraw`, and form `hideItem` / `getField` / `getFields` / `addField` / `removeField` / `focusInItem` / `values` / `markForRedraw`. Rides the existing reactive mechanisms (`parameters.mandatory`, the merged `logicFields`, `parameters.refList`) so `ProcessParameterSelector` is untouched; additive (no controller → methods stay deferred). Scope rule applied: `item.canvas` / `viewGrid` / `item.fetchData` defer to step 12 (§4.3), `form.view` / `paramWindow` to step 11 (§4.1). Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx). See §4.2 implementation notes.
 10. **[FE] §4.13 — Shared module scope for `etmetaPayscriptLogic`.** ✅ **DONE.** Body classified per §9.6 and evaluated once into a module scope (`moduleScope.ts`); the resulting helpers are spread into a single shared `scriptHookContext` consumed by all five hooks; `OB.<Module>.<Process>` access works via the body's own namespace self-registration on the shared shim. DSL bodies keep their existing path unchanged. See [moduleScope.ts](../../../packages/MainUI/utils/processes/definition/moduleScope.ts) + [tests](../../../packages/MainUI/utils/processes/definition/__tests__/moduleScope.test.ts).
-11. **[FE] §4.1 — `view` object completion.** Expose the remaining view properties / methods (`popupButtons`, `cancelButton`, `parentWindow`, `parentElement`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `refresh`, `getView(tabId)`, `sourceView`, `callerField`). Large; some properties (footer-button programmability) require new modal-chrome plumbing.
+11. **[FE] §4.1 — `view` object completion.** ✅ **DONE.** One canonical `view` ([createViewProxy](../../../packages/MainUI/utils/processes/definition/scriptProxies.ts)) is reached uniformly as the second argument of every hook — positionally for `onChange`/`onGridLoad`, and as the second arg of `onLoad`/`onProcess` ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx), [useProcessExecution.ts](../../../packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts)) with the legacy data fields merged onto it (additive — verified against the 12 migrated `onLoad`/`onProcess` and 3 `onChange` bodies in the live DB). Read-only data (`windowId`, `callerField`, `parentWindow`, `sourceView`, `activeView`, `getContextInfo`, `getView`) is always present; lifecycle actions (`refresh`, `fireOnPause`, `handleReadOnlyLogic`, `handleButtonsStatus`, `selectAllRecords`, `getSelection`) and footer chrome (`popupButtons`, `cancelButton`, the close `X`) delegate to a `ViewController` the modal owns (mirror of the `FieldController`), via a `scriptButtonState` store for the footer. Tests in [scriptProxies.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/scriptProxies.test.ts), [utils.test.ts](../../../packages/MainUI/utils/processes/definition/__tests__/utils.test.ts), [useParameterChangeHooks.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useParameterChangeHooks.test.tsx), [useProcessExecution.onProcessView.test.tsx](../../../packages/MainUI/components/ProcessModal/hooks/__tests__/useProcessExecution.onProcessView.test.tsx). See §4.1 implementation notes. **Deferred to step 14 (§4.5):** `view.openProcess` / `standardWindow.openProcess` and the nested-popup `callerField` (still throwing).
 12. **[FE] §4.3 — Embedded interactive grid.** Programmable grid surface on `view.theForm.getItem('<param>').canvas.viewGrid` (selection, edit values, datasource swap, filter API, lifecycle callbacks). Large. Blocker for Match Statement / AddPayment / AddTransaction full ports.
 13. **[FE] §4.4 — Per-row grid plugin.** Declarative row-action registration keyed by `(processId, parameterId)`. Depends on step 12.
 14. **[FE] §4.5 — Nested-process modal stack.** Modal stack + `view.openProcess(params)` + auto-fire of parent's `onRefreshFunction` on child close. Depends on step 12 (the canonical case launches a nested process from a row component).
+15. **[FE/BE] Bug — a process that carries `etmetaOnload` is shown as a multi-parameter form even when classic renders a single field.** ⚠️ **PENDING — pre-existing bug, not introduced by §4.13** (confirmed during §4.13 testing: the defect reproduces independently of the shared-module-scope wiring). **Where it was seen.** The "Bulk Completion" button (field `EM_ETBLKC_Bulkcompletion` / `798183D32B024B7BA686C75122375798`) bound to `OBUIAPP_Process` "Process Invoices" (`272C8D38EF3245BF882E623CE92AB4E7`, `com.smf.jobs.defaults.ProcessInvoices`). **Symptom.** When the process payload carries a value in `etmetaOnload`, it *also* arrives with a populated `parameters` set (`DocAction`, `Void Date`, `Void Accounting Date`, `Supplier Reference`) and the new modal renders the full parameter form; when `etmetaOnload` is `null` the payload arrives with `parameters: {}` and the modal shows a single field. Compare the two captured payloads: [bulk-completion-with-on-load.json](../../../../bulk-completion/bulk-completion-with-on-load.json) vs [bulk-completion-without-on-load.json](../../../../bulk-completion/bulk-completion-without-on-load.json). **Expected.** Classic shows only the single button/field for this process — it has **no** legacy "On Load" function for the old UI — so the migrated modal must not surface a parameter form here; it should match the classic single-field behaviour regardless of whether `etmetaOnload` is set. **To investigate (after the capability steps).** Why `etmetaOnload` presence correlates with a populated `parameters` payload (BE serialization), and where the modal decides between the single-field button flow and the full parameter-form flow (FE) — then align the new UI with classic. **Do not fix now**; tracked for the end of the migration.
 
 Steps §5.3 and §5.4 are not on the priority list because they require no code change; they are
 documented in §5 as standing confirmations of the existing contract.

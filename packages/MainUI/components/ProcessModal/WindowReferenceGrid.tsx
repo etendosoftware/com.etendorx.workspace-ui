@@ -1045,6 +1045,8 @@ const WindowReferenceGrid = ({
   onGridLoadHook,
   gridLoadFormHandle,
   messageBar,
+  viewController,
+  viewData,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1815,7 +1817,12 @@ const WindowReferenceGrid = ({
     if (onGridLoadHook && gridLoadFormHandle && messageBar) {
       const selectedRecords = prepared.filter((record: EntityData) => Boolean(record?.obSelected));
       const grid = createGridProxy({ rows: prepared, selectedRecords });
-      const view = createViewProxy(gridLoadFormHandle, parameters, { messageBar, grid });
+      const view = createViewProxy(gridLoadFormHandle, parameters, {
+        messageBar,
+        grid,
+        viewController,
+        data: viewData,
+      });
       grid.view = view;
       try {
         onGridLoadHook(grid, view, parameters);
@@ -1823,7 +1830,7 @@ const WindowReferenceGrid = ({
         logger.error("[WindowReferenceGrid] onGridLoad failed", error);
       }
     }
-  }, [rawRecords, onGridLoadHook, gridLoadFormHandle, messageBar, parameters]);
+  }, [rawRecords, onGridLoadHook, gridLoadFormHandle, messageBar, parameters, viewController, viewData]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
   // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.

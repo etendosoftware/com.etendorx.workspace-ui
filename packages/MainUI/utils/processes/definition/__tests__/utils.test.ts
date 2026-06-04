@@ -15,6 +15,11 @@ import {
   normalizeValueMap,
   addDynamicParameter,
   removeParameter,
+  withButtonHidden,
+  withButtonDisabled,
+  withCancelHidden,
+  withCloseHidden,
+  EMPTY_SCRIPT_BUTTON_STATE,
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
@@ -483,6 +488,30 @@ describe("Process Definition Utils", () => {
       it("short-circuits to the same reference when unchanged", () => {
         const prev = { "a.readonly": true };
         expect(withFlag(prev, "a.readonly", true)).toBe(prev);
+      });
+    });
+
+    describe("footer button-state reducers", () => {
+      it("withButtonHidden / withButtonDisabled set per-value flags immutably", () => {
+        const hidden = withButtonHidden(EMPTY_SCRIPT_BUTTON_STATE, "DONE", true);
+        expect(hidden.hiddenValues).toEqual({ DONE: true });
+        expect(hidden).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+
+        const disabled = withButtonDisabled(hidden, "DONE", true);
+        expect(disabled.disabledValues).toEqual({ DONE: true });
+        expect(disabled.hiddenValues).toEqual({ DONE: true });
+      });
+
+      it("withCancelHidden / withCloseHidden set the modal-wide flags immutably", () => {
+        expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, true).cancelHidden).toBe(true);
+        expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, true).closeHidden).toBe(true);
+      });
+
+      it("short-circuits to the same reference on a no-op", () => {
+        expect(withButtonHidden(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withButtonDisabled(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
       });
     });
 

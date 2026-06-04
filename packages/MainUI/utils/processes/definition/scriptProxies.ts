@@ -91,6 +91,55 @@ export interface FieldController {
   focusField: (name: string) => void;
 }
 
+/** A footer button handle reachable through `view.popupButtons.members`. */
+export interface FooterButtonHandle extends Record<string, unknown> {
+  _buttonValue: string;
+  title: string;
+  hide: () => void;
+  show: () => void;
+  setDisabled: (disabled?: boolean) => void;
+}
+
+/**
+ * View-level bridge the modal supplies so the `view` action methods and footer
+ * chrome become live. Mirrors `FieldController`: absent in plain tests (and any
+ * context that only reads), where the corresponding classic methods stay
+ * deferred. Keeps `createViewProxy` a pure adapter with no React dependency.
+ */
+export interface ViewController {
+  refresh: (force?: boolean, keepEditedValues?: boolean) => void;
+  fireOnPause: (id: string, fn: () => void, delay: number) => void;
+  handleReadOnlyLogic: () => void;
+  handleButtonsStatus: () => void;
+  getSelection: () => EntityData[];
+  selectAllRecords: () => void;
+  getFooterButtons: () => FooterButtonHandle[];
+  setCancelHidden: (hidden: boolean) => void;
+  setCloseHidden: (hidden: boolean) => void;
+}
+
+/** Identity of the field/button that launched the process (`view.callerField`). */
+export interface CallerField extends Record<string, unknown> {
+  id?: string;
+  name?: string;
+  columnId?: string;
+  record?: EntityData;
+}
+
+/**
+ * Pure read-only data the modal already holds, surfaced on the `view`. These
+ * need no controller (they are plain values), so they are present on every
+ * `view` regardless of who builds it.
+ */
+export interface ViewData {
+  windowId?: string;
+  callerField?: CallerField;
+  parentWindow?: unknown;
+  sourceView?: unknown;
+  parentRecord?: Record<string, unknown>;
+  activeTabId?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Proxy shapes
 // ---------------------------------------------------------------------------
@@ -119,6 +168,25 @@ export interface ViewProxy extends Record<string, unknown> {
   theForm: FormProxy;
   messageBar: MessageBarHandle;
   viewGrid?: GridProxy;
+  /** Read-only environment data (always present). */
+  windowId?: string;
+  callerField?: CallerField;
+  parentWindow?: unknown;
+  sourceView?: unknown;
+  activeView?: { tabId?: string };
+  getContextInfo: () => Record<string, unknown>;
+  getView: (tabId?: string) => unknown;
+  /** Lifecycle actions (live only when a `ViewController` is injected). */
+  refresh?: (force?: boolean, keepEditedValues?: boolean) => void;
+  fireOnPause?: (id: string, fn: () => void, delay: number) => void;
+  handleReadOnlyLogic?: () => void;
+  handleButtonsStatus?: () => void;
+  selectAllRecords?: () => void;
+  getSelection?: () => EntityData[];
+  /** Footer chrome (live only with a controller). */
+  popupButtons?: { members: FooterButtonHandle[] };
+  cancelButton?: { hide: () => void; show: () => void };
+  parentElement?: { parentElement: { closeButton: { hide: () => void; show: () => void } } };
 }
 
 /** Optional extras for the grid-cell variant of the onChange hook. */
@@ -170,16 +238,21 @@ const LIVE_FORM_METHODS: readonly string[] = [...DEFERRED_FORM_METHODS];
 const DEFERRED_ITEM_METHODS_WITH_CONTROLLER = DEFERRED_ITEM_METHODS.filter((m) => !LIVE_ITEM_METHODS.includes(m));
 const DEFERRED_FORM_METHODS_WITH_CONTROLLER = DEFERRED_FORM_METHODS.filter((m) => !LIVE_FORM_METHODS.includes(m));
 
-const DEFERRED_VIEW_METHODS = [
-  "getContextInfo",
+/** Action methods that become live once a `ViewController` is injected. */
+const LIVE_VIEW_METHODS = [
   "refresh",
+  "fireOnPause",
   "handleReadOnlyLogic",
   "handleButtonsStatus",
-  "fireOnPause",
-  "openProcess",
   "selectAllRecords",
   "getSelection",
 ] as const;
+
+/** Owned by the nested-process modal step; stays deferred even with a controller. */
+const NESTED_VIEW_METHODS = ["openProcess"] as const;
+
+/** Full deferred set used when no controller is present (`getContextInfo` is always live). */
+const DEFERRED_VIEW_METHODS = [...LIVE_VIEW_METHODS, ...NESTED_VIEW_METHODS] as const;
 
 const DEFERRED_GRID_METHODS = [
   "setEditValue",
@@ -365,17 +438,86 @@ export function createGridProxy(state: GridState): GridProxy {
   return gridProxy;
 }
 
-/** Builds the `view` proxy. `viewGrid` is set when the parameter is grid-typed. */
+/** Read-only environment data and the always-live context accessors. */
+function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void {
+  view.windowId = data.windowId;
+  view.callerField = data.callerField;
+  view.parentWindow = data.parentWindow;
+  view.sourceView = data.sourceView;
+  view.activeView = { tabId: data.activeTabId };
+  // Context map = parent record fields overlaid with the current parameter values.
+  view.getContextInfo = () => ({ ...(data.parentRecord ?? {}), ...(form.getValues() as Record<string, unknown>) });
+  // Best-effort: only the current view is reachable from the modal. A matching
+  // tabId returns this view; any other id returns a minimal read-only handle.
+  view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? view : { tabId });
+}
+
+/** Lifecycle action methods, each delegating to the injected controller. */
+function assignViewActions(view: ViewProxy, controller: ViewController): void {
+  view.refresh = (force, keepEditedValues) => controller.refresh(force, keepEditedValues);
+  view.fireOnPause = (id, fn, delay) => controller.fireOnPause(id, fn, delay);
+  view.handleReadOnlyLogic = () => controller.handleReadOnlyLogic();
+  view.handleButtonsStatus = () => controller.handleButtonsStatus();
+  view.selectAllRecords = () => controller.selectAllRecords();
+  view.getSelection = () => controller.getSelection();
+}
+
+/** Footer chrome handles (`popupButtons` / `cancelButton` / the close `X`). */
+function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
+  view.popupButtons = { members: controller.getFooterButtons() };
+  view.cancelButton = {
+    hide: () => controller.setCancelHidden(true),
+    show: () => controller.setCancelHidden(false),
+  };
+  view.parentElement = {
+    parentElement: {
+      closeButton: {
+        hide: () => controller.setCloseHidden(true),
+        show: () => controller.setCloseHidden(false),
+      },
+    },
+  };
+}
+
+/**
+ * Builds the canonical `view` proxy shared by every migrated hook. `viewGrid` is
+ * set for grid-typed parameters. Read-only data and `getContextInfo` / `getView`
+ * are always present; the lifecycle actions and footer chrome become live only
+ * when a `ViewController` is injected, and stay deferred (throwing stubs)
+ * otherwise. `openProcess` is always deferred (owned by the nested-modal step).
+ *
+ * `hookData` carries the plain data fields the onLoad / onProcess scripts read
+ * directly off their second argument (`selectedRecords`, `recordIds`, …). It is
+ * spread first so the canonical `view` surface always takes precedence over any
+ * stray key, keeping "the second argument is the view" uniform across hooks.
+ */
 export function createViewProxy(
   form: FormHandle,
   parameters: ParametersMap | undefined,
-  deps: { messageBar: MessageBarHandle; grid?: GridProxy; controller?: FieldController }
+  deps: {
+    messageBar: MessageBarHandle;
+    grid?: GridProxy;
+    controller?: FieldController;
+    viewController?: ViewController;
+    data?: ViewData;
+    hookData?: Record<string, unknown>;
+  }
 ): ViewProxy {
-  const view: ViewProxy = {
+  const view = {
+    ...(deps.hookData ?? {}),
     theForm: createFormProxy(form, parameters, deps.controller),
     messageBar: deps.messageBar,
-  };
+  } as ViewProxy;
   if (deps.grid) view.viewGrid = deps.grid;
-  assignDeferred(view, "view", DEFERRED_VIEW_METHODS);
+
+  assignViewData(view, form, deps.data ?? {});
+
+  if (deps.viewController) {
+    assignViewActions(view, deps.viewController);
+    assignFooterChrome(view, deps.viewController);
+    assignDeferred(view, "view", NESTED_VIEW_METHODS);
+  } else {
+    assignDeferred(view, "view", DEFERRED_VIEW_METHODS);
+  }
   return view;
 }
