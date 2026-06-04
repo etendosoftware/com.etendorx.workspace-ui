@@ -79,6 +79,9 @@ import {
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
+import { TreeColumnFilter } from "./TreeColumnFilter";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -681,6 +684,30 @@ const getHierarchyIcon = (
   }
 
   return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+};
+
+/** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
+const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
+  const props = (mrtColumn.columnDef as any)._treeFilterProps;
+  if (!props) return null;
+  return (
+    <TreeColumnFilter
+      column={props.column}
+      entityName={props.entityName}
+      tabId={props.tabId}
+      onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
+        const colId = props.column.id || props.column.columnName;
+        props.onFilterChange((prev: ColumnFiltersState) => {
+          const filtered = prev.filter((f: { id: string }) => f.id !== colId);
+          if (selectedOptions && selectedOptions.length > 0) {
+            return [...filtered, { id: colId, value: selectedOptions }];
+          }
+          return filtered;
+        });
+      }}
+      data-testid="TreeColumnFilter__8ca888"
+    />
+  );
 };
 
 const DynamicTable = ({
@@ -2441,6 +2468,20 @@ const DynamicTable = ({
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
 
+      // Tree reference columns get a tree-aware dropdown filter instead of text
+      const ref = col.column?.reference;
+      if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
+        column.enableColumnFilter = true;
+        // Store props on column for the stable TreeColumnFilterWrapper to read
+        (column as Record<string, unknown>)._treeFilterProps = {
+          column: col,
+          entityName: tab.entityName,
+          tabId: tab.id,
+          onFilterChange: handleMRTColumnFiltersChange,
+        };
+        column.Filter = TreeColumnFilterWrapper;
+      }
+
       return column;
     });
 
@@ -2506,7 +2547,16 @@ const DynamicTable = ({
     }
 
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
+  }, [
+    baseColumns,
+    shouldUseTreeMode,
+    renderActionsColumnCell,
+    renderDataColumnCell,
+    tableColumnVisibility,
+    tab.entityName,
+    tab.id,
+    handleMRTColumnFiltersChange,
+  ]);
 
   // Helper function to check if a row is being edited
 
