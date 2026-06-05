@@ -39,17 +39,6 @@ jest.mock("../WindowReferenceGridContext", () => ({
   WindowReferenceGridProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-// MRT_EditActionButtons needs the MaterialReactTable internals to mount. We
-// only care about the *presence* of the chrome vs our custom buttons, so we
-// stub it with a probe.
-jest.mock("material-react-table", () => {
-  const actual = jest.requireActual("material-react-table");
-  return {
-    ...actual,
-    MRT_EditActionButtons: () => <div data-testid="probe-mrt-edit-chrome">chrome</div>,
-  };
-});
-
 import type React from "react";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -67,6 +56,9 @@ import {
   GridCellRenderer,
   shouldRenderCellEditor,
   renderActionsCell,
+  CreateRowActionButtons,
+  collectEditInputValues,
+  shouldShowRowActions,
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
@@ -440,6 +432,9 @@ describe("WindowReferenceGrid Utilities", () => {
 
   // Row-actions cell: two branches (creating, idle) and the cross-disabling
   // contract that locks "one row at a time".
+  const CREATE_ROW_CANCEL_TESTID = "WindowReferenceGrid__CreateRowCancelButton";
+  const CREATE_ROW_SAVE_TESTID = "WindowReferenceGrid__CreateRowSaveButton";
+
   describe("renderActionsCell", () => {
     const DELETE_LABEL = "Delete row";
     const ROW_ID = "row-1";
@@ -458,10 +453,20 @@ describe("WindowReferenceGrid Utilities", () => {
       const onDelete = jest.fn();
       const args = {
         row: { id: rowId, original: hasId ? { id: rowId } : {} },
+        // Minimal MRT table stub covering both branches: `creatingRow` for the
+        // idle/trash logic and the options/refs the create-row buttons consume.
         table: {
           getState: () => ({
             creatingRow: creatingRowId ? { id: creatingRowId } : null,
+            isSaving: false,
           }),
+          setCreatingRow: jest.fn(),
+          options: {
+            onCreatingRowSave: jest.fn(),
+            onCreatingRowCancel: jest.fn(),
+            localization: { cancel: "Cancel", save: "Save" },
+          },
+          refs: { editInputRefs: { current: {} } },
         },
         canDelete,
         onDelete,
@@ -492,12 +497,13 @@ describe("WindowReferenceGrid Utilities", () => {
       expect(container.querySelector("button")).toBeNull();
     });
 
-    it("defers to MRT's edit chrome for the creating-row scaffold (no row.original.id)", () => {
+    it("renders our custom Add/Cancel buttons for the creating-row scaffold (no row.original.id)", () => {
       const { args } = buildArgs({ hasId: false });
       render(renderActionsCell(args) as React.ReactElement);
-      // MRT_EditActionButtons is the chrome — not our custom trash button.
+      // Our own create-row chrome — not the trash button.
       expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
-      expect(screen.getByTestId("probe-mrt-edit-chrome")).toBeInTheDocument();
+      expect(screen.getByTestId(CREATE_ROW_CANCEL_TESTID)).toBeInTheDocument();
+      expect(screen.getByTestId(CREATE_ROW_SAVE_TESTID)).toBeInTheDocument();
     });
 
     it("renders leading script actions before the delete button on an idle row", () => {
@@ -512,7 +518,7 @@ describe("WindowReferenceGrid Utilities", () => {
       expect(screen.getByTestId("WindowReferenceGrid__DeleteRowButton")).toBeInTheDocument();
     });
 
-    it("ignores leadingActions on the creating-row scaffold (chrome only)", () => {
+    it("ignores leadingActions on the creating-row scaffold (create-row chrome only)", () => {
       const { args } = buildArgs({ hasId: false });
       render(
         renderActionsCell({
@@ -521,7 +527,7 @@ describe("WindowReferenceGrid Utilities", () => {
         }) as React.ReactElement
       );
       expect(screen.queryByTestId("leading-probe")).toBeNull();
-      expect(screen.getByTestId("probe-mrt-edit-chrome")).toBeInTheDocument();
+      expect(screen.getByTestId(CREATE_ROW_SAVE_TESTID)).toBeInTheDocument();
     });
 
     it("renders leading script actions even when the row is not deletable", () => {
@@ -534,6 +540,165 @@ describe("WindowReferenceGrid Utilities", () => {
       );
       expect(screen.getByTestId("leading-probe")).toBeInTheDocument();
       expect(screen.queryByTestId("WindowReferenceGrid__DeleteRowButton")).toBeNull();
+    });
+  });
+
+  describe("collectEditInputValues", () => {
+    const ROW_ID = "row-1";
+
+    const buildTable = (current: Record<string, { name: string; value: unknown }>) => ({
+      refs: { editInputRefs: { current } },
+    });
+
+    it("copies matching inputs (by row id) into the value cache", () => {
+      const row = { id: ROW_ID, _valuesCache: { [`${ROW_ID}_amount`]: "", [`${ROW_ID}_qty`]: "" } };
+      const table = buildTable({
+        a: { name: `${ROW_ID}_amount`, value: "100" },
+        b: { name: `${ROW_ID}_qty`, value: "5" },
+      });
+
+      const result = collectEditInputValues(row, table);
+
+      expect(result).toEqual({ [`${ROW_ID}_amount`]: "100", [`${ROW_ID}_qty`]: "5" });
+    });
+
+    it("ignores inputs that belong to another row", () => {
+      const row = { id: ROW_ID, _valuesCache: { [`${ROW_ID}_amount`]: "" } };
+      const table = buildTable({ a: { name: "other-row_amount", value: "999" } });
+
+      const result = collectEditInputValues(row, table);
+
+      expect(result).toEqual({ [`${ROW_ID}_amount`]: "" });
+    });
+
+    it("ignores input names absent from the value cache", () => {
+      const row = { id: ROW_ID, _valuesCache: { [`${ROW_ID}_amount`]: "" } };
+      const table = buildTable({ a: { name: `${ROW_ID}_unknown`, value: "x" } });
+
+      const result = collectEditInputValues(row, table);
+
+      expect(result).toEqual({ [`${ROW_ID}_amount`]: "" });
+    });
+
+    it("returns an empty object when the row has no value cache and no refs", () => {
+      expect(collectEditInputValues({ id: ROW_ID }, {})).toEqual({});
+    });
+  });
+
+  describe("CreateRowActionButtons", () => {
+    const ROW_ID = "row-1";
+    const CANCEL_LABEL = "Cancel";
+    const SAVE_LABEL = "Save";
+
+    const buildTable = ({
+      isSaving = false,
+      withSave = true,
+      editInputs = {},
+    }: {
+      isSaving?: boolean;
+      withSave?: boolean;
+      editInputs?: Record<string, { name: string; value: unknown }>;
+    } = {}) => {
+      const onCreatingRowSave = jest.fn();
+      const onCreatingRowCancel = jest.fn();
+      const setCreatingRow = jest.fn();
+      const table = {
+        getState: () => ({ isSaving }),
+        setCreatingRow,
+        options: {
+          onCreatingRowSave: withSave ? onCreatingRowSave : undefined,
+          onCreatingRowCancel,
+          localization: { cancel: CANCEL_LABEL, save: SAVE_LABEL },
+        },
+        refs: { editInputRefs: { current: editInputs } },
+      };
+      return { table, onCreatingRowSave, onCreatingRowCancel, setCreatingRow };
+    };
+
+    const buildRow = (valuesCache: Record<string, unknown> = {}) => ({ id: ROW_ID, _valuesCache: valuesCache });
+
+    it("renders both Cancel and Save buttons with the localized labels", () => {
+      const { table } = buildTable();
+      render(<CreateRowActionButtons row={buildRow()} table={table} />);
+      expect(screen.getByTestId(CREATE_ROW_CANCEL_TESTID)).toHaveAttribute("aria-label", CANCEL_LABEL);
+      expect(screen.getByTestId(CREATE_ROW_SAVE_TESTID)).toHaveAttribute("aria-label", SAVE_LABEL);
+    });
+
+    it("does not render Save when no onCreatingRowSave is provided", () => {
+      const { table } = buildTable({ withSave: false });
+      render(<CreateRowActionButtons row={buildRow()} table={table} />);
+      expect(screen.getByTestId(CREATE_ROW_CANCEL_TESTID)).toBeInTheDocument();
+      expect(screen.queryByTestId(CREATE_ROW_SAVE_TESTID)).toBeNull();
+    });
+
+    it("disables Save while the table is saving", () => {
+      const { table } = buildTable({ isSaving: true });
+      render(<CreateRowActionButtons row={buildRow()} table={table} />);
+      expect(screen.getByTestId(CREATE_ROW_SAVE_TESTID)).toBeDisabled();
+    });
+
+    it("Save flushes the edit inputs and calls onCreatingRowSave with an exitCreatingMode that clears the row", () => {
+      const { table, onCreatingRowSave, setCreatingRow } = buildTable({
+        editInputs: { a: { name: `${ROW_ID}_amount`, value: "42" } },
+      });
+      const row = buildRow({ [`${ROW_ID}_amount`]: "" });
+      render(<CreateRowActionButtons row={row} table={table} />);
+
+      screen.getByTestId(CREATE_ROW_SAVE_TESTID).click();
+
+      expect(onCreatingRowSave).toHaveBeenCalledTimes(1);
+      const callArg = onCreatingRowSave.mock.calls[0][0];
+      expect(callArg.row).toBe(row);
+      expect(callArg.table).toBe(table);
+      expect(callArg.values).toEqual({ [`${ROW_ID}_amount`]: "42" });
+      callArg.exitCreatingMode();
+      expect(setCreatingRow).toHaveBeenCalledWith(null);
+    });
+
+    it("Cancel calls onCreatingRowCancel, clears the creating row and resets the value cache", () => {
+      const { table, onCreatingRowCancel, setCreatingRow } = buildTable();
+      const row = buildRow({ [`${ROW_ID}_amount`]: "42" });
+      render(<CreateRowActionButtons row={row} table={table} />);
+
+      screen.getByTestId(CREATE_ROW_CANCEL_TESTID).click();
+
+      expect(onCreatingRowCancel).toHaveBeenCalledWith({ row, table });
+      expect(setCreatingRow).toHaveBeenCalledWith(null);
+      expect(row._valuesCache).toEqual({});
+    });
+
+    it("stops click propagation so the row selection is not toggled", () => {
+      const { table } = buildTable();
+      const onParentClick = jest.fn();
+      render(
+        // biome-ignore lint/a11y/useKeyWithClickEvents: test-only wrapper to assert propagation
+        <div onClick={onParentClick}>
+          <CreateRowActionButtons row={buildRow()} table={table} />
+        </div>
+      );
+
+      screen.getByTestId(CREATE_ROW_CANCEL_TESTID).click();
+      screen.getByTestId(CREATE_ROW_SAVE_TESTID).click();
+
+      expect(onParentClick).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("shouldShowRowActions", () => {
+    it("is true when the grid is creatable (canAdd) even with no actionable rows or script actions", () => {
+      expect(shouldShowRowActions(false, false, true)).toBe(true);
+    });
+
+    it("is true when a row is actionable (deletable/locally-added)", () => {
+      expect(shouldShowRowActions(true, false, false)).toBe(true);
+    });
+
+    it("is true when script row actions are registered", () => {
+      expect(shouldShowRowActions(false, true, false)).toBe(true);
+    });
+
+    it("is false only when none apply", () => {
+      expect(shouldShowRowActions(false, false, false)).toBe(false);
     });
   });
 

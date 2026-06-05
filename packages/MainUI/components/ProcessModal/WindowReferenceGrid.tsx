@@ -21,6 +21,7 @@ import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import TrashIcon from "../../../ComponentLibrary/src/assets/icons/trash.svg";
 import SearchIcon from "../../../ComponentLibrary/src/assets/icons/search.svg";
 import XIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
+import SaveIcon from "../../../ComponentLibrary/src/assets/icons/save.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
@@ -36,7 +37,6 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
-  MRT_EditActionButtons,
   MRT_ShowHideColumnsButton,
   MRT_ToggleDensePaddingButton,
   MRT_ToggleFiltersButton,
@@ -601,6 +601,112 @@ export const buildEnableEditingPredicate = (
   };
 };
 
+/** Shared sizing for every action icon in the leading column (row buttons, trash, create-row). */
+const ACTION_ICON_CLASS = "h-4 w-4";
+const CREATE_ROW_CANCEL_TESTID = "WindowReferenceGrid__CreateRowCancelButton";
+const CREATE_ROW_SAVE_TESTID = "WindowReferenceGrid__CreateRowSaveButton";
+const CREATE_ROW_CANCEL_FALLBACK = "Cancel";
+const CREATE_ROW_SAVE_FALLBACK = "Save";
+
+interface CreateRowActionButtonsProps {
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row
+  row: any;
+  // biome-ignore lint/suspicious/noExplicitAny: MRT table instance
+  table: any;
+}
+
+/**
+ * Flushes the values typed into MRT's edit inputs for the given creating row into
+ * `row._valuesCache`, mirroring MRT's own submit wiring so the fields MRT knows
+ * about reach `onCreatingRowSave`. Only inputs whose name belongs to this row and
+ * whose key already exists in the value cache are copied. Returns the value cache.
+ */
+export const collectEditInputValues = (
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row internals are untyped
+  row: any,
+  // biome-ignore lint/suspicious/noExplicitAny: MRT table internals are untyped
+  table: any
+) => {
+  const editInputRefs = table?.refs?.editInputRefs?.current ?? {};
+  const valuesCache = row?._valuesCache ?? {};
+  // biome-ignore lint/suspicious/noExplicitAny: input refs are untyped DOM elements
+  for (const input of Object.values<any>(editInputRefs)) {
+    const name = input?.name;
+    if (!name || name.split("_")[0] !== row.id) continue;
+    if (input.value !== undefined && Object.hasOwn(valuesCache, name)) {
+      valuesCache[name] = input.value;
+    }
+  }
+  return valuesCache;
+};
+
+/**
+ * Add/Cancel buttons for the grid's create-row scaffold. Replaces MRT's built-in
+ * edit-action chrome so the create-row icons match the size, spacing and centering
+ * of the other action icons in the column (script row buttons + the trash icon). It
+ * drives MRT's creation flow directly: Cancel discards the scaffold; Save flushes
+ * the edited inputs and hands them to `onCreatingRowSave`.
+ */
+export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsProps) => {
+  const { onCreatingRowSave, onCreatingRowCancel, localization } = table.options;
+  const { isSaving } = table.getState();
+  const cancelLabel = localization?.cancel ?? CREATE_ROW_CANCEL_FALLBACK;
+  const saveLabel = localization?.save ?? CREATE_ROW_SAVE_FALLBACK;
+
+  const handleCancel = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onCreatingRowCancel?.({ row, table });
+    table.setCreatingRow(null);
+    row._valuesCache = {};
+  };
+
+  const handleSubmit = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const values = collectEditInputValues(row, table);
+    onCreatingRowSave?.({
+      exitCreatingMode: () => table.setCreatingRow(null),
+      row,
+      table,
+      values,
+    });
+  };
+
+  return (
+    <div className="w-full flex justify-center items-center gap-1">
+      <Tooltip title={cancelLabel} data-testid="CreateRowCancelTooltip__ce8544">
+        <span>
+          <IconButton aria-label={cancelLabel} onClick={handleCancel} data-testid={CREATE_ROW_CANCEL_TESTID}>
+            <XIcon className={ACTION_ICON_CLASS} />
+          </IconButton>
+        </span>
+      </Tooltip>
+      {onCreatingRowSave && (
+        <Tooltip title={saveLabel} data-testid="CreateRowSaveTooltip__ce8544">
+          <span>
+            <IconButton
+              aria-label={saveLabel}
+              disabled={isSaving}
+              onClick={handleSubmit}
+              data-testid={CREATE_ROW_SAVE_TESTID}>
+              <SaveIcon className={ACTION_ICON_CLASS} />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Whether the grid must render the leading "Actions" column. It is required when a
+ * row would paint a button (deletable/locally-added rows or script row actions) and
+ * also whenever the grid is creatable: the create-row scaffold must render through
+ * `renderActionsCell` (our custom Add/Cancel buttons) instead of MRT's built-in
+ * edit chrome, which only happens when row actions are enabled.
+ */
+export const shouldShowRowActions = (hasAnyActionableRow: boolean, hasRowActions: boolean, canAdd: boolean): boolean =>
+  hasAnyActionableRow || hasRowActions || canAdd;
+
 interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: MRT row
   row: any;
@@ -632,9 +738,7 @@ export const renderActionsCell = ({
   const state = table.getState();
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
-    return (
-        <MRT_EditActionButtons row={row} table={table}  variant="icon" data-testid="MRT_EditActionButtons__ce8544" />
-    );
+    return <CreateRowActionButtons row={row} table={table} />;
   }
   const lockedByOther = Boolean(state.creatingRow);
 
@@ -649,7 +753,7 @@ export const renderActionsCell = ({
               aria-label={deleteRowLabel}
               disabled={lockedByOther}
               data-testid="WindowReferenceGrid__DeleteRowButton">
-              <TrashIcon className="h-4 w-4" data-testid="TrashIcon__ce8544" />
+              <TrashIcon className={ACTION_ICON_CLASS} data-testid="TrashIcon__ce8544" />
             </IconButton>
           </span>
         </Tooltip>
@@ -756,7 +860,7 @@ const ROW_ACTIONS_COLUMN_ID = "script-row-actions";
 /** Widened size of the leading actions column when it also hosts script buttons. */
 const ACTIONS_COLUMN_SIZE_WITH_SCRIPT = 200;
 const ACTIONS_COLUMN_SIZE_DEFAULT = 100;
-const ROW_ACTION_ICON_CLASS = "h-4 w-4";
+const ROW_ACTION_ICON_CLASS = ACTION_ICON_CLASS;
 
 /** Maps a declarative icon preset to its SVG component (no chained ternaries). */
 const ROW_ACTION_ICONS: Record<string, typeof PlusIcon> = {
@@ -2726,7 +2830,7 @@ const WindowReferenceGrid = ({
       });
 
     // The script row-action buttons are rendered inside the leading actions
-    // column (see `renderRowActions`), not as a trailing column.
+    // column (the "mrt-row-actions" Cell override), not as a trailing column.
     return mappedColumns;
   }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
@@ -2769,6 +2873,8 @@ const WindowReferenceGrid = ({
   const hasLocallyAddedRow = (records || []).some((r) => Boolean((r as { _locallyAdded?: boolean })?._locallyAdded));
   const hasAnyDeletableRow = canDelete && (records || []).length > 0;
   const hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow;
+  // Creatable grids must own the create-row chrome too (see shouldShowRowActions).
+  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasRowActions, canAdd);
   const enableEditingPredicate = useMemo(
     () => buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap),
     [finalColumns, windowReferenceTab, fieldReadOnlyMap]
@@ -2874,21 +2980,7 @@ const WindowReferenceGrid = ({
       // gate). Combined with `enableEditing` rejecting rows that already have an
       // `original.id`, no existing row can be entered into edit-mode by the user.
       editDisplayMode: "row",
-      enableRowActions: hasAnyActionableRow || hasRowActions,
-      renderRowActions:
-        hasAnyActionableRow || hasRowActions
-          ? ({ row, table }) =>
-              renderActionsCell({
-                row,
-                table,
-                canDelete,
-                onDelete: handleDeleteRow,
-                deleteRowLabel,
-                // Script buttons render on real rows only; the create-row
-                // scaffold keeps MRT's Save/Cancel chrome.
-                leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
-              })
-          : undefined,
+      enableRowActions: showRowActions,
       positionActionsColumn: "first",
       displayColumnDefOptions: {
         "mrt-row-actions": {
@@ -2900,6 +2992,21 @@ const WindowReferenceGrid = ({
             // align: "center",
             sx: { "& .Mui-TableHeadCell-Content": { justifyContent: "center" } },
           },
+          // Own the actions cell directly. MRT's default actions cell forces its
+          // built-in MRT_EditActionButtons for the create-row in row create/edit
+          // mode and never consults `renderRowActions`, so overriding the column
+          // `Cell` is the only way our create-row buttons (and idle-row buttons)
+          // render for every row, including the creating scaffold.
+          Cell: ({ row, table }) =>
+            renderActionsCell({
+              row,
+              table,
+              canDelete,
+              onDelete: handleDeleteRow,
+              deleteRowLabel,
+              // Script buttons render on real (persisted) rows only.
+              leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
+            }),
         },
       },
       onCreatingRowSave: handleCreateRow,
@@ -2925,7 +3032,7 @@ const WindowReferenceGrid = ({
       deleteRowLabel,
       enableRowSelectionFromMetadata,
       enableEditingPredicate,
-      hasAnyActionableRow,
+      showRowActions,
       hasRowActions,
       renderRowActionsCell,
     ]

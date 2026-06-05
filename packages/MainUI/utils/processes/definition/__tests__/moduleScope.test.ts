@@ -37,6 +37,18 @@ describe("classifyPayscriptBody", () => {
     });
 
     it.each([
+      ["export const = object", "export const Rules = { id: 'X', compute: () => ({}) };"],
+      ["export const = parenthesised", "export const Rules = ({ onScan: async () => {} });"],
+      ["export default", "export default { id: 'X' };"],
+    ])("classifies a leading %s as DSL (the registry strips the wrapper)", (_label, body) => {
+      expect(classifyPayscriptBody(body)).toBe("dsl");
+    });
+
+    it("routes an export-led body to DSL even behind a leading comment", () => {
+      expect(classifyPayscriptBody("// rules\nexport const Rules = { id: 'X' };")).toBe("dsl");
+    });
+
+    it.each([
       ["const declaration", "const a = 1; return { a };"],
       ["let declaration", "let a = 1; return { a };"],
       ["function declaration", "function f() {} return { f };"],

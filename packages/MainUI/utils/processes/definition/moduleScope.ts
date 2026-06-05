@@ -37,6 +37,13 @@ const MARKER_MODULE = "@module-scope";
 const DSL_OPENERS = ["{", "("];
 
 /**
+ * A leading `export` keyword (e.g. `export const NAME = {...}` / `export default {...}`).
+ * Such a body is always a DSL object: the DSL registry strips that wrapper, and a module
+ * body (run via `new Function`) can never contain a top-level `export`.
+ */
+const EXPORT_KEYWORD_RE = /^export\b/;
+
+/**
  * Removes leading whitespace plus any leading line (`//`) or block (`/* *\/`)
  * comments so the structural classifier can inspect the first significant token.
  */
@@ -89,6 +96,12 @@ export function classifyPayscriptBody(body: string): PayscriptBodyKind {
     return marker;
   }
   const significant = stripLeadingComments(body);
+  // A DSL object exported via `export const NAME = {...}` (the shape every process
+  // shipping the column uses) routes to DSL: the registry strips the wrapper and a
+  // module body can never carry a top-level `export`.
+  if (EXPORT_KEYWORD_RE.test(significant)) {
+    return KIND_DSL;
+  }
   const firstChar = significant.charAt(0);
   if (DSL_OPENERS.includes(firstChar)) {
     return KIND_DSL;
