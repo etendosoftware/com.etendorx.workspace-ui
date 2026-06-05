@@ -63,6 +63,8 @@ export { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefa
 export { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 export {
   isBulkCompletionProcess,
+  buildOnLoadScripts,
+  isBulkParameterRenderable,
   DEFAULT_BULK_COMPLETION_ONLOAD,
 } from "@/utils/process/bulkCompletionUtils";
 export { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";

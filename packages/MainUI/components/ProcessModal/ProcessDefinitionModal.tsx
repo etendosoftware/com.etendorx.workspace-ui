@@ -62,7 +62,8 @@ import {
   removeParameter,
   evaluateParameterDefaults,
   isBulkCompletionProcess,
-  DEFAULT_BULK_COMPLETION_ONLOAD,
+  buildOnLoadScripts,
+  isBulkParameterRenderable,
   registerPayScriptDSL,
   compileExpression,
   logger,
@@ -604,6 +605,11 @@ function ProcessDefinitionModalContent({
   const isBulkCompletion = useMemo(
     () => isBulkCompletionProcess(processDefinition, parameters),
     [processDefinition, parameters]
+  );
+
+  const onLoadScripts = useMemo(
+    () => buildOnLoadScripts(etmetaOnload, isBulkCompletion),
+    [etmetaOnload, isBulkCompletion]
   );
 
   // Stable processConfig object for WindowReferenceGrid — prevents new reference on every render.
@@ -1264,12 +1270,12 @@ function ProcessDefinitionModalContent({
       try {
         setLoading(true);
 
-        const effectiveOnLoad = etmetaOnload || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
-
-        if (effectiveOnLoad && tab) {
+        if (onLoadScripts.length > 0 && tab) {
           // The onLoad second argument is the canonical view: it carries the
           // data fields the migrated scripts read (selectedRecords, tabId, …) and
           // the full view surface (theForm, messageBar, refresh, windowId, …).
+          // Built once and shared across every script so they operate on the same
+          // form/view.
           const onLoadView = createViewProxy(createFormHandle(form), parameters, {
             messageBar,
             controller: fieldController,
@@ -1287,16 +1293,18 @@ function ProcessDefinitionModalContent({
             },
           });
 
-          const result = await executeStringFunction(
-            effectiveOnLoad,
-            scriptHookContext,
-            button.processDefinition,
-            onLoadView
-          );
+          for (const onLoadScript of onLoadScripts) {
+            const result = await executeStringFunction(
+              onLoadScript,
+              scriptHookContext,
+              button.processDefinition,
+              onLoadView
+            );
 
-          if (result) {
-            const shouldStop = handleOnLoadResult(result);
-            if (shouldStop) return;
+            if (result) {
+              const shouldStop = handleOnLoadResult(result);
+              if (shouldStop) return;
+            }
           }
         }
 
@@ -1310,13 +1318,12 @@ function ProcessDefinitionModalContent({
     fetchOptions();
   }, [
     button.processDefinition,
-    etmetaOnload,
     onRefreshFunction,
     open,
     selectedRecords,
     recordValues,
     tab,
-    isBulkCompletion,
+    onLoadScripts,
     scriptHookContext,
     warehousePluginLoading,
     warehouseSchema,
@@ -1491,11 +1498,7 @@ function ProcessDefinitionModalContent({
       // the metadata payload carries it; mirroring the previous behaviour.
       if (parameter.active === false) return false;
       if (isBulkCompletion) {
-        return (
-          parameter.name === "DocAction" ||
-          parameter.dBColumnName === "DocAction" ||
-          parameter.name === "Document Actionn"
-        );
+        return isBulkParameterRenderable(parameter, logicFields);
       }
       if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) {
         return false;
