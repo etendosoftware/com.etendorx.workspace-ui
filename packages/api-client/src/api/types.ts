@@ -954,6 +954,10 @@ export interface ProcessDefinition extends Record<string, unknown> {
   etmetaOnprocess: string | null;
   etmetaOnRefresh: string | null;
   etmetaPayscriptLogic: string | null;
+  /** Whether the process renders its own custom UI component (built from the
+   *  schema returned by its onLoad) instead of the standard parameter form. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  etmetaCustomComponent?: boolean | "Y" | "N";
   /** Pick and Execute discriminator emitted by the metadata converter. Most
    *  process definitions omit it; only P&E seeds set it to `OBUIAPP_PickAndExecute`. */
   uIPattern?: UIPattern | string;

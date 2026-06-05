@@ -670,6 +670,37 @@ representative sample. Selection rationale:
 > Passing this sample provides high confidence that the migration is sound for the remaining 27
 > processes, because each of them is structurally equivalent to one of the patterns covered here.
 
+### Custom-component (warehouse) processes — additional mandatory validation
+
+Beyond the 10 representative picks above, two **custom-component** processes must be validated
+explicitly. Unlike every other defined process, they do **not** render the standard parameter form:
+they render a bespoke component (`GenericWarehouseProcess` — barcode input bar + lines grid + box
+management) built from the schema their `em_etmeta_onload` returns. They take this path because they
+carry the declarative flag **`em_etmeta_custom_component = Y`** on `obuiapp_process`; every other
+process leaves it `N` and keeps the standard form.
+
+These two exercise a path none of the 10 picks cover, so they are required:
+
+| # | id | name | flag | classic source |
+|---|---|---|---|---|
+| 11 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | `em_etmeta_custom_component = Y` | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` |
+| 12 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | `em_etmeta_custom_component = Y` | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` |
+
+**Migrated hooks:** `em_etmeta_onload` (returns the `warehouseProcess` schema; opens via
+`ManagePackingAction`), `em_etmeta_onprocess` (submits via `ManagePackingAction`), and
+`em_etmeta_payscript_logic` (the `onScan` barcode handler, validates via `ValidateBarcodeAction`).
+
+**QA focus (both processes):**
+- **Custom render.** Opening the process renders the **packing component** (barcode bar + lines grid
+  + box management), **not** the parameter form.
+- **Single onLoad.** The `onLoad` runs **exactly once** per open: no duplicated side effects and the
+  console shows **no** `[useWarehousePlugin] onLoad evaluation failed`.
+- **Scan.** Scanning a barcode fires `onScan`, matches the corresponding line and updates its boxed
+  quantity; an unknown barcode is rejected.
+- **Submit.** Confirming runs `onProcess` (`ManagePackingAction`) and closes the modal on success.
+- **Regression guard.** Standard (non-flagged) processes are unaffected — they still render the
+  parameter form and run their `onLoad` once in the full context.
+
 ---
 
 ## 11. Next steps (out of this inventory's scope)

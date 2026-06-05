@@ -45,6 +45,7 @@ import {
   useTranslation,
   useProcessCallouts,
   useWarehousePlugin,
+  usesCustomComponent,
   // Next.js
   useRouter,
   useSearchParams,
@@ -364,7 +365,13 @@ function ProcessDefinitionModalContent({
 
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
 
-  // Warehouse plugin — evaluated only when etmetaOnload returns type: 'warehouseProcess'
+  // Custom-component processes (em_etmeta_custom_component) provide their own UI
+  // built from the schema their onLoad returns. The flag is declarative, so a
+  // standard process never runs its onLoad just to be classified.
+  const isCustomComponent = usesCustomComponent(processDefinition);
+
+  // Warehouse plugin — evaluated only for custom-component processes; its onLoad
+  // returns the schema (type: 'warehouseProcess') used to render GenericWarehouseProcess.
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
 
   const {
@@ -374,6 +381,7 @@ function ProcessDefinitionModalContent({
     loading: warehousePluginLoading,
   } = useWarehousePlugin({
     processId,
+    isCustomComponent,
     onLoadCode: etmetaOnload ?? undefined,
     onProcessCode: typeof etmetaOnprocess === "string" ? etmetaOnprocess : undefined,
     processDefinition: processDefinition as Record<string, unknown>,
@@ -1661,7 +1669,7 @@ function ProcessDefinitionModalContent({
     (isPE && hasInvalidSelection);
 
   const renderModalContent = () => {
-    if (warehousePluginLoading && etmetaOnload) {
+    if (warehousePluginLoading && isCustomComponent) {
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">

@@ -29,7 +29,7 @@ export { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 export { useSelected } from "@/hooks/useSelected";
 export { useTranslation } from "@/hooks/useTranslation";
 export { useProcessCallouts } from "./callouts/useProcessCallouts";
-export { useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
+export { useWarehousePlugin, usesCustomComponent } from "./Custom/GenericWarehouseProcess";
 
 // --- Next.js navigation ---
 export { useRouter, useSearchParams } from "next/navigation";

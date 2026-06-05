@@ -55,6 +55,10 @@ export interface UseWarehousePluginResult {
 
 interface UseWarehousePluginOptions {
   processId: string;
+  /** Whether the process is flagged as a custom-component process (em_etmeta_custom_component).
+   *  When false the onLoad is not evaluated here, so a standard process never runs its onLoad
+   *  in this reduced sandbox just to be detected. */
+  isCustomComponent: boolean;
   /** Raw string from processDefinition.etmetaOnload (em_etmeta_onload column) — may be empty if not yet in AD */
   onLoadCode: string | undefined;
   /** Raw string from processDefinition.etmetaOnprocess (em_etmeta_onprocess column) — may be empty if not yet in AD */
@@ -71,6 +75,7 @@ interface UseWarehousePluginOptions {
 
 export function useWarehousePlugin({
   processId,
+  isCustomComponent,
   onLoadCode,
   onProcessCode,
   processDefinition,
@@ -96,8 +101,9 @@ export function useWarehousePlugin({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally limited deps — processDefinition, callAction and fetchDatasource are stable (derived from token/processId via useMemo)
   useEffect(() => {
-    // If there's no onLoad at all (not in backend, not in fallbacks) → not a warehouse process
-    if (!effectiveOnLoad) {
+    // Only flagged custom-component processes take this path. A standard process
+    // must never run its onLoad in this reduced sandbox just to be classified.
+    if (!isCustomComponent || !effectiveOnLoad) {
       setLoading(false);
       return;
     }
@@ -135,7 +141,7 @@ export function useWarehousePlugin({
     };
 
     run();
-  }, [processId, effectiveOnLoad, selectedRecords[0]?.id, token]);
+  }, [processId, isCustomComponent, effectiveOnLoad, selectedRecords[0]?.id, token]);
 
   // Read the Payscript plugin from registry (registered by ProcessDefinitionModal via EM_Etmeta_Payscript field)
   const rawRules = getPayScriptRules(processId);
