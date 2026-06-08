@@ -48,7 +48,9 @@ import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
 import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
 import { ButtonSelector } from "./ButtonSelector";
+import { LinkSelector } from "./LinkSelector";
 import { RichTextSelector } from "./RichTextSelector";
+import { TreeSelector } from "./TreeSelector";
 import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -118,6 +120,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id: // Selector rendered as navigable link
       case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
       case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
+      // Assignment (ref 33): uses TableDirDomainType in Classic — resource assignment FK
+      case FIELD_REFERENCE_CODES.ASSIGNMENT.id:
         return (
           <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />
         );
@@ -185,6 +189,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             data-testid="AttributeSetInstanceSelector__6e80fa"
           />
         );
+      case FIELD_REFERENCE_CODES.MEMO.id:
       case FIELD_REFERENCE_CODES.TEXT_LONG.id:
         return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.IMAGE.id:
@@ -214,6 +219,24 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.BUTTON.id:
         return (
           <ButtonSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ButtonSelector__${field.id}`} />
+        );
+      case FIELD_REFERENCE_CODES.LINK.id:
+        return (
+          <LinkSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={"LinkSelector__" + field.id} />
+        );
+      // Product Characteristics: always read-only — composed from Product Characteristics window, not editable inline.
+      case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
+        return (
+          <StringSelector
+            field={effectiveField}
+            readOnly={true}
+            data-testid={`StringSelector__prodchar__${field.id}`}
+          />
+        );
+      // Tree Reference: hierarchical FK selector (e.g. Characteristic Values)
+      case FIELD_REFERENCE_CODES.TREE_REFERENCE.id:
+        return (
+          <TreeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={"TreeSelector__" + field.id} />
         );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;

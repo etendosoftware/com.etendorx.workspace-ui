@@ -118,11 +118,17 @@ const formatOptionItem = (item: Record<string, unknown>, distinctField?: string)
       item.id
   );
 
-  return {
+  const option: FilterOption = {
     id: String(item.id),
     label: identifier,
     value: identifier,
   };
+
+  // Preserve tree hierarchy fields when present (used by tree column filters)
+  if (item.parentId) option.parentId = String(item.parentId);
+  if (item.isCharacteristic) option.isCharacteristic = true;
+
+  return option;
 };
 
 export interface FetchFilterOptionsParams {
