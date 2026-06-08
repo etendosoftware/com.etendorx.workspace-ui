@@ -81,6 +81,14 @@ test.describe("Sales Invoice - Add Payment", () => {
     await page.keyboard.press("Enter");
     await formInitDone;
 
+    // Wait for callout to finish populating fields (UOM, Tax, Price) after product selection.
+    // The FormInitializationComponent response arrives first, but the callout may still be
+    // applying values. Wait for the UOM field to be populated as a reliable signal.
+    await expect(page.locator('[aria-describedby="UOM-help"]')).toContainText(/.+/, { timeout: 15_000 });
+
+    // Also wait for network to settle — callout responses may still be in flight
+    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+
     // Set Invoiced Quantity: 100 (large qty ensures gross≈220 far exceeds any accumulated
     // Customer A credits from FINb test runs, preventing silent auto-payment of the invoice)
     await page.locator('[data-testid="TextInput__2999"]').waitFor({ state: "visible", timeout: 15_000 });
@@ -95,9 +103,10 @@ test.describe("Sales Invoice - Add Payment", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
-    // Save line
+    // Save line — wait for network to settle before saving to avoid race with pending callouts
+    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
     await page.locator("button.toolbar-button-save").last().click();
     await closeToastIfPresent(page);
 

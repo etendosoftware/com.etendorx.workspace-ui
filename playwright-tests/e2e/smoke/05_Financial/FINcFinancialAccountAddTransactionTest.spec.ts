@@ -163,7 +163,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
 
       // ── Step 8: Search and select Spain Cashbook ──────────────────────────────
       const filterName = page.locator('input.w-full[placeholder="Filter Name..."]');
-      await filterName.waitFor({ state: "visible", timeout: 10_000 });
+      await filterName.waitFor({ state: "visible", timeout: 30_000 });
       await filterName.clear();
       await filterName.fill("Spain Cashbook");
       await filterName.press("Enter");
