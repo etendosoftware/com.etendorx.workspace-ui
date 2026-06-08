@@ -36,6 +36,14 @@ describe("createOBShim", () => {
     expect(ob.Styles.MessageBar).toBeDefined();
   });
 
+  it("exposes the classic OB.MessageBar.TYPE_* severity constants", () => {
+    const ob = createOBShim();
+    expect(ob.MessageBar.TYPE_INFO).toBe("info");
+    expect(ob.MessageBar.TYPE_SUCCESS).toBe("success");
+    expect(ob.MessageBar.TYPE_WARNING).toBe("warning");
+    expect(ob.MessageBar.TYPE_ERROR).toBe("error");
+  });
+
   it("wires I18N.getLabel to the injected resolver", () => {
     const ob = createOBShim({ getLabel: (key) => (key === "Greet" ? "Hi %0" : key) });
     expect(ob.I18N.getLabel("Greet", ["Sam"])).toBe("Hi Sam");

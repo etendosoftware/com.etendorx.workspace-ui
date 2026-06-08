@@ -181,6 +181,8 @@ export interface OBShim {
   Format: OBFormat;
   Utilities: OBUtilities;
   Styles: Record<string, unknown>;
+  /** Classic `OB.MessageBar.TYPE_*` severity constants. */
+  MessageBar: Record<string, string>;
   TestRegistry: OBTestRegistry;
   RemoteCallManager: OBRemoteCallManager;
   Datasource: OBDatasource;

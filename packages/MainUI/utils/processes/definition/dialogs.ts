@@ -34,6 +34,7 @@
  */
 
 import { logger } from "@/utils/logger";
+import { MESSAGE_BAR_TYPES } from "./messageBarStore";
 
 export type DialogKind = "confirm" | "warn" | "say";
 
@@ -182,7 +183,7 @@ export function say(
 }
 
 /** Classic `isc` namespace shim, mirroring the standalone helpers. */
-export const isc = { confirm, ask, warn, say };
+export const isc = { confirm, ask, warn, say, OBMessageBar: MESSAGE_BAR_TYPES };
 
 /** Shape of the dialog helpers injected into the process script context. */
 export interface DialogScriptApi {

@@ -14,13 +14,17 @@ jest.mock("../ProcessDefinitionModal", () => ({
     button,
     onClose,
     onSuccess,
+    callerField,
   }: {
     button: { processId: string };
     onClose: () => void;
     onSuccess?: () => void;
+    callerField?: { id?: string; view?: unknown };
   }) => (
     <div data-testid="modal-stub">
       <span data-testid="modal-process-id">{button.processId}</span>
+      <span data-testid="modal-caller-field-id">{callerField?.id ?? ""}</span>
+      <span data-testid="modal-caller-has-view">{callerField?.view ? "yes" : "no"}</span>
       <button type="button" onClick={onClose}>
         close
       </button>
@@ -70,6 +74,20 @@ describe("ProcessStackHost", () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("modal-stub")).not.toBeInTheDocument();
+  });
+
+  it("forwards the launcher callerField (with its view) to the nested modal", async () => {
+    const launcherView = { windowId: "W-1" };
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({
+        processId: PROCESS_A,
+        callerField: { id: "FIELD-1", view: launcherView },
+      });
+    });
+
+    expect(screen.getByTestId("modal-caller-field-id").textContent).toBe("FIELD-1");
+    expect(screen.getByTestId("modal-caller-has-view").textContent).toBe("yes");
   });
 
   it("pops the entry and fires its onClose on success", async () => {

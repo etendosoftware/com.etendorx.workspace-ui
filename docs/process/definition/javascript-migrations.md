@@ -514,9 +514,12 @@ that launched the nested popup).
 - **Parent refresh on close.** The launch request carries `onClose = () => parentView.onRefreshFunction(parentView)`;
   the host fires it on both the close (X) and success of the nested entry, matching classic
   `closeClick()` → `parentView.onRefreshFunction(parentView)`.
-- **`callerField.view`.** The modal sets `callerField.view` to the parent view on every launch, so a
+- **`callerField.view`.** The launcher's `ViewController.openProcess` stamps `callerField.view` with
+  the launcher's own view onto the request; the host forwards that `callerField` to the nested
+  `ProcessDefinitionModal` (a `callerField` prop), and the nested modal surfaces it as
+  `view.callerField` (preferring the forwarded value over the one derived from its button stub). So a
   nested script reaches the launcher through `view.callerField.view` regardless of what the script
-  passed as `callerField`.
+  passed as `callerField`. Covered by the `ProcessStackHost` forwarding test below.
 - **Minimal, extensible nested context (documented decision).** The only migratable *Defined Process*
   that uses `openProcess` is **Match Statement** (Find Transactions `154CB4F9...` and Add Transaction
   `E68790A7...`); the other `openProcess` hits are framework files, out of scope. So the host gives the
@@ -534,7 +537,8 @@ that launched the nested popup).
 (`openProcess` live-with-controller delegation incl. the `standardWindow` alias; deferred + no
 `standardWindow` without a controller), and
 [ProcessStackHost.test.tsx](../../../packages/MainUI/components/ProcessModal/__tests__/ProcessStackHost.test.tsx)
-(empty stack renders null; one modal per entry stacked; close/success pop the entry and fire `onClose`).
+(empty stack renders null; one modal per entry stacked; close/success pop the entry and fire `onClose`;
+the launcher `callerField` — carrying its `view` — is forwarded to the nested modal).
 
 **Unlocks.** Match Statement (launches Find Transaction and Add Transaction nested), and any
 process that chains into another (currently rare but the pattern is documented).
@@ -613,7 +617,8 @@ it. Severity is one of `isc.OBMessageBar.TYPE_INFO` / `TYPE_SUCCESS` / `TYPE_WAR
 
 - `view.messageBar.setMessage(severity, title, text)`. Evidence: [ob-aprm-matchStatement.js:56](../../../../erp/modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js#L56), [ob-aprm-addPayment.js:254](../../../../erp/modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js#L254), [validateCostingRuleProcess.js:24](../../../../erp/web/js/validateCostingRuleProcess.js#L24).
 - `view.messageBar.hide()`. Evidence: [ob-onchange-functions.js:73](../../../../erp/modules_core/org.openbravo.client.application/web/org.openbravo.client.application/js/utilities/ob-onchange-functions.js#L73).
-- Severity constants via §4.8 (`OB.MessageBar.TYPE_*` or `isc.OBMessageBar.TYPE_*`).
+- Severity constants via §4.8 (`OB.MessageBar.TYPE_*` or `isc.OBMessageBar.TYPE_*`) — now provided
+  (see the implementation note below and §4.8).
 
 **New-UI requirement.** A `<MessageBar>` UI element rendered inside the modal layout
 ([ProcessDefinitionModal.tsx](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx)),
@@ -676,6 +681,13 @@ injection in [utils.ts](../../../packages/MainUI/utils/processes/definition/util
   `view`, call `messageBar.setMessage(...)`) **and** is exposed as `view.messageBar` inside the
   parameter/grid proxies (§4.12). Both reach the same banner. The full process-level `view` object
   stays deferred to §4.1.
+- **Severity constants.** The classic `TYPE_*` constants are provided as `MESSAGE_BAR_TYPES`
+  (`{ TYPE_INFO: "info", TYPE_SUCCESS: "success", TYPE_WARNING: "warning", TYPE_ERROR: "error" }`) and
+  exposed on both shims — `OB.MessageBar.TYPE_*` (§4.8) and `isc.OBMessageBar.TYPE_*` (§4.6) — so a
+  migrated script that references them resolves the value instead of throwing. The values are the
+  canonical severities, so they pass straight through `setMessage`'s `normalizeSeverity` (which also
+  lowercases any classic capitalized string, e.g. `"Warning"`). Covered by `messageBarStore.test.ts`
+  (constant map + `setMessage` accepts a constant), `obShim.test.ts`, and `dialogs.test.ts`.
 
 **Unlocks.** Match Statement, AddPayment, AddTransaction, Validate Costing Rule, Aging Balance
 (via `OB.OnChange.agingProcessDefinition*`), VAT Regularization, ETFRA family.
@@ -727,7 +739,8 @@ every API above. Backings:
 **Coverage status.** DONE (core shim). Implemented in [utils/ob/](../../../packages/MainUI/utils/ob/):
 `PropertyStore.get`/`set`, `I18N.getLabel` (with `%n` substitution), `Format.*`,
 `Utilities.Number.JSToOBMasked`, `Utilities.Action.set`/`execute`, `Utilities.generateRandomString`,
-`Styles.MessageBar`, `TestRegistry.register` (no-op) and tolerant module-namespace writes.
+`Styles.MessageBar` (CSS class names), `MessageBar.TYPE_*` (severity constants — see §4.7),
+`TestRegistry.register` (no-op) and tolerant module-namespace writes.
 No `OB.*` methods remain deferred: `Utilities.Action.executeJSON` is implemented (see §4.10),
 `RemoteCallManager.call` is implemented (see §4.9), and `Datasource.create` is implemented
 (see §4.11) — all routed through injected transports rather than throwing stubs.
@@ -1227,9 +1240,13 @@ needed.
 
 ## §6. Per-process feasibility matrix
 
-Mapping of every in-scope process to the §4 capabilities it depends on. **Feasible today?** is
-**YES** only if the process needs nothing beyond what is DONE in §3; **WITH-X** if it needs one
-additional §4 capability; **NO** otherwise.
+Mapping of every in-scope process to the §4 capabilities it depends on.
+
+> **Status update — all §4 capabilities are now DONE.** The **feasible today?** column below is the
+> *analysis-time snapshot* (when most capabilities were still pending) and is kept for historical
+> traceability. Since every §4 capability (§4.1–§4.13) is now delivered, **every in-scope process is
+> feasible**: each needs only its own per-process JS port (the migration ticket), not any further
+> platform work. Read the "capabilities required" column as the surface each port will rely on.
 
 Mechanism-to-capability shorthand (combined with the per-file readings):
 
@@ -1282,10 +1299,11 @@ Rows ordered as in inventory §6 (easiest first).
 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action (signal 3) | processId | §4.1, §4.2, §4.3, §4.8, §4.9, §4.10, §4.13 | NO | (heavy) |
 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | onLoad, onProc, onChg ×13, onGridLoad ×3 | §4.1, §4.2, §4.3, §4.6, §4.7, §4.8, §4.9, §4.10, §4.11, §4.12, §4.13 | NO | **all capabilities** |
 
-No row is feasible today: every in-scope process needs at least §4.12 (parameter hooks) or
-§4.8 (OB shim) or §4.1 (view contract). The lowest-cost wins are the rows that need only
-`§4.12 + §4.2` (3 processes) — Valued Stock Report, Verifactu Query, and (partially) the simple
-onChange-only candidates.
+**Current reading (post-completion):** the per-row "feasible today?" / "unlocked by" columns are
+historical; with §4.1–§4.13 all DONE, no row is blocked on a platform capability. The lowest-effort
+ports remain the rows that need only `§4.12 + §4.2` (Valued Stock Report, Verifactu Query, the simple
+onChange-only candidates); the heaviest are Match Statement and Add Payment, which exercise nearly
+every capability.
 
 ---
 
@@ -1618,3 +1636,36 @@ When all 10 pass, every §4 capability has at least one process exercising it.
    §9.6 (this section) defines only the discrimination rule; the scope-sharing contract
    between the body and the five hook columns lives in §4.13 and must stay in sync with
    any future change to this classifier.
+
+---
+
+## §10. Legacy Add-Payment support (pre-existing debt)
+
+The new UI already shipped Add Payment before this migration work, through a set of **process-specific
+hardcodings**. They are **pre-existing**: every one of them lives in the base branch
+`epic/ETP-3931` and was introduced by earlier tickets (ETP-3496, ETP-2457, ETP-3745), **not** by the
+JavaScript-migration work. They are recorded here for traceability and as the cleanup target once Add
+Payment is migrated to the generic, metadata-driven payscript/DSL path described in this document.
+
+| Hardcoding | Location | What it does |
+|---|---|---|
+| `PROCESS_DEFINITION_DATA` table + per-process IDs (`ADD_PAYMENT_ORDER_PROCESS_ID`, …) | `utils/processes/definition/constants.ts` | Static lookup mapping specific process IDs to payload field/column overrides. Consumed by `useProcessPayload.ts`, `useProcessExecution.ts`, `WindowReferenceGrid.tsx`. |
+| `isAddPayment` branch | `components/ProcessModal/hooks/useProcessPayload.ts` | An `if (processId === ADD_PAYMENT_ORDER_PROCESS_ID)` branch in `getMergedProcessValues` that bypasses parameter-name mapping for Add Payment. |
+| `SINGLE_RECORD_ONLY_PROCESSES` | `hooks/Toolbar/useToolbar.ts` | A set hardcoding `"EM_APRM_AddPayment"` as a single-record exception to the bulk toolbar logic (a Classic-metadata workaround, per its own TODO). |
+| `PROCESS_CALLOUTS` static registry | `components/ProcessModal/callouts/processCallouts.ts` | A static trigger-field registry whose only entry is Add Payment. Processes carrying `em_etmeta_payscript_logic` use the dynamic per-parameter fallback in `useProcessCallouts` instead. |
+
+**Why this is not a blocker.** The migration infrastructure itself is generic and metadata-driven: rules
+load dynamically from `em_etmeta_payscript_logic` keyed by the real process UUID (§4.13), and the
+backend emits the `em_etmeta_*` fields for every process via a generic converter pass (§5). None of the
+four spots above is required by the migration path; they are the *old* Add-Payment support that the
+generic path is meant to supersede.
+
+**Cleanup direction (future, not in this branch).** When Add Payment is migrated, fold each hardcoding
+into the generic mechanism — express the payload/column overrides and the single-record exception as
+metadata (or derive them from the process definition) rather than by process ID, and drop the static
+`PROCESS_CALLOUTS` entry in favour of the dynamic per-parameter callouts. Until then they remain inert
+for every other process and do not affect the 37 in-scope migrations.
+
+> Note: `payscript/rules/AddPaymentRulesClean.js` and `payscript/examples/simpleExample.ts` are
+> development/test fixtures only — they are imported solely by tests and an unused example, never by the
+> live modal path, so they carry no runtime coupling to Add Payment.

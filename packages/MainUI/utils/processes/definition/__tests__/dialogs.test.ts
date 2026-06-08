@@ -126,4 +126,13 @@ describe("dialogs", () => {
     await expect(b).resolves.toBe(false);
     expect(getDialogQueue()).toHaveLength(0);
   });
+
+  it("exposes the classic isc.OBMessageBar.TYPE_* severity constants", () => {
+    expect(isc.OBMessageBar).toEqual({
+      TYPE_INFO: "info",
+      TYPE_SUCCESS: "success",
+      TYPE_WARNING: "warning",
+      TYPE_ERROR: "error",
+    });
+  });
 });

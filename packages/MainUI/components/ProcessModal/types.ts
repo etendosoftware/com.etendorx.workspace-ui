@@ -18,6 +18,7 @@
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
 import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import type {
+  CallerField,
   FieldController,
   FormHandle,
   GridController,
@@ -136,6 +137,8 @@ export interface ProcessDefinitionModalProps {
   windowId?: string;
   /** Window title for a programmatically-opened process (e.g. a nested launch). */
   windowTitle?: string;
+  /** Launching field/button forwarded by a nested launch, so a nested script reaches `view.callerField.view`. */
+  callerField?: CallerField;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {

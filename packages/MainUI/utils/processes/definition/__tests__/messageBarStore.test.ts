@@ -1,4 +1,10 @@
-import { getMessageBarState, type MessageBarState, messageBar, subscribeMessageBar } from "../messageBarStore";
+import {
+  getMessageBarState,
+  MESSAGE_BAR_TYPES,
+  type MessageBarState,
+  messageBar,
+  subscribeMessageBar,
+} from "../messageBarStore";
 
 describe("messageBarStore", () => {
   afterEach(() => {
@@ -62,5 +68,19 @@ describe("messageBarStore", () => {
     unsubscribe();
     messageBar.setMessage("info", null, "y");
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("MESSAGE_BAR_TYPES map to canonical severities", () => {
+    expect(MESSAGE_BAR_TYPES).toEqual({
+      TYPE_INFO: "info",
+      TYPE_SUCCESS: "success",
+      TYPE_WARNING: "warning",
+      TYPE_ERROR: "error",
+    });
+  });
+
+  it("setMessage accepts a MESSAGE_BAR_TYPES constant as severity", () => {
+    messageBar.setMessage(MESSAGE_BAR_TYPES.TYPE_WARNING, null, "x");
+    expect(currentState().severity).toBe("warning");
   });
 });

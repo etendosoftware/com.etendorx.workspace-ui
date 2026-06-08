@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { MESSAGE_BAR_TYPES } from "@/utils/processes/definition/messageBarStore";
 import { getStoredPreferences, setStoredPreference } from "@/utils/propertyStore";
 import { createAction } from "./action";
 import { createDatasourceManager } from "./datasource";
@@ -77,6 +78,7 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
       generateRandomString,
     },
     Styles: createStyles(),
+    MessageBar: MESSAGE_BAR_TYPES,
     TestRegistry: {
       register: () => {
         /* no-op: test infrastructure is not migrated */

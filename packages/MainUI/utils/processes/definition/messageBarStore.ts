@@ -30,6 +30,19 @@ import { sanitizeMessageHtml } from "./sanitizeHtml";
 
 export type MessageBarSeverity = "info" | "success" | "warning" | "error";
 
+/**
+ * Classic `OB.MessageBar.TYPE_*` / `isc.OBMessageBar.TYPE_*` severity constants.
+ * The values are the canonical severities, so a script passing one flows straight
+ * through `normalizeSeverity` unchanged. Exposed on the `OB` and `isc` shims so
+ * migrated scripts that reference these constants resolve them instead of throwing.
+ */
+export const MESSAGE_BAR_TYPES: Record<string, MessageBarSeverity> = {
+  TYPE_INFO: "info",
+  TYPE_SUCCESS: "success",
+  TYPE_WARNING: "warning",
+  TYPE_ERROR: "error",
+};
+
 /** The current message rendered by the banner, or `null` when hidden. */
 export interface MessageBarState {
   severity: MessageBarSeverity;

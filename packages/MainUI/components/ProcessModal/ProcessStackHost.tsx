@@ -102,6 +102,7 @@ export default function ProcessStackHost() {
           windowId={request.windowId}
           windowTitle={request.windowTitle}
           contextRecord={request.externalParams}
+          callerField={request.callerField}
           onClose={() => handleClose(request)}
           onSuccess={() => handleClose(request)}
           data-testid="ProcessStackHost__ProcessDefinitionModal"

@@ -300,6 +300,7 @@ function ProcessDefinitionModalContent({
   keepOpenOnSuccess,
   contextRecord,
   windowId: windowIdProp,
+  callerField: callerFieldProp,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { getLabel, language } = useLanguage();
@@ -763,7 +764,9 @@ function ProcessDefinitionModalContent({
   const viewData = useMemo<ViewData>(
     () => ({
       windowId,
-      callerField: {
+      // A nested launch forwards its launcher field (carrying the launcher's view, so the nested
+      // script reaches `view.callerField.view`); a top-level open derives it from the button.
+      callerField: callerFieldProp ?? {
         id: button.processDefinition.fieldId as string | undefined,
         name: (button.processDefinition.fieldName ?? button.name) as string | undefined,
         columnId: button.processDefinition.columnId as string | undefined,
@@ -774,7 +777,7 @@ function ProcessDefinitionModalContent({
       parentRecord: recordValues ?? (record as Record<string, unknown>) ?? undefined,
       activeTabId: tab?.id,
     }),
-    [windowId, button, record, recordValues, tab]
+    [windowId, button, record, recordValues, tab, callerFieldProp]
   );
 
   // Lifecycle actions + footer chrome behind the `view`. Mirrors fieldController:
