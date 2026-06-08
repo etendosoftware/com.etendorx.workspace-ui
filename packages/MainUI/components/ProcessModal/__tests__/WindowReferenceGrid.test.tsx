@@ -876,7 +876,10 @@ describe("WindowReferenceGrid Utilities", () => {
       render(
         <RowActionsCell
           // Stale/removed preset (e.g. the old "separator") must not paint an empty button.
-          buttons={[{ icon: "separator" as unknown as RowActionButton["icon"], prompt: "x" }, { icon: "add", prompt: "Add" }]}
+          buttons={[
+            { icon: "separator" as unknown as RowActionButton["icon"], prompt: "x" },
+            { icon: "add", prompt: "Add" },
+          ]}
           onActivate={jest.fn()}
         />
       );

@@ -24,10 +24,7 @@ describe("compileOnRefreshFunction", () => {
   });
 
   it("threads the context into the compiled function", () => {
-    const fn = compileOnRefreshFunction(
-      "(view) => helper(view.value)",
-      { helper: (n: number) => n * 3 }
-    );
+    const fn = compileOnRefreshFunction("(view) => helper(view.value)", { helper: (n: number) => n * 3 });
     expect(fn!({ value: 4 } as unknown)).toBe(12);
   });
 

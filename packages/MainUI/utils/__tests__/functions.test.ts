@@ -66,10 +66,7 @@ describe("executeStringFunction", () => {
 describe("compileStringFunction", () => {
   it("returns a callable that the caller can invoke many times without re-parsing", () => {
     const calls: number[] = [];
-    const fn = compileStringFunction(
-      "(n) => (track.push(n), n * 2)",
-      { track: calls }
-    ) as (n: number) => number;
+    const fn = compileStringFunction("(n) => (track.push(n), n * 2)", { track: calls }) as (n: number) => number;
 
     expect(fn(1)).toBe(2);
     expect(fn(5)).toBe(10);

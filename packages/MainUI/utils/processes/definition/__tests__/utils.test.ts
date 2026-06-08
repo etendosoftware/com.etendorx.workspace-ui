@@ -772,10 +772,7 @@ describe("Process Definition Utils", () => {
     it("merges an id inSet sub-criterion into an existing criteria object", () => {
       const result = addSelectedIDsToCriteria({ operator: "or", criteria: [{ fieldName: "x" }] }, SELECTED);
       expect(result.operator).toBe("or");
-      expect(result.criteria).toEqual([
-        { fieldName: "x" },
-        { fieldName: "id", operator: "inSet", value: SELECTED },
-      ]);
+      expect(result.criteria).toEqual([{ fieldName: "x" }, { fieldName: "id", operator: "inSet", value: SELECTED }]);
     });
 
     it("defaults to an `and` combinator when starting from empty criteria", () => {

@@ -33,7 +33,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
       {/* Host for nested process modals opened via view.openProcess. */}
-      <ProcessStackHost />
+      <ProcessStackHost data-testid="ProcessStackHost__519d5c" />
     </div>
   );
 }

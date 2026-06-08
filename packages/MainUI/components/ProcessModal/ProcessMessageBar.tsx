@@ -66,9 +66,8 @@ export default function ProcessMessageBar() {
       className={`p-3 rounded mb-4 border-l-4 bg-gray-50 flex items-start gap-3 ${border}`}
       data-testid="ProcessMessageBar__container">
       <span className={`shrink-0 mt-0.5 ${accent}`}>
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5" data-testid="Icon__ab7595" />
       </span>
-
       <div className="flex-1 min-w-0">
         {state.title && <h4 className="font-bold text-sm mb-0.5">{state.title}</h4>}
         {/* Body is sanitized in the store via DOMPurify (formatting tags only). */}
@@ -92,14 +91,13 @@ export default function ProcessMessageBar() {
           </div>
         )}
       </div>
-
       <button
         type="button"
         onClick={() => messageBar.hide()}
         aria-label={t("common.close")}
         className="shrink-0 text-gray-500 hover:text-gray-700 transition-colors"
         data-testid="ProcessMessageBar__close">
-        <CloseIcon className="w-4 h-4" />
+        <CloseIcon className="w-4 h-4" data-testid="CloseIcon__ab7595" />
       </button>
     </div>
   );

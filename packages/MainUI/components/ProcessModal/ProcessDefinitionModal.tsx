@@ -1720,7 +1720,7 @@ function ProcessDefinitionModalContent({
             {/* Content */}
             <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
               {/* In-modal message bar driven by migrated scripts (view.messageBar / messageBar). */}
-              <ProcessMessageBar />
+              <ProcessMessageBar data-testid="ProcessMessageBar__761503" />
               <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 {(loading || initializationLoading) && !result && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
@@ -1821,7 +1821,7 @@ function ProcessDefinitionModalContent({
             {renderModalContent()}
           </Modal>
           {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
-          <ProcessDialogHost />
+          <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
         </>
       )}
     </>

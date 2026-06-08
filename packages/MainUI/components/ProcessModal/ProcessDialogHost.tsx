@@ -75,6 +75,7 @@ export default function ProcessDialogHost() {
       buttons={buttons}
       onClose={() => resolve(current, false)}
       t={t}
+      data-testid="ActionModal__e16b02"
     />
   );
 }

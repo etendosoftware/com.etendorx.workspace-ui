@@ -676,7 +676,7 @@ export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsPro
       <Tooltip title={cancelLabel} data-testid="CreateRowCancelTooltip__ce8544">
         <span>
           <IconButton aria-label={cancelLabel} onClick={handleCancel} data-testid={CREATE_ROW_CANCEL_TESTID}>
-            <XIcon className={ACTION_ICON_CLASS} />
+            <XIcon className={ACTION_ICON_CLASS} data-testid="XIcon__ce8544" />
           </IconButton>
         </span>
       </Tooltip>
@@ -688,7 +688,7 @@ export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsPro
               disabled={isSaving}
               onClick={handleSubmit}
               data-testid={CREATE_ROW_SAVE_TESTID}>
-              <SaveIcon className={ACTION_ICON_CLASS} />
+              <SaveIcon className={ACTION_ICON_CLASS} data-testid="SaveIcon__ce8544" />
             </IconButton>
           </span>
         </Tooltip>
@@ -738,7 +738,7 @@ export const renderActionsCell = ({
   const state = table.getState();
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
-    return <CreateRowActionButtons row={row} table={table} />;
+    return <CreateRowActionButtons row={row} table={table} data-testid="CreateRowActionButtons__ce8544" />;
   }
   const lockedByOther = Boolean(state.creatingRow);
 
@@ -888,7 +888,7 @@ const RowActionButtonView = ({ button, onActivate }: { button: RowActionButton; 
           aria-label={label}
           disabled={button.disabled}
           data-testid="WindowReferenceGrid__RowActionButton">
-          <Icon className={ROW_ACTION_ICON_CLASS} />
+          <Icon className={ROW_ACTION_ICON_CLASS} data-testid="Icon__ce8544" />
         </IconButton>
       </span>
     </Tooltip>
@@ -915,6 +915,7 @@ export const RowActionsCell = ({
           key={`${ROW_ACTIONS_COLUMN_ID}-${index}`}
           button={button}
           onActivate={() => onActivate(index)}
+          data-testid="RowActionButtonView__ce8544"
         />
       ))}
     </>
@@ -2759,7 +2760,11 @@ const WindowReferenceGrid = ({
       const descriptor = evaluateRowActions(record);
       if (!descriptor || descriptor.buttons.length === 0) return null;
       return (
-        <RowActionsCell buttons={descriptor.buttons} onActivate={(index) => runRowAction(descriptor.buttons[index], record)} />
+        <RowActionsCell
+          buttons={descriptor.buttons}
+          onActivate={(index) => runRowAction(descriptor.buttons[index], record)}
+          data-testid="RowActionsCell__ce8544"
+        />
       );
     },
     [evaluateRowActions, runRowAction]
