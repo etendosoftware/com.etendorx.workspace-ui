@@ -43,6 +43,22 @@ jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   ),
 }));
 
+jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
+  __esModule: true,
+  default: ({ open, confirmText, onConfirm, onCancel }: any) =>
+    open ? (
+      <div data-testid="ConfirmModal">
+        <span>{confirmText}</span>
+        <button onClick={onConfirm} data-testid="ConfirmButton">
+          Confirm
+        </button>
+        <button onClick={onCancel} data-testid="CancelButton">
+          Cancel
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock("@/components/NavigationTabs/MenuTabs", () => ({
   __esModule: true,
   default: ({ anchorEl, onClose, onSelect, "data-testid": testId }: any) =>

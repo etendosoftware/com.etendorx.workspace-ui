@@ -23,6 +23,8 @@ const en = {
     confirm: "Confirm",
     close: "Close",
     closing: "Closing...",
+    unsavedChangesCloseMessage:
+      "You have unsaved changes that will be lost. Are you sure you want to close this window?",
     execute: "Execute",
     register: "Register",
     save: "Save",

@@ -791,6 +791,7 @@ const DynamicTable = ({
   const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
   }, []);
+  const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 
@@ -986,6 +987,19 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
+
+  // Report table dirty state to windowStore for tab-close confirmation
+  const hasEditingRows = Object.keys(editingRows).length > 0;
+  useEffect(() => {
+    if (windowIdentifier) {
+      setWindowDirtySource(windowIdentifier, `table:${tab.id}`, hasEditingRows);
+    }
+    return () => {
+      if (windowIdentifier) {
+        setWindowDirtySource(windowIdentifier, `table:${tab.id}`, false);
+      }
+    };
+  }, [hasEditingRows, windowIdentifier, tab.id, setWindowDirtySource]);
 
   // Focus management for inline editing - stored in a ref so that changing the focus target
   // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all

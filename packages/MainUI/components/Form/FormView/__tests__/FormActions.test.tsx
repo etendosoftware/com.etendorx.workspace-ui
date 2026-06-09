@@ -110,6 +110,7 @@ jest.mock("@/stores/windowStore", () => ({
         },
       },
       clearTabFormState: mockClearTabFormState,
+      setWindowDirtySource: jest.fn(),
     }),
 }));
 
