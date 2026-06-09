@@ -17,12 +17,13 @@
 
 "use client";
 
+import { useBackendLabels } from "@/hooks/useBackendLabels";
 import { usePrevious } from "@/hooks/usePrevious";
-import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
+import { useUserStore } from "@/stores/userStore";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { Labels } from "@workspaceui/api-client/src/api/types";
+import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { getLanguageFlag } from "../utils/languageFlags";
 import type { Language, LanguageContextType } from "./types";
 
@@ -30,8 +31,9 @@ export const LanguageContext = createContext({} as LanguageContextType);
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguage] = useLocalStorage<Language | null>("language", null);
-  const [labels, setLabels] = useState<Labels>({});
   const prevLanguage = usePrevious(language);
+  const token = useUserStore((state) => state.token);
+  const [labels, setLabels] = useBackendLabels(language, token);
   const router = useRouter();
 
   const getFlag = useCallback(
@@ -52,7 +54,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       prevLanguage,
       getLabel,
     }),
-    [language, setLanguage, getFlag, prevLanguage, getLabel]
+    [language, setLanguage, setLabels, getFlag, prevLanguage, getLabel]
   );
 
   useEffect(() => {
