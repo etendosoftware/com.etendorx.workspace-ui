@@ -4,7 +4,7 @@ import { useExpandedMenuItems } from "../useExpandedMenuItems";
 // Mock useLocalStorage
 const mockStorageState: Record<string, any> = {};
 jest.mock("@workspaceui/componentlibrary/src/hooks/useLocalStorage", () => ({
-  useLocalStorage: <T,>(key: string, initial: T) => {
+  useLocalStorage: <T>(key: string, initial: T) => {
     if (!(key in mockStorageState)) mockStorageState[key] = initial;
     const setState = (fn: any) => {
       mockStorageState[key] = typeof fn === "function" ? fn(mockStorageState[key]) : fn;
@@ -24,10 +24,9 @@ describe("useExpandedMenuItems", () => {
   });
 
   it("persists expanded items and restores them", () => {
-    const { result, rerender } = renderHook(
-      ({ roleId }) => useExpandedMenuItems(roleId),
-      { initialProps: { roleId: "role1" } }
-    );
+    const { result, rerender } = renderHook(({ roleId }) => useExpandedMenuItems(roleId), {
+      initialProps: { roleId: "role1" },
+    });
 
     act(() => {
       result.current.setExpandedItems(new Set(["menu1", "menu2"]));
@@ -38,10 +37,9 @@ describe("useExpandedMenuItems", () => {
   });
 
   it("isolates state by role", () => {
-    const { result, rerender } = renderHook(
-      ({ roleId }) => useExpandedMenuItems(roleId),
-      { initialProps: { roleId: "role1" } }
-    );
+    const { result, rerender } = renderHook(({ roleId }) => useExpandedMenuItems(roleId), {
+      initialProps: { roleId: "role1" },
+    });
 
     act(() => {
       result.current.setExpandedItems(new Set(["menuA"]));

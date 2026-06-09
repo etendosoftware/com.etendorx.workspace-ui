@@ -218,6 +218,7 @@ export default function WindowTabs() {
         secondaryButtonLabel={t("common.cancel") || "Cancel"}
         onConfirm={handleConfirmClose}
         onCancel={handleCancelClose}
+        data-testid="ConfirmModal__c8117d"
       />
     </div>
   );
