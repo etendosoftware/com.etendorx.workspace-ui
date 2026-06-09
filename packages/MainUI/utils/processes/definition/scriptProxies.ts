@@ -456,6 +456,108 @@ function recordId(record: Record<string, unknown> | undefined): unknown {
   return record.id ?? record.value ?? "";
 }
 
+// ---------------------------------------------------------------------------
+// Selector value-map bridge
+//
+// Classic scripts drive a selector with `setValue(id)` + `setValueMap(map)`. The
+// new-UI selectors read none of that directly: they watch the form keys
+// `${field}$_entries` (the dropdown options as `{ id, label }`) and
+// `${field}$_identifier` (the label shown for the current value) — the same
+// contract used by FIC callouts and the form's initial state. These helpers
+// translate the classic map onto those keys so the field actually updates.
+// ---------------------------------------------------------------------------
+
+/** Form-key suffix holding the label rendered for a selector's current value. */
+const IDENTIFIER_KEY_SUFFIX = "$_identifier";
+/** Form-key suffix holding a selector's injected dropdown options. */
+const ENTRIES_KEY_SUFFIX = "$_entries";
+
+/** Builds a normalized selector entry from one raw classic map element, or null. */
+function toSelectorEntry(raw: unknown): ListOption | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const id = record.id ?? record.value;
+  if (id === undefined || id === null) return null;
+  const label = record.label ?? record.title ?? record.text ?? id;
+  const value = record.value ?? id;
+  return { id: String(id), value: String(value), label: String(label) };
+}
+
+/** Normalizes an array-shaped classic value map into selector entries. */
+function normalizeEntryArray(map: unknown[]): ListOption[] {
+  const entries: ListOption[] = [];
+  for (const raw of map) {
+    const entry = toSelectorEntry(raw);
+    if (entry) entries.push(entry);
+  }
+  return entries;
+}
+
+/** Normalizes an `id → label` object map into selector entries. */
+function normalizeEntryObject(map: Record<string, unknown>): ListOption[] {
+  const entries: ListOption[] = [];
+  for (const [id, label] of Object.entries(map)) {
+    entries.push({ id, value: id, label: String(label) });
+  }
+  return entries;
+}
+
+/**
+ * Normalizes a classic value map into the selector entry shape the new UI reads.
+ * Accepts an array of `{ id?, value?, label?/title?/text? }` elements or a plain
+ * `id → label` object; elements without a resolvable id are dropped.
+ */
+export function normalizeValueMapEntries(map: unknown): ListOption[] {
+  if (Array.isArray(map)) return normalizeEntryArray(map);
+  if (map && typeof map === "object") return normalizeEntryObject(map as Record<string, unknown>);
+  return [];
+}
+
+/** Reads a selector's injected entries from the form, or `[]` when none are set. */
+function readEntries(form: FormHandle, name: string): ListOption[] {
+  const stored = form.getValues(`${name}${ENTRIES_KEY_SUFFIX}`);
+  return Array.isArray(stored) ? (stored as ListOption[]) : [];
+}
+
+/**
+ * Writes `${name}$_identifier` so the selector renders the label of `value`,
+ * looking it up in `entries`. No-op when no entry matches (e.g. plain text
+ * fields), so it is safe to call from every `setValue`.
+ */
+function syncSelectorIdentifier(form: FormHandle, name: string, value: unknown, entries: ListOption[]): void {
+  const match = entries.find((entry) => entry.id === value || entry.value === value);
+  if (!match) return;
+  form.setValue(`${name}${IDENTIFIER_KEY_SUFFIX}`, match.label, { shouldDirty: true, shouldValidate: true });
+}
+
+/** Sets a form value and keeps the selector's displayed label in sync. */
+function applyValue(form: FormHandle, name: string, value: unknown): void {
+  form.setValue(name, value, { shouldDirty: true, shouldValidate: true });
+  syncSelectorIdentifier(form, name, value, readEntries(form, name));
+}
+
+/**
+ * Refreshes the label shown for the selector's current value from a classic
+ * value map. It deliberately does NOT inject the map as `$_entries`: doing so
+ * would replace the datasource-driven option list, so the dropdown would only
+ * offer the scripted entries. `addCurrentValueIfMissing` already surfaces the
+ * current value while the datasource loads lazily, so the full option list is
+ * preserved. Still forwards the raw map to the controller so list-reference
+ * selectors (which read `refList`) keep working.
+ */
+function applyValueMap(form: FormHandle, name: string, map: unknown, controller: FieldController): void {
+  const entries = normalizeValueMapEntries(map);
+  syncSelectorIdentifier(form, name, form.getValues(name), entries);
+  controller.setValueMap(name, map);
+}
+
+/** Returns the selector's injected entries, falling back to the controller's value map. */
+function readValueMap(form: FormHandle, name: string, controller: FieldController): ListOption[] {
+  const entries = readEntries(form, name);
+  if (entries.length > 0) return entries;
+  return controller.getValueMap(name);
+}
+
 /**
  * Assigns the live `item` mutation methods, delegating each to the injected
  * controller (or the form handle for value-only operations). One statement per
@@ -471,8 +573,8 @@ function assignLiveItemMethods(
   item.setDisabled = (disabled = true) => controller.setDisabled(paramName, disabled);
   item.show = () => controller.setDisplayed(paramName, true);
   item.hide = () => controller.setDisplayed(paramName, false);
-  item.setValueMap = (map: unknown) => controller.setValueMap(paramName, map);
-  item.getValueMap = () => controller.getValueMap(paramName);
+  item.setValueMap = (map: unknown) => applyValueMap(form, paramName, map, controller);
+  item.getValueMap = () => readValueMap(form, paramName, controller);
   item.clearValue = () => form.setValue(paramName, null, { shouldDirty: true, shouldValidate: true });
   item.setValueFromRecord = (record: Record<string, unknown> | undefined) =>
     updateSelectorValue(form.setValue as unknown as UseFormSetValue<FieldValues>, paramName, recordId(record), record);
@@ -576,7 +678,7 @@ export function createItemProxy(
   const item: ItemProxy = {
     name: paramName,
     getValue: () => form.getValues(paramName),
-    setValue: (value: unknown) => form.setValue(paramName, value, { shouldDirty: true, shouldValidate: true }),
+    setValue: (value: unknown) => applyValue(form, paramName, value),
   };
   if (extras.rowNum !== undefined) item.rowNum = extras.rowNum;
   if (extras.columnName !== undefined) item.columnName = extras.columnName;

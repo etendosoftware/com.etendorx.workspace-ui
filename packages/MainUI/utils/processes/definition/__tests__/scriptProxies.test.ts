@@ -6,6 +6,7 @@ import {
   createGridProxy,
   createItemProxy,
   createViewProxy,
+  normalizeValueMapEntries,
   notImplemented,
   resolveFormKey,
   type FieldController,
@@ -571,6 +572,90 @@ describe("scriptProxies", () => {
 
       const viewGrid = view.theForm.getItem("amount").canvas?.viewGrid;
       expect(viewGrid?.getSelectedRecords()).toEqual([row("9")]);
+    });
+  });
+
+  describe("normalizeValueMapEntries", () => {
+    it("normalizes an array of { id, value, label } entries", () => {
+      const map = [{ id: "100", value: "100", label: "USD" }];
+      expect(normalizeValueMapEntries(map)).toEqual([{ id: "100", value: "100", label: "USD" }]);
+    });
+
+    it("normalizes an id -> label object map", () => {
+      expect(normalizeValueMapEntries({ "100": "USD", "200": "EUR" })).toEqual([
+        { id: "100", value: "100", label: "USD" },
+        { id: "200", value: "200", label: "EUR" },
+      ]);
+    });
+
+    it("derives id from value and label from title/text, and drops entries without an id", () => {
+      const map = [{ value: "100", title: "USD" }, { text: "no id" }, null];
+      expect(normalizeValueMapEntries(map)).toEqual([{ id: "100", value: "100", label: "USD" }]);
+    });
+
+    it("returns [] for non-map inputs", () => {
+      expect(normalizeValueMapEntries(undefined)).toEqual([]);
+      expect(normalizeValueMapEntries("x")).toEqual([]);
+    });
+  });
+
+  describe("selector value-map bridge", () => {
+    const USD_ENTRY: ListOption = { id: "100", value: "100", label: "USD" };
+    const ENTRIES_KEY = "currency$_entries";
+    const IDENTIFIER_KEY = "currency$_identifier";
+
+    it("setValueMap sets $_identifier for the current value without overriding the datasource dropdown", () => {
+      const controller = makeController();
+      const { handle, values } = makeFormHandle({ currency: "100" });
+      const item = createItemProxy(handle, "currency", {}, controller);
+
+      call(item.setValueMap)([USD_ENTRY]);
+
+      expect(values[IDENTIFIER_KEY]).toBe("USD");
+      // The dropdown stays datasource-driven: the map is NOT injected as options.
+      expect(values).not.toHaveProperty(ENTRIES_KEY);
+      expect(controller.setValueMap).toHaveBeenCalledWith("currency", [USD_ENTRY]);
+    });
+
+    it("setValue syncs $_identifier when the injected entries contain the value", () => {
+      const controller = makeController();
+      const { handle, values } = makeFormHandle({ [ENTRIES_KEY]: [USD_ENTRY] });
+      const item = createItemProxy(handle, "currency", {}, controller);
+
+      call(item.setValue)("100");
+
+      expect(values.currency).toBe("100");
+      expect(values[IDENTIFIER_KEY]).toBe("USD");
+    });
+
+    it("setValue does not write an identifier for a field without entries", () => {
+      const { handle, values } = makeFormHandle({ amount: 1 });
+      const item = createItemProxy(handle, "amount");
+
+      call(item.setValue)(42);
+
+      expect(values.amount).toBe(42);
+      expect(values).not.toHaveProperty("amount$_identifier");
+    });
+
+    it("getValueMap reads injected $_entries when present, preserving .value for the classic filter", () => {
+      const controller = makeController();
+      const { handle } = makeFormHandle({ [ENTRIES_KEY]: [USD_ENTRY] });
+      const item = createItemProxy(handle, "currency", {}, controller);
+
+      const stored = call(item.getValueMap)() as ListOption[];
+
+      expect(stored).toEqual([USD_ENTRY]);
+      expect(stored.filter((option) => option.value !== "100")).toEqual([]);
+    });
+
+    it("getValueMap falls back to the controller when no entries are injected", () => {
+      const options: ListOption[] = [{ id: "a", value: "a", label: "A" }];
+      const controller = makeController({ currency: options });
+      const { handle } = makeFormHandle();
+      const item = createItemProxy(handle, "currency", {}, controller);
+
+      expect(call(item.getValueMap)()).toEqual(options);
     });
   });
 });
