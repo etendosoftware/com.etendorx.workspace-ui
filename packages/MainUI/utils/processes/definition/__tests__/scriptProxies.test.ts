@@ -1,6 +1,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import {
+  buildGridVisibility,
   createFormHandle,
   createFormProxy,
   createGridProxy,
@@ -209,6 +210,21 @@ describe("scriptProxies", () => {
       const grid = createGridProxy(state);
       expect(() => (grid.setRowActions as () => void)()).toThrow("grid.setRowActions is not implemented yet");
       expect(() => (grid.setRecordComponent as () => void)()).toThrow("grid.setRecordComponent is not implemented yet");
+    });
+
+    it("defers show/hide when no visibility hooks are supplied", () => {
+      const grid = createGridProxy(state);
+      expect(() => (grid.show as () => void)()).toThrow("grid.show is not implemented yet");
+      expect(() => (grid.hide as () => void)()).toThrow("grid.hide is not implemented yet");
+    });
+
+    it("wires show/hide to the supplied visibility hooks", () => {
+      const visibility = { show: jest.fn(), hide: jest.fn() };
+      const grid = createGridProxy(state, undefined, visibility);
+      grid.show?.();
+      grid.hide?.();
+      expect(visibility.show).toHaveBeenCalledTimes(1);
+      expect(visibility.hide).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -548,6 +564,27 @@ describe("scriptProxies", () => {
       expect(() => item.canvas?.markForRedraw()).not.toThrow();
     });
 
+    it("toggles the grid parameter via canvas.viewGrid.show()/hide() when a FieldController is present", () => {
+      const { handle } = makeFormHandle();
+      const fieldController = makeController();
+      const gridController = makeGridController();
+      const resolver: GridResolver = jest.fn(() => gridController);
+      const item = createItemProxy(handle, "Accounts", {}, fieldController, resolver);
+
+      const viewGrid = item.canvas?.viewGrid;
+      viewGrid?.hide?.();
+      viewGrid?.show?.();
+      expect(fieldController.setDisplayed).toHaveBeenNthCalledWith(1, "Accounts", false);
+      expect(fieldController.setDisplayed).toHaveBeenNthCalledWith(2, "Accounts", true);
+    });
+
+    it("defers viewGrid show/hide when no FieldController is present", () => {
+      const { handle } = makeFormHandle();
+      const resolver: GridResolver = jest.fn(() => makeGridController());
+      const item = createItemProxy(handle, "Accounts", {}, undefined, resolver);
+      expect(() => (item.canvas?.viewGrid?.hide as () => void)()).toThrow("grid.hide is not implemented yet");
+    });
+
     it("defers viewGrid methods when the parameter has no registered grid", () => {
       const { handle } = makeFormHandle();
       const resolver: GridResolver = jest.fn(() => undefined);
@@ -572,6 +609,18 @@ describe("scriptProxies", () => {
 
       const viewGrid = view.theForm.getItem("amount").canvas?.viewGrid;
       expect(viewGrid?.getSelectedRecords()).toEqual([row("9")]);
+    });
+  });
+
+  describe("buildGridVisibility", () => {
+    it("maps show -> setDisplayed(name, true) and hide -> setDisplayed(name, false)", () => {
+      const controller = makeController();
+      const visibility = buildGridVisibility(controller, "Accounts");
+
+      visibility.show();
+      visibility.hide();
+      expect(controller.setDisplayed).toHaveBeenNthCalledWith(1, "Accounts", true);
+      expect(controller.setDisplayed).toHaveBeenNthCalledWith(2, "Accounts", false);
     });
   });
 

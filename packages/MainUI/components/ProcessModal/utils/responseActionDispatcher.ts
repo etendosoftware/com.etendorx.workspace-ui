@@ -115,6 +115,36 @@ export const readResponseActions = (data: unknown): unknown[] => {
 };
 
 /**
+ * Action keys already handled by the modal's success/banner/navigation flow
+ * (toast/banner from the response message, tab navigation). The generic
+ * registry-first dispatch of `responseActions` must skip them so a process that
+ * also lists them in `responseActions` does not fire the effect twice.
+ */
+export const LEGACY_FLOW_ACTION_KEYS = [
+  RESPONSE_ACTION_KEYS.SHOW_MSG_IN_PROCESS_VIEW,
+  RESPONSE_ACTION_KEYS.SHOW_MSG_IN_VIEW,
+  RESPONSE_ACTION_KEYS.OPEN_DIRECT_TAB,
+] as const;
+
+/**
+ * Returns the raw `{ name: payload }` `responseActions` entries minus the keys
+ * already handled by the modal's success flow. The result is dispatched
+ * registry-first through `OB.Utilities.Action.executeJSON`, so process-specific
+ * actions registered via `OB.Utilities.Action.set` (e.g. `showVATGrid`) run
+ * alongside the built-in ones (`refreshGrid`, `refreshGridParameter`) — mirroring
+ * the classic `executeJSON(responseActions)` call. Built-in-only `dispatchSingle`
+ * would silently drop the registered actions, so it cannot be used here.
+ */
+export const readDispatchableResponseActions = (data: unknown): unknown[] => {
+  const skip = new Set<string>(LEGACY_FLOW_ACTION_KEYS);
+  return readResponseActions(data).filter((entry) => {
+    if (!isPlainObject(entry)) return false;
+    const key = Object.keys(entry)[0];
+    return key !== undefined && !skip.has(key);
+  });
+};
+
+/**
  * Parses a single `{ actionType: payload }` entry into a normalized
  * {@link DispatchedAction}, or `null` for an unrecognized / malformed entry.
  * Exported so the script-facing `executeJSON` path can route a lone entry

@@ -244,7 +244,7 @@ the classic single-file module, expressed declaratively in metadata.
 | Distinct `.js` files to migrate (high confidence) | 33 |
 | Total legacy JS to migrate (distinct files) | **~7,600 lines · ~250 KB** |
 | Largest files | `ob-aprm-addPayment.js` (1,935 lines), `OBWPACK_PackingComponent.js` (1,033), `OBWPL_ValidateComponent.js` (714) |
-| Difficulty distribution (by lines) | **9 easy** (<100) · **24 medium** (100–500) · **4 hard** (>500) |
+| Difficulty distribution (by lines) | **8 easy** (<100) · **25 medium** (100–500) · **4 hard** (>500) |
 
 `uipattern` distribution: `OBUIAPP_PickAndExecute` 116 · `A` 89 · `M` 24 ·
 `OBUIAPP_Report` 11 · `ETRX_RxAction` 1.
@@ -264,7 +264,7 @@ available as a deployed copy under `WebContent/web/…` (module source not check
 **easy** < 100 lines · **medium** 100–500 · **hard** > 500. Rows are ordered easiest first;
 within a band, smallest first.
 
-Distribution: **9 easy · 24 medium · 4 hard.**
+Distribution: **8 easy · 25 medium · 4 hard.**
 
 | id | name | signal | mechanisms (signal 1) | difficulty | size (lines · KB) | `.js` file(s) | status |
 |---|---|---|---|---|---|---|---|
@@ -274,10 +274,10 @@ Distribution: **9 easy · 24 medium · 4 hard.**
 | B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | migrated |
 | 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | migrated |
 | CC73C4845CDC487395804946EACB225F | Funds Transfer | 1 | `on_load_function`, `onchangefunction` ×1 | easy | 49 · 1.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-fundsTransfer.js` | migrated |
-| C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | easy | 51 · 1.7 KB | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` ⚠ deploy | pending |
-| 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | pending |
-| B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | pending |
+| 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | migrated |
+| B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | blocked |
 | 154CB4F9274A479CB38A285E16984539 | Find Transactions to Match | 1,3 | `clientsidevalidation` | medium | 106 · 3.6 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-findTransaction.js` | pending |
+| C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | medium | 112 · 3.9 KB ³ | `WebContent/web/org.openbravo.module.remittance/js/ob-rem-utilities.js` ⚠ deploy ³ | blocked |
 | EB4C4053F3B94A17A08D1DD7E89CEB7E | Aging Balance Process Definition for Payables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `modules_core/org.openbravo.client.application/web/…/js/utilities/ob-onchange-functions.js` ¹ | pending |
 | 0D37A9F6109549DEB058373EF2DAEB6A | Aging Balance Process Definition for Receivables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `…/js/utilities/ob-onchange-functions.js` ¹ | pending |
 | AB2EFCAABB7B4EC0A9B30CFB82963FB6 | Create Lines From Order | 1 | `on_load_function` | medium | 119 · 3.7 KB | `modules_core/org.openbravo.client.application/web/…/js/procurement/ob-procurement.js` | pending |
@@ -311,6 +311,18 @@ Distribution: **9 easy · 24 medium · 4 hard.**
   `OB.OnChange.agingProcessDefinition*` functions apply. Migrate only those, not the whole file.
 - ² `etfra-*.js` family: `etfra-onchange.js`, `etfra-showDatesFields.js`, `etfra-showHideDimensions.js`,
   `etfra-showHideDocumentNo.js` (shared by the 4 ETFRA reports).
+- ³ **File corrected & process `blocked`.** The earlier inventory listed `rem_addinvandord_utilities.js`
+  for this process, but that file defines `OB.REM.ProcessPP.*`, which belongs to *Select Invoices and
+  Orders* (`99E532BA0306450A839F5DE238375238`). The only hook bound to `C88AB6…` is the **Pick/Edit
+  Lines** parameter's `ongridloadfunction = OB.REM.CalculateSelected`, defined in `ob-rem-utilities.js`
+  (verified against the `obuiapp_parameter` legacy columns in `etendodev`). Only that one function is in
+  scope; the file's other declaration (`OB.REM.CalculateTotal`) is not bound to this process. Status is
+  **`blocked` for lack of platform implementation**: `CalculateSelected` depends on two primitives the
+  new-UI hook context does not yet provide — the global `BigDecimal` (used for all the per-currency
+  amount arithmetic; not injected by `buildProcessScriptContext`) and `OB.Constants.FIELDSEPARATOR` /
+  `OB.Constants.IDENTIFIER` (the `OB` shim exposes no `Constants` namespace). Rewriting `BigDecimal`
+  with `Number` would change rounding/scale and break amount parity, so the conservative gate applies.
+  Revisit once the platform exposes a decimal helper and `OB.Constants`.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.

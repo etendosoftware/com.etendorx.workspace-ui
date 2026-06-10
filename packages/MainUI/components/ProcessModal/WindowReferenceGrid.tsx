@@ -85,7 +85,12 @@ import {
   addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
 import { logger } from "@/utils/logger";
-import { createGridProxy, createViewProxy, ICON_PRESET } from "@/utils/processes/definition/scriptProxies";
+import {
+  buildGridVisibility,
+  createGridProxy,
+  createViewProxy,
+  ICON_PRESET,
+} from "@/utils/processes/definition/scriptProxies";
 import type {
   GridController,
   RowActionButton,
@@ -2129,7 +2134,11 @@ const WindowReferenceGrid = ({
     // lets the script read sibling parameter values.
     if (onGridLoadHook && gridLoadFormHandle && messageBar) {
       const selectedRecords = prepared.filter((record: EntityData) => Boolean(record?.obSelected));
-      const grid = createGridProxy({ rows: prepared, selectedRecords }, gridControllerRef.current ?? undefined);
+      const grid = createGridProxy(
+        { rows: prepared, selectedRecords },
+        gridControllerRef.current ?? undefined,
+        fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+      );
       const view = createViewProxy(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
@@ -2151,6 +2160,7 @@ const WindowReferenceGrid = ({
     gridLoadFormHandle,
     messageBar,
     parameters,
+    parameter.name,
     viewController,
     viewData,
     fieldController,
@@ -2705,7 +2715,11 @@ const WindowReferenceGrid = ({
     (record: EntityData): RowActionContext | null => {
       if (!gridLoadFormHandle || !messageBar) return null;
       const selectedRecords = Array.from(persistentSelectionRef.current.values());
-      const grid = createGridProxy({ rows: localRecords, selectedRecords }, gridControllerRef.current ?? undefined);
+      const grid = createGridProxy(
+        { rows: localRecords, selectedRecords },
+        gridControllerRef.current ?? undefined,
+        fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+      );
       const view = createViewProxy(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
@@ -2717,7 +2731,17 @@ const WindowReferenceGrid = ({
       grid.view = view;
       return { record, view, grid };
     },
-    [gridLoadFormHandle, messageBar, localRecords, parameters, fieldController, viewController, gridResolver, viewData]
+    [
+      gridLoadFormHandle,
+      messageBar,
+      localRecords,
+      parameters,
+      parameter.name,
+      fieldController,
+      viewController,
+      gridResolver,
+      viewData,
+    ]
   );
 
   // Calls the registered renderer for one row; a throw is logged and yields no

@@ -49,16 +49,19 @@ import {
   dispatchResponseActions,
   findFirstMessage,
   findFirstOpenDirectTab,
+  readDispatchableResponseActions,
 } from "../utils/responseActionDispatcher";
 import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
 import {
   createFormHandle,
   createViewProxy,
+  type CallerField,
   type FieldController,
   type GridResolver,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
+import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // ---------------------------------------------------------------------------
@@ -76,6 +79,19 @@ interface ExtractedMessage {
 // ---------------------------------------------------------------------------
 // Pure helpers for executeJavaProcess
 // ---------------------------------------------------------------------------
+
+/** Registry-first dispatcher of the OB shim (`OB.Utilities.Action.executeJSON`). */
+type ActionExecuteJSON = (jsonArray: unknown) => void;
+
+/**
+ * Reads `OB.Utilities.Action.executeJSON` from the shared script context. The
+ * same per-modal OB shim instance that `onLoad` used to register process actions
+ * (e.g. `showVATGrid`) is reachable here, so dispatching the kernel response
+ * through it runs those registered actions plus the built-in ones.
+ */
+const getActionExecuteJSON = (ctx: Record<string, unknown>): ActionExecuteJSON | undefined =>
+  (ctx.OB as { Utilities?: { Action?: { executeJSON?: ActionExecuteJSON } } } | undefined)?.Utilities?.Action
+    ?.executeJSON;
 
 const KERNEL_ENDPOINT = "/api/erp/org.openbravo.client.kernel";
 
@@ -127,6 +143,8 @@ export interface UseProcessExecutionParams {
   onRefreshFunction: ((view: unknown) => unknown) | undefined;
   // Context
   tab: Tab | undefined;
+  /** Forwarded launcher field; present only for nested (script-launched) opens. */
+  callerField?: CallerField;
   record: EntityData | undefined;
   initialState: Record<string, any> | undefined;
   selectedRecords: EntityData[];
@@ -205,6 +223,7 @@ export function useProcessExecution({
   etmetaOnprocess,
   onRefreshFunction,
   tab,
+  callerField,
   record,
   initialState,
   selectedRecords,
@@ -508,6 +527,16 @@ export function useProcessExecution({
         const resultData = await fetchAndParseJson(apiUrl, requestInit);
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
+        // Dispatch the server `responseActions` registry-first, mirroring the
+        // classic `OB.Utilities.Action.executeJSON(responseActions)` the process
+        // popup runs after every execution. This fires process-registered actions
+        // (e.g. `showVATGrid`) and the built-in grid refreshes; message/navigation
+        // keys are skipped because the success flow below already handles them.
+        const dispatchableActions = readDispatchableResponseActions(resultData);
+        if (dispatchableActions.length > 0) {
+          getActionExecuteJSON(scriptContext)?.(dispatchableActions);
+        }
+
         if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
@@ -528,6 +557,7 @@ export function useProcessExecution({
       tab?.window,
       javaClassName,
       fileParams,
+      scriptContext,
       buildMultipartRequest,
       buildJsonRequest,
       parseProcessResponse,
@@ -666,13 +696,13 @@ export function useProcessExecution({
         return;
       }
 
-      if (!etmetaOnprocess || !tab) return;
+      if (!etmetaOnprocess || !shouldRunProcessLifecycleHooks({ tab, callerField })) return;
 
       startTransition(async () => {
         const formValues = form.getValues();
         resolveDocAction(formValues);
 
-        const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
+        const completePayload = tab ? buildProcessPayload(record || {}, tab, initialState || {}, formValues) : {};
 
         // The onProcess second argument is the canonical view: it carries the
         // data fields the migrated scripts read (recordIds, windowId, DocAction,
@@ -686,9 +716,9 @@ export function useProcessExecution({
           hookData: {
             _buttonValue: actionValue || "DONE",
             buttonValue: actionValue || "DONE",
-            windowId: tab.window,
+            windowId: tab?.window,
             tabId: tab?.id || tabId || "",
-            entityName: tab.entityName,
+            entityName: tab?.entityName,
             recordIds: selectedRecords?.map((r) => r.id),
             // Mirrors classic SmartClient view.onRefreshFunction so migrated
             // scripts can refresh the modal grid/form after async actions. The
@@ -752,6 +782,7 @@ export function useProcessExecution({
       onRefreshFunction,
       javaClassName,
       tab,
+      callerField,
       tabId,
       record,
       initialState,

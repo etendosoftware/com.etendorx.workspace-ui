@@ -286,6 +286,20 @@ export interface GridProxy extends Record<string, unknown> {
   /** Registers a per-row renderer; `setRecordComponent` is a classic-vocabulary alias. */
   setRowActions?: (renderer: RowActionRenderer) => void;
   setRecordComponent?: (renderer: RowActionRenderer) => void;
+  /** Grid-parameter visibility; live only when visibility hooks are supplied. */
+  show?: () => void;
+  hide?: () => void;
+}
+
+/**
+ * Show/hide hooks for a grid parameter. The classic
+ * `canvas.viewGrid.show()/hide()` toggles the grid widget; in the new UI a grid is
+ * a parameter, so this delegates to the field-display store (the same one backing
+ * `item.show()/hide()`), where the script wins over static display logic.
+ */
+export interface GridVisibility {
+  show: () => void;
+  hide: () => void;
 }
 
 export interface ViewProxy extends Record<string, unknown> {
@@ -434,6 +448,9 @@ const DEFERRED_GRID_METHODS_WITH_CONTROLLER = DEFERRED_GRID_METHODS.filter((m) =
 
 /** Classic grid lifecycle callbacks assigned as properties (`grid.dataArrived = fn`). */
 const GRID_CALLBACK_PROPS = ["dataArrived", "selectionChanged"] as const;
+
+/** Grid visibility methods; deferred (throwing) unless visibility hooks are supplied. */
+const GRID_VISIBILITY_METHODS = ["show", "hide"] as const;
 
 /** Stable empty grid state for proxies whose data is served live by a controller. */
 const EMPTY_GRID_STATE: GridState = { rows: [], selectedRecords: [] };
@@ -651,7 +668,12 @@ export function resolveFormKey(name: string, parameters: ParametersMap | undefin
  * defers otherwise; without a resolver, accessing `canvas` throws a traceable
  * error (the embedded grid is only reachable from the modal).
  */
-function assignItemCanvas(item: ItemProxy, paramName: string, gridResolver?: GridResolver): void {
+function assignItemCanvas(
+  item: ItemProxy,
+  paramName: string,
+  gridResolver?: GridResolver,
+  controller?: FieldController
+): void {
   if (!gridResolver) {
     Object.defineProperty(item, "canvas", {
       get: () => notImplemented("item.canvas"),
@@ -660,8 +682,9 @@ function assignItemCanvas(item: ItemProxy, paramName: string, gridResolver?: Gri
     });
     return;
   }
+  const visibility = controller ? buildGridVisibility(controller, paramName) : undefined;
   item.canvas = {
-    viewGrid: createGridProxy(EMPTY_GRID_STATE, gridResolver(paramName)),
+    viewGrid: createGridProxy(EMPTY_GRID_STATE, gridResolver(paramName), visibility),
     markForRedraw: () => {
       // No-op: the grid re-renders reactively from the modal's state.
     },
@@ -688,7 +711,7 @@ export function createItemProxy(
   } else {
     assignDeferred(item, "item", DEFERRED_ITEM_METHODS);
   }
-  assignItemCanvas(item, paramName, gridResolver);
+  assignItemCanvas(item, paramName, gridResolver, controller);
   return item;
 }
 
@@ -783,12 +806,36 @@ function assignGridCallbacks(grid: GridProxy, controller: GridController): void 
 }
 
 /**
+ * Builds the grid visibility hooks for a grid parameter, delegating to the field
+ * controller's display store (so `canvas.viewGrid.hide()` hides the grid parameter,
+ * mirroring the classic widget hide). Reuses the same `setDisplayed` path as
+ * `item.show()/hide()`.
+ */
+export function buildGridVisibility(controller: FieldController, paramName: string): GridVisibility {
+  return {
+    show: () => controller.setDisplayed(paramName, true),
+    hide: () => controller.setDisplayed(paramName, false),
+  };
+}
+
+/** Assigns `grid.show`/`hide` from the visibility hooks, or throwing stubs when absent. */
+function assignGridVisibility(grid: GridProxy, visibility?: GridVisibility): void {
+  if (!visibility) {
+    assignDeferred(grid, "grid", GRID_VISIBILITY_METHODS);
+    return;
+  }
+  grid.show = visibility.show;
+  grid.hide = visibility.hide;
+}
+
+/**
  * Builds the `grid` proxy. Without a controller it is read-only over the given
  * `state` (the plain `onGridLoad` snapshot and unit tests), and every mutation
  * method defers. With a `GridController` the full surface becomes live, served
  * from the modal's current grid state, and the lifecycle callbacks are wired.
+ * `visibility`, when supplied, makes `show()`/`hide()` toggle the grid parameter.
  */
-export function createGridProxy(state: GridState, controller?: GridController): GridProxy {
+export function createGridProxy(state: GridState, controller?: GridController, visibility?: GridVisibility): GridProxy {
   const gridProxy: GridProxy = {
     getData: () => ({ getLength: () => state.rows.length }),
     getSelectedRecords: () => state.selectedRecords,
@@ -803,6 +850,7 @@ export function createGridProxy(state: GridState, controller?: GridController): 
   } else {
     assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS);
   }
+  assignGridVisibility(gridProxy, visibility);
   return gridProxy;
 }
 

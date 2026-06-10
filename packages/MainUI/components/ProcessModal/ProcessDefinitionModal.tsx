@@ -131,6 +131,7 @@ import {
   EMPTY_SCRIPT_BUTTON_STATE,
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
+import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import { pushProcess } from "@/utils/processes/definition/processStack";
 import {
@@ -1054,6 +1055,7 @@ function ProcessDefinitionModalContent({
     etmetaOnprocess,
     onRefreshFunction,
     tab,
+    callerField: callerFieldProp,
     record: record ?? undefined,
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
@@ -1266,21 +1268,27 @@ function ProcessDefinitionModalContent({
         return;
       }
 
-      // Run onLoad once per open session (keyed on the selected record ids, which
-      // are stable across refetches). This prevents a script-triggered parent-grid
-      // refresh from re-firing onLoad — which would loop, since onLoad depends on
-      // the parent record/selection data that the refresh replaces.
-      const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
-      if (onLoadIdentityRef.current === onLoadIdentity) {
-        setLoading(false);
-        return;
-      }
-      onLoadIdentityRef.current = onLoadIdentity;
-
       try {
         setLoading(true);
 
-        if (onLoadScripts.length > 0 && tab) {
+        const gate = shouldRunProcessLifecycleHooks({ tab, callerField: callerFieldProp });
+        const hasRunnableOnLoad = onLoadScripts.length > 0 && gate;
+
+        // Run onLoad once per open session (keyed on the selected record ids, which
+        // are stable across refetches), but only lock the identity when there is
+        // actually something to run. A premature run — before the metadata fetch
+        // populates `etmetaOnload`, so `onLoadScripts` is still empty — must NOT
+        // consume the lock, or the later run that has the scripts would be skipped.
+        // Locking on a real run still prevents a script-triggered parent-grid
+        // refresh from re-firing onLoad (which would loop).
+        if (hasRunnableOnLoad) {
+          const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
+          if (onLoadIdentityRef.current === onLoadIdentity) {
+            setLoading(false);
+            return;
+          }
+          onLoadIdentityRef.current = onLoadIdentity;
+
           // The onLoad second argument is the canonical view: it carries the
           // data fields the migrated scripts read (selectedRecords, tabId, …) and
           // the full view surface (theForm, messageBar, refresh, windowId, …).
@@ -1294,8 +1302,8 @@ function ProcessDefinitionModalContent({
             data: viewData,
             hookData: {
               selectedRecords,
-              tabId: tab.id || "",
-              tableId: tab.table || "",
+              tabId: tab?.id || "",
+              tableId: tab?.table || "",
               parentRecord: recordValues,
               // Mirrors classic SmartClient view.onRefreshFunction so migrated
               // scripts can call view.onRefreshFunction(view) to rebuild the modal.
@@ -1344,6 +1352,7 @@ function ProcessDefinitionModalContent({
     viewController,
     viewData,
     gridResolver,
+    callerFieldProp,
   ]);
 
   // -------------------------------------------------------------------------

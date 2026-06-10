@@ -402,11 +402,14 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
   `getEditedRecord`), edit values (`setEditValue`, `getEditValues`, `getEditedCell`), data/lifecycle
   (`invalidateCache`, `fetchData`, `getCriteria`, `addSelectedIDsToCriteria`, `data.{localData,
-  allRows, totalRows}`, `getTotalRows`), per-row plugins (`setRowActions`/`setRecordComponent`), and
-  chained lifecycle callbacks (`dataArrived`, `selectionChanged`). Methods backed by the grid controller
-  are live only when a `GridController` is present; the read-only subset (selection/row reads) always
-  works. A few filter-editor methods (`filterByEditor`, `setFilterEditorCriteria`, `removeRecordClick`,
-  `transformData`) are best-effort.
+  allRows, totalRows}`, `getTotalRows`), **visibility (`show()` / `hide()`)**, per-row plugins
+  (`setRowActions`/`setRecordComponent`), and chained lifecycle callbacks (`dataArrived`,
+  `selectionChanged`). Methods backed by the grid controller are live only when a `GridController` is
+  present; the read-only subset (selection/row reads) always works. `show()` / `hide()` are live when a
+  `FieldController` is present (the modal injects one for both the `onGridLoad` grid arg and
+  `canvas.viewGrid`); they toggle the grid **parameter's** visibility through the same field-display
+  store as `item.show()/hide()` — see Section 8.5. A few filter-editor methods (`filterByEditor`,
+  `setFilterEditorCriteria`, `removeRecordClick`, `transformData`) are best-effort.
 
 ### 7.4 `callerField` and nested launches
 
@@ -494,6 +497,16 @@ Covered by the grid proxy in Section 7.3. The same live grid handle is reached t
 `view.theForm.getItem('<param>').canvas.viewGrid` and as the `onGridLoad` argument — and the controller
 reuses the grid's own handlers, so a script acts exactly as a user would. Edit-value writes overlay
 through the grid's change handler; `dataArrived`/`selectionChanged` are chained subscribers.
+
+**Grid visibility.** A Classic process can hide/show the whole grid widget
+(`item.theForm.getField('<grid>').canvas.viewGrid.hide()` / `.show()`) — e.g. to keep a results grid
+hidden until a search runs. The new UI supports this on the grid proxy as `viewGrid.hide()` /
+`viewGrid.show()`. Because a grid is a **parameter** here (not a free-floating widget), these delegate
+to the field-display store via the `FieldController` (`setDisplayed('<grid>', false/true)`) — the same
+store behind `item.hide()/show()` — and the grid parameter's `WindowReferenceGrid` honors that flag
+when it has no static `displayLogic` of its own. Equivalent and interchangeable:
+`view.theForm.getItem('<grid>').canvas.viewGrid.hide()` and `view.theForm.getItem('<grid>').hide()`
+both hide the grid parameter.
 
 ### 8.6 The `OB.*` namespace shim
 
@@ -624,6 +637,7 @@ This section is the operational guide for translating one Classic `.js` file int
 | `OB.Datasource.create({...}).fetchData(cb)` | identical (mandatory pagination defaults applied) |
 | `isc.OBRestDataSource.getDummyCriterion()` | unnecessary — `fetchData` always re-queries |
 | `standardWindow.openProcess({...})` | `view.openProcess({...})` |
+| `getField('<grid>').canvas.viewGrid.hide()` / `.show()` | `getItem('<grid>').canvas.viewGrid.hide()` / `.show()` (or `getItem('<grid>').hide()` / `.show()`) — toggles the grid parameter's visibility |
 | per-row `isc.ClassFactory.defineClass` component | `grid.setRowActions(renderer)` returning `{ buttons }` |
 | `OB.<Module>.<Process> = {}` namespace | tolerated; self-register inside the module body |
 

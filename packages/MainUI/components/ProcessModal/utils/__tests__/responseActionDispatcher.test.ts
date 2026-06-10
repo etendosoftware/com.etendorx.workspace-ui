@@ -23,6 +23,7 @@ import {
   dispatchResponseActions,
   findFirstMessage,
   findFirstOpenDirectTab,
+  readDispatchableResponseActions,
   readResponseActions,
 } from "../responseActionDispatcher";
 
@@ -274,5 +275,38 @@ describe("buildReportActionUrl", () => {
   it("omits absent fields but always sets the mode", () => {
     const url = buildReportActionUrl({}, "DOWNLOAD");
     expect(url).toBe("/api/erp/org.openbravo.client.kernel?mode=DOWNLOAD");
+  });
+});
+
+describe("readDispatchableResponseActions", () => {
+  const VAT_RESPONSE = {
+    responseActions: [
+      { refreshGridParameter: { gridName: "Accounts" } },
+      { refreshGrid: {} },
+      { showVATGrid: {} },
+      { updateVATTotal: { amount: "0.00" } },
+      { updateVATLines: { accounts: [] } },
+    ],
+  };
+
+  it("keeps process-registered (custom) actions and built-in grid refreshes", () => {
+    expect(readDispatchableResponseActions(VAT_RESPONSE)).toEqual(VAT_RESPONSE.responseActions);
+  });
+
+  it("drops the keys already handled by the success/navigation flow", () => {
+    const data = {
+      responseActions: [
+        { showMsgInProcessView: { msgText: "done" } },
+        { showMsgInView: { msgText: "done" } },
+        { openDirectTab: { tabId: "T1" } },
+        { showVATGrid: {} },
+      ],
+    };
+    expect(readDispatchableResponseActions(data)).toEqual([{ showVATGrid: {} }]);
+  });
+
+  it("returns [] when there are no response actions", () => {
+    expect(readDispatchableResponseActions({})).toEqual([]);
+    expect(readDispatchableResponseActions(null)).toEqual([]);
   });
 });
