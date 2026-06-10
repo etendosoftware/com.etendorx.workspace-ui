@@ -177,11 +177,35 @@ const applyOutFields = (
   }
 };
 
+const COL_START_CLASS: Record<number, string> = {
+  1: 'col-start-1',
+  2: 'col-start-2',
+  3: 'col-start-3',
+};
+const COL_SPAN_CLASS: Record<number, string> = {
+  1: 'col-span-1',
+  2: 'col-span-2',
+  3: 'col-span-3',
+};
+const ROW_SPAN_CLASS: Record<number, string> = {
+  1: 'row-span-1',
+  2: 'row-span-2',
+  3: 'row-span-3',
+};
+
+interface BaseSelectorProps {
+  field: Field;
+  formMode?: FormMode;
+  forceReadOnly?: boolean;
+  colStart?: number;
+}
+
 const BaseSelectorComp = ({
   field,
   formMode = FormMode.EDIT,
   forceReadOnly,
-}: { field: Field; formMode?: FormMode; forceReadOnly?: boolean }) => {
+  colStart,
+}: BaseSelectorProps) => {
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
@@ -532,10 +556,16 @@ const BaseSelectorComp = ({
     const isMultiSelector = field.column.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id;
     const isExpandedField = isTextLong || isMemo || isImage || isRichText || isMultiSelector;
     const containerClasses = isExpandedField ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
+    const layoutClasses = [
+      colStart != null ? COL_START_CLASS[colStart] : undefined,
+      field.obuiappColspan != null ? COL_SPAN_CLASS[field.obuiappColspan] : undefined,
+      field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
+    ].filter(Boolean).join(' ');
 
     return (
       <div
-        className={`${containerClasses} title={field.helpComment || ''}`}
+        className={[containerClasses, layoutClasses].filter(Boolean).join(' ')}
+        title={field.helpComment || ''}
         aria-describedby={field.helpComment ? `${field.name}-help` : ""}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) {
