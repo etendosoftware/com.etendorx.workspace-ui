@@ -44,10 +44,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         // Disable implicit filter (e.g. processed='N') before applying our filter
         await disableImplicitFilter(page);
 
-        const filterInput = page
-          .locator('input.w-full[placeholder="Filter Document No...."]')
-          .locator("visible=true")
-          .first();
+        const filterInput = page.locator('input[placeholder="Filter Document No...."]').locator("visible=true").first();
         await filterInput.waitFor({ state: "visible", timeout: 15_000 });
         await filterInput.clear();
         await filterInput.fill(value);
@@ -61,10 +58,13 @@ test.describe("LinkedItems Navigation @smoke", () => {
       };
 
       const openRowFormByText = async (rowText: string | RegExp) => {
-        const row = page.locator("tr:visible").filter({ hasText: rowText }).first();
-        await row.waitFor({ state: "visible", timeout: 10_000 });
-        await row.scrollIntoViewIfNeeded();
-        await row.locator('button[data-testid^="form-button-"]').click();
+        const btn = page
+          .locator("tr:visible")
+          .filter({ hasText: rowText })
+          .first()
+          .locator('button[data-testid^="form-button-"]');
+        await btn.waitFor({ state: "visible", timeout: 10_000 });
+        await btn.click();
       };
 
       const openLinkedItemsTab = async () => {

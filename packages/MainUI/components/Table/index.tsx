@@ -862,6 +862,7 @@ const DynamicTable = ({
     addRecordLocally,
     applyQuickFilter,
     fetchSummary,
+    handleDateTextFilterChange,
   } = useTableData({
     isTreeMode,
   });
@@ -2651,6 +2652,17 @@ const DynamicTable = ({
         }
       }
 
+      // Conditional styling for document status
+      const VOIDED_STATUS = "VO";
+      const recordData = record as Record<string, unknown> | undefined;
+      const docStatus = recordData?.docStatus as string | undefined;
+      const isActive = recordData?.active;
+      if (docStatus === VOIDED_STATUS) {
+        rowClassName = `${rowClassName} table-row-voided`.trim();
+      } else if (isActive === false || isActive === "N") {
+        rowClassName = `${rowClassName} table-row-inactive`.trim();
+      }
+
       // Determine drop target overlay styling for drag and drop interactions
       let dropIndicatorClass = "";
       if (shouldUseTreeMode && dropTarget?.id === rowId) {
@@ -2803,8 +2815,11 @@ const DynamicTable = ({
         })(),
 
         onBlur: (e: React.FocusEvent<HTMLTableRowElement>) => {
-          if (uIPattern !== UIPatternEnum.EDIT_AND_DELETE_ONLY) return;
-          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          const focusLeft = !e.currentTarget.contains(e.relatedTarget as Node);
+          if (!focusLeft) return;
+          if (editingData?.isNew) {
+            handleSaveRow(rowId);
+          } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
             const blurEditingData = editingRowUtils.getEditingRowData(rowId);
             if (blurEditingData?.hasUnsavedChanges) {
               handleSaveRow(rowId);
@@ -3104,21 +3119,49 @@ const DynamicTable = ({
         selectedRecords: t("table.counter.selectedRecords"),
         recordsLoaded: t("table.counter.recordsLoaded"),
       };
+      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+      // that Etendo Classic shows in the quick-filter bar above the grid.
+      const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
       return (
-        <RecordCounterBar
-          totalRecords={total}
-          loadedRecords={loaded}
-          selectedCount={selCount}
-          isLoading={loading}
-          labels={labels}
-          actions={
-            <>
-              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
-              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-            </>
-          }
-          data-testid="RecordCounterBar__8ca888"
-        />
+        <>
+          <RecordCounterBar
+            totalRecords={total}
+            loadedRecords={loaded}
+            selectedCount={selCount}
+            isLoading={loading}
+            labels={labels}
+            actions={
+              <>
+                <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+                <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+              </>
+            }
+            data-testid="RecordCounterBar__8ca888"
+          />
+          {quickFilterCols.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
+              {quickFilterCols.map((col: Column) => {
+                const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
+                const currentValue =
+                  currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
+                return (
+                  <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
+                    <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">
+                      {col.header}:
+                    </span>
+                    <input
+                      type="text"
+                      value={currentValue}
+                      onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
+                      placeholder="…"
+                      className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       );
     },
     enableBottomToolbar: false,
