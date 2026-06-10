@@ -271,9 +271,9 @@ Distribution: **9 easy · 24 medium · 4 hard.**
 | C044DDAA929E40D780C36154FBB968F7 | Create Invoices from Orders | 1 | `onchangefunction` ×1 | easy | 15 · 0.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/createFromOrders.js` | migrated |
 | 31ED9333E46C419D92E9F1B10F821B91 | Clone | 3 |  | easy | 25 · 1.2 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/ob-clone-record.js` | blocked |
 | 71E00A0E964E43AE81C5AFBCDCA5F87C | Valued Stock Report | 1 | `onchangefunction` ×1 | easy | 27 · 0.7 KB | `modules_core/com.etendoerp.reportvaluationstock/web/com.etendoerp.reportvaluationstock/js/etrvs-onchange.js` | migrated |
-| B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | pending |
-| 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | pending |
-| CC73C4845CDC487395804946EACB225F | Funds Transfer | 1 | `on_load_function`, `onchangefunction` ×1 | easy | 49 · 1.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-fundsTransfer.js` | pending |
+| B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | migrated |
+| 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | migrated |
+| CC73C4845CDC487395804946EACB225F | Funds Transfer | 1 | `on_load_function`, `onchangefunction` ×1 | easy | 49 · 1.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-fundsTransfer.js` | migrated |
 | C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | easy | 51 · 1.7 KB | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` ⚠ deploy | pending |
 | 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | pending |
 | B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | pending |
