@@ -381,7 +381,7 @@ function ProcessDefinitionModalContent({
       }
 
       const individualMapped = individualButtons.map((p) => ({
-        value: p.dBColumnName,
+        value: p.dBColumnName ?? "",
         label: p.name,
       }));
       buttons.push(...individualMapped);
@@ -1118,7 +1118,13 @@ function ProcessDefinitionModalContent({
         }
         return true;
       })
-      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+      .sort((a, b) => {
+        // "sequenceNumber" is set explicitly by the backend builder;
+        // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
+        const seqA = Number(a.sequenceNumber ?? a.seqno) || 0;
+        const seqB = Number(b.sequenceNumber ?? b.seqno) || 0;
+        return seqA - seqB;
+      });
 
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
