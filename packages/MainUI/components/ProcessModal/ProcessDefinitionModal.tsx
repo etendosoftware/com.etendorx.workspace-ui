@@ -29,7 +29,7 @@
  *
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
+import { type FieldValues, FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -107,6 +107,7 @@ import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
 import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
+import { useFormDefaultsSync } from "./hooks/useFormDefaultsSync";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
@@ -698,12 +699,10 @@ function ProcessDefinitionModalContent({
     mode: "onChange",
   });
 
-  useEffect(() => {
-    const hasFormData = Object.keys(availableFormData).length > 0;
-    if (hasFormData) {
-      form.reset(availableFormData);
-    }
-  }, [availableFormData, form]);
+  // Re-applies process defaults when availableFormData changes (async defaults,
+  // session, parameters) while preserving values set by onLoad/onChange scripts
+  // (e.g. view.theForm.getItem(...).setValue(...)) so a later reset cannot wipe them.
+  useFormDefaultsSync(form, availableFormData as FieldValues);
 
   // Initialize gridSelection from filterExpressions
   useEffect(() => {
