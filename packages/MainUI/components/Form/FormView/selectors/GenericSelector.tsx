@@ -39,6 +39,7 @@ import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { MultiRecordSelector } from "./MultiRecordSelector";
 import { PasswordSelector } from "./PasswordSelector";
+import { EncryptedSelector } from "./EncryptedSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
@@ -99,6 +100,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         field={effectiveField}
         isReadOnly={isReadOnly}
         data-testid={`ProductStockModalSelector__${field.id}`}
+      />
+    );
+  }
+
+  // Encrypted fields are masked regardless of reference type
+  if (effectiveField.column.displayEncription) {
+    return (
+      <EncryptedSelector
+        field={effectiveField}
+        isReadOnly={isReadOnly}
+        deencryptable={effectiveField.column.deencryptable ?? false}
       />
     );
   }
