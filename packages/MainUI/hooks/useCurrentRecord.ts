@@ -103,8 +103,8 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       .filter((f) => f.displayed && f.column?.propertyPath)
       .map((f) => ({
         hqlName: f.hqlName,
-        propertyPath: f.column.propertyPath, // e.g. "file.type"
-        dollarKey: f.column.propertyPath.replace(/\./g, "$"), // e.g. "file$type"
+        propertyPath: f.column.propertyPath!, // e.g. "file.type"
+        dollarKey: f.column.propertyPath!.replace(/\./g, "$"), // e.g. "file$type"
       }));
 
     // Build reverse map: datasource response key → field hqlName

@@ -511,7 +511,7 @@ const BaseSelectorComp = ({
   useEffect(() => {
     if (isFormInitializing || isSettingInitialValues) {
       previousValue.current = value;
-    } else if (isImmediateCalloutField(field.column.reference)) {
+    } else if (isImmediateCalloutField(field.column.reference ?? "")) {
       runCallout();
     }
   }, [isFormInitializing, isSettingInitialValues, value, field.column.reference, runCallout]);

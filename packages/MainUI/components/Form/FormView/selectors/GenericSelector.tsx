@@ -91,7 +91,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const isProductStockModal =
     effectiveField.selector?.datasourceName === "ProductStockView" ||
-    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey ?? "");
 
   if (isProductStockModal) {
     return (
@@ -140,8 +140,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           <QuantitySelector
             allowNegative={true}
             field={effectiveField}
-            min={effectiveField.column.minValue}
-            max={effectiveField.column.maxValue}
+            min={effectiveField.column.minValue ?? undefined}
+            max={effectiveField.column.maxValue ?? undefined}
             isReadOnly={isReadOnly}
             data-testid="QuantitySelector__6e80fa"
           />
