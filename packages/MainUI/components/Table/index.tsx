@@ -872,25 +872,30 @@ const DynamicTable = ({
     isTreeMode,
   });
 
-  // Auto-open FormView for logical SR (Single Record) tabs once the child
-  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
-  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
-  // the parent-selected id is not a valid child id, so we wait for the fetched
-  // records to discover the real child id and then open the form.
+  // Auto-open FormView for SR (Single Record) tabs once records are fetched.
+  // Covers two cases Tab.tsx's 1:1 auto-open cannot:
+  //   - Logical SR (PK and FK are distinct, e.g. ETSG_Certificate.organization):
+  //     parent-selected id is not a valid child id, so we resolve from fetched records.
+  //   - Root SR (no parent, e.g. Client window): isSrOneToOneExtension returns true
+  //     due to empty parentColumns, and Tab.tsx requires parentSelectedRecordId,
+  //     so neither path opens the form. Resolve recordId from displayRecords[0].
   useEffect(() => {
     if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
     if (!tab.defaultEditMode) return;
-    if (isSrOneToOneExtension(tab)) return;
     if (loading) return;
     if (displayRecords.length === 0) return;
 
-    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
-    if (!parentKey) return;
-    if (srAutoOpenedForParentRef.current === parentKey) return;
+    // 1:1 ID-extension WITH parent → Tab.tsx handles via parent.id.
+    if (parentTab && isSrOneToOneExtension(tab)) return;
+    // Child SR awaiting parent selection → wait.
+    if (parentTab && !parentRecord?.id) return;
 
-    srAutoOpenedForParentRef.current = parentKey;
+    const trackingKey = parentRecord?.id ? String(parentRecord.id) : "__root__";
+    if (srAutoOpenedForParentRef.current === trackingKey) return;
+
+    srAutoOpenedForParentRef.current = trackingKey;
     setRecordId(String(displayRecords[0].id));
-  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
