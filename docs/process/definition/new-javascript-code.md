@@ -445,7 +445,20 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   script-logic field store, where the script wins).
 - **Item** (`form.getItem(name)`): `getValue()`/`setValue(v)`, `setValueFromRecord(record)`,
   `setRequired(bool)`/`setDisabled(bool)`, `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`,
-  `clearValue()`, `name`, and `canvas.viewGrid` for grid parameters.
+  `clearValue()`, `name`, and `canvas.viewGrid` for grid parameters. Items resolve by `name`,
+  `dBColumnName`, or the parameter map key, so `getItem('Column1')` and `getItem('<Display Name>')` both
+  work.
+  - **`getValue()` is type-faithful to Classic.** For numeric parameters (Integer / Number / Quantity /
+    Decimal references) it returns a **`number`**, mirroring SmartClient — so a migrated comparison like
+    `a < b` is numeric, not lexicographic (`90 < 120`, never `"90" < "120"`). Empty/`null` values pass
+    through unchanged. Non-numeric parameters return their raw value (usually a string). Do **not** wrap
+    numeric reads in `Number(...)`; the platform already coerces.
+  - **Setting a selector value + its label.** To set a reference/selector field to a value that is not in
+    the loaded option list (e.g. a value resolved by an action handler), use
+    `item.setValueFromRecord({ id, _identifier })`. This sets both the value and the displayed identifier
+    in one call — the new-UI equivalent of the Classic `item.valueMap[id] = label; item.setValue(id)`
+    idiom. A bare `setValue(id)` only sets the value, so the selector would not render a label for an
+    unknown id.
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
@@ -714,6 +727,8 @@ This section is the operational guide for translating one Classic `.js` file int
 | `function onRefresh(view) { … }` | `em_etmeta_on_refresh`: `(view) => { … }`; call via `view.onRefreshFunction(view)` |
 | `onchangefunction(item, view, form, grid)` | `em_etmeta_on_parameter_change`: `(item, view, form, grid) => { … }` |
 | `ongridloadfunction(grid, view, parameters)` | `em_etmeta_on_grid_load`: `(grid, view, parameters) => { … }` |
+| `form.getItem('<numeric>').getValue()` → number | identical — numeric params return a `number` (Section 7.3); keep Classic comparisons (`a < b`) as-is, do not add `Number(...)` |
+| `gl.valueMap[id] = label; gl.setValue(id)` | `gl.setValueFromRecord({ id, _identifier: label })` — sets value **and** display label (Section 7.3) |
 | module-level helpers/state | `em_etmeta_payscript_logic` module body ending in `return { … }` |
 | `isc.confirm(msg, cb)` / `isc.warn` / `isc.say` | `confirm(msg, cb)` / `warn` / `say` (or `await confirm(msg)`) |
 | `view.parentWindow.view.getContextInfo()` | identical (also `view.getContextInfo()`) — parent record fields by `inputName` overlaid with the current parameter values |

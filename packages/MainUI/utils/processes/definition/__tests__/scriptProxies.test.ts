@@ -7,6 +7,7 @@ import {
   createGridProxy,
   createItemProxy,
   createViewProxy,
+  findParameter,
   normalizeValueMapEntries,
   notImplemented,
   resolveFormKey,
@@ -163,6 +164,91 @@ describe("scriptProxies", () => {
       const { handle } = makeFormHandle();
       const item = createItemProxy(handle, "amount");
       expect(() => (item.setDisabled as () => void)()).toThrow("item.setDisabled is not implemented yet");
+    });
+  });
+
+  describe("createItemProxy numeric getValue coercion (classic SmartClient parity)", () => {
+    const integerParam = { name: "Column1", dBColumnName: "Column1", reference: "11" } as unknown as ProcessParameter;
+    const stringParam = { name: "Note", dBColumnName: "Note", reference: "10" } as unknown as ProcessParameter;
+    const readNumeric = (handle: FormHandle, key: string) =>
+      createItemProxy(handle, key, {}, undefined, undefined, integerParam).getValue();
+
+    it("returns a number for a numeric parameter so comparisons are numeric, not lexicographic", () => {
+      // The original bug: stored as strings, "90" < "120" is true lexicographically
+      // but the migrated hook needs the numeric order 90 < 120.
+      const ninety = readNumeric(makeFormHandle({ Column1: "90" }).handle, "Column1");
+      const oneTwenty = readNumeric(makeFormHandle({ Column1: "120" }).handle, "Column1");
+      expect(ninety).toBe(90);
+      expect(oneTwenty).toBe(120);
+      expect((ninety as number) < (oneTwenty as number)).toBe(true);
+    });
+
+    it("reproduces the aging-overdue validation: the four defaults compare ascending as numbers", () => {
+      const { handle } = makeFormHandle({ Column1: "30", Column2: "60", Column3: "90", Column4: "120" });
+      const c1 = readNumeric(handle, "Column1") as number;
+      const c2 = readNumeric(handle, "Column2") as number;
+      const c3 = readNumeric(handle, "Column3") as number;
+      const c4 = readNumeric(handle, "Column4") as number;
+      expect(c1 < c2 && c2 < c3 && c3 < c4).toBe(true);
+    });
+
+    it("leaves non-numeric parameters and empty/nullish values untouched", () => {
+      const stringItem = createItemProxy(
+        makeFormHandle({ Note: "90" }).handle,
+        "Note",
+        {},
+        undefined,
+        undefined,
+        stringParam
+      );
+      expect(stringItem.getValue()).toBe("90");
+      expect(readNumeric(makeFormHandle({ Column1: "" }).handle, "Column1")).toBe("");
+      expect(readNumeric(makeFormHandle({ Column1: null }).handle, "Column1")).toBeNull();
+    });
+
+    it("does not coerce when no parameter metadata is supplied (backward compatible)", () => {
+      expect(createItemProxy(makeFormHandle({ Column1: "90" }).handle, "Column1").getValue()).toBe("90");
+    });
+
+    it("coerces through form.getItem when the parameter is numeric", () => {
+      const params = { Column1: integerParam } as unknown as Record<string, ProcessParameter>;
+      const form = createFormProxy(makeFormHandle({ Column1: "90" }).handle, params);
+      expect(call(form.getItem)("Column1").getValue()).toBe(90);
+    });
+
+    it("coerces through form.getItem when the map is keyed by dBColumnName and name differs", () => {
+      // Real data shape: the parameters map is keyed by dBColumnName ("Column1"),
+      // while parameter.name (the form key) is the long display label. getItem must
+      // still find the parameter to coerce, whether addressed by columnName or name.
+      const overdue = {
+        name: "Number Of Days Overdue: Group Three",
+        dBColumnName: "Column3",
+        reference: "11",
+      } as unknown as ProcessParameter;
+      const params = { Column3: overdue } as unknown as Record<string, ProcessParameter>;
+      const handle = makeFormHandle({ "Number Of Days Overdue: Group Three": "90" }).handle;
+      const form = createFormProxy(handle, params);
+      expect(call(form.getItem)("Column3").getValue()).toBe(90); // by dBColumnName (map key)
+      expect(call(form.getItem)("Number Of Days Overdue: Group Three").getValue()).toBe(90); // by name
+    });
+  });
+
+  describe("findParameter", () => {
+    const overdue = {
+      name: "Number Of Days Overdue: Group Three",
+      dBColumnName: "Column3",
+      reference: "11",
+    } as unknown as ProcessParameter;
+    const params = { Column3: overdue } as unknown as Record<string, ProcessParameter>;
+
+    it("resolves by map key / dBColumnName and by parameter name", () => {
+      expect(findParameter("Column3", params)).toBe(overdue);
+      expect(findParameter("Number Of Days Overdue: Group Three", params)).toBe(overdue);
+    });
+
+    it("returns undefined for unknown names or missing parameters", () => {
+      expect(findParameter("Nope", params)).toBeUndefined();
+      expect(findParameter("Column3", undefined)).toBeUndefined();
     });
   });
 

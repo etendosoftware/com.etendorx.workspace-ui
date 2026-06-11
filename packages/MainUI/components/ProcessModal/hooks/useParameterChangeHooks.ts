@@ -24,6 +24,7 @@ import {
   createFormHandle,
   createItemProxy,
   createViewProxy,
+  findParameter,
   type FieldController,
   type GridResolver,
   type MessageBarHandle,
@@ -103,7 +104,14 @@ export function useParameterChangeHooks({
     const runHook = (name: string, hook: CompiledParameterHook) => {
       firing.add(name);
       try {
-        const item = createItemProxy(formHandle, name, {}, fieldController, gridResolver);
+        const item = createItemProxy(
+          formHandle,
+          name,
+          {},
+          fieldController,
+          gridResolver,
+          findParameter(name, parameters)
+        );
         const view = createViewProxy(formHandle, parameters, {
           messageBar,
           controller: fieldController,

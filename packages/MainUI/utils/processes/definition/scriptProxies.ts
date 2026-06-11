@@ -28,6 +28,7 @@
 
 import type { FieldValues, UseFormReturn, UseFormSetValue } from "react-hook-form";
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { isNumericReference } from "@/utils/form/constants";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import type { DynamicParameter } from "./utils";
 
@@ -624,7 +625,7 @@ function assignLiveFormMethods(
 ): void {
   const getFields = () =>
     Object.values(parameters ?? {}).map((parameter) =>
-      createItemProxy(form, parameter.name, {}, controller, gridResolver)
+      createItemProxy(form, parameter.name, {}, controller, gridResolver, parameter)
     );
   formProxy.getFields = getFields;
   formProxy.getField = (index: number) => getFields()[index];
@@ -647,19 +648,28 @@ function assignLiveFormMethods(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolves the react-hook-form key for a classic item name. Migrated scripts
- * address items by parameter name or by raw `dBColumnName`; the form is keyed
- * by `parameter.name`, so a `dBColumnName` lookup maps back to its name. Falls
- * back to the requested name when no parameter matches.
+ * Finds the parameter a classic item name refers to. Migrated scripts address
+ * items by `name`, by raw `dBColumnName`, or by the `parameters` map key (which
+ * is the `dBColumnName`); all three are checked. Returns `undefined` when no
+ * parameter matches.
+ */
+export function findParameter(name: string, parameters: ParametersMap | undefined): ProcessParameter | undefined {
+  if (!parameters) return undefined;
+  const byKey = parameters[name];
+  if (byKey) return byKey;
+  for (const parameter of Object.values(parameters)) {
+    if (parameter.name === name || parameter.dBColumnName === name) return parameter;
+  }
+  return undefined;
+}
+
+/**
+ * Resolves the react-hook-form key for a classic item name. The form is keyed by
+ * `parameter.name`, so any addressing form (name / `dBColumnName` / map key) maps
+ * back to its name. Falls back to the requested name when no parameter matches.
  */
 export function resolveFormKey(name: string, parameters: ParametersMap | undefined): string {
-  if (!parameters) return name;
-  const byName = parameters[name];
-  if (byName) return byName.name;
-  for (const parameter of Object.values(parameters)) {
-    if (parameter.dBColumnName === name) return parameter.name;
-  }
-  return name;
+  return findParameter(name, parameters)?.name ?? name;
 }
 
 // ---------------------------------------------------------------------------
@@ -701,16 +711,31 @@ function assignItemCanvas(
   };
 }
 
+/**
+ * Coerces a numeric parameter's raw form value to a Number, mirroring classic
+ * SmartClient (an Integer/Number item returns a number from `getValue()`).
+ * Non-numeric parameters, empty strings, `null` and already-numeric values are
+ * returned unchanged, so truthiness checks (`allSet`) keep their classic meaning.
+ */
+function coerceParamValue(raw: unknown, parameter?: ProcessParameter): unknown {
+  if (!parameter || !isNumericReference(parameter.reference)) return raw;
+  if (typeof raw !== "string" || raw.trim() === "") return raw;
+  const asNumber = Number(raw);
+  if (Number.isNaN(asNumber)) return raw;
+  return asNumber;
+}
+
 export function createItemProxy(
   form: FormHandle,
   paramName: string,
   extras: ItemProxyExtras = {},
   controller?: FieldController,
-  gridResolver?: GridResolver
+  gridResolver?: GridResolver,
+  parameter?: ProcessParameter
 ): ItemProxy {
   const item: ItemProxy = {
     name: paramName,
-    getValue: () => form.getValues(paramName),
+    getValue: () => coerceParamValue(form.getValues(paramName), parameter),
     setValue: (value: unknown) => applyValue(form, paramName, value),
   };
   if (extras.rowNum !== undefined) item.rowNum = extras.rowNum;
@@ -738,7 +763,11 @@ export function createFormProxy(
   gridResolver?: GridResolver
 ): FormProxy {
   const formProxy: FormProxy = {
-    getItem: (name: string) => createItemProxy(form, resolveFormKey(name, parameters), {}, controller, gridResolver),
+    getItem: (name: string) => {
+      const parameter = findParameter(name, parameters);
+      const key = parameter?.name ?? name;
+      return createItemProxy(form, key, {}, controller, gridResolver, parameter);
+    },
     getValues: () => form.getValues(),
     redraw: () => {
       // No-op: react-hook-form re-renders reactively on value changes.
