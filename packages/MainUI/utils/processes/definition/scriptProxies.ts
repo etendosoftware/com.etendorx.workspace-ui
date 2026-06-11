@@ -328,6 +328,13 @@ export interface ViewProxy extends Record<string, unknown> {
   /** Nested-process launch (live only with a controller); `standardWindow` is the classic alias. */
   openProcess?: (params: OpenProcessParams) => void;
   standardWindow?: { openProcess: (params: OpenProcessParams) => void };
+  /**
+   * Reproduction of Classic's `actionHandlerCall()`: submits the standard
+   * execution payload to the process's configured Java class and resolves with
+   * the server response. Live only when the executor is injected (the
+   * `onProcess` path); deferred (throwing) otherwise.
+   */
+  executeProcess?: (actionValue?: string) => Promise<unknown>;
 }
 
 /** Optional extras for the grid-cell variant of the onChange hook. */
@@ -391,6 +398,9 @@ const LIVE_VIEW_METHODS = [
 
 /** Method name for the nested-process launch; shared across the proxy wiring. */
 const OPEN_PROCESS = "openProcess";
+
+/** `view.executeProcess()` stays deferred unless its executor is injected. */
+const EXECUTE_PROCESS_METHOD = ["executeProcess"] as const;
 
 /** Full deferred set used when no controller is present (`getContextInfo` is always live). */
 const DEFERRED_VIEW_METHODS = [...LIVE_VIEW_METHODS, OPEN_PROCESS] as const;
@@ -854,11 +864,27 @@ export function createGridProxy(state: GridState, controller?: GridController, v
   return gridProxy;
 }
 
+/**
+ * Builds the classic `view.parentWindow.view` handle a migrated script reaches through the
+ * SmartClient idiom `view.parentWindow.view.getContextInfo()`. The new UI keeps a single `view`,
+ * so the parent handle aliases the same context accessors. The original `parentWindow` data (the
+ * Tab) is preserved so scripts reading tab fields off `parentWindow` keep working.
+ */
+function buildParentWindow(
+  parentWindow: unknown,
+  parentView: Pick<ViewProxy, "getContextInfo" | "getView">
+): Record<string, unknown> {
+  const view = { getContextInfo: parentView.getContextInfo, getView: parentView.getView };
+  if (parentWindow && typeof parentWindow === "object") {
+    return { ...(parentWindow as Record<string, unknown>), view };
+  }
+  return { view };
+}
+
 /** Read-only environment data and the always-live context accessors. */
 function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void {
   view.windowId = data.windowId;
   view.callerField = data.callerField;
-  view.parentWindow = data.parentWindow;
   view.sourceView = data.sourceView;
   view.activeView = { tabId: data.activeTabId };
   // Context map = parent record fields overlaid with the current parameter values.
@@ -866,6 +892,8 @@ function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.
   view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? view : { tabId });
+  // Classic `view.parentWindow.view.getContextInfo()` idiom (built after the accessors above).
+  view.parentWindow = buildParentWindow(data.parentWindow, view);
 }
 
 /** Lifecycle action methods, each delegating to the injected controller. */
@@ -925,6 +953,8 @@ export function createViewProxy(
     gridResolver?: GridResolver;
     data?: ViewData;
     hookData?: Record<string, unknown>;
+    /** Executor for `view.executeProcess()` (the `actionHandlerCall()` reproduction). */
+    executeProcess?: (actionValue?: string) => Promise<unknown>;
   }
 ): ViewProxy {
   const view = {
@@ -942,6 +972,12 @@ export function createViewProxy(
     assignNestedViewActions(view, deps.viewController);
   } else {
     assignDeferred(view, "view", DEFERRED_VIEW_METHODS);
+  }
+
+  if (deps.executeProcess) {
+    view.executeProcess = deps.executeProcess;
+  } else {
+    assignDeferred(view, "view", EXECUTE_PROCESS_METHOD);
   }
   return view;
 }

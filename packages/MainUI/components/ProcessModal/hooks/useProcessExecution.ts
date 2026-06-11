@@ -618,38 +618,39 @@ export function useProcessExecution({
     ]
   );
 
-  const handleDirectJavaProcessExecute = useCallback(
-    async (actionValue?: string) => {
-      if (!processId || !javaClassName) return;
-      startTransition(async () => {
-        const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId as string] : null;
-        const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+  /**
+   * Builds the standard Java-process execution payload — the new-UI counterpart
+   * of Classic's `allProperties` (parent record context at the top level +
+   * `_params` with the process form values + `_buttonValue` / `_entityName`).
+   * Shared by the direct-Java path and the `actionHandlerCall()` reproduction
+   * (`runStandardExecution`) so both send an identical request.
+   */
+  const buildStandardJavaPayload = useCallback(
+    (actionValue?: string): Record<string, unknown> => {
+      const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId as string] : null;
+      const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
-        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+      const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
-        const params = getMergedProcessValues({ ...getMappedFormValues(), ...extraKey });
-        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+      const params = getMergedProcessValues({ ...getMappedFormValues(), ...extraKey });
+      const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
 
-        const payload = {
-          recordIds: getRecordIds(),
-          _buttonValue: actionValue || "DONE",
-          _entityName: tab?.entityName || "",
-          ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
-          ...buildProcessSpecificFields(processId),
-          ..._basePayload,
-        };
-
-        await executeJavaProcess(payload, "direct Java process");
-      });
+      return {
+        recordIds: getRecordIds(),
+        _buttonValue: actionValue || "DONE",
+        _entityName: tab?.entityName || "",
+        ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
+        ...buildProcessSpecificFields(processId),
+        ..._basePayload,
+      };
     },
     [
       tab,
       processId,
-      javaClassName,
       windowId,
       record,
       parameters,
@@ -657,9 +658,41 @@ export function useProcessExecution({
       getMappedFormValues,
       getRecordIds,
       buildProcessSpecificFields,
-      executeJavaProcess,
-      startTransition,
     ]
+  );
+
+  const handleDirectJavaProcessExecute = useCallback(
+    async (actionValue?: string) => {
+      if (!processId || !javaClassName) return;
+      startTransition(async () => {
+        await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
+      });
+    },
+    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition]
+  );
+
+  /**
+   * Faithful reproduction of Classic's `actionHandlerCall()` for migrated
+   * `onProcess` scripts (`view.executeProcess()`). The platform builds the
+   * standard payload and posts it to the process's configured Java class —
+   * exactly as the Classic framework does — then dispatches any server
+   * `responseActions` registry-first. It is intentionally side-effect-light (no
+   * `setResult`/toast/retry): the returned response flows back through the
+   * `onProcess` return so the modal handles the message once.
+   */
+  const runStandardExecution = useCallback(
+    async (actionValue?: string): Promise<unknown> => {
+      const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
+      const resultData = await fetchAndParseJson(apiUrl, buildJsonRequest(buildStandardJavaPayload(actionValue)));
+
+      const dispatchableActions = readDispatchableResponseActions(resultData);
+      if (dispatchableActions.length > 0) {
+        getActionExecuteJSON(scriptContext)?.(dispatchableActions);
+      }
+
+      return resultData;
+    },
+    [processId, tab?.window, javaClassName, scriptContext, buildJsonRequest, buildStandardJavaPayload]
   );
 
   const extractResponseMessage = useCallback(
@@ -713,6 +746,8 @@ export function useProcessExecution({
           viewController,
           gridResolver,
           data: viewData,
+          // Classic `actionHandlerCall()` equivalent for migrated onProcess scripts.
+          executeProcess: runStandardExecution,
           hookData: {
             _buttonValue: actionValue || "DONE",
             buttonValue: actionValue || "DONE",
@@ -778,6 +813,7 @@ export function useProcessExecution({
       hasWindowReference,
       handleWindowReferenceExecute,
       handleDirectJavaProcessExecute,
+      runStandardExecution,
       etmetaOnprocess,
       onRefreshFunction,
       javaClassName,

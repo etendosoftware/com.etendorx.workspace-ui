@@ -60,3 +60,25 @@ export function evaluateParameterDefaults(
 
   return defaults;
 }
+
+/**
+ * Seeds `false` into Yes/No (boolean) parameters that ended up without a resolved value, matching
+ * the classic unchecked checkbox. Without it, an absent boolean stays `undefined`, so display logic
+ * like `@Param@=false` (compiled to `... == 'N'`) evaluates `false` and hides a field the classic UI
+ * shows. Mutates `values` in place.
+ *
+ * @param values - Current form values (mutated in place)
+ * @param parameters - Record of process parameters
+ */
+export function seedBooleanParameterDefaults(
+  values: Record<string, unknown>,
+  parameters: Record<string, ProcessParameter>
+): void {
+  for (const param of Object.values(parameters)) {
+    if (param.reference !== FIELD_REFERENCE_CODES.BOOLEAN.id) continue;
+    const current = values[param.name];
+    if (current === undefined || current === null || current === "") {
+      values[param.name] = false;
+    }
+  }
+}

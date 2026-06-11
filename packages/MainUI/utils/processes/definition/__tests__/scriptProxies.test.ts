@@ -271,6 +271,35 @@ describe("scriptProxies", () => {
       expect(view.getView("OTHER")).toEqual({ tabId: "OTHER" });
     });
 
+    it("exposes the classic view.parentWindow.view context handle, preserving parentWindow data", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const data: ViewData = {
+        activeTabId: "T-1",
+        parentWindow: { tabTitle: "Business Partner" },
+        parentRecord: { docStatus: "DR", amount: 1 },
+      };
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, data });
+      const parentWindow = view.parentWindow as { tabTitle: string; view: ViewProxy };
+
+      // Classic idiom `view.parentWindow.view.getContextInfo()` resolves to the same context.
+      expect(parentWindow.view.getContextInfo()).toEqual(view.getContextInfo());
+      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "DR", amount: 7 });
+      expect(parentWindow.view.getView("T-1")).toBe(view);
+      // The original parentWindow data is preserved alongside the injected `view` handle.
+      expect(parentWindow.tabTitle).toBe("Business Partner");
+    });
+
+    it("falls back to a bare { view } parentWindow when none is provided", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        data: { parentRecord: { docStatus: "CO" } },
+      });
+      const parentWindow = view.parentWindow as { view: ViewProxy };
+
+      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7 });
+    });
+
     it("delegates the action methods to the viewController", () => {
       const { handle } = makeFormHandle();
       const viewController = makeViewController();
@@ -331,6 +360,22 @@ describe("scriptProxies", () => {
       expect(viewController.openProcess).toHaveBeenCalledTimes(2);
       expect(viewController.openProcess).toHaveBeenNthCalledWith(1, OPEN_PROCESS_PARAMS);
       expect(viewController.openProcess).toHaveBeenNthCalledWith(2, OPEN_PROCESS_PARAMS);
+    });
+
+    it("defers executeProcess when no executor is injected", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar });
+      expect(() => (view.executeProcess as () => void)()).toThrow("view.executeProcess is not implemented yet");
+    });
+
+    it("exposes executeProcess when its executor is injected", async () => {
+      const { handle } = makeFormHandle();
+      const executeProcess = jest.fn(async () => ({ message: { severity: "success", text: "ok" } }));
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, executeProcess });
+
+      const response = await (view.executeProcess as (a?: string) => Promise<unknown>)("DONE");
+      expect(executeProcess).toHaveBeenCalledWith("DONE");
+      expect(response).toEqual({ message: { severity: "success", text: "ok" } });
     });
 
     it("merges hookData onto the view without shadowing the canonical surface", () => {

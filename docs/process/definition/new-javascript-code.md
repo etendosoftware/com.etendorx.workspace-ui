@@ -199,8 +199,47 @@ Each field below holds a string compiled into a function (Section 6). The signat
 - **Gating:** early-returns if the body is empty or there is no tab context (`!etmetaOnprocess || !tab`).
 - **Returns (optional):** a result object such as `{ success, msgText, msgType, linkTabId, … }` and/or
   response actions dispatched through the action pipeline (Section 8.9).
-- **Purpose:** client-side validation before submit, building the execution payload, calling the
-  backend, and post-processing the response.
+- **Purpose:** client-side validation before submit, calling the backend (via `view.executeProcess()`
+  or `callAction`), and post-processing the response.
+
+#### 5.2.1 `view.executeProcess()` — the `actionHandlerCall()` equivalent
+
+In Classic, a `clientsidevalidation` (`onProcess`) function receives two callbacks,
+`actionHandlerCall` and `clientSideValidationFail`, and decides which to run
+(`ob-parameter-window-view.js` `doProcess`). `actionHandlerCall()` submits the **standard execution
+payload** — `getUnderLyingRecordContext()` (the launching record's full context: `inpadOrgId`,
+`inp<col>` session inputs, the bare primary key, …) plus `_params` (the process form values) — to the
+process's configured Java class. **The Classic script never builds that payload; the framework does.**
+
+The new UI reproduces this with `await view.executeProcess(actionValue?)`:
+
+- It builds the same standard payload through `buildProcessPayload(record, tab, …)` (top-level record
+  context, including the bare PK via `systemContext[keyColumnName] = record.id`) + `_params` (the
+  current form values), and POSTs it to the process's configured `javaClassName`.
+- It dispatches any server `responseActions` registry-first (Section 8.9) and resolves with the parsed
+  server response, e.g. `{ message: { severity, text } }`.
+- It is side-effect-light: it does **not** show a toast or close the modal. The migrated `onProcess`
+  returns the response (commonly `return response && response.message`) and the standard `onProcess`
+  return flow surfaces the message exactly once.
+
+Migration mapping — a Classic `onProcess` that does `actionHandlerCall()` on the valid branch becomes:
+
+```js
+async (process, view) => {
+  // …client-side validation…
+  if (invalid) {
+    view.messageBar.setMessage(isc.OBMessageBar.TYPE_ERROR, null, text);
+    return { severity: 'error', text };   // = clientSideValidationFail()
+  }
+  const response = await view.executeProcess();   // = actionHandlerCall()
+  return response && response.message;
+};
+```
+
+Prefer `view.executeProcess()` over hand-building a payload for `callAction(<class>, …)`: it avoids a
+hardcoded handler name, guarantees the legacy context keys the handler reads, and matches Classic
+exactly. Reach for `callAction` directly only when the script must call a **different** handler than the
+process's own Java class.
 
 ### 5.3 `em_etmeta_on_refresh` — process `onRefresh`
 
@@ -377,13 +416,22 @@ client's `/api` proxy, which injects the CSRF token server-side.
 
 - **Read-only environment — always present:** `view.theForm`, `view.messageBar`, `view.viewGrid`,
   `view.windowId`, `view.callerField`, `view.parentWindow`, `view.sourceView`, `view.activeView.tabId`,
-  `view.getContextInfo()`, `view.getView(tabId?)`.
+  `view.getContextInfo()`, `view.getView(tabId?)`. The parent context is reachable both as
+  `view.getContextInfo()` and through the Classic SmartClient idiom
+  `view.parentWindow.view.getContextInfo()` (alias of the same accessor; `view.parentWindow.view` also
+  exposes `getView`), so a migrated script can keep the literal Classic call. `getContextInfo()` returns
+  the launching record's fields (keyed by `inputName`, e.g. `inpbpCurrencyId`) overlaid with the current
+  parameter values.
 - **Action methods — live only when a controller is injected by the modal:** `view.refresh()`,
   `view.handleReadOnlyLogic()`, `view.handleButtonsStatus()`, `view.fireOnPause()`,
   `view.selectAllRecords()`, `view.getSelection()`, `view.openProcess(params)`,
   `view.standardWindow.openProcess(params)`, plus footer chrome (`view.popupButtons.members`,
   `view.cancelButton`, `view.parentElement…closeButton`). Without the controller these are deferred and
   throw `"<api> is not implemented yet"`.
+- **Server execution — live only in the `onProcess` path:** `await view.executeProcess(actionValue?)`.
+  This is the new-UI reproduction of Classic's `actionHandlerCall()` (see Section 5.2.1). It is deferred
+  (throws `"view.executeProcess is not implemented yet"`) in the other hooks, where pressing the execute
+  button is not what triggered them.
 
 This deferral is intentional: read-only data is always safe, and any unported action surfaces loudly.
 
@@ -508,6 +556,13 @@ when it has no static `displayLogic` of its own. Equivalent and interchangeable:
 `view.theForm.getItem('<grid>').canvas.viewGrid.hide()` and `view.theForm.getItem('<grid>').hide()`
 both hide the grid parameter.
 
+**Yes/No defaults and display logic.** A Yes/No (boolean, reference `20`) parameter with no
+`defaultValue` is initialized to `false`, matching the Classic unchecked checkbox. This is what makes
+static display logic such as `@SomeFlag@=false` evaluate correctly on open (an unset boolean would
+otherwise stay `undefined`, and `undefined == 'N'` is false, wrongly hiding the field). Handled by
+`seedBooleanParameterDefaults` (`utils/process/evaluateParameterDefaults.ts`) when the modal builds its
+form defaults; no script action is needed.
+
 ### 8.6 The `OB.*` namespace shim
 
 `createOBShim(deps)` (`packages/MainUI/utils/ob/obShim.ts`, one file per namespace) builds one shared,
@@ -623,11 +678,14 @@ This section is the operational guide for translating one Classic `.js` file int
 |---|---|
 | `function onLoad(view) { … }` | `em_etmeta_onload`: `async (process, view) => { … }` |
 | `function onProcess(view) { … }` | `em_etmeta_onprocess`: `async (process, view) => { … }` |
+| `onProcess(view, actionHandlerCall, …)` → `actionHandlerCall()` | `return await view.executeProcess()` (Section 5.2.1) — platform builds the standard payload + submits to the configured Java class |
+| `onProcess(…, …, clientSideValidationFail)` → `clientSideValidationFail()` | `return { severity: 'error', text }` (aborts; modal stays open) |
 | `function onRefresh(view) { … }` | `em_etmeta_on_refresh`: `(view) => { … }`; call via `view.onRefreshFunction(view)` |
 | `onchangefunction(item, view, form, grid)` | `em_etmeta_on_parameter_change`: `(item, view, form, grid) => { … }` |
 | `ongridloadfunction(grid, view, parameters)` | `em_etmeta_on_grid_load`: `(grid, view, parameters) => { … }` |
 | module-level helpers/state | `em_etmeta_payscript_logic` module body ending in `return { … }` |
 | `isc.confirm(msg, cb)` / `isc.warn` / `isc.say` | `confirm(msg, cb)` / `warn` / `say` (or `await confirm(msg)`) |
+| `view.parentWindow.view.getContextInfo()` | identical (also `view.getContextInfo()`) — parent record fields by `inputName` overlaid with the current parameter values |
 | `view.messageBar.setMessage(OB.MessageBar.TYPE_X, t, html)` | same; `html` is sanitized; links → `actions` |
 | `OB.I18N.getLabel(id, params)` | identical |
 | `OB.PropertyStore.get/set` | identical |

@@ -59,7 +59,7 @@ export {
   addDynamicParameter,
   removeParameter,
 } from "@/utils/processes/definition/utils";
-export { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
+export { evaluateParameterDefaults, seedBooleanParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 export { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 export {
   isBulkCompletionProcess,
