@@ -191,6 +191,9 @@ const ROW_SPAN_CLASS: Record<number, string> = {
   1: 'row-span-1',
   2: 'row-span-2',
   3: 'row-span-3',
+  4: 'row-span-4',
+  5: 'row-span-5',
+  6: 'row-span-6',
 };
 
 interface BaseSelectorProps {
@@ -555,11 +558,14 @@ const BaseSelectorComp = ({
     const isRichText = field.column.reference === FIELD_REFERENCE_CODES.RICH_TEXT.id;
     const isMultiSelector = field.column.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id;
     const isExpandedField = isTextLong || isMemo || isImage || isRichText || isMultiSelector;
-    const containerClasses = isExpandedField ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
+    const rowspanFromMeta = field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : null;
+    const containerClasses = isExpandedField
+      ? `${rowspanFromMeta ?? 'row-span-4'} flex items-start pt-2`
+      : "h-12 flex items-center";
     const layoutClasses = [
       colStart != null ? COL_START_CLASS[colStart] : undefined,
       field.obuiappColspan != null ? COL_SPAN_CLASS[field.obuiappColspan] : undefined,
-      field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
+      !isExpandedField && field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
     ].filter(Boolean).join(' ');
 
     return (
