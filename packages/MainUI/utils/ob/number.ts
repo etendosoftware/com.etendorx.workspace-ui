@@ -47,6 +47,26 @@ function trimFraction(fraction: string, min: number): string {
   return fraction.substring(0, end);
 }
 
+/**
+ * Coerces a value to a finite number for formatting. Accepts a native finite `number` or any
+ * decimal-like object exposing `toNumber()` (our `BigDecimal` shim or a raw `BigNumber`), so the
+ * classic `JSToOBMasked(<BigDecimal>, …)` call formats correctly. Returns `undefined` when the
+ * value cannot be represented as a finite number.
+ */
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  const toNumber = (value as { toNumber?: unknown })?.toNumber;
+  if (typeof toNumber === "function") {
+    const converted = toNumber.call(value);
+    if (typeof converted === "number" && Number.isFinite(converted)) {
+      return converted;
+    }
+  }
+  return undefined;
+}
+
 /** Inserts the grouping separator every `interval` digits from the right. */
 function groupIntegerDigits(integerDigits: string, separator: string, interval: number): string {
   if (!interval || interval <= 0) {
@@ -71,8 +91,9 @@ function groupIntegerDigits(integerDigits: string, separator: string, interval: 
  * Simplified port of classic `OB.Utilities.Number.JSToOBMasked`. The in-scope
  * migrated processes only ever pass `OB.Format.defaultNumericMask` (a standard
  * `#,##0.00`-style mask), which this implementation reproduces exactly; masks
- * with literal symbols are out of scope. Non-numeric input is returned
- * unchanged, matching classic behaviour.
+ * with literal symbols are out of scope. A finite `number` or a decimal-like value (our
+ * `BigDecimal` shim / a `BigNumber`, both passed by classic scripts) is formatted; any other input
+ * is returned unchanged, matching classic behaviour.
  */
 export function JSToOBMasked(
   value: unknown,
@@ -81,14 +102,15 @@ export function JSToOBMasked(
   groupSeparator = ",",
   groupInterval: number = DEFAULT_GROUPING_SIZE
 ): unknown {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  const num = toFiniteNumber(value);
+  if (num === undefined) {
     return value;
   }
   const { min, max } = parseMaskFractionDigits(mask);
-  const fixed = Math.abs(value).toFixed(max);
+  const fixed = Math.abs(num).toFixed(max);
   const [integerPart, fractionPart = ""] = fixed.split(".");
   const trimmedFraction = trimFraction(fractionPart, min);
   const groupedInteger = groupIntegerDigits(integerPart, groupSeparator, groupInterval);
-  const sign = value < 0 ? "-" : "";
+  const sign = num < 0 ? "-" : "";
   return trimmedFraction ? `${sign}${groupedInteger}${decSeparator}${trimmedFraction}` : `${sign}${groupedInteger}`;
 }

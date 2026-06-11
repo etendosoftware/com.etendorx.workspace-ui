@@ -15,6 +15,8 @@
  *************************************************************************
  */
 
+import BigNumber from "bignumber.js";
+import { BigDecimal } from "../bigDecimal";
 import { JSToOBMasked } from "../number";
 
 const STANDARD_MASK = "#,##0.00";
@@ -58,5 +60,18 @@ describe("JSToOBMasked", () => {
 
   it("returns NaN unchanged (not finite)", () => {
     expect(JSToOBMasked(Number.NaN, STANDARD_MASK, ".", ",", 3)).toBeNaN();
+  });
+
+  it("formats a BigDecimal like its numeric equivalent", () => {
+    expect(JSToOBMasked(new BigDecimal("1234.5"), STANDARD_MASK, ".", ",", 3)).toBe("1,234.50");
+  });
+
+  it("formats a raw BigNumber like its numeric equivalent", () => {
+    expect(JSToOBMasked(new BigNumber("1000000"), STANDARD_MASK, ".", ",", 3)).toBe("1,000,000.00");
+  });
+
+  it("returns a non-decimal object unchanged", () => {
+    const obj = { foo: "bar" };
+    expect(JSToOBMasked(obj, STANDARD_MASK, ".", ",", 3)).toBe(obj);
   });
 });

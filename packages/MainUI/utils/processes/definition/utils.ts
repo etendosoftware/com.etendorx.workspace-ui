@@ -18,6 +18,7 @@
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { BigDecimal } from "@/utils/ob/bigDecimal";
 import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
 import { dispatchBuiltinAction } from "@/utils/processes/definition/actionDispatcherStore";
@@ -141,6 +142,13 @@ export interface ProcessScriptContext {
    * proxies, so process-level hooks (which have no `view`) use `messageBar.*`.
    */
   messageBar: MessageBarHandle;
+
+  /**
+   * Classic global `BigDecimal` (decimal amount arithmetic), injected so migrated
+   * hooks keep exact rounding/scale parity with the server-side amount checks
+   * instead of using lossy `Number`. See {@link BigDecimal}.
+   */
+  BigDecimal: typeof BigDecimal;
 }
 
 /**
@@ -236,7 +244,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     datasource.get(entity, payload) as Promise<{ data: unknown }>;
   const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource });
 
-  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar };
+  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar, BigDecimal };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */
