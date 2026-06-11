@@ -402,6 +402,7 @@ identifiers inside every hook body (alongside `Metadata` and any module-scope he
 | `confirm` / `warn` / `say` | Promise-based modal dialogs (Section 8.1). |
 | `isc` | Classic alias namespace: `{ confirm, ask, warn, say, OBMessageBar }`. |
 | `messageBar` | In-dialog banner handle (Section 8.2); also reachable as `view.messageBar`. |
+| `BigDecimal` | Decimal arithmetic class mirroring the Classic global (Section 8.11). |
 | module-scope helpers | Whatever `etmetaPayscriptLogic` returned (Section 6.4). |
 
 All HTTP helpers attach auth headers (bearer token + CSRF) automatically. They are routed through the
@@ -573,7 +574,7 @@ React-free `OB` per modal:
 | `OB.PropertyStore` | `get(key, windowId?)`, `set(key, value)` (case-insensitive). |
 | `OB.I18N` | `getLabel(labelId, paramsArray?)` with Classic `%n` positional substitution; unknown keys fall back to the key. |
 | `OB.Format` | `defaultDecimalSymbol`, `defaultGroupingSymbol`, `defaultGroupingSize`, `defaultNumericMask`, derived from the active language. |
-| `OB.Utilities.Number` | `JSToOBMasked(mask, value, …)` for standard `#,##0.00` masks. |
+| `OB.Utilities.Number` | `JSToOBMasked(value, mask, …)` for standard `#,##0.00` masks. Accepts a `number` **or** a decimal-like value (a `BigDecimal`/`BigNumber`, via `toNumber()`); any other input is returned unchanged. |
 | `OB.Utilities.Action` | `set(name, fn)`, `execute(name, params)`, `executeJSON(...)` (Section 8.9). |
 | `OB.Utilities.generateRandomString(length)` | utility. |
 | `OB.Styles` | style constants (`MessageBar`, module styles). |
@@ -639,6 +640,30 @@ the returned helpers into every hook's context, so entry points call helpers by 
 also self-register `OB.<Module>.<Process>` so namespaced calls keep working. There is no cross-process
 global namespace — each process owns its module scope (see the cloning rule in Section 10.5).
 
+### 8.11 Decimal arithmetic — the `BigDecimal` global
+
+- **Classic:** a global `BigDecimal` (Openbravo's GWT/Java decimal port) used for money math that must
+  keep the server's rounding/scale, e.g. `new BigDecimal(String(x))`, `BigDecimal.prototype.ZERO`,
+  `.add`, `.subtract`, `.compareTo`.
+- **New UI:** `BigDecimal` is injected as a top-level global (Section 7.1), so migrated scripts use it
+  **verbatim** — never rewrite money math with `Number`/`parseFloat`, which drifts (`0.1 + 0.2`) and
+  breaks parity with the server-side amount check. The class is an immutable wrapper over
+  `bignumber.js` (`packages/MainUI/utils/ob/bigDecimal.ts`):
+
+  ```js
+  let total = BigDecimal.prototype.ZERO;                 // zero
+  total = total.add(new BigDecimal(String(row.amount))); // immutable: returns a new instance
+  const diff = total.subtract(other);
+  if (total.compareTo(expected) !== 0) { /* amounts differ */ }
+  OB.Utilities.Number.JSToOBMasked(total, OB.Format.defaultNumericMask, …); // formats directly
+  ```
+
+  Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`, `add`,
+  `subtract`, `compareTo` (`-1 | 0 | 1`), `toString()`, `toNumber()`. `multiply`/`divide` are **not**
+  provided yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be
+  deterministic, so they will be added with those semantics when a process needs them. `JSToOBMasked`
+  accepts a `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
+
 ---
 
 ## 9. Custom UI component path
@@ -689,7 +714,8 @@ This section is the operational guide for translating one Classic `.js` file int
 | `view.messageBar.setMessage(OB.MessageBar.TYPE_X, t, html)` | same; `html` is sanitized; links → `actions` |
 | `OB.I18N.getLabel(id, params)` | identical |
 | `OB.PropertyStore.get/set` | identical |
-| `OB.Format.*`, `OB.Utilities.Number.JSToOBMasked` | identical |
+| `OB.Format.*`, `OB.Utilities.Number.JSToOBMasked` | identical (`JSToOBMasked` also accepts a `BigDecimal`, Section 8.6) |
+| `new BigDecimal(String(x))` / `.add` / `.subtract` / `.compareTo` / `.prototype.ZERO` | identical — injected global (Section 8.11); never rewrite money math with `Number` |
 | `OB.RemoteCallManager.call(handler, params, other, cb)` | identical (callback adapter over `callAction`) |
 | `OB.Utilities.Action.set/execute/executeJSON` | identical |
 | `OB.Datasource.create({...}).fetchData(cb)` | identical (mandatory pagination defaults applied) |
