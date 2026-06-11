@@ -89,6 +89,11 @@ export interface WindowStore {
   /** Triggers URL-based recovery to re-run. Set by WindowProvider. */
   triggerRecovery: () => void;
 
+  // ---- Dirty tracking -----------------------------------------------------
+  /** Tracks which windows have unsaved changes, keyed by source (e.g. "form:tabId", "table:tabId") */
+  dirtyWindows: Record<string, Record<string, boolean>>;
+  setWindowDirtySource: (windowIdentifier: string, sourceKey: string, isDirty: boolean) => void;
+
   // ---- Table state setters ------------------------------------------------
   setTableFilters: (
     windowIdentifier: string,
@@ -163,6 +168,7 @@ export const useWindowStore = create<WindowStore>()(
       isRecoveryLoading: false,
       recoveryError: null,
       triggerRecovery: () => {},
+      dirtyWindows: {},
 
       // ---- Table state setters ----------------------------------------
       setTableFilters: (windowIdentifier, tabId, filters, tabLevel = 0) =>
@@ -352,6 +358,7 @@ export const useWindowStore = create<WindowStore>()(
             const allIds = Object.keys(draft.windows);
 
             delete draft.windows[windowIdentifier];
+            delete draft.dirtyWindows[windowIdentifier];
 
             if (wasActive && allIds.length > 1) {
               const deletedIdx = allIds.indexOf(windowIdentifier);
@@ -376,9 +383,28 @@ export const useWindowStore = create<WindowStore>()(
         set(
           (draft) => {
             draft.windows = {};
+            draft.dirtyWindows = {};
           },
           false,
           "window/cleanState"
+        ),
+
+      setWindowDirtySource: (windowIdentifier, sourceKey, isDirty) =>
+        set(
+          (draft) => {
+            if (isDirty) {
+              if (!draft.dirtyWindows[windowIdentifier]) {
+                draft.dirtyWindows[windowIdentifier] = {};
+              }
+              draft.dirtyWindows[windowIdentifier][sourceKey] = true;
+            } else {
+              if (draft.dirtyWindows[windowIdentifier]) {
+                delete draft.dirtyWindows[windowIdentifier][sourceKey];
+              }
+            }
+          },
+          false,
+          "window/setWindowDirtySource"
         ),
 
       // ---- Form state ------------------------------------------------

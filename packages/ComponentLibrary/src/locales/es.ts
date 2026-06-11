@@ -22,6 +22,8 @@ const es = {
     confirm: "Confirmar",
     close: "Cerrar",
     closing: "Cerrando...",
+    unsavedChangesCloseMessage:
+      "Tiene cambios sin guardar que se perderán. ¿Está seguro de que desea cerrar esta ventana?",
     execute: "Ejecutar",
     register: "Registrar",
     save: "Guardar",
