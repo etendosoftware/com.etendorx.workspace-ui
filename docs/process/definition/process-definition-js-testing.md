@@ -266,45 +266,45 @@ within a band, smallest first.
 
 Distribution: **8 easy · 25 medium · 4 hard.**
 
-| id | name | signal | mechanisms (signal 1) | difficulty | size (lines · KB) | `.js` file(s) | status |
-|---|---|---|---|---|---|---|---|
-| C044DDAA929E40D780C36154FBB968F7 | Create Invoices from Orders | 1 | `onchangefunction` ×1 | easy | 15 · 0.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/createFromOrders.js` | migrated |
-| 31ED9333E46C419D92E9F1B10F821B91 | Clone | 3 |  | easy | 25 · 1.2 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/ob-clone-record.js` | blocked |
-| 71E00A0E964E43AE81C5AFBCDCA5F87C | Valued Stock Report | 1 | `onchangefunction` ×1 | easy | 27 · 0.7 KB | `modules_core/com.etendoerp.reportvaluationstock/web/com.etendoerp.reportvaluationstock/js/etrvs-onchange.js` | migrated |
-| B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | migrated |
-| 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | migrated |
-| CC73C4845CDC487395804946EACB225F | Funds Transfer | 1 | `on_load_function`, `onchangefunction` ×1 | easy | 49 · 1.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-fundsTransfer.js` | migrated |
-| 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | migrated |
-| B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | migrated |
-| 154CB4F9274A479CB38A285E16984539 | Find Transactions to Match | 1,3 | `clientsidevalidation` | medium | 106 · 3.6 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-findTransaction.js` | migrated |
-| C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | medium | 112 · 3.9 KB ³ | `WebContent/web/org.openbravo.module.remittance/js/ob-rem-utilities.js` ⚠ deploy ³ | migrated |
-| EB4C4053F3B94A17A08D1DD7E89CEB7E | Aging Balance Process Definition for Payables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `modules_core/org.openbravo.client.application/web/…/js/utilities/ob-onchange-functions.js` ¹ | migrated |
-| 0D37A9F6109549DEB058373EF2DAEB6A | Aging Balance Process Definition for Receivables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `…/js/utilities/ob-onchange-functions.js` ¹ | migrated |
-| AB2EFCAABB7B4EC0A9B30CFB82963FB6 | Create Lines From Order | 1 | `on_load_function` | medium | 119 · 3.7 KB | `modules_core/org.openbravo.client.application/web/…/js/procurement/ob-procurement.js` | migrated |
-| D37588FFC6264BED91FA7611DBFFC679 | Balance Sheet and P&L Structure advanced | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `WebContent/web/com.etendoerp.financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
-| 56E951BB13A44AFBB642291081613E46 | General Ledger Report Advanced | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
-| 636EF6F0F8B64E94A8247930569B98CA | Journal Entries Report Advanced | 1 | `onchangefunction` ×2 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
-| D8E8015B1478473799E47F84796C481C | Trial Balance | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
-| 99E532BA0306450A839F5DE238375238 | Select Invoices and Orders | 1 | `ongridloadfunction` ×1 | medium | 163 · 5.6 KB (2 files) | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` · `ob-rem-utilities.js` ⚠ deploy | blocked |
-| B7B1D4F53D4249C5A10D3AD0865D909F | Manage PickingList Action | 3 |  | medium | 173 · 5.6 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_Process.js` ⚠ deploy | pending |
-| 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | 1,2 | `onchangefunction` ×2 | medium | 178 · 5.1 KB (2 files) | `modules_core/com.etendoerp.advpaymentmngt/web/com.etendoerp.advpaymentmngt/js/received_in-paid_out-onchange.js` · `…/js/payment-action-popup.js` (signal 2: `EAPM_Popup`) | pending |
-| A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | pending |
-| B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
-| 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
-| 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
-| 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
-| DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | pending |
-| C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | pending |
-| 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | pending |
-| E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
-| A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | pending |
-| FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | pending |
-| 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
-| A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function` | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | pending |
-| 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | pending |
-| 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | pending |
-| 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | pending |
-| 9BED7889E1034FE68BD85D5D16857320 | Add Payment | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3 | hard | 1935 · 63.2 KB | `modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js` | pending |
+| # | id | name | signal | mechanisms (signal 1) | difficulty | size (lines · KB) | `.js` file(s) | status |
+|---|---|---|---|---|---|---|---|---|
+| 1 | C044DDAA929E40D780C36154FBB968F7 | Create Invoices from Orders | 1 | `onchangefunction` ×1 | easy | 15 · 0.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/createFromOrders.js` | migrated |
+| 2 | 31ED9333E46C419D92E9F1B10F821B91 | Clone | 3 |  | easy | 25 · 1.2 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/ob-clone-record.js` | blocked |
+| 3 | 71E00A0E964E43AE81C5AFBCDCA5F87C | Valued Stock Report | 1 | `onchangefunction` ×1 | easy | 27 · 0.7 KB | `modules_core/com.etendoerp.reportvaluationstock/web/com.etendoerp.reportvaluationstock/js/etrvs-onchange.js` | migrated |
+| 4 | B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | migrated |
+| 5 | 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | migrated |
+| 6 | CC73C4845CDC487395804946EACB225F | Funds Transfer | 1 | `on_load_function`, `onchangefunction` ×1 | easy | 49 · 1.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-fundsTransfer.js` | migrated |
+| 7 | 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | migrated |
+| 8 | B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | migrated |
+| 9 | 154CB4F9274A479CB38A285E16984539 | Find Transactions to Match | 1,3 | `clientsidevalidation` | medium | 106 · 3.6 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-findTransaction.js` | migrated |
+| 10 | C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | medium | 112 · 3.9 KB ³ | `WebContent/web/org.openbravo.module.remittance/js/ob-rem-utilities.js` ⚠ deploy ³ | migrated |
+| 11 | EB4C4053F3B94A17A08D1DD7E89CEB7E | Aging Balance Process Definition for Payables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `modules_core/org.openbravo.client.application/web/…/js/utilities/ob-onchange-functions.js` ¹ | migrated |
+| 12 | 0D37A9F6109549DEB058373EF2DAEB6A | Aging Balance Process Definition for Receivables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `…/js/utilities/ob-onchange-functions.js` ¹ | migrated |
+| 13 | AB2EFCAABB7B4EC0A9B30CFB82963FB6 | Create Lines From Order | 1 | `on_load_function` | medium | 119 · 3.7 KB | `modules_core/org.openbravo.client.application/web/…/js/procurement/ob-procurement.js` | migrated |
+| 14 | D37588FFC6264BED91FA7611DBFFC679 | Balance Sheet and P&L Structure advanced | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `WebContent/web/com.etendoerp.financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
+| 15 | 56E951BB13A44AFBB642291081613E46 | General Ledger Report Advanced | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
+| 16 | 636EF6F0F8B64E94A8247930569B98CA | Journal Entries Report Advanced | 1 | `onchangefunction` ×2 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
+| 17 | D8E8015B1478473799E47F84796C481C | Trial Balance | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
+| 18 | 99E532BA0306450A839F5DE238375238 | Select Invoices and Orders | 1 | `ongridloadfunction` ×1 | medium | 163 · 5.6 KB (2 files) | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` · `ob-rem-utilities.js` ⚠ deploy | blocked |
+| 19 | B7B1D4F53D4249C5A10D3AD0865D909F | Manage PickingList Action | 3 |  | medium | 173 · 5.6 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_Process.js` ⚠ deploy ⁴ | blocked |
+| 20 | 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | 1,2 | `onchangefunction` ×2 | medium | 178 · 5.1 KB (2 files) | `modules_core/com.etendoerp.advpaymentmngt/web/com.etendoerp.advpaymentmngt/js/received_in-paid_out-onchange.js` · `…/js/payment-action-popup.js` (signal 2: `EAPM_Popup`) | blocked |
+| 21 | A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | blocked |
+| 22 | B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | blocked ⁵ |
+| 23 | 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
+| 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
+| 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
+| 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | pending |
+| 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | pending |
+| 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | pending |
+| 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
+| 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | pending |
+| 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | pending |
+| 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
+| 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function` | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | pending |
+| 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | pending |
+| 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | pending |
+| 36 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | pending |
+| 37 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3 | hard | 1935 · 63.2 KB | `modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js` | pending |
 
 **Notes:**
 - ¹ `ob-onchange-functions.js` is a **shared core utilities** file; for Aging Balance only the
@@ -327,6 +327,23 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   `em_etmeta_on_grid_load`; all other columns stay empty. Status advances `blocked → migrated`
   (pending manual QA). `OB.REM.CalculateTotal` remains out of scope (no metadata binding for this
   process).
+- ⁴ **Scope/binding mismatch — `blocked` 2026-06-11** (see
+  `client/agents/reports/B7B1D4F53D4249C5A10D3AD0865D909F.md`). `OBWPL_Process.js` defines
+  `OB.OBWPL.Process.*`, the `CLASSNAME` button handlers of six **launcher** processes (Validate
+  `40317268…`, Assign and Group `44821BBF…`, Re Assign `C107C380…`, Process `A4008FA0…`, Cancel
+  `B6F5DE7C…`, Close `6DA8E27C…`). `B7B1D4F5` ("Manage PickingList Action") is the **backend handler**
+  (`ManagePickingListAction`) those launchers POST to; in `etendodev` it has no `em_etmeta_*` columns
+  and no parameters. The signal-3 match is only a `RemoteCallManager` *call target* (the UUID literal
+  at line 151), not a client-side hook. Nothing of the file belongs in this process's columns; the real
+  migration units are the six launcher rows. No capability gap.
+- ⁵ **Capability gap — `blocked` 2026-06-11** (see
+  `client/agents/reports/B4A21A617AD64137BF8C9A6770F65AD2.md`). Verified independently against
+  `etendodev`: this process binds **`OB.Jobs.ProcessOrders.onLoad`** (not `ProcessInvoices.onLoad`),
+  and its "Document Action" parameter has no `onchangefunction`/`ongridloadfunction`. `ProcessOrders.onLoad`
+  depends on `item.setValueProgrammatically()` and `item.getFirstOptionValue()` (both absent from the
+  new-UI item proxy — same blockers as A5A9B914) **plus** `view.okButton.isEnabled()` / `view.okButton.enable()`
+  (absent from the view proxy — an **additional** blocker not present in A5A9B914's `ProcessInvoices.onLoad`).
+  No code generated; all `em_etmeta_*` columns stay empty.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
