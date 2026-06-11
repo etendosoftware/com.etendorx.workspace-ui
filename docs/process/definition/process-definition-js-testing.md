@@ -277,7 +277,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 20D69FFD251A481BA75F33538EDFCF76 | VAT Regularization | 1 | `on_load_function`, `ongridloadfunction` ×1 | easy | 57 · 2.0 KB | `WebContent/web/com.etendoerp.vat.regularization/js/etvatr_regularization_utilities.js` ⚠ deploy | migrated |
 | B5C942145F354ABEBC9F16235D80D776 | Set New Currency | 1 | `on_load_function`, `clientsidevalidation` | easy | 64 · 2.8 KB | `web/js/checkAvailableCredit.js` | migrated |
 | 154CB4F9274A479CB38A285E16984539 | Find Transactions to Match | 1,3 | `clientsidevalidation` | medium | 106 · 3.6 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-findTransaction.js` | migrated |
-| C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | medium | 112 · 3.9 KB ³ | `WebContent/web/org.openbravo.module.remittance/js/ob-rem-utilities.js` ⚠ deploy ³ | blocked |
+| C88AB6CBA1694000AFF5706A31B08AE1 | Select Payments Pick and Edit | 1 | `ongridloadfunction` ×1 | medium | 112 · 3.9 KB ³ | `WebContent/web/org.openbravo.module.remittance/js/ob-rem-utilities.js` ⚠ deploy ³ | migrated |
 | EB4C4053F3B94A17A08D1DD7E89CEB7E | Aging Balance Process Definition for Payables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `modules_core/org.openbravo.client.application/web/…/js/utilities/ob-onchange-functions.js` ¹ | pending |
 | 0D37A9F6109549DEB058373EF2DAEB6A | Aging Balance Process Definition for Receivables | 1 | `onchangefunction` ×5 | medium | 117 · 4.3 KB | `…/js/utilities/ob-onchange-functions.js` ¹ | pending |
 | AB2EFCAABB7B4EC0A9B30CFB82963FB6 | Create Lines From Order | 1 | `on_load_function` | medium | 119 · 3.7 KB | `modules_core/org.openbravo.client.application/web/…/js/procurement/ob-procurement.js` | pending |
@@ -316,13 +316,17 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   Orders* (`99E532BA0306450A839F5DE238375238`). The only hook bound to `C88AB6…` is the **Pick/Edit
   Lines** parameter's `ongridloadfunction = OB.REM.CalculateSelected`, defined in `ob-rem-utilities.js`
   (verified against the `obuiapp_parameter` legacy columns in `etendodev`). Only that one function is in
-  scope; the file's other declaration (`OB.REM.CalculateTotal`) is not bound to this process. Status is
-  **`blocked` for lack of platform implementation**: `CalculateSelected` depends on two primitives the
-  new-UI hook context does not yet provide — the global `BigDecimal` (used for all the per-currency
-  amount arithmetic; not injected by `buildProcessScriptContext`) and `OB.Constants.FIELDSEPARATOR` /
-  `OB.Constants.IDENTIFIER` (the `OB` shim exposes no `Constants` namespace). Rewriting `BigDecimal`
-  with `Number` would change rounding/scale and break amount parity, so the conservative gate applies.
-  Revisit once the platform exposes a decimal helper and `OB.Constants`.
+  scope; the file's other declaration (`OB.REM.CalculateTotal`) is not bound to this process.
+  **Migrated 2026-06-11** (see `client/agents/reports/C88AB6CBA1694000AFF5706A31B08AE1.md`): all three
+  earlier gaps are now **closed** in the client substrate — `BigDecimal` is injected into every hook
+  context, `BigDecimal.prototype.setScale(scale)` exists (`utils/ob/bigDecimal.ts:82-84`, `ROUND_HALF_UP`,
+  fixed scale that zero-pads via `toString`), and the `OB` shim now exposes
+  `OB.Constants.FIELDSEPARATOR` (`"$"`) / `OB.Constants.IDENTIFIER` (`"_identifier"`)
+  (`utils/ob/obShim.ts:85`). The single in-scope hook (the **Pick/Edit Lines** parameter's
+  `ongridloadfunction = OB.REM.CalculateSelected`) was ported near line-for-line to
+  `em_etmeta_on_grid_load`; all other columns stay empty. Status advances `blocked → migrated`
+  (pending manual QA). `OB.REM.CalculateTotal` remains out of scope (no metadata binding for this
+  process).
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.

@@ -60,6 +60,23 @@ describe("BigDecimal", () => {
     expect(new BigDecimal("1234.56").toNumber()).toBe(1234.56);
   });
 
+  it("setScale fixes the scale, zero-padding toString (classic `setScale(2)`)", () => {
+    expect(new BigDecimal("5").setScale(2).toString()).toBe("5.00");
+    expect(new BigDecimal("5.5").setScale(2).toString()).toBe("5.50");
+    expect(new BigDecimal("100").setScale(2).toString()).toBe("100.00");
+  });
+
+  it("setScale does not mutate the operand", () => {
+    const a = new BigDecimal("5");
+    a.setScale(2);
+    expect(a.toString()).toBe("5");
+  });
+
+  it("compareTo ignores the fixed scale", () => {
+    expect(new BigDecimal("0").setScale(2).compareTo(new BigDecimal("0"))).toBe(0);
+    expect(new BigDecimal("5.00").setScale(2).compareTo(new BigDecimal("5"))).toBe(0);
+  });
+
   // Reproduces the Find-Transactions-to-Match onProcess decision: accumulate
   // Σ(depositAmount − paymentAmount) over the selection and compare to the line amount.
   it("matches the classic split-decision arithmetic", () => {
@@ -76,5 +93,35 @@ describe("BigDecimal", () => {
     expect(total.compareTo(new BigDecimal("70")) === 0).toBe(true);
     // Net differs from a larger line amount: split confirmation required.
     expect(total.compareTo(new BigDecimal("99.99")) !== 0).toBe(true);
+  });
+
+  // Reproduces REM `CalculateSelected`: accumulate signed amounts per currency
+  // (`.add(...).setScale(2)`), drop currencies that net to zero, and render `"<total> <iso>"`.
+  it("matches the REM per-currency accumulation", () => {
+    const records = [
+      { amount: 100, receipt: true, currency: "EUR" },
+      { amount: 30, receipt: false, currency: "EUR" },
+      { amount: 50, receipt: true, currency: "USD" },
+      { amount: 50, receipt: false, currency: "USD" },
+    ];
+    const totals: Record<string, BigDecimal> = {};
+    for (const record of records) {
+      const signedAmount = record.receipt ? record.amount : -record.amount;
+      const current = totals[record.currency] ?? new BigDecimal("0");
+      const next = current.add(new BigDecimal(signedAmount.toString())).setScale(2);
+      if (next.compareTo(new BigDecimal("0")) === 0) {
+        delete totals[record.currency];
+      } else {
+        totals[record.currency] = next;
+      }
+    }
+
+    let total = "";
+    for (const iso of Object.keys(totals)) {
+      total += `${totals[iso].toString()} ${iso} `;
+    }
+
+    // EUR nets to 70.00 (kept, scaled); USD nets to 0 (dropped).
+    expect(total).toBe("70.00 EUR ");
   });
 });

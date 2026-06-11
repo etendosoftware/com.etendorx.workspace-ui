@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { IDENTIFIER_KEY } from "@/utils/columnsConstants";
 import { MESSAGE_BAR_TYPES } from "@/utils/processes/definition/messageBarStore";
 import { getStoredPreferences, setStoredPreference } from "@/utils/propertyStore";
 import { createAction } from "./action";
@@ -26,6 +27,9 @@ import { createRemoteCallManager } from "./remoteCallManager";
 import { createStyles } from "./styles";
 import type { OBPropertyStore, OBShim, OBShimDeps } from "./types";
 import { generateRandomString } from "./utilities";
+
+/** SmartClient compound-field separator backing `OB.Constants.FIELDSEPARATOR`. */
+const FIELD_SEPARATOR = "$";
 
 /**
  * Builds the `OB.PropertyStore` namespace. `get` reads a preference (with a
@@ -78,6 +82,7 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
       generateRandomString,
     },
     Styles: createStyles(),
+    Constants: { FIELDSEPARATOR: FIELD_SEPARATOR, IDENTIFIER: IDENTIFIER_KEY },
     MessageBar: MESSAGE_BAR_TYPES,
     TestRegistry: {
       register: () => {

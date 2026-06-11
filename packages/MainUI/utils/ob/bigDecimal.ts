@@ -39,11 +39,20 @@ export class BigDecimal {
   /** Backing arbitrary-precision value. */
   readonly value: BigNumber;
 
+  /**
+   * Fixed decimal scale, when set via {@link setScale}. Mirrors Java/classic `BigDecimal` scale:
+   * `toString` then renders exactly this many decimals (zero-padded). `undefined` means the natural,
+   * unpadded representation. `add`/`subtract` results carry no scale (the classic code re-applies
+   * `setScale` after operating), so this stays `undefined` unless `setScale` set it.
+   */
+  readonly scale?: number;
+
   /** Zero, exposed on the prototype to honour the classic `BigDecimal.prototype.ZERO` idiom. */
   declare ZERO: BigDecimal;
 
-  constructor(value: BigDecimalValue) {
+  constructor(value: BigDecimalValue, scale?: number) {
     this.value = new BigNumber(toBigNumber(value));
+    this.scale = scale;
   }
 
   /** Returns a new `BigDecimal` equal to `this + other`. */
@@ -64,9 +73,19 @@ export class BigDecimal {
     return this.value.comparedTo(toBigNumber(other)) ?? Number.NaN;
   }
 
-  /** Canonical decimal string. */
+  /**
+   * Returns a new `BigDecimal` rounded to `scale` decimals with a fixed scale, mirroring the classic
+   * `BigDecimal.setScale(scale)`. Rounding uses `ROUND_HALF_UP` (the Classic money default); for the
+   * ≤2-decimal money amounts these scripts handle, nothing is ever discarded, so this matches the
+   * classic `ROUND_UNNECESSARY` default exactly while only ever zero-padding (e.g. `5` → `"5.00"`).
+   */
+  setScale(scale: number): BigDecimal {
+    return new BigDecimal(this.value.decimalPlaces(scale, BigNumber.ROUND_HALF_UP), scale);
+  }
+
+  /** Canonical decimal string; zero-padded to {@link scale} decimals when a scale was fixed. */
   toString(): string {
-    return this.value.toString();
+    return this.scale === undefined ? this.value.toString() : this.value.toFixed(this.scale);
   }
 
   /** Native number conversion (for formatting helpers such as `JSToOBMasked`). */

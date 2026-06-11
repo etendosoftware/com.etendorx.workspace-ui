@@ -105,6 +105,18 @@ export interface OBPropertyStore {
   set: (key: string, value: unknown) => void;
 }
 
+/**
+ * Classic `OB.Constants` namespace. Exposes the SmartClient identifiers migrated scripts use to build
+ * compound display-field keys, e.g. `'currency' + OB.Constants.FIELDSEPARATOR + OB.Constants.IDENTIFIER`
+ * → `'currency$_identifier'`.
+ */
+export interface OBConstants {
+  /** SmartClient compound-field separator (`"$"`); joins a field with a sub-property. */
+  FIELDSEPARATOR: string;
+  /** Suffix of the display column holding an FK's identifier (`"_identifier"`). */
+  IDENTIFIER: string;
+}
+
 export interface OBTestRegistry {
   /** No-op: test infrastructure is not migrated. */
   register: (name: string, obj?: unknown) => void;
@@ -180,6 +192,8 @@ export interface OBShim {
   I18N: OBI18N;
   Format: OBFormat;
   Utilities: OBUtilities;
+  /** Classic `OB.Constants.*` identifiers (e.g. `FIELDSEPARATOR`, `IDENTIFIER`). */
+  Constants: OBConstants;
   Styles: Record<string, unknown>;
   /** Classic `OB.MessageBar.TYPE_*` severity constants. */
   MessageBar: Record<string, string>;

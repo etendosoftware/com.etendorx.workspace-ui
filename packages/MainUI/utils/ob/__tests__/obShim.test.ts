@@ -36,6 +36,13 @@ describe("createOBShim", () => {
     expect(ob.Styles.MessageBar).toBeDefined();
   });
 
+  it("exposes the classic OB.Constants identifiers and builds a compound field key", () => {
+    const ob = createOBShim();
+    expect(ob.Constants.FIELDSEPARATOR).toBe("$");
+    expect(ob.Constants.IDENTIFIER).toBe("_identifier");
+    expect(`currency${ob.Constants.FIELDSEPARATOR}${ob.Constants.IDENTIFIER}`).toBe("currency$_identifier");
+  });
+
   it("exposes the classic OB.MessageBar.TYPE_* severity constants", () => {
     const ob = createOBShim();
     expect(ob.MessageBar.TYPE_INFO).toBe("info");

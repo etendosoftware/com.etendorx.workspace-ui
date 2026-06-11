@@ -578,6 +578,7 @@ React-free `OB` per modal:
 | `OB.Utilities.Action` | `set(name, fn)`, `execute(name, params)`, `executeJSON(...)` (Section 8.9). |
 | `OB.Utilities.generateRandomString(length)` | utility. |
 | `OB.Styles` | style constants (`MessageBar`, module styles). |
+| `OB.Constants` | Classic SmartClient identifiers: `FIELDSEPARATOR` (`"$"`) and `IDENTIFIER` (`"_identifier"`), used to build compound display-field keys (e.g. `'currency' + OB.Constants.FIELDSEPARATOR + OB.Constants.IDENTIFIER` → `'currency$_identifier'`). |
 | `OB.MessageBar` | severity constants (Section 8.2). |
 | `OB.RemoteCallManager` | `call(...)` callback↔Promise adapter (Section 8.7). |
 | `OB.Datasource` | `create(config)` datasource façade (Section 8.8). |
@@ -644,7 +645,7 @@ global namespace — each process owns its module scope (see the cloning rule in
 
 - **Classic:** a global `BigDecimal` (Openbravo's GWT/Java decimal port) used for money math that must
   keep the server's rounding/scale, e.g. `new BigDecimal(String(x))`, `BigDecimal.prototype.ZERO`,
-  `.add`, `.subtract`, `.compareTo`.
+  `.add`, `.subtract`, `.compareTo`, `.setScale(2)`.
 - **New UI:** `BigDecimal` is injected as a top-level global (Section 7.1), so migrated scripts use it
   **verbatim** — never rewrite money math with `Number`/`parseFloat`, which drifts (`0.1 + 0.2`) and
   breaks parity with the server-side amount check. The class is an immutable wrapper over
@@ -654,15 +655,20 @@ global namespace — each process owns its module scope (see the cloning rule in
   let total = BigDecimal.prototype.ZERO;                 // zero
   total = total.add(new BigDecimal(String(row.amount))); // immutable: returns a new instance
   const diff = total.subtract(other);
+  total = total.setScale(2);                             // fix the scale → toString() shows "5.00"
   if (total.compareTo(expected) !== 0) { /* amounts differ */ }
   OB.Utilities.Number.JSToOBMasked(total, OB.Format.defaultNumericMask, …); // formats directly
   ```
 
   Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`, `add`,
-  `subtract`, `compareTo` (`-1 | 0 | 1`), `toString()`, `toNumber()`. `multiply`/`divide` are **not**
-  provided yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be
-  deterministic, so they will be added with those semantics when a process needs them. `JSToOBMasked`
-  accepts a `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
+  `subtract`, `compareTo` (`-1 | 0 | 1`), `setScale(scale)`, `toString()`, `toNumber()`.
+  `setScale(scale)` mirrors the Classic `BigDecimal.setScale(scale)`: it returns a **new** instance
+  with a fixed decimal scale (rounding `ROUND_HALF_UP`; for ≤2-decimal money nothing is discarded, so
+  it only zero-pads) whose `toString()` renders exactly that many decimals (`"5"` → `"5.00"`) — needed
+  for parity when the result is displayed by concatenation. `multiply`/`divide` are **not** provided
+  yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be deterministic, so
+  they will be added with those semantics when a process needs them. `JSToOBMasked` accepts a
+  `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
 
 ---
 
@@ -715,7 +721,8 @@ This section is the operational guide for translating one Classic `.js` file int
 | `OB.I18N.getLabel(id, params)` | identical |
 | `OB.PropertyStore.get/set` | identical |
 | `OB.Format.*`, `OB.Utilities.Number.JSToOBMasked` | identical (`JSToOBMasked` also accepts a `BigDecimal`, Section 8.6) |
-| `new BigDecimal(String(x))` / `.add` / `.subtract` / `.compareTo` / `.prototype.ZERO` | identical — injected global (Section 8.11); never rewrite money math with `Number` |
+| `new BigDecimal(String(x))` / `.add` / `.subtract` / `.compareTo` / `.setScale(2)` / `.prototype.ZERO` | identical — injected global (Section 8.11); never rewrite money math with `Number` |
+| `OB.Constants.FIELDSEPARATOR` / `OB.Constants.IDENTIFIER` | identical — exposed by the `OB` shim (Section 8.6) |
 | `OB.RemoteCallManager.call(handler, params, other, cb)` | identical (callback adapter over `callAction`) |
 | `OB.Utilities.Action.set/execute/executeJSON` | identical |
 | `OB.Datasource.create({...}).fetchData(cb)` | identical (mandatory pagination defaults applied) |
