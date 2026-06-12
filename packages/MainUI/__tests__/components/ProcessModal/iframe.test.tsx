@@ -323,7 +323,7 @@ describe("ProcessIframeModal", () => {
         window.postMessage({ action: "processOrder" }, "*");
       });
 
-      await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText("processModal.gridToolbar.processingMessage")).toBeInTheDocument());
     });
 
     it("shows fallback warning after timeout when no real message arrives", async () => {
@@ -345,9 +345,11 @@ describe("ProcessIframeModal", () => {
           jest.advanceTimersByTime(5000);
         });
 
-        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
-        expect(screen.getByText("process.fallbackMessage.text")).toBeInTheDocument();
-        expect(screen.queryByText("process.processingMessage")).not.toBeInTheDocument();
+        await waitFor(() =>
+          expect(screen.getByText("processModal.gridToolbar.fallbackMessage.title")).toBeInTheDocument()
+        );
+        expect(screen.getByText("processModal.gridToolbar.fallbackMessage.text")).toBeInTheDocument();
+        expect(screen.queryByText("processModal.gridToolbar.processingMessage")).not.toBeInTheDocument();
       } finally {
         jest.useRealTimers();
       }
@@ -384,7 +386,7 @@ describe("ProcessIframeModal", () => {
           jest.advanceTimersByTime(10000);
         });
 
-        expect(screen.queryByText("process.fallbackMessage.title")).not.toBeInTheDocument();
+        expect(screen.queryByText("processModal.gridToolbar.fallbackMessage.title")).not.toBeInTheDocument();
       } finally {
         jest.useRealTimers();
       }
@@ -410,7 +412,9 @@ describe("ProcessIframeModal", () => {
           jest.advanceTimersByTime(5000);
         });
 
-        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+        await waitFor(() =>
+          expect(screen.getByText("processModal.gridToolbar.fallbackMessage.title")).toBeInTheDocument()
+        );
 
         act(() => {
           window.postMessage({ action: "closeModal" }, "*");
@@ -439,13 +443,15 @@ describe("ProcessIframeModal", () => {
           window.postMessage({ action: "iframeUnloaded" }, "*");
         });
 
-        await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("processModal.gridToolbar.processingMessage")).toBeInTheDocument());
 
         act(() => {
           jest.advanceTimersByTime(5000);
         });
 
-        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+        await waitFor(() =>
+          expect(screen.getByText("processModal.gridToolbar.fallbackMessage.title")).toBeInTheDocument()
+        );
       } finally {
         jest.useRealTimers();
       }
@@ -467,13 +473,15 @@ describe("ProcessIframeModal", () => {
         });
 
         await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
-        await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText("processModal.gridToolbar.processingMessage")).toBeInTheDocument());
 
         act(() => {
           jest.advanceTimersByTime(5000);
         });
 
-        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+        await waitFor(() =>
+          expect(screen.getByText("processModal.gridToolbar.fallbackMessage.title")).toBeInTheDocument()
+        );
       } finally {
         jest.useRealTimers();
       }
@@ -508,7 +516,9 @@ describe("ProcessIframeModal", () => {
           jest.advanceTimersByTime(2000);
         });
 
-        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+        await waitFor(() =>
+          expect(screen.getByText("processModal.gridToolbar.fallbackMessage.title")).toBeInTheDocument()
+        );
       } finally {
         jest.useRealTimers();
       }
