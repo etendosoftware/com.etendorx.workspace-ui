@@ -1127,7 +1127,7 @@ function ProcessDefinitionModalContent({
       });
 
     const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
+    const selectors: ProcessParameter[] = [];
 
     for (const parameter of parametersList) {
       // @ts-ignore
@@ -1176,7 +1176,28 @@ function ProcessDefinitionModalContent({
           </CollapsibleSection>
         );
       } else {
-        selectors.push(
+        selectors.push(parameter);
+      }
+    }
+
+    // Group regular selectors by fieldGroup, preserving sequence order within each group.
+    // Parameters without a fieldGroup are rendered first with no header.
+    const groupOrder: string[] = [];
+    const groupedSelectors = new Map<string, { label: string; params: ProcessParameter[] }>();
+
+    for (const parameter of selectors) {
+      const groupId: string = parameter.fieldGroup || "__ungrouped__";
+      const groupLabel: string = parameter["fieldGroup$_identifier"] || "";
+      if (!groupedSelectors.has(groupId)) {
+        groupOrder.push(groupId);
+        groupedSelectors.set(groupId, { label: groupLabel, params: [] });
+      }
+      groupedSelectors.get(groupId)!.params.push(parameter);
+    }
+
+    const renderSelectorGroup = (params: ProcessParameter[]) => (
+      <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
+        {params.map((parameter) => (
           <ProcessParameterSelector
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
@@ -1188,14 +1209,29 @@ function ProcessDefinitionModalContent({
             onFileChange={handleFileChange}
             data-testid="ProcessParameterSelector__761503"
           />
-        );
-      }
-    }
+        ))}
+      </div>
+    );
 
     return (
       <>
         {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+          <div className="flex flex-col gap-4 mb-4">
+            {groupOrder.map((groupId) => {
+              const group = groupedSelectors.get(groupId)!;
+              if (groupId === "__ungrouped__") {
+                return renderSelectorGroup(group.params);
+              }
+              return (
+                <div key={groupId}>
+                  <div className="col-span-3 text-sm font-semibold text-(--color-dynamic-main) border-b border-gray-200 pb-1 mb-2">
+                    {group.label}
+                  </div>
+                  {renderSelectorGroup(group.params)}
+                </div>
+              );
+            })}
+          </div>
         )}
         {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
       </>

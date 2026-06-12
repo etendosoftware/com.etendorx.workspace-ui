@@ -17,6 +17,21 @@ function todayISO(): string {
 }
 
 /**
+ * Converts a Classic column name like C_BPartner_ID to its inp-prefixed form
+ * used in the process payload (e.g. inpcBPartnerId).
+ * Mirrors Classic's Sqlc.TransformaNombreColumna: strips underscores and
+ * capitalises the first letter after each underscore, then lowercases the
+ * first character of the whole result before prepending "inp".
+ */
+function columnNameToInpKey(columnName: string): string {
+  const camel = columnName
+    .split("_")
+    .map((seg, i) => (i === 0 ? seg.toLowerCase() : seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase()))
+    .join("");
+  return "inp" + camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+/**
  * Evaluates simple Etendo system-variable expressions that the backend
  * DefaultsProcessActionHandler may not return for every parameter.
  *
@@ -25,10 +40,15 @@ function todayISO(): string {
  *   @#AD_Org_ID@     → current org ID from session context
  *   @#AD_Client_ID@  → current client ID from session context
  *   @#AD_User_ID@    → current user ID from session context
+ *   @C_BPartner_ID@  → resolved from currentValues using inp-key lookup
  *
  * Returns undefined for expressions it cannot resolve (SQL, unknown variables).
  */
-function evaluateSystemExpression(expr: string, context: Record<string, unknown>): unknown {
+function evaluateSystemExpression(
+  expr: string,
+  context: Record<string, unknown>,
+  currentValues: Record<string, unknown>
+): unknown {
   const trimmed = expr.trim();
 
   // SQL expressions can only be evaluated server-side — skip them
@@ -37,12 +57,22 @@ function evaluateSystemExpression(expr: string, context: Record<string, unknown>
   // Well-known system-date variable
   if (trimmed === "@#Date@") return todayISO();
 
-  // Single-token session variable: @#VARNAME@
-  const singleToken = /^@(#[A-Za-z_]\w*)@$/.exec(trimmed);
+  // Single-token variable: @#VARNAME@ (session) or @COLUMN_NAME@ (parent record field)
+  const singleToken = /^@(#?[A-Za-z_]\w*)@$/.exec(trimmed);
   if (singleToken) {
-    const key = singleToken[1]; // e.g. "#AD_Org_ID"
-    const val = context[key] ?? context[key.slice(1)];
-    if (val !== undefined && val !== null && val !== "") return val;
+    const key = singleToken[1];
+
+    if (key.startsWith("#")) {
+      // Session variable: look up in context
+      const val = context[key] ?? context[key.slice(1)];
+      if (val !== undefined && val !== null && val !== "") return val;
+    } else {
+      // Parent record field reference (e.g. C_BPartner_ID):
+      // currentValues already has inp* keys built by buildProcessPayload.
+      const inpKey = columnNameToInpKey(key);
+      const val = currentValues[inpKey] ?? currentValues[inpKey.toLowerCase()] ?? currentValues[key];
+      if (val !== undefined && val !== null && val !== "") return val;
+    }
   }
 
   return undefined;
@@ -100,7 +130,7 @@ export function evaluateParameterDefaults(
 
     // Fast path: try to resolve simple system-variable expressions first,
     // before spinning up the JS compiler (cheaper and avoids parse errors for SQL).
-    const systemValue = evaluateSystemExpression(expr, enrichedContext);
+    const systemValue = evaluateSystemExpression(expr, enrichedContext, currentValues);
     if (systemValue !== undefined) {
       defaults[param.name] = systemValue;
       logger.debug(`Evaluated system expression for ${param.name}:`, { expression: expr, result: systemValue });

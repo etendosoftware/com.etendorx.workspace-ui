@@ -921,6 +921,10 @@ export type ProcessParameter = {
   sequenceNumber?: number;
   /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
   dBColumnName: string;
+  /** Field group ID from AD_Fieldgroup_ID — used for visual grouping of parameters. */
+  fieldGroup?: string;
+  /** Field group display name. */
+  fieldGroup$_identifier?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {
