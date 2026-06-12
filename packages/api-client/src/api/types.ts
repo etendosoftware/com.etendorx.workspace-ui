@@ -78,6 +78,21 @@ export interface DatasourceOptions {
 export interface ProcessAction extends Record<string, unknown> {
   id: string;
   name: string;
+  /** Relative path to the Classic action page (e.g. "/SalesOrder/Header_Edition.html"). Resolved by the backend. */
+  url?: string;
+  /** Value for the Classic Command parameter (e.g. "BUTTONDocAction104", "DEFAULT"). Resolved by the backend. */
+  command?: string;
+  /** DB column name of the table primary key (e.g. "C_Order_ID"). Resolved by the backend. */
+  keyColumnName?: string;
+  /** Input parameter name for the record ID in the Classic request (same as keyColumnName). Resolved by the backend. */
+  inpkeyColumnId?: string;
+  /**
+   * Additional `inp{...}` parameters to send with the legacy request. Values may be literals
+   * or placeholders (`$recordId`, `$windowId`, `$tabId`, `$tableId`, `$record.<DBColumnName>`).
+   * The backend derives one entry per active column of the tab's table, mirroring the hidden
+   * inputs the Classic form would have submitted.
+   */
+  additionalParameters?: Record<string, string>;
 }
 
 export interface GridProps {

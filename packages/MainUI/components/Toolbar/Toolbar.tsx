@@ -35,11 +35,15 @@ import { useTranslation } from "../../hooks/useTranslation";
 import ProcessIframeModal from "../ProcessModal/Iframe";
 import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
+  isProcessActionButton,
+  type ProcessActionButton,
   type ProcessButton,
   ProcessButtonType,
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
+import EmailIcon from "@mui/icons-material/Email";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
@@ -180,6 +184,32 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     setAnchorEl(null);
   }, []);
 
+  const handleLegacyUnresolved = useCallback(() => {
+    toast.error(t("process.legacyProcessUnresolved.title"), {
+      description: t("process.legacyProcessUnresolved.description"),
+    });
+  }, [t]);
+
+  const runProcessAction = useCallback(
+    async (button: ProcessActionButton, recordId: string) => {
+      try {
+        const response = await handleProcessClick(button, recordId);
+        setProcessResponse(response);
+        setSelectedProcessActionButton(button);
+        if (response.showInIframe) {
+          setOpenIframeModal(true);
+        }
+      } catch (error) {
+        if (error instanceof LegacyProcessUnresolvedError) {
+          handleLegacyUnresolved();
+          return;
+        }
+        throw error;
+      }
+    },
+    [handleProcessClick, handleLegacyUnresolved]
+  );
+
   const handleSaveViewMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       if (!saveViewAnchorEl) {
@@ -233,17 +263,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       const record = selectedRecord || selectedRecords[0];
       if (!record) return;
 
-      if (ProcessButtonType.PROCESS_ACTION in button) {
-        const response = await handleProcessClick(button, String(record.id));
-        setProcessResponse(response);
-        setSelectedProcessActionButton(button);
-        if (response.showInIframe) {
-          setOpenIframeModal(true);
-        } else if (response.responseActions?.[0]?.showMsgInProcessView) {
-          // If there's an error and not an iframe, show it in actionModal or similar.
-          // For now, logging it clearly, as the previous logic just hung infinitely.
-          console.error("Process error:", response.responseActions[0].showMsgInProcessView);
-        }
+      if (isProcessActionButton(button)) {
+        await runProcessAction(button, String(record.id));
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -253,7 +274,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       handleMenuClose();
     },
-    [handleMenuClose, handleProcessClick, selectedRecord, selectedRecords]
+    [handleMenuClose, runProcessAction, selectedRecord, selectedRecords]
   );
 
   const handleSearchChange = useCallback(
@@ -588,6 +609,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         isOpen={openIframeModal}
         onClose={handleCloseProcess}
         url={processResponse?.iframeUrl}
+        formParams={processResponse?.iframeFormParams ?? null}
         title={selectedProcessActionButton?.name}
         onProcessSuccess={handleCompleteRefresh}
         tabId={tab.id}

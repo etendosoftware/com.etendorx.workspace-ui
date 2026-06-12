@@ -15,6 +15,7 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
@@ -276,14 +277,21 @@ export default function Sidebar() {
           token: token,
           kioskMode: true,
         });
-        // Open in js modal
+        const popupBlockedTexts = {
+          title: t("process.openLegacyReport.popupBlockedTitle"),
+          openLabel: t("process.openLegacyReport.openManually"),
+        };
         if (item.isModalProcess) {
-          window.open(classicUrl, "Test", "width=950,height=700");
+          if (!tryOpenReportPopup(classicUrl)) {
+            notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
+          }
           return;
         }
 
         // Fallback: Open in new tab
-        window.open(classicUrl, "_blank");
+        if (!window.open(classicUrl, "_blank")) {
+          notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
+        }
         return;
       }
 

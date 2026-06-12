@@ -17,7 +17,11 @@
 
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { logger } from "@/utils/logger";
+import { tryOpenReportPopup } from "@/utils/reportPopup";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   type MessageStylesType,
@@ -25,10 +29,29 @@ import {
   type ProcessIframeModalOpenProps,
   isIframeModalOpen,
 } from "./types";
+import { LEGACY_ACTIONS } from "./legacyMessageProtocol";
 import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/CustomModal";
 
-const CLOSE_MODAL_ACTION = "closeModal";
-const PROCESS_ORDER_ACTION = "processOrder";
+const MESSAGE_FALLBACK_TIMEOUT_MS = 5000;
+
+/**
+ * Shape of each entry in the {@code openLegacyReport} payload emitted by the
+ * metadata module's {@code LegacyProcessServlet}. The backend has already
+ * stripped the public host, isolated the query string, and pulled the tab
+ * title from the popup body — the handler just feeds these straight into
+ * {@code buildEtendoClassicBookmarkUrl}.
+ */
+interface OpenLegacyReportItem {
+  processUrl: string;
+  tabTitle: string;
+  params: string;
+}
+
+const isOpenLegacyReportItem = (value: unknown): value is OpenLegacyReportItem => {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.processUrl === "string" && typeof v.tabTitle === "string" && typeof v.params === "string";
+};
 
 /**
  * Classic forms running inside an iframe use window.innerWidth (the iframe's width)
@@ -73,20 +96,32 @@ const ProcessIframeOpenModal = ({
   isOpen,
   onClose,
   url,
+  formParams,
   title,
   onProcessSuccess,
   tabId,
   size = "default",
 }: ProcessIframeModalOpenProps) => {
   const { t } = useTranslation();
+  const { token } = useUserContext();
+  const { config } = useRuntimeConfig();
+  const publicHost = config?.etendoClassicHost || "";
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
+  const processMessageRef = useRef<ProcessMessage | null>(null);
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const [progressWidth, setProgressWidth] = useState(100);
   const loadCount = useRef<number>(0);
   const [hasNavigated, setHasNavigated] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [awaitingMessage, setAwaitingMessage] = useState(false);
+  const [blockedReportUrls, setBlockedReportUrls] = useState<string[]>([]);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    processMessageRef.current = processMessage;
+  }, [processMessage]);
 
   const handleClose = useCallback(() => {
     if ((processWasSuccessful || hasNavigated) && onProcessSuccess) {
@@ -98,10 +133,38 @@ const ProcessIframeOpenModal = ({
     onClose();
   }, [onClose, onProcessSuccess, processWasSuccessful, hasNavigated]);
 
+  const clearFallbackTimer = useCallback(() => {
+    if (fallbackTimerRef.current !== null) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const showFallbackMessage = useCallback(() => {
+    clearFallbackTimer();
+    setAwaitingMessage(false);
+    setProcessMessage({
+      type: "warning",
+      title: t("process.fallbackMessage.title"),
+      text: t("process.fallbackMessage.text"),
+    });
+  }, [t, clearFallbackTimer]);
+
+  const startFallbackCountdown = useCallback(() => {
+    if (fallbackTimerRef.current !== null) return;
+    setAwaitingMessage(true);
+    fallbackTimerRef.current = setTimeout(showFallbackMessage, MESSAGE_FALLBACK_TIMEOUT_MS);
+  }, [showFallbackMessage]);
+
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
-      if (message?.type === "info") return;
-      if (message.text?.toUpperCase().includes("ERROR")) {
+      clearFallbackTimer();
+      setAwaitingMessage(false);
+      if (message?.type === "info" && message?.text === "") {
+        handleClose();
+        return;
+      }
+      if (message.text?.toUpperCase().includes("ERROR") || message.title?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
           type: "error",
@@ -117,7 +180,7 @@ const ProcessIframeOpenModal = ({
         }
       }
     },
-    [t]
+    [t, clearFallbackTimer, handleClose]
   );
 
   const handleMessageError = useCallback(
@@ -134,19 +197,88 @@ const ProcessIframeOpenModal = ({
     [t]
   );
 
+  const handleRequestFailed = useCallback(() => {
+    clearFallbackTimer();
+    setAwaitingMessage(false);
+    setProcessMessage({
+      type: "error",
+      title: t("process.requestFailed.title"),
+      text: t("process.requestFailed.text"),
+    });
+  }, [t, clearFallbackTimer]);
+
+  const handleOpenLegacyReports = useCallback(
+    (reports: OpenLegacyReportItem[]) => {
+      clearFallbackTimer();
+      setAwaitingMessage(false);
+
+      // Build each popup URL with the same Etendo Classic bookmark helper used
+      // by the Sidebar (`buildEtendoClassicBookmarkUrl`). The backend already
+      // splits the absolute URL emitted by `printPageClosePopUp` into
+      // {processUrl, params, tabTitle}, so we only have to feed those values
+      // to the helper. The bookmark embeds `params` inside `obManualURL` with
+      // `&` as the path-vs-query separator, matching the canonical format the
+      // classic OBClassicWindow JS produces — Menu.html receives the report
+      // already filtered without any double-encoding of `?`/`&`.
+      const blocked: string[] = [];
+      for (const report of reports) {
+        const popupUrl = buildEtendoClassicBookmarkUrl({
+          baseUrl: publicHost,
+          processUrl: report.processUrl,
+          tabTitle: report.tabTitle,
+          kioskMode: true,
+          token,
+          params: report.params,
+        });
+        if (!tryOpenReportPopup(popupUrl)) {
+          blocked.push(popupUrl);
+        }
+      }
+
+      if (blocked.length > 0) {
+        setBlockedReportUrls(blocked);
+        return;
+      }
+
+      setBlockedReportUrls([]);
+      handleClose();
+    },
+    [publicHost, token, clearFallbackTimer, handleClose]
+  );
+
+  const handleRetryBlockedReports = useCallback(() => {
+    const stillBlocked: string[] = [];
+    for (const popupUrl of blockedReportUrls) {
+      if (!tryOpenReportPopup(popupUrl)) {
+        stillBlocked.push(popupUrl);
+      }
+    }
+    if (stillBlocked.length === 0) {
+      setBlockedReportUrls([]);
+      handleClose();
+      return;
+    }
+    setBlockedReportUrls(stillBlocked);
+  }, [blockedReportUrls, handleClose]);
+
   const handleProcessMessage = useCallback(async () => {
+    startFallbackCountdown();
     try {
       const message = await fetchProcessMessage();
       if (message) {
+        clearFallbackTimer();
+        setAwaitingMessage(false);
         handleReceivedMessage(message);
         return true;
       }
     } catch (error) {
       handleMessageError(error);
+      clearFallbackTimer();
+      setAwaitingMessage(false);
       return error instanceof Error && !(error instanceof DOMException);
     }
     return false;
-  }, [fetchProcessMessage, handleReceivedMessage, handleMessageError]);
+  }, [fetchProcessMessage, handleReceivedMessage, handleMessageError, startFallbackCountdown, clearFallbackTimer]);
 
   const handleIframeLoad = useCallback(() => {
     loadCount.current += 1;
@@ -196,44 +328,75 @@ const ProcessIframeOpenModal = ({
     if (url) {
       setIframeLoading(true);
       setProcessMessage(null);
+      setAwaitingMessage(false);
+      setBlockedReportUrls([]);
+      clearFallbackTimer();
     }
     loadCount.current = 0;
     setHasNavigated(false);
-  }, [url]);
+  }, [url, clearFallbackTimer]);
+
+  useEffect(() => () => clearFallbackTimer(), [clearFallbackTimer]);
 
   useEffect(() => {
     if (processMessage?.type === "success") {
-      const totalDuration = 3000; // 3 seconds
-      const updateInterval = 50; // Update every 50ms
+      const totalDuration = 3000;
+      const updateInterval = 50;
       const decrementValue = (100 / totalDuration) * updateInterval;
 
-      const timer = setInterval(() => {
-        setProgressWidth((prevWidth) => {
-          const newWidth = prevWidth - decrementValue;
-
-          if (newWidth <= 0) {
-            clearInterval(timer);
-            setProcessMessage(null);
-            return 0;
-          }
-
-          return newWidth;
-        });
+      const progressTimer = setInterval(() => {
+        setProgressWidth((prev) => Math.max(0, prev - decrementValue));
       }, updateInterval);
 
+      const closeTimer = setTimeout(() => {
+        clearInterval(progressTimer);
+        handleClose();
+      }, totalDuration);
+
       return () => {
-        clearInterval(timer);
+        clearInterval(progressTimer);
+        clearTimeout(closeTimer);
       };
     }
-  }, [processMessage]);
+  }, [processMessage, handleClose]);
+
+  const shouldSuppressAutoClose = useCallback(() => {
+    const current = processMessageRef.current;
+    return current?.type === "error" || current?.type === "warning";
+  }, []);
 
   useEffect(() => {
+    // NOTE: We intentionally do not validate event.origin here. The legacy iframe
+    // protocol is restricted to UI-only actions (close modal, show in-page message,
+    // notify unload) that have no backend side effects, so a cross-origin spoofed
+    // message can at worst close the modal or render a fake banner. If a new action
+    // with backend impact (e.g. forceRefresh, triggerSave) is ever added, this
+    // listener MUST start filtering by origin against config.etendoClassicHost.
+    // Audit reference: ETP-3747.
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.action === CLOSE_MODAL_ACTION) {
+      if (event.data?.action === LEGACY_ACTIONS.OPEN_LEGACY_REPORT) {
+        const reports = event.data?.payload?.reports;
+        if (Array.isArray(reports) && reports.length > 0 && reports.every(isOpenLegacyReportItem)) {
+          handleOpenLegacyReports(reports);
+        }
+        return;
+      }
+      if (event.data?.action === LEGACY_ACTIONS.CLOSE_MODAL) {
+        if (shouldSuppressAutoClose()) return;
         handleClose();
       }
-      if (event.data?.action === PROCESS_ORDER_ACTION) {
+      if (event.data?.action === LEGACY_ACTIONS.PROCESS_ORDER) {
         await handleProcessMessage();
+      }
+      if (event.data?.action === LEGACY_ACTIONS.SHOW_PROCESS_MESSAGE && event.data?.payload) {
+        handleReceivedMessage(event.data.payload as ProcessMessage);
+      }
+      if (event.data?.action === LEGACY_ACTIONS.IFRAME_UNLOADED) {
+        if (processMessageRef.current) return;
+        startFallbackCountdown();
+      }
+      if (event.data?.action === LEGACY_ACTIONS.REQUEST_FAILED) {
+        handleRequestFailed();
       }
     };
 
@@ -242,7 +405,15 @@ const ProcessIframeOpenModal = ({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [handleClose, handleProcessMessage]);
+  }, [
+    handleClose,
+    handleOpenLegacyReports,
+    handleProcessMessage,
+    handleReceivedMessage,
+    handleRequestFailed,
+    shouldSuppressAutoClose,
+    startFallbackCountdown,
+  ]);
 
   const messageStyles = useMemo(
     () =>
@@ -262,49 +433,83 @@ const ProcessIframeOpenModal = ({
   // Apply larger size for Forms - responsive with max size
   const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[92vh] !max-h-[1000px]" : "";
 
+  const showLoadingOverlay = iframeLoading || awaitingMessage;
+  const loadingText = awaitingMessage ? t("process.processingMessage") : t("common.loading");
+
+  // CustomModal hides the iframe behind any non-empty `customContent` overlay
+  // so the banner has the focus. Pass `null` (not an empty Fragment) when no
+  // banner is active — Fragments are always truthy regardless of their inner
+  // conditional children, so an `<>{...}</>` wrapper would keep the iframe
+  // permanently invisible.
+  const hasOverlayBanner = Boolean(processMessage) || blockedReportUrls.length > 0;
+  const overlayContent = hasOverlayBanner ? (
+    <>
+      {processMessage && (
+        <div
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
+          style={{
+            borderColor: messageStyles.borderColor,
+            backgroundColor: "white",
+          }}>
+          <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
+            <div className="flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
+                {processMessage.title || t("common.processes")}
+              </h3>
+              {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
+            </div>
+          </div>
+          {processMessage.type === "success" && (
+            <div className="w-full bg-(--color-transparent-neutral-10) h-1">
+              <div
+                className="h-1 transition-all duration-50 ease-linear"
+                style={{
+                  width: `${progressWidth}%`,
+                  backgroundColor: messageStyles.borderColor,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {blockedReportUrls.length > 0 && (
+        <div
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border bg-white shadow-lg"
+          style={{ borderColor: "var(--color-warning-main)" }}
+          data-testid="LegacyReportPopupBlocked__banner">
+          <div className="flex flex-col gap-3 p-4" style={{ backgroundColor: "var(--color-warning-contrast-text)" }}>
+            <h3 className="font-semibold text-lg" style={{ color: "var(--color-warning-main)" }}>
+              {t("process.openLegacyReport.popupBlockedTitle")}
+            </h3>
+            <button
+              type="button"
+              onClick={handleRetryBlockedReports}
+              className="self-start rounded px-3 py-1 font-medium text-white"
+              style={{ backgroundColor: "var(--color-warning-main)" }}
+              data-testid="LegacyReportPopupBlocked__retry">
+              {t("process.openLegacyReport.openManually")}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  ) : null;
+
   return (
     <CustomModal
       isOpen={isOpen}
       title={title || t("common.processes")}
-      iframeLoading={iframeLoading}
+      iframeLoading={showLoadingOverlay}
       iframeRef={iframeRef}
       customContentClass={sizeClass}
-      customContent={
-        processMessage && (
-          <div
-            className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
-            style={{
-              borderColor: messageStyles.borderColor,
-              backgroundColor: "white",
-            }}>
-            <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
-              <div className="flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
-                  {processMessage.title || t("common.processes")}
-                </h3>
-                {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
-              </div>
-            </div>
-            {processMessage.type === "success" && (
-              <div className="w-full bg-(--color-transparent-neutral-10) h-1">
-                <div
-                  className="h-1 transition-all duration-50 ease-linear"
-                  style={{
-                    width: `${progressWidth}%`,
-                    backgroundColor: messageStyles.borderColor,
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )
-      }
+      customContent={overlayContent}
       url={url || ""}
+      formParams={formParams ?? null}
       handleIframeLoad={handleIframeLoad}
       handleClose={handleClose}
       texts={{
-        loading: t("common.loading"),
+        loading: loadingText,
         iframeTitle: t("common.processes"),
         noData: t("common.noDataAvailable"),
         closeButton: t("common.close"),

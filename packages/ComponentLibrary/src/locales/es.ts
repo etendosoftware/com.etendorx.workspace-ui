@@ -314,6 +314,23 @@ const es = {
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
+    legacyProcessUnresolved: {
+      title: "Este proceso no puede abrirse",
+      description: "No pudimos cargar los parámetros necesarios. Contacta con soporte.",
+    },
+    processingMessage: "Procesando...",
+    fallbackMessage: {
+      title: "No se pudo capturar la respuesta",
+      text: "No se pudo capturar la respuesta del proceso. Verifica el estado manualmente.",
+    },
+    requestFailed: {
+      title: "El proceso no pudo ejecutarse",
+      text: "El proceso no pudo ejecutarse. Contacta a soporte.",
+    },
+    openLegacyReport: {
+      popupBlockedTitle: "El navegador bloqueó la ventana del reporte.",
+      openManually: "Abrir reporte",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

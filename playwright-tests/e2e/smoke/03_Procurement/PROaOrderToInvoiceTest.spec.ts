@@ -236,8 +236,8 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
       await page.locator(".rounded-2xl:visible").getByText("Post", { exact: true }).click();
 
       await clickOkInLegacyPopup(page);
-      await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
-      await page.locator('[data-testid="close-button"]').click();
+      // await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
+      // await page.locator('[data-testid="close-button"]').click();
       await closeToastIfPresent(page);
     }
   );
