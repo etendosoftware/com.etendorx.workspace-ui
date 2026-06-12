@@ -1221,4 +1221,98 @@ describe("buildEtendoClassicBookmarkUrl", () => {
     expect(result).toBeDefined();
     expect(result).toContain("#");
   });
+
+  describe("params", () => {
+    // The SmartClient hash parser (isc.JSON.decode after __→") does NOT run
+    // decodeURIComponent on the fragment. Any %26/%3D left there propagates
+    // literally into obManualURL and then into the iframe path that
+    // OBClassicWindow builds (-> 404 from Tomcat). Assertions therefore run
+    // against the RAW URL string — decoding before assert would mask the bug.
+    const fragmentOf = (url: string): string => url.split("#")[1] ?? "";
+
+    it("should append params to obManualURL with & separator when params is provided", () => {
+      const result = buildEtendoClassicBookmarkUrl({
+        baseUrl,
+        processUrl: "/ad_reports/Report.html",
+        tabTitle: "Report",
+        kioskMode: false,
+        token: null,
+        params: "Command=DIRECT&inpRecord=42",
+      });
+
+      // Raw fragment must already contain literal `&` and `=` — matches the
+      // canonical bookmark the classic UI emits.
+      expect(fragmentOf(result)).toContain("obManualURL:__/ad_reports/Report.html&Command=DIRECT&inpRecord=42__");
+    });
+
+    it("should not modify obManualURL when params is undefined", () => {
+      const result = buildEtendoClassicBookmarkUrl({
+        baseUrl,
+        processUrl: "/ad_reports/Report.html",
+        tabTitle: "Report",
+        kioskMode: false,
+        token: null,
+      });
+
+      const fragment = fragmentOf(result);
+      expect(fragment).toContain("obManualURL:__/ad_reports/Report.html__");
+      expect(fragment).not.toContain("/ad_reports/Report.html&");
+    });
+
+    it("should not modify obManualURL when params is an empty string", () => {
+      const result = buildEtendoClassicBookmarkUrl({
+        baseUrl,
+        processUrl: "/ad_reports/Report.html",
+        tabTitle: "Report",
+        kioskMode: false,
+        token: null,
+        params: "",
+      });
+
+      const fragment = fragmentOf(result);
+      expect(fragment).toContain("obManualURL:__/ad_reports/Report.html__");
+      expect(fragment).not.toContain("/ad_reports/Report.html&");
+    });
+
+    it("should keep & and = literal in the bookmark fragment when params are provided", () => {
+      // Regression: encodeEtendoBookmark used to encode & as %26 and = as %3D.
+      // SmartClient's hash parser does not decodeURIComponent the fragment, so
+      // those codes leaked into obManualURL and then into the iframe path,
+      // breaking the report popup with a 404. The fragment must therefore keep
+      // & and = literal (sub-delims allowed by RFC 3986 §3.5 in fragments).
+      const result = buildEtendoClassicBookmarkUrl({
+        baseUrl,
+        processUrl: "/ad_reports/R.html",
+        tabTitle: "T",
+        kioskMode: false,
+        token: null,
+        params: "Command=DIRECT&inpRecord=42",
+      });
+
+      const fragment = fragmentOf(result);
+      expect(fragment).toMatch(/obManualURL:__\/ad_reports\/R\.html&Command=DIRECT&inpRecord=42__/);
+      expect(fragment).not.toContain("%26");
+      expect(fragment).not.toContain("%3D");
+    });
+
+    it("should keep & and = literal even when token routes through the redirect endpoint", () => {
+      // URL.searchParams.get("location") performs one decode pass. After that
+      // single decode the location fragment must still expose & and = literal,
+      // matching what the meta-refresh writes verbatim and what SmartClient
+      // later receives via location.hash.
+      const result = buildEtendoClassicBookmarkUrl({
+        baseUrl,
+        processUrl: "/ad_reports/R.html",
+        tabTitle: "T",
+        kioskMode: true,
+        token: "JWT",
+        params: "Command=DIRECT&inpRecord=42",
+      });
+
+      const locationParam = new URL(result).searchParams.get("location") || "";
+      expect(locationParam).toContain("obManualURL:__/ad_reports/R.html&Command=DIRECT&inpRecord=42__");
+      expect(locationParam).not.toContain("%26");
+      expect(locationParam).not.toContain("%3D");
+    });
+  });
 });
