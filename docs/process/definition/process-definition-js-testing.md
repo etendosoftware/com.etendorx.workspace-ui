@@ -291,7 +291,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 21 | A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | blocked |
 | 22 | B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
 | 23 | 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
-| 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
+| 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁶ |
 | 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
 | 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | pending |
 | 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | pending |
@@ -344,6 +344,16 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   *Platform changes* and the *Updates* section of `new-javascript-code.md`); `onLoad` was ported to
   `em_etmeta_onload`, all other `em_etmeta_*` columns empty. These capabilities also unblock the rest of
   the `ProcessOrders/ProcessShipment/ProcessInvoices` family (each migrated on its own row).
+- ⁶ **Migrated 2026-06-12** (see `client/agents/reports/33338B1F2C4F499EBA4F5547BE0B2A4E.md`). Binds
+  **`OB.Jobs.ProcessShipment.onLoad`** on `on_load_function`. Its "Document Action" parameter declares
+  `onchangefunction = OB.Jobs.ProcessShipment.onChangeDocumentAction`, but **that function is not defined**
+  in `processRecords.js` (only `OB.Jobs.ProcessInvoices.onChangeDocumentAction` exists) — so the binding is
+  **dangling** and a no-op in Classic; `em_etmeta_on_parameter_change` is therefore left EMPTY. The same
+  family capabilities already added for the ProcessOrders rows
+  (`item.setValueProgrammatically()`, `item.getFirstOptionValue()`, `view.okButton.isEnabled()/enable()`)
+  cover this hook; `onLoad` was ported to `em_etmeta_onload`, all other `em_etmeta_*` columns empty. Note
+  the Classic onLoad only builds `documentStatuses` (never `documentActions`), so the record-action
+  pre-selection always falls back to the first option — reproduced faithfully.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
