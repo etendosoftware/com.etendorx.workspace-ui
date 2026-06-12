@@ -127,7 +127,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
-import { isSrOneToOneExtension } from "@/utils/window/utils";
+import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -873,28 +873,21 @@ const DynamicTable = ({
   });
 
   // Auto-open FormView for SR (Single Record) tabs once records are fetched.
-  // Covers two cases Tab.tsx's 1:1 auto-open cannot:
-  //   - Logical SR (PK and FK are distinct, e.g. ETSG_Certificate.organization):
-  //     parent-selected id is not a valid child id, so we resolve from fetched records.
-  //   - Root SR (no parent, e.g. Client window): isSrOneToOneExtension returns true
-  //     due to empty parentColumns, and Tab.tsx requires parentSelectedRecordId,
-  //     so neither path opens the form. Resolve recordId from displayRecords[0].
+  // See getSrAutoOpenDecision for the conditions covered.
   useEffect(() => {
-    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
-    if (!tab.defaultEditMode) return;
-    if (loading) return;
-    if (displayRecords.length === 0) return;
+    const decision = getSrAutoOpenDecision({
+      uIPattern,
+      tab,
+      loading,
+      displayRecords,
+      parentTab,
+      parentRecord,
+    });
+    if (!decision.open) return;
+    if (srAutoOpenedForParentRef.current === decision.trackingKey) return;
 
-    // 1:1 ID-extension WITH parent → Tab.tsx handles via parent.id.
-    if (parentTab && isSrOneToOneExtension(tab)) return;
-    // Child SR awaiting parent selection → wait.
-    if (parentTab && !parentRecord?.id) return;
-
-    const trackingKey = parentRecord?.id ? String(parentRecord.id) : "__root__";
-    if (srAutoOpenedForParentRef.current === trackingKey) return;
-
-    srAutoOpenedForParentRef.current = trackingKey;
-    setRecordId(String(displayRecords[0].id));
+    srAutoOpenedForParentRef.current = decision.trackingKey;
+    setRecordId(decision.recordId);
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
   // Summary State

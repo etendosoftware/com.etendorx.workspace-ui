@@ -161,14 +161,14 @@ export interface ADColumn {
   description?: string;
   helpComment?: string;
   table?: string;
-  'table$_identifier'?: string;
+  table$_identifier?: string;
   sequenceNumber?: number;
   position?: number;
   length?: number;
   reference?: string;
-  'reference$_identifier'?: string;
+  reference$_identifier?: string;
   referenceSearchKey?: string | null;
-  'referenceSearchKey$_identifier'?: string;
+  referenceSearchKey$_identifier?: string;
   mandatory?: boolean;
   updatable?: boolean;
   keyColumn?: boolean;
@@ -206,9 +206,9 @@ export interface ADColumn {
   validateOnNew?: boolean;
   process?: string | null;
   oBUIAPPProcess?: string | null;
-  'oBUIAPPProcess$_identifier'?: string;
+  oBUIAPPProcess$_identifier?: string;
   applicationElement?: string;
-  'applicationElement$_identifier'?: string;
+  applicationElement$_identifier?: string;
   propertyPath?: string;
   [key: string]: unknown;
 }

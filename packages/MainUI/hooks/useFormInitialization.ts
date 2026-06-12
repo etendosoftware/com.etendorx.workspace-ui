@@ -56,7 +56,7 @@ const initialState: State = {
  * @returns Updated state based on the action type
  *
  */
-const reducer = (state: State, action: Action): State => {
+export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FETCH_START":
       return { loading: true, error: null, formInitialization: null };

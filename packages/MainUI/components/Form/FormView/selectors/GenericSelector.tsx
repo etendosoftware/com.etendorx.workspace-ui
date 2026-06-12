@@ -111,6 +111,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         field={effectiveField}
         isReadOnly={isReadOnly}
         deencryptable={effectiveField.column.deencryptable ?? false}
+        data-testid={"EncryptedSelector__" + field.id}
       />
     );
   }

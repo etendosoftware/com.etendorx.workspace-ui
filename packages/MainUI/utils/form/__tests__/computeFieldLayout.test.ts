@@ -52,7 +52,9 @@ describe("computeFieldLayout", () => {
 
   it("cursor wraps to 1 after filling 3 columns", () => {
     const fields = [
-      makeField({ id: "a" }), makeField({ id: "b" }), makeField({ id: "c" }),
+      makeField({ id: "a" }),
+      makeField({ id: "b" }),
+      makeField({ id: "c" }),
       makeField({ id: "d", startinoddcolumn: true }),
     ];
     expect(computeFieldLayout(fields).get("d")).toBeUndefined();
