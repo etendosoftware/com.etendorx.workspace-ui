@@ -289,7 +289,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 19 | B7B1D4F53D4249C5A10D3AD0865D909F | Manage PickingList Action | 3 |  | medium | 173 · 5.6 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_Process.js` ⚠ deploy ⁴ | blocked |
 | 20 | 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | 1,2 | `onchangefunction` ×2 | medium | 178 · 5.1 KB (2 files) | `modules_core/com.etendoerp.advpaymentmngt/web/com.etendoerp.advpaymentmngt/js/received_in-paid_out-onchange.js` · `…/js/payment-action-popup.js` (signal 2: `EAPM_Popup`) | blocked |
 | 21 | A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | blocked |
-| 22 | B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | blocked ⁵ |
+| 22 | B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
 | 23 | 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
 | 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
 | 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | pending |
@@ -336,14 +336,14 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   and no parameters. The signal-3 match is only a `RemoteCallManager` *call target* (the UUID literal
   at line 151), not a client-side hook. Nothing of the file belongs in this process's columns; the real
   migration units are the six launcher rows. No capability gap.
-- ⁵ **Capability gap — `blocked` 2026-06-11** (see
-  `client/agents/reports/B4A21A617AD64137BF8C9A6770F65AD2.md`). Verified independently against
-  `etendodev`: this process binds **`OB.Jobs.ProcessOrders.onLoad`** (not `ProcessInvoices.onLoad`),
-  and its "Document Action" parameter has no `onchangefunction`/`ongridloadfunction`. `ProcessOrders.onLoad`
-  depends on `item.setValueProgrammatically()` and `item.getFirstOptionValue()` (both absent from the
-  new-UI item proxy — same blockers as A5A9B914) **plus** `view.okButton.isEnabled()` / `view.okButton.enable()`
-  (absent from the view proxy — an **additional** blocker not present in A5A9B914's `ProcessInvoices.onLoad`).
-  No code generated; all `em_etmeta_*` columns stay empty.
+- ⁵ **Unblocked & migrated 2026-06-12** (see
+  `client/agents/reports/B4A21A617AD64137BF8C9A6770F65AD2.md`). Binds **`OB.Jobs.ProcessOrders.onLoad`**
+  (not `ProcessInvoices.onLoad`); its "Document Action" parameter has no `onchangefunction`/`ongridloadfunction`.
+  The three blockers (`item.setValueProgrammatically()`, `item.getFirstOptionValue()`,
+  `view.okButton.isEnabled()/enable()`) were **implemented** in the client substrate (see the report's
+  *Platform changes* and the *Updates* section of `new-javascript-code.md`); `onLoad` was ported to
+  `em_etmeta_onload`, all other `em_etmeta_*` columns empty. These capabilities also unblock the rest of
+  the `ProcessOrders/ProcessShipment/ProcessInvoices` family (each migrated on its own row).
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
@@ -753,3 +753,28 @@ These two exercise a path none of the 10 picks cover, so they are required:
   `em_etmeta_on_parameter_change` / `em_etmeta_on_grid_load`; shared helpers in
   `em_etmeta_payscript_logic`; lifecycle hooks in `em_etmeta_onload` / `em_etmeta_onprocess` /
   `em_etmeta_on_refresh`.
+
+---
+
+## Updates
+
+### 2026-06-12 — Unblocked "Create Inverse document for Order" (`B4A21A617AD64137BF8C9A6770F65AD2`, §6 #22)
+
+`ProcessOrders.onLoad` depended on three SmartClient APIs absent from the new UI. They were implemented
+in the client substrate (see `client/agents/reports/B4A21A617AD64137BF8C9A6770F65AD2.md` →
+*Platform changes*, and the *Updates* section of `new-javascript-code.md`):
+
+- **`item.setValueProgrammatically(value)`** — selects an existing selector option (value + label).
+- **`item.getFirstOptionValue()`** — reads the first option value of a selector's current value map.
+- **`view.okButton.isEnabled()` / `view.okButton.enable()`** — reads/force-enables the execute button
+  (the force-enable overrides only the "mandatory empty" reason).
+
+Also fixed a latent keying bug: `setValueMap`/`getValueMap`/`setRequired` now resolve a parameter by
+map-key OR `name` OR `dBColumnName` (the parameters map is keyed by `dBColumnName`, while migrated hooks
+address items by `name` — e.g. `DocAction`'s name "Document Action" ≠ dBColumnName "DocAction").
+
+The `onLoad` was ported to `em_etmeta_onload` (porting details: `view.selectedRecords` / `view.tabId`
+instead of `view.parentWindow.view.viewGrid` / `view.processOwnerView.tabId`; `Array.add` → `.push`;
+`getValueMap()` returns a `ListOption[]` array so `currentValues[action]` → `currentValues.find(...)`).
+Status `blocked → migrated` (pending manual QA). These capabilities also unblock the rest of the
+`processRecords` family (Process Orders/Shipment/Invoices), each migrated on its own row.

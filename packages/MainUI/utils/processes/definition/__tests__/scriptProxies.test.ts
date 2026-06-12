@@ -68,6 +68,8 @@ const makeViewController = (footerButtons: FooterButtonHandle[] = []): ViewContr
   getFooterButtons: jest.fn(() => footerButtons),
   setCancelHidden: jest.fn(),
   setCloseHidden: jest.fn(),
+  isOkButtonEnabled: jest.fn(() => false),
+  enableOkButton: jest.fn(),
   openProcess: jest.fn(),
 });
 
@@ -428,6 +430,24 @@ describe("scriptProxies", () => {
       expect(viewController.setCloseHidden).toHaveBeenCalledWith(true);
     });
 
+    it("makes view.okButton live with a controller (isEnabled / enable delegate)", () => {
+      const { handle } = makeFormHandle();
+      const viewController = makeViewController();
+      (viewController.isOkButtonEnabled as jest.Mock).mockReturnValue(true);
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, viewController });
+
+      expect(view.okButton?.isEnabled()).toBe(true);
+      view.okButton?.enable();
+      expect(viewController.enableOkButton).toHaveBeenCalledTimes(1);
+    });
+
+    it("defers view.okButton methods without a controller", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar });
+      expect(() => view.okButton?.isEnabled()).toThrow("view.okButton.isEnabled is not implemented yet");
+      expect(() => view.okButton?.enable()).toThrow("view.okButton.enable is not implemented yet");
+    });
+
     it("defers openProcess and exposes no standardWindow alias without a controller", () => {
       const { handle } = makeFormHandle();
       const view = createViewProxy(handle, PARAMETERS, { messageBar });
@@ -536,6 +556,52 @@ describe("scriptProxies", () => {
       call(item.setValueMap)({ a: "A" });
       expect(controller.setValueMap).toHaveBeenCalledWith("amount", { a: "A" });
       expect(call(item.getValueMap)()).toEqual(options);
+    });
+
+    it("setValueProgrammatically sets the value and selects the matching option label", () => {
+      const entry: ListOption = { id: "CO", value: "CO", label: "Book" };
+      const controller = makeController();
+      const { handle, setValue } = makeFormHandle({ amount$_entries: [entry] });
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      call(item.setValueProgrammatically)("CO");
+      expect(setValue).toHaveBeenCalledWith("amount", "CO", { shouldDirty: true, shouldValidate: true });
+      expect(setValue).toHaveBeenCalledWith("amount$_identifier", "Book", { shouldDirty: true, shouldValidate: true });
+    });
+
+    it("getFirstOptionValue returns the first option value, from entries or the controller", () => {
+      const entries: ListOption[] = [
+        { id: "CO", value: "CO", label: "Book" },
+        { id: "VO", value: "VO", label: "Void" },
+      ];
+      const fromEntries = createItemProxy(
+        makeFormHandle({ amount$_entries: entries }).handle,
+        "amount",
+        {},
+        makeController()
+      );
+      expect(call(fromEntries.getFirstOptionValue)()).toBe("CO");
+
+      const fromController = createItemProxy(
+        makeFormHandle().handle,
+        "amount",
+        {},
+        makeController({ amount: entries })
+      );
+      expect(call(fromController.getFirstOptionValue)()).toBe("CO");
+    });
+
+    it("getFirstOptionValue returns undefined when the selector has no options", () => {
+      const item = createItemProxy(makeFormHandle().handle, "amount", {}, makeController());
+      expect(call(item.getFirstOptionValue)()).toBeUndefined();
+    });
+
+    it("defers setValueProgrammatically / getFirstOptionValue without a controller", () => {
+      const item = createItemProxy(makeFormHandle().handle, "amount");
+      expect(() => call(item.setValueProgrammatically)("CO")).toThrow(
+        "item.setValueProgrammatically is not implemented yet"
+      );
+      expect(() => call(item.getFirstOptionValue)()).toThrow("item.getFirstOptionValue is not implemented yet");
     });
 
     it("clears the value and sets a value from a record via the form handle", () => {

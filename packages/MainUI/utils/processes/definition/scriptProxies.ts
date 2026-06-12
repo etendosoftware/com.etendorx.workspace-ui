@@ -117,8 +117,18 @@ export interface ViewController {
   getFooterButtons: () => FooterButtonHandle[];
   setCancelHidden: (hidden: boolean) => void;
   setCloseHidden: (hidden: boolean) => void;
+  /** Current enabled state of the execute/OK button (backs `view.okButton.isEnabled()`). */
+  isOkButtonEnabled: () => boolean;
+  /** Forces the execute/OK button enabled (backs `view.okButton.enable()`). */
+  enableOkButton: () => void;
   /** Launches a nested process modal layered on top of the current one. */
   openProcess: (params: OpenProcessParams) => void;
+}
+
+/** Execute/OK button handle reached through `view.okButton` (classic SmartClient surface). */
+export interface OkButtonHandle {
+  isEnabled: () => boolean;
+  enable: () => void;
 }
 
 /**
@@ -252,6 +262,14 @@ export interface ItemProxy extends Record<string, unknown> {
   name: string;
   getValue: () => unknown;
   setValue: (value: unknown) => void;
+  /**
+   * Selects an existing option of a selector, setting its value and displayed
+   * label together. Live only when a `FieldController` is injected. New-UI
+   * equivalent of classic `setValueProgrammatically`; see `assignLiveItemMethods`.
+   */
+  setValueProgrammatically?: (value: unknown) => void;
+  /** Reads the first option value of the selector's current value map; live with a controller. */
+  getFirstOptionValue?: () => unknown;
   /** Live only for grid parameters (when a `GridResolver` is injected). */
   canvas?: CanvasProxy;
 }
@@ -324,6 +342,8 @@ export interface ViewProxy extends Record<string, unknown> {
   getSelection?: () => EntityData[];
   /** Footer chrome (live only with a controller). */
   popupButtons?: { members: FooterButtonHandle[] };
+  /** Execute/OK button handle (live only with a controller). */
+  okButton?: OkButtonHandle;
   cancelButton?: { hide: () => void; show: () => void };
   parentElement?: { parentElement: { closeButton: { hide: () => void; show: () => void } } };
   /** Nested-process launch (live only with a controller); `standardWindow` is the classic alias. */
@@ -350,6 +370,8 @@ export interface ItemProxyExtras {
 
 const DEFERRED_ITEM_METHODS = [
   "setValueFromRecord",
+  "setValueProgrammatically",
+  "getFirstOptionValue",
   "setRequired",
   "setDisabled",
   "show",
@@ -379,6 +401,8 @@ const LIVE_ITEM_METHODS: readonly string[] = [
   "setValueMap",
   "getValueMap",
   "setValueFromRecord",
+  "setValueProgrammatically",
+  "getFirstOptionValue",
   "redraw",
 ];
 const LIVE_FORM_METHODS: readonly string[] = [...DEFERRED_FORM_METHODS];
@@ -606,6 +630,11 @@ function assignLiveItemMethods(
   item.clearValue = () => form.setValue(paramName, null, { shouldDirty: true, shouldValidate: true });
   item.setValueFromRecord = (record: Record<string, unknown> | undefined) =>
     updateSelectorValue(form.setValue as unknown as UseFormSetValue<FieldValues>, paramName, recordId(record), record);
+  // Classic `setValueProgrammatically` selects an existing option (value + label).
+  // The new UI has no user `onChange` to suppress on the migrated-hook path, so
+  // this maps to the same value+identifier set as `setValue`.
+  item.setValueProgrammatically = (value: unknown) => applyValue(form, paramName, value);
+  item.getFirstOptionValue = () => readValueMap(form, paramName, controller)[0]?.value;
   item.redraw = () => {
     // No-op: react-hook-form re-renders reactively on value changes.
   };
@@ -941,6 +970,25 @@ function assignNestedViewActions(view: ViewProxy, controller: ViewController): v
   view.standardWindow = { openProcess: (params) => controller.openProcess(params) };
 }
 
+/**
+ * Assigns `view.okButton`. With a controller the handle reads/forces the live
+ * execute-button state; without one its methods defer (throwing a traceable
+ * error), matching the rest of the view's controller-gated surface.
+ */
+function assignOkButton(view: ViewProxy, controller?: ViewController): void {
+  if (!controller) {
+    view.okButton = {
+      isEnabled: () => notImplemented("view.okButton.isEnabled"),
+      enable: () => notImplemented("view.okButton.enable"),
+    };
+    return;
+  }
+  view.okButton = {
+    isEnabled: () => controller.isOkButtonEnabled(),
+    enable: () => controller.enableOkButton(),
+  };
+}
+
 /** Footer chrome handles (`popupButtons` / `cancelButton` / the close `X`). */
 function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
   view.popupButtons = { members: controller.getFooterButtons() };
@@ -1002,6 +1050,7 @@ export function createViewProxy(
   } else {
     assignDeferred(view, "view", DEFERRED_VIEW_METHODS);
   }
+  assignOkButton(view, deps.viewController);
 
   if (deps.executeProcess) {
     view.executeProcess = deps.executeProcess;

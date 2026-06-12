@@ -427,8 +427,17 @@ client's `/api` proxy, which injects the CSRF token server-side.
   `view.handleReadOnlyLogic()`, `view.handleButtonsStatus()`, `view.fireOnPause()`,
   `view.selectAllRecords()`, `view.getSelection()`, `view.openProcess(params)`,
   `view.standardWindow.openProcess(params)`, plus footer chrome (`view.popupButtons.members`,
-  `view.cancelButton`, `view.parentElement…closeButton`). Without the controller these are deferred and
+  `view.cancelButton`, `view.parentElement…closeButton`) and the execute button
+  (`view.okButton.isEnabled()` / `view.okButton.enable()`). Without the controller these are deferred and
   throw `"<api> is not implemented yet"`.
+  - **`view.okButton`.** `isEnabled()` reads the live enabled state of the execute/OK button; `enable()`
+    force-enables it. The button already enables itself reactively once mandatory parameters have values,
+    so `enable()` exists for parity with Classic (e.g. `ProcessOrders.onLoad`) and overrides **only** the
+    "mandatory empty" reason — it does not bypass `isPending` / submit-in-progress / final-success states.
+- **onLoad data fields.** An `onLoad` script reads the launch context directly off `view`:
+  `view.selectedRecords` (the launching grid's selection), `view.tabId`, `view.tableId`,
+  `view.parentRecord`. Use these instead of the Classic `view.parentWindow.view.viewGrid
+  .getSelectedRecords()` / `view.processOwnerView.tabId` DOM walks.
 - **Server execution — live only in the `onProcess` path:** `await view.executeProcess(actionValue?)`.
   This is the new-UI reproduction of Classic's `actionHandlerCall()` (see Section 5.2.1). It is deferred
   (throws `"view.executeProcess is not implemented yet"`) in the other hooks, where pressing the execute
@@ -444,10 +453,11 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   existing reactive mechanisms (e.g. `setRequired` → the parameter's `mandatory`, `show`/`hide` → the
   script-logic field store, where the script wins).
 - **Item** (`form.getItem(name)`): `getValue()`/`setValue(v)`, `setValueFromRecord(record)`,
-  `setRequired(bool)`/`setDisabled(bool)`, `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`,
-  `clearValue()`, `name`, and `canvas.viewGrid` for grid parameters. Items resolve by `name`,
-  `dBColumnName`, or the parameter map key, so `getItem('Column1')` and `getItem('<Display Name>')` both
-  work.
+  `setValueProgrammatically(v)`, `getFirstOptionValue()`, `setRequired(bool)`/`setDisabled(bool)`,
+  `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`, `clearValue()`, `name`, and `canvas.viewGrid`
+  for grid parameters. Items resolve by `name`, `dBColumnName`, or the parameter map key, so
+  `getItem('Column1')` and `getItem('<Display Name>')` both work — and `setValueMap` / `getValueMap` /
+  `setRequired` update the parameter under its real map key regardless of which form you address it by.
   - **`getValue()` is type-faithful to Classic.** For numeric parameters (Integer / Number / Quantity /
     Decimal references) it returns a **`number`**, mirroring SmartClient — so a migrated comparison like
     `a < b` is numeric, not lexicographic (`90 < 120`, never `"90" < "120"`). Empty/`null` values pass
@@ -459,6 +469,15 @@ This deferral is intentional: read-only data is always safe, and any unported ac
     in one call — the new-UI equivalent of the Classic `item.valueMap[id] = label; item.setValue(id)`
     idiom. A bare `setValue(id)` only sets the value, so the selector would not render a label for an
     unknown id.
+  - **Selecting an existing option / reading the first option.** `item.setValueProgrammatically(value)`
+    selects an option already present in the field's value map (sets value + label, like Classic's
+    homonym); `item.getFirstOptionValue()` returns the `value` of the first option in the current value
+    map (or `undefined` when there are none). Both are the new-UI equivalents used by the `processRecords`
+    family (`ProcessOrders/Invoices/Shipment.onLoad`).
+  - **`getValueMap()` returns a `ListOption[]` array** (`{ id, value, label }`), **not** a Classic
+    `{ id: label }` object. Port the Classic lookup `valueMap[action]` to
+    `getValueMap().find(o => o.value === action || o.id === action)`. `setValueMap(map)` still accepts
+    either an array or a plain `{ id: label }` object and normalizes it.
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
@@ -729,6 +748,13 @@ This section is the operational guide for translating one Classic `.js` file int
 | `ongridloadfunction(grid, view, parameters)` | `em_etmeta_on_grid_load`: `(grid, view, parameters) => { … }` |
 | `form.getItem('<numeric>').getValue()` → number | identical — numeric params return a `number` (Section 7.3); keep Classic comparisons (`a < b`) as-is, do not add `Number(...)` |
 | `gl.valueMap[id] = label; gl.setValue(id)` | `gl.setValueFromRecord({ id, _identifier: label })` — sets value **and** display label (Section 7.3) |
+| `item.setValueProgrammatically(v)` | identical — selects an existing option (value + label), Section 7.3 |
+| `item.getFirstOptionValue()` | identical — returns the first option `value` of the current value map |
+| `var m = item.getValueMap(); m[action]` | `item.getValueMap().find(o => o.value === action \|\| o.id === action)` — `getValueMap()` is a `ListOption[]` array, not an `{id:label}` object |
+| `view.okButton.isEnabled()` / `view.okButton.enable()` | identical — `enable()` force-enables, overriding only the "mandatory empty" reason (Section 7.2) |
+| `view.parentWindow.view.viewGrid.getSelectedRecords()` (onLoad) | `view.selectedRecords` (onLoad `hookData`) |
+| `view.processOwnerView.tabId` / `view.parentWindow.tabId` (onLoad) | `view.tabId` (onLoad `hookData`) |
+| `documentStatuses.add(x)` (SmartClient Array) | `documentStatuses.push(x)` — plain JS arrays |
 | module-level helpers/state | `em_etmeta_payscript_logic` module body ending in `return { … }` |
 | `isc.confirm(msg, cb)` / `isc.warn` / `isc.say` | `confirm(msg, cb)` / `warn` / `say` (or `await confirm(msg)`) |
 | `view.parentWindow.view.getContextInfo()` | identical (also `view.getContextInfo()`) — parent record fields by `inputName` overlaid with the current parameter values |

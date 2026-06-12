@@ -339,6 +339,8 @@ export interface ScriptButtonState {
   disabledValues: Record<string, boolean>;
   cancelHidden: boolean;
   closeHidden: boolean;
+  /** Forces the execute/OK button enabled (set by `view.okButton.enable()`). */
+  okForceEnabled: boolean;
 }
 
 /** Stable empty reference, so the reset effect never builds a fresh object. */
@@ -347,6 +349,7 @@ export const EMPTY_SCRIPT_BUTTON_STATE: ScriptButtonState = {
   disabledValues: {},
   cancelHidden: false,
   closeHidden: false,
+  okForceEnabled: false,
 };
 
 /** Sets an action button's hidden flag; short-circuits on a no-op (absent = false). */
@@ -371,6 +374,12 @@ export function withCancelHidden(prev: ScriptButtonState, hidden: boolean): Scri
 export function withCloseHidden(prev: ScriptButtonState, hidden: boolean): ScriptButtonState {
   if (prev.closeHidden === hidden) return prev;
   return { ...prev, closeHidden: hidden };
+}
+
+/** Sets the execute/OK button's force-enabled flag; short-circuits on a no-op. */
+export function withOkForceEnabled(prev: ScriptButtonState, enabled: boolean): ScriptButtonState {
+  if (prev.okForceEnabled === enabled) return prev;
+  return { ...prev, okForceEnabled: enabled };
 }
 
 /** Default combinator and the id-set operator used when merging grid criteria. */
@@ -413,15 +422,30 @@ export function addSelectedIDsToCriteria(
 }
 
 /**
+ * Resolves a parameter entry by its map key, `name`, or `dBColumnName` (the map
+ * is keyed by `dBColumnName`, but migrated hooks address items by `name`). Returns
+ * the actual map key and the parameter, or `undefined` when none matches.
+ */
+function resolveParamEntry(prev: ParametersMap, name: string): [string, ProcessParameter] | undefined {
+  if (prev[name]) return [name, prev[name]];
+  for (const [key, parameter] of Object.entries(prev)) {
+    if (parameter.name === name || parameter.dBColumnName === name) return [key, parameter];
+  }
+  return undefined;
+}
+
+/**
  * Returns the parameters map with `name`'s `mandatory` flag set. Short-circuits
  * to the same reference when the parameter is missing or already at that value.
  */
 export function withMandatory(prev: ParametersMap, name: string, required: boolean): ParametersMap {
-  const parameter = prev[name];
-  if (!parameter || parameter.mandatory === required) return prev;
+  const entry = resolveParamEntry(prev, name);
+  if (!entry) return prev;
+  const [key, parameter] = entry;
+  if (parameter.mandatory === required) return prev;
   const updated = { ...parameter };
   updated.mandatory = required;
-  return { ...prev, [name]: updated };
+  return { ...prev, [key]: updated };
 }
 
 /**
@@ -429,11 +453,12 @@ export function withMandatory(prev: ParametersMap, name: string, required: boole
  * Short-circuits to the same reference when the parameter is missing.
  */
 export function withRefList(prev: ParametersMap, name: string, refList: ListOption[]): ParametersMap {
-  const parameter = prev[name];
-  if (!parameter) return prev;
+  const entry = resolveParamEntry(prev, name);
+  if (!entry) return prev;
+  const [key, parameter] = entry;
   const updated = { ...parameter };
   updated.refList = refList;
-  return { ...prev, [name]: updated };
+  return { ...prev, [key]: updated };
 }
 
 /** Normalizes a single classic value-map entry into a `ListOption`. */

@@ -116,6 +116,7 @@ import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/de
 import {
   createFormHandle,
   createViewProxy,
+  findParameter,
   resolveFormKey,
   type FieldController,
   type FooterButtonHandle,
@@ -129,6 +130,7 @@ import {
   withButtonHidden,
   withCancelHidden,
   withCloseHidden,
+  withOkForceEnabled,
   EMPTY_SCRIPT_BUTTON_STATE,
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
@@ -600,6 +602,11 @@ function ProcessDefinitionModalContent({
   // id replaces the earlier pending one. Cleared when the modal closes.
   const onPauseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Live execute-button enabled state, so the async onLoad callback's
+  // `view.okButton.isEnabled()` reads the current value (not a render-time stale).
+  // Updated each render once `isActionButtonDisabled` is computed (below).
+  const okEnabledRef = useRef(false);
+
   // Combined view: static defaults < dynamic callout updates < script overrides.
   const logicFields = useMemo(
     () => ({ ...staticLogicFields, ...calloutLogicFields, ...scriptLogicFields }),
@@ -754,7 +761,7 @@ function ProcessDefinitionModalContent({
       setDisabled: (name, disabled) => setScriptLogicFields((prev) => withFlag(prev, `${name}.readonly`, disabled)),
       setDisplayed: (name, displayed) => setScriptLogicFields((prev) => withFlag(prev, `${name}.display`, displayed)),
       setValueMap: (name, map) => setParameters((prev) => withRefList(prev, name, normalizeValueMap(map))),
-      getValueMap: (name) => parametersRef.current[name]?.refList ?? [],
+      getValueMap: (name) => findParameter(name, parametersRef.current)?.refList ?? [],
       addField: (field) => setParameters((prev) => addDynamicParameter(prev, field)),
       removeField: (target) => setParameters((prev) => removeParameter(prev, target)),
       focusField: (name) => focusFormField(form, name),
@@ -811,6 +818,8 @@ function ProcessDefinitionModalContent({
       getFooterButtons: () => availableButtons.map((btn) => makeFooterButtonHandle(btn, setScriptButtonState)),
       setCancelHidden: (hidden) => setScriptButtonState((prev) => withCancelHidden(prev, hidden)),
       setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
+      isOkButtonEnabled: () => okEnabledRef.current,
+      enableOkButton: () => setScriptButtonState((prev) => withOkForceEnabled(prev, true)),
       // Layer a nested process modal on top; on its close (X or success) the host
       // fires this (parent) view's onRefreshFunction, mirroring classic behaviour.
       openProcess: (params) =>
@@ -1678,11 +1687,16 @@ function ProcessDefinitionModalContent({
     isPending ||
     loadingMetadata ||
     initializationBlocksSubmit ||
-    hasMandatoryParametersWithoutValue ||
+    // A migrated onLoad may force-enable via view.okButton.enable(), overriding
+    // only the "mandatory empty" reason (the case it resolves after populating).
+    (hasMandatoryParametersWithoutValue && !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
     (isPE && !gridSelection) ||
     (isPE && hasInvalidSelection);
+
+  // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
+  okEnabledRef.current = !isActionButtonDisabled;
 
   const renderModalContent = () => {
     if (warehousePluginLoading && isCustomComponent) {

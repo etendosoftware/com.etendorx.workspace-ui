@@ -19,6 +19,7 @@ import {
   withButtonDisabled,
   withCancelHidden,
   withCloseHidden,
+  withOkForceEnabled,
   EMPTY_SCRIPT_BUTTON_STATE,
   addSelectedIDsToCriteria,
   type DynamicParameter,
@@ -508,11 +509,18 @@ describe("Process Definition Utils", () => {
         expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, true).closeHidden).toBe(true);
       });
 
+      it("withOkForceEnabled sets the force-enabled flag immutably", () => {
+        const forced = withOkForceEnabled(EMPTY_SCRIPT_BUTTON_STATE, true);
+        expect(forced.okForceEnabled).toBe(true);
+        expect(forced).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+      });
+
       it("short-circuits to the same reference on a no-op", () => {
         expect(withButtonHidden(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
         expect(withButtonDisabled(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
         expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
         expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withOkForceEnabled(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
       });
     });
 
@@ -530,6 +538,16 @@ describe("Process Definition Utils", () => {
         expect(withMandatory(prev, "unknown", true)).toBe(prev);
         expect(withMandatory(prev, "currency", true)).toBe(prev);
       });
+
+      it("resolves a parameter addressed by name when the map is keyed by dBColumnName", () => {
+        // Map keyed by dBColumnName ("DocAction"); the hook addresses it by name.
+        const prev = {
+          DocAction: { name: "Document Action", dBColumnName: "DocAction", mandatory: false, refList: [] },
+        } as unknown as ParametersMap;
+        const next = withMandatory(prev, "Document Action", true);
+        expect(next.DocAction.mandatory).toBe(true);
+        expect(next).not.toBe(prev);
+      });
     });
 
     describe("withRefList", () => {
@@ -543,6 +561,17 @@ describe("Process Definition Utils", () => {
       it("short-circuits when the parameter is missing", () => {
         const prev = params();
         expect(withRefList(prev, "unknown", [])).toBe(prev);
+      });
+
+      it("resolves by name/dBColumnName and writes under the real map key", () => {
+        const options = [{ id: "CO", value: "CO", label: "Book" }];
+        const prev = {
+          DocAction: { name: "Document Action", dBColumnName: "DocAction", mandatory: true, refList: [] },
+        } as unknown as ParametersMap;
+        // Addressed by name (≠ map key): must update the "DocAction" entry.
+        expect(withRefList(prev, "Document Action", options).DocAction.refList).toEqual(options);
+        // Addressed by dBColumnName (== map key): same result.
+        expect(withRefList(prev, "DocAction", options).DocAction.refList).toEqual(options);
       });
     });
 
