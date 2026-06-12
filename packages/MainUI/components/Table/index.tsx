@@ -79,6 +79,9 @@ import {
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
+import { TreeColumnFilter } from "./TreeColumnFilter";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -683,6 +686,30 @@ const getHierarchyIcon = (
   return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
 };
 
+/** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
+const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
+  const props = (mrtColumn.columnDef as any)._treeFilterProps;
+  if (!props) return null;
+  return (
+    <TreeColumnFilter
+      column={props.column}
+      entityName={props.entityName}
+      tabId={props.tabId}
+      onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
+        const colId = props.column.id || props.column.columnName;
+        props.onFilterChange((prev: ColumnFiltersState) => {
+          const filtered = prev.filter((f: { id: string }) => f.id !== colId);
+          if (selectedOptions && selectedOptions.length > 0) {
+            return [...filtered, { id: colId, value: selectedOptions }];
+          }
+          return filtered;
+        });
+      }}
+      data-testid="TreeColumnFilter__8ca888"
+    />
+  );
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -764,6 +791,7 @@ const DynamicTable = ({
   const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
   }, []);
+  const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 
@@ -835,6 +863,7 @@ const DynamicTable = ({
     addRecordLocally,
     applyQuickFilter,
     fetchSummary,
+    handleDateTextFilterChange,
   } = useTableData({
     isTreeMode,
   });
@@ -959,6 +988,19 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
+
+  // Report table dirty state to windowStore for tab-close confirmation
+  const hasEditingRows = Object.keys(editingRows).length > 0;
+  useEffect(() => {
+    if (windowIdentifier) {
+      setWindowDirtySource(windowIdentifier, `table:${tab.id}`, hasEditingRows);
+    }
+    return () => {
+      if (windowIdentifier) {
+        setWindowDirtySource(windowIdentifier, `table:${tab.id}`, false);
+      }
+    };
+  }, [hasEditingRows, windowIdentifier, tab.id, setWindowDirtySource]);
 
   // Focus management for inline editing - stored in a ref so that changing the focus target
   // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all
@@ -2441,6 +2483,20 @@ const DynamicTable = ({
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
 
+      // Tree reference columns get a tree-aware dropdown filter instead of text
+      const ref = col.column?.reference;
+      if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
+        column.enableColumnFilter = true;
+        // Store props on column for the stable TreeColumnFilterWrapper to read
+        (column as Record<string, unknown>)._treeFilterProps = {
+          column: col,
+          entityName: tab.entityName,
+          tabId: tab.id,
+          onFilterChange: handleMRTColumnFiltersChange,
+        };
+        column.Filter = TreeColumnFilterWrapper;
+      }
+
       return column;
     });
 
@@ -2506,7 +2562,16 @@ const DynamicTable = ({
     }
 
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
+  }, [
+    baseColumns,
+    shouldUseTreeMode,
+    renderActionsColumnCell,
+    renderDataColumnCell,
+    tableColumnVisibility,
+    tab.entityName,
+    tab.id,
+    handleMRTColumnFiltersChange,
+  ]);
 
   // Helper function to check if a row is being edited
 
@@ -2601,6 +2666,17 @@ const DynamicTable = ({
         }
       }
 
+      // Conditional styling for document status
+      const VOIDED_STATUS = "VO";
+      const recordData = record as Record<string, unknown> | undefined;
+      const docStatus = recordData?.docStatus as string | undefined;
+      const isActive = recordData?.active;
+      if (docStatus === VOIDED_STATUS) {
+        rowClassName = `${rowClassName} table-row-voided`.trim();
+      } else if (isActive === false || isActive === "N") {
+        rowClassName = `${rowClassName} table-row-inactive`.trim();
+      }
+
       // Determine drop target overlay styling for drag and drop interactions
       let dropIndicatorClass = "";
       if (shouldUseTreeMode && dropTarget?.id === rowId) {
@@ -2619,6 +2695,19 @@ const DynamicTable = ({
             target.closest(".inline-edit-cell-container")
           ) {
             return;
+          }
+
+          // ED: auto-save the currently editing row when the user clicks a different row
+          if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
+            const editingIds = editingRowUtils.getEditingRowIds();
+            if (editingIds.length > 0 && !editingIds.includes(rowId)) {
+              const editingRowId = editingIds[0];
+              const editingRowData = editingRowUtils.getEditingRowData(editingRowId);
+              if (editingRowData?.hasUnsavedChanges) {
+                handleSaveRow(editingRowId);
+                return;
+              }
+            }
           }
 
           // Don't allow row selection changes while editing (to prevent accidental data loss)
@@ -2739,6 +2828,19 @@ const DynamicTable = ({
           };
         })(),
 
+        onBlur: (e: React.FocusEvent<HTMLTableRowElement>) => {
+          const focusLeft = !e.currentTarget.contains(e.relatedTarget as Node);
+          if (!focusLeft) return;
+          if (editingData?.isNew) {
+            handleSaveRow(rowId);
+          } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
+            const blurEditingData = editingRowUtils.getEditingRowData(rowId);
+            if (blurEditingData?.hasUnsavedChanges) {
+              handleSaveRow(rowId);
+            }
+          }
+        },
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -2769,6 +2871,8 @@ const DynamicTable = ({
       dropTarget,
       getNodeDragProps,
       getNodeDropProps,
+      uIPattern,
+      handleSaveRow,
     ]
   );
 
@@ -3029,21 +3133,49 @@ const DynamicTable = ({
         selectedRecords: t("table.counter.selectedRecords"),
         recordsLoaded: t("table.counter.recordsLoaded"),
       };
+      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+      // that Etendo Classic shows in the quick-filter bar above the grid.
+      const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
       return (
-        <RecordCounterBar
-          totalRecords={total}
-          loadedRecords={loaded}
-          selectedCount={selCount}
-          isLoading={loading}
-          labels={labels}
-          actions={
-            <>
-              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
-              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-            </>
-          }
-          data-testid="RecordCounterBar__8ca888"
-        />
+        <>
+          <RecordCounterBar
+            totalRecords={total}
+            loadedRecords={loaded}
+            selectedCount={selCount}
+            isLoading={loading}
+            labels={labels}
+            actions={
+              <>
+                <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+                <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+              </>
+            }
+            data-testid="RecordCounterBar__8ca888"
+          />
+          {quickFilterCols.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
+              {quickFilterCols.map((col: Column) => {
+                const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
+                const currentValue =
+                  currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
+                return (
+                  <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
+                    <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">
+                      {col.header}:
+                    </span>
+                    <input
+                      type="text"
+                      value={currentValue}
+                      onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
+                      placeholder="…"
+                      className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       );
     },
     enableBottomToolbar: false,

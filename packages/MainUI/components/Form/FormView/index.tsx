@@ -156,6 +156,9 @@ export function FormView({
   // triggered by the NEW→EDIT transition is treated as a data refresh (uses setValue
   // instead of form.reset) rather than a full form reconstruction.
   const justSavedFromNewRef = useRef(false);
+  // Set to true after a successful EDIT-mode save so the subsequent data refresh
+  // resets defaultValues (via stableReset) to clear isDirty.
+  const justSavedInEditRef = useRef(false);
 
   const { graph } = useSelected();
   const windowsObj = useWindowStore((s) => s.windows);
@@ -632,8 +635,12 @@ export function FormView({
 
     if (isDataRefresh) {
       applyDataRefresh(processedData);
-      if (isPostNewSave) {
-        // After a NEW→EDIT save, update defaultValues to match ALL current form values
+      const isPostEditSave = justSavedInEditRef.current;
+      if (isPostEditSave) {
+        justSavedInEditRef.current = false;
+      }
+      if (isPostNewSave || isPostEditSave) {
+        // After a save, update defaultValues to match ALL current form values
         // (including $\_entries dropdown arrays not present in processedData) so that
         // react-hook-form's isDirty correctly becomes false. keepValues: true avoids
         // re-rendering form inputs — only formState subscribers (e.g. save button) update.
@@ -856,6 +863,7 @@ export function FormView({
         // when the refetch completes
       } else {
         // For EDIT mode, manually refetch to get updated calculated fields
+        justSavedInEditRef.current = true;
         await refetch();
         setIsFormInitializing(false);
       }

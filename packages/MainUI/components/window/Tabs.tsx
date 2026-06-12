@@ -29,7 +29,6 @@ import TabContextProvider from "@/contexts/tab";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
 }

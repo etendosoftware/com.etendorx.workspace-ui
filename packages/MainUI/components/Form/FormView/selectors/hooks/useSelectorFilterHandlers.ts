@@ -32,7 +32,7 @@ export function useSelectorFilterHandlers({
     (columnId: string, filterValue: string) => {
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
-        return [...filtered, { id: columnId, value: filterValue?.trim() || "" }];
+        return [...filtered, { id: columnId, value: filterValue?.trim() ? filterValue : "" }];
       });
     },
     [setColumnFilters]

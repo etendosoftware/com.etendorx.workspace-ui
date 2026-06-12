@@ -192,15 +192,25 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parentSelectedRecordId = reactiveParentSelectedRecordId;
   const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
+  // SR (Single Record) tabs share the same entity/record as the parent.
+  // They should show form view by default (like Classic) instead of loading a grid first.
+  // Always use parentSelectedRecordId directly — since SR child.id === parent.id,
+  // there's no need to fall back to currentRecordId (which may be stale during the
+  // render cycle before the reset effect clears it).
+  const isSrTab = tab.uIPattern === UIPattern.EDIT_ONLY && tab.defaultEditMode;
+  const effectiveRecordId = isSrTab && parentSelectedRecordId ? parentSelectedRecordId : currentRecordId;
+
   // When the parent record changes, reset child tab state (exit form view, clear selection).
   // This replaces the implicit re-render that useWindowContext provided in the pre-Zustand architecture.
+  // For SR tabs this clears stale form state so effectiveRecordId picks up the new parentId.
   const prevParentRecordRef = useRef<string | undefined>(parentSelectedRecordId);
   useEffect(() => {
     const prev = prevParentRecordRef.current;
     prevParentRecordRef.current = parentSelectedRecordId;
 
-    // Only react to actual changes (not initial mount)
-    if (prev === undefined && parentSelectedRecordId === undefined) return;
+    // Skip initial mount — prev is always undefined on first render.
+    // This prevents clearing the form state that auto-open or SR default just set.
+    if (prev === undefined) return;
     if (prev === parentSelectedRecordId) return;
     if (!parentTab || !windowIdentifier) return;
 
@@ -211,8 +221,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [parentSelectedRecordId, parentTab, windowIdentifier, tab, clearTabFormState, clearSelectedRecord, graph]);
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
+  const isSrDefaultForm = isSrTab && parentHasSelection;
   const shouldShowForm =
-    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
+    isSrDefaultForm ||
+    hasFormViewState ||
+    isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
@@ -271,13 +284,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
-          // Clear children tabs when deselecting parent record
-          const children = graph.getChildren(tab);
-          if (children && children.length > 0) {
-            const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-            if (childIds.length > 0) {
-              clearChildrenSelections(windowIdentifier, childIds);
+          // Recursively collect ALL descendant tab IDs so deselection cascades through all levels
+          const descendantIds: string[] = [];
+          const collectDescendants = (parentTab: typeof tab) => {
+            const children = graph.getChildren(parentTab);
+            if (!children) return;
+            for (const child of children) {
+              if (child.window === tab.window) {
+                descendantIds.push(child.id);
+                collectDescendants(child);
+              }
             }
+          };
+          collectDescendants(tab);
+          if (descendantIds.length > 0) {
+            clearChildrenSelections(windowIdentifier, descendantIds, true);
           }
 
           setTimeout(() => {
@@ -297,34 +318,37 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowIdentifier, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
-    if (windowIdentifier) {
-      const currentFormState = getTabFormState(windowIdentifier, tab.id);
-      const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+    if (!windowIdentifier) return;
 
-      if (isInFormView) {
-        clearTabFormState(windowIdentifier, tab.id);
-      } else {
-        if (tab.tabLevel === 0) {
-          // Back on Level 0 Grid navigates Home
-          setAllWindowsInactive();
-          return;
-        }
+    const currentFormState = getTabFormState(windowIdentifier, tab.id);
+    const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
+    if (isInFormView) {
+      clearTabFormState(windowIdentifier, tab.id);
+      if (tab.uIPattern === UIPattern.EDIT_ONLY) {
         clearSelectedRecord(windowIdentifier, tab.id);
-
-        // Also clear children if this tab has any
-        const children = graph.getChildren(tab);
-        if (children && children.length > 0) {
-          const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-          if (childIds.length > 0) {
-            clearChildrenSelections(windowIdentifier, childIds);
-          }
-        }
-
-        // Clear graph selection
         graph.clearSelected(tab);
       }
+      return;
     }
+
+    if (tab.tabLevel === 0) {
+      setAllWindowsInactive();
+      return;
+    }
+
+    clearSelectedRecord(windowIdentifier, tab.id);
+
+    const childIds =
+      graph
+        .getChildren(tab)
+        ?.filter((c) => c.window === tab.window)
+        .map((c) => c.id) ?? [];
+    if (childIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, childIds);
+    }
+
+    graph.clearSelected(tab);
   }, [
     windowIdentifier,
     clearTabFormState,
@@ -1214,10 +1238,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         <div
           className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
           <FormView
+            key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
             mode={formMode}
             tab={tab}
             window={window}
-            recordId={currentRecordId}
+            recordId={effectiveRecordId}
             setRecordId={handleSetRecordId}
             uIPattern={tab.uIPattern}
             isFocused={isFocused}

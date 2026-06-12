@@ -158,7 +158,12 @@ const handleDeselectInContext = (
   rowSelection: MRT_RowSelectionState,
   graph: ReturnType<typeof useSelected>["graph"],
   getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
-  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void,
+  clearChildrenSelections: (
+    windowIdentifier: string,
+    childTabIds: string[],
+    isParentSelectionChanging?: boolean
+  ) => void
 ): void => {
   const hasTableSelection = Object.keys(rowSelection).length > 0;
   if (hasTableSelection) return;
@@ -171,6 +176,23 @@ const handleDeselectInContext = (
 
   if (!hasChildInFormView) {
     clearSelectedRecord(windowIdentifier, tab.id);
+
+    // Cascade clear ALL descendant tabs so no stale selection survives in the store
+    const descendantIds: string[] = [];
+    const collectDescendants = (parentTab: Tab) => {
+      const kids = graph.getChildren(parentTab);
+      if (!kids) return;
+      for (const child of kids) {
+        if (child.window === tab.window) {
+          descendantIds.push(child.id);
+          collectDescendants(child);
+        }
+      }
+    };
+    collectDescendants(tab);
+    if (descendantIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, descendantIds, true);
+    }
   } else {
     logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
   }
@@ -272,6 +294,7 @@ export default function useTableSelection(
   // Zustand store — stable action references
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
 
   // Zustand store — imperative getters
   const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
@@ -418,7 +441,15 @@ export default function useTableSelection(
       } else if (selectedRecords.length === 0) {
         // Deselect all — guard against clearing parent selection while a child tab is in FormView.
         debouncedPersistSelection.cancel();
-        handleDeselectInContext(windowIdentifier, tab, rowSelection, graph, getTabFormState, clearSelectedRecord);
+        handleDeselectInContext(
+          windowIdentifier,
+          tab,
+          rowSelection,
+          graph,
+          getTabFormState,
+          clearSelectedRecord,
+          clearChildrenSelections
+        );
       }
     }
 

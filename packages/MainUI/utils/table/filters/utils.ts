@@ -17,7 +17,7 @@
 
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { ColumnFilterUtils, isTextFilterValue } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
 /**
  * Type guard to check if a value is a FilterOption array
@@ -51,8 +51,13 @@ export const getTextFilterValue = (
     return undefined;
   }
 
+  // For TextFilterValue, return just the text portion for display
+  if (isTextFilterValue(currentFilter.value)) {
+    return currentFilter.value.text;
+  }
+
   // For text/date filters, return as string
-  return currentFilter ? String(currentFilter.value) : undefined;
+  return String(currentFilter.value);
 };
 
 /**

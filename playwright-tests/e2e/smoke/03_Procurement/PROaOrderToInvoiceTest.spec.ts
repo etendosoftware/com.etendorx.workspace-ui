@@ -188,10 +188,7 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
       // Filter the table by order number and wait for the datasource response.
       // Use .filter({ visible: true }).first() — mirrors Cypress .filter(":visible"); avoids selecting a hidden label input.
-      const filterInput = page
-        .locator('input.w-full[placeholder="Filter Document No...."]')
-        .filter({ visible: true })
-        .first();
+      const filterInput = page.locator('input[placeholder="Filter Document No...."]').filter({ visible: true }).first();
       await filterInput.waitFor({ state: "visible", timeout: 15_000 });
       await filterInput.clear();
       // Set up the listener AFTER clear() so it captures the filter-triggered response,

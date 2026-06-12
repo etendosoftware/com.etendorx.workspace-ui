@@ -1,4 +1,5 @@
 import { buildBaseCriteria } from "../criteriaUtils";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 
 describe("criteriaUtils", () => {
   describe("buildBaseCriteria", () => {
@@ -63,6 +64,45 @@ describe("criteriaUtils", () => {
       // falls back to @EntityName.id@ session variables for filtering.
       expect(result[0].fieldName).toBe("_dummy");
       expect(result[0].operator).toBe("equals");
+    });
+
+    it("should return id criteria for true 1:1 SR tabs (parentColumns includes PK)", () => {
+      const srOneToOneTab: any = {
+        ...childTab,
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentColumns: ["id"],
+        fields: { id: { column: { keyColumn: true } } },
+      };
+      const result = buildBaseCriteria({
+        tab: srOneToOneTab,
+        parentTab,
+        parentId: "123",
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fieldName).toBe("id");
+      expect(result[0].value).toBe("123");
+    });
+
+    it("should use FK resolution for non-1:1 SR tabs (e.g. Payment Plan)", () => {
+      const srNonOneToOneTab: any = {
+        ...childTab,
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentColumns: ["invoice"],
+        fields: {
+          id: { column: { keyColumn: true } },
+          invoice: { referencedEntity: "ParentEntity" },
+        },
+      };
+      const result = buildBaseCriteria({
+        tab: srNonOneToOneTab,
+        parentTab,
+        parentId: "123",
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fieldName).toBe("invoice");
+      expect(result[0].value).toBe("123");
     });
   });
 });

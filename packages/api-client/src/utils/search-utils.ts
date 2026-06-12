@@ -17,7 +17,7 @@
 
 import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
 import type { ColumnFilterState } from "./column-filter-utils";
-import { ColumnFilterUtils } from "./column-filter-utils";
+import { ColumnFilterUtils, isTextFilterValue } from "./column-filter-utils";
 
 type FormattedValue = string | number | null;
 
@@ -489,21 +489,53 @@ export class LegacyColumnFilterUtils {
     return result;
   }
 
+  private static buildExistsQueryCriteria(fieldName: string, values: unknown[], existsQuery: string): BaseCriteria[] {
+    const ids = values
+      .filter(
+        (v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic
+      )
+      .map((v) => String((v as { id: unknown }).id));
+    if (ids.length === 0) return [];
+    return [
+      {
+        fieldName,
+        operator: "exists",
+        value: ids,
+        existsQuery,
+        isProductCharacteristicsCriteria: true,
+      } as unknown as BaseCriteria,
+    ];
+  }
+
+  private static extractFilterValues(values: unknown[]): { actualValues: unknown[]; isTextSearch: boolean } {
+    let isTextSearch = false;
+    const actualValues = values.map((val) => {
+      if (typeof val === "object" && val !== null && "value" in val) {
+        if ((val as Record<string, unknown>).isTextSearch) isTextSearch = true;
+        return (val as { value: unknown }).value;
+      }
+      return val;
+    });
+    return { actualValues, isTextSearch };
+  }
+
+  private static resolveFilterOperator(isTextSearch: boolean, column: Column): "iContains" | "iEquals" | "equals" {
+    if (isTextSearch) return "iContains";
+    if (ColumnFilterUtils.isTableDirColumn(column)) return "iEquals";
+    return "equals";
+  }
+
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
-    // Extract actual values from FilterOption objects if present
-    // This supports both new format (FilterOption[]) and legacy format (string[])
-    let isTextSearch = false;
-    const actualValues = values.map((val) => {
-      // If it's a FilterOption object with a value property, extract it
-      if (typeof val === "object" && val !== null && "value" in val) {
-        if ((val as any).isTextSearch) isTextSearch = true;
-        return (val as { value: unknown }).value;
-      }
-      // Otherwise use the value as-is (backward compatibility with string[])
-      return val;
-    });
+    // Check for special existsQuery criteria (e.g. Product Characteristics tree filter)
+    const firstObj =
+      typeof values[0] === "object" && values[0] !== null ? (values[0] as Record<string, unknown>) : null;
+    if (firstObj?.existsQuery) {
+      return LegacyColumnFilterUtils.buildExistsQueryCriteria(fieldName, values, String(firstObj.existsQuery));
+    }
+
+    const { actualValues, isTextSearch } = LegacyColumnFilterUtils.extractFilterValues(values);
 
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
@@ -515,14 +547,7 @@ export class LegacyColumnFilterUtils {
       }
     }
 
-    let operator: "iContains" | "iEquals" | "equals";
-    if (isTextSearch) {
-      operator = "iContains";
-    } else if (ColumnFilterUtils.isTableDirColumn(column)) {
-      operator = "iEquals";
-    } else {
-      operator = "equals";
-    }
+    const operator = LegacyColumnFilterUtils.resolveFilterOperator(isTextSearch, column);
 
     // SmartClient sends list/select equals criteria with value as an array (e.g. ["FATAL"]),
     // even for single selections. Classic datasources like OBPickAndExecuteDataSource require this.
@@ -841,6 +866,12 @@ export class LegacyColumnFilterUtils {
   }
 
   private static processFilterValue(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    if (isTextFilterValue(value)) {
+      const trimmed = value.text.trim();
+      if (!trimmed) return [];
+      return [{ fieldName, operator: value.operator, value: trimmed }];
+    }
+
     if (LegacyColumnFilterUtils.isRangeObject(value)) {
       return LegacyColumnFilterUtils.handleRangeFilter(
         fieldName,

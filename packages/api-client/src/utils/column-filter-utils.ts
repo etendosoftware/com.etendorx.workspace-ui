@@ -18,11 +18,26 @@
 import type { Column, BaseCriteria } from "../api/types";
 import { FieldType } from "../api/types";
 
+export type TextFilterOperator = "iContains" | "iStartsWith" | "equals";
+
+export interface TextFilterValue {
+  text: string;
+  operator: TextFilterOperator;
+}
+
+export function isTextFilterValue(v: unknown): v is TextFilterValue {
+  return typeof v === "object" && v !== null && "text" in v && "operator" in v;
+}
+
 export interface FilterOption {
   id: string;
   label: string;
   value: string;
   isTextSearch?: boolean;
+  parentId?: string;
+  isCharacteristic?: boolean;
+  /** HQL exists subquery for special filter criteria (e.g. Product Characteristics) */
+  existsQuery?: string;
 }
 
 export interface ColumnFilterState {

@@ -217,8 +217,22 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
       showColumnFilters: true,
     },
     muiTablePaperProps: { sx: sx.tablePaper },
-    muiTableHeadCellProps: { sx: sx.tableHeadCell },
-    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableHeadCellProps: {
+      sx: {
+        ...sx.tableHeadCell,
+        fontSize: "0.75rem",
+        padding: "4px 8px",
+        lineHeight: 1.2,
+      },
+    },
+    muiTableBodyCellProps: {
+      sx: {
+        ...sx.tableBodyCell,
+        fontSize: "0.75rem",
+        padding: "2px 8px",
+        lineHeight: 1.2,
+      },
+    },
     muiTableBodyProps: { sx: sx.tableBody },
     muiTableContainerProps: {
       onScroll: (event: UIEvent<HTMLDivElement>) => fetchMoreOnBottomReached(event.currentTarget),
@@ -229,13 +243,29 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
         onSelect(row.original);
         onClose();
       },
-      sx: { cursor: "pointer", ...sx.tableBodyRow },
+      sx: {
+        cursor: "pointer",
+        ...sx.tableBodyRow,
+        height: "28px",
+      },
     }),
+    muiFilterTextFieldProps: {
+      sx: {
+        "& .MuiInputBase-input": {
+          fontSize: "0.75rem",
+          padding: "4px 8px",
+        },
+      },
+    },
+    defaultColumn: {
+      minSize: 60,
+      size: 120,
+    },
     initialState: { density: "compact" },
   });
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth data-testid={`Dialog__${field.id}`}>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="xl" fullWidth data-testid={`Dialog__${field.id}`}>
       <Box className="relative flex justify-center items-center p-4 border-b" data-testid={`Box__${field.id}`}>
         <Typography
           sx={{ fontSize: "1.125rem", fontWeight: 700, textTransform: "none", color: "text.primary" }}

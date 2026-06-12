@@ -27,6 +27,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useWindowContext } from "@/contexts/window";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -160,6 +161,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Multi-window navigation hook providing access to current window state.
    */
   const windowIdentifier = useCurrentWindowIdentifier();
+  const { getSelectedRecord } = useWindowContext();
 
   const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -327,6 +329,13 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
           if (index > 0) {
             const parentLevel = groupedTabs[index - 1][0].tabLevel;
             activeParentTab = getActiveTabForLevel(parentLevel);
+          }
+
+          // Defer child tab group mount until the user has selected a parent record.
+          // This prevents DynamicTable from firing N+1 fetches before any selection.
+          if (index > 0 && activeParentTab) {
+            const parentSelectedId = getSelectedRecord(windowIdentifier ?? "", activeParentTab.id);
+            if (!parentSelectedId) return null;
           }
 
           return (

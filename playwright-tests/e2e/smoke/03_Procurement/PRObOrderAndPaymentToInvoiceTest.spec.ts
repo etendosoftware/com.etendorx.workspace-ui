@@ -176,7 +176,7 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl > :nth-child(2)").click();
 
-    const docFilterInput = page.locator('input.w-full[placeholder="Filter Document No...."]').last();
+    const docFilterInput = page.locator('input[placeholder="Filter Document No...."]').last();
     await docFilterInput.waitFor({ state: "visible", timeout: 15_000 });
     const datasourceDone = page.waitForResponse(/api\/datasource/, { timeout: 30_000 }).catch(() => null);
     await docFilterInput.clear();

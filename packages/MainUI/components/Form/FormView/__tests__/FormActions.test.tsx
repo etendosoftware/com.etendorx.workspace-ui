@@ -110,6 +110,7 @@ jest.mock("@/stores/windowStore", () => ({
         },
       },
       clearTabFormState: mockClearTabFormState,
+      setWindowDirtySource: jest.fn(),
     }),
 }));
 
@@ -351,5 +352,33 @@ describe("FormActions", () => {
       expect(mockOnSave).not.toHaveBeenCalled();
       expect(mockClearTabFormState).not.toHaveBeenCalled();
     });
+  });
+
+  it("shows error modal when required fields are missing on save", async () => {
+    (useFormValidation as jest.Mock).mockReturnValue({
+      validateRequiredFields: jest.fn(() => ({
+        isValid: false,
+        missingFields: [{ fieldLabel: "Name" }],
+      })),
+      requiredFields: [{ hqlName: "name" }],
+    });
+
+    const mockShowErrorModal = jest.fn();
+    renderFormActions({ ...props, showErrorModal: mockShowErrorModal });
+
+    fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+    await waitFor(() => expect(mockShowErrorModal).toHaveBeenCalledWith(expect.stringContaining("Name")));
+  });
+
+  it("calls refetch and resetFormChanges on refresh action", async () => {
+    const mockRefetch = jest.fn().mockResolvedValue(undefined);
+    renderFormActions({ ...props, refetch: mockRefetch });
+
+    const registeredActions = mockRegisterActions.mock.calls[0][0];
+    await registeredActions.refresh();
+
+    expect(mockRefetch).toHaveBeenCalled();
+    expect(mockResetFormChanges).toHaveBeenCalled();
   });
 });
