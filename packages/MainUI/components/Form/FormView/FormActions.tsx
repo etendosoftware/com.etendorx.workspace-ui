@@ -28,6 +28,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 
 interface FormActionsProps {
   tab: Tab;
@@ -43,13 +44,9 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
-  const windowIdentifier = activeWindow?.windowIdentifier;
+  const windowIdentifier = useCurrentWindowIdentifier();
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
@@ -90,6 +87,18 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
       resetFormChanges();
     }
   }, [isDirty, markFormAsChanged, resetFormChanges]);
+
+  // Report form dirty state to windowStore for tab-close confirmation
+  useEffect(() => {
+    if (windowIdentifier) {
+      setWindowDirtySource(windowIdentifier, `form:${tab.id}`, isDirty);
+    }
+    return () => {
+      if (windowIdentifier) {
+        setWindowDirtySource(windowIdentifier, `form:${tab.id}`, false);
+      }
+    };
+  }, [isDirty, windowIdentifier, tab.id, setWindowDirtySource]);
 
   useEffect(() => {
     if (isFormInitializing || isSettingInitialValues) {

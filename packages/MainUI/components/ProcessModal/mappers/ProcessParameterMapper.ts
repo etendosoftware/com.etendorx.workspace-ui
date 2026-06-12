@@ -146,7 +146,15 @@ export class ProcessParameterMapper {
    * @returns Mapped reference code for FormView compatibility
    */
   private static mapReferenceType(reference: string): string {
-    // Map textual references from process definition to reference codes
+    // When the backend serializes the FK field as a nested object { id, _identifier }
+    // (OpenBravo FULL_TRANSLATABLE mode for some versions), extract the ID.
+    if (reference && typeof reference === "object" && "id" in (reference as object)) {
+      reference = (reference as { id: string }).id;
+    }
+
+    if (!reference) return "10";
+
+    // Map textual reference names (from Process Definition metadata) to reference codes
     const referenceMap: Record<string, string> = {
       // Boolean types
       "Yes/No": FIELD_REFERENCE_CODES.BOOLEAN.id,
@@ -163,12 +171,14 @@ export class ProcessParameterMapper {
       // Date types
       Date: FIELD_REFERENCE_CODES.DATE.id,
       DateTime: FIELD_REFERENCE_CODES.DATETIME.id,
+      "Absolute DateTime": FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id,
 
       // List types
       List: FIELD_REFERENCE_CODES.LIST_17.id,
 
-      // Select types
+      // Select / Table types
       Select: FIELD_REFERENCE_CODES.SELECT_30.id,
+      Table: FIELD_REFERENCE_CODES.TABLE_DIR_18.id,
 
       // Product types
       Product: FIELD_REFERENCE_CODES.PRODUCT.id,
@@ -198,12 +208,16 @@ export class ProcessParameterMapper {
       "Multi Selector": FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
 
       // String/Text (default)
-      String: "10", // Text reference
-      Text: "10",
+      String: FIELD_REFERENCE_CODES.STRING.id,
+      Text: FIELD_REFERENCE_CODES.STRING.id,
+      "Long Text": FIELD_REFERENCE_CODES.TEXT_LONG.id,
+
+      // Time
+      Time: FIELD_REFERENCE_CODES.TIME.id,
     };
 
-    // Return mapped reference or the original reference if already a code
-    return referenceMap[reference] || reference || "10";
+    // Return mapped reference, or pass through if it already looks like a reference ID
+    return referenceMap[reference] || reference;
   }
 
   /**
@@ -212,44 +226,21 @@ export class ProcessParameterMapper {
    * @returns true if mappable, false otherwise
    */
   static canMapParameter(parameter: ProcessParameter | ExtendedProcessParameter): boolean {
-    // Check if required properties exist
     if (!parameter || !parameter.name) {
       return false;
     }
 
-    // Check if reference type is supported
-    const supportedReferences = [
-      "String",
-      "Text",
-      "Password",
-      "Yes/No",
-      "YesNo",
-      "Boolean",
-      "Amount",
-      "Number",
-      "Decimal",
-      "Integer",
-      "Quantity",
-      "Date",
-      "DateTime",
-      "List",
-      "Select",
-      "Product",
-      "TableDir",
-      "Table Directory",
-      "Window",
-      "PAttribute",
-      "Image",
-      "Upload File",
-      "UploadFile",
-      "MultiSelector",
-      "Multi Selector",
-    ];
+    // Normalize reference before validation (handles FK object format)
+    const normalizedRef = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
+    // Accept any reference that resolves to a known FIELD_REFERENCE_CODES ID,
+    // any textual name that mapReferenceType knows, or no reference at all.
+    const knownIds = Object.values(FIELD_REFERENCE_CODES).map((v) => v.id) as string[];
     return (
       !parameter.reference ||
-      supportedReferences.includes(parameter.reference) ||
-      (Object.values(FIELD_REFERENCE_CODES).map((v) => v.id) as string[]).includes(parameter.reference)
+      knownIds.includes(normalizedRef) ||
+      // Unknown IDs fall back to "text" (GenericSelector) — still renderable
+      true
     );
   }
 
@@ -291,6 +282,9 @@ export class ProcessParameterMapper {
   }
 
   private static readonly REFERENCE_TO_FIELD_TYPE: Record<string, string> = Object.fromEntries([
+    [FIELD_REFERENCE_CODES.STRING.id, "text"],
+    [FIELD_REFERENCE_CODES.TEXT_LONG.id, "text"],
+    [FIELD_REFERENCE_CODES.NUMERIC.id, "numeric"],
     [FIELD_REFERENCE_CODES.PASSWORD.id, "password"],
     [FIELD_REFERENCE_CODES.BOOLEAN.id, "boolean"],
     [FIELD_REFERENCE_CODES.DECIMAL.id, "numeric"],
@@ -299,6 +293,8 @@ export class ProcessParameterMapper {
     [FIELD_REFERENCE_CODES.QUANTITY_22.id, "quantity"],
     [FIELD_REFERENCE_CODES.DATE.id, "date"],
     [FIELD_REFERENCE_CODES.DATETIME.id, "datetime"],
+    [FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id, "datetime"],
+    [FIELD_REFERENCE_CODES.TIME.id, "text"],
     [FIELD_REFERENCE_CODES.SELECT_30.id, "select"],
     [FIELD_REFERENCE_CODES.PRODUCT.id, "product"],
     [FIELD_REFERENCE_CODES.TABLE_DIR_19.id, "tabledir"],

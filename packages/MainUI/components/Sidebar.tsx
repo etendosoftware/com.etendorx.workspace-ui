@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
+import { useExpandedMenuItems } from "../hooks/useExpandedMenuItems";
 import { useUserStore } from "@/stores/userStore";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
@@ -156,7 +157,8 @@ export default function Sidebar() {
   );
 
   const [searchValue, setSearchValue] = useState("");
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const currentRoleId = currentRole?.id ?? "";
+  const { expandedItems, setExpandedItems } = useExpandedMenuItems(currentRoleId);
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
@@ -367,6 +369,7 @@ export default function Sidebar() {
     <FavoritesDrawerContext.Provider value={favoritesDrawerValue}>
       <>
         <Drawer
+          key={currentRoleId}
           windowId={currentWindowId}
           pendingWindowId={pendingWindowId}
           logo={EtendoLogotype.src}
