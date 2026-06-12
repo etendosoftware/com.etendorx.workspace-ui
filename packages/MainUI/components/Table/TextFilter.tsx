@@ -1,26 +1,25 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
+import { isTextFilterValue } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import type { TextFilterValue } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useDebouncedCallback } from "./utils/performanceOptimizations";
 
 export interface TextFilterProps {
   column: Column;
   onFilterChange: (filterValue: string) => void;
-  filterValue?: string;
+  filterValue?: string | TextFilterValue;
 }
 
 export const TextFilter: React.FC<TextFilterProps> = ({ column, onFilterChange, filterValue }) => {
   const [inputValue, setInputValue] = useState("");
 
-  // Create a debounced version of the filter change handler
   const debouncedFilterChange = useDebouncedCallback((value: string) => {
     onFilterChange(value);
   }, 500);
 
-  // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
-  // Also handle clearing when filterValue becomes undefined
   useEffect(() => {
-    setInputValue(filterValue || "");
+    setInputValue(isTextFilterValue(filterValue) ? filterValue.text : filterValue || "");
   }, [filterValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

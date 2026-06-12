@@ -50,23 +50,22 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "retain-on-failure",
-    // Allow cross-origin iframes (equivalent to chromeWebSecurity: false)
     ignoreHTTPSErrors: true,
+    // --no-zygote prevents Chromium from using the zygote process model for
+    // spawning renderers. In container/CI environments with restricted namespaces
+    // the zygote fork can produce a SIGSEGV (General Protection Fault) during
+    // browser launch, particularly after prolonged test runs.
+    launchOptions: {
+      args: ["--disable-web-security", "--disable-site-isolation-trials", "--no-zygote"],
+    },
   },
 
   projects: [
-    // ── Shared browser options ───────────────────────────────────────────────
-    // Each suite group below spreads via this use block.
-    // (Playwright requires each project to declare its own browser.)
-
     // Group 1 — Performance (runs first, alone — stress tests can saturate the server)
     {
       name: "suite-00-performance",
       testMatch: ["**/performance/**"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state)
@@ -81,10 +80,7 @@ export default defineConfig({
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 3 — Sales (starts only after Group 2 finishes)
@@ -93,10 +89,7 @@ export default defineConfig({
       testMatch: ["**/01_Sales/**"],
       dependencies: ["suite-01-base"],
       timeout: 720_000,
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 4 — Procurement (starts only after Sales finishes)
@@ -105,10 +98,7 @@ export default defineConfig({
       testMatch: ["**/03_Procurement/**"],
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 5 — Financial (most fragile — runs last, alone)
@@ -117,10 +107,7 @@ export default defineConfig({
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
       timeout: 360_000,
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 

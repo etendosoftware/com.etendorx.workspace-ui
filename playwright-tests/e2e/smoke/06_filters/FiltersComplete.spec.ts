@@ -47,7 +47,9 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     };
 
     const clickOptionButton = async (text: string | RegExp) => {
-      const btn = page.getByRole("button", { name: text }).first();
+      // Scope to the last open menu portal so table-header TextFilter operator
+      // buttons (=, ⊃, →) with the same labels are never matched by mistake.
+      const btn = page.locator('div[role="menu"]').last().getByRole("button", { name: text }).first();
       await btn.waitFor({ state: "visible", timeout: 10_000 });
       await btn.click();
     };

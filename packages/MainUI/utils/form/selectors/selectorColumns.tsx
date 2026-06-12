@@ -203,7 +203,7 @@ export function buildSelectorColumnDefs(
           <TextFilter
             column={minimalCol}
             filterValue={filterValue}
-            onFilterChange={(value: string) => onTextFilterChange(col.accessorKey, value)}
+            onFilterChange={(value) => onTextFilterChange(col.accessorKey, value)}
             data-testid="TextFilter__ea08b7"
           />
         );

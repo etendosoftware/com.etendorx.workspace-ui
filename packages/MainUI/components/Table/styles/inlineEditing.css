@@ -410,6 +410,17 @@ td:has(.inline-edit-cell-container) {
   transition: width 0.3s ease-in-out;
 }
 
+/* Document-status row indicators */
+.table-row-voided td {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.table-row-inactive td {
+  opacity: 0.5;
+  color: var(--color-transparent-neutral-60, #9ca3af);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .inline-edit-input,

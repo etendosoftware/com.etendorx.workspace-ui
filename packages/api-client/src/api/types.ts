@@ -210,6 +210,11 @@ export interface Field {
    * When false or undefined, the field group starts expanded.
    */
   fieldGroupCollapsed?: boolean;
+  /**
+   * When true, this column is marked as ISSELECTIONCOLUMN=Y in AD_COLUMN.
+   * The grid toolbar renders a default quick-filter input for these columns.
+   */
+  isSelectionColumn?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -253,6 +258,11 @@ export interface Column {
    * When set, the column should be rendered as a navigable link in the grid.
    */
   clientclass?: string | null;
+  /**
+   * When true, this column is marked ISSELECTIONCOLUMN=Y and should be shown
+   * as a default quick-filter input in the grid toolbar.
+   */
+  isSelectionColumn?: boolean;
 }
 
 export interface MappedField {
@@ -931,6 +941,10 @@ export type ProcessParameter = {
   // grid parameter's data-arrived event.
   etmetaOnParameterChange?: string | null;
   etmetaOnGridLoad?: string | null;
+  /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
+  sequenceNumber?: number;
+  /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
+  dBColumnName: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {

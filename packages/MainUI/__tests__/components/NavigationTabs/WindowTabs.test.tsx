@@ -43,6 +43,22 @@ jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   ),
 }));
 
+jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
+  __esModule: true,
+  default: ({ open, confirmText, onConfirm, onCancel }: any) =>
+    open ? (
+      <div data-testid="ConfirmModal">
+        <span>{confirmText}</span>
+        <button onClick={onConfirm} data-testid="ConfirmButton">
+          Confirm
+        </button>
+        <button onClick={onCancel} data-testid="CancelButton">
+          Cancel
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock("@/components/NavigationTabs/MenuTabs", () => ({
   __esModule: true,
   default: ({ anchorEl, onClose, onSelect, "data-testid": testId }: any) =>
@@ -383,5 +399,118 @@ describe("WindowTabs", () => {
     // i=2: Last element, never has separator after it.
 
     expect(separators.length).toBe(1);
+  });
+
+  it("uses metadata name when window title is empty", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: {},
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    mockUseMetadataContext.mockReturnValue({
+      windowsData: { w1: { name: "Invoice" } },
+    });
+
+    render(<WindowTabs />);
+
+    expect(screen.getByText("Invoice")).toBeInTheDocument();
+  });
+
+  it("shows confirmation modal when closing a dirty window", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+
+    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+    expect(mockCleanupWindow).not.toHaveBeenCalled();
+  });
+
+  it("calls cleanupWindow when confirming dirty window close", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+    fireEvent.click(screen.getByTestId("ConfirmButton"));
+
+    expect(mockCleanupWindow).toHaveBeenCalledWith("w1");
+  });
+
+  it("keeps window visible when canceling dirty window close", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("CancelButton"));
+
+    expect(screen.queryByTestId("ConfirmModal")).not.toBeInTheDocument();
+    expect(mockCleanupWindow).not.toHaveBeenCalled();
+    expect(screen.getByText("Window 1")).toBeInTheDocument();
   });
 });
