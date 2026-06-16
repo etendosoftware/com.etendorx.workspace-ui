@@ -587,7 +587,7 @@ const columnToFieldForEditor = (column: Column): Field => {
     displayOnSameLine: false,
     obuiappColspan: null,
     obuiappRowspan: null,
-    column: (column.column as import("@workspaceui/api-client/src/api/types").ADColumn) || {},
+    column: column.column || {},
     id: column.fieldId || column.id,
     module: "",
     hasDefaultValue: false,
