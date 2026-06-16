@@ -293,8 +293,8 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 23 | 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
 | 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁶ |
 | 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁷ |
-| 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | blocked |
-| 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | blocked ⁸ |
+| 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | migrated |
+| 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | migrated ⁸ |
 | 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | blocked |
 | 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
 | 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
@@ -365,22 +365,24 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   gated on a single-record selection). The same family capabilities already added for the ProcessOrders rows
   (`item.setValueProgrammatically()`, `item.getFirstOptionValue()`) cover the onLoad; this variant has no
   OK-button manipulation. All other `em_etmeta_*` columns left empty.
-- ⁸ **Blocked 2026-06-16** (see `client/agents/reports/C4265E27C8134096B49DFBF69369DFC6.md`). Binds
-  `OB.ProductServices.onLoad` (`on_load_function`) and `OB.ProductServices.onLoadGrid` (the "Pick/Edit
-  Lines" `ongridloadfunction`). `onLoad` exists only to install a SmartClient **per-toggle**
-  `selectionChanged` handler (`relateOrderLinesSelectionChanged(record, state)`) that writes
-  `relatedQuantity` on the **single toggled record** and rolls it back with `deselectRecord(record)` on
-  a server-price error. The new-UI chained `selectionChanged` subscriber is invoked as `fn(selection)`
-  (the full resulting selection **array**, not the `(record, state)` delta — `WindowReferenceGrid.tsx`
-  `selectionChangedSubsRef`; `scriptProxies.ts` `defineGridCallbackProp`), so the toggled record + state
-  are unavailable and the core behavior cannot be reproduced faithfully; `this.Super('selectionChanged',
-  …)` and the grid-relative `fireOnPause` per-record debounce also have no equivalent. **Independently**,
-  the cell-edit recompute (`orderLinesGridQtyOnChange`) and the range validator (`QuantityValidate`) are
-  bound on **`AD_FIELD` grid-column hooks** (`ONCHANGEFUNCTION` / `EM_OBUIAPP_VALIDATOR` on
-  `AD_FIELD_ID = 025D94512BBC49E3A941AB7114C5704E`), for which there is **no `em_etmeta_*` column**, and
-  `orderLinesGridQtyOnChange` uses `BigDecimal.multiply` (not implemented). All `em_etmeta_*` columns
-  stay EMPTY until the platform delivers a per-toggle `selectionChanged` delta and a grid-column
-  field-hook path.
+- ⁸ **Migrated 2026-06-16** (re-evaluated; see `client/agents/reports/C4265E27C8134096B49DFBF69369DFC6.md`,
+  §Updates). Previously blocked on the SmartClient **per-toggle** `selectionChanged(record, state)`
+  delta, the grid-relative `fireOnPause`, the `activeView` two-tier `getContextInfo` fallback, the
+  grid-column field hooks (`orderLinesGridQtyOnChange` / `QuantityValidate` on
+  `AD_FIELD_ID = 025D94512BBC49E3A941AB7114C5704E`), and `BigDecimal.multiply`/`setScale`. **All of these
+  are now closed by additive substrate capabilities** (verified against `WindowReferenceGrid.tsx`
+  `createEmbeddedGridController` / `emitSelectionToggles` / `fireCellEditHooks` /
+  `rejectByColumnValidator`, `scriptProxies.ts` `assignGridFireOnPause` / `buildParentWindow`,
+  `bigDecimal.ts`): `grid.onSelectionToggle((record, state) => …)`, `grid.fireOnPause`,
+  `view.parentWindow.activeView[.parentView].getContextInfo()` (now carrying `inpTabId`),
+  `grid.setColumnOnChange('relatedQuantity', …)`, `grid.setColumnValidator('relatedQuantity', …)`, and
+  exact `multiply` + `setScale(scale, roundingMode?)`. Migration consolidates into
+  `em_etmeta_payscript_logic` (shared helpers) + the **"Pick/Edit Lines"** `em_etmeta_on_grid_load`
+  (registers the per-toggle handler and both grid-column hooks, then seeds the totals/service price);
+  `em_etmeta_onload` and all other columns stay EMPTY. The classic `deselectRecord(record)` rollback is
+  ported as `grid.deselectRecord(grid.getRecordIndex(record))` (the controller resolves by index). ETP-3748's
+  `onProcess` pre-submit hook is **not** the unblocker here (no `clientsidevalidation`); the grid-side
+  capability set is. Pending manual QA.
 - ⁹ **Blocked 2026-06-16** (see `client/agents/reports/A832A5DA28FB4BB391BDE883E928DFC5.md`). Pure
   **signal-3** process: in `etendodev` it has **no** classic hook columns
   (`on_load_function`/`clientsidevalidation`/`on_refresh_function` empty), **no `em_etmeta_*`**, and
