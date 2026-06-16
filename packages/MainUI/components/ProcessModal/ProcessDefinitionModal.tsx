@@ -101,6 +101,7 @@ import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessDialogHost from "./ProcessDialogHost";
+import ParameterDialogHost from "./ParameterDialogHost";
 import ProcessMessageBar from "./ProcessMessageBar";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
@@ -1852,6 +1853,8 @@ function ProcessDefinitionModalContent({
           </Modal>
           {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
           <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
+          {/* Host for action-time dynamic parameter forms (openDynamicForm); unmounts with the modal. */}
+          <ParameterDialogHost />
         </>
       )}
     </>

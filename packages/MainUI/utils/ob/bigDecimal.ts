@@ -31,9 +31,9 @@ function toBigNumber(value: BigDecimalValue): BigNumber.Value {
  * migrated hooks can do decimal amount arithmetic with the exact rounding/scale parity the
  * server-side check expects — never with lossy `Number`.
  *
- * Only the surface the in-scope migrated processes use is implemented. `multiply`/`divide` are
- * intentionally omitted: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be
- * deterministic, so they will be added (with those semantics) when a process actually needs them.
+ * Only the surface the in-scope migrated processes use is implemented. `divide` is intentionally
+ * omitted: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be deterministic,
+ * so it will be added (with those semantics) when a process actually needs it.
  */
 export class BigDecimal {
   /** Backing arbitrary-precision value. */
@@ -49,6 +49,12 @@ export class BigDecimal {
 
   /** Zero, exposed on the prototype to honour the classic `BigDecimal.prototype.ZERO` idiom. */
   declare ZERO: BigDecimal;
+
+  /**
+   * Half-up rounding mode, exposed on the prototype to honour the classic
+   * `BigDecimal.prototype.ROUND_HALF_UP` idiom (passed as the 2nd arg of `setScale`).
+   */
+  declare ROUND_HALF_UP: number;
 
   constructor(value: BigDecimalValue, scale?: number) {
     this.value = new BigNumber(toBigNumber(value));
@@ -66,6 +72,15 @@ export class BigDecimal {
   }
 
   /**
+   * Returns a new `BigDecimal` equal to `this * other`. Java `BigDecimal.multiply` is exact (the
+   * product scale is the sum of the operand scales, with no rounding), so this carries no fixed
+   * scale — callers re-apply `setScale` afterwards, exactly as the classic scripts do.
+   */
+  multiply(other: BigDecimalValue): BigDecimal {
+    return new BigDecimal(this.value.multipliedBy(toBigNumber(other)));
+  }
+
+  /**
    * Returns `-1`, `0` or `1` as `this` is less than, equal to, or greater than `other`. Decimal
    * operands are never NaN, so `comparedTo`'s `null` (a NaN operand) is surfaced as `NaN`.
    */
@@ -78,9 +93,12 @@ export class BigDecimal {
    * `BigDecimal.setScale(scale)`. Rounding uses `ROUND_HALF_UP` (the Classic money default); for the
    * ≤2-decimal money amounts these scripts handle, nothing is ever discarded, so this matches the
    * classic `ROUND_UNNECESSARY` default exactly while only ever zero-padding (e.g. `5` → `"5.00"`).
+   *
+   * Accepts an optional `roundingMode` (the classic `setScale(scale, BigDecimal.prototype.ROUND_HALF_UP)`
+   * 2-arg form); it defaults to `ROUND_HALF_UP`, preserving the previous single-arg behaviour.
    */
-  setScale(scale: number): BigDecimal {
-    return new BigDecimal(this.value.decimalPlaces(scale, BigNumber.ROUND_HALF_UP), scale);
+  setScale(scale: number, roundingMode: number = BigNumber.ROUND_HALF_UP): BigDecimal {
+    return new BigDecimal(this.value.decimalPlaces(scale, roundingMode as BigNumber.RoundingMode), scale);
   }
 
   /** Canonical decimal string; zero-padded to {@link scale} decimals when a scale was fixed. */
@@ -95,3 +113,4 @@ export class BigDecimal {
 }
 
 BigDecimal.prototype.ZERO = new BigDecimal(0);
+BigDecimal.prototype.ROUND_HALF_UP = BigNumber.ROUND_HALF_UP;

@@ -269,7 +269,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | # | id | name | signal | mechanisms (signal 1) | difficulty | size (lines · KB) | `.js` file(s) | status |
 |---|---|---|---|---|---|---|---|---|
 | 1 | C044DDAA929E40D780C36154FBB968F7 | Create Invoices from Orders | 1 | `onchangefunction` ×1 | easy | 15 · 0.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/createFromOrders.js` | migrated |
-| 2 | 31ED9333E46C419D92E9F1B10F821B91 | Clone | 3 |  | easy | 25 · 1.2 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/ob-clone-record.js` | blocked |
+| 2 | 31ED9333E46C419D92E9F1B10F821B91 | Clone | 3 |  | easy | 25 · 1.2 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/ob-clone-record.js` | invalid |
 | 3 | 71E00A0E964E43AE81C5AFBCDCA5F87C | Valued Stock Report | 1 | `onchangefunction` ×1 | easy | 27 · 0.7 KB | `modules_core/com.etendoerp.reportvaluationstock/web/com.etendoerp.reportvaluationstock/js/etrvs-onchange.js` | migrated |
 | 4 | B57A0126F38B428F936FA2B52186EB97 | Consulta de Facturas en Verifactu | 1 | `onchangefunction` ×2 | easy | 41 · 1.0 KB | `WebContent/web/com.etendoerp.verifactu/js/etvfac-organization-info.js` ⚠ deploy | migrated |
 | 5 | 45ED6D0400FD42BEA9771C549A9AE8AB | Validate Costing Rule | 1 | `on_load_function`, `clientsidevalidation` | easy | 47 · 1.9 KB | `web/js/validateCostingRuleProcess.js` | migrated |
@@ -285,25 +285,25 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 15 | 56E951BB13A44AFBB642291081613E46 | General Ledger Report Advanced | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
 | 16 | 636EF6F0F8B64E94A8247930569B98CA | Journal Entries Report Advanced | 1 | `onchangefunction` ×2 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
 | 17 | D8E8015B1478473799E47F84796C481C | Trial Balance | 1 | `onchangefunction` ×1 | medium | 124 · 4.2 KB (4 files) | `…/financial.reports.advanced/js/etfra-*.js` ⚠ deploy ² | migrated |
-| 18 | 99E532BA0306450A839F5DE238375238 | Select Invoices and Orders | 1 | `ongridloadfunction` ×1 | medium | 163 · 5.6 KB (2 files) | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` · `ob-rem-utilities.js` ⚠ deploy | blocked |
+| 18 | 99E532BA0306450A839F5DE238375238 | Select Invoices and Orders | 1 | `ongridloadfunction` ×1 | medium | 163 · 5.6 KB (2 files) | `WebContent/web/org.openbravo.module.remittance/js/rem_addinvandord_utilities.js` · `ob-rem-utilities.js` ⚠ deploy | migrated |
 | 19 | B7B1D4F53D4249C5A10D3AD0865D909F | Manage PickingList Action | 3 |  | medium | 173 · 5.6 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_Process.js` ⚠ deploy ⁴ | blocked |
-| 20 | 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | 1,2 | `onchangefunction` ×2 | medium | 178 · 5.1 KB (2 files) | `modules_core/com.etendoerp.advpaymentmngt/web/com.etendoerp.advpaymentmngt/js/received_in-paid_out-onchange.js` · `…/js/payment-action-popup.js` (signal 2: `EAPM_Popup`) | blocked |
-| 21 | A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | blocked |
+| 20 | 60F1E2DEB1B544908CDD4CF99ACA80EB | Etendo Payment Execution | 1,2 | `onchangefunction` ×2 | medium | 178 · 5.1 KB (2 files) | `modules_core/com.etendoerp.advpaymentmngt/web/com.etendoerp.advpaymentmngt/js/received_in-paid_out-onchange.js` · `…/js/payment-action-popup.js` (signal 2: `EAPM_Popup`) | migrated |
+| 21 | A5A9B914DEAF4C16B028C9D8A4F39A6F | Create Inverse document for Invoice | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `modules_core/com.smf.jobs.defaults/web/com.smf.jobs.defaults/processRecords.js` | migrated |
 | 22 | B4A21A617AD64137BF8C9A6770F65AD2 | Create Inverse document for Order | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
 | 23 | 8DF818E471394C01A6546A4AB7F5E529 | Process Orders | 1 | `on_load_function` | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁵ |
 | 24 | 33338B1F2C4F499EBA4F5547BE0B2A4E | Process Shipment | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁶ |
 | 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁷ |
-| 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | pending |
-| 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | pending |
-| 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | pending |
+| 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | blocked |
+| 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | blocked ⁸ |
+| 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | blocked |
 | 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
-| 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | pending |
+| 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
 | 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | pending |
 | 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
 | 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function` | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | pending |
-| 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | pending |
-| 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | pending |
-| 36 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | pending |
+| 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | component |
+| 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | component |
+| 36 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | component |
 | 37 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3 | hard | 1935 · 63.2 KB | `modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js` | pending |
 
 **Notes:**
@@ -365,6 +365,36 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   gated on a single-record selection). The same family capabilities already added for the ProcessOrders rows
   (`item.setValueProgrammatically()`, `item.getFirstOptionValue()`) cover the onLoad; this variant has no
   OK-button manipulation. All other `em_etmeta_*` columns left empty.
+- ⁸ **Blocked 2026-06-16** (see `client/agents/reports/C4265E27C8134096B49DFBF69369DFC6.md`). Binds
+  `OB.ProductServices.onLoad` (`on_load_function`) and `OB.ProductServices.onLoadGrid` (the "Pick/Edit
+  Lines" `ongridloadfunction`). `onLoad` exists only to install a SmartClient **per-toggle**
+  `selectionChanged` handler (`relateOrderLinesSelectionChanged(record, state)`) that writes
+  `relatedQuantity` on the **single toggled record** and rolls it back with `deselectRecord(record)` on
+  a server-price error. The new-UI chained `selectionChanged` subscriber is invoked as `fn(selection)`
+  (the full resulting selection **array**, not the `(record, state)` delta — `WindowReferenceGrid.tsx`
+  `selectionChangedSubsRef`; `scriptProxies.ts` `defineGridCallbackProp`), so the toggled record + state
+  are unavailable and the core behavior cannot be reproduced faithfully; `this.Super('selectionChanged',
+  …)` and the grid-relative `fireOnPause` per-record debounce also have no equivalent. **Independently**,
+  the cell-edit recompute (`orderLinesGridQtyOnChange`) and the range validator (`QuantityValidate`) are
+  bound on **`AD_FIELD` grid-column hooks** (`ONCHANGEFUNCTION` / `EM_OBUIAPP_VALIDATOR` on
+  `AD_FIELD_ID = 025D94512BBC49E3A941AB7114C5704E`), for which there is **no `em_etmeta_*` column**, and
+  `orderLinesGridQtyOnChange` uses `BigDecimal.multiply` (not implemented). All `em_etmeta_*` columns
+  stay EMPTY until the platform delivers a per-toggle `selectionChanged` delta and a grid-column
+  field-hook path.
+- ⁹ **Blocked 2026-06-16** (see `client/agents/reports/A832A5DA28FB4BB391BDE883E928DFC5.md`). Pure
+  **signal-3** process: in `etendodev` it has **no** classic hook columns
+  (`on_load_function`/`clientsidevalidation`/`on_refresh_function` empty), **no `em_etmeta_*`**, and
+  **zero `obuiapp_parameter` rows**; it is launched by two **button** columns (`C_Period.OpenClose`
+  `7270DE4F…`, `C_PeriodControl.Open Close` `F27047EF…`). All behavior lives in `OB.OpenClose.openClose`,
+  which opens a **bespoke `isc.OBPopup`** (`OpenClosePeriodProcessPopup`) — a hand-built `DynamicForm`
+  with one dynamic combo ("Action") seeded by an `ACTION_COMBO` round-trip to `OpenClosePeriodHandler`,
+  plus OK/Cancel `OBFormButton`s. The migration target only supports the standard parameter form or a
+  custom component from an `onLoad`-returned schema; arbitrary SmartClient widget construction is not in
+  the capability catalog, and there is **no hook surface** (no parameters, no hook columns) to attach
+  to. The two `PeriodControlStatus_Field`/`PeriodStatus_Field` grid cell renderers are `AD_FIELD.CLIENTCLASS`
+  components, out of scope (no `em_etmeta_*` channel). All `em_etmeta_*` columns stay EMPTY until the
+  platform documents a custom-component schema for an action-picker dialog (or a list parameter whose
+  value map is seeded at open), at which point a parameter would also need to be authored as metadata.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.

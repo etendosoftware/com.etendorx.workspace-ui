@@ -23,6 +23,7 @@ import { createOBShim } from "@/utils/ob/obShim";
 import type { OBShim } from "@/utils/ob/types";
 import { dispatchBuiltinAction } from "@/utils/processes/definition/actionDispatcherStore";
 import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
+import { openParameterDialog } from "@/utils/processes/definition/parameterDialogStore";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import type { MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
 
@@ -149,6 +150,15 @@ export interface ProcessScriptContext {
    * instead of using lossy `Number`. See {@link BigDecimal}.
    */
   BigDecimal: typeof BigDecimal;
+
+  /**
+   * Opens an action-time dialog hosting a parameter form built from server field
+   * descriptors (TEXT / CHECK), the new-UI equivalent of classic `isc.DynamicForm`
+   * inside `isc.OBPopup`. Resolves with the collected values, or `null` when the
+   * user cancels. Typically called from a builder registered via
+   * `OB.Utilities.Action.set(<name>, ...)` for a data-only custom response action.
+   */
+  openDynamicForm: typeof openParameterDialog;
 }
 
 /**
@@ -244,7 +254,16 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     datasource.get(entity, payload) as Promise<{ data: unknown }>;
   const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource });
 
-  return { callAction, callDatasource, callServlet, OB, ...dialogScriptApi, messageBar, BigDecimal };
+  return {
+    callAction,
+    callDatasource,
+    callServlet,
+    OB,
+    ...dialogScriptApi,
+    messageBar,
+    BigDecimal,
+    openDynamicForm: openParameterDialog,
+  };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */

@@ -710,6 +710,111 @@ export function useProcessExecution({
     [t]
   );
 
+  /**
+   * Builds the canonical `view` proxy passed as the onProcess second argument.
+   * It carries the data fields the migrated scripts read (recordIds, windowId,
+   * DocAction, …) and the full view surface (theForm, messageBar, refresh, …).
+   * Shared by the standard onProcess path and the Pick&Execute pre-submit
+   * validation hook so both expose an identical surface to the migrated script.
+   */
+  const buildOnProcessView = useCallback(
+    (actionValue?: string) => {
+      const formValues = form.getValues();
+      resolveDocAction(formValues);
+
+      const completePayload = tab ? buildProcessPayload(record || {}, tab, initialState || {}, formValues) : {};
+
+      return createViewProxy(createFormHandle(form), parameters, {
+        messageBar,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+        // Classic `actionHandlerCall()` equivalent for migrated onProcess scripts.
+        executeProcess: runStandardExecution,
+        hookData: {
+          _buttonValue: actionValue || "DONE",
+          buttonValue: actionValue || "DONE",
+          windowId: tab?.window,
+          tabId: tab?.id || tabId || "",
+          entityName: tab?.entityName,
+          recordIds: selectedRecords?.map((r) => r.id),
+          // Mirrors classic SmartClient view.onRefreshFunction so migrated
+          // scripts can refresh the modal grid/form after async actions. The
+          // parent's refresh after a nested process closes is wired through the
+          // process stack (ProcessStackHost fires the launcher's onRefreshFunction).
+          onRefreshFunction,
+          ...completePayload,
+        },
+      });
+    },
+    [
+      form,
+      resolveDocAction,
+      tab,
+      record,
+      initialState,
+      parameters,
+      messageBar,
+      fieldController,
+      viewController,
+      gridResolver,
+      viewData,
+      runStandardExecution,
+      tabId,
+      selectedRecords,
+      onRefreshFunction,
+    ]
+  );
+
+  /**
+   * Pre-submit validation hook for Pick&Execute / Window-Reference processes.
+   * For these, the Done button posts straight to the Java handler via
+   * `handleWindowReferenceExecute`, so the migrated `em_etmeta_onprocess` runs
+   * here as a client-side guard BEFORE the submit (the faithful equivalent of
+   * Classic's `clientSideValidationFail()`). The script returns
+   * `{ severity: 'error', text }` to abort the submit, or `undefined` to proceed.
+   * It must NOT call `view.executeProcess()` — the platform performs the submit.
+   *
+   * @returns `true` if the submit may proceed, `false` if validation aborted it.
+   */
+  const runPreSubmitValidation = useCallback(
+    async (actionValue?: string): Promise<boolean> => {
+      if (!etmetaOnprocess) return true;
+      const processView = buildOnProcessView(actionValue);
+      try {
+        const stringFnResult = await executeStringFunction(
+          etmetaOnprocess,
+          scriptContext,
+          button.processDefinition,
+          processView
+        );
+        const result = stringFnResult?.data ?? stringFnResult;
+        const responseMessage = extractResponseMessage(result);
+
+        if (responseMessage.msgType === "error") {
+          messageBar.setMessage("error", null, responseMessage.msgText);
+          setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
+          return false;
+        }
+        return true;
+      } catch (error) {
+        logger.warn("Error in Pick&Execute pre-submit validation:", error);
+        messageBar.setMessage("error", null, error instanceof Error ? error.message : "Unknown error");
+        return false;
+      }
+    },
+    [
+      buildOnProcessView,
+      etmetaOnprocess,
+      scriptContext,
+      button.processDefinition,
+      extractResponseMessage,
+      messageBar,
+      setResult,
+    ]
+  );
+
   const handleExecute = useCallback(
     async (actionValue?: string) => {
       const actionButton = availableButtons.find((b) => b.value === actionValue);
@@ -720,6 +825,13 @@ export function useProcessExecution({
 
       setResult(null);
       if (hasWindowReference) {
+        // Run the migrated pre-submit onProcess validation (if any) before
+        // posting to the Java handler. Previously em_etmeta_onprocess was never
+        // evaluated for P&E/Window-Reference processes (the early return below).
+        if (etmetaOnprocess && shouldRunProcessLifecycleHooks({ tab, callerField })) {
+          const canProceed = await runPreSubmitValidation(actionValue);
+          if (!canProceed) return; // message already shown; do not submit
+        }
         await handleWindowReferenceExecute(actionValue);
         return;
       }
@@ -732,37 +844,8 @@ export function useProcessExecution({
       if (!etmetaOnprocess || !shouldRunProcessLifecycleHooks({ tab, callerField })) return;
 
       startTransition(async () => {
-        const formValues = form.getValues();
-        resolveDocAction(formValues);
-
-        const completePayload = tab ? buildProcessPayload(record || {}, tab, initialState || {}, formValues) : {};
-
-        // The onProcess second argument is the canonical view: it carries the
-        // data fields the migrated scripts read (recordIds, windowId, DocAction,
-        // …) and the full view surface (theForm, messageBar, refresh, …).
-        const processView = createViewProxy(createFormHandle(form), parameters, {
-          messageBar,
-          controller: fieldController,
-          viewController,
-          gridResolver,
-          data: viewData,
-          // Classic `actionHandlerCall()` equivalent for migrated onProcess scripts.
-          executeProcess: runStandardExecution,
-          hookData: {
-            _buttonValue: actionValue || "DONE",
-            buttonValue: actionValue || "DONE",
-            windowId: tab?.window,
-            tabId: tab?.id || tabId || "",
-            entityName: tab?.entityName,
-            recordIds: selectedRecords?.map((r) => r.id),
-            // Mirrors classic SmartClient view.onRefreshFunction so migrated
-            // scripts can refresh the modal grid/form after async actions. The
-            // parent's refresh after a nested process closes is wired through the
-            // process stack (ProcessStackHost fires the launcher's onRefreshFunction).
-            onRefreshFunction,
-            ...completePayload,
-          },
-        });
+        // The onProcess second argument is the canonical view (see buildOnProcessView).
+        const processView = buildOnProcessView(actionValue);
 
         try {
           const stringFnResult = await executeStringFunction(
@@ -813,25 +896,14 @@ export function useProcessExecution({
       hasWindowReference,
       handleWindowReferenceExecute,
       handleDirectJavaProcessExecute,
-      runStandardExecution,
+      runPreSubmitValidation,
+      buildOnProcessView,
       etmetaOnprocess,
-      onRefreshFunction,
       javaClassName,
       tab,
       callerField,
-      tabId,
-      record,
-      initialState,
       button.processDefinition,
-      selectedRecords,
-      form,
-      parameters,
       scriptContext,
-      viewController,
-      viewData,
-      fieldController,
-      gridResolver,
-      resolveDocAction,
       availableButtons,
       setResult,
       setGridRefreshKey,

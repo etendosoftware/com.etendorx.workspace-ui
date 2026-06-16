@@ -72,6 +72,34 @@ describe("BigDecimal", () => {
     expect(a.toString()).toBe("5");
   });
 
+  it("multiplies exactly without mutating the operands (classic `multiply`)", () => {
+    const a = new BigDecimal("12.5");
+    const b = new BigDecimal("4");
+    const product = a.multiply(b);
+    expect(product.toString()).toBe("50");
+    expect(a.toString()).toBe("12.5");
+    expect(b.toString()).toBe("4");
+  });
+
+  it("multiply keeps decimal precision where Number would drift", () => {
+    expect(new BigDecimal("0.1").multiply(new BigDecimal("0.2")).toString()).toBe("0.02");
+  });
+
+  it("supports the classic `unitPrice.multiply(qty).setScale(2, ROUND_HALF_UP)` idiom", () => {
+    const amount = new BigDecimal("10.005").multiply(new BigDecimal("3")).setScale(2, BigDecimal.prototype.ROUND_HALF_UP);
+    expect(amount.toString()).toBe("30.02");
+  });
+
+  it("exposes ROUND_HALF_UP on the prototype (classic `BigDecimal.prototype.ROUND_HALF_UP` idiom)", () => {
+    expect(typeof BigDecimal.prototype.ROUND_HALF_UP).toBe("number");
+  });
+
+  it("setScale defaults to the same rounding when no mode is passed (back-compat)", () => {
+    expect(new BigDecimal("1.005").setScale(2).toString()).toBe(
+      new BigDecimal("1.005").setScale(2, BigDecimal.prototype.ROUND_HALF_UP).toString()
+    );
+  });
+
   it("compareTo ignores the fixed scale", () => {
     expect(new BigDecimal("0").setScale(2).compareTo(new BigDecimal("0"))).toBe(0);
     expect(new BigDecimal("5.00").setScale(2).compareTo(new BigDecimal("5"))).toBe(0);

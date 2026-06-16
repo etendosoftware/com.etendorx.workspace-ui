@@ -241,6 +241,31 @@ hardcoded handler name, guarantees the legacy context keys the handler reads, an
 exactly. Reach for `callAction` directly only when the script must call a **different** handler than the
 process's own Java class.
 
+#### 5.2.2 `onProcess` on Pick&Execute / Window-Reference processes — a pre-submit validation hook
+
+For a process whose `uipattern` is `OBUIAPP_PickAndExecute` **or** which has a Window Reference grid
+parameter (`hasWindowReference === true`), the Done button does **not** run the standard `onProcess`
+execution path: the platform posts the grid selection directly to the Java handler
+(`handleWindowReferenceExecute` in `useProcessExecution.ts`). For these processes the migrated
+`em_etmeta_onprocess` runs as a **pre-submit validation hook** — it is evaluated *before* the platform
+submits, and is the faithful equivalent of the Classic `clientSideValidationFail()` guards:
+
+```js
+async (process, view) => {
+  // …client-side validation reading the grids via view.theForm.getItem('<grid>').canvas.viewGrid…
+  if (invalid) {
+    view.messageBar.setMessage(isc.OBMessageBar.TYPE_ERROR, null, text);
+    return { severity: 'error', text };   // aborts the submit
+  }
+  // return undefined → the platform proceeds to post to the Java handler
+};
+```
+
+Rules for this case: return `{ severity: 'error', text }` (or any `error` severity) to **abort** the
+submit; return `undefined` to **proceed**. Do **not** call `view.executeProcess()` here — the platform
+performs the submit itself, so calling it would double-submit. (On non-Window-Reference processes,
+`onProcess` keeps its full Section 5.2.1 behavior, including `view.executeProcess()`.)
+
 ### 5.3 `em_etmeta_on_refresh` — process `onRefresh`
 
 - **JS key:** `etmetaOnRefresh` · **Entity:** process.
@@ -579,6 +604,25 @@ Covered by the grid proxy in Section 7.3. The same live grid handle is reached t
 reuses the grid's own handlers, so a script acts exactly as a user would. Edit-value writes overlay
 through the grid's change handler; `dataArrived`/`selectionChanged` are chained subscribers.
 
+**Cell-edit, per-toggle and per-column hooks (register from `onGridLoad`).** Beyond `selectionChanged`
+(which fires with the full selection array, `fn(selection)`), the grid handle exposes additional
+**additive** subscription points. Register them from the grid's `onGridLoad` body:
+
+| Grid method | Fires | Classic equivalent |
+|---|---|---|
+| `grid.onRecordChange((record, changes) => …)` | on every in-place cell edit | a field-level `realPaymentOnChange`-style recompute |
+| `grid.onSelectionToggle((record, state) => …)` | once per row added/removed, with the toggled record + its new boolean | the Classic `selectionChanged(record, state)` per-toggle signature |
+| `grid.setColumnOnChange('<col>', (item, view, form, grid) => …)` | when that column's cell changes; `item.getValue()` is the new value, `item.record` the row | `AD_FIELD.ONCHANGEFUNCTION` on a grid column |
+| `grid.setColumnValidator('<col>', (item, validator, value, record) => boolean)` | on edit; return `false` to reject (the edited cell reverts) | `AD_FIELD.EM_OBUIAPP_VALIDATOR` on a grid column |
+| `grid.fireOnPause(id, fn, ms)` | trailing-debounced run (per `id`) | the Classic `this.fireOnPause` reachable on the grid `this` |
+
+Notes: `onSelectionToggle` is computed by diffing the previous vs current selection — it complements,
+and does not replace, the full-array `selectionChanged` subscriber. A `setColumnOnChange` body may call
+`grid.setEditValue(...)`; the platform guards against re-entrancy so a recompute that writes sibling
+columns does not loop. There is **no** new DB column for the per-column hooks — they are registered at
+runtime from the existing `onGridLoad` body. `grid.getEditedCell(...)` accepts either a row index or a
+record, and either a column name (string) or a Classic field object.
+
 **Grid visibility.** A Classic process can hide/show the whole grid widget
 (`item.theForm.getField('<grid>').canvas.viewGrid.hide()` / `.show()`) — e.g. to keep a results grid
 hidden until a search runs. The new UI supports this on the grid proxy as `viewGrid.hide()` /
@@ -692,15 +736,53 @@ global namespace — each process owns its module scope (see the cloning rule in
   OB.Utilities.Number.JSToOBMasked(total, OB.Format.defaultNumericMask, …); // formats directly
   ```
 
-  Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`, `add`,
-  `subtract`, `compareTo` (`-1 | 0 | 1`), `setScale(scale)`, `toString()`, `toNumber()`.
-  `setScale(scale)` mirrors the Classic `BigDecimal.setScale(scale)`: it returns a **new** instance
-  with a fixed decimal scale (rounding `ROUND_HALF_UP`; for ≤2-decimal money nothing is discarded, so
-  it only zero-pads) whose `toString()` renders exactly that many decimals (`"5"` → `"5.00"`) — needed
-  for parity when the result is displayed by concatenation. `multiply`/`divide` are **not** provided
-  yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be deterministic, so
-  they will be added with those semantics when a process needs them. `JSToOBMasked` accepts a
-  `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
+  Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`,
+  `prototype.ROUND_HALF_UP`, `add`, `subtract`, `multiply`, `compareTo` (`-1 | 0 | 1`),
+  `setScale(scale, roundingMode?)`, `toString()`, `toNumber()`. `multiply(other)` is exact (Java
+  `BigDecimal.multiply` carries no scale/rounding; re-apply `setScale` afterwards), e.g.
+  `unitPrice.multiply(qty).setScale(2, BigDecimal.prototype.ROUND_HALF_UP)`. `setScale(scale)` mirrors
+  the Classic `BigDecimal.setScale(scale)`: it returns a **new** instance with a fixed decimal scale
+  whose `toString()` renders exactly that many decimals (`"5"` → `"5.00"`); the optional second argument
+  accepts the Classic `BigDecimal.prototype.ROUND_HALF_UP` rounding mode and defaults to it. `divide` is
+  **not** provided yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be
+  deterministic, so it will be added with those semantics when a process needs it. `JSToOBMasked` accepts
+  a `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
+
+### 8.12 Action-time dynamic parameter form — `openDynamicForm`
+
+- **Classic:** a backend response action returns field descriptors and the client builds a popup form
+  at runtime (`isc.defineClass(..., isc.OBPopup)` + `isc.DynamicForm.create({ fields })` + `isc.OBFormButton`),
+  collects the values, and POSTs them to a second handler.
+- **New UI:** `openDynamicForm({ title?, fields })` opens a dialog hosting a parameter form built from
+  the server field descriptors, reusing the standard parameter selectors (no SmartClient primitives). It
+  returns a `Promise<CollectedValue[] | null>` — the collected values, or `null` when the user cancels.
+  `fields` are `{ name, inputType: 'TEXT' | 'CHECK', defaultText?, defaultCheck?, id? }`. It is injected
+  as a top-level global (Section 7.1) and also exposed as `view.openDynamicForm(...)`.
+- **Data-only custom response actions.** A backend `responseActions` entry with a custom key (e.g.
+  `EAPM_Popup`) carrying field descriptors is dispatched **registry-first** through
+  `OB.Utilities.Action.executeJSON` (Section 8.9). Register a builder for it from
+  `em_etmeta_payscript_logic` (module scope), which opens the form and submits the result:
+
+  ```js
+  // @module-scope
+  OB.Utilities.Action.set('EAPM_Popup', async function (actionData) {
+    const collected = await openDynamicForm({ title: actionData.executionProcessName, fields: actionData.processParameters });
+    if (!collected) return;                       // cancelled → no-op
+    OB.RemoteCallManager.call('<SecondActionHandler>', { _params: actionData, processParameters: collected }, {},
+      function (rpcResponse, data) {
+        if (data && data.success) {
+          OB.Utilities.Action.executeJSON([{ refreshGrid: {} }]);
+          messageBar.setMessage('success', null, data.message);
+        } else {
+          messageBar.setMessage('error', null, (data && data.error) || 'Error');
+        }
+      });
+  });
+  ```
+
+  Only `TEXT` / `CHECK` field types are rendered today (what the Classic popup emits); richer types are
+  an additive extension. No change to the response-action dispatcher is required — an unregistered custom
+  key is still dropped exactly as before.
 
 ---
 
@@ -743,6 +825,17 @@ This section is the operational guide for translating one Classic `.js` file int
 | `function onProcess(view) { … }` | `em_etmeta_onprocess`: `async (process, view) => { … }` |
 | `onProcess(view, actionHandlerCall, …)` → `actionHandlerCall()` | `return await view.executeProcess()` (Section 5.2.1) — platform builds the standard payload + submits to the configured Java class |
 | `onProcess(…, …, clientSideValidationFail)` → `clientSideValidationFail()` | `return { severity: 'error', text }` (aborts; modal stays open) |
+| `clientsidevalidation` on a Pick&Execute / Window-Reference process | `em_etmeta_onprocess` as a **pre-submit hook** (Section 5.2.2): `return { severity: 'error', text }` to abort, `undefined` to proceed; do **not** call `view.executeProcess()` |
+| `grid.selectionChanged = function(record, state) { … }` (per-toggle) | `grid.onSelectionToggle((record, state) => …)` registered from `onGridLoad` (Section 8.5) |
+| `this.fireOnPause(id, fn, ms)` (on the grid) | `grid.fireOnPause(id, fn, ms)` (Section 8.5) |
+| `AD_FIELD.ONCHANGEFUNCTION` on a grid column | `grid.setColumnOnChange('<col>', (item, view, form, grid) => …)` from `onGridLoad` (Section 8.5) |
+| `AD_FIELD.EM_OBUIAPP_VALIDATOR` on a grid column | `grid.setColumnValidator('<col>', (item, validator, value, record) => boolean)` from `onGridLoad` (Section 8.5) |
+| field-level cell `onchangefunction` recompute (e.g. `realPaymentOnChange`) | `grid.onRecordChange((record, changes) => …)` from `onGridLoad` (Section 8.5) |
+| `grid.pneSelectedRecords[i].x = …` (staging edited amounts) | drop — the edit is already merged; recompute from `grid.getSelectedRecords()` + the `changes` arg |
+| `unitPrice.multiply(qty)` / `.setScale(2, BigDecimal.prototype.ROUND_HALF_UP)` | identical — `multiply` is exact; `setScale` accepts the rounding mode (Section 8.11) |
+| `view.parentWindow.activeView.getContextInfo(...)` (+ `.parentView` fallback) | identical — both alias the single context, which carries `inpTabId` (Section 7.2) |
+| `grid.getEditedCell(record, fieldObject)` / `(rowIndex, fieldObject)` | identical — `getEditedCell` accepts a record or index, and a column name or field object |
+| backend custom popup action (`isc.DynamicForm` in `isc.OBPopup`) | register a builder via `OB.Utilities.Action.set('<key>', …)` calling `openDynamicForm({ fields })` (Section 8.12) |
 | `function onRefresh(view) { … }` | `em_etmeta_on_refresh`: `(view) => { … }`; call via `view.onRefreshFunction(view)` |
 | `onchangefunction(item, view, form, grid)` | `em_etmeta_on_parameter_change`: `(item, view, form, grid) => { … }` |
 | `ongridloadfunction(grid, view, parameters)` | `em_etmeta_on_grid_load`: `(grid, view, parameters) => { … }` |

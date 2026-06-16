@@ -30,6 +30,7 @@ import type { FieldValues, UseFormReturn, UseFormSetValue } from "react-hook-for
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { isNumericReference } from "@/utils/form/constants";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
+import { openParameterDialog } from "./parameterDialogStore";
 import type { DynamicParameter } from "./utils";
 
 // ---------------------------------------------------------------------------
@@ -205,7 +206,8 @@ export interface GridController {
   // Edit values (overlay merged into the loaded rows)
   setEditValue: (rowIndex: number, colName: string, value: unknown) => void;
   getEditValues: (rowIndex: number) => Record<string, unknown>;
-  getEditedCell: (rowIndex: number, colName: string) => unknown;
+  // Classic callers pass either a row index or a record, and either a column name or a field object.
+  getEditedCell: (row: number | EntityData, col: string | Record<string, unknown>) => unknown;
   // Data / lifecycle
   invalidateCache: () => void;
   fetchData: (criteria?: unknown) => void;
@@ -219,7 +221,19 @@ export interface GridController {
   // Lifecycle callbacks (chained: every subscriber is kept and fired)
   onDataArrived: (fn: (rows: EntityData[]) => void) => void;
   onSelectionChanged: (fn: (selection: EntityData[]) => void) => void;
+  /** Per-cell edit callback (classic `realPaymentOnChange` family); fired on every cell edit. */
+  onRecordChange: (fn: (record: EntityData, changes: Record<string, unknown>) => void) => void;
+  /** Per-toggle selection delta (classic `selectionChanged(record, state)` shape). */
+  onSelectionToggle: (fn: (record: EntityData, state: boolean) => void) => void;
+  // Per-column field hooks (classic AD_FIELD `ONCHANGEFUNCTION` / `EM_OBUIAPP_VALIDATOR`)
+  setColumnOnChange: (colName: string, fn: ColumnOnChange) => void;
+  setColumnValidator: (colName: string, fn: ColumnValidator) => void;
 }
+
+/** Classic per-grid-column onChange (`AD_FIELD.ONCHANGEFUNCTION`): `fn(item, view, form, grid)`. */
+export type ColumnOnChange = (item: ItemProxy, view: ViewProxy, form: FormProxy, grid: GridProxy) => void;
+/** Classic per-grid-column validator (`AD_FIELD.EM_OBUIAPP_VALIDATOR`): returns `false` to reject. */
+export type ColumnValidator = (item: ItemProxy, validator: unknown, value: unknown, record: EntityData) => boolean;
 
 /** Resolves the live `GridController` for a parameter name (undefined when none). */
 export type GridResolver = (paramName: string) => GridController | undefined;
@@ -296,7 +310,7 @@ export interface GridProxy extends Record<string, unknown> {
   userSelectAllRecords?: () => void;
   setEditValue?: (rowIndex: number, colName: string, value: unknown) => void;
   getEditValues?: (rowIndex: number) => Record<string, unknown>;
-  getEditedCell?: (rowIndex: number, colName: string) => unknown;
+  getEditedCell?: (row: number | EntityData, col: string | Record<string, unknown>) => unknown;
   invalidateCache?: () => void;
   fetchData?: (criteria?: unknown) => void;
   getCriteria?: () => unknown;
@@ -305,6 +319,15 @@ export interface GridProxy extends Record<string, unknown> {
   /** Registers a per-row renderer; `setRecordComponent` is a classic-vocabulary alias. */
   setRowActions?: (renderer: RowActionRenderer) => void;
   setRecordComponent?: (renderer: RowActionRenderer) => void;
+  /** Registers a per-cell edit subscriber; live only when a `GridController` backs the proxy. */
+  onRecordChange?: (fn: (record: EntityData, changes: Record<string, unknown>) => void) => void;
+  /** Registers a per-toggle selection-delta subscriber; live only with a controller. */
+  onSelectionToggle?: (fn: (record: EntityData, state: boolean) => void) => void;
+  /** Registers a per-column onChange / validator (classic AD_FIELD hooks); live with a controller. */
+  setColumnOnChange?: (colName: string, fn: ColumnOnChange) => void;
+  setColumnValidator?: (colName: string, fn: ColumnValidator) => void;
+  /** Grid-relative debounce (classic `this.fireOnPause` on the grid); delegates to the view. */
+  fireOnPause?: (id: string, fn: () => void, delay: number) => void;
   /** Grid-parameter visibility; live only when visibility hooks are supplied. */
   show?: () => void;
   hide?: () => void;
@@ -356,6 +379,12 @@ export interface ViewProxy extends Record<string, unknown> {
    * `onProcess` path); deferred (throwing) otherwise.
    */
   executeProcess?: (actionValue?: string) => Promise<unknown>;
+  /**
+   * Opens an action-time dynamic parameter-form dialog (classic `isc.DynamicForm`
+   * inside `isc.OBPopup`); resolves with the collected values or `null` on cancel.
+   * Always live (no controller dependency).
+   */
+  openDynamicForm?: typeof openParameterDialog;
 }
 
 /** Optional extras for the grid-cell variant of the onChange hook. */
@@ -450,6 +479,11 @@ const DEFERRED_GRID_METHODS = [
   "getFieldByColumnName",
   "setRowActions",
   "setRecordComponent",
+  "onRecordChange",
+  "onSelectionToggle",
+  "setColumnOnChange",
+  "setColumnValidator",
+  "fireOnPause",
 ] as const;
 
 /**
@@ -476,13 +510,18 @@ const LIVE_GRID_METHODS: readonly string[] = [
   "getFieldByColumnName",
   "setRowActions",
   "setRecordComponent",
+  "onRecordChange",
+  "onSelectionToggle",
+  "setColumnOnChange",
+  "setColumnValidator",
+  "fireOnPause",
 ];
 
 /** Deferred set that remains when a controller IS present (single source of truth). */
 const DEFERRED_GRID_METHODS_WITH_CONTROLLER = DEFERRED_GRID_METHODS.filter((m) => !LIVE_GRID_METHODS.includes(m));
 
 /** Classic grid lifecycle callbacks assigned as properties (`grid.dataArrived = fn`). */
-const GRID_CALLBACK_PROPS = ["dataArrived", "selectionChanged"] as const;
+const GRID_CALLBACK_PROPS = ["dataArrived", "selectionChanged", "recordChange"] as const;
 
 /** Grid visibility methods; deferred (throwing) unless visibility hooks are supplied. */
 const GRID_VISIBILITY_METHODS = ["show", "hide"] as const;
@@ -839,6 +878,10 @@ function assignLiveGridMethods(grid: GridProxy, controller: GridController): voi
   grid.getFieldByColumnName = (colName) => controller.getFieldByColumnName(colName);
   grid.setRowActions = (renderer) => controller.setRowActions(renderer);
   grid.setRecordComponent = (renderer) => controller.setRowActions(renderer);
+  grid.onRecordChange = (fn) => controller.onRecordChange(fn);
+  grid.onSelectionToggle = (fn) => controller.onSelectionToggle(fn);
+  grid.setColumnOnChange = (colName, fn) => controller.setColumnOnChange(colName, fn);
+  grid.setColumnValidator = (colName, fn) => controller.setColumnValidator(colName, fn);
   Object.defineProperty(grid, "data", {
     get: () => {
       const rows = controller.getRows();
@@ -853,9 +896,9 @@ function assignLiveGridMethods(grid: GridProxy, controller: GridController): voi
 function defineGridCallbackProp(
   grid: GridProxy,
   name: string,
-  register: (fn: (rows: EntityData[]) => void) => void
+  register: (fn: (...args: never[]) => void) => void
 ): void {
-  let last: ((rows: EntityData[]) => void) | undefined;
+  let last: ((...args: never[]) => void) | undefined;
   Object.defineProperty(grid, name, {
     get: () => last,
     set: (fn) => {
@@ -869,8 +912,21 @@ function defineGridCallbackProp(
 
 /** Wires the classic lifecycle callback properties to the controller's subscriber sinks. */
 function assignGridCallbacks(grid: GridProxy, controller: GridController): void {
-  defineGridCallbackProp(grid, GRID_CALLBACK_PROPS[0], controller.onDataArrived);
-  defineGridCallbackProp(grid, GRID_CALLBACK_PROPS[1], controller.onSelectionChanged);
+  defineGridCallbackProp(
+    grid,
+    GRID_CALLBACK_PROPS[0],
+    controller.onDataArrived as (fn: (...args: never[]) => void) => void
+  );
+  defineGridCallbackProp(
+    grid,
+    GRID_CALLBACK_PROPS[1],
+    controller.onSelectionChanged as (fn: (...args: never[]) => void) => void
+  );
+  defineGridCallbackProp(
+    grid,
+    GRID_CALLBACK_PROPS[2],
+    controller.onRecordChange as (fn: (...args: never[]) => void) => void
+  );
 }
 
 /**
@@ -883,6 +939,24 @@ export function buildGridVisibility(controller: FieldController, paramName: stri
   return {
     show: () => controller.setDisplayed(paramName, true),
     hide: () => controller.setDisplayed(paramName, false),
+  };
+}
+
+/**
+ * Assigns the grid-relative `fireOnPause` (classic `this.fireOnPause` where `this`
+ * is the grid). It delegates to the view's debouncer, read lazily from `grid.view`
+ * (set by `WindowReferenceGrid` after the proxy is built), so the single shared
+ * timer map and its cleanup are reused. Falls back to running immediately when no
+ * debouncer is wired.
+ */
+function assignGridFireOnPause(grid: GridProxy): void {
+  grid.fireOnPause = (id, fn, delay) => {
+    const view = grid.view as ViewProxy | undefined;
+    if (view?.fireOnPause) {
+      view.fireOnPause(id, fn, delay);
+    } else {
+      fn();
+    }
   };
 }
 
@@ -915,6 +989,7 @@ export function createGridProxy(state: GridState, controller?: GridController, v
     assignLiveGridMethods(gridProxy, controller);
     assignGridCallbacks(gridProxy, controller);
     assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS_WITH_CONTROLLER);
+    assignGridFireOnPause(gridProxy);
   } else {
     assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS);
   }
@@ -932,11 +1007,12 @@ function buildParentWindow(
   parentWindow: unknown,
   parentView: Pick<ViewProxy, "getContextInfo" | "getView">
 ): Record<string, unknown> {
-  const view = { getContextInfo: parentView.getContextInfo, getView: parentView.getView };
-  if (parentWindow && typeof parentWindow === "object") {
-    return { ...(parentWindow as Record<string, unknown>), view };
-  }
-  return { view };
+  const accessors = { getContextInfo: parentView.getContextInfo, getView: parentView.getView };
+  // Classic two-tier fallback `parentWindow.activeView[.parentView].getContextInfo(...)`. The new UI
+  // keeps a single context, so activeView and its parentView alias the same accessors.
+  const activeView = { ...accessors, parentView: { ...accessors } };
+  const base = parentWindow && typeof parentWindow === "object" ? (parentWindow as Record<string, unknown>) : {};
+  return { ...base, view: accessors, activeView };
 }
 
 /** Read-only environment data and the always-live context accessors. */
@@ -945,8 +1021,13 @@ function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void
   view.callerField = data.callerField;
   view.sourceView = data.sourceView;
   view.activeView = { tabId: data.activeTabId };
-  // Context map = parent record fields overlaid with the current parameter values.
-  view.getContextInfo = () => ({ ...(data.parentRecord ?? {}), ...(form.getValues() as Record<string, unknown>) });
+  // Context map = the launching tab id (so classic `contextInfo.inpTabId` resolves), overlaid with
+  // the parent record fields and the current parameter values (real values win over the default).
+  view.getContextInfo = () => ({
+    inpTabId: data.activeTabId,
+    ...(data.parentRecord ?? {}),
+    ...(form.getValues() as Record<string, unknown>),
+  });
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.
   view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? view : { tabId });
@@ -1057,5 +1138,7 @@ export function createViewProxy(
   } else {
     assignDeferred(view, "view", EXECUTE_PROCESS_METHOD);
   }
+  // Always-live (no controller dependency): opens an action-time dynamic parameter form.
+  view.openDynamicForm = openParameterDialog;
   return view;
 }

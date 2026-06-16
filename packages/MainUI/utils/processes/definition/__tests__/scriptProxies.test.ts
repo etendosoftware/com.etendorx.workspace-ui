@@ -100,6 +100,10 @@ const makeGridController = (overrides: Partial<GridController> = {}): GridContro
   setRowActions: jest.fn(),
   onDataArrived: jest.fn(),
   onSelectionChanged: jest.fn(),
+  onRecordChange: jest.fn(),
+  onSelectionToggle: jest.fn(),
+  setColumnOnChange: jest.fn(),
+  setColumnValidator: jest.fn(),
   ...overrides,
 });
 
@@ -314,6 +318,48 @@ describe("scriptProxies", () => {
       expect(visibility.show).toHaveBeenCalledTimes(1);
       expect(visibility.hide).toHaveBeenCalledTimes(1);
     });
+
+    it("delegates the new cell/column hooks to the controller (live)", () => {
+      const controller = makeGridController();
+      const grid = createGridProxy(state, controller);
+      const recordFn = jest.fn();
+      const toggleFn = jest.fn();
+      const onChange = jest.fn();
+      const validator = jest.fn();
+      grid.onRecordChange?.(recordFn);
+      grid.onSelectionToggle?.(toggleFn);
+      grid.setColumnOnChange?.("quantity", onChange);
+      grid.setColumnValidator?.("quantity", validator);
+      expect(controller.onRecordChange).toHaveBeenCalledWith(recordFn);
+      expect(controller.onSelectionToggle).toHaveBeenCalledWith(toggleFn);
+      expect(controller.setColumnOnChange).toHaveBeenCalledWith("quantity", onChange);
+      expect(controller.setColumnValidator).toHaveBeenCalledWith("quantity", validator);
+    });
+
+    it("defers the new cell/column hooks without a controller", () => {
+      const grid = createGridProxy(state);
+      expect(() => (grid.onRecordChange as () => void)()).toThrow("grid.onRecordChange is not implemented yet");
+      expect(() => (grid.onSelectionToggle as () => void)()).toThrow("grid.onSelectionToggle is not implemented yet");
+      expect(() => (grid.setColumnOnChange as () => void)()).toThrow("grid.setColumnOnChange is not implemented yet");
+      expect(() => (grid.fireOnPause as () => void)()).toThrow("grid.fireOnPause is not implemented yet");
+    });
+
+    it("grid.fireOnPause delegates to the view debouncer, or runs immediately when none is wired", () => {
+      const controller = makeGridController();
+      const grid = createGridProxy(state, controller);
+      const fn = jest.fn();
+      // No grid.view wired yet → runs immediately (fallback).
+      grid.fireOnPause?.("k", fn, 50);
+      expect(fn).toHaveBeenCalledTimes(1);
+
+      // With a view exposing fireOnPause, it delegates instead of running.
+      const fireOnPause = jest.fn();
+      grid.view = { fireOnPause };
+      const fn2 = jest.fn();
+      grid.fireOnPause?.("k", fn2, 50);
+      expect(fireOnPause).toHaveBeenCalledWith("k", fn2, 50);
+      expect(fn2).not.toHaveBeenCalled();
+    });
   });
 
   describe("createViewProxy", () => {
@@ -352,8 +398,8 @@ describe("scriptProxies", () => {
       expect(view.windowId).toBe("W-1");
       expect(view.callerField?.record).toEqual(row("rec-1"));
       expect(view.activeView?.tabId).toBe("T-1");
-      // Context = parent record overlaid with the live parameter values.
-      expect(view.getContextInfo()).toEqual({ docStatus: "DR", amount: 7 });
+      // Context = the launching tab id + parent record overlaid with the live parameter values.
+      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
       // getView returns this view for the active tab, a minimal handle otherwise.
       expect(view.getView("T-1")).toBe(view);
       expect(view.getView("OTHER")).toEqual({ tabId: "OTHER" });
@@ -371,7 +417,7 @@ describe("scriptProxies", () => {
 
       // Classic idiom `view.parentWindow.view.getContextInfo()` resolves to the same context.
       expect(parentWindow.view.getContextInfo()).toEqual(view.getContextInfo());
-      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "DR", amount: 7 });
+      expect(parentWindow.view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
       expect(parentWindow.view.getView("T-1")).toBe(view);
       // The original parentWindow data is preserved alongside the injected `view` handle.
       expect(parentWindow.tabTitle).toBe("Business Partner");
@@ -386,6 +432,25 @@ describe("scriptProxies", () => {
       const parentWindow = view.parentWindow as { view: ViewProxy };
 
       expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7 });
+    });
+
+    it("exposes the classic two-tier parentWindow.activeView[.parentView].getContextInfo fallback", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const data: ViewData = { activeTabId: "T-9", parentRecord: { docStatus: "DR" } };
+      const view = createViewProxy(handle, PARAMETERS, { messageBar, data });
+      const parentWindow = view.parentWindow as {
+        activeView: { getContextInfo: () => Record<string, unknown>; parentView: { getContextInfo: () => Record<string, unknown> } };
+      };
+
+      const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7 };
+      expect(parentWindow.activeView.getContextInfo()).toEqual(expected);
+      expect(parentWindow.activeView.parentView.getContextInfo()).toEqual(expected);
+    });
+
+    it("exposes an always-live view.openDynamicForm regardless of controller", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar });
+      expect(typeof view.openDynamicForm).toBe("function");
     });
 
     it("delegates the action methods to the viewController", () => {

@@ -88,15 +88,21 @@ import { logger } from "@/utils/logger";
 import {
   buildGridVisibility,
   createGridProxy,
+  createItemProxy,
   createViewProxy,
   ICON_PRESET,
 } from "@/utils/processes/definition/scriptProxies";
 import type {
+  ColumnOnChange,
+  ColumnValidator,
+  FormHandle,
   GridController,
+  GridProxy,
   RowActionButton,
   RowActionContext,
   RowActionDescriptor,
   RowActionRenderer,
+  ViewProxy,
 } from "@/utils/processes/definition/scriptProxies";
 
 const MAX_WIDTH = 100;
@@ -1245,11 +1251,21 @@ export interface EmbeddedGridApi {
  * edit and refetch all reuse the grid's existing handlers, so script mutations
  * follow the exact same path as user interactions.
  */
+/** Resolves a column name from either a string or a classic field object. */
+function resolveColName(col: string | Record<string, unknown>): string {
+  if (typeof col === "string") return col;
+  return String(col?.columnName ?? col?.hqlName ?? col?.inputName ?? col?.name ?? "");
+}
+
 export function createEmbeddedGridController(
   getApi: () => EmbeddedGridApi,
   getSelected: () => EntityData[],
   dataArrivedSubs: Array<(rows: EntityData[]) => void>,
-  selectionChangedSubs: Array<(selection: EntityData[]) => void>
+  selectionChangedSubs: Array<(selection: EntityData[]) => void>,
+  recordChangeSubs: Array<(record: EntityData, changes: Record<string, unknown>) => void>,
+  selectionToggleSubs: Array<(record: EntityData, state: boolean) => void>,
+  columnOnChange: Map<string, ColumnOnChange>,
+  columnValidator: Map<string, ColumnValidator>
 ): GridController {
   const rows = () => getApi().rows;
   const setSelectedById = (id: string, isSelected: boolean) =>
@@ -1284,7 +1300,11 @@ export function createEmbeddedGridController(
       if (record) getApi().handleRecordChange(record, { [colName]: value });
     },
     getEditValues: (rowIndex) => (rows()[rowIndex] as Record<string, unknown>) ?? {},
-    getEditedCell: (rowIndex, colName) => (rows()[rowIndex] as Record<string, unknown>)?.[colName],
+    getEditedCell: (row, col) => {
+      const index =
+        typeof row === "number" ? row : rows().findIndex((r) => String(r.id) === String((row as EntityData)?.id));
+      return (rows()[index] as Record<string, unknown>)?.[resolveColName(col)];
+    },
     invalidateCache: () => {
       getApi().refetch?.();
     },
@@ -1308,6 +1328,18 @@ export function createEmbeddedGridController(
     },
     onSelectionChanged: (fn) => {
       if (!selectionChangedSubs.includes(fn)) selectionChangedSubs.push(fn);
+    },
+    onRecordChange: (fn) => {
+      if (!recordChangeSubs.includes(fn)) recordChangeSubs.push(fn);
+    },
+    onSelectionToggle: (fn) => {
+      if (!selectionToggleSubs.includes(fn)) selectionToggleSubs.push(fn);
+    },
+    setColumnOnChange: (colName, fn) => {
+      columnOnChange.set(colName, fn);
+    },
+    setColumnValidator: (colName, fn) => {
+      columnValidator.set(colName, fn);
     },
   };
 }
@@ -2088,6 +2120,18 @@ const WindowReferenceGrid = ({
   const gridControllerRef = useRef<GridController | null>(null);
   const dataArrivedSubsRef = useRef<Array<(rows: EntityData[]) => void>>([]);
   const selectionChangedSubsRef = useRef<Array<(selection: EntityData[]) => void>>([]);
+  // Per-cell edit subscribers (grid.onRecordChange) and per-toggle selection-delta
+  // subscribers (grid.onSelectionToggle); both additive and empty unless a migrated
+  // script registers into them. Column hooks back grid.setColumnOnChange/Validator.
+  const recordChangeSubsRef = useRef<Array<(record: EntityData, changes: Record<string, unknown>) => void>>([]);
+  const selectionToggleSubsRef = useRef<Array<(record: EntityData, state: boolean) => void>>([]);
+  const columnOnChangeRef = useRef<Map<string, ColumnOnChange>>(new Map());
+  const columnValidatorRef = useRef<Map<string, ColumnValidator>>(new Map());
+  // Ids selected as of the last selectionChanged fire, for the onSelectionToggle diff.
+  const prevSelectionIdsRef = useRef<Set<string>>(new Set());
+  // Guards against the infinite loop when a column onChange calls grid.setEditValue
+  // (which re-enters handleRecordChange and would re-dispatch the column hooks).
+  const inColumnOnChangeRef = useRef(false);
 
   // Per-row component plugin: a migrated script registers a renderer via
   // `grid.setRowActions(...)`. The renderer lives in a ref (replacing it needs
@@ -2557,6 +2601,122 @@ const WindowReferenceGrid = ({
     rowSelectionRef.current = rowSelection;
   }, [localRecords, rowSelection]);
 
+  // Builds the {grid, view} script proxies used by the cell-edit hooks, reusing
+  // the same construction as the onGridLoad effect (the grid reads live state via
+  // the controller; `grid.view` wires the view-level fireOnPause/context). Returns
+  // null when the form handle isn't available (read-only / test contexts).
+  const buildCellHookProxies = useCallback((): { grid: GridProxy; view: ViewProxy } | null => {
+    if (!gridLoadFormHandle || !messageBar) return null;
+    const grid = createGridProxy(
+      { rows: localRecordsRef.current, selectedRecords: Array.from(persistentSelectionRef.current.values()) },
+      gridControllerRef.current ?? undefined,
+      fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+    );
+    const view = createViewProxy(gridLoadFormHandle, parameters, {
+      messageBar,
+      grid,
+      controller: fieldController,
+      viewController,
+      gridResolver,
+      data: viewData,
+    });
+    grid.view = view;
+    return { grid, view };
+  }, [
+    gridLoadFormHandle,
+    messageBar,
+    parameters,
+    parameter.name,
+    viewController,
+    viewData,
+    fieldController,
+    gridResolver,
+  ]);
+
+  // Grid-cell variant of the item proxy passed to a per-column onChange / validator:
+  // `getValue`/`record` point at the edited row's cell, `grid`/`view` are wired.
+  const buildColumnItemProxy = useCallback(
+    (formHandle: FormHandle, rowData: Record<string, unknown>, colName: string, grid: GridProxy, view: ViewProxy) => {
+      const item = createItemProxy(formHandle, colName, { columnName: colName }, fieldController, gridResolver);
+      item.getValue = () => rowData?.[colName];
+      item.record = rowData;
+      item.grid = grid;
+      item.view = view;
+      return item;
+    },
+    [fieldController, gridResolver]
+  );
+
+  // Runs registered per-column validators on the changed columns. On rejection it
+  // reverts the edited cell to its prior value (the script already showed its own
+  // message) and returns true so the caller aborts the change — the faithful
+  // equivalent of a classic validator returning false.
+  const rejectByColumnValidator = useCallback(
+    (row: any, mergedChanges: Record<string, unknown>, records: EntityData[]): boolean => {
+      const proxies = buildCellHookProxies();
+      if (!proxies || !gridLoadFormHandle) return false;
+      const { grid, view } = proxies;
+      const rowData = (row.original ?? row) as Record<string, unknown>;
+      let rejected = false;
+      for (const colName of Object.keys(mergedChanges ?? {})) {
+        const validator = columnValidatorRef.current.get(colName);
+        if (!validator) continue;
+        const item = buildColumnItemProxy(gridLoadFormHandle, rowData, colName, grid, view);
+        if (validator(item, undefined, rowData[colName], rowData as EntityData) === false) {
+          const prior = records.find((r) => String(r.id) === String(row.id)) as Record<string, unknown> | undefined;
+          if (prior && colName in prior) rowData[colName] = prior[colName];
+          rejected = true;
+        }
+      }
+      if (rejected) setSiblingPatchVersion((v) => v + 1);
+      return rejected;
+    },
+    [buildCellHookProxies, buildColumnItemProxy, gridLoadFormHandle]
+  );
+
+  // Fires the cell-edit hooks on every real edit (both create-rows and existing
+  // rows): script `grid.onRecordChange` subscribers, then per-column onChange
+  // handlers. No-op unless a migrated script registered any. The re-entrancy guard
+  // stops a column onChange that calls `grid.setEditValue` from looping forever.
+  const fireCellEditHooks = useCallback(
+    (row: any, mergedChanges: Record<string, unknown>): void => {
+      const hasSubs = recordChangeSubsRef.current.length > 0;
+      const hasColumnOnChange = columnOnChangeRef.current.size > 0;
+      if ((!hasSubs && !hasColumnOnChange) || inColumnOnChangeRef.current) return;
+      const proxies = buildCellHookProxies();
+      if (!proxies || !gridLoadFormHandle) return;
+      const { grid, view } = proxies;
+      const rowData = (row.original ?? row) as Record<string, unknown>;
+      const changes = (mergedChanges ?? {}) as Record<string, unknown>;
+
+      for (const fn of recordChangeSubsRef.current) {
+        try {
+          fn(row as EntityData, changes);
+        } catch (error) {
+          logger.error("[WindowReferenceGrid] onRecordChange subscriber failed", error);
+        }
+      }
+
+      if (!hasColumnOnChange) return;
+      inColumnOnChangeRef.current = true;
+      try {
+        for (const colName of Object.keys(changes)) {
+          const onChange = columnOnChangeRef.current.get(colName);
+          if (!onChange) continue;
+          const item = buildColumnItemProxy(gridLoadFormHandle, rowData, colName, grid, view);
+          try {
+            onChange(item, view, view.theForm, grid);
+          } catch (error) {
+            logger.error("[WindowReferenceGrid] column onChange failed", error);
+          }
+        }
+      } finally {
+        inColumnOnChangeRef.current = false;
+      }
+    },
+    [buildCellHookProxies, buildColumnItemProxy, gridLoadFormHandle]
+  );
+
   // Stable handler using refs
   const handleRecordChange = useCallback(
     (row: any, changes: any) => {
@@ -2579,39 +2739,49 @@ const WindowReferenceGrid = ({
         setSiblingPatchVersion((v) => v + 1);
       }
 
+      // Per-column validator gate (classic AD_FIELD validator). Only when a script
+      // registered validators and we're not in a column-onChange re-entry. On
+      // reject the edited cell is reverted and the change is aborted.
+      if (!inColumnOnChangeRef.current && columnValidatorRef.current.size > 0) {
+        if (rejectByColumnValidator(row, mergedChanges, records)) return;
+      }
+
       // For rows not yet in localRecords (typical create-row case), the
       // row.original / _valuesCache mutation plus the version bump above are
-      // the entire effect. The setLocalRecords + onSelectionChange paths below
-      // operate on existing rows only, so we stop here.
-      if (!records.some((r) => String(r.id) === String(row.id))) {
-        return;
+      // the entire state effect. The setLocalRecords + onSelectionChange paths
+      // operate on existing rows only, so we skip them for create-rows but still
+      // fire the cell-edit hooks below.
+      if (records.some((r) => String(r.id) === String(row.id))) {
+        // Update state (trigger re-render)
+        setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...mergedChanges } : r)));
+
+        // Update selection if selected (read from ref)
+        if (selection[row.id]) {
+          onSelectionChange((prev: GridSelectionStructure) => {
+            const currentSelection = prev[parameter.dBColumnName]?._selection || [];
+            const updatedSelection = currentSelection.map((item) =>
+              String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
+            );
+            return {
+              ...prev,
+              [parameter.dBColumnName]: {
+                ...prev[parameter.dBColumnName],
+                _selection: updatedSelection,
+                _allRows:
+                  prev[parameter.dBColumnName]?._allRows?.map((item) =>
+                    String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
+                  ) || [],
+              },
+            };
+          });
+        }
       }
 
-      // Update state (trigger re-render)
-      setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...mergedChanges } : r)));
-
-      // Update selection if selected (read from ref)
-      if (selection[row.id]) {
-        onSelectionChange((prev: GridSelectionStructure) => {
-          const currentSelection = prev[parameter.dBColumnName]?._selection || [];
-          const updatedSelection = currentSelection.map((item) =>
-            String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
-          );
-          return {
-            ...prev,
-            [parameter.dBColumnName]: {
-              ...prev[parameter.dBColumnName],
-              _selection: updatedSelection,
-              _allRows:
-                prev[parameter.dBColumnName]?._allRows?.map((item) =>
-                  String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
-                ) || [],
-            },
-          };
-        });
-      }
+      // Notify script-registered cell-edit hooks (mirrors the classic per-cell
+      // onChange). Additive: a no-op when no script registered any subscriber.
+      fireCellEditHooks(row, mergedChanges);
     },
-    [parameter.dBColumnName, onSelectionChange, processId]
+    [parameter.dBColumnName, onSelectionChange, processId, rejectByColumnValidator, fireCellEditHooks]
   ); // Dependencies are now minimal and stable
 
   // Update the ref exposed to context
@@ -2650,7 +2820,11 @@ const WindowReferenceGrid = ({
         () => gridApiRef.current,
         () => Array.from(persistentSelectionRef.current.values()),
         dataArrivedSubsRef.current,
-        selectionChangedSubsRef.current
+        selectionChangedSubsRef.current,
+        recordChangeSubsRef.current,
+        selectionToggleSubsRef.current,
+        columnOnChangeRef.current,
+        columnValidatorRef.current
       ),
     []
   );
@@ -2665,16 +2839,59 @@ const WindowReferenceGrid = ({
     return () => onUnregisterGrid?.(parameter.name);
   }, [onRegisterGrid, onUnregisterGrid, parameter.name, gridController]);
 
+  // Diffs the previous vs current selection and emits one per-toggle delta
+  // (record, state) for each added (true) / removed (false) id. A removed record
+  // may be off the current page, so it is resolved from the persistent cache then
+  // from localRecords. Updates the baseline for the next diff.
+  const emitSelectionToggles = useCallback((selection: EntityData[]) => {
+    const currentIds = new Set(selection.map((r) => String(r.id)));
+    const byId = new Map(selection.map((r) => [String(r.id), r] as const));
+    const fire = (record: EntityData, state: boolean) => {
+      for (const fn of selectionToggleSubsRef.current) {
+        try {
+          fn(record, state);
+        } catch (error) {
+          logger.error("[WindowReferenceGrid] onSelectionToggle subscriber failed", error);
+        }
+      }
+    };
+    for (const id of currentIds) {
+      if (!prevSelectionIdsRef.current.has(id)) {
+        const record = byId.get(id);
+        if (record) fire(record, true);
+      }
+    }
+    for (const id of prevSelectionIdsRef.current) {
+      if (!currentIds.has(id)) {
+        const record =
+          persistentSelectionRef.current.get(id) ?? localRecordsRef.current.find((r) => String(r.id) === id);
+        if (record) fire(record, false);
+      }
+    }
+    prevSelectionIdsRef.current = currentIds;
+  }, []);
+
   // Notify script `selectionChanged` subscribers on every selection change
   // (skipping the initial mount so it mirrors a user/programmatic toggle).
   const selectionChangedReadyRef = useRef(false);
   useEffect(() => {
     if (!selectionChangedReadyRef.current) {
       selectionChangedReadyRef.current = true;
+      // Seed the toggle-diff baseline so the first real toggle diffs against the
+      // mount selection instead of emitting spurious "added" toggles.
+      prevSelectionIdsRef.current = new Set(Array.from(persistentSelectionRef.current.keys()));
       return;
     }
     const selection = Array.from(persistentSelectionRef.current.values());
+    // Existing full-array contract — UNCHANGED (already-migrated processes rely on it).
     for (const fn of selectionChangedSubsRef.current) fn(selection);
+
+    // Additive per-toggle delta (classic `selectionChanged(record, state)`): diff
+    // the previous vs current selection and emit one toggle per added/removed id.
+    // Gated so it stays a pure no-op unless a script subscribed via onSelectionToggle.
+    if (selectionToggleSubsRef.current.length > 0) {
+      emitSelectionToggles(selection);
+    }
   }, [rowSelection]);
 
   // Context value for GridCellEditor components (defined here to capture handleRecordChangeRef)
