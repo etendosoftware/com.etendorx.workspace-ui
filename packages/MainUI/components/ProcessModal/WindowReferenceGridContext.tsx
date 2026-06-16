@@ -16,6 +16,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 interface WindowReferenceGridContextValue {
   // Use Refs for dynamic data to prevent context updates from triggering re-renders
@@ -34,8 +35,31 @@ interface WindowReferenceGridContextValue {
   // biome-ignore lint/suspicious/noExplicitAny: user session
   session: any;
   tabId: string | undefined;
+  /**
+   * The P&E grid's own tab metadata (e.g. the "GL Item" tab inside the Add
+   * Payment process). Distinct from the ambient {@link useTabContext} value,
+   * which carries the *outer* record's tab. Cells use this to scope selector
+   * default-criteria and filter context to the right table.
+   */
+  tab?: Tab | null;
   fieldReadOnlyMap: Record<string, boolean>;
   shouldSendOrg: boolean;
+  /**
+   * Set of `columnName`s whose mandatory-validation failed for the active
+   * create-row. Consumers use it to flip the cell visual to red.
+   */
+  createRowErrors: Set<string>;
+  /** Drops a single column from {@link createRowErrors} (called on edit). */
+  clearCellError: (columnName: string) => void;
+  /**
+   * Monotonic counter bumped whenever `applyFieldInteractions` produces a
+   * non-empty sibling patch (e.g. mutually-exclusive column was zeroed). Flows
+   * down to each `GridCellEditor` as a prop so its `memo` comparator detects
+   * the change and re-renders — without this, the editor never re-evaluates
+   * `row.original[col.columnName]` for the sibling cell in MRT create-rows
+   * (which aren't in `localRecords` and so don't trigger re-render via state).
+   */
+  siblingPatchVersion: number;
 }
 
 const WindowReferenceGridContext = createContext<WindowReferenceGridContextValue | undefined>(undefined);

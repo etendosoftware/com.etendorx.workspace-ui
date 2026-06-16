@@ -17,10 +17,9 @@
 
 "use client";
 
-import Image from "next/image";
 import { Button } from "@mui/material";
 import { useTranslation } from "../hooks/useTranslation";
-import errorImage from "../../ComponentLibrary/src/assets/images/NotificationModal/empty-state-notifications.svg?url";
+import ErrorImage from "@workspaceui/componentlibrary/src/assets/images/logo.svg";
 import Link from "next/link";
 import type { ErrorDisplayProps } from "./types";
 
@@ -37,15 +36,7 @@ export function ErrorDisplay({
   return (
     <div className="w-full max-w-md p-8 mx-auto bg-white rounded-lg shadow-md flex flex-col items-center">
       <div className="mb-6 max-w-xs">
-        <Image
-          src={errorImage}
-          width={240}
-          height={240}
-          alt="Error"
-          className="mx-auto"
-          priority
-          data-testid="Image__2e88cf"
-        />
+        <ErrorImage width={240} height={240} className="mx-auto" data-testid="Image__2e88cf" />
       </div>
       <h2 className="text-2xl font-semibold text-gray-800 mb-3 text-center">{title}</h2>
       {description && <p className="text-gray-600 mb-6 text-center">{description}</p>}

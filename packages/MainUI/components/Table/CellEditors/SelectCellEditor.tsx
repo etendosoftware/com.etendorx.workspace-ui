@@ -37,6 +37,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   keyboardNavigationManager,
   shouldAutoFocus = false,
   loadOptions,
+  showTooltip = true,
   // isLoadingOptions - not currently used, available for future enhancements
 }) => {
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -226,14 +227,11 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
           ${getErrorClasses()}
           ${getDisabledClasses()}
         `}
-        title={hasError ? "This field has validation errors (TABLEDIR fallback)" : `${field.name} (TABLEDIR)`}
+        title={showTooltip && hasError ? "This field has validation errors (TABLEDIR fallback)" : undefined}
         aria-label={`${field.name} (TABLEDIR)`}
         aria-invalid={hasError}
         aria-describedby={hasError ? `${field.name}-error` : undefined}
       />
-      <div className="text-xs text-gray-500 mt-1">
-        {isLoadingDynamicOptions ? "Loading options..." : "TABLEDIR field - options not loaded"}
-      </div>
     </div>
   );
 
@@ -268,7 +266,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
         ${getErrorClasses()}
         ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer"}
       `}
-      title={hasError ? "This field has validation errors" : field.name}
+      title={showTooltip && hasError ? "This field has validation errors" : undefined}
       aria-label={field.name}
       aria-invalid={hasError}
       aria-describedby={hasError ? `${field.name}-error` : undefined}>

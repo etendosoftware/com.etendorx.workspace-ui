@@ -182,6 +182,7 @@ export interface Field {
   referencedWindowId: string;
   referencedTabId: string;
   displayLogicExpression?: string;
+  gridDisplayLogicExpression?: string;
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;
@@ -346,6 +347,7 @@ export enum UIPattern {
   EDIT_ONLY = "SR",
   EDIT_AND_DELETE_ONLY = "ED",
   STANDARD = "STD",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface AuxiliaryInput {
@@ -370,6 +372,7 @@ export interface Tab {
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;
+  filterName?: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
   hqlorderbyclause?: string;
@@ -381,6 +384,26 @@ export interface Tab {
   tableTree?: boolean | string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_ADD. When true, the P&E grid for this tab shows
+   * an "Add row" button that opens an inline-editable new row (same rule as the
+   * classic UI in OBViewTab#isAllowAdd()).
+   */
+  obuiappCanAdd?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_DELETE. When true, the P&E grid shows a
+   * per-row trash icon that removes the row from the local grid buffer
+   * (no backend call) — matches classic UI behavior for tabs like APRM GL Items.
+   */
+  obuiappCanDelete?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_SHOW_SELECT. When false, the grid hides the
+   * row-selection checkbox column (e.g. GL Items, where the backend reads
+   * `_allRows` and selection has no semantic meaning).
+   */
+  obuiappShowSelect?: boolean;
+  /** "M" = multiple (default), "S" = single, "N" = none */
+  obuiappSelectionType?: "M" | "S" | "N" | null;
   process?: string;
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
@@ -412,6 +435,7 @@ export interface Menu {
   id: string;
   name: string;
   windowId?: string;
+  windowType?: `${WindowType}`;
   recordId?: string;
   tableId?: string;
   window?: Window | null;
@@ -453,6 +477,7 @@ export enum WindowType {
   M = "M",
   Q = "Q",
   T = "T",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface LoginResponse {
@@ -917,6 +942,13 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
+  fieldGroup?: string;
+  fieldGroup$_identifier?: string;
+  /**
+   * When true, the field group (subsection) starts collapsed in the process modal.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
   /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
   sequenceNumber?: number;
   /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
@@ -937,6 +969,12 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+  /** Pick and Execute discriminator emitted by the metadata converter. Most
+   *  process definitions omit it; only P&E seeds set it to `OBUIAPP_PickAndExecute`. */
+  uIPattern?: UIPattern | string;
+  /** Whether the embedded grid accepts more than one selected row. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  isMultiRecord?: boolean | "Y" | "N";
 }
 
 export interface Labels {

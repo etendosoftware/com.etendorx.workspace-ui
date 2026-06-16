@@ -30,9 +30,9 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
+import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import ChevronDownIcon from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
@@ -68,6 +68,8 @@ import {
   BUTTON_LIST_REFERENCE_ID,
   BUTTON_REFERENCE_ID,
   PROCESS_TYPES,
+  isPickAndExecute,
+  PICK_AND_EXECUTE_UI_PATTERN,
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
@@ -92,25 +94,14 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
-
-const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
-  const [expanded, setExpanded] = useState(true);
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-left cursor-pointer select-none">
-        <ChevronDownIcon
-          className={`h-3.5 w-3.5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
-          data-testid="ChevronDownIcon__761503"
-        />
-        <span className="text-sm font-medium text-gray-700">{title}</span>
-      </button>
-      <div style={{ display: expanded ? "block" : "none" }}>{children}</div>
-    </div>
-  );
-};
+import { useGridRowValidation } from "./hooks/useGridRowValidation";
+import {
+  DEFAULT_PROCESS_PARAM_GROUP_ID,
+  groupProcessParametersByFieldGroup,
+  type ProcessParameterGroup,
+} from "./utils/groupProcessParametersByFieldGroup";
+import { buildSuccessBannerMessage } from "./utils/responseBanner";
+import { CollapsibleSection } from "./components/CollapsibleSection";
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -415,10 +406,9 @@ function ProcessDefinitionModalContent({
     return buildPayloadByInputName(record, tab.fields);
   }, [record, tab?.fields]);
 
-  const hasWindowReference = useMemo(
-    () => Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID),
-    [parameters]
-  );
+  // Pick-and-Execute discriminator: prefers the explicit `uiPattern` from metadata
+  // and falls back to the presence of a Window Reference parameter for legacy seeds.
+  const isPE = useMemo(() => isPickAndExecute(button.processDefinition), [button.processDefinition]);
 
   const {
     fetchConfig,
@@ -707,6 +697,22 @@ function ProcessDefinitionModalContent({
     });
   }, [loading, initializationLoading, parameters, formValues]);
 
+  const peGrids = useMemo(() => {
+    if (!isPE) return [];
+    return Object.values(parameters)
+      .filter((p) => p.reference === WINDOW_REFERENCE_ID && p.window?.tabs)
+      .map((p) => {
+        const paramTab = p.window!.tabs![0] as Tab;
+        const key = p.dBColumnName || p.name;
+        return {
+          selectedRows: gridSelection[key]?._selection ?? [],
+          fields: paramTab?.fields,
+        };
+      });
+  }, [isPE, parameters, gridSelection]);
+
+  const { hasInvalidSelection } = useGridRowValidation({ grids: peGrids });
+
   const handleClose = useCallback(() => {
     if (isPending) return;
     setResult(null);
@@ -770,7 +776,7 @@ function ProcessDefinitionModalContent({
     buildWindowSpecificFields,
     getMappedFormValues,
     resolveDocAction,
-    hasWindowReference,
+    hasWindowReference: isPE,
     availableButtons,
     isPending,
     shouldTriggerSuccess,
@@ -826,14 +832,14 @@ function ProcessDefinitionModalContent({
   );
 
   useEffect(() => {
-    if (open && hasWindowReference) {
+    if (open && isPE) {
       const loadConfig = async () => {
         const combinedPayload = { ...recordValues, ...session };
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, recordValues, session, tabId, open, hasWindowReference]);
+  }, [fetchConfig, recordValues, session, tabId, open, isPE]);
 
   useEffect(() => {
     if (initializationError) {
@@ -889,6 +895,17 @@ function ProcessDefinitionModalContent({
 
     loadProcessMetadata();
   }, [open, processId, button.processDefinition.parameters, type]);
+
+  // Report and Process subtype with uipattern = "Pick and Execute" is not implemented.
+  // Surface a warning and close the modal to avoid a broken render (no Window Reference
+  // parameter → empty grid + no Done payload).
+  useEffect(() => {
+    if (!open) return;
+    if (type !== PROCESS_TYPES.REPORT_AND_PROCESS) return;
+    if (processDefinition?.uIPattern !== PICK_AND_EXECUTE_UI_PATTERN) return;
+    toast.warning(t("process.pickAndExecuteNotImplemented"));
+    onClose();
+  }, [open, type, processDefinition?.uIPattern, t, onClose]);
 
   useEffect(() => {
     if (open) {
@@ -1055,17 +1072,16 @@ function ProcessDefinitionModalContent({
     if (isFinalSuccess) return null;
 
     if (result.keepOpen && result.success) {
-      const rawMsg =
-        typeof result.data === "string"
-          ? result.data
-          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
-      const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
-      const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
+      // Only render the success banner when the server explicitly emitted a
+      // message via `responseActions[].showMsgInProcessView` (Classic UX:
+      // silent on actions like Search that only refresh the grid).
+      const parsed = buildSuccessBannerMessage(result.data, result.isHtml);
+      if (!parsed) return null;
       return (
         <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
           <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
           <div className="border-(--color-active-40) rounded p-2">
-            <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
+            <ToastContent message={parsed.msgText} isHtml={parsed.isHtml} data-testid="ToastContent__761503" />
           </div>
         </div>
       );
@@ -1104,38 +1120,30 @@ function ProcessDefinitionModalContent({
     return parameter.window.tabs[0] as Tab;
   }, []);
 
-  const renderParameters = () => {
-    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
-    // Only hide parameters when execution fully completed (isFinalSuccess).
-    if (result?.success && !result?.keepOpen) return null;
+  const isWindowReferenceParameter = useCallback(
+    (parameter: ProcessParameter) => parameter.reference === WINDOW_REFERENCE_ID,
+    []
+  );
 
-    const parametersList = Object.values(parameters)
-      .filter((p) => {
-        // @ts-ignore
-        if (p.active === false) return false;
-        if (isBulkCompletion) {
-          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        // "sequenceNumber" is set explicitly by the backend builder;
-        // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
-        const seqA = Number(a.sequenceNumber ?? a.seqno) || 0;
-        const seqB = Number(b.sequenceNumber ?? b.seqno) || 0;
-        return seqA - seqB;
-      });
+  const resolveGroupTitle = useCallback((group: ProcessParameterGroup): string => group.identifier, []);
 
-    const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
-
-    for (const parameter of parametersList) {
-      // @ts-ignore
-      if (parameter.active === false) continue;
-      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) continue;
-
-      if (parameter.reference === WINDOW_REFERENCE_ID) {
-        const isDisplayed = evaluateWindowReferenceDisplay({
+  const isParameterRenderable = useCallback(
+    (parameter: ProcessParameter): boolean => {
+      // @ts-ignore — `active` is not in the public ProcessParameter type but
+      // the metadata payload carries it; mirroring the previous behaviour.
+      if (parameter.active === false) return false;
+      if (isBulkCompletion) {
+        return (
+          parameter.name === "DocAction" ||
+          parameter.dBColumnName === "DocAction" ||
+          parameter.name === "Document Actionn"
+        );
+      }
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) {
+        return false;
+      }
+      if (isWindowReferenceParameter(parameter)) {
+        return evaluateWindowReferenceDisplay({
           parameter,
           logicFields,
           formValues,
@@ -1145,61 +1153,114 @@ function ProcessDefinitionModalContent({
           recordValues: recordValues || {},
           parentFields: tab?.fields,
         });
-
-        if (!isDisplayed) continue;
-
-        const parameterTab = getTabForParameter(parameter);
-        windowReferences.push(
-          <CollapsibleSection
-            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
-            title={parameter.name}
-            data-testid="CollapsibleSection__761503">
-            <WindowReferenceGrid
-              parameter={parameter}
-              parameters={parameters}
-              selectedRecordsCount={selectedRecordsCount}
-              onSelectionChange={setGridSelection}
-              gridSelection={gridSelection}
-              tabId={parameterTab?.id || ""}
-              entityName={parameterTab?.entityName || ""}
-              windowReferenceTab={parameterTab || windowReferenceTab}
-              processConfig={stableProcessConfig}
-              processConfigLoading={processConfigLoading}
-              processConfigError={processConfigError}
-              recordValues={recordValues}
-              currentValues={formValues}
-              originTab={tab}
-              showTitle={false}
-              onClose={onClose}
-              data-testid="WindowReferenceGrid__761503"
-            />
-          </CollapsibleSection>
-        );
-      } else {
-        selectors.push(
-          <ProcessParameterSelector
-            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-            parameter={parameter}
-            logicFields={logicFields}
-            parameters={parameters}
-            recordValues={recordValues || undefined}
-            parentFields={tab?.fields}
-            selectedRecordsCount={selectedRecordsCount}
-            onFileChange={handleFileChange}
-            data-testid="ProcessParameterSelector__761503"
-          />
-        );
       }
-    }
+      return true;
+    },
+    [
+      isBulkCompletion,
+      isWindowReferenceParameter,
+      logicFields,
+      formValues,
+      availableFormData,
+      parameters,
+      session,
+      recordValues,
+      tab?.fields,
+    ]
+  );
 
+  const renderScalarParameter = (parameter: ProcessParameter) => (
+    <ProcessParameterSelector
+      key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+      parameter={parameter}
+      logicFields={logicFields}
+      parameters={parameters}
+      recordValues={recordValues || undefined}
+      parentFields={tab?.fields}
+      selectedRecordsCount={selectedRecordsCount}
+      onFileChange={handleFileChange}
+      values={formValues}
+      processId={processId}
+      data-testid="ProcessParameterSelector__761503"
+    />
+  );
+
+  const renderWindowReferenceParameter = (parameter: ProcessParameter) => {
+    const parameterTab = getTabForParameter(parameter);
+    return (
+      <WindowReferenceGrid
+        key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
+        parameter={parameter}
+        parameters={parameters}
+        selectedRecordsCount={selectedRecordsCount}
+        onSelectionChange={setGridSelection}
+        gridSelection={gridSelection}
+        tabId={parameterTab?.id || ""}
+        entityName={parameterTab?.entityName || ""}
+        windowReferenceTab={parameterTab || windowReferenceTab}
+        processConfig={stableProcessConfig}
+        processConfigLoading={processConfigLoading}
+        processConfigError={processConfigError}
+        recordValues={recordValues}
+        currentValues={formValues}
+        originTab={tab}
+        showTitle={false}
+        onClose={onClose}
+        processDefinition={button.processDefinition}
+        data-testid="WindowReferenceGrid__761503"
+      />
+    );
+  };
+
+  const renderGroupBody = (group: ProcessParameterGroup) => {
+    const scalars = group.parameters.filter((p) => !isWindowReferenceParameter(p));
+    const windowRefs = group.parameters.filter(isWindowReferenceParameter);
     return (
       <>
-        {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+        {scalars.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{scalars.map(renderScalarParameter)}</div>
         )}
-        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
+        {windowRefs.length > 0 && (
+          <div className="w-full flex flex-col gap-4 mt-2">{windowRefs.map(renderWindowReferenceParameter)}</div>
+        )}
       </>
     );
+  };
+
+  const renderGroup = (group: ProcessParameterGroup) => {
+    if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) {
+      return (
+        <div key={`group-${group.id}`} className="w-full">
+          {renderGroupBody(group)}
+        </div>
+      );
+    }
+    return (
+      <CollapsibleSection
+        key={`group-${group.id}`}
+        title={resolveGroupTitle(group)}
+        initiallyExpanded={!group.fieldGroupCollapsed}
+        data-testid="CollapsibleSection__761503">
+        {renderGroupBody(group)}
+      </CollapsibleSection>
+    );
+  };
+
+  const renderParameters = () => {
+    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
+    // Only hide parameters when execution fully completed (isFinalSuccess).
+    if (result?.success && !result?.keepOpen) return null;
+
+    const visibleParameters = Object.values(parameters)
+      .filter(isParameterRenderable)
+      // "sequenceNumber" is set explicitly by the backend builder;
+      // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
+      .sort((a, b) => (Number(a.sequenceNumber ?? a.seqno) || 0) - (Number(b.sequenceNumber ?? b.seqno) || 0));
+
+    const groups = groupProcessParametersByFieldGroup(visibleParameters);
+    if (groups.length === 0) return null;
+
+    return <div className="w-full flex flex-col gap-4 mb-4">{groups.map(renderGroup)}</div>;
   };
 
   const getActionButtonContent = () => {
@@ -1228,7 +1289,8 @@ function ProcessDefinitionModalContent({
     hasMandatoryParametersWithoutValue ||
     isSubmitting ||
     !!isFinalSuccess ||
-    (hasWindowReference && !gridSelection);
+    (isPE && !gridSelection) ||
+    (isPE && hasInvalidSelection);
 
   const renderModalContent = () => {
     if (warehousePluginLoading && onLoad) {
@@ -1264,7 +1326,7 @@ function ProcessDefinitionModalContent({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
-                {button.processDefinition.description && (
+                {!!button.processDefinition.description && (
                   <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
                 )}
               </div>

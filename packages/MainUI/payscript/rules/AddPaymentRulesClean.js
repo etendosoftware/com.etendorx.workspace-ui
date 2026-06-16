@@ -24,6 +24,21 @@ export const AddPaymentRulesGeneric = (() => {
     }, util.num(0));
   };
 
+  // Sum (received_in − paid_out), sign-flipped for payment-out direction,
+  // across every row of the GL Items grid. Mirrors classic
+  // OB.APRM.AddPayment.updateGLItemsTotal (ob-aprm-addPayment.js:1163-1196).
+  const calculateGLItemsTotal = (util, glItemRows, isSOTrx) =>
+    glItemRows.reduce((total, row) => {
+      // Accept both DB ("received_in"/"paid_out") and HQL ("receivedIn"/"paidOut")
+      // shapes — GridCellEditor mirrors writes to both keys.
+      const receivedIn = util.num(row.received_in ?? row.receivedIn ?? 0);
+      const paidOut = util.num(row.paid_out ?? row.paidOut ?? 0);
+      if (isSOTrx) {
+        return total.plus(receivedIn).minus(paidOut);
+      }
+      return total.minus(receivedIn).plus(paidOut);
+    }, util.num(0));
+
   return {
     id: "APRM_ADD_PAYMENT_V1",
 
@@ -31,7 +46,12 @@ export const AddPaymentRulesGeneric = (() => {
       const actualPayment = util.valNum("actual_payment", "actualPayment", "ActualPayment");
       const invoices = util.getGridItems(["amount", "outstandingAmount"], ["order_invoice"]);
 
-      const amountGLItemsValue = util.valNum("amount_gl_items", "amountGlItems", "AmountGlItems");
+      const trxtype = util.valStr("trxtype");
+      let isSOTrx = util.valBool("issotrx", "isSOTrx");
+      if (!isSOTrx && trxtype === "RCIN") {
+        isSOTrx = true;
+      }
+
       const usedCreditValue = util.valNum("used_credit", "usedCredit", "UsedCredit");
       const conversionRate = util.valNum("conversion_rate", "conversionRate", "finPaymentRate") || 1;
       const currencyPrecision = util.valNum("currency_precision", "currencyPrecision") || 2;
@@ -53,9 +73,11 @@ export const AddPaymentRulesGeneric = (() => {
 
       const amountInvOrds = util.sum(invoices, "amount");
 
-      // Simplification: In this logic, GL Amount is always additive regardless of isSOTrx because
-      // of how receivedIn/paidOut were constructed initially.
-      const amountGLItems = util.num(amountGLItemsValue);
+      // "glitem" is the dBColumnName of the Window Reference parameter for GL Items.
+      // _allRows (not _selection) because the grid has obuiappShowSelect=false:
+      // every row is meaningful input.
+      const glItemRows = util.getAllGridRows(["received_in", "paid_out", "receivedIn", "paidOut"], ["glitem"]);
+      const amountGLItems = calculateGLItemsTotal(util, glItemRows, isSOTrx);
 
       const usedCredit = finalUsedCredit;
       const totalOutstanding = util.sum(invoices, "outstandingAmount");
@@ -107,6 +129,11 @@ export const AddPaymentRulesGeneric = (() => {
         AmountInvOrds: fmt(amountInvOrds),
         "Amount on Invoices and/or Orders": fmt(amountInvOrds),
         "Amount Inv Ords": fmt(amountInvOrds),
+
+        amount_gl_items: fmt(amountGLItems),
+        amountGlItems: fmt(amountGLItems),
+        AmountGlItems: fmt(amountGLItems),
+        "Amount on GL Items": fmt(amountGLItems),
 
         total: fmt(total),
         Total: fmt(total),

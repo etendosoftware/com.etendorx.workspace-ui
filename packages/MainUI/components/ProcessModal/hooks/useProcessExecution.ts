@@ -45,22 +45,17 @@ import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
+import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
+import {
+  type DispatchedAction,
+  dispatchResponseActions,
+  findFirstMessage,
+  findFirstOpenDirectTab,
+} from "../utils/responseActionDispatcher";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
 // ---------------------------------------------------------------------------
-
-interface ProcessViewMsg {
-  msgType?: string;
-  msgTitle?: string;
-  msgText?: string;
-}
-
-interface ResponseAction {
-  showMsgInProcessView?: ProcessViewMsg;
-  showMsgInView?: ProcessViewMsg;
-  smartclientSay?: { message?: string };
-}
 
 interface ExtractedMessage {
   message: unknown;
@@ -69,6 +64,40 @@ interface ExtractedMessage {
   linkTabId?: string;
   linkRecordId?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Pure helpers for executeJavaProcess
+// ---------------------------------------------------------------------------
+
+const KERNEL_ENDPOINT = "/api/erp/org.openbravo.client.kernel";
+
+const buildKernelEndpoint = (args: {
+  processId?: string;
+  windowId?: string | number;
+  javaClassName?: string;
+}): string => {
+  const qs = new URLSearchParams();
+  if (args.processId) qs.set("processId", args.processId);
+  if (args.windowId !== undefined && args.windowId !== null && args.windowId !== "") {
+    qs.set("windowId", String(args.windowId));
+  }
+  if (args.javaClassName) qs.set("_action", args.javaClassName);
+  return `${KERNEL_ENDPOINT}?${qs.toString()}`;
+};
+
+/** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
+const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Execution failed");
+  }
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Param / return types
@@ -191,38 +220,31 @@ export function useProcessExecution({
   // -------------------------------------------------------------------------
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult): ExtractedMessage | null => {
-    const data = res.data;
-    const responseActions =
-      data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
+    const actions: DispatchedAction[] = dispatchResponseActions(res.data);
+    const message = findFirstMessage(actions);
+    // Prefer the structured `openDirectTab` action over the legacy SmartClient
+    // HTML link parser. The fallback still kicks in when the handler embeds
+    // `openDirectTab('TAB','REC')` inside the message HTML (older handlers).
+    const structuredOpenDirectTab = findFirstOpenDirectTab(actions);
 
-    if (!responseActions) return null;
-
-    let actionWithMsg: ResponseAction | undefined;
-    if (Array.isArray(responseActions)) {
-      actionWithMsg = responseActions.find(
-        (action: ResponseAction) => action.showMsgInProcessView || action.showMsgInView || action.smartclientSay
-      );
-    } else if (typeof responseActions === "object") {
-      actionWithMsg = responseActions as ResponseAction;
-    }
-
-    const msgView = actionWithMsg?.showMsgInProcessView ?? actionWithMsg?.showMsgInView;
-    if (msgView) {
-      const rawMsg = msgView.msgText || "";
-      const parsed = parseSmartClientMessage(rawMsg);
+    if (message) {
+      const rawMsg = message.payload.msgText || "";
+      const parsedHtml = parseSmartClientMessage(rawMsg);
       return {
-        message: rawMsg || parsed.text,
-        messageType: msgView.msgType,
+        message: rawMsg || parsedHtml.text,
+        messageType: message.payload.msgType,
         isHtml: /<[a-z][\s\S]*>/i.test(rawMsg),
-        linkTabId: parsed.tabId,
-        linkRecordId: parsed.recordId,
+        linkTabId: structuredOpenDirectTab?.tabId ?? parsedHtml.tabId,
+        linkRecordId: structuredOpenDirectTab?.recordId ?? parsedHtml.recordId,
       };
     }
 
-    const smartclientSay = actionWithMsg?.smartclientSay;
-    if (smartclientSay?.message) {
+    const smartclientSayAction = actions.find(
+      (a): a is Extract<DispatchedAction, { kind: "smartclientSay" }> => a.kind === "smartclientSay"
+    );
+    if (smartclientSayAction?.payload.message) {
       return {
-        message: smartclientSay.message,
+        message: smartclientSayAction.payload.message,
         messageType: "success",
         isHtml: true,
       };
@@ -448,40 +470,23 @@ export function useProcessExecution({
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
       try {
-        const baseUrl = "/api/erp/org.openbravo.client.kernel";
-        const queryParams = new URLSearchParams();
-        if (processId) queryParams.set("processId", processId);
-        if (tab?.window) queryParams.set("windowId", tab.window.toString());
-        if (javaClassName) queryParams.set("_action", javaClassName);
-
-        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
         const hasFiles = Object.keys(fileParams).length > 0;
         const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
-        const response = await fetch(apiUrl, requestInit);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Execution failed");
-        }
-
-        let resultData = null;
-        try {
-          resultData = await response.json();
-        } catch {}
-
-        const hasRetryExecution =
-          resultData?.retryExecution === true ||
-          resultData?.response?.retryExecution === true ||
-          resultData?.response?.data?.retryExecution === true;
-
+        const resultData = await fetchAndParseJson(apiUrl, requestInit);
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
-        if (hasRetryExecution) {
+        if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
-        } else {
-          await handleJavaProcessResult(parsedResult);
+          if (shouldRefreshAfterProcess(resultData)) {
+            setGridRefreshKey((prev) => prev + 1);
+          }
+          return;
         }
+
+        await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -497,6 +502,8 @@ export function useProcessExecution({
       parseProcessResponse,
       handleJavaProcessResult,
       setResult,
+      setShouldTriggerSuccess,
+      setGridRefreshKey,
     ]
   );
 
@@ -596,9 +603,8 @@ export function useProcessExecution({
 
   const extractResponseMessage = useCallback(
     (result: any) => {
-      if (result?.responseActions?.[0]?.showMsgInProcessView || result?.responseActions?.[0]?.showMsgInView) {
-        return result.responseActions[0].showMsgInProcessView ?? result.responseActions[0].showMsgInView;
-      }
+      const message = findFirstMessage(dispatchResponseActions(result));
+      if (message) return message.payload;
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }
@@ -658,12 +664,12 @@ export function useProcessExecution({
           const result = stringFnResult?.data ?? stringFnResult;
           const responseMessage = extractResponseMessage(result);
 
-          const msgType = responseMessage.msgType || responseMessage.severity;
+          const msgType = responseMessage.msgType;
           const isSuccess = msgType === "success";
           const isWarning = msgType === "warning";
 
           if (isSuccess || isWarning) {
-            const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
+            const message = responseMessage.msgText || t("process.completedSuccessfully");
 
             showProcessToast({
               isSuccess,

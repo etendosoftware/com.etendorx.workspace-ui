@@ -187,7 +187,13 @@ export class Datasource {
       return key;
     };
 
-    const formatValue = (value: unknown) => (Array.isArray(value) ? value.join(",") : String(value));
+    // Arrays must be preserved as-is so the proxy (`/api/datasource/route.ts`)
+    // serializes them as repeated form-urlencoded keys
+    // (`accounting_status=id1&accounting_status=id2&...`), which is what Classic
+    // Etendo's OBPickAndExecuteDataSource expects to drive its `IN (...)` filter
+    // for multi-record selectors. Joining them into a CSV here silently
+    // collapses N values into a single param the backend can't decode.
+    const formatValue = (value: unknown) => (Array.isArray(value) ? value : String(value));
 
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;
