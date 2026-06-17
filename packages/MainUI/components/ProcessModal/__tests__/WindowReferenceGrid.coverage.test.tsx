@@ -27,6 +27,7 @@ import {
   resolveSortBy,
   buildDeselectedRecord,
   applyEditToRows,
+  applyButtonOwnerViewTabId,
   decideDatasourceSync,
   syncGridSelectionToLocalRecords,
   syncPersistentSelection,
@@ -451,6 +452,32 @@ describe("applyEditToRows", () => {
     const r1 = makeRecord({ id: "1", settlementAmount: 1 });
     const result = applyEditToRows([r1], "missing", { settlementAmount: 99 });
     expect(result[0]).toBe(r1);
+  });
+});
+
+describe("applyButtonOwnerViewTabId", () => {
+  // Classic OBPickAndExecuteGrid.transformRequest sends the owner tab's id so backend
+  // HQL transformers pick the right query branch; we mirror it only when an owner tab
+  // with an id exists (otherwise the P&E grid comes back empty).
+  const tab = (id: unknown) => ({ id }) as unknown as Parameters<typeof applyButtonOwnerViewTabId>[1];
+
+  it("sets buttonOwnerViewTabId from the origin tab id when present", () => {
+    const options: Record<string, unknown> = { tabId: "grid-tab" };
+    applyButtonOwnerViewTabId(options, tab("owner-tab"));
+    expect(options.buttonOwnerViewTabId).toBe("owner-tab");
+    expect(options.tabId).toBe("grid-tab");
+  });
+
+  it("does not add the key when originTab is undefined", () => {
+    const options: Record<string, unknown> = { tabId: "grid-tab" };
+    applyButtonOwnerViewTabId(options, undefined);
+    expect(options).not.toHaveProperty("buttonOwnerViewTabId");
+  });
+
+  it("does not add the key when originTab has a falsy id", () => {
+    const options: Record<string, unknown> = {};
+    applyButtonOwnerViewTabId(options, tab(""));
+    expect(options).not.toHaveProperty("buttonOwnerViewTabId");
   });
 });
 

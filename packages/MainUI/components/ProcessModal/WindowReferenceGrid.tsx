@@ -113,6 +113,11 @@ const EMPTY_PATCH: Record<string, number> = Object.freeze({});
 const AMOUNT_FIELD = "amount";
 const PAYMENT_AMOUNT_FIELD = "paymentAmount";
 
+// Pick & Execute fetch param carrying the tabId of the view that owns the process
+// button (the tab the process was launched from). Backend HQL transformers read it
+// to pick the right query branch — see Classic OBPickAndExecuteGrid.transformRequest.
+const BUTTON_OWNER_VIEW_TAB_ID_PARAM = "buttonOwnerViewTabId";
+
 /**
  * Expands a column key to both naming shapes used across the row state:
  *   - HQL camelCase (`paidOut`)   — what `parseColumns` puts on `col.columnName`
@@ -1142,6 +1147,18 @@ interface DatasourceParams {
   [key: string]: any;
 }
 
+/**
+ * Mirrors Classic OBPickAndExecuteGrid.transformRequest: P&E fetches carry the
+ * tabId of the view that owns the process button (the tab the process was launched
+ * from), which backend HQL transformers read to pick the right query branch. Only
+ * set when an owner tab with an id exists (matches Classic's
+ * `buttonOwnerView && buttonOwnerView.tabId` guard).
+ */
+export const applyButtonOwnerViewTabId = (options: DatasourceParams, originTab?: Tab): void => {
+  if (!originTab?.id) return;
+  options[BUTTON_OWNER_VIEW_TAB_ID_PARAM] = originTab.id;
+};
+
 // Standard context variable keys that are always valid filter columns
 const STANDARD_FILTER_KEYS = [
   "c_bpartner_id",
@@ -1843,6 +1860,8 @@ const WindowReferenceGrid = ({
 
     // Required for OBPickAndExecuteDataSource to apply Pick & Execute-specific fetching logic
     options.isPickAndEdit = true;
+    // Send the owner tab so backend HQL transformers pick the right query branch (Classic parity)
+    applyButtonOwnerViewTabId(options, originTab);
     // Match Classic default: send true unless the user has explicitly toggled the filter off
     options.isImplicitFilterApplied = isImplicitFilterApplied ?? true;
 
@@ -1863,6 +1882,7 @@ const WindowReferenceGrid = ({
     sorting,
     stableRawColumns,
     etendoContext,
+    originTab,
   ]);
 
   // `datasourceOptions` legitimately changes content on cell edits because
@@ -1887,6 +1907,7 @@ const WindowReferenceGrid = ({
         tabId: datasourceOptions.tabId,
         processId: datasourceOptions.processId,
         windowId: datasourceOptions.windowId,
+        buttonOwnerViewTabId: datasourceOptions.buttonOwnerViewTabId,
         pageSize: datasourceOptions.pageSize,
       }),
     [datasourceOptions]
