@@ -623,6 +623,21 @@ columns does not loop. There is **no** new DB column for the per-column hooks �
 runtime from the existing `onGridLoad` body. `grid.getEditedCell(...)` accepts either a row index or a
 record, and either a column name (string) or a Classic field object.
 
+**Read-only amount columns survive selection changes.** When the selection changes, the substrate zeroes
+the editable amount field of every **unselected** row (correct for payment grids, where an unselected row
+pays nothing). It now skips any `amount`/`paymentAmount` column that is **read-only** for the grid (per the
+grid's read-only logic). So a migrated validation that reads `record.amount` as a read-only cap (e.g. *Add
+Invoices*, where `amount` is the invoice amount and `settlementAmount` is the editable field) keeps seeing
+the real value on every row — it is no longer forced to `0` on open. No script change is required to opt
+in; it follows the field's read-only metadata.
+
+**Row-click selection registers in the canonical store.** A user can select a grid row either by ticking
+its checkbox or by clicking the row body. Both paths now feed the same canonical selection store, so
+`grid.getSelectedRecords()` returns every selected row and `grid.onSelectionToggle((record, state) => …)`
+fires for it, regardless of how the row was selected. A migrated script that reads selection through
+`grid.getSelectedRecords()` (e.g. *Add Invoices* summing `settlementAmount` over the picked invoices)
+therefore sees the user's picks immediately — no script change is required.
+
 **Grid visibility.** A Classic process can hide/show the whole grid widget
 (`item.theForm.getField('<grid>').canvas.viewGrid.hide()` / `.show()`) — e.g. to keep a results grid
 hidden until a search runs. The new UI supports this on the grid proxy as `viewGrid.hide()` /

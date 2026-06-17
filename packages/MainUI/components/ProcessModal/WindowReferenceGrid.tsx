@@ -109,6 +109,10 @@ const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
 const EMPTY_PATCH: Record<string, number> = Object.freeze({});
 
+// Selection-driven amount fields the substrate syncs/zeroes on selection changes.
+const AMOUNT_FIELD = "amount";
+const PAYMENT_AMOUNT_FIELD = "paymentAmount";
+
 /**
  * Expands a column key to both naming shapes used across the row state:
  *   - HQL camelCase (`paidOut`)   — what `parseColumns` puts on `col.columnName`
@@ -937,12 +941,15 @@ export const updateLocalRecordFromSelection = (record: EntityData, selectionItem
   let updated = false;
   const newRecord = { ...record };
 
-  if (selectionItem.amount !== undefined && selectionItem.amount !== newRecord.amount) {
-    newRecord.amount = selectionItem.amount;
+  if (selectionItem[AMOUNT_FIELD] !== undefined && selectionItem[AMOUNT_FIELD] !== newRecord[AMOUNT_FIELD]) {
+    newRecord[AMOUNT_FIELD] = selectionItem[AMOUNT_FIELD];
     updated = true;
   }
-  if (selectionItem.paymentAmount !== undefined && selectionItem.paymentAmount !== newRecord.paymentAmount) {
-    newRecord.paymentAmount = selectionItem.paymentAmount;
+  if (
+    selectionItem[PAYMENT_AMOUNT_FIELD] !== undefined &&
+    selectionItem[PAYMENT_AMOUNT_FIELD] !== newRecord[PAYMENT_AMOUNT_FIELD]
+  ) {
+    newRecord[PAYMENT_AMOUNT_FIELD] = selectionItem[PAYMENT_AMOUNT_FIELD];
     updated = true;
   }
 
@@ -952,27 +959,57 @@ export const updateLocalRecordFromSelection = (record: EntityData, selectionItem
   return null;
 };
 
-export const resetLocalRecordFields = (record: EntityData): EntityData | null => {
-  let changed = false;
+// Predicate telling whether a record field is read-only (and therefore must not
+// be zeroed). When omitted, every field is treated as editable (legacy behavior).
+type IsFieldReadOnly = (fieldName: string) => boolean;
+
+// Zeroes a single editable amount field in place. A read-only field (e.g. the
+// invoice `amount` cap in Add Invoices) is left untouched so migrated validations
+// that read it keep working. Returns whether the record was changed.
+const resetAmountField = (record: EntityData, fieldName: string, isFieldReadOnly?: IsFieldReadOnly): boolean => {
+  if (record[fieldName] === undefined || record[fieldName] === 0) {
+    return false;
+  }
+  if (isFieldReadOnly?.(fieldName)) {
+    return false;
+  }
+  record[fieldName] = 0;
+  return true;
+};
+
+export const resetLocalRecordFields = (record: EntityData, isFieldReadOnly?: IsFieldReadOnly): EntityData | null => {
   const newRecord = { ...record };
+  const amountChanged = resetAmountField(newRecord, AMOUNT_FIELD, isFieldReadOnly);
+  const paymentChanged = resetAmountField(newRecord, PAYMENT_AMOUNT_FIELD, isFieldReadOnly);
 
-  if (newRecord.amount !== undefined && newRecord.amount !== 0) {
-    newRecord.amount = 0;
-    changed = true;
-  }
-  if (newRecord.paymentAmount !== undefined && newRecord.paymentAmount !== 0) {
-    newRecord.paymentAmount = 0;
-    changed = true;
-  }
+  return amountChanged || paymentChanged ? newRecord : null;
+};
 
-  return changed ? newRecord : null;
+// Sync the canonical selection cache with an MRT row-selection map: set selected
+// rows, delete the rest. Single source of truth for both selection entry points
+// (checkbox via handleRowSelection and row-body click via handleRowClick), so
+// grid.getSelectedRecords() and onSelectionToggle reflect every user selection.
+export const syncPersistentSelection = (
+  cache: Map<string, EntityData>,
+  recordsList: EntityData[],
+  selection: MRT_RowSelectionState
+): void => {
+  for (const record of recordsList) {
+    const id = String(record.id);
+    if (selection[id]) {
+      cache.set(id, record);
+    } else {
+      cache.delete(id);
+    }
+  }
 };
 
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
   localRecords: EntityData[],
-  setLocalRecords: (records: EntityData[]) => void
+  setLocalRecords: (records: EntityData[]) => void,
+  isFieldReadOnly?: IsFieldReadOnly
 ) => {
   let hasChanges = false;
   const newRecords = [...localRecords];
@@ -989,7 +1026,7 @@ export const syncGridSelectionToLocalRecords = (
         hasChanges = true;
       }
     } else {
-      const reset = resetLocalRecordFields(record);
+      const reset = resetLocalRecordFields(record, isFieldReadOnly);
       if (reset) {
         newRecords[i] = reset;
         hasChanges = true;
@@ -1000,6 +1037,16 @@ export const syncGridSelectionToLocalRecords = (
   if (hasChanges) {
     setLocalRecords(newRecords);
   }
+};
+
+// Builds an `isFieldReadOnly` predicate from the grid's computed read-only map.
+// A missing/empty map yields a predicate that treats every field as editable,
+// preserving the legacy zeroing behavior for grids without field metadata.
+export const buildIsFieldReadOnly = (fieldReadOnlyMap: Record<string, boolean> | undefined): IsFieldReadOnly => {
+  if (!fieldReadOnlyMap) {
+    return () => false;
+  }
+  return (fieldName: string) => Boolean(fieldReadOnlyMap[fieldName]);
 };
 
 // Helper to find valid matching record in grid
@@ -1516,14 +1563,22 @@ const WindowReferenceGrid = ({
 
     const fields = Object.values(stableWindowReferenceTab.fields);
     for (const field of fields) {
-      const key = (field as any).columnName || (field as any).hqlName;
-      if (key) {
-        map[key] = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
-      }
+      // Index by both identifiers so a lookup by record property name (hqlName,
+      // e.g. `amount`) resolves even when `columnName` differs from it.
+      const readOnly = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
+      const columnName = (field as any).columnName;
+      const hqlName = (field as any).hqlName;
+      if (columnName) map[columnName] = readOnly;
+      if (hqlName) map[hqlName] = readOnly;
     }
 
     return map;
   }, [stableWindowReferenceTab?.fields, fieldReadOnlyContext]);
+
+  // Mirror the read-only map into a ref so the selection-sync effect can read it
+  // without adding it to the effect deps (keeps the existing run timing intact).
+  const fieldReadOnlyMapRef = useRef(fieldReadOnlyMap);
+  fieldReadOnlyMapRef.current = fieldReadOnlyMap;
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
@@ -2264,13 +2319,20 @@ const WindowReferenceGrid = ({
 
     // OPTIMIZATION: Check if selection actually changed for THIS grid
     // We include amounts in the check because engine updates amounts. Also check paymentAmount.
-    const selectionString = JSON.stringify(externalSelection.map((s: any) => `${s.id}-${s.amount}-${s.paymentAmount}`));
+    const selectionString = JSON.stringify(
+      externalSelection.map((s: any) => `${s.id}-${s[AMOUNT_FIELD]}-${s[PAYMENT_AMOUNT_FIELD]}`)
+    );
     if (selectionString === lastSelectionStringRef.current) {
       return;
     }
     lastSelectionStringRef.current = selectionString;
 
-    syncGridSelectionToLocalRecords(externalSelection, localRecords, setLocalRecords);
+    syncGridSelectionToLocalRecords(
+      externalSelection,
+      localRecords,
+      setLocalRecords,
+      buildIsFieldReadOnly(fieldReadOnlyMapRef.current)
+    );
   }, [gridSelection, parameter.dBColumnName]); // localRecords omitted to prevent cycle
 
   const records = localRecords;
@@ -2393,14 +2455,7 @@ const WindowReferenceGrid = ({
 
       // 3. Update the persistent cache for rows on the current page.
       // Only rows currently in `records` are touched; off-page selections are preserved.
-      for (const record of newRecords) {
-        const id = String(record.id);
-        if (newSelection[id]) {
-          persistentSelectionRef.current.set(id, record);
-        } else {
-          persistentSelectionRef.current.delete(id);
-        }
-      }
+      syncPersistentSelection(persistentSelectionRef.current, newRecords, newSelection);
 
       // 4. Propagate ALL persistently selected rows (including off-page) to the parent.
       onSelectionChange((prev: GridSelectionStructure) => ({
@@ -2490,18 +2545,19 @@ const WindowReferenceGrid = ({
         return record;
       });
 
-      const selectedItems = updatedRecords.filter((record) => {
-        const recordId = String(record.id);
-        return newSelection[recordId];
-      });
+      // Populate the canonical selection cache so a row-body click registers the
+      // selection identically to a checkbox click (handleRowSelection). Without
+      // this, grid.getSelectedRecords() / onSelectionToggle stay empty for clicks.
+      syncPersistentSelection(persistentSelectionRef.current, updatedRecords, newSelection);
 
       setRowSelection(newSelection);
 
-      // Update with the new structure
+      // Update with the new structure, propagating from the same canonical cache
+      // as handleRowSelection so both selection stores stay consistent.
       onSelectionChange((prev: GridSelectionStructure) => ({
         ...prev,
         [parameter.dBColumnName]: {
-          _selection: selectedItems,
+          _selection: Array.from(persistentSelectionRef.current.values()),
           _allRows: updatedRecords,
         },
       }));

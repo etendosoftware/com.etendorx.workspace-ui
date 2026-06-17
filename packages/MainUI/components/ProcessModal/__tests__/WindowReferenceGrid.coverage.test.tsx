@@ -27,6 +27,8 @@ import {
   resolveSortBy,
   buildDeselectedRecord,
   syncGridSelectionToLocalRecords,
+  syncPersistentSelection,
+  buildIsFieldReadOnly,
   findMatchingRecord,
   isFieldVisibleForContext,
 } from "../WindowReferenceGrid";
@@ -95,6 +97,20 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       const reset = resetLocalRecordFields(record as any);
       expect(reset?.amount).toBe(0);
       expect(reset?.paymentAmount).toBe(0);
+    });
+
+    it("resetLocalRecordFields should preserve a read-only amount and still zero an editable field", () => {
+      const record = { id: "1", amount: 10, paymentAmount: 5 };
+      const isFieldReadOnly = (fieldName: string) => fieldName === "amount";
+      const reset = resetLocalRecordFields(record as any, isFieldReadOnly);
+      expect(reset?.amount).toBe(10); // read-only invoice amount is kept
+      expect(reset?.paymentAmount).toBe(0); // editable field still zeroed
+    });
+
+    it("resetLocalRecordFields should return null when every resettable field is read-only", () => {
+      const record = { id: "1", amount: 10, paymentAmount: 5 };
+      const reset = resetLocalRecordFields(record as any, () => true);
+      expect(reset).toBeNull();
     });
 
     it("applyDynamicKeys should apply org and client keys", () => {
@@ -338,6 +354,71 @@ describe("syncGridSelectionToLocalRecords", () => {
     // record id=2 not in selection → reset amount/paymentAmount
     expect(updated[1].amount).toBe(0);
     expect(updated[1].paymentAmount).toBe(0);
+  });
+
+  it("keeps a read-only amount on unselected rows while zeroing the editable field", () => {
+    const setLocalRecords = jest.fn();
+    const localRecords = [makeRecord({ id: "2", amount: 100, paymentAmount: 20 })];
+    const isFieldReadOnly = (fieldName: string) => fieldName === "amount";
+    syncGridSelectionToLocalRecords([], localRecords, setLocalRecords, isFieldReadOnly);
+    expect(setLocalRecords).toHaveBeenCalledTimes(1);
+    const updated = setLocalRecords.mock.calls[0][0] as EntityData[];
+    expect(updated[0].amount).toBe(100); // read-only invoice amount preserved
+    expect(updated[0].paymentAmount).toBe(0); // editable field still zeroed
+  });
+});
+
+describe("syncPersistentSelection", () => {
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData =>
+    ({ id: "1", ...overrides }) as EntityData;
+
+  it("sets selected rows and ignores unselected ones", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    const r2 = makeRecord({ id: "2" });
+    syncPersistentSelection(cache, [r1, r2], { "1": true });
+    expect(Array.from(cache.keys())).toEqual(["1"]);
+    expect(cache.get("1")).toBe(r1);
+    expect(cache.has("2")).toBe(false);
+  });
+
+  it("deletes a previously cached row when it is re-synced as unselected", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    const r2 = makeRecord({ id: "2" });
+    syncPersistentSelection(cache, [r1, r2], { "1": true });
+    syncPersistentSelection(cache, [r1, r2], { "2": true });
+    expect(cache.has("1")).toBe(false);
+    expect(cache.get("2")).toBe(r2);
+  });
+
+  it("empties the cache when nothing is selected", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    syncPersistentSelection(cache, [r1], { "1": true });
+    syncPersistentSelection(cache, [r1], {});
+    expect(cache.size).toBe(0);
+  });
+
+  it("keys the cache by String(record.id) for non-string ids", () => {
+    const cache = new Map<string, EntityData>();
+    const record = makeRecord({ id: 7 as unknown as string });
+    syncPersistentSelection(cache, [record], { "7": true });
+    expect(cache.get("7")).toBe(record);
+  });
+});
+
+describe("buildIsFieldReadOnly", () => {
+  it("returns true only for fields flagged read-only in the map", () => {
+    const isFieldReadOnly = buildIsFieldReadOnly({ amount: true, paymentAmount: false });
+    expect(isFieldReadOnly("amount")).toBe(true);
+    expect(isFieldReadOnly("paymentAmount")).toBe(false);
+    expect(isFieldReadOnly("unknown")).toBe(false);
+  });
+
+  it("treats every field as editable when the map is missing or empty", () => {
+    expect(buildIsFieldReadOnly(undefined)("amount")).toBe(false);
+    expect(buildIsFieldReadOnly({})("amount")).toBe(false);
   });
 });
 
