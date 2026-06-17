@@ -1032,6 +1032,35 @@ export const applyEditToRows = (
   changes: Record<string, EntityValue>
 ): EntityData[] => records.map((r) => (String(r.id) === String(rowId) ? { ...r, ...changes } : r));
 
+// Outcome of `decideDatasourceSync`: whether the datasource-sync effect should
+// process this render, plus the content signature the caller stores to dedup.
+export interface DatasourceSyncDecision {
+  shouldSync: boolean;
+  signature: string;
+}
+
+// Decides whether the datasource-sync effect should process the current
+// `rawRecords`. It proceeds only when (1) a real datasource fetch has completed
+// — before that the records are a placeholder (initial state or the `skip`
+// phase), NOT a delivered result — and (2) the serialized content differs from
+// the last processed payload (dedup). Gating on the first fetch is what lets an
+// empty result set still reach `onGridLoad`/`dataArrived`: without it the
+// pre-fetch empty placeholder fires those hooks with a phantom `rowCount=0` and
+// advances the dedup signature, so the genuine (also empty) delivery is then
+// skipped. While gated the signature is returned unchanged so the caller never
+// poisons its dedup ref. Classic fires these on data ARRIVAL, not while loading.
+export const decideDatasourceSync = (
+  rawRecords: EntityData[] | undefined,
+  hasFirstFetchCompleted: boolean,
+  lastSignature: string
+): DatasourceSyncDecision => {
+  if (!hasFirstFetchCompleted) {
+    return { shouldSync: false, signature: lastSignature };
+  }
+  const signature = JSON.stringify(rawRecords ?? []);
+  return { shouldSync: signature !== lastSignature, signature };
+};
+
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
@@ -2109,6 +2138,7 @@ const WindowReferenceGrid = ({
     fetchMore,
     addRecordLocally,
     removeRecordLocally,
+    hasFirstFetchCompleted,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
@@ -2237,10 +2267,17 @@ const WindowReferenceGrid = ({
 
   // Sync with datasource (rawRecords)
   useEffect(() => {
-    // Only update if rawRecords actually changed content
-    const rawString = JSON.stringify(rawRecords || []);
-    if (rawString === rawRecordsStringRef.current) return;
-    rawRecordsStringRef.current = rawString;
+    // Run only once a real fetch has delivered a result and the content changed
+    // (see decideDatasourceSync). The signature is stored even when skipping the
+    // body so the dedup keeps working, but it is left untouched while no fetch
+    // has completed yet — so an empty result set still reaches onGridLoad.
+    const { shouldSync, signature } = decideDatasourceSync(
+      rawRecords,
+      hasFirstFetchCompleted,
+      rawRecordsStringRef.current
+    );
+    rawRecordsStringRef.current = signature;
+    if (!shouldSync) return;
     // Apply the same default-payment logic that `handleRowSelection` runs on
     // user toggle, but synchronously for rows the backend pre-flagged with
     // `obSelected=true`. This collapses the legacy "rows arrive → default
@@ -2283,6 +2320,7 @@ const WindowReferenceGrid = ({
     }
   }, [
     rawRecords,
+    hasFirstFetchCompleted,
     onGridLoadHook,
     gridLoadFormHandle,
     messageBar,

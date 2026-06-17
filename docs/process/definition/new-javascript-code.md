@@ -300,8 +300,14 @@ performs the submit itself, so calling it would double-submit. (On non-Window-Re
 
 - **JS key:** `etmetaOnGridLoad` · **Entity:** parameter.
 - **Signature:** `(grid, view, parameters) => { … }` (the Classic `function(grid)` form also works).
-- **Fires:** each time the embedded grid parameter receives a datasource payload.
-- **Purpose:** post-process loaded rows — default selection, per-row components, derived columns.
+- **Fires:** each time the embedded grid parameter receives a **delivered datasource result** — i.e. once
+  a real fetch has completed, then again whenever the row content changes (e.g. paging, refetch). It does
+  **not** fire on the pre-fetch empty placeholder (initial render or the `skip` phase), so an **empty
+  result set still fires it exactly once** with `grid.getData().getLength() === 0`. This is what lets a
+  load-time `view.messageBar.setMessage(...)` "no records" banner appear (see Section 8.2): a hook that
+  reacts to `recordCount === 0` runs on the genuine empty delivery rather than on a phantom early render.
+- **Purpose:** post-process loaded rows — default selection, per-row components, derived columns — or react
+  to an empty grid (e.g. show an info banner when no rows match).
 
 ### 5.7 `em_etmeta_custom_component` — rendering flag
 
@@ -573,6 +579,14 @@ Anything not implemented throws a clear error rather than failing silently.
   `<script>`, inputs, `style`, or `on*` handlers). Clickable affordances must use the structured
   `actions` array (real React buttons whose `onClick` is a closure with access to `view`/`form`/`OB`),
   **not** Classic inline `<a href="#" onclick="…">` markup.
+- **Setting a message from `onGridLoad` (load-time banners).** A message set from an `onGridLoad` body
+  (e.g. an info banner when the grid loads zero rows) survives the modal's clear-on-open: the bar is
+  cleared once when the modal opens, and `onGridLoad` fires later, on the first **delivered** datasource
+  result (Section 5.6) — never on the pre-fetch empty placeholder. Because the firing is gated on a real
+  fetch completing, an empty result set reaches the hook exactly once, so a `recordCount === 0` banner is
+  set after the clear and stays visible. (The host `ProcessMessageBar` may mount/unmount during loading
+  transitions; the store owns the message lifetime, so a message set before the host mounts is still shown
+  when it does.)
 
 ### 8.3 Nested-process modal stack
 

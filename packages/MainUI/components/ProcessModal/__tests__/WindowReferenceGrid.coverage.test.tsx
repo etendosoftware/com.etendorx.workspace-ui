@@ -27,6 +27,7 @@ import {
   resolveSortBy,
   buildDeselectedRecord,
   applyEditToRows,
+  decideDatasourceSync,
   syncGridSelectionToLocalRecords,
   syncPersistentSelection,
   buildIsFieldReadOnly,
@@ -450,6 +451,49 @@ describe("applyEditToRows", () => {
     const r1 = makeRecord({ id: "1", settlementAmount: 1 });
     const result = applyEditToRows([r1], "missing", { settlementAmount: 99 });
     expect(result[0]).toBe(r1);
+  });
+});
+
+describe("decideDatasourceSync", () => {
+  const row = (id: string): EntityData => ({ id }) as EntityData;
+
+  it("does not sync and leaves the signature untouched before the first fetch completes", () => {
+    // The pre-fetch placeholder must never poison the dedup signature, otherwise
+    // the genuine (possibly empty) delivery would be deduped away afterwards.
+    const decision = decideDatasourceSync([], false, "prev");
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe("prev");
+  });
+
+  it("ignores the placeholder content while gated, even with rows present", () => {
+    const decision = decideDatasourceSync([row("1")], false, "");
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe("");
+  });
+
+  it("syncs an empty result set once the first fetch completed (drives the onGridLoad message)", () => {
+    const decision = decideDatasourceSync([], true, "");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe("[]");
+  });
+
+  it("syncs when the delivered content differs from the last signature", () => {
+    const decision = decideDatasourceSync([row("1")], true, "[]");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe(JSON.stringify([row("1")]));
+  });
+
+  it("does not re-sync identical delivered content (dedup)", () => {
+    const signature = JSON.stringify([row("1")]);
+    const decision = decideDatasourceSync([row("1")], true, signature);
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe(signature);
+  });
+
+  it("treats undefined records as an empty array", () => {
+    const decision = decideDatasourceSync(undefined, true, "");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe("[]");
   });
 });
 

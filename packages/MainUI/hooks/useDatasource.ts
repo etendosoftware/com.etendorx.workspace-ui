@@ -409,6 +409,7 @@ export function useDatasource({
     changePageSize,
     records,
     loaded,
+    hasFirstFetchCompleted,
     activeColumnFilters,
     removeRecordLocally,
     updateRecordLocally,

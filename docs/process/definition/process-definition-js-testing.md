@@ -298,7 +298,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | blocked |
 | 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
 | 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
-| 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | pending |
+| 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | migrated |
 | 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
 | 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function` | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | pending |
 | 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | component |
