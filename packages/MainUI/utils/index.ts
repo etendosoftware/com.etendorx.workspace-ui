@@ -359,8 +359,9 @@ export const buildFormPayload = ({
   csrfToken: string;
   tab?: Tab;
 }) => {
-  const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
-  const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
+  // In EDIT mode, "updated" is kept so the backend can detect stale-object conflicts.
+  const alwaysExcluded = ["creationDate", "createdBy", "updatedBy"];
+  const excludedFields = mode === FormMode.NEW ? [...alwaysExcluded, "updated", "id"] : alwaysExcluded;
   const passwordFields = getPasswordFieldNames(tab);
   const isNewRecord = mode === FormMode.NEW;
 
@@ -394,7 +395,7 @@ export const buildFormPayload = ({
 
   if (mode !== FormMode.NEW && oldValues) {
     const filteredOldValues = Object.entries(oldValues).reduce((acc, [key, value]) => {
-      if (!auditFields.includes(key)) {
+      if (!excludedFields.includes(key)) {
         acc[key] = value;
       }
       return acc;

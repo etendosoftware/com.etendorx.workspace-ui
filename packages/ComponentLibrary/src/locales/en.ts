@@ -137,6 +137,7 @@ const en = {
     noRecordsError: "There is no records selected",
     noRecords: "Please create a new record",
     copyError: "Copy failed! Please try again or contact support.",
+    staleObjectError: "The record has been modified by another user or process. Please refresh and try again.",
   },
   errors: {
     tableError: {
