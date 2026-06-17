@@ -26,6 +26,7 @@ import {
   buildGridCriteria,
   resolveSortBy,
   buildDeselectedRecord,
+  applyEditToRows,
   syncGridSelectionToLocalRecords,
   syncPersistentSelection,
   buildIsFieldReadOnly,
@@ -235,6 +236,25 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       expect(updated.amount).toBe(0);
       expect(updated.paymentAmount).toBe(0);
     });
+
+    it("preserves a read-only amount and still zeroes an editable paymentAmount", () => {
+      const record = { id: "1", obSelected: true, amount: 20, paymentAmount: 30 } as EntityData;
+      const isFieldReadOnly = (field: string) => field === "amount";
+      const { updated, changed } = buildDeselectedRecord(record, isFieldReadOnly);
+      expect(changed).toBe(true);
+      expect(updated.obSelected).toBe(false);
+      expect(updated.amount).toBe(20);
+      expect(updated.paymentAmount).toBe(0);
+    });
+
+    it("does not zero any amount field when every field is read-only (obSelected still clears)", () => {
+      const record = { id: "1", obSelected: true, amount: 20, paymentAmount: 30 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record, () => true);
+      expect(changed).toBe(true);
+      expect(updated.obSelected).toBe(false);
+      expect(updated.amount).toBe(20);
+      expect(updated.paymentAmount).toBe(30);
+    });
   });
 
   describe("GridTopToolbar", () => {
@@ -405,6 +425,31 @@ describe("syncPersistentSelection", () => {
     const record = makeRecord({ id: 7 as unknown as string });
     syncPersistentSelection(cache, [record], { "7": true });
     expect(cache.get("7")).toBe(record);
+  });
+});
+
+describe("applyEditToRows", () => {
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData => ({ id: "1", ...overrides }) as EntityData;
+
+  it("merges changes into the matching row and keeps other rows' identity", () => {
+    const r1 = makeRecord({ id: "1", settlementAmount: 1 });
+    const r2 = makeRecord({ id: "2", settlementAmount: 2 });
+    const result = applyEditToRows([r1, r2], "1", { settlementAmount: 99 });
+    expect(result[0]).toEqual({ id: "1", settlementAmount: 99 });
+    expect(result[0]).not.toBe(r1);
+    expect(result[1]).toBe(r2);
+  });
+
+  it("matches the row by String(id) for non-string ids", () => {
+    const record = makeRecord({ id: 7 as unknown as string, settlementAmount: 1 });
+    const result = applyEditToRows([record], 7, { settlementAmount: 5 });
+    expect(result[0].settlementAmount).toBe(5);
+  });
+
+  it("returns an equivalent array with no row mutated when no id matches", () => {
+    const r1 = makeRecord({ id: "1", settlementAmount: 1 });
+    const result = applyEditToRows([r1], "missing", { settlementAmount: 99 });
+    expect(result[0]).toBe(r1);
   });
 });
 

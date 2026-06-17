@@ -370,6 +370,25 @@ export function computeScalarStableKey(values: Record<string, unknown> | null | 
     .join("|");
 }
 
+// Predicate telling whether a record field is read-only (and therefore must not
+// be zeroed). When omitted, every field is treated as editable (legacy behavior).
+type IsFieldReadOnly = (fieldName: string) => boolean;
+
+// True when an amount-like field holds a non-zero value safe to zero (not read-only).
+// Shared by the load-time reset (resetAmountField) and the deselect path
+// (buildDeselectedRecord) so both honor the same read-only guard (e.g. the invoice
+// `amount` cap in Add Invoices).
+const shouldZeroAmountField = (
+  record: EntityData,
+  fieldName: string,
+  isFieldReadOnly?: IsFieldReadOnly
+): boolean => {
+  if (record[fieldName] === undefined || record[fieldName] === 0) {
+    return false;
+  }
+  return !isFieldReadOnly?.(fieldName);
+};
+
 /**
  * Mirrors Classic SmartClient: marks a record as selected and applies the
  * default payment amount in a single pass. Reused by the initial sync (so
@@ -392,8 +411,15 @@ export function buildSelectedRecord(record: EntityData): EntityData {
 /**
  * Resets payment-related fields on a deselected record.
  * Extracted to reduce cognitive complexity of handleRowSelection.
+ *
+ * Read-only-aware: a field flagged read-only (e.g. the invoice `amount` cap in
+ * Add Invoices) is left untouched, so migrated validations that read it keep
+ * working. Without a predicate it zeroes both amount fields (legacy behavior).
  */
-export function buildDeselectedRecord(record: EntityData): { updated: EntityData; changed: boolean } {
+export function buildDeselectedRecord(
+  record: EntityData,
+  isFieldReadOnly?: IsFieldReadOnly
+): { updated: EntityData; changed: boolean } {
   let updated = record;
   let changed = false;
   if (updated.obSelected) {
@@ -404,12 +430,12 @@ export function buildDeselectedRecord(record: EntityData): { updated: EntityData
     updated = { ...updated, payment: 0 };
     changed = true;
   }
-  if (updated.amount !== undefined && updated.amount !== 0) {
-    updated = { ...updated, amount: 0 };
+  if (shouldZeroAmountField(updated, AMOUNT_FIELD, isFieldReadOnly)) {
+    updated = { ...updated, [AMOUNT_FIELD]: 0 };
     changed = true;
   }
-  if (updated.paymentAmount !== undefined && updated.paymentAmount !== 0) {
-    updated = { ...updated, paymentAmount: 0 };
+  if (shouldZeroAmountField(updated, PAYMENT_AMOUNT_FIELD, isFieldReadOnly)) {
+    updated = { ...updated, [PAYMENT_AMOUNT_FIELD]: 0 };
     changed = true;
   }
   return { updated, changed };
@@ -959,18 +985,11 @@ export const updateLocalRecordFromSelection = (record: EntityData, selectionItem
   return null;
 };
 
-// Predicate telling whether a record field is read-only (and therefore must not
-// be zeroed). When omitted, every field is treated as editable (legacy behavior).
-type IsFieldReadOnly = (fieldName: string) => boolean;
-
 // Zeroes a single editable amount field in place. A read-only field (e.g. the
 // invoice `amount` cap in Add Invoices) is left untouched so migrated validations
 // that read it keep working. Returns whether the record was changed.
 const resetAmountField = (record: EntityData, fieldName: string, isFieldReadOnly?: IsFieldReadOnly): boolean => {
-  if (record[fieldName] === undefined || record[fieldName] === 0) {
-    return false;
-  }
-  if (isFieldReadOnly?.(fieldName)) {
+  if (!shouldZeroAmountField(record, fieldName, isFieldReadOnly)) {
     return false;
   }
   record[fieldName] = 0;
@@ -1003,6 +1022,15 @@ export const syncPersistentSelection = (
     }
   }
 };
+
+// Returns a new array with `changes` merged into the row whose id matches; other
+// rows keep their identity. Used both to commit (setLocalRecords) and to refresh
+// the read store synchronously so cell-edit hooks see the just-typed value.
+export const applyEditToRows = (
+  records: EntityData[],
+  rowId: unknown,
+  changes: Record<string, EntityValue>
+): EntityData[] => records.map((r) => (String(r.id) === String(rowId) ? { ...r, ...changes } : r));
 
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
@@ -2424,6 +2452,9 @@ const WindowReferenceGrid = ({
       // Reuse the same `records` array reference when nothing changed — prevents
       // downstream parents from re-rendering on no-op selection toggles.
       let recordsChanged = false;
+      // Built once: skips zeroing read-only amount fields (e.g. the invoice `amount`
+      // cap in Add Invoices) on deselect, matching the load-time reset.
+      const isFieldReadOnly = buildIsFieldReadOnly(fieldReadOnlyMapRef.current);
       const mappedRecords = records.map((record) => {
         const recordId = String(record.id);
         const isSelected = newSelection[recordId];
@@ -2437,7 +2468,7 @@ const WindowReferenceGrid = ({
         } else {
           // Aggressively reset amount to 0 if deselected, regardless of current value
           // Also handle 'paymentAmount' field which is used by Credit grid in Classic
-          const { updated, changed } = buildDeselectedRecord(record);
+          const { updated, changed } = buildDeselectedRecord(record, isFieldReadOnly);
           if (changed) {
             record = updated;
             recordsChanged = true;
@@ -2809,7 +2840,15 @@ const WindowReferenceGrid = ({
       // fire the cell-edit hooks below.
       if (records.some((r) => String(r.id) === String(row.id))) {
         // Update state (trigger re-render)
-        setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...mergedChanges } : r)));
+        const updatedRecords = applyEditToRows(records, row.id, mergedChanges);
+        setLocalRecords(updatedRecords);
+        // Reflect the in-flight edit in the read store synchronously, BEFORE the
+        // cell-edit hooks fire below. setLocalRecords commits on the next render, so
+        // without this a migrated onChange reading grid.getEditValues / getEditedCell
+        // (which read gridApiRef.current.rows) would see the previous render's value
+        // (stale-by-one). Classic SmartClient committed the cell value synchronously
+        // before the change handler.
+        gridApiRef.current.rows = updatedRecords;
 
         // Update selection if selected (read from ref)
         if (selection[row.id]) {

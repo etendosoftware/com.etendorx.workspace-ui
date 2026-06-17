@@ -623,13 +623,22 @@ columns does not loop. There is **no** new DB column for the per-column hooks �
 runtime from the existing `onGridLoad` body. `grid.getEditedCell(...)` accepts either a row index or a
 record, and either a column name (string) or a Classic field object.
 
+**A cell-edit hook sees the just-typed value.** When a `setColumnOnChange` (or `onRecordChange`) body
+reads the grid back through `grid.getEditValues(index)` / `grid.getEditedCell(...)`, those reads reflect
+the **in-flight** edit — the value the user just committed in that cell — not the previous one. (The
+substrate refreshes the read store synchronously before firing the hook, matching Classic SmartClient,
+which committed the cell value before invoking the change handler.) So a recompute like *Add Invoices*'
+`amountChange` — which re-sums `settlementAmount` over the selected rows on every edit — is correct on
+every keystroke-commit, with no stale-by-one lag. No script change is required.
+
 **Read-only amount columns survive selection changes.** When the selection changes, the substrate zeroes
 the editable amount field of every **unselected** row (correct for payment grids, where an unselected row
 pays nothing). It now skips any `amount`/`paymentAmount` column that is **read-only** for the grid (per the
-grid's read-only logic). So a migrated validation that reads `record.amount` as a read-only cap (e.g. *Add
-Invoices*, where `amount` is the invoice amount and `settlementAmount` is the editable field) keeps seeing
-the real value on every row — it is no longer forced to `0` on open. No script change is required to opt
-in; it follows the field's read-only metadata.
+grid's read-only logic), on **both** paths that reset a row: the initial-load sync *and* an explicit
+deselect. So a migrated validation that reads `record.amount` as a read-only cap (e.g. *Add Invoices*,
+where `amount` is the invoice amount and `settlementAmount` is the editable field) keeps seeing the real
+value on every row — it is not forced to `0` on open, nor when the user deselects and reselects a row.
+No script change is required to opt in; it follows the field's read-only metadata.
 
 **Row-click selection registers in the canonical store.** A user can select a grid row either by ticking
 its checkbox or by clicking the row body. Both paths now feed the same canonical selection store, so
