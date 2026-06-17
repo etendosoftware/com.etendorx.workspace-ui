@@ -94,6 +94,7 @@ export interface ProcessResponse {
   retryExecution?: boolean;
   showInIframe?: boolean;
   iframeUrl?: string;
+  iframeFormParams?: Record<string, string> | null;
 }
 
 export interface MessageStylesType {
@@ -110,6 +111,7 @@ export interface ProcessIframeModalClosedProps {
 export interface ProcessIframeModalOpenProps {
   isOpen: true;
   url?: string;
+  formParams?: Record<string, string> | null;
   title?: string;
   tabId: string;
   onProcessSuccess?: () => void;

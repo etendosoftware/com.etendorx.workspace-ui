@@ -311,6 +311,10 @@ const en = {
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",
     executionTimeout: "Process execution timed out. Please try again.",
+    legacyProcessUnresolved: {
+      title: "This process can't be opened",
+      description: "We couldn't load the required parameters. Please contact support.",
+    },
     pickAndExecuteNotImplemented:
       "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
   },
@@ -318,6 +322,19 @@ const en = {
     gridToolbar: {
       addRow: "Add row",
       deleteRow: "Delete row",
+      processingMessage: "Processing...",
+      fallbackMessage: {
+        title: "Could not capture response",
+        text: "Could not capture the process response. Please verify status manually.",
+      },
+      requestFailed: {
+        title: "The process could not be executed",
+        text: "The process could not be executed. Please contact support.",
+      },
+      openLegacyReport: {
+        popupBlockedTitle: "The browser blocked the report popup.",
+        openManually: "Open report",
+      },
     },
   },
   drawer: {

@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
@@ -23,6 +22,8 @@ jest.mock("@/contexts/ToolbarContext", () => ({
     isAdvancedFilterApplied: false,
   }),
 }));
+jest.mock("@/hooks/useSelected", () => require("../__testUtils__/toolbarMocks").UseSelectedMock);
+jest.mock("@/contexts/window", () => require("../__testUtils__/toolbarMocks").WindowContextMock);
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getChildren: () => [] } }),
 }));
@@ -71,23 +72,14 @@ jest.mock("@/hooks/Toolbar/useProcessButton", () => ({
   useProcessButton: () => ({ handleProcessClick: jest.fn() }),
 }));
 
-// Mock IconButton and IconButtonWithText from component library
-jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
-  __esModule: true,
-  default: ({ children, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {children}
-    </button>
-  ),
-}));
-jest.mock("@workspaceui/componentlibrary/src/components/IconButtonWithText", () => ({
-  __esModule: true,
-  default: ({ text, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {text}
-    </button>
-  ),
-}));
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButton",
+  () => require("../__testUtils__/toolbarMocks").IconButtonMock
+);
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButtonWithText",
+  () => require("../__testUtils__/toolbarMocks").IconButtonWithTextMock
+);
 
 // Mock EmailSendModal
 jest.mock("../Modals/EmailSendModal", () => ({

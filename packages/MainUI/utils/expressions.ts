@@ -180,7 +180,7 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return undefined;
   };
 
-  // Resolve special prefixed properties (@prop@, #prop, $prop)
+  // Resolve special prefixed properties (@prop@, #prop, $prop, _prop)
   const resolvePrefixed = (target: Record<string, any>, prop: string): unknown => {
     if (prop.startsWith("@") && prop.endsWith("@")) {
       const cleanVal = resolveProperty(target, prop.slice(1, -1));
@@ -189,6 +189,17 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     if (prop.startsWith("#") || prop.startsWith("$")) {
       const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
       if (valFromPrefs !== undefined) return valFromPrefs;
+    }
+    // Server-side DynamicExpressionParser rewrites @#FOO@ → context._FOO as a name
+    // sanitization (# is not a valid JS identifier). Recover the original session
+    // attribute by looking up #FOO / $FOO in the context, then falling back to the
+    // preferences store (localStorage etendo_preferences).
+    if (prop.startsWith("_")) {
+      const original = prop.slice(1);
+      const fromContext = resolveProperty(target, "#" + original) ?? resolveProperty(target, "$" + original);
+      if (fromContext !== undefined && fromContext !== null) return fromContext;
+      const fromPrefs = getFromPrefs(original) ?? getFromPrefs("#" + original) ?? getFromPrefs("$" + original);
+      if (fromPrefs !== undefined) return fromPrefs;
     }
     return undefined;
   };
