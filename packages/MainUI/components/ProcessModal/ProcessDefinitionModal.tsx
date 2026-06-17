@@ -120,15 +120,14 @@ import {
   findParameter,
   resolveFormKey,
   type FieldController,
-  type FooterButtonHandle,
   type GridController,
   type GridResolver,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
 import {
-  withButtonDisabled,
-  withButtonHidden,
+  makeFooterButtonHandle,
+  runFooterButtonAction,
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
@@ -254,26 +253,6 @@ function focusFormField(form: UseFormReturn, name: string): void {
   } catch {
     // Best-effort: nothing focusable matched the requested item.
   }
-}
-
-type ButtonStateUpdater = (updater: (prev: ScriptButtonState) => ScriptButtonState) => void;
-
-/**
- * Wraps a footer action button as the SmartClient-style handle migrated scripts
- * reach through `view.popupButtons.members`. Each mutation routes through the
- * modal's `scriptButtonState` so the footer re-renders accordingly.
- */
-function makeFooterButtonHandle(
-  button: { value: string; label: string },
-  setButtonState: ButtonStateUpdater
-): FooterButtonHandle {
-  return {
-    _buttonValue: button.value,
-    title: button.label,
-    hide: () => setButtonState((prev) => withButtonHidden(prev, button.value, true)),
-    show: () => setButtonState((prev) => withButtonHidden(prev, button.value, false)),
-    setDisabled: (disabled = true) => setButtonState((prev) => withButtonDisabled(prev, button.value, disabled)),
-  };
 }
 
 /** Returns the grid-selection structure with every loaded row selected. */
@@ -1816,7 +1795,7 @@ function ProcessDefinitionModalContent({
                           key={btn.value}
                           variant="filled"
                           size="large"
-                          onClick={() => handleExecute(btn.value)}
+                          onClick={() => runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)}
                           disabled={
                             Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
                           }

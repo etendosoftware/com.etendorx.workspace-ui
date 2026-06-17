@@ -461,6 +461,18 @@ client's `/api` proxy, which injects the CSRF token server-side.
   `view.cancelButton`, `view.parentElement…closeButton`) and the execute button
   (`view.okButton.isEnabled()` / `view.okButton.enable()`). Without the controller these are deferred and
   throw `"<api> is not implemented yet"`.
+  - **Footer button action override (`button.action = fn`).** Each handle in
+    `view.popupButtons.members` is a `FooterButtonHandle` exposing `_buttonValue`, `title`, `hide()`,
+    `show()`, `setDisabled(bool)`, **and an assignable `action`**. Assigning a function —
+    `button.action = function () { … }`, the Classic SmartClient idiom — makes pressing that footer
+    Button-List button run the closure **instead of** the standard Pick&Execute submit (which always posts
+    `_buttonValue` to the process's own Java handler). Use it when a Classic `onLoad` reassigns a specific
+    footer button to a different client call (e.g. routing an "Unmatch Selected" button to its own action
+    handler). Leaving `action` unset keeps the standard submit, so this is purely additive. The closure
+    runs at click time, so it reads live state — e.g. `grid.getSelectedRecords()` returns the selection as
+    of the press, not as of `onLoad`. To redirect by button *value*, guard inside the closure on the
+    handle's `_buttonValue`. (To merely block/allow a submit without redirecting, use the `onProcess`
+    pre-submit hook instead — Section 5.2.2.)
   - **`view.okButton`.** `isEnabled()` reads the live enabled state of the execute/OK button; `enable()`
     force-enables it. The button already enables itself reactively once mandatory parameters have values,
     so `enable()` exists for parity with Classic (e.g. `ProcessOrders.onLoad`) and overrides **only** the
@@ -876,6 +888,7 @@ This section is the operational guide for translating one Classic `.js` file int
 | `onProcess(…, …, clientSideValidationFail)` → `clientSideValidationFail()` | `return { severity: 'error', text }` (aborts; modal stays open) |
 | `clientsidevalidation` on a Pick&Execute / Window-Reference process | `em_etmeta_onprocess` as a **pre-submit hook** (Section 5.2.2): `return { severity: 'error', text }` to abort, `undefined` to proceed; do **not** call `view.executeProcess()` |
 | `grid.selectionChanged = function(record, state) { … }` (per-toggle) | `grid.onSelectionToggle((record, state) => …)` registered from `onGridLoad` (Section 8.5) |
+| `button.action = function () { … }` (footer Button-List button, reassigned in `onLoad`) | `member.action = () => { … }` on a `view.popupButtons.members` handle (Section 7.2) — runs the closure instead of the standard submit; reads live state at click time |
 | `this.fireOnPause(id, fn, ms)` (on the grid) | `grid.fireOnPause(id, fn, ms)` (Section 8.5) |
 | `AD_FIELD.ONCHANGEFUNCTION` on a grid column | `grid.setColumnOnChange('<col>', (item, view, form, grid) => …)` from `onGridLoad` (Section 8.5) |
 | `AD_FIELD.EM_OBUIAPP_VALIDATOR` on a grid column | `grid.setColumnValidator('<col>', (item, validator, value, record) => boolean)` from `onGridLoad` (Section 8.5) |

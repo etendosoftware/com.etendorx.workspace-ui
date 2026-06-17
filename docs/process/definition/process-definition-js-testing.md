@@ -296,10 +296,10 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | migrated |
 | 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | migrated ⁸ |
 | 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | blocked |
-| 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | pending |
+| 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | migrated ¹¹ |
 | 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
 | 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | migrated |
-| 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
+| 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | migrated ¹² |
 | 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function`, `em_obuiapp_selection` ×2, `em_obuiapp_validator` ×2 | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | migrated ¹⁰ |
 | 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | component |
 | 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | component |
@@ -411,6 +411,44 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   reproduced by an in-module `isNum` helper (the `isc` shim does not expose `isA`). Generated:
   `em_etmeta_payscript_logic` (process) + `em_etmeta_on_grid_load` ×2 (one per grid parameter); all
   other `em_etmeta_*` empty. Pending manual QA.
+- ¹¹ **Migrated 2026-06-17** (see `client/agents/reports/E68790A7B65F4D45AB35E2BAE34C1F39.md`).
+  `OBUIAPP_PickAndExecute` process; `clientsidevalidation = OB.APRM.AddTransaction.onProcess` is
+  therefore ported as a **pre-submit validation hook** (Section 5.2.2): it returns
+  `{ severity: 'error', text }` to abort and `undefined` to proceed — it does **not** call
+  `view.executeProcess()` (the platform performs the P&E submit). `onLoad` is migrated to
+  `em_etmeta_onload` (adds the hidden `bankStatementLineId` parameter via `view.theForm.addField`,
+  seeds its value through the onLoad return map, hides it, and mirrors `ad_org_id` → `ad_org_id_process`).
+  The 7 `onchangefunction` bindings map to **6 distinct** handlers; the shared `amtOnChangeFunction`
+  (bound to both *Deposit Amount* and *Withdrawal Amount*) is **split into two parameter bodies**
+  because `item.name` in the new UI resolves to the parameter's display name, not the classic column
+  name `depositamt`/`withdrawalamt` — each body now knows its own identity. `trxDateOnChangeFunction`'s
+  Classic `setDateParameterValue(new Date(...))` becomes a plain `setValue(item.getValue())` date
+  passthrough (the item proxy has no `setDateParameterValue`; the value is already a date). Both
+  `OB.RemoteCallManager.call` handlers (`AddTransactionOnChangePaymentActionHandler`,
+  `GLItemTransactionActionHandler`) exist in `etendodev` and return the flat keys the callbacks read.
+  No substrate blockers; no backend change. Generated: `em_etmeta_onload` + `em_etmeta_onprocess`
+  (process) + 7 `em_etmeta_on_parameter_change` (one per onChange parameter); `em_etmeta_on_refresh`,
+  `em_etmeta_payscript_logic` and all `em_etmeta_on_grid_load` stay EMPTY. Pending manual QA.
+- ¹² **Migrated 2026-06-17** (was blocked; see
+  `client/agents/reports/86F0B1EBE2BC48E3ACF458768D14CC99.md`). `OBUIAPP_PickAndExecute` process with a
+  Window-Reference grid and an "Actions" **Button List** (`OK` / `RE` Reconcile All / `UN` Unmatch
+  Selected). The migration architecture/playbook lives in `new-javascript-code.md`. The decisive blocker
+  — the `UN` footer action, where the classic `onLoad` **reassigns** `button.action` so pressing `UN`
+  calls `UnMatchSelectedTransactionsActionHandler` with `grid.getSelectedRecords()` instead of the P&E
+  submit — was lifted by an additive substrate capability (ETP-3748): `FooterButtonHandle.action` is now
+  an assignable setter (`scriptProxies.ts` / `utils.ts` `makeFooterButtonHandle` + `withButtonAction`),
+  dispatched at click time by `runFooterButtonAction` in `ProcessDefinitionModal.tsx`, so `member.action
+  = fn` runs the closure instead of submitting (matching `new-javascript-code.md` §7.2 / §10.2).
+  Generated: `em_etmeta_onload` (chrome hides + `UN` `button.action` override + matching algorithm behind
+  `isc.confirm` + persist-info banner with the link as a structured `actions[]`), `em_etmeta_on_refresh`
+  (`invalidateCache`+`redraw`), `em_etmeta_onprocess` (pure passthrough → `return undefined`), and the
+  `Match Statement` grid parameter's `em_etmeta_on_grid_load` (the per-row
+  `APRMMatchStatGridButtonsComponent` re-homed as `grid.setRowActions` `search`/`add`/`clearRight` +
+  `grid.onSelectionToggle` driving the `UN` button visibility). `em_etmeta_payscript_logic`,
+  `em_etmeta_custom_component`, and the `Actions` parameter's `em_etmeta_on_parameter_change` stay EMPTY.
+  Pending manual QA. Remaining advisories (all non-blocking): the algorithm-before-first-fetch ordering
+  is reproduced via `invalidateCache` rather than the classic datasource-suspend trick, and the
+  `selectSingleRecord`-on-row-button-click side effect is not reproduced.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.

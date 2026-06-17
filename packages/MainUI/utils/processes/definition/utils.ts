@@ -25,7 +25,11 @@ import { dispatchBuiltinAction } from "@/utils/processes/definition/actionDispat
 import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
 import { openParameterDialog } from "@/utils/processes/definition/parameterDialogStore";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
-import type { MessageBarHandle } from "@/utils/processes/definition/scriptProxies";
+import type {
+  FooterButtonAction,
+  FooterButtonHandle,
+  MessageBarHandle,
+} from "@/utils/processes/definition/scriptProxies";
 
 /**
  * Auth credentials required to build the process context.
@@ -356,6 +360,12 @@ export function withFlag(prev: Record<string, boolean>, key: string, value: bool
 export interface ScriptButtonState {
   hiddenValues: Record<string, boolean>;
   disabledValues: Record<string, boolean>;
+  /**
+   * Client-side action overrides keyed by the action button's value (Classic
+   * `button.action = fn`). When a value is present its button runs the closure
+   * instead of the standard submit.
+   */
+  actionValues: Record<string, FooterButtonAction>;
   cancelHidden: boolean;
   closeHidden: boolean;
   /** Forces the execute/OK button enabled (set by `view.okButton.enable()`). */
@@ -366,6 +376,7 @@ export interface ScriptButtonState {
 export const EMPTY_SCRIPT_BUTTON_STATE: ScriptButtonState = {
   hiddenValues: {},
   disabledValues: {},
+  actionValues: {},
   cancelHidden: false,
   closeHidden: false,
   okForceEnabled: false,
@@ -399,6 +410,68 @@ export function withCloseHidden(prev: ScriptButtonState, hidden: boolean): Scrip
 export function withOkForceEnabled(prev: ScriptButtonState, enabled: boolean): ScriptButtonState {
   if (prev.okForceEnabled === enabled) return prev;
   return { ...prev, okForceEnabled: enabled };
+}
+
+/** Sets an action button's client-side action override; short-circuits on a no-op (same reference). */
+export function withButtonAction(
+  prev: ScriptButtonState,
+  value: string,
+  action: FooterButtonAction
+): ScriptButtonState {
+  if (prev.actionValues[value] === action) return prev;
+  return { ...prev, actionValues: { ...prev.actionValues, [value]: action } };
+}
+
+/**
+ * Resolves a footer button press: runs the script-assigned action override
+ * (Classic `button.action = fn`) when one exists for the value, otherwise the
+ * standard execute. A single branch keeps the click handler trivial.
+ */
+export function runFooterButtonAction(
+  actionValues: Record<string, FooterButtonAction>,
+  value: string,
+  execute: (value: string) => void
+): void {
+  const override = actionValues[value];
+  if (override) {
+    override();
+    return;
+  }
+  execute(value);
+}
+
+/** Routes a button-state update produced by a footer-button handle method. */
+export type ButtonStateUpdater = (updater: (prev: ScriptButtonState) => ScriptButtonState) => void;
+
+/**
+ * Wraps a footer action button as the SmartClient-style handle migrated scripts
+ * reach through `view.popupButtons.members`. The `hide`/`show`/`setDisabled`
+ * methods and the assignable `action` property each route through the modal's
+ * `scriptButtonState` so the footer re-renders accordingly. `action` is exposed
+ * as a setter so the Classic `button.action = fn` assignment is honored verbatim.
+ */
+export function makeFooterButtonHandle(
+  button: { value: string; label: string },
+  setButtonState: ButtonStateUpdater
+): FooterButtonHandle {
+  const handle: FooterButtonHandle = {
+    _buttonValue: button.value,
+    title: button.label,
+    hide: () => setButtonState((prev) => withButtonHidden(prev, button.value, true)),
+    show: () => setButtonState((prev) => withButtonHidden(prev, button.value, false)),
+    setDisabled: (disabled = true) => setButtonState((prev) => withButtonDisabled(prev, button.value, disabled)),
+  };
+  let assignedAction: FooterButtonAction | undefined;
+  Object.defineProperty(handle, "action", {
+    configurable: true,
+    enumerable: true,
+    get: () => assignedAction,
+    set: (action: FooterButtonAction) => {
+      assignedAction = action;
+      setButtonState((prev) => withButtonAction(prev, button.value, action));
+    },
+  });
+  return handle;
 }
 
 /** Default combinator and the id-set operator used when merging grid criteria. */

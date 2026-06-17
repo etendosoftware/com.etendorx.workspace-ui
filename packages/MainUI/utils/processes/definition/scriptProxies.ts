@@ -93,6 +93,13 @@ export interface FieldController {
   focusField: (name: string) => void;
 }
 
+/**
+ * Client-side action a migrated script assigns to a footer button via
+ * `button.action = fn` (Classic SmartClient parity). When assigned, pressing the
+ * button runs this closure instead of the standard Pick&Execute submit.
+ */
+export type FooterButtonAction = () => void;
+
 /** A footer button handle reachable through `view.popupButtons.members`. */
 export interface FooterButtonHandle extends Record<string, unknown> {
   _buttonValue: string;
@@ -100,6 +107,12 @@ export interface FooterButtonHandle extends Record<string, unknown> {
   hide: () => void;
   show: () => void;
   setDisabled: (disabled?: boolean) => void;
+  /**
+   * Overrides the button's client-side action (Classic `button.action = fn`).
+   * Assigning a function makes pressing the button run it instead of submitting
+   * to the process's own Java handler; leaving it unset keeps the standard submit.
+   */
+  action?: FooterButtonAction;
 }
 
 /**

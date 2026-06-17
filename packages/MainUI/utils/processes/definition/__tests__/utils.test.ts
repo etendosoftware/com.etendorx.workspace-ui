@@ -17,11 +17,15 @@ import {
   removeParameter,
   withButtonHidden,
   withButtonDisabled,
+  withButtonAction,
+  runFooterButtonAction,
+  makeFooterButtonHandle,
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
   EMPTY_SCRIPT_BUTTON_STATE,
   addSelectedIDsToCriteria,
+  type ScriptButtonState,
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
@@ -521,6 +525,72 @@ describe("Process Definition Utils", () => {
         expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
         expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
         expect(withOkForceEnabled(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+      });
+
+      it("starts with no action overrides", () => {
+        expect(EMPTY_SCRIPT_BUTTON_STATE.actionValues).toEqual({});
+      });
+
+      it("withButtonAction stores the override keyed by value immutably", () => {
+        const action = jest.fn();
+        const next = withButtonAction(EMPTY_SCRIPT_BUTTON_STATE, "UN", action);
+        expect(next.actionValues).toEqual({ UN: action });
+        expect(next).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(EMPTY_SCRIPT_BUTTON_STATE.actionValues).toEqual({});
+      });
+
+      it("withButtonAction short-circuits when the same action is reassigned", () => {
+        const action = jest.fn();
+        const first = withButtonAction(EMPTY_SCRIPT_BUTTON_STATE, "UN", action);
+        expect(withButtonAction(first, "UN", action)).toBe(first);
+      });
+    });
+
+    describe("runFooterButtonAction", () => {
+      const UN_VALUE = "UN";
+
+      it("runs the assigned override and does NOT call execute", () => {
+        const override = jest.fn();
+        const execute = jest.fn();
+        runFooterButtonAction({ [UN_VALUE]: override }, UN_VALUE, execute);
+        expect(override).toHaveBeenCalledTimes(1);
+        expect(execute).not.toHaveBeenCalled();
+      });
+
+      it("falls back to the standard execute when no override exists", () => {
+        const execute = jest.fn();
+        runFooterButtonAction({}, UN_VALUE, execute);
+        expect(execute).toHaveBeenCalledWith(UN_VALUE);
+      });
+    });
+
+    describe("makeFooterButtonHandle", () => {
+      const collectUpdates = () => {
+        const updaters: Array<(prev: ScriptButtonState) => ScriptButtonState> = [];
+        const setButtonState = (updater: (prev: ScriptButtonState) => ScriptButtonState) => updaters.push(updater);
+        return { updaters, setButtonState };
+      };
+
+      it("exposes the button value/title and routes hide/show/setDisabled through the state", () => {
+        const { updaters, setButtonState } = collectUpdates();
+        const handle = makeFooterButtonHandle({ value: "UN", label: "Unmatch" }, setButtonState);
+        expect(handle._buttonValue).toBe("UN");
+        expect(handle.title).toBe("Unmatch");
+
+        handle.hide();
+        expect(updaters[0](EMPTY_SCRIPT_BUTTON_STATE).hiddenValues).toEqual({ UN: true });
+        handle.setDisabled();
+        expect(updaters[1](EMPTY_SCRIPT_BUTTON_STATE).disabledValues).toEqual({ UN: true });
+      });
+
+      it("honors the Classic `button.action = fn` assignment by routing it into the state", () => {
+        const { updaters, setButtonState } = collectUpdates();
+        const handle = makeFooterButtonHandle({ value: "UN", label: "Unmatch" }, setButtonState);
+        const action = jest.fn();
+
+        handle.action = action;
+        expect(handle.action).toBe(action);
+        expect(updaters[0](EMPTY_SCRIPT_BUTTON_STATE).actionValues).toEqual({ UN: action });
       });
     });
 
