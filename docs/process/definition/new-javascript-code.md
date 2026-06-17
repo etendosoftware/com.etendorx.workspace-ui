@@ -661,6 +661,17 @@ fires for it, regardless of how the row was selected. A migrated script that rea
 `grid.getSelectedRecords()` (e.g. *Add Invoices* summing `settlementAmount` over the picked invoices)
 therefore sees the user's picks immediately — no script change is required.
 
+**The grid fetch carries the owner tab (`buttonOwnerViewTabId`).** A Pick&Execute / Window-Reference
+grid fetches its rows from a backend datasource, and several backend HQL transformers branch on
+**which tab owns the process button** — they read a `buttonOwnerViewTabId` request parameter (the tabId
+of the view the process was launched from, *not* the grid's own tab) to choose the right WHERE clause
+(e.g. RFC vs RTV order lines). Classic sends it from `OBPickAndExecuteGrid.transformRequest`; the new UI
+now mirrors this: `WindowReferenceGrid` adds `buttonOwnerViewTabId` to every P&E datasource fetch, set to
+the launching tab's id (the `originTab` the process modal was opened from), only when such a tab exists —
+the same conditional guard as Classic. Without it those transformers take the wrong branch and the grid
+comes back **empty**. This is automatic and general to every defined process with a Window-Reference grid;
+no script change is required.
+
 **Grid visibility.** A Classic process can hide/show the whole grid widget
 (`item.theForm.getField('<grid>').canvas.viewGrid.hide()` / `.show()`) — e.g. to keep a results grid
 hidden until a search runs. The new UI supports this on the grid proxy as `viewGrid.hide()` /

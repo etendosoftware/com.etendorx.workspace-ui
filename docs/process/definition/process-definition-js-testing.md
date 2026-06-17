@@ -300,7 +300,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
 | 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | migrated |
 | 32 | 86F0B1EBE2BC48E3ACF458768D14CC99 | Match Statement | 1 | `on_load_function`, `clientsidevalidation`, `on_refresh_function` | medium | 377 · 11.9 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-matchStatement.js` | pending |
-| 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function` | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | pending |
+| 33 | A2C19D0EF6594D14A64BC62E99A89CC3 | RFC/RTV HQL Pick and Edit Lines | 1 | `on_load_function`, `em_obuiapp_selection` ×2, `em_obuiapp_validator` ×2 | medium | 470 · 14.5 KB | `modules_core/org.openbravo.client.application/web/…/js/return-material/ob-return-material.js` | migrated ¹⁰ |
 | 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | component |
 | 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | component |
 | 36 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | component |
@@ -397,6 +397,20 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   components, out of scope (no `em_etmeta_*` channel). All `em_etmeta_*` columns stay EMPTY until the
   platform documents a custom-component schema for an action-picker dialog (or a list parameter whose
   value map is seeded at open), at which point a parameter would also need to be authored as metadata.
+- ¹⁰ **Migrated 2026-06-17** (see `client/agents/reports/A2C19D0EF6594D14A64BC62E99A89CC3.md`). P&E /
+  Window-Reference process with **two** grid parameters (`Pick/Edit Lines`, `Orphan Lines`). The classic
+  `ob-return-material.js` is a **shared module for three sibling processes** (RFC/RTV, RM Receipt
+  `5E9F9D7E…`, RM Shipment `4AD70293…`); only the three RFC/RTV-bound functions are in scope here —
+  tab selection `RMOrderSelectionChange` (both grids) → `onSelectionToggle`, and field validators
+  `RMOrderQtyValidate`/`RMReturnedUOMValidate` (Pick/Edit Lines window) → `grid.setColumnValidator`,
+  all wired from `em_etmeta_on_grid_load` and exported from `em_etmeta_payscript_logic`. The
+  Receipt/Shipment functions are dead code for this process (migrate on their own rows). The
+  `on_load_function = OB.RM.onLoad` binding is **dead** (no such function exists in the repo) → empty
+  `onload`. No substrate blockers; no backend change. Two best-effort items resolved without a platform
+  change: `grid.deselectRecord(record)` → `deselectRecord(getRecordIndex(record))`, and `isc.isA.Number`
+  reproduced by an in-module `isNum` helper (the `isc` shim does not expose `isA`). Generated:
+  `em_etmeta_payscript_logic` (process) + `em_etmeta_on_grid_load` ×2 (one per grid parameter); all
+  other `em_etmeta_*` empty. Pending manual QA.
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
