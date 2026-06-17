@@ -838,6 +838,8 @@ const DynamicTable = ({
   // fired, so closing the form does not re-trigger for the same parent.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
+  const [treeSearchTerm, setTreeSearchTerm] = useState("");
+
   // Use the table data hook
   const {
     displayRecords,
@@ -866,6 +868,7 @@ const DynamicTable = ({
     handleDateTextFilterChange,
   } = useTableData({
     isTreeMode,
+    treeSearchTerm,
   });
 
   // Auto-open FormView for logical SR (Single Record) tabs once the child
@@ -3276,12 +3279,53 @@ const DynamicTable = ({
     onNew?.();
   }, [parentTab, parentRecord, onNew]);
 
+  const handleTreeArrowRight = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const row = tableRef.current.getRow(selectedIds[0]);
+      if (row?.getCanExpand() && !row.getIsExpanded()) {
+        row.toggleExpanded();
+      }
+    },
+    [shouldUseTreeMode]
+  );
+
+  const handleTreeArrowLeft = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const rowId = selectedIds[0];
+      const row = tableRef.current.getRow(rowId);
+      if (row?.getIsExpanded()) {
+        row.toggleExpanded();
+      } else {
+        const record = effectiveRecords.find((r) => String(r.id) === rowId);
+        const parentId = record?.__treeParentId ? String(record.__treeParentId) : null;
+        if (parentId) {
+          tableRef.current.setRowSelection({ [parentId]: true });
+        }
+      }
+    },
+    [shouldUseTreeMode, effectiveRecords]
+  );
+
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
+      ...(shouldUseTreeMode
+        ? {
+            ArrowRight: { handler: handleTreeArrowRight },
+            ArrowLeft: { handler: handleTreeArrowLeft },
+          }
+        : {}),
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
@@ -3764,6 +3808,18 @@ const DynamicTable = ({
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
+      {shouldUseTreeMode && (
+        <div className="px-3 py-2 bg-white border-b border-gray-200 shrink-0">
+          <input
+            type="text"
+            value={treeSearchTerm}
+            onChange={(e) => setTreeSearchTerm(e.target.value)}
+            placeholder={t("search" as any) || "Search..."}
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            data-testid="TreeSearchInput__8ca888"
+          />
+        </div>
+      )}
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>

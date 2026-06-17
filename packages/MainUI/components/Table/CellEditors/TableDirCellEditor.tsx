@@ -23,7 +23,7 @@ import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
-import CheckCircleFilled from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
+import CheckCircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
 
 /**
  * TABLEDIR cell editor that uses a dropdown similar to MultiSelect but for single selection
@@ -598,7 +598,12 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
               tabIndex={-1}>
               <span className="text-gray-500">(None)</span>
               {localValue === "" && (
-                <CheckCircleFilled className="w-4 h-4 flex-shrink-0" data-testid={"Image__" + field.id} />
+                <CheckCircleFilledIcon
+                  width={16}
+                  height={16}
+                  aria-label="Selected"
+                  data-testid={"Image__" + field.id}
+                />
               )}
             </div>
           )}
@@ -623,7 +628,12 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                   tabIndex={-1}>
                   <span className="truncate">{option.label}</span>
                   {isSelected && (
-                    <CheckCircleFilled className="w-4 h-4 flex-shrink-0" data-testid={"Image__" + field.id} />
+                    <CheckCircleFilledIcon
+                      width={16}
+                      height={16}
+                      aria-label="Selected"
+                      data-testid={"Image__" + field.id}
+                    />
                   )}
                 </div>
               );

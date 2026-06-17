@@ -382,6 +382,12 @@ export interface Tab {
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;
+  hasTree?: boolean;
+  tableId?: string;
+  tableTreeId?: string;
+  isReadOnlyTree?: boolean;
+  showTreeNodeIcons?: boolean;
+  hqlWhereClauseForRootNodes?: string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
   /**
