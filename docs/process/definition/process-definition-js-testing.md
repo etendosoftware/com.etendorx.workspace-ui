@@ -295,7 +295,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 25 | 272C8D38EF3245BF882E623CE92AB4E7 | Process Invoices | 1 | `on_load_function`, `onchangefunction` ×1 | medium | 192 · 6.6 KB | `…/com.smf.jobs.defaults/processRecords.js` | migrated ⁷ |
 | 26 | DF7F70B82C514F639F06495E0B818A53 | Add Credit Payments | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 205 · 6.3 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addpayments.js` ⚠ deploy | migrated |
 | 27 | C4265E27C8134096B49DFBF69369DFC6 | Service Order Line Relation Pick and Edit | 1 | `on_load_function`, `ongridloadfunction` ×1 | medium | 206 · 10.7 KB | `web/js/productServices.js` | migrated ⁸ |
-| 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | blocked |
+| 28 | 9C260D0E9C054A6F88AFC8E3B23A0E9A | Add Invoices | 1 | `on_load_function`, `clientsidevalidation`, `ongridloadfunction` ×2 | medium | 215 · 6.5 KB | `WebContent/web/org.openbravo.financial.bpsettlement/js/ob-obfbps-addinvoices.js` ⚠ deploy | migrated |
 | 29 | E68790A7B65F4D45AB35E2BAE34C1F39 | Add Transaction | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×7 | medium | 216 · 6.2 KB | `…/org.openbravo.advpaymentmngt/js/ob-aprm-addTransaction.js` | migrated ¹¹ |
 | 30 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | 3 |  | medium | 256 · 7.4 KB | `web/js/periodControlStatus.js` | component ⁹ |
 | 31 | FE3A8C134D41488DB3A69837BD54B56A | Manage Variants | 1 | `ongridloadfunction` ×1 | medium | 322 · 10.9 KB | `web/js/productCharacteristicsProcess.js` | migrated |
