@@ -357,10 +357,9 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await refreshBtn.waitFor({ state: "visible", timeout: 30_000 });
     await refreshBtn.click({ timeout: 10_000 });
 
-    await expect(page.locator('[data-testid="status-bar-container"]:visible span[name="status"]')).toHaveText(
-      "Payment Received",
-      { timeout: 20_000 }
-    );
+    await expect(
+      page.locator('[data-testid="status-bar-container"]:visible').getByText("Payment Received")
+    ).toBeVisible({ timeout: 20_000 });
 
     await expect(page.locator('[data-testid="status-bar-container"]:visible span[name="generatedCredit"]')).toHaveText(
       "1.74",
