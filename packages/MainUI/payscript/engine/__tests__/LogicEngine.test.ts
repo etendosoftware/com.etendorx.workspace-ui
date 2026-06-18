@@ -1,4 +1,4 @@
-import { executeLogic, type PayScriptRules } from "../LogicEngine";
+import { executeLogic, resolveMutualExclusion, type PayScriptRules } from "../LogicEngine";
 
 describe("LogicEngine", () => {
   describe("executeLogic", () => {
@@ -233,6 +233,90 @@ describe("LogicEngine", () => {
       expect(result.computed?.items[0].id).toBe("1");
     });
 
+    it("util.getGridItems should ignore _allRows", () => {
+      // Pick & Execute semantics: only rows the user picked count as "items".
+      const rules: PayScriptRules = {
+        id: "test",
+        compute: (_ctx, util) => ({ items: util.getGridItems([], ["glitem"]) }),
+      };
+      const context = {
+        _gridSelection: {
+          glitem: { _selection: [], _allRows: [{ id: "row-1" }, { id: "row-2" }] },
+        },
+      };
+      const result = executeLogic(rules, context);
+      expect(result.computed?.items).toEqual([]);
+    });
+
+    it("util.getAllGridRows should return every row from _allRows", () => {
+      // Input-style grids (e.g. GL Items) have obuiappShowSelect=false; all rows are input.
+      const rules: PayScriptRules = {
+        id: "test",
+        compute: (_ctx, util) => ({ rows: util.getAllGridRows([], ["glitem"]) }),
+      };
+      const context = {
+        _gridSelection: {
+          glitem: {
+            _selection: [],
+            _allRows: [
+              { id: "row-1", paid_out: 10 },
+              { id: "row-2", paid_out: 20 },
+            ],
+          },
+        },
+      };
+      const result = executeLogic(rules, context);
+      expect(result.computed?.rows).toHaveLength(2);
+      expect(result.computed?.rows.map((r: { id: string }) => r.id)).toEqual(["row-1", "row-2"]);
+    });
+
+    it("util.getAllGridRows should parse numeric fields like getGridItems", () => {
+      const rules: PayScriptRules = {
+        id: "test",
+        compute: (_ctx, util) => ({
+          rows: util.getAllGridRows(["received_in", "paid_out"], ["glitem"]),
+        }),
+      };
+      const context = {
+        _gridSelection: {
+          glitem: {
+            _selection: [],
+            _allRows: [{ id: "row-1", received_in: "100.50", paid_out: "1,000" }],
+          },
+        },
+      };
+      const result = executeLogic(rules, context);
+      expect(result.computed?.rows[0].received_in).toBe(100.5);
+      expect(result.computed?.rows[0].paid_out).toBe(1000);
+      expect(result.computed?.rows[0].selected).toBe(true);
+      expect(result.computed?.rows[0].obSelected).toBe(true);
+    });
+
+    it("util.getAllGridRows should filter by grid name", () => {
+      const rules: PayScriptRules = {
+        id: "test",
+        compute: (_ctx, util) => ({ rows: util.getAllGridRows([], ["glitem"]) }),
+      };
+      const context = {
+        _gridSelection: {
+          glitem: { _allRows: [{ id: "keep" }] },
+          order_invoice: { _allRows: [{ id: "drop" }] },
+        },
+      };
+      const result = executeLogic(rules, context);
+      expect(result.computed?.rows).toHaveLength(1);
+      expect(result.computed?.rows[0].id).toBe("keep");
+    });
+
+    it("util.getAllGridRows should return [] when _gridSelection is missing", () => {
+      const rules: PayScriptRules = {
+        id: "test",
+        compute: (_ctx, util) => ({ rows: util.getAllGridRows() }),
+      };
+      const result = executeLogic(rules, {});
+      expect(result.computed?.rows).toEqual([]);
+    });
+
     it("util.distributeAmount should distribute amount across items", () => {
       const rules: PayScriptRules = {
         id: "test",
@@ -269,6 +353,71 @@ describe("LogicEngine", () => {
       const items = result.computed?.items;
       expect(items[0].amount).toBe(30);
       expect(items[1].amount).toBe(70);
+    });
+  });
+
+  describe("resolveMutualExclusion", () => {
+    const makeRules = (fieldInteractions?: PayScriptRules["fieldInteractions"]): PayScriptRules => ({
+      id: "test",
+      fieldInteractions,
+    });
+
+    it("returns {} when rules have no fieldInteractions", () => {
+      expect(resolveMutualExclusion(makeRules(), "glitem", { received_in: 50 })).toEqual({});
+    });
+
+    it("returns {} when the grid has no mutualExclusion entry", () => {
+      const rules = makeRules({ glitem: {} });
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: 50 })).toEqual({});
+    });
+
+    it("returns {} when the gridName is absent from fieldInteractions", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "order_invoice", { received_in: 50 })).toEqual({});
+    });
+
+    it("zeroes the second column of a pair when the first is edited non-zero", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: 50 })).toEqual({ paid_out: 0 });
+    });
+
+    it("zeroes the first column when the second is edited non-zero (reciprocal)", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "glitem", { paid_out: 30 })).toEqual({ received_in: 0 });
+    });
+
+    it("returns {} when the edited value is 0 (clearing should not touch the sibling)", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: 0 })).toEqual({});
+    });
+
+    it("treats null and empty string as zero (no patch)", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: null })).toEqual({});
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: "" })).toEqual({});
+    });
+
+    it("parses numeric strings", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      expect(resolveMutualExclusion(rules, "glitem", { received_in: "12.5" })).toEqual({ paid_out: 0 });
+    });
+
+    it("matches HQL keys when both DB and HQL pairs are declared", () => {
+      const rules = makeRules({
+        glitem: {
+          mutualExclusion: [
+            ["received_in", "paid_out"],
+            ["receivedIn", "paidOut"],
+          ],
+        },
+      });
+      expect(resolveMutualExclusion(rules, "glitem", { receivedIn: 50 })).toEqual({ paidOut: 0 });
+    });
+
+    it("emits sibling zeros for both pair members when both are edited in the same event (last write wins)", () => {
+      const rules = makeRules({ glitem: { mutualExclusion: [["received_in", "paid_out"]] } });
+      const patch = resolveMutualExclusion(rules, "glitem", { received_in: 50, paid_out: 100 });
+      expect(patch).toEqual({ paid_out: 0, received_in: 0 });
     });
   });
 });

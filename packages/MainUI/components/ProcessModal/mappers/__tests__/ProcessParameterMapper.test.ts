@@ -106,6 +106,21 @@ describe("ProcessParameterMapper", () => {
     });
   });
 
+  describe("canMapParameter with MultiSelector", () => {
+    it("should accept MultiSelector textual reference", () => {
+      expect(ProcessParameterMapper.canMapParameter({ ...mockParameter, reference: "MultiSelector" })).toBe(true);
+      expect(ProcessParameterMapper.canMapParameter({ ...mockParameter, reference: "Multi Selector" })).toBe(true);
+    });
+    it("should accept MultiSelector raw ID reference", () => {
+      expect(
+        ProcessParameterMapper.canMapParameter({
+          ...mockParameter,
+          reference: FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+        })
+      ).toBe(true);
+    });
+  });
+
   describe("canMapParameter", () => {
     it("should return true for valid parameters", () => {
       expect(ProcessParameterMapper.canMapParameter(mockParameter)).toBe(true);
@@ -186,6 +201,32 @@ describe("ProcessParameterMapper", () => {
       const paramWithoutReference = { ...mockParameter };
       delete paramWithoutReference.reference;
       expect(ProcessParameterMapper.getFieldType(paramWithoutReference)).toBe("text");
+    });
+
+    it("should return 'multiselect' for the OBUISEL_Multi Selector Reference (id)", () => {
+      expect(
+        ProcessParameterMapper.getFieldType({
+          ...mockParameter,
+          reference: FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+        })
+      ).toBe("multiselect");
+    });
+
+    it("should return 'multiselect' for textual 'MultiSelector' / 'Multi Selector'", () => {
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "MultiSelector" })).toBe("multiselect");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Multi Selector" })).toBe(
+        "multiselect"
+      );
+    });
+
+    it("should return 'multiselect' even when parameter.selector.datasourceName is set (guard wins)", () => {
+      expect(
+        ProcessParameterMapper.getFieldType({
+          ...mockParameter,
+          reference: FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+          selector: { datasourceName: "ComboTableDatasourceService" },
+        })
+      ).toBe("multiselect");
     });
   });
 

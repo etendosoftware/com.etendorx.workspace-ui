@@ -19,6 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "@/components/Form/FormView/selectors/components/Select/Select";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
+import type { ProcessSelectorContext } from "@/hooks/types";
 
 export const TableDirSelector = ({
   field,
@@ -26,18 +27,21 @@ export const TableDirSelector = ({
   isProcessModal,
   staticOptions,
   selectedRecordsCount,
+  processContext,
 }: {
   field: Field;
   isReadOnly: boolean;
   isProcessModal?: boolean;
   staticOptions?: Array<{ id: string; name: string }>;
   selectedRecordsCount?: number;
+  processContext?: ProcessSelectorContext;
 }) => {
   const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({
     field,
     isProcessModal,
     staticOptions,
     selectedRecordsCount,
+    processContext,
   });
   const options = useSelectFieldOptions(field, records);
 

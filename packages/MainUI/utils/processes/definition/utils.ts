@@ -16,6 +16,7 @@
  */
 
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 /**
  * Auth credentials required to build the process context.
@@ -386,9 +387,35 @@ export function applyMergedParam(
     return;
   }
 
-  const matchingParameter = Object.values(parameters).find((p) => p.name === key);
+  // In real process metadata the `parameters` map is keyed by the form/field
+  // shape (typically `dBColumnName`, e.g. `parameters["accounting_status"]`)
+  // while `p.name` is the display label (e.g. `"Accounting Status"`). The
+  // form keys arriving here can be either — the legacy search-by-name path
+  // missed the dBColumnName-shaped form keys, which is exactly the case for
+  // multi-record selectors. Try the direct map lookup first, then fall back
+  // to scanning by `name` and `dBColumnName` for the test/legacy callers.
+  const matchingParameter =
+    parameters[key] ?? Object.values(parameters).find((p) => p.name === key || p.dBColumnName === key);
+
   if (matchingParameter && value !== "" && value !== null && value !== undefined) {
-    options[matchingParameter.dBColumnName || key] = value;
+    const outKey = matchingParameter.dBColumnName || key;
+    // Multi-record selectors store the selection internally as a single
+    // comma-separated string (`"id1,id2,id3"`). Classic Etendo's
+    // `OBMultiSelectorItem.getValue()` returns a JS array, which SmartClient
+    // serializes as repeated form-urlencoded keys
+    // (`accounting_status=id1&accounting_status=id2&...`) — and that's what
+    // `OBPickAndExecuteDataSource` expects to drive its `IN (...)` filter.
+    // Hand the proxy an array so `createFormData` (route.ts:132) emits the
+    // same repeated-key shape; a CSV string would arrive as a single value
+    // and silently match nothing.
+    if (matchingParameter.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id && typeof value === "string") {
+      const ids = value.split(",").filter((id) => id.length > 0);
+      if (ids.length > 0) {
+        options[outKey] = ids;
+      }
+      return;
+    }
+    options[outKey] = value;
   }
 }
 

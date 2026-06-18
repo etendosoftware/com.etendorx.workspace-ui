@@ -250,6 +250,79 @@ describe("Cell Editor Components", () => {
     });
   });
 
+  describe("SelectCellEditor — showTooltip prop", () => {
+    const selectField = createMockField({
+      type: FieldType.LIST,
+      refList: [{ value: "a", label: "A" }],
+    });
+
+    it("does not set title when showTooltip=false and no error", () => {
+      render(
+        <SelectCellEditor
+          value="a"
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={false}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
+    });
+
+    it("does not set title when showTooltip=false even with error", () => {
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={true}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
+    });
+
+    it("sets title when showTooltip is true (default) and hasError is true", () => {
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={selectField}
+          hasError={true}
+          disabled={false}
+        />
+      );
+      expect(screen.getByRole("combobox")).toHaveAttribute("title", "This field has validation errors");
+    });
+
+    it("fallback input has no title when showTooltip=false", () => {
+      const tableDirField = createMockField({
+        type: FieldType.TABLEDIR,
+        refList: [],
+        referencedEntity: "SomeEntity",
+      });
+      render(
+        <SelectCellEditor
+          value=""
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={tableDirField}
+          hasError={false}
+          disabled={false}
+          showTooltip={false}
+        />
+      );
+      const input = screen.getByRole("textbox");
+      expect(input).not.toHaveAttribute("title");
+      expect(screen.queryByText(/TABLEDIR field/)).not.toBeInTheDocument();
+    });
+  });
+
   describe("SelectCellEditor", () => {
     const mockField = createMockField({
       type: FieldType.LIST,
@@ -403,7 +476,7 @@ describe("Cell Editor Components", () => {
     it("should render checked checkbox for true value", () => {
       const field = createMockField({ type: FieldType.BOOLEAN });
 
-      render(
+      const { container } = render(
         <BooleanCellEditor
           value={true}
           onChange={mockOnChange}
@@ -415,13 +488,13 @@ describe("Cell Editor Components", () => {
       );
 
       expect(screen.getByRole("checkbox")).toBeChecked();
-      expect(screen.getByText("Yes")).toBeInTheDocument();
+      expect(container.querySelector(".inline-edit-boolean-container svg")).toBeInTheDocument();
     });
 
     it("should render unchecked checkbox for false value", () => {
       const field = createMockField({ type: FieldType.BOOLEAN });
 
-      render(
+      const { container } = render(
         <BooleanCellEditor
           value={false}
           onChange={mockOnChange}
@@ -433,7 +506,7 @@ describe("Cell Editor Components", () => {
       );
 
       expect(screen.getByRole("checkbox")).not.toBeChecked();
-      expect(screen.getByText("No")).toBeInTheDocument();
+      expect(container.querySelector(".inline-edit-boolean-container svg")).not.toBeInTheDocument();
     });
 
     it("should handle string boolean values", () => {
@@ -558,6 +631,39 @@ describe("Cell Editor Components", () => {
       await waitFor(() => {
         expect(screen.getByText("Quantity cannot be negative")).toBeInTheDocument();
       });
+    });
+
+    it("should select all on focus so typing replaces a seeded default value", async () => {
+      const user = userEvent.setup();
+      const field = createMockField({ type: FieldType.NUMBER });
+
+      render(
+        <NumericCellEditor
+          value={0}
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={field}
+          hasError={false}
+          disabled={false}
+        />
+      );
+
+      const input = screen.getByRole("textbox") as HTMLInputElement;
+      expect(input.value).toBe("0");
+
+      // Spy on select so we don't depend on jsdom's selection model.
+      const selectSpy = jest.spyOn(input, "select");
+
+      await user.click(input);
+      expect(selectSpy).toHaveBeenCalled();
+
+      // Simulate the contiguous "select-then-type" UX: when the input has all
+      // text selected, typing replaces it. jsdom doesn't apply selection
+      // semantics in `user.type`, so clear first and then assert the final
+      // onChange call reflects the replacement (not a prepend).
+      await user.clear(input);
+      await user.type(input, "1");
+      expect(mockOnChange).toHaveBeenLastCalledWith(1);
     });
 
     it("should handle arrow key increment/decrement", async () => {

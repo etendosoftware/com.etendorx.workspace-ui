@@ -26,12 +26,17 @@ export const TestWrapper = ({
   );
 };
 
-export const setupParameterTest = (parameter: any, logicFields?: any) => {
+export const setupParameterTest = (
+  parameter: any,
+  logicFields?: any,
+  values: Record<string, unknown> = { dummy: "value" }
+) => {
   render(
-    <TestWrapper data-testid="TestWrapper__b68e38">
+    <TestWrapper defaultValues={values} data-testid="TestWrapper__b68e38">
       <ProcessParameterSelector
         parameter={parameter}
         logicFields={logicFields}
+        values={values}
         data-testid="ProcessParameterSelector__b68e38"
       />
     </TestWrapper>
