@@ -31,14 +31,10 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
 
     // Business Partner: Customer A
-    await page
-      .locator('[aria-describedby="Business Partner-help"]')
-      .locator('div[tabindex="0"]')
-      .scrollIntoViewIfNeeded();
-    await page
-      .locator('[aria-describedby="Business Partner-help"]')
-      .locator('div[tabindex="0"]')
-      .click({ force: true });
+    const bpField = page.locator('[aria-describedby="Business Partner-help"]').locator('div[tabindex="0"]');
+    await bpField.waitFor({ state: "attached", timeout: 10_000 });
+    await bpField.scrollIntoViewIfNeeded();
+    await bpField.click({ force: true });
     const bpSearch = page.locator('input[aria-label="Search options"]');
     await bpSearch.waitFor({ state: "visible", timeout: 10_000 });
     await bpSearch.clear();

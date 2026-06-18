@@ -253,32 +253,36 @@ export const createButtonByType = ({
     const isEditOnly = uIPattern === UIPattern.EDIT_ONLY;
     const isEditAndDeleteOnly = uIPattern === UIPattern.EDIT_AND_DELETE_ONLY;
 
+    const isDocumentProcessing = saveButtonState?.isDocumentProcessing ?? false;
+
     const actionHandlers = {
-      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
+      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () =>
+        buildDisableConfig(!(isFormView || hasSelectedRecord) || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => {
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!hasSelectedRecord || patternDisabled);
+        return buildDisableConfig(!hasSelectedRecord || patternDisabled || isDocumentProcessing);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
-      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () =>
+        buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => {
         const patternDisabled = isReadOnly || isEditOnly || isEditAndDeleteOnly;
-        return buildDisableConfig(!hasParentRecordSelected || patternDisabled);
+        return buildDisableConfig(!hasParentRecordSelected || patternDisabled || isDocumentProcessing);
       },
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
         const patternDisabled = isReadOnly;
         const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected || patternDisabled;
         const additionalDisabled = saveButtonState ? saveButtonState.isSaving : false;
-        return buildDisableConfig(baseDisabled || additionalDisabled);
+        return buildDisableConfig(baseDisabled || additionalDisabled || isDocumentProcessing);
       },
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         const isCloneEnabled = tab?.obuiappShowCloneButton;
         const isSingleSelection = hasSelectedRecord;
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled);
+        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled || isDocumentProcessing);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
     };
 
     const handler = actionHandlers[button.action];
