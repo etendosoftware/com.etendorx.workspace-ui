@@ -256,10 +256,14 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     // Save Payment In
     await visibleSaveButton.click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
-    // Verify Status: Awaiting Payment
-    await expect(page.locator('span[name="status"]:visible')).toHaveText("Awaiting Payment", { timeout: 10_000 });
+    // Verify Status: Awaiting Payment — wait for the form to exit edit mode and the
+    // server response to populate the status bar (Tag or span depending on refList).
+    await expect(
+      page.locator('[data-testid="status-bar-container"]:visible').getByText("Awaiting Payment")
+    ).toBeVisible({ timeout: 20_000 });
 
     // ── Step 7: Open Add Details process ─────────────────────────────────────
     await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible').click();
