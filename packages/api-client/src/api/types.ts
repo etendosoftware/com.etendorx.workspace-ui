@@ -942,8 +942,6 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
-  fieldGroup?: string;
-  fieldGroup$_identifier?: string;
   /**
    * When true, the field group (subsection) starts collapsed in the process modal.
    * When false or undefined, the field group starts expanded.
