@@ -62,8 +62,16 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
   }, [shouldAutoFocus, disabled, setFocused]);
 
-  // Update local value when prop value changes
+  // Sync prop `value` → `localValue` when the input is NOT being edited.
+  // The input is uncontrolled-during-editing on purpose: `parseInputValue`
+  // returns the parsed number on every keystroke, and the formatter
+  // (`formatNumberForInput`) would round-trip intermediate states like "01"
+  // back to "1" mid-typing, stomping the user's input. Guarding on
+  // `document.activeElement` keeps formatting deferred to `handleBlur`.
   useEffect(() => {
+    if (typeof document !== "undefined" && document.activeElement === inputRef.current) {
+      return;
+    }
     setLocalValue(formatNumberForInput(value));
   }, [value]);
 
@@ -150,7 +158,12 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     onBlur();
   };
 
-  const handleFocus = () => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Select all so the next keystroke replaces the current value. The input is
+    // `text-right` aligned and frequently mounted with a seeded default (e.g. 0
+    // in GL Items P&E), so without this the cursor lands before the digits and
+    // typing prepends instead of replacing (e.g. "0" + "1" → "01" → 10 after parse).
+    e.target.select();
     // Register this cell as focused when it receives focus
     setFocused();
   };

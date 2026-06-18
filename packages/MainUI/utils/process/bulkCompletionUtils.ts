@@ -14,8 +14,7 @@
  *************************************************************************
  */
 
-import type { ProcessDefinition, ProcessParameters } from "../../components/ProcessModal/types";
-import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { ProcessDefinition, ProcessParameters, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 /**
  * Default onLoad script for Bulk Completion processes.

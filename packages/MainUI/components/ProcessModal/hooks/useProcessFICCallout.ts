@@ -96,13 +96,25 @@ export function useProcessFICCallout({
   const formValues = form.watch();
   const [debouncedValues, setDebouncedValues] = useState(formValues);
 
+  // `form.watch()` returns a fresh object reference on every render even when
+  // no field changed. Use a stable content key so the debounce effect only
+  // re-arms when the form values actually differ — otherwise the timer fires
+  // setDebouncedValues with a new ref but identical content, React schedules
+  // a re-render, and the cycle repeats every ~300ms forever.
+  const formValuesKey = JSON.stringify(formValues);
+
   useEffect(() => {
+    // Hook is opt-in via the `enabled` flag (FIC only applies to
+    // REPORT_AND_PROCESS). Without this guard the timer + setState path runs
+    // for every process modal, producing an idle render loop.
+    if (!enabled || !tabId) return;
     const timer = setTimeout(() => {
       setDebouncedValues(formValues);
     }, 300); // 300ms debounce to avoid flooding the network on every keystroke
 
     return () => clearTimeout(timer);
-  }, [formValues]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValuesKey, enabled, tabId]);
 
   const executeCallout = useCallback(
     async (changedField: string) => {

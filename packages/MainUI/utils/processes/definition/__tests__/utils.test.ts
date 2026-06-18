@@ -496,5 +496,61 @@ describe("Process Definition Utils", () => {
       applyMergedParam("Param1", "val", parameters, options);
       expect(options.Param1).toBe("val");
     });
+
+    it("splits multi-record selector CSV values into an array so the proxy emits repeated form-urlencoded keys (matches Classic OBMultiSelectorItem behaviour)", () => {
+      const parameters: any = {
+        p1: {
+          name: "accounting_status",
+          dBColumnName: "accounting_status",
+          reference: "87E6CFF8F71548AFA33F181C317970B5",
+        },
+      };
+      const options: any = {};
+      applyMergedParam("accounting_status", "id1,id2,id3", parameters, options);
+      expect(options.accounting_status).toEqual(["id1", "id2", "id3"]);
+    });
+
+    it("resolves multi-selector params when the metadata map is keyed by dBColumnName (real ProcessParameter shape: p.name is the display label)", () => {
+      // Mirrors the actual Etendo process metadata: the parameters object is
+      // keyed by `accounting_status` (dBColumnName) while `p.name` is the
+      // display label "Accounting Status". The form posts the value at
+      // `accounting_status`, so the lookup must succeed via the map key.
+      const parameters: any = {
+        accounting_status: {
+          name: "Accounting Status",
+          dBColumnName: "accounting_status",
+          reference: "87E6CFF8F71548AFA33F181C317970B5",
+        },
+      };
+      const options: any = {};
+      applyMergedParam("accounting_status", "id1,id2", parameters, options);
+      expect(options.accounting_status).toEqual(["id1", "id2"]);
+    });
+
+    it("matches by dBColumnName fallback when the form key is the snake_case column and the map key is something else", () => {
+      const parameters: any = {
+        randomKey: {
+          name: "Some Display Label",
+          dBColumnName: "some_field",
+          reference: "10",
+        },
+      };
+      const options: any = {};
+      applyMergedParam("some_field", "value", parameters, options);
+      expect(options.some_field).toBe("value");
+    });
+
+    it("omits a multi-selector param when the CSV value is empty", () => {
+      const parameters: any = {
+        p1: {
+          name: "accounting_status",
+          dBColumnName: "accounting_status",
+          reference: "87E6CFF8F71548AFA33F181C317970B5",
+        },
+      };
+      const options: any = {};
+      applyMergedParam("accounting_status", "", parameters, options);
+      expect(options.accounting_status).toBeUndefined();
+    });
   });
 });

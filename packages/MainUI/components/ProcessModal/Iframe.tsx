@@ -145,8 +145,8 @@ const ProcessIframeOpenModal = ({
     setAwaitingMessage(false);
     setProcessMessage({
       type: "warning",
-      title: t("process.fallbackMessage.title"),
-      text: t("process.fallbackMessage.text"),
+      title: t("processModal.gridToolbar.fallbackMessage.title"),
+      text: t("processModal.gridToolbar.fallbackMessage.text"),
     });
   }, [t, clearFallbackTimer]);
 
@@ -202,8 +202,8 @@ const ProcessIframeOpenModal = ({
     setAwaitingMessage(false);
     setProcessMessage({
       type: "error",
-      title: t("process.requestFailed.title"),
-      text: t("process.requestFailed.text"),
+      title: t("processModal.gridToolbar.requestFailed.title"),
+      text: t("processModal.gridToolbar.requestFailed.text"),
     });
   }, [t, clearFallbackTimer]);
 
@@ -434,7 +434,7 @@ const ProcessIframeOpenModal = ({
   const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[92vh] !max-h-[1000px]" : "";
 
   const showLoadingOverlay = iframeLoading || awaitingMessage;
-  const loadingText = awaitingMessage ? t("process.processingMessage") : t("common.loading");
+  const loadingText = awaitingMessage ? t("processModal.gridToolbar.processingMessage") : t("common.loading");
 
   // CustomModal hides the iframe behind any non-empty `customContent` overlay
   // so the banner has the focus. Pass `null` (not an empty Fragment) when no
@@ -480,7 +480,7 @@ const ProcessIframeOpenModal = ({
           data-testid="LegacyReportPopupBlocked__banner">
           <div className="flex flex-col gap-3 p-4" style={{ backgroundColor: "var(--color-warning-contrast-text)" }}>
             <h3 className="font-semibold text-lg" style={{ color: "var(--color-warning-main)" }}>
-              {t("process.openLegacyReport.popupBlockedTitle")}
+              {t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle")}
             </h3>
             <button
               type="button"
@@ -488,7 +488,7 @@ const ProcessIframeOpenModal = ({
               className="self-start rounded px-3 py-1 font-medium text-white"
               style={{ backgroundColor: "var(--color-warning-main)" }}
               data-testid="LegacyReportPopupBlocked__retry">
-              {t("process.openLegacyReport.openManually")}
+              {t("processModal.gridToolbar.openLegacyReport.openManually")}
             </button>
           </div>
         </div>

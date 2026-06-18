@@ -37,6 +37,7 @@ import { SelectSelector } from "./SelectSelector";
 import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
+import { MultiRecordSelector } from "./MultiRecordSelector";
 import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
@@ -106,6 +107,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     switch (reference) {
       case FIELD_REFERENCE_CODES.PASSWORD.id:
         return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.MULTI_SELECTOR.id:
+        return (
+          <MultiRecordSelector
+            field={effectiveField}
+            isReadOnly={isReadOnly}
+            data-testid="MultiRecordSelector__6e80fa"
+          />
+        );
       case FIELD_REFERENCE_CODES.PRODUCT.id: // Product reference to datasource
       case FIELD_REFERENCE_CODES.SELECTOR.id: // Generic selector (includes Product)
       case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id: // Selector rendered as navigable link
