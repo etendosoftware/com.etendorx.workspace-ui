@@ -28,7 +28,7 @@ function columnNameToInpKey(columnName: string): string {
     .split("_")
     .map((seg, i) => (i === 0 ? seg.toLowerCase() : seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase()))
     .join("");
-  return "inp" + camel.charAt(0).toUpperCase() + camel.slice(1);
+  return `inp${camel}`;
 }
 
 /**

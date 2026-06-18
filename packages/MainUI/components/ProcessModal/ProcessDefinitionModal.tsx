@@ -1130,8 +1130,6 @@ function ProcessDefinitionModalContent({
     const selectors: ProcessParameter[] = [];
 
     for (const parameter of parametersList) {
-      // @ts-ignore
-      if (parameter.active === false) continue;
       if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) continue;
 
       if (parameter.reference === WINDOW_REFERENCE_ID) {
