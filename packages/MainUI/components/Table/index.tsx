@@ -838,8 +838,6 @@ const DynamicTable = ({
   // fired, so closing the form does not re-trigger for the same parent.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
-  const [treeSearchTerm, setTreeSearchTerm] = useState("");
-
   // Use the table data hook
   const {
     displayRecords,
@@ -868,7 +866,6 @@ const DynamicTable = ({
     handleDateTextFilterChange,
   } = useTableData({
     isTreeMode,
-    treeSearchTerm,
   });
 
   // Auto-open FormView for logical SR (Single Record) tabs once the child
@@ -3808,18 +3805,6 @@ const DynamicTable = ({
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
-      {shouldUseTreeMode && (
-        <div className="px-3 py-2 bg-white border-b border-gray-200 shrink-0">
-          <input
-            type="text"
-            value={treeSearchTerm}
-            onChange={(e) => setTreeSearchTerm(e.target.value)}
-            placeholder={t("search" as any) || "Search..."}
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-            data-testid="TreeSearchInput__8ca888"
-          />
-        </div>
-      )}
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
