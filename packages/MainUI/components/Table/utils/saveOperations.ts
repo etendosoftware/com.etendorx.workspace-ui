@@ -46,7 +46,7 @@ export function isStaleObjectError(errorMessage: string | undefined): boolean {
  * @param tab The tab metadata to filter valid fields
  * @returns The formatted payload
  */
-function buildSavePayload({
+export function buildSavePayload({
   values,
   oldValues,
   mode,
