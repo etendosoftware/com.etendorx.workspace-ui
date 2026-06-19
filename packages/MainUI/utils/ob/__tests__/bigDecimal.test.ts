@@ -86,7 +86,9 @@ describe("BigDecimal", () => {
   });
 
   it("supports the classic `unitPrice.multiply(qty).setScale(2, ROUND_HALF_UP)` idiom", () => {
-    const amount = new BigDecimal("10.005").multiply(new BigDecimal("3")).setScale(2, BigDecimal.prototype.ROUND_HALF_UP);
+    const amount = new BigDecimal("10.005")
+      .multiply(new BigDecimal("3"))
+      .setScale(2, BigDecimal.prototype.ROUND_HALF_UP);
     expect(amount.toString()).toBe("30.02");
   });
 
@@ -98,6 +100,59 @@ describe("BigDecimal", () => {
     expect(new BigDecimal("1.005").setScale(2).toString()).toBe(
       new BigDecimal("1.005").setScale(2, BigDecimal.prototype.ROUND_HALF_UP).toString()
     );
+  });
+
+  it("exposes ONE on the prototype (classic `BigDecimal.prototype.ONE` idiom)", () => {
+    expect(BigDecimal.prototype.ONE.toNumber()).toBe(1);
+    expect(BigDecimal.prototype.ONE).toBeInstanceOf(BigDecimal);
+  });
+
+  it("divides with an explicit scale + rounding (classic `divide(rate, precision, ROUND_HALF_UP)`)", () => {
+    // Exact division zero-pads to the requested scale.
+    expect(new BigDecimal("10").divide(new BigDecimal("4"), 2).toString()).toBe("2.50");
+    // Non-terminating division is rounded HALF_UP to the requested scale.
+    expect(new BigDecimal("10").divide(new BigDecimal("3"), 2).toString()).toBe("3.33");
+    expect(new BigDecimal("2").divide(new BigDecimal("3"), 4).toString()).toBe("0.6667");
+  });
+
+  it("divide rounds HALF_UP at the boundary", () => {
+    // 1 / 8 = 0.125 → at scale 2 the trailing 5 rounds up to 0.13.
+    expect(new BigDecimal("1").divide(new BigDecimal("8"), 2).toString()).toBe("0.13");
+  });
+
+  it("divide honours the classic `actualConverted.divide(actualPayment, 15, 2)` shape", () => {
+    expect(new BigDecimal("100").divide(new BigDecimal("80"), 15).toNumber()).toBe(1.25);
+  });
+
+  it("divide does not mutate the operand", () => {
+    const a = new BigDecimal("10");
+    a.divide(new BigDecimal("4"), 2);
+    expect(a.toString()).toBe("10");
+  });
+
+  it("divide by zero yields a non-finite quotient (no throw)", () => {
+    expect(Number.isFinite(new BigDecimal("1").divide(new BigDecimal("0"), 2).toNumber())).toBe(false);
+  });
+
+  it("signum returns -1, 0 or 1 (classic Java `signum()`)", () => {
+    expect(new BigDecimal("-7.5").signum()).toBe(-1);
+    expect(new BigDecimal("0").signum()).toBe(0);
+    expect(new BigDecimal("0").setScale(2).signum()).toBe(0);
+    expect(new BigDecimal("7.5").signum()).toBe(1);
+  });
+
+  it("negate flips the sign without mutating the operand", () => {
+    const a = new BigDecimal("7.5");
+    expect(a.negate().toString()).toBe("-7.5");
+    expect(a.negate().negate().toString()).toBe("7.5");
+    expect(a.toString()).toBe("7.5");
+  });
+
+  it("abs returns the magnitude without mutating the operand", () => {
+    const a = new BigDecimal("-7.5");
+    expect(a.abs().toString()).toBe("7.5");
+    expect(new BigDecimal("7.5").abs().toString()).toBe("7.5");
+    expect(a.toString()).toBe("-7.5");
   });
 
   it("compareTo ignores the fixed scale", () => {

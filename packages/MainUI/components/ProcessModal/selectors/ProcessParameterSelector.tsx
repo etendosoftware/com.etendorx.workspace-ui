@@ -31,6 +31,9 @@ import { UploadFileSelector } from "./UploadFileSelector";
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
   logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
+  // Runtime label overrides set by migrated scripts (item.setTitle). Keyed by
+  // parameter name; when present, the override replaces the static label.
+  labelOverrides?: Record<string, string>;
   parameters?: Record<string, ProcessParameter>;
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
@@ -83,6 +86,7 @@ export const mapValuesByDBColumnName = (
 const ProcessParameterSelectorImpl = ({
   parameter,
   logicFields,
+  labelOverrides,
   parameters,
   recordValues,
   parentFields,
@@ -127,10 +131,14 @@ const ProcessParameterSelectorImpl = ({
       return true; // Default to visible for malformed expressions
     }
 
-    // WAIT for form data to be available before evaluating expressions
+    // WAIT for form data to be available before evaluating expressions.
+    // A field gated by display logic must default to HIDDEN until its logic can be
+    // evaluated: defaulting to visible makes server-driven fields (e.g. Add Payment's
+    // multicurrency conversion_rate/converted_amount/currency_to) flash on open before
+    // the hook hides them. Fields without display logic returned `true` above, so they
+    // are unaffected by this fail-safe.
     if (!values || Object.keys(values).length === 0) {
-      // Form data not loaded yet, default to visible to avoid errors
-      return true;
+      return false;
     }
 
     try {
@@ -343,7 +351,11 @@ const ProcessParameterSelectorImpl = ({
   return (
     <div className="h-12 flex items-center" title={parameter.description}>
       <div className="w-1/3 flex items-center gap-2 pr-2">
-        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
+        <Label
+          htmlFor={parameter.name}
+          name={labelOverrides?.[parameter.name] ?? parameter.name}
+          data-testid="Label__dac06b"
+        />
         {parameter.mandatory && (
           <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
             *

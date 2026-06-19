@@ -304,7 +304,7 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 | 34 | 50D2EB7B24B44EA39C4735AC51CA8E0A | Validate Barcode Action | 3 |  | hard | 714 · 24.3 KB | `WebContent/web/org.openbravo.warehouse.pickinglist/js/OBWPL_ValidateComponent.js` ⚠ deploy | component |
 | 35 | 71DEE8098CE74C939575FF57609952CC | Validate Barcode Action | 3 |  | hard | 1033 · 31.6 KB | `modules/org.openbravo.warehouse.packing/web/org.openbravo.warehouse.packing/js/OBWPACK_PackingComponent.js` | component |
 | 36 | 83AD8A78FB1C4EDBB4A222A276498938 | Manage Packing Action | 3 |  | hard | 1201 · 36.9 KB (2 files) | `…/warehouse.packing/js/OBWPACK_PackingComponent.js` · `OBWPACK_Process.js` | component |
-| 37 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3 | hard | 1935 · 63.2 KB | `modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js` | pending |
+| 37 | 9BED7889E1034FE68BD85D5D16857320 | Add Payment | 1 | `on_load_function`, `clientsidevalidation`, `onchangefunction` ×13, `ongridloadfunction` ×3 | hard | 1935 · 63.2 KB | `modules_core/org.openbravo.advpaymentmngt/web/org.openbravo.advpaymentmngt/js/ob-aprm-addPayment.js` | migrated ¹³ |
 
 **Notes:**
 - ¹ `ob-onchange-functions.js` is a **shared core utilities** file; for Aging Balance only the
@@ -449,6 +449,127 @@ Distribution: **8 easy · 25 medium · 4 hard.**
   Pending manual QA. Remaining advisories (all non-blocking): the algorithm-before-first-fetch ordering
   is reproduced via `invalidateCache` rather than the classic datasource-suspend trick, and the
   `selectSingleRecord`-on-row-button-click side effect is not reproduced.
+- ¹³ **Finalized 2026-06-18 → `migrated`: the last substrate blocker (the stale-value column validator) is
+  FIXED by Fix C** (was `blocked` after the 3rd QA; see
+  `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`, top blockquote + newest `## Updates`
+  FINALIZATION entry + §0). Babel **re-verified all three substrate fixes present in the working tree** (not
+  assumed): **Fix A** — `ProcessDefinitionModal.tsx:1296` `if (initializationLoading) return;` (onLoad +
+  mandatory validation run after the async seed → #2 multicurrency + "payment date mandatory" resolved);
+  **Fix B** — `WindowReferenceGrid.tsx:1050` `applyEditToReadStore` wired in `handleRecordChange` (a
+  programmatic `setEditValue` persists to the read/display store); **Fix C** —
+  `WindowReferenceGrid.tsx:1063` `buildValidatorCandidate(rowData, mergedChanges)` + `rejectByColumnValidator`
+  validating the **candidate post-write record** (`:2866`, `:2871-2872`), so the validator sees
+  `amount=2.07, outstanding=2.07` → passes instead of the pre-write `0` → unblocks #1/#3/#4 (one bug). The
+  substrate methods the §4 bodies rely on (`getSelectedRecords`/`getRecordIndex`/`getEditValues`/
+  `getEditedCell`/`setEditValue`/`selectRecord`/`setColumnValidator`/`setColumnOnChange`/`onSelectionToggle`/
+  `onRecordChange`/`fireOnPause`) are all still defined. **No JS logic changed.** Babel's only finalization
+  was to **remove the temporary `AP_DEBUG` read-back instrumentation** (the flag/exposure, the module-body
+  `log` helper, the per-hook local `const log` in the two `on_grid_load` bodies, `AP.logObSelected`, and
+  every `log(...)` call) — full removal, calculation/branch/selection/seeding byte-identical. Grep confirms
+  zero `log`/`logCtx`/`AP_DEBUG`/`AP.debug`/`logObSelected` identifiers in any of the 19 §4 code blocks.
+  Phase-6 re-check: all 19 §4 blocks valid (1 module body + 18 bare arrow functions). Row → **`migrated`**
+  (pending the human's manual QA per report §7 / brief §10; do **not** advance to `qa-passed` without it).
+  History below.
+- ¹³ **Re-blocked 2026-06-18 after the 3rd QA: Fix A OK, Fix B partial** (was `migrated`; see
+  `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`, top blockquote + newest `## Updates` +
+  §0.3-3). The 3rd manual QA ran with Fix A + Fix B in the build. **Fix A landed** — problem #2
+  (multicurrency flash-then-hide) and the "payment date mandatory" message on open are RESOLVED. **Fix B is
+  only partial:** it persists the programmatic `setEditValue` into the read/data store (so
+  `getEditValues`/`getEditedCell` read it back) but does **not** refresh the **editable cell display** —
+  the cell is drawn by the memoized `GridCellEditor` (MRT `Edit:` slot) which reads `row.original`/
+  `_valuesCache` and re-renders only when `siblingPatchVersion` bumps, neither of which the primary
+  `setEditValue` path touches (the bump is gated on a *sibling* patch). So problem #3 (Order/Invoice
+  `Amount`=0) and #4 (Credit `Payment Amount`=0) persist, and #1's underpayment message persists downstream
+  of #3. **Culprit = UI/substrate, not JS** (§4 unchanged and faithful). Required substrate extension in
+  report §0.3-3 (mirror the persisted change onto `row.original`/`_valuesCache` + bump `siblingPatchVersion`).
+  Babel re-adding read-back logging for the joint debug. Row → **`blocked`**. History below.
+- ¹³ **Finalized 2026-06-18 → `migrated`: the 4 substrate blockers were thought resolved** (superseded by
+  the 3rd-QA re-block above; see `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`, top
+  blockquote + `## Updates` + §5). The 4 defects that gated the 2nd QA (#1, #4, #7, new-#8)
+  were all confirmed **SUBSTRATE** (the §4 JS was already faithful). The platform team has now implemented
+  the two capabilities report §0.3 required, and Babel **re-verified them present in the working tree** (not
+  assumed): **Fix A** — `ProcessDefinitionModal.tsx` runs `onLoad` + mandatory validation **after** the
+  async process-defaults/FIC seed (gated on `initializationLoading`) with a post-onLoad `form.clearErrors()`
+  → resolves **#1** (no spurious mandatory error on open) and **#4** (the existing
+  `paymentMethodMulticurrency` call now hides the 3 NULL-`displaylogic` multicurrency fields with complete
+  context); **Fix B** — `WindowReferenceGrid.tsx` exported `applyEditToReadStore` wired into
+  `handleRecordChange` makes a script-proxy `setEditValue` on an editable amount column persist to the
+  read/display store → resolves **#7** (auto-distribute) and **new-#8** (credit `paymentAmount` seed). **No
+  JS logic changed.** Babel's only finalization was to **remove the temporary `AP_DEBUG` read-back
+  instrumentation** from every §4 body (full removal, not `AP_DEBUG=false`) so the pasted production code is
+  clean; calculation/branch/selection/seeding are byte-identical modulo the removed scaffolding. Phase-6
+  re-check: all 19 §4 code blocks valid (1 module body + 18 bare arrow functions). Row → **`migrated`**
+  (pending the human's manual QA per report §7; do **not** advance to `qa-passed` without it). History below.
+- ¹³ **Re-blocked 2026-06-18 after the 2nd QA** (was migrated 2026-06-18 after F1–F6; see
+  `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`, **§0** + 2026-06-18 RE-BLOCKED Update).
+  The 2nd manual QA confirmed **F1–F6 resolved 5 of 9 defects + both new issues** (#2,3,5,6,9, NEW-A
+  `grid.fetchData`, NEW-B null callbacks) — the fresh `logs.txt` shows **no `[AP onChange:…]`** (cascade
+  gone) and no crashes. **4 defects remain.** Two are **JS-fixed in §4** this revision: **#7** (pre-selected
+  Order/Invoice editable `Amount`=0) — root cause was `preselectedCount` computed at ENTRY on the
+  `rowCount=0` phantom; now selection is read via `getSelectedRecords()` **inside** the `afterGridSettle`
+  deferral and the row's amount is seeded (`AP.seedPreselectedOrderInvoice`); and **new-#8** (pre-selected
+  Credit `Payment Amount`=0) — added `AP.seedPreselectedCredit` (mirror of classic `selectionChangedCredit`).
+  Both carry read-back logs for joint debug. Two are **SUBSTRATE blockers (shared root cause)**: **#1**
+  (mandatory "payment date" error on open) and **#4** (the 3 multicurrency fields show and never hide; they
+  have NULL `displaylogic`, so the hide is purely imperative and F1 correctly suppressed the cascade calls
+  that ran it). Both stem from the new UI running `onLoad`/validation **before** the async default/FIC seed
+  (Classic seeds synchronously first); fix = run `onLoad`/validation post-seed or expose a post-seed hook
+  (report §0.3). **2026-06-18 (Babel):** the #7/new-#8 seeding bodies (2 `on_grid_load` + the 2 helpers
+  `AP.seedPreselectedOrderInvoice` / `AP.seedPreselectedCredit`) are reviewed against the classic JS,
+  compile-checked, and are now **official Babel code** (report §0.5), ready for the human to paste and QA;
+  scope was surgical (other 16 bodies + the `afterGridSettle` deferral untouched). DB re-checked read-only:
+  migrated columns match §4 exactly. Row **stays `blocked`** (substrate #1/#4). History below.
+- ¹³ **Re-migrated 2026-06-18 after substrate fixes F1–F6** (was re-blocked 2026-06-18 after QA, migrated
+  2026-06-18, blocked 2026-06-17; see `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`,
+  **RE-MIGRATION Update + §0.5**). The six frontend substrate fixes for the 9 QA defects are now in the
+  ETP-3748 working tree and were **re-verified by read/grep** (not assumed): **F1** the seeding guard
+  (`useParameterChangeHooks` `enabled` ref → no `on_parameter_change` cascade during FIC seeding, fixes
+  2,3,5,6,8,9,NEW-B); **F2** grid `fetchData`/`invalidateCache` safe no-ops before the controller is live
+  (fixes NEW-A); **F3** `shouldDeferInitialZeroing` keeps a pre-selected row's editable `amount` (fixes #7
+  secondary); **F4** dependent-datasource context at load (fixes 5,8,9, downstream of the cascade); **F5**
+  display-logic fields default hidden while values load (fixes 4); **F6** seed-time validation errors
+  cleared once (fixes 1). **Defect #7 primary** is now migratable and **applied** (report §0.4/§0.5):
+  `on_grid_load` fires once on real data (no phantom), and the pre-selected order/invoice editable `amount`
+  is seeded/kept (`AP.seedPreselectedOrderInvoice`, mirror of classic `ordInvDataArrived`); the settling
+  work runs **deferred via `grid.fireOnPause`** (`AP.afterGridSettle`) because the controller-backed
+  edit/selection store lags one render at firing time — the faithful equivalent of the classic
+  `isc.Timer.setTimeout(fn, 0)` deferral. JS changed only in `em_etmeta_payscript_logic` (2 helpers +
+  2 constants) and the 3 `em_etmeta_on_grid_load` bodies; the other 15 bodies stand. All bodies
+  re-compile-checked (bare arrow functions; module body ends in `return {...}`). `AP_DEBUG` logs kept for the
+  QA re-run (remove via `AP_DEBUG = false`). Row → `migrated` (pending manual QA); no `qa-passed` reference
+  exists yet (non-blocking). History below.
+- ¹³ **Re-blocked 2026-06-18 after QA** (was migrated 2026-06-18, was blocked 2026-06-17; see
+  `client/agents/reports/9BED7889E1034FE68BD85D5D16857320.md`, **§0**). Babel translated the full classic
+  JS (1,935 lines) faithfully to the generic `em_etmeta_*` columns (module body + onLoad + onProcess +
+  13 `on_parameter_change` + 3 `on_grid_load`), but **manual QA found 9 defects whose dominant root causes
+  are substrate/UI, not JS fidelity**, so the row reverts to `blocked`. The single dominant cause: the
+  new-UI substrate **fires the migrated `on_parameter_change` hooks during the async default/FIC seeding**
+  — `ProcessDefinitionModal.tsx handleCalloutResponse` applies FIC columns per-field via
+  `form.setValue(…, { shouldDirty:true })`, which `useParameterChangeHooks.ts` (`form.watch`) treats as a
+  user change and fires the faithful reset/cascade handlers at load, wiping their dependent fields
+  ("value flashes, then blanks/zeroes" — defects 2, 3, 5, 6; cascades into 8, 9). Classic never fires
+  onChange during initial FIC seeding. A second substrate cause (defect 7, suspected root of 3 and 6):
+  `WindowReferenceGrid` zeroes the **editable** `amount` of a pre-selected order/invoice row not synced
+  into `persistentSelectionRef` before the zeroing pass (the read-only `shouldZeroAmountField` guard does
+  not protect an editable field), and the `order_invoice` `on_grid_load` only distributes when there is no
+  pre-selection. The **§4 migrated bodies are kept** (faithful) and now carry **targeted, removable runtime
+  logs** for joint debugging. **Substrate fixes required to unblock** (report §0.3): suppress
+  `on_parameter_change` during initial default/FIC seeding; seed the multicurrency fields hidden via
+  display logic; do not zero a pre-selected row's editable amount + sync pre-selection before the zeroing
+  pass + add a data-arrival hook for initial distribution; ensure dependent datasources (Deposit To,
+  Credit To Use, document_action) get the right context params at load; do not run mandatory validation
+  before defaults are applied. A small JS refinement to the `order_invoice` `on_grid_load` is proposed
+  (report §0.4) but held until the substrate stops zeroing the pre-selected amount.
+  **Runtime QA 2026-06-18 (`logs.txt`):** the `AP_DEBUG` instrumentation fired and **confirms all 9
+  defects** (per-point log evidence in report §0.2) — the load-time `on_parameter_change` cascade during
+  FIC seeding is captured directly. Point 7's **primary** cause is refined to the `order_invoice`
+  `on_grid_load` firing on a `rowCount=0` pre-fetch phantom with stale `issotrx=false` (editable-amount
+  zeroing kept as secondary). **Two new issues:** (A) the script grid proxy's `fetchData()` is **not
+  implemented** (`grid.fetchData is not implemented yet`) so the migrated `onLoad` grid fetches throw;
+  (B) RemoteCallManager callbacks crashed dereferencing null/errored responses at load (incl. an
+  `AddPaymentOrganizationActionHandler` 500) — the §4 callbacks were **defensively null-guarded** (no
+  Classic-behavior change) and re-compile-checked. Stays `blocked` (unblock now also needs grid
+  `fetchData`/re-fetch and `on_grid_load` first-fetch gating; report §0.3 #6–#8).
 - `processRecords.js` is shared by 5 processes (jobs for invoices/orders/shipment + 2 intercompany).
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.

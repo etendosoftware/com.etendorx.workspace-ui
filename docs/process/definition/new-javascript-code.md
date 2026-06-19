@@ -405,14 +405,80 @@ launch should live in a parameter `onChange`, not in `onLoad`/`onProcess`.
 
 Classic fires onChange on blur. The new form runs in `onChange` mode, but real commit timing comes from
 each selector (numeric commits on blur; select/boolean/date/tabledir/list commit per discrete
-selection; free text commits per keystroke). Three guards make this faithful and loop-free:
+selection; free text commits per keystroke). Four guards make this faithful and loop-free:
 
 1. **Value diff** — fire only when the committed value actually changed.
 2. **Re-entrancy guard** — a hook's own `item.setValue` does not recursively re-fire that parameter.
 3. **Trailing ~250 ms debounce** — coalesces free-text keystroke bursts.
+4. **Seeding guard** — `on_parameter_change` hooks **do not fire during the initial default/FIC seeding**
+   (while the dialog is still loading defaults). Classic only fires onChange on a *user* change, never
+   while the FIC seeds initial values; the new substrate now matches that. During seeding the watcher
+   still **absorbs** values into its diff baseline, so the first genuine user change afterwards fires
+   correctly. Internally the hook takes an `enabled` flag wired to `open && !loading && !initializationLoading`
+   (the same steady-state signal the callout hooks use). This is essential for any process whose onChange
+   handlers reset/cascade dependent fields — without it, seeding a default would run the reset handler at
+   load and wipe the value ("value flashes then blanks"). Do load-time computation in `em_etmeta_onload`,
+   not in `on_parameter_change`.
 
-Net effect: discrete selectors fire once immediately, numeric on blur, text once typing settles, and
-script-driven value writes cannot cause infinite loops.
+Net effect: discrete selectors fire once immediately, numeric on blur, text once typing settles,
+seeding never triggers onChange, and script-driven value writes cannot cause infinite loops.
+
+### 6.7 Load-time behavior guarantees
+
+Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process dialog faithful to Classic:
+
+- **Grid `fetchData()` before mount is a safe no-op.** A process-level `onLoad` may call
+  `view.theForm.getItem('<grid>').canvas.viewGrid.fetchData()` (or `invalidateCache()`) before the embedded
+  grid has registered its live controller. The grid proxy treats these two methods as no-ops until the
+  controller is live (the grid fetches on mount anyway; an explicit re-fetch after a later value change runs
+  normally once live). It does **not** throw `not implemented yet` — so onLoad grid fetches never abort
+  parameter loading. All other deferred grid methods still throw to flag an unported script.
+- **Display-logic fields don't flash.** A parameter that carries display logic renders **hidden** until form
+  values are available to evaluate it (previously it defaulted to visible, flashing server-driven fields
+  like multicurrency `conversion_rate` / `converted_amount` on open). Fields with no display logic are
+  always visible as before.
+- **`onLoad` runs *after* the async default/FIC seed.** Classic applies all process defaults (and the FIC
+  callout) synchronously *before* `onLoad`. The substrate now defers the `onLoad` hook until the
+  process-defaults seed completes, so the migrated body sees a fully-seeded form/context. An imperative
+  show/hide driven from `onLoad` (e.g. a `paymentMethodMulticurrency`-style handler that hides fields with
+  **no** `displaylogic`, which therefore cannot be hidden declaratively) evaluates against real values and
+  takes effect, instead of no-op-ing on an empty context. No script change is required — an existing
+  `onLoad` simply runs at the right time.
+- **No mandatory error on open.** Validation errors raised while defaults are still being seeded — and any
+  raised by `onLoad` itself — are cleared once the post-seed `onLoad` completes (and once more after the
+  seed settles for processes without an `onLoad`), so a mandatory field is not flagged before the user
+  interacts. Normal onChange/submit validation is unaffected.
+- **`setEditValue` on an editable grid column persists to the read/display store.** A script write
+  `grid.setEditValue(rowIndex, col, value)` (e.g. the `order_invoice` / `credit_to_use` amount distribution
+  and pre-selection seeding) is reflected synchronously into the same store that `grid.getEditValues` /
+  `getEditedCell` and the cell display read — even when the write happens during the grid's initial
+  phantom→real load (when the committed read store is briefly one render ahead of internal state) and even
+  for a synchronous multi-row write burst (each write accumulates rather than clobbering the previous). So
+  an immediate read-back of a just-written editable amount returns the written value, matching Classic's
+  synchronous `setEditValues`. MRT create-rows (not yet committed) keep their `row.original`-only path.
+- **A column validator sees the candidate (post-write) value.** A `grid.setColumnValidator('<col>', fn)`
+  registered in `onGridLoad` is invoked with the value being written, not the cell's stale pre-write value:
+  the substrate validates the candidate record (current row data overlaid with the pending change) and
+  exposes it through `item.getValue()` and the validator's `value` / `record` arguments. Without this, a
+  programmatic `grid.setEditValue` of a valid value was validated against the row's default — e.g. an
+  `amount` validator rejecting `0` (zero-amount underpayment) would drop the legitimate write of the
+  outstanding amount, leaving the cell at `0` permanently. On rejection the cell still reverts to its prior
+  committed value. No script change is required; the validator body is unchanged.
+- **Column validators run on interactive edits only, never on programmatic writes.** Mirroring classic
+  SmartClient, a `grid.setColumnValidator('<col>', fn)` is consulted when the **user** edits the cell, but a
+  **programmatic** `grid.setEditValue(...)` (distribution, seeding, cascades from `onGridLoad` / column
+  `onChange`) is applied **without** running the validator. This prevents a script's own write from being
+  rejected — and from raising the validator's user-facing message — on open: e.g. `distributeAmount` writing
+  `amount = 0` to deselect a row must not trigger the zero-amount underpayment message. The validator still
+  guards real user input (validating the candidate value, per the previous bullet). No script change is
+  required.
+- **`selectRecord` after a programmatic `setEditValue` keeps the written value.** The classic
+  distribute/seed pattern writes a cell then selects the row in two back-to-back calls
+  (`grid.setEditValue(i, 'amount', x); grid.selectRecord(i);`). The substrate captures the selection
+  snapshot from the live read store, so the just-written value is carried into the selection and the
+  internal selection-sync stays idempotent — it never pushes a stale pre-write value back over the cell.
+  Without this, a distributed `amount = 2.07` was overwritten back to `0` on load. No script change is
+  required.
 
 ---
 
@@ -497,8 +563,8 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   script-logic field store, where the script wins).
 - **Item** (`form.getItem(name)`): `getValue()`/`setValue(v)`, `setValueFromRecord(record)`,
   `setValueProgrammatically(v)`, `getFirstOptionValue()`, `setRequired(bool)`/`setDisabled(bool)`,
-  `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`, `clearValue()`, `name`, and `canvas.viewGrid`
-  for grid parameters. Items resolve by `name`, `dBColumnName`, or the parameter map key, so
+  `setTitle(title)`, `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`, `clearValue()`, `name`, and
+  `canvas.viewGrid` for grid parameters. Items resolve by `name`, `dBColumnName`, or the parameter map key, so
   `getItem('Column1')` and `getItem('<Display Name>')` both work — and `setValueMap` / `getValueMap` /
   `setRequired` update the parameter under its real map key regardless of which form you address it by.
   - **`getValue()` is type-faithful to Classic.** For numeric parameters (Integer / Number / Quantity /
@@ -521,6 +587,12 @@ This deferral is intentional: read-only data is always safe, and any unported ac
     `{ id: label }` object. Port the Classic lookup `valueMap[action]` to
     `getValueMap().find(o => o.value === action || o.id === action)`. `setValueMap(map)` still accepts
     either an array or a plain `{ id: label }` object and normalizes it.
+  - **Runtime relabeling (`item.setTitle(title)`).** Replaces the field's label at runtime — the new-UI
+    equivalent of the Classic `form.getItem(name).title = '<text>'` assignment (e.g. the
+    `AddPaymentReloadLabelsActionHandler` callback retitling *Received From* / *Deposit To* per the
+    selected document type). Live only when a `FieldController` is injected; the override is held in the
+    modal's label store (reset on close) and merged over the static parameter label, so leaving it unset
+    keeps the metadata label — purely additive.
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
@@ -797,17 +869,20 @@ global namespace — each process owns its module scope (see the cloning rule in
   OB.Utilities.Number.JSToOBMasked(total, OB.Format.defaultNumericMask, …); // formats directly
   ```
 
-  Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`,
-  `prototype.ROUND_HALF_UP`, `add`, `subtract`, `multiply`, `compareTo` (`-1 | 0 | 1`),
+  Supported surface: constructor (`string | number | BigDecimal`), `prototype.ZERO`, `prototype.ONE`,
+  `prototype.ROUND_HALF_UP`, `add`, `subtract`, `multiply`, `divide(divisor, scale, roundingMode?)`,
+  `compareTo` (`-1 | 0 | 1`), `signum()` (`-1 | 0 | 1`), `negate()`, `abs()`,
   `setScale(scale, roundingMode?)`, `toString()`, `toNumber()`. `multiply(other)` is exact (Java
   `BigDecimal.multiply` carries no scale/rounding; re-apply `setScale` afterwards), e.g.
   `unitPrice.multiply(qty).setScale(2, BigDecimal.prototype.ROUND_HALF_UP)`. `setScale(scale)` mirrors
   the Classic `BigDecimal.setScale(scale)`: it returns a **new** instance with a fixed decimal scale
   whose `toString()` renders exactly that many decimals (`"5"` → `"5.00"`); the optional second argument
-  accepts the Classic `BigDecimal.prototype.ROUND_HALF_UP` rounding mode and defaults to it. `divide` is
-  **not** provided yet: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be
-  deterministic, so it will be added with those semantics when a process needs it. `JSToOBMasked` accepts
-  a `BigDecimal` directly (Section 8.6), so amounts format without a manual `.toNumber()`.
+  accepts the Classic `BigDecimal.prototype.ROUND_HALF_UP` rounding mode and defaults to it.
+  `divide(divisor, scale, roundingMode?)` mirrors Java `BigDecimal.divide(divisor, scale, RoundingMode)`:
+  the explicit scale + rounding (default `ROUND_HALF_UP`) keep the quotient deterministic even when the
+  division does not terminate, e.g. `amount.divide(rate, precision, BigDecimal.prototype.ROUND_HALF_UP)`.
+  `JSToOBMasked` accepts a `BigDecimal` directly (Section 8.6), so amounts format without a manual
+  `.toNumber()`.
 
 ### 8.12 Action-time dynamic parameter form — `openDynamicForm`
 
@@ -903,6 +978,7 @@ This section is the operational guide for translating one Classic `.js` file int
 | `ongridloadfunction(grid, view, parameters)` | `em_etmeta_on_grid_load`: `(grid, view, parameters) => { … }` |
 | `form.getItem('<numeric>').getValue()` → number | identical — numeric params return a `number` (Section 7.3); keep Classic comparisons (`a < b`) as-is, do not add `Number(...)` |
 | `gl.valueMap[id] = label; gl.setValue(id)` | `gl.setValueFromRecord({ id, _identifier: label })` — sets value **and** display label (Section 7.3) |
+| `form.getItem('<f>').title = '<text>'` (runtime relabel, e.g. `AddPaymentReloadLabelsActionHandler`) | `form.getItem('<f>').setTitle('<text>')` (Section 7.3) |
 | `item.setValueProgrammatically(v)` | identical — selects an existing option (value + label), Section 7.3 |
 | `item.getFirstOptionValue()` | identical — returns the first option `value` of the current value map |
 | `var m = item.getValueMap(); m[action]` | `item.getValueMap().find(o => o.value === action \|\| o.id === action)` — `getValueMap()` is a `ListOption[]` array, not an `{id:label}` object |
@@ -918,6 +994,8 @@ This section is the operational guide for translating one Classic `.js` file int
 | `OB.PropertyStore.get/set` | identical |
 | `OB.Format.*`, `OB.Utilities.Number.JSToOBMasked` | identical (`JSToOBMasked` also accepts a `BigDecimal`, Section 8.6) |
 | `new BigDecimal(String(x))` / `.add` / `.subtract` / `.compareTo` / `.setScale(2)` / `.prototype.ZERO` | identical — injected global (Section 8.11); never rewrite money math with `Number` |
+| `amount.divide(rate, scale, BigDecimal.prototype.ROUND_HALF_UP)` / `.signum()` / `.negate()` / `.abs()` / `.prototype.ONE` | identical — injected `BigDecimal` (Section 8.11) |
+| `recalcDisplayLogicOrReadOnlyLogic` → `RemoteCallManager.call(DisplayLogicHandler, …, cb)` then in `cb` `form.getItem(p).setValue(v)` + `view.handleReadOnlyLogic()` | identical — call the handler, `setValue`/`setValueMap` the returned per-parameter values, then `view.handleReadOnlyLogic()` / `view.handleButtonsStatus()`; display/readonly logic re-evaluates reactively from the new values (no bespoke push-back API needed) |
 | `OB.Constants.FIELDSEPARATOR` / `OB.Constants.IDENTIFIER` | identical — exposed by the `OB` shim (Section 8.6) |
 | `OB.RemoteCallManager.call(handler, params, other, cb)` | identical (callback adapter over `callAction`) |
 | `OB.Utilities.Action.set/execute/executeJSON` | identical |
@@ -974,29 +1052,26 @@ module reuses the Defined-Process registration; their UI lives in a separate app
 
 ---
 
-## 11. Legacy Add-Payment exception
+## 11. Legacy Add-Payment exception (RETIRED)
 
-The platform is fully generic and metadata-driven **with one exception**: the **Add Payment** process
-is currently supported through four process-specific hardcodings in the UI. They predate this migration
-work and are retained for traceability and as a cleanup target once Add Payment is itself migrated to
-the generic, metadata-driven path.
+The platform is fully generic and metadata-driven. **Add Payment** was once the sole exception, supported
+through four process-specific hardcodings in the UI. As of the substrate work that unblocked its migration
+(see the process report `agents/reports/9BED7889E1034FE68BD85D5D16857320.md`), **all four hardcodings have
+been retired** and Add Payment runs on the generic, metadata-driven path like every other process.
 
-| # | Location | What it does |
-|---|---|---|
-| 1 | `PROCESS_DEFINITION_DATA` + per-process IDs in `packages/MainUI/utils/processes/definition/constants.ts` | Static lookup mapping process IDs to payload field/column overrides. |
-| 2 | `isAddPayment` branch in `packages/MainUI/components/ProcessModal/hooks/useProcessPayload.ts` | `if (processId === ADD_PAYMENT_ORDER_PROCESS_ID)` bypasses parameter-name mapping. |
-| 3 | `SINGLE_RECORD_ONLY_PROCESSES` in `packages/MainUI/hooks/Toolbar/useToolbar.ts` | Hardcodes `"EM_APRM_AddPayment"` as a single-record exception to bulk toolbar logic. |
-| 4 | `PROCESS_CALLOUTS` registry in `packages/MainUI/components/ProcessModal/callouts/processCallouts.ts` | Its only entry is Add Payment; processes carrying `em_etmeta_payscript_logic` use the dynamic per-parameter fallback instead. |
+| # | Location | Former hardcoding | Now |
+|---|---|---|---|
+| 1 | `packages/MainUI/utils/processes/definition/constants.ts` | `ADD_PAYMENT_ORDER_PROCESS_ID` + its `PROCESS_DEFINITION_DATA` entry | **Removed.** Other entries (Copy-From-Order, etc.) are untouched. |
+| 2 | `packages/MainUI/components/ProcessModal/hooks/useProcessPayload.ts` | `if (processId === ADD_PAYMENT_ORDER_PROCESS_ID)` bypassed parameter-name mapping | **Removed.** Add Payment uses the standard `getMappedFormValues` + `resolveDocAction` path. |
+| 3 | `packages/MainUI/hooks/Toolbar/useToolbar.ts` | `SINGLE_RECORD_ONLY_PROCESSES` hardcoded `"EM_APRM_AddPayment"` | **Entry removed** (the generic guard remains, now empty, for any future backend-misconfigured `isMultiRecord` process). |
+| 4 | `packages/MainUI/components/ProcessModal/callouts/processCallouts.ts` | `PROCESS_CALLOUTS` static registry whose only entry was Add Payment | **Registry emptied** + dead `@deprecated calculateAddPayment` removed. The generic PayScript-DSL fallback (`getPayScriptRules` → `genericPayScriptCallout`) is **kept** — it is shared (e.g. `GenericWarehouseProcess`). |
 
-**Why this is not a blocker.** The migration runtime itself is generic: hooks load dynamically from the
-`em_etmeta_*` columns keyed by the real process UUID, and the backend emits those columns for every
-process through the generic converter pass (Section 4). None of the four spots is required by the
-migration path; they are the old Add-Payment support, inert for every other process.
-
-**Cleanup direction (future).** When Add Payment is migrated, fold each hardcoding into the generic
-mechanism — express payload/column overrides and the single-record exception as metadata (or derive
-them from the process definition) rather than by process ID, and drop the static `PROCESS_CALLOUTS`
-entry.
+**Capabilities added to unblock the migration** (all additive, non-regressive — Sections 7.3 & 8.11):
+`BigDecimal.divide`/`signum`/`negate`/`abs`/`prototype.ONE`; `item.setTitle(title)` (runtime relabeling).
+The server-driven display/read-only-logic recalc (`recalcDisplayLogicOrReadOnlyLogic`) needed **no new
+API** — it is reproduced with the existing `OB.RemoteCallManager.call` adapter, the live `item.setValue`/
+`setValueMap`, and `view.handleReadOnlyLogic()`/`handleButtonsStatus()`, since display/readonly logic
+re-evaluates reactively from the form values (Section 10.2).
 
 **Note.** `packages/MainUI/payscript/rules/AddPaymentRulesClean.js` and
 `packages/MainUI/payscript/examples/simpleExample.ts` are development/test fixtures only — imported by

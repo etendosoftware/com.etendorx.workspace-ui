@@ -766,7 +766,9 @@ describe("WindowReferenceGrid Utilities", () => {
         []
       );
       controller.setEditValue(0, "amount", 99);
-      expect(api.handleRecordChange).toHaveBeenCalledWith(rec("1", { amount: 5 }), { amount: 99 });
+      // setEditValue is the script (programmatic) path: it flags the write so the
+      // cell validator gate is skipped (classic never validates programmatic writes).
+      expect(api.handleRecordChange).toHaveBeenCalledWith(rec("1", { amount: 5 }), { amount: 99 }, { programmatic: true });
 
       controller.selectRecord(1);
       const updater = (api.handleRowSelection as jest.Mock).mock.calls[0][0];

@@ -27,9 +27,13 @@ import {
   resolveSortBy,
   buildDeselectedRecord,
   applyEditToRows,
+  applyEditToReadStore,
+  buildValidatorCandidate,
+  shouldRunColumnValidators,
   applyButtonOwnerViewTabId,
   decideDatasourceSync,
   syncGridSelectionToLocalRecords,
+  shouldDeferInitialZeroing,
   syncPersistentSelection,
   buildIsFieldReadOnly,
   findMatchingRecord,
@@ -93,6 +97,16 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       const selection = { amount: 20 };
       const updated = updateLocalRecordFromSelection(record as any, selection);
       expect(updated?.amount).toBe(20);
+    });
+
+    it("updateLocalRecordFromSelection does NOT overwrite when the selection amount matches the record", () => {
+      // Regression guard for the Add Payment Order/Invoice "amount -> 0" clobber:
+      // once the selection snapshot carries the freshly distributed value (the
+      // handleRowSelection read-store fix), the selection-sync becomes idempotent
+      // and must NOT push the (now-equal) amount back over the grid's value.
+      const record = { id: "1", amount: 2.07 };
+      const selection = { id: "1", amount: 2.07 };
+      expect(updateLocalRecordFromSelection(record as any, selection)).toBeNull();
     });
 
     it("resetLocalRecordFields should reset specific fields", () => {
@@ -390,6 +404,27 @@ describe("syncGridSelectionToLocalRecords", () => {
   });
 });
 
+describe("shouldDeferInitialZeroing", () => {
+  const preSelected = [{ id: "1", amount: 100, obSelected: true }] as EntityData[];
+  const notSelected = [{ id: "1", amount: 100, obSelected: false }] as EntityData[];
+
+  it("defers the initial empty pass while a backend pre-selected row is pending", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [], false)).toBe(true);
+  });
+
+  it("does not defer once a real (non-empty) selection has arrived", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [{ id: "1" }], false)).toBe(false);
+  });
+
+  it("does not defer after reconciliation (later updates behave normally)", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [], true)).toBe(false);
+  });
+
+  it("does not defer when no row is pre-selected (no regression for plain grids)", () => {
+    expect(shouldDeferInitialZeroing(notSelected, [], false)).toBe(false);
+  });
+});
+
 describe("syncPersistentSelection", () => {
   const makeRecord = (overrides?: Partial<EntityData>): EntityData =>
     ({ id: "1", ...overrides }) as EntityData;
@@ -676,5 +711,98 @@ describe("isFieldVisibleForContext", () => {
       gridDisplayLogicExpression: "true",
     };
     expect(isFieldVisibleForContext(field, {}, {})).toBe(false);
+  });
+
+  describe("applyEditToReadStore", () => {
+    const READ_STORE: EntityData[] = [
+      { id: "1", amount: 0, outstandingAmount: 2.07 } as unknown as EntityData,
+      { id: "2", amount: 0, outstandingAmount: 5 } as unknown as EntityData,
+    ];
+
+    it("applies the edit when the read store holds the row and reflects it on read-back", () => {
+      const updated = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      expect(updated).not.toBeNull();
+      // The script proxy's getEditValues reads the row back by index from this store.
+      expect((updated as EntityData[])[0].amount).toBe(2.07);
+      // Untouched rows are preserved.
+      expect((updated as EntityData[])[1].amount).toBe(0);
+    });
+
+    it("returns null for a create-row absent from the read store (row.original-only path)", () => {
+      expect(applyEditToReadStore(READ_STORE, "mrt-row-create", { amount: 9 })).toBeNull();
+      expect(applyEditToReadStore([], "1", { amount: 9 })).toBeNull();
+    });
+
+    it("does not mutate the input rows (returns a fresh array)", () => {
+      const updated = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      expect(updated).not.toBe(READ_STORE);
+      expect(READ_STORE[0].amount).toBe(0);
+    });
+
+    it("accumulates successive writes when each result feeds the next (single-tick distribute loop)", () => {
+      // Mirrors the distribute loop: each setEditValue uses the prior result (the
+      // synchronously-updated read store) as the next base, so writes do not clobber.
+      const afterRow0 = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      const afterRow1 = applyEditToReadStore(afterRow0 as EntityData[], "2", { amount: 5 });
+      expect((afterRow1 as EntityData[])[0].amount).toBe(2.07);
+      expect((afterRow1 as EntityData[])[1].amount).toBe(5);
+    });
+  });
+
+  describe("buildValidatorCandidate", () => {
+    // The pre-write row a column validator was (wrongly) fed before the fix: a
+    // default row whose amount=0 fails a zero-amount validator.
+    const ROW_DATA = { id: "1", amount: 0, outstandingAmount: 2.07, writeoff: false };
+
+    it("overlays the pending changes so the written column reflects the new value", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate.amount).toBe(2.07);
+    });
+
+    it("preserves untouched columns from the row data", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate.outstandingAmount).toBe(2.07);
+      expect(candidate.writeoff).toBe(false);
+    });
+
+    it("does not mutate the input row data (returns a fresh object)", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate).not.toBe(ROW_DATA);
+      expect(ROW_DATA.amount).toBe(0);
+    });
+
+    it("returns a safe copy of the row data when there are no changes", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, {});
+      expect(candidate).toEqual(ROW_DATA);
+      expect(candidate).not.toBe(ROW_DATA);
+    });
+
+    it("makes a zero-amount validator accept the candidate that the pre-write row would have rejected", () => {
+      // Mirrors AP.orderInvoiceGridValidation: reject amount===0, accept otherwise.
+      const validate = (record: { amount: number }) => record.amount !== 0;
+      // Pre-write row → rejected (the bug); candidate with the written value → accepted.
+      expect(validate(ROW_DATA)).toBe(false);
+      expect(validate(buildValidatorCandidate(ROW_DATA, { amount: 2.07 }) as { amount: number })).toBe(true);
+    });
+  });
+
+  describe("shouldRunColumnValidators", () => {
+    it("skips validation for a programmatic write even when validators are registered", () => {
+      // Bug repro: distribute/seed setEditValue must NOT be gated (classic never
+      // validates programmatic writes), so no spurious rejection/message on open.
+      expect(shouldRunColumnValidators(true, false, 1)).toBe(false);
+    });
+
+    it("runs validation for an interactive edit with a registered validator", () => {
+      expect(shouldRunColumnValidators(false, false, 1)).toBe(true);
+    });
+
+    it("skips validation when no validator is registered", () => {
+      expect(shouldRunColumnValidators(false, false, 0)).toBe(false);
+    });
+
+    it("skips validation during a column-onChange re-entry", () => {
+      expect(shouldRunColumnValidators(false, true, 1)).toBe(false);
+    });
   });
 });

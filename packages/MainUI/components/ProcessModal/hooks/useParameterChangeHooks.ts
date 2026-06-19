@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
@@ -56,6 +56,14 @@ export interface UseParameterChangeHooksParams {
   viewData?: ViewData;
   /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` to a live grid handle. */
   gridResolver?: GridResolver;
+  /**
+   * When `false`, value changes are absorbed into the baseline but DO NOT fire the
+   * hooks. This mirrors Classic, which never fires `onChange` during the initial
+   * default/FIC seeding — only on a user-initiated change. Pass the same steady-state
+   * signal the callout hooks use (`open && !loading && !initializationLoading`).
+   * Defaults to `true` to preserve behavior for callers that don't gate.
+   */
+  enabled?: boolean;
 }
 
 /**
@@ -78,7 +86,16 @@ export function useParameterChangeHooks({
   viewController,
   viewData,
   gridResolver,
+  enabled = true,
 }: UseParameterChangeHooksParams): void {
+  // Read `enabled` through a ref so toggling it (seeding → steady state) never
+  // re-subscribes the stable `form.watch` below. While disabled, the watch keeps
+  // updating the baseline so the first user change after enabling fires correctly.
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   const compiledHooks = useMemo(() => {
     const map = new Map<string, CompiledParameterHook>();
     for (const parameter of Object.values(parameters ?? {})) {
@@ -145,6 +162,11 @@ export function useParameterChangeHooks({
       // Value-diff guard: skip no-op changes (also prevents loops).
       if (Object.is(prevValues[name], nextValue)) return;
       prevValues[name] = nextValue;
+
+      // Seeding guard: while not in a steady/interactive state (initial default +
+      // FIC seeding), absorb the change into the baseline above but do not fire the
+      // hook — Classic never fires onChange during the initial seed.
+      if (!enabledRef.current) return;
 
       const pending = timers.get(name);
       if (pending) clearTimeout(pending);

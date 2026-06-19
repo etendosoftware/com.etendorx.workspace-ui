@@ -31,9 +31,9 @@ function toBigNumber(value: BigDecimalValue): BigNumber.Value {
  * migrated hooks can do decimal amount arithmetic with the exact rounding/scale parity the
  * server-side check expects — never with lossy `Number`.
  *
- * Only the surface the in-scope migrated processes use is implemented. `divide` is intentionally
- * omitted: Java `BigDecimal.divide` requires an explicit scale + `RoundingMode` to be deterministic,
- * so it will be added (with those semantics) when a process actually needs it.
+ * Only the surface the in-scope migrated processes use is implemented. `divide` follows the Java
+ * `BigDecimal.divide(divisor, scale, RoundingMode)` contract: it requires an explicit scale +
+ * rounding mode so the quotient is deterministic (a bare `a / b` could be non-terminating).
  */
 export class BigDecimal {
   /** Backing arbitrary-precision value. */
@@ -49,6 +49,9 @@ export class BigDecimal {
 
   /** Zero, exposed on the prototype to honour the classic `BigDecimal.prototype.ZERO` idiom. */
   declare ZERO: BigDecimal;
+
+  /** One, exposed on the prototype to honour the classic `BigDecimal.prototype.ONE` idiom. */
+  declare ONE: BigDecimal;
 
   /**
    * Half-up rounding mode, exposed on the prototype to honour the classic
@@ -89,6 +92,34 @@ export class BigDecimal {
   }
 
   /**
+   * Returns a new `BigDecimal` equal to `this / divisor`, rounded to `scale` decimals with the given
+   * rounding mode and a fixed scale, mirroring Java `BigDecimal.divide(divisor, scale, RoundingMode)`
+   * (classic `amount.divide(rate, precision, BigDecimal.prototype.ROUND_HALF_UP)`). The explicit
+   * scale + mode keep the quotient deterministic even when the exact division does not terminate.
+   */
+  divide(divisor: BigDecimalValue, scale: number, roundingMode: number = BigNumber.ROUND_HALF_UP): BigDecimal {
+    const quotient = this.value
+      .dividedBy(toBigNumber(divisor))
+      .decimalPlaces(scale, roundingMode as BigNumber.RoundingMode);
+    return new BigDecimal(quotient, scale);
+  }
+
+  /** Returns `-1`, `0` or `1` as `this` is negative, zero, or positive (classic Java `signum()`). */
+  signum(): number {
+    return this.value.comparedTo(0) ?? Number.NaN;
+  }
+
+  /** Returns a new `BigDecimal` equal to `-this` (classic Java `negate()`). */
+  negate(): BigDecimal {
+    return new BigDecimal(this.value.negated());
+  }
+
+  /** Returns a new `BigDecimal` equal to `|this|` (classic Java `abs()`). */
+  abs(): BigDecimal {
+    return new BigDecimal(this.value.absoluteValue());
+  }
+
+  /**
    * Returns a new `BigDecimal` rounded to `scale` decimals with a fixed scale, mirroring the classic
    * `BigDecimal.setScale(scale)`. Rounding uses `ROUND_HALF_UP` (the Classic money default); for the
    * ≤2-decimal money amounts these scripts handle, nothing is ever discarded, so this matches the
@@ -113,4 +144,5 @@ export class BigDecimal {
 }
 
 BigDecimal.prototype.ZERO = new BigDecimal(0);
+BigDecimal.prototype.ONE = new BigDecimal(1);
 BigDecimal.prototype.ROUND_HALF_UP = BigNumber.ROUND_HALF_UP;

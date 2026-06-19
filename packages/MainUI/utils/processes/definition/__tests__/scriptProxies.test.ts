@@ -50,6 +50,7 @@ const makeController = (valueMaps: Record<string, ListOption[]> = {}): FieldCont
   setRequired: jest.fn(),
   setDisabled: jest.fn(),
   setDisplayed: jest.fn(),
+  setTitle: jest.fn(),
   setValueMap: jest.fn(),
   getValueMap: jest.fn((name: string) => valueMaps[name] ?? []),
   addField: jest.fn(),
@@ -298,6 +299,14 @@ describe("scriptProxies", () => {
       expect(() => (grid.setEditValue as () => void)()).toThrow("grid.setEditValue is not implemented yet");
     });
 
+    it("treats fetchData/invalidateCache as safe no-ops before a controller is live", () => {
+      const grid = createGridProxy(state);
+      expect(() => (grid.fetchData as () => void)()).not.toThrow();
+      expect(() => (grid.invalidateCache as () => void)()).not.toThrow();
+      // Other data methods still throw, so an unported script is still flagged.
+      expect(() => (grid.setEditValue as () => void)()).toThrow("grid.setEditValue is not implemented yet");
+    });
+
     it("defers setRowActions and setRecordComponent without a controller", () => {
       const grid = createGridProxy(state);
       expect(() => (grid.setRowActions as () => void)()).toThrow("grid.setRowActions is not implemented yet");
@@ -439,7 +448,10 @@ describe("scriptProxies", () => {
       const data: ViewData = { activeTabId: "T-9", parentRecord: { docStatus: "DR" } };
       const view = createViewProxy(handle, PARAMETERS, { messageBar, data });
       const parentWindow = view.parentWindow as {
-        activeView: { getContextInfo: () => Record<string, unknown>; parentView: { getContextInfo: () => Record<string, unknown> } };
+        activeView: {
+          getContextInfo: () => Record<string, unknown>;
+          parentView: { getContextInfo: () => Record<string, unknown> };
+        };
       };
 
       const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7 };
@@ -604,12 +616,20 @@ describe("scriptProxies", () => {
       call(item.setDisabled)();
       call(item.show)();
       call(item.hide)();
+      (item.setTitle as (title: string) => void)("Received From Vendor");
 
       expect(controller.setRequired).toHaveBeenNthCalledWith(1, "amount", true);
       expect(controller.setRequired).toHaveBeenNthCalledWith(2, "amount", false);
       expect(controller.setDisabled).toHaveBeenCalledWith("amount", true);
       expect(controller.setDisplayed).toHaveBeenNthCalledWith(1, "amount", true);
       expect(controller.setDisplayed).toHaveBeenNthCalledWith(2, "amount", false);
+      expect(controller.setTitle).toHaveBeenCalledWith("amount", "Received From Vendor");
+    });
+
+    it("defers item.setTitle (throws) when no controller is injected", () => {
+      const { handle } = makeFormHandle({ amount: 1 });
+      const item = createItemProxy(handle, "amount");
+      expect(() => (item.setTitle as (title: string) => void)("x")).toThrow("item.setTitle is not implemented yet");
     });
 
     it("routes setValueMap / getValueMap through the controller", () => {

@@ -10,6 +10,7 @@ import {
   applyStaticParameterValues,
   updateParametersFromOnLoadResult,
   withFlag,
+  withLabelOverride,
   withMandatory,
   withRefList,
   normalizeValueMap,
@@ -23,6 +24,7 @@ import {
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
+  shouldClearSeedValidationErrors,
   EMPTY_SCRIPT_BUTTON_STATE,
   addSelectedIDsToCriteria,
   type ScriptButtonState,
@@ -494,6 +496,44 @@ describe("Process Definition Utils", () => {
       it("short-circuits to the same reference when unchanged", () => {
         const prev = { "a.readonly": true };
         expect(withFlag(prev, "a.readonly", true)).toBe(prev);
+      });
+    });
+
+    describe("withLabelOverride", () => {
+      it("sets a label override keyed by parameter name, immutably", () => {
+        const prev = { received_from: "Received From" };
+        const next = withLabelOverride(prev, "fin_financial_account_id", "Withdrawal Account");
+        expect(next).toEqual({ received_from: "Received From", fin_financial_account_id: "Withdrawal Account" });
+        expect(next).not.toBe(prev);
+      });
+
+      it("overwrites an existing override for the same parameter", () => {
+        const prev = { received_from: "Received From" };
+        expect(withLabelOverride(prev, "received_from", "Paid To")).toEqual({ received_from: "Paid To" });
+      });
+
+      it("short-circuits to the same reference when the title is unchanged", () => {
+        const prev = { received_from: "Received From" };
+        expect(withLabelOverride(prev, "received_from", "Received From")).toBe(prev);
+      });
+    });
+
+    describe("shouldClearSeedValidationErrors", () => {
+      it("clears once after seeding settles on an open modal", () => {
+        expect(shouldClearSeedValidationErrors(true, false, false, false)).toBe(true);
+      });
+
+      it("does not clear again once already cleared this open cycle", () => {
+        expect(shouldClearSeedValidationErrors(true, false, false, true)).toBe(false);
+      });
+
+      it("waits while metadata or defaults are still loading", () => {
+        expect(shouldClearSeedValidationErrors(true, true, false, false)).toBe(false);
+        expect(shouldClearSeedValidationErrors(true, false, true, false)).toBe(false);
+      });
+
+      it("never clears while the modal is closed", () => {
+        expect(shouldClearSeedValidationErrors(false, false, false, false)).toBe(false);
       });
     });
 

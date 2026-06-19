@@ -353,6 +353,16 @@ export function withFlag(prev: Record<string, boolean>, key: string, value: bool
 }
 
 /**
+ * Sets a parameter's runtime label override in an immutable map (Classic
+ * `form.getItem(name).title = title`). Keyed by parameter name; short-circuits to
+ * the same reference when unchanged, so a no-op never triggers a re-render.
+ */
+export function withLabelOverride(prev: Record<string, string>, name: string, title: string): Record<string, string> {
+  if (prev[name] === title) return prev;
+  return { ...prev, [name]: title };
+}
+
+/**
  * Footer-button visibility/enablement toggled imperatively by migrated scripts
  * (`view.popupButtons` / `view.cancelButton` / the close `X`). Keyed by the
  * action button's value; the cancel/close flags are modal-wide.
@@ -760,6 +770,28 @@ export function applyMergedParam(
     }
     options[outKey] = value;
   }
+}
+
+/**
+ * One-shot gate for clearing validation errors surfaced during the modal's initial
+ * default/FIC seeding. Classic shows no mandatory error on open; the new form
+ * (`mode: "onChange"`) can flag a mandatory field while defaults are still being
+ * applied. Returns `true` exactly when the clear should run: the modal is open, the
+ * seeding has settled (not loading), and we haven't already cleared this open cycle.
+ *
+ * @param open                  Whether the process modal is open
+ * @param loading               Process metadata still loading
+ * @param initializationLoading Defaults (DefaultsProcessActionHandler) still loading
+ * @param alreadyCleared        Whether the clear already ran for this open cycle
+ */
+export function shouldClearSeedValidationErrors(
+  open: boolean,
+  loading: boolean,
+  initializationLoading: boolean,
+  alreadyCleared: boolean
+): boolean {
+  if (!open || loading || initializationLoading) return false;
+  return !alreadyCleared;
 }
 
 /** Shape of a single filter criteria entry */

@@ -46,9 +46,10 @@ const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
  * These are processes that are incorrectly configured in the backend.
  * TODO: These should be fixed in Etendo Classic metadata by setting isMultiRecord = false
  */
-const SINGLE_RECORD_ONLY_PROCESSES = new Set([
-  "EM_APRM_AddPayment", // Add Payment - processes individual orders, not bulk
-]);
+// Empty by design: Add Payment (the only former entry) moved to the generic
+// metadata-driven mechanism, so it is no longer forced single-record here. The
+// generic guard is kept for any future backend-misconfigured `isMultiRecord` process.
+const SINGLE_RECORD_ONLY_PROCESSES = new Set<string>();
 
 export function useToolbar(windowIdentifier: string, tabId?: string) {
   const cacheKey = `${windowIdentifier}-${tabId || "default"}`;

@@ -86,6 +86,7 @@ export interface FieldController {
   setRequired: (name: string, required: boolean) => void;
   setDisabled: (name: string, disabled: boolean) => void;
   setDisplayed: (name: string, displayed: boolean) => void;
+  setTitle: (name: string, title: string) => void;
   setValueMap: (name: string, map: unknown) => void;
   getValueMap: (name: string) => ListOption[];
   addField: (field: DynamicParameter) => void;
@@ -297,6 +298,11 @@ export interface ItemProxy extends Record<string, unknown> {
   setValueProgrammatically?: (value: unknown) => void;
   /** Reads the first option value of the selector's current value map; live with a controller. */
   getFirstOptionValue?: () => unknown;
+  /**
+   * Relabels the field at runtime (Classic `item.title = …`, from handlers such as
+   * `AddPaymentReloadLabelsActionHandler`). Live only when a `FieldController` is injected.
+   */
+  setTitle?: (title: string) => void;
   /** Live only for grid parameters (when a `GridResolver` is injected). */
   canvas?: CanvasProxy;
 }
@@ -416,6 +422,7 @@ const DEFERRED_ITEM_METHODS = [
   "getFirstOptionValue",
   "setRequired",
   "setDisabled",
+  "setTitle",
   "show",
   "hide",
   "clearValue",
@@ -437,6 +444,7 @@ const DEFERRED_FORM_METHODS = ["getField", "getFields", "addField", "removeField
 const LIVE_ITEM_METHODS: readonly string[] = [
   "setRequired",
   "setDisabled",
+  "setTitle",
   "show",
   "hide",
   "clearValue",
@@ -551,6 +559,23 @@ export function notImplemented(api: string): never {
 function assignDeferred(target: Record<string, unknown>, prefix: string, methods: readonly string[]): void {
   for (const method of methods) {
     target[method] = () => notImplemented(`${prefix}.${method}`);
+  }
+}
+
+/**
+ * Deferred grid data methods that must be safe NO-OPS (not throwing) when no
+ * controller is live yet. A process-level `onLoad` can call `grid.fetchData()` /
+ * `grid.invalidateCache()` before the embedded grid registers its controller; since
+ * embedded grids fetch on mount, a pre-registration call is redundant, and the
+ * functional re-fetch (after a user change) runs later when the controller IS live.
+ * Keeping these as no-ops prevents a spurious "not implemented yet" from aborting onLoad.
+ */
+const DEFERRED_GRID_NOOP_METHODS = ["fetchData", "invalidateCache"] as const;
+
+/** Assigns no-op stubs for the given method names onto `target` (overrides any throwing stub). */
+function assignDeferredNoop(target: Record<string, unknown>, methods: readonly string[]): void {
+  for (const method of methods) {
+    target[method] = () => undefined;
   }
 }
 
@@ -675,6 +700,7 @@ function assignLiveItemMethods(
 ): void {
   item.setRequired = (required = true) => controller.setRequired(paramName, required);
   item.setDisabled = (disabled = true) => controller.setDisabled(paramName, disabled);
+  item.setTitle = (title: string) => controller.setTitle(paramName, title);
   item.show = () => controller.setDisplayed(paramName, true);
   item.hide = () => controller.setDisplayed(paramName, false);
   item.setValueMap = (map: unknown) => applyValueMap(form, paramName, map, controller);
@@ -1005,6 +1031,9 @@ export function createGridProxy(state: GridState, controller?: GridController, v
     assignGridFireOnPause(gridProxy);
   } else {
     assignDeferred(gridProxy, "grid", DEFERRED_GRID_METHODS);
+    // Pre-registration fetch/invalidate are redundant (the grid fetches on mount),
+    // so make them safe no-ops instead of throwing — see DEFERRED_GRID_NOOP_METHODS.
+    assignDeferredNoop(gridProxy, DEFERRED_GRID_NOOP_METHODS);
   }
   assignGridVisibility(gridProxy, visibility);
   return gridProxy;

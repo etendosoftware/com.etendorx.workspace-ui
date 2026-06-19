@@ -1037,6 +1037,47 @@ export const applyEditToRows = (
   changes: Record<string, EntityValue>
 ): EntityData[] => records.map((r) => (String(r.id) === String(rowId) ? { ...r, ...changes } : r));
 
+// Applies an in-flight cell edit against the committed READ store
+// (`gridApiRef.current.rows`) — the store the script proxy resolves rows from and
+// that `getEditValues`/`getEditedCell`/the display read back. It returns the
+// updated rows when the store holds `rowId`, or `null` when it does not (an MRT
+// create-row, id="mrt-row-create", which persists only on `row.original`). The
+// read store is the authority over `localRecordsRef`: it is at least as fresh
+// (it can be one render ahead during the grid's phantom→real load) and it
+// accumulates synchronous multi-row write bursts (e.g. the distribute loop)
+// within a single tick, so using it as the base prevents both dropped writes and
+// earlier writes being clobbered.
+export const applyEditToReadStore = (
+  readStoreRows: EntityData[],
+  rowId: unknown,
+  changes: Record<string, EntityValue>
+): EntityData[] | null =>
+  readStoreRows.some((r) => String(r.id) === String(rowId)) ? applyEditToRows(readStoreRows, rowId, changes) : null;
+
+// Build the post-write record a column validator must see: the current row data
+// overlaid with the pending changes. Classic validators read the value being
+// written (e.g. `record.amount`), not the stale cell value; validating the
+// pre-write value silently drops legitimate programmatic writes (the distribute
+// loop setting amount=2.07 on a row whose default 0 fails a zero-amount check).
+// Returns a fresh object — it never mutates `rowData`.
+export const buildValidatorCandidate = (
+  rowData: Record<string, unknown>,
+  mergedChanges: Record<string, unknown>
+): Record<string, unknown> => ({ ...rowData, ...(mergedChanges ?? {}) });
+
+// Decides whether the per-column validator gate runs for a cell write. Classic
+// fires cell validators ONLY on interactive (user) edits, never on programmatic
+// writes (a script's `setEditValue` from distribute/seed); replicating that
+// avoids a programmatic write being rejected — and raising a spurious validator
+// message — by a validator that was only ever meant for user input. The gate
+// also stays off during a column-onChange re-entry and when no validator is
+// registered (the prior conditions).
+export const shouldRunColumnValidators = (
+  programmatic: boolean,
+  inColumnOnChange: boolean,
+  validatorCount: number
+): boolean => !programmatic && !inColumnOnChange && validatorCount > 0;
+
 // Outcome of `decideDatasourceSync`: whether the datasource-sync effect should
 // process this render, plus the content signature the caller stores to dedup.
 export interface DatasourceSyncDecision {
@@ -1099,6 +1140,24 @@ export const syncGridSelectionToLocalRecords = (
   if (hasChanges) {
     setLocalRecords(newRecords);
   }
+};
+
+// Load-time race guard for the external-selection sync. The modal seeds
+// `_selection: []` (from filterExpressions) before the backend pre-selection has
+// propagated; the zeroing pass would then wipe a pre-selected row's editable
+// `amount`. Defer the pass ONLY while this initial empty pass coincides with rows
+// the backend pre-flagged (`obSelected`) and reconciliation hasn't happened yet.
+// Once a real selection arrives, `reconciled` is set and this never guards again,
+// so later engine/user-driven updates behave exactly as before (non-regressive).
+export const shouldDeferInitialZeroing = (
+  localRecords: EntityData[],
+  externalSelection: unknown[],
+  reconciled: boolean
+): boolean => {
+  if (reconciled || externalSelection.length > 0) {
+    return false;
+  }
+  return localRecords.some((record) => record.obSelected === true);
 };
 
 // Builds an `isFieldReadOnly` predicate from the grid's computed read-only map.
@@ -1359,7 +1418,7 @@ export interface EmbeddedGridApi {
   ) => void;
   handleClearSelections: () => void;
   // biome-ignore lint/suspicious/noExplicitAny: row/changes mirror handleRecordChange's loose shape
-  handleRecordChange: (row: any, changes: any) => void;
+  handleRecordChange: (row: any, changes: any, options?: { programmatic?: boolean }) => void;
   setRowActions: (renderer: RowActionRenderer) => void;
 }
 
@@ -1418,7 +1477,9 @@ export function createEmbeddedGridController(
     getTotalRows: () => rows().length,
     setEditValue: (rowIndex, colName, value) => {
       const record = rows()[rowIndex];
-      if (record) getApi().handleRecordChange(record, { [colName]: value });
+      // Programmatic write (script distribute/seed): flag it so handleRecordChange
+      // skips the cell validator gate (Classic never validates programmatic writes).
+      if (record) getApi().handleRecordChange(record, { [colName]: value }, { programmatic: true });
     },
     getEditValues: (rowIndex) => (rows()[rowIndex] as Record<string, unknown>) ?? {},
     getEditedCell: (row, col) => {
@@ -2394,6 +2455,9 @@ const WindowReferenceGrid = ({
 
   // Ref to track last processed selection to prevent redundant updates
   const lastSelectionStringRef = useRef<string>("");
+  // Armed once the first real (non-empty) external selection has been reconciled;
+  // gates `shouldDeferInitialZeroing` so the deferral only applies during initial load.
+  const initialSelectionReconciledRef = useRef<boolean>(false);
 
   // Sync with external updates via gridSelection (e.g. Callouts modifying data)
   useEffect(() => {
@@ -2403,6 +2467,13 @@ const WindowReferenceGrid = ({
     if (!gridData || !gridData._selection || !localRecords.length) return;
 
     const externalSelection = gridData._selection;
+
+    // Don't let the initial empty-selection pass zero a row the backend pre-selected
+    // before its real selection has propagated (fixes pre-selected Amount → 0 at load).
+    if (shouldDeferInitialZeroing(localRecords, externalSelection, initialSelectionReconciledRef.current)) {
+      return;
+    }
+    initialSelectionReconciledRef.current = true;
 
     // OPTIMIZATION: Check if selection actually changed for THIS grid
     // We include amounts in the check because engine updates amounts. Also check paymentAmount.
@@ -2514,7 +2585,15 @@ const WindowReferenceGrid = ({
       // Built once: skips zeroing read-only amount fields (e.g. the invoice `amount`
       // cap in Add Invoices) on deselect, matching the load-time reset.
       const isFieldReadOnly = buildIsFieldReadOnly(fieldReadOnlyMapRef.current);
-      const mappedRecords = records.map((record) => {
+      // Base the selection snapshot on the READ STORE, not the closure `records`
+      // (lagging `localRecords`). A programmatic `setEditValue` updates the read
+      // store synchronously (see handleRecordChange); a `selectRecord` fired right
+      // after it (distribute writes amount=2.07 then selects the row) would
+      // otherwise capture the pre-write value into `_selection`, and the
+      // selection-sync effect would then push that stale value back over the
+      // freshly written one (the Add Payment Order/Invoice amount → 0 bug).
+      const baseRecords = gridApiRef.current?.rows ?? records;
+      const mappedRecords = baseRecords.map((record) => {
         const recordId = String(record.id);
         const isSelected = newSelection[recordId];
 
@@ -2535,7 +2614,7 @@ const WindowReferenceGrid = ({
         }
         return record;
       });
-      const newRecords = recordsChanged ? mappedRecords : records;
+      const newRecords = recordsChanged ? mappedRecords : baseRecords;
 
       // 2. Update local state if needed
       if (recordsChanged) {
@@ -2803,12 +2882,17 @@ const WindowReferenceGrid = ({
       if (!proxies || !gridLoadFormHandle) return false;
       const { grid, view } = proxies;
       const rowData = (row.original ?? row) as Record<string, unknown>;
+      // Validate the value(s) being written, not the stale cell value (see
+      // buildValidatorCandidate): a programmatic setEditValue must be checked
+      // against the candidate it writes, otherwise a row whose default fails the
+      // validator (e.g. amount=0) drops every legitimate write.
+      const candidate = buildValidatorCandidate(rowData, mergedChanges);
       let rejected = false;
       for (const colName of Object.keys(mergedChanges ?? {})) {
         const validator = columnValidatorRef.current.get(colName);
         if (!validator) continue;
-        const item = buildColumnItemProxy(gridLoadFormHandle, rowData, colName, grid, view);
-        if (validator(item, undefined, rowData[colName], rowData as EntityData) === false) {
+        const item = buildColumnItemProxy(gridLoadFormHandle, candidate, colName, grid, view);
+        if (validator(item, undefined, candidate[colName], candidate as EntityData) === false) {
           const prior = records.find((r) => String(r.id) === String(row.id)) as Record<string, unknown> | undefined;
           if (prior && colName in prior) rowData[colName] = prior[colName];
           rejected = true;
@@ -2865,7 +2949,7 @@ const WindowReferenceGrid = ({
 
   // Stable handler using refs
   const handleRecordChange = useCallback(
-    (row: any, changes: any) => {
+    (row: any, changes: any, options?: { programmatic?: boolean }) => {
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
@@ -2885,21 +2969,23 @@ const WindowReferenceGrid = ({
         setSiblingPatchVersion((v) => v + 1);
       }
 
-      // Per-column validator gate (classic AD_FIELD validator). Only when a script
-      // registered validators and we're not in a column-onChange re-entry. On
-      // reject the edited cell is reverted and the change is aborted.
-      if (!inColumnOnChangeRef.current && columnValidatorRef.current.size > 0) {
+      // Per-column validator gate (classic AD_FIELD validator). Runs only for
+      // interactive edits with registered validators and outside a column-onChange
+      // re-entry; programmatic writes (distribute/seed) are never validated, matching
+      // classic. On reject the edited cell is reverted and the change is aborted.
+      if (shouldRunColumnValidators(!!options?.programmatic, inColumnOnChangeRef.current, columnValidatorRef.current.size)) {
         if (rejectByColumnValidator(row, mergedChanges, records)) return;
       }
 
-      // For rows not yet in localRecords (typical create-row case), the
-      // row.original / _valuesCache mutation plus the version bump above are
-      // the entire state effect. The setLocalRecords + onSelectionChange paths
-      // operate on existing rows only, so we skip them for create-rows but still
-      // fire the cell-edit hooks below.
-      if (records.some((r) => String(r.id) === String(row.id))) {
+      // Persist the edit against the committed read store (see applyEditToReadStore):
+      // a script-proxy setEditValue targets a row drawn from gridApiRef.current.rows,
+      // which getEditValues / getEditedCell / the cell display also read. Rows absent
+      // from the read store (MRT create-rows, id="mrt-row-create") return null here
+      // and keep the row.original / _valuesCache mutation above as their only state
+      // effect, just firing the cell-edit hooks below.
+      const updatedRecords = applyEditToReadStore(gridApiRef.current.rows, row.id, mergedChanges);
+      if (updatedRecords) {
         // Update state (trigger re-render)
-        const updatedRecords = applyEditToRows(records, row.id, mergedChanges);
         setLocalRecords(updatedRecords);
         // Reflect the in-flight edit in the read store synchronously, BEFORE the
         // cell-edit hooks fire below. setLocalRecords commits on the next render, so

@@ -56,6 +56,7 @@ import {
   applyGridSelection,
   updateParametersFromOnLoadResult,
   withFlag,
+  withLabelOverride,
   withMandatory,
   withRefList,
   normalizeValueMap,
@@ -131,6 +132,7 @@ import {
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
+  shouldClearSeedValidationErrors,
   EMPTY_SCRIPT_BUTTON_STATE,
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
@@ -574,6 +576,10 @@ function ProcessDefinitionModalContent({
   // hide / setDisabled). Merged last so a script's explicit choice wins.
   const [scriptLogicFields, setScriptLogicFields] = useState<Record<string, boolean>>({});
 
+  // Field labels retitled imperatively by migrated scripts (item.setTitle, Classic
+  // `item.title = …`). Keyed by parameter name; empty means the static label is used.
+  const [scriptLabelOverrides, setScriptLabelOverrides] = useState<Record<string, string>>({});
+
   // Footer-button visibility/enablement toggled imperatively by migrated scripts
   // (view.popupButtons / view.cancelButton / the close X). Reset on each open.
   const [scriptButtonState, setScriptButtonState] = useState<ScriptButtonState>(EMPTY_SCRIPT_BUTTON_STATE);
@@ -598,6 +604,7 @@ function ProcessDefinitionModalContent({
     if (!open) {
       setCalloutLogicFields({});
       setScriptLogicFields({});
+      setScriptLabelOverrides({});
     }
   }, [open]);
 
@@ -695,6 +702,22 @@ function ProcessDefinitionModalContent({
   // (e.g. view.theForm.getItem(...).setValue(...)) so a later reset cannot wipe them.
   useFormDefaultsSync(form, availableFormData as FieldValues);
 
+  // Clear validation errors raised during the initial default/FIC seeding, once per
+  // open, after seeding settles — Classic shows no mandatory error on open. Normal
+  // onChange/submit validation is unaffected afterwards.
+  const seedErrorsClearedRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      seedErrorsClearedRef.current = false;
+      return;
+    }
+    if (!shouldClearSeedValidationErrors(open, loading, initializationLoading, seedErrorsClearedRef.current)) {
+      return;
+    }
+    seedErrorsClearedRef.current = true;
+    form.clearErrors();
+  }, [open, loading, initializationLoading, form]);
+
   // Initialize gridSelection from filterExpressions
   useEffect(() => {
     if (open && filterExpressions && Object.keys(filterExpressions).length > 0) {
@@ -740,6 +763,7 @@ function ProcessDefinitionModalContent({
       setRequired: (name, required) => setParameters((prev) => withMandatory(prev, name, required)),
       setDisabled: (name, disabled) => setScriptLogicFields((prev) => withFlag(prev, `${name}.readonly`, disabled)),
       setDisplayed: (name, displayed) => setScriptLogicFields((prev) => withFlag(prev, `${name}.display`, displayed)),
+      setTitle: (name, title) => setScriptLabelOverrides((prev) => withLabelOverride(prev, name, title)),
       setValueMap: (name, map) => setParameters((prev) => withRefList(prev, name, normalizeValueMap(map))),
       getValueMap: (name) => findParameter(name, parametersRef.current)?.refList ?? [],
       addField: (field) => setParameters((prev) => addDynamicParameter(prev, field)),
@@ -852,6 +876,9 @@ function ProcessDefinitionModalContent({
     viewController,
     viewData,
     gridResolver,
+    // Suppress onChange hooks during the initial default/FIC seeding (same signal
+    // the callout hooks use); Classic only fires onChange on a user change.
+    enabled: open && !loading && !initializationLoading,
   });
 
   const gridLoadHooks = useMemo(() => {
@@ -1259,6 +1286,14 @@ function ProcessDefinitionModalContent({
         setLoading(false);
         return;
       }
+      // Run onLoad (and the field validation it can trigger) only AFTER the async
+      // process-defaults / FIC seed completes. Classic seeds synchronously before
+      // onLoad; running it on an unseeded form leaves all context undefined, so
+      // imperative show/hide (e.g. the multicurrency fields) no-ops and mandatory
+      // fields flag on open. The effect re-runs once initializationLoading flips to
+      // false (it is a dependency below). Warehouse-plugin processes return earlier
+      // and never reach this gate.
+      if (initializationLoading) return;
 
       try {
         setLoading(true);
@@ -1316,6 +1351,13 @@ function ProcessDefinitionModalContent({
               if (shouldStop) return;
             }
           }
+
+          // onLoad ran post-seed; clear any validation error it or the seed raised
+          // (e.g. a mandatory field flagged before its default landed) so the modal
+          // opens clean, as Classic does. Normal onChange/submit validation is
+          // unaffected afterwards. Complements the seed-settle clear (which covers
+          // processes without an onLoad script).
+          form.clearErrors();
         }
 
         setTimeout(() => setLoading(false), 300);
@@ -1345,6 +1387,7 @@ function ProcessDefinitionModalContent({
     viewData,
     gridResolver,
     callerFieldProp,
+    initializationLoading,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1546,6 +1589,7 @@ function ProcessDefinitionModalContent({
       key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
       parameter={parameter}
       logicFields={logicFields}
+      labelOverrides={scriptLabelOverrides}
       parameters={parameters}
       recordValues={recordValues || undefined}
       parentFields={tab?.fields}
@@ -1795,7 +1839,9 @@ function ProcessDefinitionModalContent({
                           key={btn.value}
                           variant="filled"
                           size="large"
-                          onClick={() => runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)}
+                          onClick={() =>
+                            runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)
+                          }
                           disabled={
                             Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
                           }

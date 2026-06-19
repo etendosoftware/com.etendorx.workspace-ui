@@ -54,16 +54,30 @@ function setup(
   context: Record<string, unknown>,
   fieldController?: FieldController,
   viewController?: ViewController,
-  gridResolver?: GridResolver
+  gridResolver?: GridResolver,
+  enabled = true
 ) {
   const formHook = renderHook(() => useForm({ defaultValues: { p1: "", p2: "" } }));
   const form = formHook.result.current;
-  const hookRender = renderHook(() =>
-    useParameterChangeHooks({ form, parameters, context, messageBar, fieldController, viewController, gridResolver })
+  const watchSpy = jest.spyOn(form, "watch");
+  const hookRender = renderHook(
+    ({ enabled: en }) =>
+      useParameterChangeHooks({
+        form,
+        parameters,
+        context,
+        messageBar,
+        fieldController,
+        viewController,
+        gridResolver,
+        enabled: en,
+      }),
+    { initialProps: { enabled } }
   );
   const change = (name: string, value: unknown) => act(() => form.setValue(name, value, { shouldDirty: true }));
   const flush = () => act(() => jest.advanceTimersByTime(300));
-  return { form, hookRender, change, flush };
+  const setEnabled = (en: boolean) => hookRender.rerender({ enabled: en });
+  return { form, hookRender, change, flush, setEnabled, watchSpy };
 }
 
 describe("useParameterChangeHooks", () => {
@@ -201,6 +215,72 @@ describe("useParameterChangeHooks", () => {
 
     expect(viewController.refresh).toHaveBeenCalled();
     expect(doneButton.hide).toHaveBeenCalled();
+  });
+
+  it("does not fire while disabled (initial seeding), absorbing the change into the baseline", () => {
+    const onChange = jest.fn();
+    const { change, flush } = setup(
+      { p1: param("p1", "(item) => onChange(item.getValue())") },
+      { onChange },
+      undefined,
+      undefined,
+      undefined,
+      false // seeding: not yet in steady state
+    );
+
+    change("p1", "seeded");
+    flush();
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("fires on a user change after enabling, and not for the already-seeded value", () => {
+    const onChange = jest.fn();
+    const { change, flush, setEnabled } = setup(
+      { p1: param("p1", "(item) => onChange(item.getValue())") },
+      { onChange },
+      undefined,
+      undefined,
+      undefined,
+      false
+    );
+
+    // Seeding phase: value applied while disabled -> absorbed, no fire.
+    change("p1", "seeded");
+    flush();
+    expect(onChange).not.toHaveBeenCalled();
+
+    // Steady state reached.
+    setEnabled(true);
+
+    // Re-applying the same seeded value is a no-op (baseline already holds it).
+    change("p1", "seeded");
+    flush();
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A genuine user change now fires.
+    change("p1", "typed");
+    flush();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("typed");
+  });
+
+  it("does not re-subscribe form.watch when the enabled flag toggles", () => {
+    const onChange = jest.fn();
+    const { setEnabled, watchSpy } = setup(
+      { p1: param("p1", "(item) => onChange(item.getValue())") },
+      { onChange },
+      undefined,
+      undefined,
+      undefined,
+      false
+    );
+
+    const callsAfterMount = watchSpy.mock.calls.length;
+    setEnabled(true);
+    setEnabled(false);
+
+    expect(watchSpy.mock.calls.length).toBe(callsAfterMount);
   });
 
   it("reaches a registered grid via view.theForm.getItem(...).canvas.viewGrid", () => {
