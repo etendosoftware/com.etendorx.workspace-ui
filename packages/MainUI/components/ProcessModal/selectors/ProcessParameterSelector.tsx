@@ -51,7 +51,7 @@ interface ProcessParameterSelectorProps {
   processId?: string;
 }
 
-import { createProcessExpressionContext } from "../utils/processExpressionUtils";
+import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
 
 // ... imports remain the same
 
@@ -114,43 +114,12 @@ const ProcessParameterSelectorImpl = ({
     });
   }, [parameters, values, recordValues, parentFields, session]);
 
-  // Evaluate display logic expression (combine parameter logic with process defaults logic)
-  const isDisplayed = useMemo(() => {
-    // Check process defaults logic first (takes precedence)
-    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
-    if (defaultsDisplayLogic !== undefined) {
-      return defaultsDisplayLogic;
-    }
-
-    // Fallback to parameter's own display logic
-    if (!parameter.displayLogic) return true;
-
-    // Skip compilation if display logic looks like a field name (contains underscores and ends with _logic)
-    if (parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@")) {
-      logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
-      return true; // Default to visible for malformed expressions
-    }
-
-    // WAIT for form data to be available before evaluating expressions.
-    // A field gated by display logic must default to HIDDEN until its logic can be
-    // evaluated: defaulting to visible makes server-driven fields (e.g. Add Payment's
-    // multicurrency conversion_rate/converted_amount/currency_to) flash on open before
-    // the hook hides them. Fields without display logic returned `true` above, so they
-    // are unaffected by this fail-safe.
-    if (!values || Object.keys(values).length === 0) {
-      return false;
-    }
-
-    try {
-      const compiledExpr = compileExpression(parameter.displayLogic);
-      // Pass smartContext as both context and values to ensure resolution works for all variable types
-      const result = compiledExpr(evaluationContext, evaluationContext);
-      return result;
-    } catch (error) {
-      logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
-      return true; // Default to visible on error
-    }
-  }, [parameter.displayLogic, parameter.name, parameter.dBColumnName, logicFields, values, evaluationContext]);
+  // Evaluate display logic via the shared helper, so the script-facing
+  // `item.isVisible()` proxy and the rendered field always agree on visibility.
+  const isDisplayed = useMemo(
+    () => isParameterDisplayed({ parameter, logicFields, values, evaluationContext }),
+    [parameter, logicFields, values, evaluationContext]
+  );
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {

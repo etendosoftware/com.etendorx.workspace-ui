@@ -43,7 +43,7 @@ export { revalidateDopoProcess } from "@/app/actions/revalidate";
 // --- Utilities ---
 export { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 export { executeStringFunction } from "@/utils/functions";
-export { createProcessExpressionContext } from "./utils/processExpressionUtils";
+export { createProcessExpressionContext, isParameterDisplayed } from "./utils/processExpressionUtils";
 export { logger } from "@/utils/logger";
 export { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 export { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";

@@ -86,6 +86,8 @@ export interface FieldController {
   setRequired: (name: string, required: boolean) => void;
   setDisabled: (name: string, disabled: boolean) => void;
   setDisplayed: (name: string, displayed: boolean) => void;
+  /** Reads the current visibility of a parameter (backs `item.isVisible()`). */
+  isDisplayed: (name: string) => boolean;
   setTitle: (name: string, title: string) => void;
   setValueMap: (name: string, map: unknown) => void;
   getValueMap: (name: string) => ListOption[];
@@ -296,6 +298,13 @@ export interface ItemProxy extends Record<string, unknown> {
    * equivalent of classic `setValueProgrammatically`; see `assignLiveItemMethods`.
    */
   setValueProgrammatically?: (value: unknown) => void;
+  /**
+   * Reads the item's current visibility (Classic `item.isVisible()`). Live only
+   * when a `FieldController` is injected; reflects the same display state the
+   * rendered field uses. Returns a strict boolean so scripts that forward it to a
+   * server payload never serialize `undefined` (which `JSON.stringify` drops).
+   */
+  isVisible?: () => boolean;
   /** Reads the first option value of the selector's current value map; live with a controller. */
   getFirstOptionValue?: () => unknown;
   /**
@@ -703,6 +712,7 @@ function assignLiveItemMethods(
   item.setTitle = (title: string) => controller.setTitle(paramName, title);
   item.show = () => controller.setDisplayed(paramName, true);
   item.hide = () => controller.setDisplayed(paramName, false);
+  item.isVisible = () => controller.isDisplayed(paramName);
   item.setValueMap = (map: unknown) => applyValueMap(form, paramName, map, controller);
   item.getValueMap = () => readValueMap(form, paramName, controller);
   item.clearValue = () => form.setValue(paramName, null, { shouldDirty: true, shouldValidate: true });

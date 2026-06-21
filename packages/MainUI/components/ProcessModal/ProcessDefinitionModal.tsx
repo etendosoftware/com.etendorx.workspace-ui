@@ -82,6 +82,7 @@ import {
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
+  isParameterDisplayed,
   executeStringFunction,
   // Types
   type ExecuteProcessResult,
@@ -754,6 +755,25 @@ function ProcessDefinitionModalContent({
     parametersRef.current = parameters;
   }, [parameters]);
 
+  // Resolves a parameter's current visibility from the same inputs the rendered
+  // selector uses, so the script-facing `item.isVisible()` agrees with what the
+  // user sees. Recomputed every render into a ref so the (identity-stable)
+  // controller below reads fresh state without rebuilding (which would
+  // re-subscribe the onChange hook).
+  const isParamDisplayedRef = useRef<(name: string) => boolean>(() => true);
+  isParamDisplayedRef.current = (name: string) => {
+    const parameter = findParameter(name, parameters);
+    if (!parameter) return true;
+    const evaluationContext = createProcessExpressionContext({
+      values: formValues,
+      parameters,
+      recordValues: recordValues || {},
+      parentFields: tab?.fields,
+      session,
+    });
+    return isParameterDisplayed({ parameter, logicFields, values: formValues, evaluationContext });
+  };
+
   // Imperative bridge backing the form-item API (item.setRequired / setDisabled /
   // show / hide / setValueMap / form.addField / ...). Built from stable setters,
   // refs and the form instance, so its identity is stable and the onChange
@@ -763,6 +783,7 @@ function ProcessDefinitionModalContent({
       setRequired: (name, required) => setParameters((prev) => withMandatory(prev, name, required)),
       setDisabled: (name, disabled) => setScriptLogicFields((prev) => withFlag(prev, `${name}.readonly`, disabled)),
       setDisplayed: (name, displayed) => setScriptLogicFields((prev) => withFlag(prev, `${name}.display`, displayed)),
+      isDisplayed: (name) => isParamDisplayedRef.current(name),
       setTitle: (name, title) => setScriptLabelOverrides((prev) => withLabelOverride(prev, name, title)),
       setValueMap: (name, map) => setParameters((prev) => withRefList(prev, name, normalizeValueMap(map))),
       getValueMap: (name) => findParameter(name, parametersRef.current)?.refList ?? [],
@@ -1081,6 +1102,7 @@ function ProcessDefinitionModalContent({
     scriptContext: scriptHookContext,
     viewController,
     viewData,
+    fieldController,
     gridResolver,
     button,
     parameters,

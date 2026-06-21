@@ -60,4 +60,44 @@ describe("useProcessExecution — onProcess second argument is the canonical vie
     expect(typeof view.getContextInfo).toBe("function");
     expect((view.getContextInfo as () => Record<string, unknown>)()).toEqual({ docStatus: "DR", DocAction: "CO" });
   });
+
+  it("threads the fieldController into the view so onProcess items are live (regression: item.isVisible)", async () => {
+    // Before the fix, useProcessExecution received no fieldController, so view.theForm
+    // built deferred items with no isVisible() — making a guarded `field.isVisible &&
+    // field.isVisible()` expression evaluate to undefined and silently drop from the
+    // callAction payload (the Add Payment `generatesCredit` defect).
+    const isDisplayed = jest.fn(() => false);
+    const fieldController = {
+      setRequired: jest.fn(),
+      setDisabled: jest.fn(),
+      setDisplayed: jest.fn(),
+      isDisplayed,
+      setTitle: jest.fn(),
+      setValueMap: jest.fn(),
+      getValueMap: jest.fn(() => []),
+      addField: jest.fn(),
+      removeField: jest.fn(),
+      focusField: jest.fn(),
+    };
+    const params = makeParams({
+      etmetaOnprocess: "async (process, view) => view",
+      tab: { id: "TAB-001", window: "WIN-001", entityName: "C_Invoice" },
+      viewController: makeViewController(),
+      fieldController,
+      parameters: { overpayment_action: { name: "overpayment_action", dBColumnName: "overpayment_action" } },
+      form: { getValues: jest.fn(() => ({})), setValue: jest.fn() },
+    });
+
+    const { result } = renderHook(() => useProcessExecution(params as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    const view = executeStringFunction.mock.calls[0][3] as Record<string, unknown>;
+    const theForm = view.theForm as { getItem: (name: string) => Record<string, unknown> };
+    const item = theForm.getItem("overpayment_action");
+
+    expect(typeof item.isVisible).toBe("function");
+    expect((item.isVisible as () => boolean)()).toBe(false);
+    expect(isDisplayed).toHaveBeenCalledWith("overpayment_action");
+  });
 });

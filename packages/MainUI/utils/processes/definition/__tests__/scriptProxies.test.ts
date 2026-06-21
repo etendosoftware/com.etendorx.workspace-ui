@@ -50,6 +50,7 @@ const makeController = (valueMaps: Record<string, ListOption[]> = {}): FieldCont
   setRequired: jest.fn(),
   setDisabled: jest.fn(),
   setDisplayed: jest.fn(),
+  isDisplayed: jest.fn(() => true),
   setTitle: jest.fn(),
   setValueMap: jest.fn(),
   getValueMap: jest.fn((name: string) => valueMaps[name] ?? []),
@@ -624,6 +625,23 @@ describe("scriptProxies", () => {
       expect(controller.setDisplayed).toHaveBeenNthCalledWith(1, "amount", true);
       expect(controller.setDisplayed).toHaveBeenNthCalledWith(2, "amount", false);
       expect(controller.setTitle).toHaveBeenCalledWith("amount", "Received From Vendor");
+    });
+
+    it("item.isVisible delegates to controller.isDisplayed and returns its boolean", () => {
+      const controller = makeController();
+      (controller.isDisplayed as jest.Mock).mockReturnValue(false);
+      const { handle } = makeFormHandle({ amount: 1 });
+      const item = createItemProxy(handle, "amount", {}, controller);
+
+      const result = call(item.isVisible)();
+
+      expect(controller.isDisplayed).toHaveBeenCalledWith("amount");
+      expect(result).toBe(false);
+    });
+
+    it("does not expose item.isVisible when no controller is injected", () => {
+      const item = createItemProxy(makeFormHandle({ amount: 1 }).handle, "amount");
+      expect(item.isVisible).toBeUndefined();
     });
 
     it("defers item.setTitle (throws) when no controller is injected", () => {

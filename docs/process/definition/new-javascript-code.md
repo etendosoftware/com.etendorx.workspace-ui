@@ -572,8 +572,8 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   script-logic field store, where the script wins).
 - **Item** (`form.getItem(name)`): `getValue()`/`setValue(v)`, `setValueFromRecord(record)`,
   `setValueProgrammatically(v)`, `getFirstOptionValue()`, `setRequired(bool)`/`setDisabled(bool)`,
-  `setTitle(title)`, `show()`/`hide()`, `setValueMap(map)`/`getValueMap()`, `clearValue()`, `name`, and
-  `canvas.viewGrid` for grid parameters. Items resolve by `name`, `dBColumnName`, or the parameter map key, so
+  `setTitle(title)`, `show()`/`hide()`/`isVisible()`, `setValueMap(map)`/`getValueMap()`, `clearValue()`,
+  `name`, and `canvas.viewGrid` for grid parameters. Items resolve by `name`, `dBColumnName`, or the parameter map key, so
   `getItem('Column1')` and `getItem('<Display Name>')` both work — and `setValueMap` / `getValueMap` /
   `setRequired` update the parameter under its real map key regardless of which form you address it by.
   - **`getValue()` is type-faithful to Classic.** For numeric parameters (Integer / Number / Quantity /
@@ -602,6 +602,21 @@ This deferral is intentional: read-only data is always safe, and any unported ac
     selected document type). Live only when a `FieldController` is injected; the override is held in the
     modal's label store (reset on close) and merged over the static parameter label, so leaving it unset
     keeps the metadata label — purely additive.
+  - **Reading visibility (`item.isVisible()`).** Returns the parameter's **current visibility as a strict
+    boolean** — the Classic `view.theForm.getItem(name).isVisible()`. It reflects the *same* display state
+    the rendered field uses (shared `isParameterDisplayed` helper): the explicit display override
+    (`item.show()/hide()`, callout, defaults) wins, otherwise the parameter's `displayLogic` is evaluated
+    against the current form values. Live only when a `FieldController` is injected (the onProcess /
+    onLoad / onChange hooks all inject one). Use it to gate flags sent to a Java handler — e.g. Add
+    Payment's `generatesCredit: overpaymentField.isVisible() && overpaymentAction === 'CR'`.
+    - **Why a *strict boolean* matters: `undefined` silently drops from `callAction` payloads.** The
+      `callAction` / `OB.RemoteCallManager.call` body is serialized with `JSON.stringify`, and
+      `JSON.stringify` **omits keys whose value is `undefined`** (`{a:false,b:undefined}` → `{"a":false}`).
+      A migrated expression that evaluates to `undefined` (e.g. `field.isVisible && field.isVisible() &&
+      …` when `isVisible` is missing) therefore makes the whole key disappear from the request, and a Java
+      handler doing `jsonData.getBoolean("<key>")` throws `JSONObject["<key>"] not found.`. Any flag a
+      script forwards to the backend must be a real boolean — which is exactly why `isVisible()` always
+      returns one. When you forward a computed flag, prefer coercing it (`Boolean(...)` / `=== true`).
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
