@@ -27,7 +27,7 @@ describe("generateRandomString", () => {
   });
 
   it("returns only digits when only digits are allowed", () => {
-    expect(generateRandomString(50, false, false, true, false)).toMatch(/^[0-9]+$/);
+    expect(generateRandomString(50, false, false, true, false)).toMatch(/^\d+$/);
   });
 
   it("returns an empty string when no character pool is enabled", () => {

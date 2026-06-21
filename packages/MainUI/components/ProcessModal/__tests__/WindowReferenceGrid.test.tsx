@@ -741,13 +741,22 @@ describe("WindowReferenceGrid Utilities", () => {
       return api;
     };
 
+    // Fresh, empty subscription registries; spread-override the ones a test exercises.
+    const emptySubs = () => ({
+      dataArrived: [],
+      selectionChanged: [],
+      recordChange: [],
+      selectionToggle: [],
+      columnOnChange: new Map(),
+      columnValidator: new Map(),
+    });
+
     it("reads rows, edited cells and total live from the api getter", () => {
       const api = makeApi();
       const controller = createEmbeddedGridController(
         () => api,
         () => [rec("2")],
-        [],
-        []
+        emptySubs()
       );
       expect(controller.getTotalRows()).toBe(2);
       expect(controller.getRecord(0)).toEqual(rec("1", { amount: 5 }));
@@ -762,8 +771,7 @@ describe("WindowReferenceGrid Utilities", () => {
       const controller = createEmbeddedGridController(
         () => api,
         () => [],
-        [],
-        []
+        emptySubs()
       );
       controller.setEditValue(0, "amount", 99);
       // setEditValue is the script (programmatic) path: it flags the write so the
@@ -791,8 +799,10 @@ describe("WindowReferenceGrid Utilities", () => {
       const controller = createEmbeddedGridController(
         () => api,
         () => [rec("a"), rec("b")],
-        dataArrivedSubs,
-        []
+        {
+          ...emptySubs(),
+          dataArrived: dataArrivedSubs,
+        }
       );
       const merged = controller.addSelectedIDsToCriteria({ operator: "and" }, true) as {
         criteria: Array<Record<string, unknown>>;
@@ -810,8 +820,7 @@ describe("WindowReferenceGrid Utilities", () => {
       const controller = createEmbeddedGridController(
         () => api,
         () => [],
-        [],
-        []
+        emptySubs()
       );
       const renderer = jest.fn();
       controller.setRowActions(renderer);

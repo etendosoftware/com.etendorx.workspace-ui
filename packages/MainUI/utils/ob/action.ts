@@ -92,18 +92,26 @@ export function createAction(deps: CreateActionDeps = {}): OBAction {
     deps.dispatchBuiltinAction?.(name, payload);
   };
 
+  // Returns `true` when at least one entry was dispatched (or scheduled, in the
+  // delayed form), `false` when the input carried nothing dispatchable. Callers
+  // run it for its side effects; the meaningful return just keeps the value
+  // non-invariant.
   const executeJSON = (jsonArray: unknown, _threadId?: unknown, delay?: number, _processView?: unknown): boolean => {
     if (typeof delay === "number") {
       setTimeout(() => executeJSON(jsonArray), delay);
       return true;
     }
     const entries = Array.isArray(jsonArray) ? jsonArray : [jsonArray];
+    let dispatched = false;
     for (const entry of entries) {
       if (!entry || typeof entry !== "object") continue;
       const [name, payload] = Object.entries(entry as Record<string, unknown>)[0] ?? [];
-      if (name) dispatchEntry(name, payload);
+      if (name) {
+        dispatchEntry(name, payload);
+        dispatched = true;
+      }
     }
-    return true;
+    return dispatched;
   };
 
   return { set, execute, executeJSON };

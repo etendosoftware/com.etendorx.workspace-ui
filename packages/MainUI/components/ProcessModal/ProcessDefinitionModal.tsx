@@ -1301,6 +1301,65 @@ function ProcessDefinitionModalContent({
   }, [button.processDefinition.parameters, open]);
 
   useEffect(() => {
+    // Runs the migrated onLoad scripts once per open session (keyed on the selected
+    // record ids). Returns "stop" when fetchOptions must bail without scheduling the
+    // trailing loading reset — either the identity was already processed (loading is
+    // turned off here, mirroring the dedup path) or a script signalled an early stop
+    // (loading intentionally left on) — and "done" once the scripts ran to completion.
+    // Defined as a sibling of fetchOptions so it shares the same closure (no params).
+    const runOnLoadScripts = async (): Promise<"stop" | "done"> => {
+      const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
+      if (onLoadIdentityRef.current === onLoadIdentity) {
+        setLoading(false);
+        return "stop";
+      }
+      onLoadIdentityRef.current = onLoadIdentity;
+
+      // The onLoad second argument is the canonical view: it carries the
+      // data fields the migrated scripts read (selectedRecords, tabId, …) and
+      // the full view surface (theForm, messageBar, refresh, windowId, …).
+      // Built once and shared across every script so they operate on the same
+      // form/view.
+      const onLoadView = createViewProxy(createFormHandle(form), parameters, {
+        messageBar,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+        hookData: {
+          selectedRecords,
+          tabId: tab?.id || "",
+          tableId: tab?.table || "",
+          parentRecord: recordValues,
+          // Mirrors classic SmartClient view.onRefreshFunction so migrated
+          // scripts can call view.onRefreshFunction(view) to rebuild the modal.
+          onRefreshFunction,
+        },
+      });
+
+      for (const onLoadScript of onLoadScripts) {
+        const result = await executeStringFunction(
+          onLoadScript,
+          scriptHookContext,
+          button.processDefinition,
+          onLoadView
+        );
+
+        if (result) {
+          const shouldStop = handleOnLoadResult(result);
+          if (shouldStop) return "stop";
+        }
+      }
+
+      // onLoad ran post-seed; clear any validation error it or the seed raised
+      // (e.g. a mandatory field flagged before its default landed) so the modal
+      // opens clean, as Classic does. Normal onChange/submit validation is
+      // unaffected afterwards. Complements the seed-settle clear (which covers
+      // processes without an onLoad script).
+      form.clearErrors();
+      return "done";
+    };
+
     const fetchOptions = async () => {
       if (!open) return;
       if (warehousePluginLoading) return;
@@ -1331,55 +1390,8 @@ function ProcessDefinitionModalContent({
         // Locking on a real run still prevents a script-triggered parent-grid
         // refresh from re-firing onLoad (which would loop).
         if (hasRunnableOnLoad) {
-          const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
-          if (onLoadIdentityRef.current === onLoadIdentity) {
-            setLoading(false);
-            return;
-          }
-          onLoadIdentityRef.current = onLoadIdentity;
-
-          // The onLoad second argument is the canonical view: it carries the
-          // data fields the migrated scripts read (selectedRecords, tabId, …) and
-          // the full view surface (theForm, messageBar, refresh, windowId, …).
-          // Built once and shared across every script so they operate on the same
-          // form/view.
-          const onLoadView = createViewProxy(createFormHandle(form), parameters, {
-            messageBar,
-            controller: fieldController,
-            viewController,
-            gridResolver,
-            data: viewData,
-            hookData: {
-              selectedRecords,
-              tabId: tab?.id || "",
-              tableId: tab?.table || "",
-              parentRecord: recordValues,
-              // Mirrors classic SmartClient view.onRefreshFunction so migrated
-              // scripts can call view.onRefreshFunction(view) to rebuild the modal.
-              onRefreshFunction,
-            },
-          });
-
-          for (const onLoadScript of onLoadScripts) {
-            const result = await executeStringFunction(
-              onLoadScript,
-              scriptHookContext,
-              button.processDefinition,
-              onLoadView
-            );
-
-            if (result) {
-              const shouldStop = handleOnLoadResult(result);
-              if (shouldStop) return;
-            }
-          }
-
-          // onLoad ran post-seed; clear any validation error it or the seed raised
-          // (e.g. a mandatory field flagged before its default landed) so the modal
-          // opens clean, as Classic does. Normal onChange/submit validation is
-          // unaffected afterwards. Complements the seed-settle clear (which covers
-          // processes without an onLoad script).
-          form.clearErrors();
+          const outcome = await runOnLoadScripts();
+          if (outcome === "stop") return;
         }
 
         setTimeout(() => setLoading(false), 300);

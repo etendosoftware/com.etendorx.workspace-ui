@@ -163,6 +163,7 @@ jest.mock("react-hook-form", () => ({
     watch: () => ({}),
     control: {},
     reset: jest.fn(),
+    clearErrors: jest.fn(),
   }),
   useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
 }));

@@ -1433,16 +1433,34 @@ function resolveColName(col: string | Record<string, unknown>): string {
   return String(col?.columnName ?? col?.hqlName ?? col?.inputName ?? col?.name ?? "");
 }
 
+/**
+ * Mutable registries the controller wires script callbacks into. They are shared
+ * (by reference) with the grid component, so a script that subscribes here is
+ * seen by the grid's lifecycle and vice-versa. Bundled into one argument to keep
+ * the controller factory's signature small.
+ */
+export interface EmbeddedGridSubscriptions {
+  dataArrived: Array<(rows: EntityData[]) => void>;
+  selectionChanged: Array<(selection: EntityData[]) => void>;
+  recordChange: Array<(record: EntityData, changes: Record<string, unknown>) => void>;
+  selectionToggle: Array<(record: EntityData, state: boolean) => void>;
+  columnOnChange: Map<string, ColumnOnChange>;
+  columnValidator: Map<string, ColumnValidator>;
+}
+
 export function createEmbeddedGridController(
   getApi: () => EmbeddedGridApi,
   getSelected: () => EntityData[],
-  dataArrivedSubs: Array<(rows: EntityData[]) => void>,
-  selectionChangedSubs: Array<(selection: EntityData[]) => void>,
-  recordChangeSubs: Array<(record: EntityData, changes: Record<string, unknown>) => void>,
-  selectionToggleSubs: Array<(record: EntityData, state: boolean) => void>,
-  columnOnChange: Map<string, ColumnOnChange>,
-  columnValidator: Map<string, ColumnValidator>
+  subscriptions: EmbeddedGridSubscriptions
 ): GridController {
+  const {
+    dataArrived: dataArrivedSubs,
+    selectionChanged: selectionChangedSubs,
+    recordChange: recordChangeSubs,
+    selectionToggle: selectionToggleSubs,
+    columnOnChange,
+    columnValidator,
+  } = subscriptions;
   const rows = () => getApi().rows;
   const setSelectedById = (id: string, isSelected: boolean) =>
     getApi().handleRowSelection((prev) => ({ ...prev, [id]: isSelected }));
@@ -3057,12 +3075,14 @@ const WindowReferenceGrid = ({
       createEmbeddedGridController(
         () => gridApiRef.current,
         () => Array.from(persistentSelectionRef.current.values()),
-        dataArrivedSubsRef.current,
-        selectionChangedSubsRef.current,
-        recordChangeSubsRef.current,
-        selectionToggleSubsRef.current,
-        columnOnChangeRef.current,
-        columnValidatorRef.current
+        {
+          dataArrived: dataArrivedSubsRef.current,
+          selectionChanged: selectionChangedSubsRef.current,
+          recordChange: recordChangeSubsRef.current,
+          selectionToggle: selectionToggleSubsRef.current,
+          columnOnChange: columnOnChangeRef.current,
+          columnValidator: columnValidatorRef.current,
+        }
       ),
     []
   );

@@ -42,12 +42,14 @@ const makeController = () => {
         setRowActions: jest.fn(),
       }) as never,
     () => [ROWS[1]],
-    [],
-    [],
-    recordChangeSubs,
-    selectionToggleSubs,
-    columnOnChange,
-    columnValidator
+    {
+      dataArrived: [],
+      selectionChanged: [],
+      recordChange: recordChangeSubs,
+      selectionToggle: selectionToggleSubs,
+      columnOnChange,
+      columnValidator,
+    }
   );
   return { controller, recordChangeSubs, selectionToggleSubs, columnOnChange, columnValidator };
 };
