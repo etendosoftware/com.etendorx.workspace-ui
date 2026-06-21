@@ -479,6 +479,15 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   internal selection-sync stays idempotent — it never pushes a stale pre-write value back over the cell.
   Without this, a distributed `amount = 2.07` was overwritten back to `0` on load. No script change is
   required.
+- **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
+  numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
+  is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a
+  numeric field (e.g. `actual_payment`) while a later async seed/distribution sets that field's value
+  programmatically, the field keeps showing its pre-seed value (`0`) until it loses focus — and the blur then
+  commits that stale `0`, clobbering the seeded value and any field computed from it (e.g. the Add Payment
+  "There is a difference of"). The form value itself is correct; only the focused display is stale. Migrate
+  the focus to a **text** field instead (Add Payment `onLoad` focuses `reference_no`, not `actual_payment`),
+  so the substrate renders the already-correct numeric value and no blur-commit occurs.
 
 ---
 

@@ -53,7 +53,7 @@ describe("form/constants", () => {
       expect(isNumericReference(FIELD_REFERENCE_CODES.STRING.id)).toBe(false);
       expect(isNumericReference(FIELD_REFERENCE_CODES.SELECTOR.id)).toBe(false);
       expect(isNumericReference("")).toBe(false);
-      expect(isNumericReference(undefined)).toBe(false);
+      expect(isNumericReference()).toBe(false);
     });
   });
 

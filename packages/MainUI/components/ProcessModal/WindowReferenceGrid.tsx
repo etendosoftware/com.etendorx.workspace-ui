@@ -2917,7 +2917,7 @@ const WindowReferenceGrid = ({
       if (!proxies || !gridLoadFormHandle) return;
       const { grid, view } = proxies;
       const rowData = (row.original ?? row) as Record<string, unknown>;
-      const changes = (mergedChanges ?? {}) as Record<string, unknown>;
+      const changes = (mergedChanges ?? {});
 
       for (const fn of recordChangeSubsRef.current) {
         try {

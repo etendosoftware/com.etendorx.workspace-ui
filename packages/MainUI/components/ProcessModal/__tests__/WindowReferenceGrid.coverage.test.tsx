@@ -505,7 +505,7 @@ describe("applyButtonOwnerViewTabId", () => {
 
   it("does not add the key when originTab is undefined", () => {
     const options: Record<string, unknown> = { tabId: "grid-tab" };
-    applyButtonOwnerViewTabId(options, undefined);
+    applyButtonOwnerViewTabId(options);
     expect(options).not.toHaveProperty("buttonOwnerViewTabId");
   });
 
