@@ -383,11 +383,7 @@ type IsFieldReadOnly = (fieldName: string) => boolean;
 // Shared by the load-time reset (resetAmountField) and the deselect path
 // (buildDeselectedRecord) so both honor the same read-only guard (e.g. the invoice
 // `amount` cap in Add Invoices).
-const shouldZeroAmountField = (
-  record: EntityData,
-  fieldName: string,
-  isFieldReadOnly?: IsFieldReadOnly
-): boolean => {
+const shouldZeroAmountField = (record: EntityData, fieldName: string, isFieldReadOnly?: IsFieldReadOnly): boolean => {
   if (record[fieldName] === undefined || record[fieldName] === 0) {
     return false;
   }
@@ -2917,7 +2913,7 @@ const WindowReferenceGrid = ({
       if (!proxies || !gridLoadFormHandle) return;
       const { grid, view } = proxies;
       const rowData = (row.original ?? row) as Record<string, unknown>;
-      const changes = (mergedChanges ?? {});
+      const changes = mergedChanges ?? {};
 
       for (const fn of recordChangeSubsRef.current) {
         try {
@@ -2973,7 +2969,9 @@ const WindowReferenceGrid = ({
       // interactive edits with registered validators and outside a column-onChange
       // re-entry; programmatic writes (distribute/seed) are never validated, matching
       // classic. On reject the edited cell is reverted and the change is aborted.
-      if (shouldRunColumnValidators(!!options?.programmatic, inColumnOnChangeRef.current, columnValidatorRef.current.size)) {
+      if (
+        shouldRunColumnValidators(!!options?.programmatic, inColumnOnChangeRef.current, columnValidatorRef.current.size)
+      ) {
         if (rejectByColumnValidator(row, mergedChanges, records)) return;
       }
 

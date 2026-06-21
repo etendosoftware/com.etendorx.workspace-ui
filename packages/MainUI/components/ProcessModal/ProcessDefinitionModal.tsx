@@ -1901,7 +1901,7 @@ function ProcessDefinitionModalContent({
           {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
           <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
           {/* Host for action-time dynamic parameter forms (openDynamicForm); unmounts with the modal. */}
-          <ParameterDialogHost />
+          <ParameterDialogHost data-testid="ParameterDialogHost__761503" />
         </>
       )}
     </>

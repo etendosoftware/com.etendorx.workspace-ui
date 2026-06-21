@@ -99,7 +99,7 @@ function ParameterDialogForm({ request }: { request: ParameterDialogRequest }) {
         </div>
 
         <div className="p-6">
-          <FormProvider {...form}>
+          <FormProvider {...form} data-testid="FormProvider__15edcf">
             {parameters.map((parameter) => (
               <ProcessParameterSelector
                 key={parameter.name}
@@ -145,5 +145,5 @@ export default function ParameterDialogHost() {
   if (!current) return null;
 
   // `key` remounts the inner form (and its react-hook-form instance) per request.
-  return <ParameterDialogForm key={current.id} request={current} />;
+  return <ParameterDialogForm key={current.id} request={current} data-testid="ParameterDialogForm__15edcf" />;
 }

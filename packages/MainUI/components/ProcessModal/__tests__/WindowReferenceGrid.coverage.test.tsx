@@ -426,8 +426,7 @@ describe("shouldDeferInitialZeroing", () => {
 });
 
 describe("syncPersistentSelection", () => {
-  const makeRecord = (overrides?: Partial<EntityData>): EntityData =>
-    ({ id: "1", ...overrides }) as EntityData;
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData => ({ id: "1", ...overrides }) as EntityData;
 
   it("sets selected rows and ignores unselected ones", () => {
     const cache = new Map<string, EntityData>();
