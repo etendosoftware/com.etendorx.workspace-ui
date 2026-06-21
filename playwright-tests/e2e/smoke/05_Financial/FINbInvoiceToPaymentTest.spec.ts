@@ -296,7 +296,8 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       .first();
     await targetRow.waitFor({ state: "attached", timeout: 30_000 });
     await targetRow.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
-    await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
+    // The click is no longer necessary because the checkbox is auto-checked after filtering to a single row, but keep it here in case that behavior changes in the future.
+    //await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
 
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves)
     await expect(targetRow.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 15_000 });
