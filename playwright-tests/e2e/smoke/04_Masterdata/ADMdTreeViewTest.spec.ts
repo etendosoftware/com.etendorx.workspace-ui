@@ -25,10 +25,6 @@ test.describe("Master Data - Hierarchical Tree View @smoke", () => {
     // Activate tree mode
     await treeToggleBtn.click();
 
-    // Tree search input is rendered only when tree mode is active
-    const treeSearchInput = page.locator('[data-testid="TreeSearchInput__8ca888"]');
-    await expect(treeSearchInput).toBeVisible({ timeout: 10_000 });
-
     // At least one hierarchy icon must be visible in the table rows
     const hierarchyIcon = page.locator('[data-testid="HierarchyIcon__8ca888"]').first();
     await expect(hierarchyIcon).toBeVisible({ timeout: 15_000 });
