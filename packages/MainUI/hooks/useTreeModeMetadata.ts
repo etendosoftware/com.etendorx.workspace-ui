@@ -55,17 +55,32 @@ export function useTreeModeMetadata(tab: Tab) {
       try {
         const fullTabData = await Metadata.getTab(tab.id);
 
-        if (fullTabData && ("treeId" in fullTabData || "adTreeId" in fullTabData || "tableTree" in fullTabData)) {
-          const adTreeId =
-            (fullTabData as unknown as Record<string, unknown>).treeId ||
-            (fullTabData as unknown as Record<string, unknown>).adTreeId ||
-            (fullTabData as unknown as Record<string, unknown>).tableTree;
-          const entityId = getEntityIdFromTab(tab.entityName, tab.id);
+        if (fullTabData?.hasTree === true) {
+          const entityId = extractDatasourceId(fullTabData) ?? getEntityIdFromTab(tab.entityName, tab.id);
           treeMetadata = {
             supportsTreeMode: true,
             treeEntity: entityId,
-            adTreeId: String(adTreeId),
-            referencedTableId: getTableIdFromTableName(fullTabData.table || tab.table),
+            adTreeId: fullTabData.tableTreeId ?? undefined,
+            referencedTableId: extractTableId(fullTabData, tab),
+          };
+        } else if (
+          fullTabData &&
+          ("treeId" in fullTabData || "adTreeId" in fullTabData || "tableTree" in fullTabData)
+        ) {
+          const raw =
+            (fullTabData as unknown as Record<string, unknown>).treeId ||
+            (fullTabData as unknown as Record<string, unknown>).adTreeId ||
+            (fullTabData as unknown as Record<string, unknown>).tableTree;
+          const adTreeId =
+            raw && typeof raw === "object" ? ((raw as Record<string, unknown>).id as string) : String(raw);
+          // Prefer the datasource ID embedded in the tableTree relation (OBSERDS_DATASOURCE_ID);
+          // falls back to the generic ADTreeDatasourceService UUID when not present.
+          const entityId = extractDatasourceId(fullTabData) ?? getEntityIdFromTab(tab.entityName, tab.id);
+          treeMetadata = {
+            supportsTreeMode: true,
+            treeEntity: entityId,
+            adTreeId,
+            referencedTableId: extractTableId(fullTabData, tab),
           };
         }
       } catch (metadataError) {
@@ -285,15 +300,39 @@ function checkForTreePatterns(entityName: string, tableName: string): string | n
 }
 
 function hasTreeConfiguration(tabData: Tab): boolean {
-  const treeProps = ["treeId", "adTreeId", "tree_id", "ad_tree_id", "tableTree"];
+  if (tabData.hasTree === true) return true;
 
-  for (const prop of treeProps) {
+  const legacyTreeProps = ["treeId", "adTreeId", "tree_id", "ad_tree_id"];
+  for (const prop of legacyTreeProps) {
     if (prop in tabData && (tabData as unknown as Record<string, unknown>)[prop]) {
       return true;
     }
   }
 
   return false;
+}
+
+function extractDatasourceId(fullTabData: Tab): string | undefined {
+  const tableTree = (fullTabData as unknown as Record<string, unknown>).tableTree;
+  if (tableTree && typeof tableTree === "object") {
+    const ds = (tableTree as Record<string, unknown>).datasource;
+    if (ds && typeof ds === "object") {
+      return (ds as Record<string, unknown>).id as string | undefined;
+    }
+  }
+  return undefined;
+}
+
+function extractTableId(fullTabData: Tab, tab: Tab): string | undefined {
+  // Backend-sent explicit UUID (new field from TabBuilder.java)
+  if (fullTabData.tableId) return fullTabData.tableId;
+  // FULL_TRANSLATABLE serializes the table relation as an object — extract its id
+  const tableRelation = (fullTabData as unknown as Record<string, unknown>).table;
+  if (tableRelation && typeof tableRelation === "object") {
+    return (tableRelation as Record<string, unknown>).id as string | undefined;
+  }
+  // Fallback: treat as a table name string and look it up
+  return getTableIdFromTableName(fullTabData.table || tab.table);
 }
 
 function getTableIdFromTableName(tableName: string | undefined): string | undefined {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { FormProvider, useForm } from "react-hook-form";
@@ -236,7 +236,8 @@ describe("StatusBar", () => {
       );
 
       const closeButton = screen.getByTestId("icon-button");
-      const closeIcon = screen.getByTestId("mock-svg");
+      // SVG mock always renders data-testid="mock-svg"; query within the button
+      const closeIcon = within(closeButton).getByTestId("mock-svg");
       expect(closeButton).toContainElement(closeIcon);
     });
 

@@ -59,9 +59,18 @@ const loadData = async (
       value: String(treeOptions.parentId ?? -1),
     };
 
-    // Ensure criteria is an array and append parentId criteria
+    // Ensure criteria is an array before spreading. params.criteria can be a
+    // single object (not an array) when the caller collapses allCriteria[0]
+    // for a single-criterion case — spreading a plain object throws "not iterable".
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const currentCriteria = (params.criteria as any[]) || [];
+    const rawCriteria = params.criteria as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let currentCriteria: any[];
+    if (Array.isArray(rawCriteria)) {
+      currentCriteria = rawCriteria;
+    } else {
+      currentCriteria = rawCriteria ? [rawCriteria] : [];
+    }
     processedParams.criteria = [...currentCriteria, parentIdCriteria];
 
     if (treeOptions.tabId) {

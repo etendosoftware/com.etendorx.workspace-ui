@@ -3276,12 +3276,53 @@ const DynamicTable = ({
     onNew?.();
   }, [parentTab, parentRecord, onNew]);
 
+  const handleTreeArrowRight = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const row = tableRef.current.getRow(selectedIds[0]);
+      if (row?.getCanExpand() && !row.getIsExpanded()) {
+        row.toggleExpanded();
+      }
+    },
+    [shouldUseTreeMode]
+  );
+
+  const handleTreeArrowLeft = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const rowId = selectedIds[0];
+      const row = tableRef.current.getRow(rowId);
+      if (row?.getIsExpanded()) {
+        row.toggleExpanded();
+      } else {
+        const record = effectiveRecords.find((r) => String(r.id) === rowId);
+        const parentId = record?.__treeParentId ? String(record.__treeParentId) : null;
+        if (parentId) {
+          tableRef.current.setRowSelection({ [parentId]: true });
+        }
+      }
+    },
+    [shouldUseTreeMode, effectiveRecords]
+  );
+
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
+      ...(shouldUseTreeMode
+        ? {
+            ArrowRight: { handler: handleTreeArrowRight },
+            ArrowLeft: { handler: handleTreeArrowLeft },
+          }
+        : {}),
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
