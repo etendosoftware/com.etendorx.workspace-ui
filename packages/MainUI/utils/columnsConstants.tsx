@@ -19,17 +19,22 @@ import type { TagType } from "@workspaceui/componentlibrary/src/components/Tag/t
 import InfoIcon from "../../ComponentLibrary/src/assets/icons/info.svg";
 import CheckIcon from "../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import ErrorIcon from "../../ComponentLibrary/src/assets/icons/alert-octagon.svg";
+import LoaderIcon from "../../ComponentLibrary/src/assets/icons/loader.svg";
+import RefreshIcon from "../../ComponentLibrary/src/assets/icons/refresh-cw.svg";
 
 const defaultColor = "var(--color-baseline-0)";
 
 export const statusConfig: Record<string, { type: TagType; icon?: React.ReactElement }> = {
   AP: { type: "success" }, // Accepted
-  CL: { type: "success" }, // Closed
-  CO: { type: "success" }, // Booked
+  CL: { type: "success", icon: <CheckIcon fill={defaultColor} data-testid="CheckIcon__CL" /> }, // Closed
+  CO: { type: "success", icon: <CheckIcon fill={defaultColor} data-testid="CheckIcon__CO" /> }, // Booked
   PO: { type: "success" }, // Posted
   CA: { type: "success" }, // Closed - Order Created
 
-  IP: { type: "warning" }, // Under Way
+  IP: {
+    type: "warning",
+    icon: <LoaderIcon fill={defaultColor} className="animate-spin" data-testid="LoaderIcon__IP" />,
+  }, // Under Way
   CH: { type: "warning" }, // Modified
   PR: { type: "warning" }, // Printed
   XX: { type: "warning" }, // Procesando
@@ -38,7 +43,7 @@ export const statusConfig: Record<string, { type: TagType; icon?: React.ReactEle
   AE: { type: "warning" }, // Automatic Evaluation
 
   NA: { type: "error" }, // Not Accepted
-  VO: { type: "error" }, // Voided
+  VO: { type: "error", icon: <ErrorIcon fill={defaultColor} data-testid="ErrorIcon__VO" /> }, // Voided
   PE: { type: "error" }, // Accounting Error
   TE: { type: "error" }, // Transfer Error
   IN: { type: "error" }, // Inactive
@@ -47,9 +52,9 @@ export const statusConfig: Record<string, { type: TagType; icon?: React.ReactEle
   WP: { type: "error" }, // Not Paid
 
   TR: { type: "primary" }, // Transferred
-  RE: { type: "primary" }, // Re-Opened
+  RE: { type: "primary", icon: <RefreshIcon fill={defaultColor} data-testid="RefreshIcon__RE" /> }, // Re-Opened
 
-  DR: { type: "draft" }, // Draft
+  DR: { type: "draft", icon: <InfoIcon fill={defaultColor} data-testid="InfoIcon__DR" /> }, // Draft
   TMP: { type: "draft" }, // Temporal
   "??": { type: "draft" }, // Unknown
 };

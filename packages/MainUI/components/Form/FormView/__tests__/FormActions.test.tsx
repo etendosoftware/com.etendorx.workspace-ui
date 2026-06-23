@@ -225,6 +225,63 @@ describe("FormActions", () => {
     expect(mockMarkFormAsChanged).toHaveBeenCalled();
   });
 
+  describe("isDocumentProcessing", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: jest require
+    const toolbarCtx = () => require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock;
+
+    const prevState = {
+      isSaving: false,
+      isCalloutLoading: false,
+      hasValidationErrors: false,
+      validationErrors: [],
+      isDocumentProcessing: false,
+    };
+
+    const setupCtx = () => {
+      toolbarCtx().mockReturnValue({
+        registerActions: mockRegisterActions,
+        setSaveButtonState: mockSetSaveButtonState,
+        saveButtonState: prevState,
+      });
+    };
+
+    // setSaveButtonState is called with function updaters: (prev) => ({ ...prev, ... })
+    // Multiple effects call it; find the one that touched isDocumentProcessing
+    const findProcessingUpdate = (expectedValue: boolean) => {
+      const calls = mockSetSaveButtonState.mock.calls;
+      return calls.some((call) => {
+        const updater = call[0];
+        if (typeof updater !== "function") return false;
+        const result = updater(prevState);
+        return result.isDocumentProcessing === expectedValue;
+      });
+    };
+
+    it("syncs isDocumentProcessing=true into setSaveButtonState", () => {
+      setupCtx();
+      renderFormActions({ ...props, isDocumentProcessing: true });
+
+      expect(findProcessingUpdate(true)).toBe(true);
+    });
+
+    it("syncs isDocumentProcessing=false (default) into setSaveButtonState", () => {
+      setupCtx();
+      renderFormActions({ ...props });
+
+      expect(findProcessingUpdate(false)).toBe(true);
+    });
+
+    it("resets isDocumentProcessing to false on unmount", () => {
+      setupCtx();
+      const { unmount } = renderFormActions({ ...props, isDocumentProcessing: true });
+      mockSetSaveButtonState.mockClear();
+
+      unmount();
+
+      expect(findProcessingUpdate(false)).toBe(true);
+    });
+  });
+
   describe("keyboard shortcuts", () => {
     // biome-ignore lint/suspicious/noExplicitAny: jest require
     const toolbarContextMock = () => require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock;

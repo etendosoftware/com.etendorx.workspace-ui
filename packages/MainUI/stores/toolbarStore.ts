@@ -58,6 +58,7 @@ export const defaultSaveButtonState: SaveButtonState = {
   hasValidationErrors: false,
   isSaving: false,
   validationErrors: [],
+  isDocumentProcessing: false,
 };
 
 /**

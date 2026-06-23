@@ -59,6 +59,8 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
+import { getDocumentStatus, getProcessing } from "@/utils/processes/manual/utils";
+import { DEFAULT_DOC_STATUS } from "@/utils/processes/manual/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -216,12 +218,32 @@ export function FormView({
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
 
+  const docStatus = useMemo(
+    () => (initialState ? getDocumentStatus(initialState as Record<string, unknown>) : DEFAULT_DOC_STATUS),
+    [initialState]
+  );
+
+  const isDocumentProcessing = useMemo(
+    () => docStatus === "IP" || getProcessing((initialState as Record<string, unknown>) ?? {}) === "Y",
+    [docStatus, initialState]
+  );
+
   // Determine read-only state from two sources:
   // 1. Tab-level uIPattern "RO" — the tab itself is defined as read-only
   // 2. Record-level _readOnly — the backend security layer (DAL) marks this specific
   //    record as read-only for the current role (e.g. system records with org='0'
   //    are not writable by non-system roles even if the window access is isreadwrite='Y')
-  const isReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
+  const baseReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
+
+  // Status-driven override:
+  //   IP — always locked (processing in progress)
+  //   RE — always editable (re-opened), overrides any _readOnly=true from completed state
+  //   All other statuses — use baseReadOnly as-is
+  const isReadOnly = useMemo(() => {
+    if (isDocumentProcessing) return true;
+    if (docStatus === "RE") return uIPattern === UIPattern.READ_ONLY;
+    return baseReadOnly;
+  }, [isDocumentProcessing, docStatus, uIPattern, baseReadOnly]);
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {
@@ -1140,6 +1162,7 @@ export function FormView({
               showErrorModal={showErrorModal}
               mode={currentMode}
               isFocused={isFocused}
+              isDocumentProcessing={isDocumentProcessing}
               data-testid="FormActions__1a0853"
             />
           </form>

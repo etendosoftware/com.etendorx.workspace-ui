@@ -38,9 +38,19 @@ interface FormActionsProps {
   showErrorModal: (message: string) => void;
   mode: FormMode;
   isFocused?: boolean;
+  isDocumentProcessing?: boolean;
 }
 
-export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode, isFocused }: FormActionsProps) {
+export function FormActions({
+  tab,
+  onNew,
+  refetch,
+  onSave,
+  showErrorModal,
+  mode,
+  isFocused,
+  isDocumentProcessing,
+}: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
@@ -49,6 +59,13 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
+
+  useEffect(() => {
+    setSaveButtonState((prev) => ({ ...prev, isDocumentProcessing: isDocumentProcessing ?? false }));
+    return () => {
+      setSaveButtonState((prev) => ({ ...prev, isDocumentProcessing: false }));
+    };
+  }, [isDocumentProcessing, setSaveButtonState]);
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
   const { validateRequiredFields, requiredFields } = useFormValidation(tab);
