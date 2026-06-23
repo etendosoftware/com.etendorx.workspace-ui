@@ -19,6 +19,13 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import ProcessIframeModal from "../Iframe";
 import { LEGACY_ACTIONS, LEGACY_MESSAGE_TYPE } from "../legacyMessageProtocol";
 
+// These integration-style tests render the legacy report iframe modal and drive async
+// postMessage handlers. Under heavy parallel test load the render + effects can exceed the
+// default per-test budget purely due to CPU contention (the assertions are correct), so widen
+// the per-test timeout for this file and give the async waits extra headroom.
+jest.setTimeout(30000);
+const ASYNC_WAIT = { timeout: 5000 };
+
 const mockTryOpenReportPopup = jest.fn();
 const mockBuildEtendoClassicBookmarkUrl = jest.fn(
   (args: { processUrl: string; params?: string }) => `bookmark(${args.processUrl}|${args.params ?? ""})`
@@ -141,7 +148,7 @@ describe("Iframe.tsx — openLegacyReport handler", () => {
       2,
       "bookmark(/ad_reports/B.html|Command=DIRECT&inpRecord=2)"
     );
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1), ASYNC_WAIT);
   });
 
   it("forwards an empty params string when the backend omits the report query", async () => {
@@ -209,7 +216,7 @@ describe("Iframe.tsx — openLegacyReport handler", () => {
     const retry = await screen.findByTestId("LegacyReportPopupBlocked__retry");
     fireEvent.click(retry);
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1), ASYNC_WAIT);
     // 2 from initial dispatch + 1 retry of the only blocked URL
     expect(mockTryOpenReportPopup).toHaveBeenCalledTimes(3);
   });
