@@ -25,6 +25,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "@/hooks/useUserContext";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/utils/session/constants";
+import { isStaleObjectError } from "@/components/Table/utils/saveOperations";
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 
@@ -138,6 +139,10 @@ export const useFormAction = ({
           logout();
           setLoginErrorText(t("login.errors.noAccessTableNoView.title"));
           setLoginErrorDescription(t("login.errors.noAccessTableNoView.description"));
+          return;
+        }
+        if (isStaleObjectError(errorMessage)) {
+          onError?.(t("status.staleObjectError"));
           return;
         }
         onError?.(String(err));

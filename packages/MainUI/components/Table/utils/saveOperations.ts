@@ -28,6 +28,16 @@ import { getMergedRowData } from "./editingRowUtils";
 import { validateRowForSave } from "./validationUtils";
 
 /**
+ * Detects stale-object (optimistic lock) errors returned by Etendo Classic.
+ * The backend throws OBStaleObjectException with message "@OBJSON_StaleDate@",
+ * which Classic's Utility.translateError may resolve to a human-readable string.
+ */
+export function isStaleObjectError(errorMessage: string | undefined): boolean {
+  if (!errorMessage) return false;
+  return errorMessage.includes("OBJSON_StaleDate") || errorMessage.includes("APRM_StaleDate");
+}
+
+/**
  * Builds the payload for saving a record via the datasource servlet
  * @param values The record data to save
  * @param oldValues The original record data (for updates)
@@ -36,7 +46,7 @@ import { validateRowForSave } from "./validationUtils";
  * @param tab The tab metadata to filter valid fields
  * @returns The formatted payload
  */
-function buildSavePayload({
+export function buildSavePayload({
   values,
   oldValues,
   mode,
@@ -49,11 +59,10 @@ function buildSavePayload({
   csrfToken: string;
   tab?: Tab;
 }) {
-  // Fields that should be excluded from the payload
-  const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
-
-  // When creating a new record (add operation), exclude the id field as well
-  const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
+  // Fields that should be excluded from the payload.
+  // In EDIT mode, "updated" is kept so the backend can detect stale-object conflicts.
+  const alwaysExcluded = ["creationDate", "createdBy", "updatedBy"];
+  const excludedFields = mode === FormMode.NEW ? [...alwaysExcluded, "updated", "id"] : alwaysExcluded;
 
   // Build a set of valid field names from tab.fields (using hqlName)
   // This will filter out display names like "Transaction Document" and keep only "transactionDocument"
@@ -131,7 +140,7 @@ function buildSavePayload({
 
   if (mode !== FormMode.NEW && oldValues) {
     const filteredOldValues = Object.entries(oldValues).reduce((acc, [key, value]) => {
-      if (!auditFields.includes(key)) {
+      if (!excludedFields.includes(key)) {
         acc[key] = value;
       }
       return acc;
@@ -244,8 +253,11 @@ function shouldAbortRetry(result: SaveResult, attempt: number, maxRetries: numbe
   // Don't retry validation errors - they won't change
   const hasValidationErrors = result.errors?.some((error) => error.type === "server" && error.field !== "_general");
 
-  // Return true if there are validation errors or we've reached max retries
-  return (hasValidationErrors ?? false) || attempt === maxRetries;
+  // Don't retry stale-object conflicts — they require user action (refresh)
+  const hasStaleError = result.errors?.some((error) => isStaleObjectError(error.message));
+
+  // Return true if there are validation/stale errors or we've reached max retries
+  return (hasValidationErrors ?? false) || (hasStaleError ?? false) || attempt === maxRetries;
 }
 
 /**
@@ -392,6 +404,8 @@ function prepareSaveData(
   mode: FormMode
 ): { values: EntityData; oldValues?: EntityData } {
   const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
+  // `saveOperation.data` is Partial<EntityData>; the cast is intentional — at save
+  // time the accumulated edits form a complete record subset (no undefined values).
   let processedValues: EntityData = { ...saveOperation.data } as EntityData;
   let processedOriginalData: EntityData | undefined = saveOperation.originalData
     ? ({ ...saveOperation.originalData } as EntityData)
