@@ -40,7 +40,10 @@ import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useCallback, useEffect, useRef } from "react";
-import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
+import {
+  syncSelectedRecordsToSession,
+  clearRecordContextFromSession,
+} from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
 import { useWindowStore } from "@/stores/windowStore";
@@ -450,6 +453,11 @@ export default function useTableSelection(
           clearSelectedRecord,
           clearChildrenSelections
         );
+        // On a root tab, also wipe the record-scoped context left in the server session by the
+        // previously selected record, so a later NEW record starts from a clean session state.
+        if (!tab.parentTabId) {
+          clearRecordContextFromSession({ tab, parentId: tab.parentTabId });
+        }
       }
     }
 

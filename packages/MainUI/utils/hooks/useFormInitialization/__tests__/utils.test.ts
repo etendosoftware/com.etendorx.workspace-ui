@@ -4,6 +4,8 @@ import {
   buildFormInitializationParams,
   buildFormInitializationPayload,
   buildSessionAttributes,
+  buildSessionResetPayload,
+  computeGridVisibleProperties,
   fetchFormInitialization,
   mergeSessionAttributes,
 } from "../utils";
@@ -432,6 +434,103 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         "?MODE=SETSESSION&TAB_ID=test-tab&ROW_ID=record-123&PARENT_ID=parent-456",
         payload
       );
+    });
+
+    it("should degrade gracefully when the backend returns a status:-1 error envelope", async () => {
+      const errorEnvelope = {
+        data: {
+          response: {
+            status: -1,
+            error: { message: "Couldn't execute callout (class ...OrderBankAccountAssigner)" },
+            totalRows: 0,
+          },
+        },
+      };
+      jest.mocked(Metadata.kernelClient.post).mockResolvedValue(errorEnvelope);
+
+      const params = new URLSearchParams("MODE=NEW&TAB_ID=test-tab");
+      const result = await fetchFormInitialization(params, { testData: "x" });
+
+      // The form must still open with an empty, well-formed response (no throw).
+      expect(result).toEqual({
+        columnValues: {},
+        auxiliaryInputValues: {},
+        sessionAttributes: {},
+        dynamicCols: [],
+        attachmentExists: false,
+        noteCount: 0,
+      });
+    });
+
+    it("should return data untouched when the response envelope status is not -1", async () => {
+      const okEnvelope = {
+        data: { response: { status: 0 }, columnValues: { a: { value: "1" } } },
+      };
+      jest.mocked(Metadata.kernelClient.post).mockResolvedValue(okEnvelope);
+
+      const params = new URLSearchParams("MODE=NEW&TAB_ID=test-tab");
+      const result = await fetchFormInitialization(params, {});
+
+      expect(result).toEqual(okEnvelope.data);
+    });
+  });
+
+  describe("computeGridVisibleProperties", () => {
+    it("should list the column name of displayed fields", () => {
+      expect(computeGridVisibleProperties(mockTab)).toContain("test_column");
+    });
+
+    it("should include both columnName and $-format path for property fields", () => {
+      const propertyField = createMockField({
+        columnName: "Type",
+        column: { propertyPath: "etcopFile.type" },
+        displayed: true,
+      });
+      const tab = createMockTab();
+      tab.fields = { propertyField };
+
+      const result = computeGridVisibleProperties(tab);
+
+      expect(result).toEqual(expect.arrayContaining(["Type", "etcopFile$type"]));
+    });
+  });
+
+  describe("buildSessionResetPayload", () => {
+    it("should send empty inp values plus the DAL property name (not the column name)", () => {
+      const entityKeyColumn = createMockField();
+      const payload = buildSessionResetPayload(mockTab, entityKeyColumn);
+
+      // Record field is reset to empty so the backend clears its session attribute.
+      expect(payload.testInput).toBe("");
+      // FIC matches _gridVisibleProperties against the DAL property name (hqlName), so the
+      // column name must NOT be used here or the FIC silently skips the field.
+      expect(payload._gridVisibleProperties).toContain(createMockField().hqlName);
+      expect(payload._gridVisibleProperties).not.toContain("test_column");
+      // Structural keys required by FormInitializationComponent.
+      expect(payload).toEqual(
+        expect.objectContaining({
+          inpKeyName: entityKeyColumn.inputName,
+          inpTabId: mockTab.id,
+          inpTableId: mockTab.table,
+          inpkeyColumnId: entityKeyColumn.columnName,
+          inpwindowId: mockTab.window,
+        })
+      );
+    });
+
+    it("should use the $-format property path for property fields", () => {
+      const propertyField = createMockField({
+        inputName: "inp_propertyField_Type",
+        columnName: "Type",
+        column: { propertyPath: "etcopFile.type" },
+        displayed: true,
+      });
+      const tab = createMockTab();
+      tab.fields = { propertyField };
+
+      const payload = buildSessionResetPayload(tab, propertyField);
+
+      expect(payload._gridVisibleProperties).toContain("etcopFile$type");
     });
   });
 

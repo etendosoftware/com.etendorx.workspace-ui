@@ -9,7 +9,7 @@ import {
   type Field,
   type ISession,
 } from "@workspaceui/api-client/src/api/types";
-import { ACTION_FORM_INITIALIZATION } from "./constants";
+import { ACTION_FORM_INITIALIZATION, FIC_ERROR_STATUS } from "./constants";
 import { logger } from "@/utils/logger";
 import { getFieldsToAdd } from "@/utils/form/entityConfig";
 import { extractKeyValuePairs } from "@/utils/commons";
@@ -21,6 +21,29 @@ const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): s
   }
   return "null";
 };
+
+/**
+ * Builds the `_gridVisibleProperties` list expected by FormInitializationComponent (FIC).
+ *
+ * Classic sends this list so the FIC knows which fields are currently visible in the form:
+ *   - Regular fields:  their columnName is listed (e.g. "Behaviour")
+ *   - Property fields: BOTH their columnName AND the "$"-format property path are listed
+ *     (e.g. "Type" + "etcopFile$type" for column.propertyPath = "etcopFile.type").
+ *
+ * The FIC also relies on this list to decide which columns get their value stored into the
+ * server session (see FormInitializationComponent#computeColumnValues), which is why the
+ * session-reset flow reuses exactly the same list.
+ */
+export const computeGridVisibleProperties = (tab: Tab): string[] =>
+  Object.values(tab.fields)
+    .filter((f) => (f.displayed || f.column?.defaultValue?.startsWith("@SQL=")) && f.columnName)
+    .flatMap((f) => {
+      const propertyPath = f.column?.propertyPath;
+      if (propertyPath) {
+        return [f.columnName, propertyPath.replace(/\./g, "$")];
+      }
+      return [f.columnName];
+    });
 
 /**
  * Builds the payload object required for form initialization API call
@@ -77,22 +100,7 @@ export const buildFormInitializationPayload = (
   //
   // Not needed for SETSESSION mode. Entity-specific overrides in entityConfig
   // (e.g. ADUser) take precedence via the spread of additionalFields below.
-  const computedGridVisibleProperties =
-    mode !== SessionMode.SETSESSION
-      ? Object.values(tab.fields)
-          .filter((f) => (f.displayed || f.column?.defaultValue?.startsWith("@SQL=")) && f.columnName)
-          .flatMap((f) => {
-            const propertyPath = f.column?.propertyPath;
-            if (propertyPath) {
-              // For property fields, include both the column name and the $-format path.
-              // FormInitializationComponent.setValuesInRequest checks _gridVisibleProperties
-              // for entries in the "entity$property" format to identify property fields and
-              // look up their values from the payload.
-              return [f.columnName, propertyPath.replace(/\./g, "$")];
-            }
-            return [f.columnName];
-          })
-      : undefined;
+  const computedGridVisibleProperties = mode !== SessionMode.SETSESSION ? computeGridVisibleProperties(tab) : undefined;
 
   return {
     ...recordPayload,
@@ -139,12 +147,87 @@ export const buildFormInitializationParams = ({
     _action: ACTION_FORM_INITIALIZATION,
   });
 
+/**
+ * Builds the SETSESSION payload used to wipe the record-scoped context that a previous
+ * record left in the server session for this window.
+ *
+ * Every grid-visible field is sent with an empty `inp*` value. FormInitializationComponent
+ * then stores those empty values into the session attributes keyed by `<window>|<COLUMN>`,
+ * clearing stale values (e.g. a stale `C_BPartner_ID`) so the next NEW initialization
+ * computes its defaults from a clean state.
+ *
+ * IMPORTANT: in SETSESSION mode the FIC gates each field on
+ * `_gridVisibleProperties.contains(prop.getName())`, i.e. it matches against the DAL
+ * **property name** (e.g. `businessPartner`), NOT the DB column name (`C_BPartner_ID`).
+ * Sending column names makes the FIC skip every field, so the empty value never reaches the
+ * session and nothing gets cleared. We therefore build `_gridVisibleProperties` from the
+ * field's `hqlName` (the property name) — or the `$`-format property path for property
+ * fields — exactly as the classic client does.
+ */
+export const buildSessionResetPayload = (tab: Tab, entityKeyColumn: NonNullable<Field>): Record<string, unknown> => {
+  const emptyInputs: Record<string, unknown> = {};
+  const visibleProperties: string[] = [];
+  for (const field of Object.values(tab.fields)) {
+    if (!field?.displayed || !field.columnName || !field.inputName) {
+      continue;
+    }
+    emptyInputs[field.inputName] = "";
+    const propertyPath = field.column?.propertyPath;
+    if (propertyPath) {
+      visibleProperties.push(propertyPath.replace(/\./g, "$"));
+    } else if (field.hqlName) {
+      visibleProperties.push(field.hqlName);
+    }
+  }
+
+  return {
+    ...emptyInputs,
+    inpKeyName: entityKeyColumn.inputName,
+    inpTabId: tab.id,
+    inpTableId: tab.table,
+    inpkeyColumnId: entityKeyColumn.columnName,
+    keyColumnName: entityKeyColumn.columnName,
+    _entityName: tab.entityName,
+    inpwindowId: tab.window,
+    _gridVisibleProperties: visibleProperties,
+  };
+};
+
+/**
+ * Builds an empty, well-formed FormInitializationResponse so that the form can still open
+ * gracefully when the backend returns an error envelope (no defaults, no session attributes).
+ */
+const buildEmptyFormInitialization = (): FormInitializationResponse => ({
+  columnValues: {},
+  auxiliaryInputValues: {},
+  sessionAttributes: {},
+  dynamicCols: [],
+  attachmentExists: false,
+  noteCount: 0,
+});
+
+/**
+ * Detects the `{ response: { status: -1, error } }` envelope the kernel returns when a
+ * FormInitialization callout fails server-side (HTTP 200 but logical error).
+ */
+const isFormInitializationError = (
+  data: unknown
+): data is { response: { status: number; error?: { message?: string } } } => {
+  const response = (data as { response?: { status?: number } } | null)?.response;
+  return Boolean(response) && response?.status === FIC_ERROR_STATUS;
+};
+
 export const fetchFormInitialization = async (
   params: URLSearchParams,
   payload: ClientOptions["body"]
 ): Promise<FormInitializationResponse> => {
   try {
     const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
+    if (isFormInitializationError(data)) {
+      const message = data.response.error?.message ?? "Unknown error";
+      logger.warn(`Form initialization returned an error envelope, opening form without defaults: ${message}`);
+      return buildEmptyFormInitialization();
+    }
     return data;
   } catch (error) {
     logger.warn("Error fetching initial form data:", error);
