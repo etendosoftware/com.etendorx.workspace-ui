@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
-import { setErpSessionCookie, setErpCsrfToken } from "@/app/api/_utils/sessionStore";
+import { setErpSessionCookie, setErpCsrfToken, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
 import { handleLoginError } from "../../_utils/sessionErrors";
@@ -98,8 +98,9 @@ export async function POST(request: NextRequest) {
     const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/sws/login");
 
     const userToken = extractBearerToken(request);
-    // ponytail: don't send "JSESSIONID=null" — let the backend create a fresh session from the Bearer token
-    const erpResponse = await fetchErpLogin(erpLoginUrl, body, undefined, userToken || undefined);
+    // Forward the existing JSESSIONID (if any) so the backend can associate/invalidate the old session
+    const existingCookie = userToken ? getErpSessionCookie(userToken) : null;
+    const erpResponse = await fetchErpLogin(erpLoginUrl, body, existingCookie || undefined, userToken || undefined);
 
     if (!erpResponse || !erpResponse.ok) {
       throw new Error("ERP login failed", { cause: erpResponse });

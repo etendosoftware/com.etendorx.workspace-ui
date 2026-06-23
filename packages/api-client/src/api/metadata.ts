@@ -30,6 +30,7 @@ export class Metadata {
   public static datasourceServletClient = new Client();
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION, "etendo_metadata_");
   private static currentRoleId: string | null = null;
+  private static pendingMenuRequest: Promise<Etendo.Menu[]> | null = null;
   public static loginClient = new Client();
   private static language: string | null = null;
   public static locationClient = new LocationClient();
@@ -227,17 +228,28 @@ export class Metadata {
     if (!forceRefresh && cached && cached.length && currentRoleId === Metadata.currentRoleId) {
       return cached;
     }
-    try {
-      const { data } = await Metadata.client.post("meta/menu", { role: currentRoleId });
-      const menu = data.menu;
-      Metadata.cache.set("OBMenu", menu);
-      Metadata.currentRoleId = currentRoleId;
 
-      return menu;
-    } catch (error) {
-      console.error("Error fetching menu:", error);
-      throw error;
+    // Deduplicate concurrent requests — second caller reuses the in-flight promise
+    if (Metadata.pendingMenuRequest) {
+      return Metadata.pendingMenuRequest;
     }
+
+    Metadata.pendingMenuRequest = (async () => {
+      try {
+        const { data } = await Metadata.client.post("meta/menu", { role: currentRoleId });
+        const menu = data.menu;
+        Metadata.cache.set("OBMenu", menu);
+        Metadata.currentRoleId = currentRoleId;
+        return menu;
+      } catch (error) {
+        console.error("Error fetching menu:", error);
+        throw error;
+      } finally {
+        Metadata.pendingMenuRequest = null;
+      }
+    })();
+
+    return Metadata.pendingMenuRequest;
   }
 
   public static async refreshMenuOnLogin(): Promise<void> {

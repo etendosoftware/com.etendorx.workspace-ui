@@ -41,12 +41,14 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
     [showLoading, hideLoading]
   );
 
+  // ponytail: use currentRole.id (primitive) as dep, not the object ref — avoids double-fire
+  // when language and currentRole change in separate render cycles during role switch
+  const currentRoleId = currentRole?.id;
   useEffect(() => {
-    if (token && currentRole) {
+    if (token && currentRoleId) {
       fetchMenu(true);
     }
-    // ponytail: token is a guard, not a trigger — currentRole changes only after the session is fully initialized
-  }, [currentRole, fetchMenu, language]);
+  }, [currentRoleId, fetchMenu, language]);
 
   return menu;
 };
