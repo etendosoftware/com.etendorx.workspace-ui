@@ -45,7 +45,8 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
     if (token && currentRole) {
       fetchMenu(true);
     }
-  }, [token, currentRole, fetchMenu, language]);
+    // ponytail: token is a guard, not a trigger — currentRole changes only after the session is fully initialized
+  }, [currentRole, fetchMenu, language]);
 
   return menu;
 };
