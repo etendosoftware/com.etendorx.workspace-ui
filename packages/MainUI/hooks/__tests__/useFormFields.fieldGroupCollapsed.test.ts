@@ -131,3 +131,59 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
     expect(g2![1].fieldGroupCollapsed).toBe(false);
   });
 });
+
+describe("useFormFields — fieldGroupName as group identifier", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("uses fieldGroupName as the group identifier when present", () => {
+    const tab = makeTab({
+      field1: makeField({
+        hqlName: "field1",
+        fieldGroup: "group1",
+        fieldGroup$_identifier: "Group One",
+        fieldGroupName: "Grupo Uno",
+      }),
+    });
+
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
+
+    const group = result.current.groups.find(([id]) => id === "group1");
+    expect(group).toBeDefined();
+    expect(group![1].identifier).toBe("Grupo Uno");
+  });
+
+  it("falls back to fieldGroup$_identifier when fieldGroupName is absent", () => {
+    const tab = makeTab({
+      field1: makeField({
+        hqlName: "field1",
+        fieldGroup: "group1",
+        fieldGroup$_identifier: "Group One",
+      }),
+    });
+
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
+
+    const group = result.current.groups.find(([id]) => id === "group1");
+    expect(group).toBeDefined();
+    expect(group![1].identifier).toBe("Group One");
+  });
+
+  it("falls back to fieldGroup$_identifier when fieldGroupName is an empty string", () => {
+    const tab = makeTab({
+      field1: makeField({
+        hqlName: "field1",
+        fieldGroup: "group1",
+        fieldGroup$_identifier: "Group One",
+        fieldGroupName: "",
+      }),
+    });
+
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
+
+    const group = result.current.groups.find(([id]) => id === "group1");
+    expect(group).toBeDefined();
+    expect(group![1].identifier).toBe("Group One");
+  });
+});
