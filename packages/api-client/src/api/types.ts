@@ -1035,8 +1035,6 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
-  fieldGroup?: string;
-  fieldGroup$_identifier?: string;
   /**
    * When true, the field group (subsection) starts collapsed in the process modal.
    * When false or undefined, the field group starts expanded.
@@ -1046,6 +1044,10 @@ export type ProcessParameter = {
   sequenceNumber?: number;
   /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
   dBColumnName: string;
+  /** Field group ID from AD_Fieldgroup_ID — used for visual grouping of parameters. */
+  fieldGroup?: string;
+  /** Field group display name. */
+  fieldGroup$_identifier?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {
