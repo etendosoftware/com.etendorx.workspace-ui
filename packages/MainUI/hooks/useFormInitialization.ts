@@ -56,7 +56,7 @@ const initialState: State = {
  * @returns Updated state based on the action type
  *
  */
-const reducer = (state: State, action: Action): State => {
+export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FETCH_START":
       return { loading: true, error: null, formInitialization: null };
@@ -64,6 +64,8 @@ const reducer = (state: State, action: Action): State => {
       return { loading: false, error: null, formInitialization: action.payload };
     case "FETCH_ERROR":
       return { loading: false, error: action.payload, formInitialization: state.formInitialization };
+    case "CLEAR":
+      return { loading: false, error: null, formInitialization: null };
     default:
       return state;
   }
@@ -241,6 +243,14 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     // Wait for record to finish loading before initializing form
     // This ensures audit fields are available when enrichWithAuditFields is called
     if (params && !recordLoading) {
+      // Guard: avoid FIC call when EDIT mode hasn't resolved a recordId yet (race condition
+      // where the table auto-selects the first record after this effect fires).
+      // Dispatch CLEAR so loading stays false instead of hanging at true indefinitely.
+      if (mode === FormMode.EDIT && !recordId) {
+        dispatch({ type: "CLEAR" });
+        return;
+      }
+
       // Create unique key for current params to track if we already fetched with these
       // Use params.toString() instead of JSON.stringify because URLSearchParams serializes to {}
       const paramsKey = params.toString();

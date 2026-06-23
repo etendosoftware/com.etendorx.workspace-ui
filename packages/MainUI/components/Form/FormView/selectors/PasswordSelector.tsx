@@ -47,11 +47,14 @@ const EyeIcon = ({ open }: { open: boolean }): React.ReactElement => (
   </svg>
 );
 
-export const PasswordSelector = (
-  props: { field: Field } & React.ComponentProps<typeof TextInput>
-): React.ReactElement => {
+interface PasswordSelectorProps extends React.ComponentProps<typeof TextInput> {
+  field: Field;
+  showToggle?: boolean;
+}
+
+export const PasswordSelector = ({ field, showToggle = true }: PasswordSelectorProps): React.ReactElement => {
   const { register, watch, setValue } = useFormContext<FieldValues>();
-  const fieldName = props.field.hqlName;
+  const fieldName = field.hqlName;
   const currentValue = watch(fieldName);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -62,10 +65,10 @@ export const PasswordSelector = (
   const isPlaceholder = currentValue === PASSWORD_PLACEHOLDER;
 
   const eyeToggle =
-    !isPlaceholder && currentValue ? (
+    showToggle && !isPlaceholder && currentValue ? (
       <button
         type="button"
-        data-testid={`eye-toggle__${props.field.id}`}
+        data-testid={`eye-toggle__${field.id}`}
         onClick={() => setShowPassword((prev) => !prev)}
         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors z-10">
         <EyeIcon open={showPassword} data-testid="EyeIcon__1b1414" />
@@ -75,13 +78,13 @@ export const PasswordSelector = (
   return (
     <TextInput
       {...register(fieldName)}
-      field={props.field}
+      field={field}
       setValue={handleSetValue}
       showClearButton={false}
       endAdornment={eyeToggle}
       value={currentValue}
       type={showPassword ? "text" : "password"}
-      maxLength={Number(props.field.column.length)}
+      maxLength={Number(field.column.length)}
       autoComplete="new-password"
       data-testid="TextInput__1b1414"
     />

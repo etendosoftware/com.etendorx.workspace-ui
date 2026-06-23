@@ -26,7 +26,7 @@ export const ProductStockModalSelector = ({
 }) => {
   const isStockView =
     field.selector?.datasourceName === "ProductStockView" ||
-    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(field.column?.referenceSearchKey);
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(field.column?.referenceSearchKey ?? "");
 
   const effectiveField = useMemo(() => {
     const datasourceName = isStockView ? "ProductStockView" : field.selector?.datasourceName || "ProductSimple";

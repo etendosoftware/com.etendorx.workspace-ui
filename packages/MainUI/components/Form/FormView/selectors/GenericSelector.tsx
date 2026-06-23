@@ -39,6 +39,7 @@ import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { MultiRecordSelector } from "./MultiRecordSelector";
 import { PasswordSelector } from "./PasswordSelector";
+import { EncryptedSelector } from "./EncryptedSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
@@ -91,7 +92,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const isProductStockModal =
     effectiveField.selector?.datasourceName === "ProductStockView" ||
-    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey ?? "");
 
   if (isProductStockModal) {
     return (
@@ -99,6 +100,18 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         field={effectiveField}
         isReadOnly={isReadOnly}
         data-testid={`ProductStockModalSelector__${field.id}`}
+      />
+    );
+  }
+
+  // Encrypted fields are masked regardless of reference type
+  if (effectiveField.column.displayEncription) {
+    return (
+      <EncryptedSelector
+        field={effectiveField}
+        isReadOnly={isReadOnly}
+        deencryptable={effectiveField.column.deencryptable ?? false}
+        data-testid={"EncryptedSelector__" + field.id}
       />
     );
   }
@@ -140,8 +153,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           <QuantitySelector
             allowNegative={true}
             field={effectiveField}
-            min={effectiveField.column.minValue}
-            max={effectiveField.column.maxValue}
+            min={effectiveField.column.minValue ?? undefined}
+            max={effectiveField.column.maxValue ?? undefined}
             isReadOnly={isReadOnly}
             data-testid="QuantitySelector__6e80fa"
           />

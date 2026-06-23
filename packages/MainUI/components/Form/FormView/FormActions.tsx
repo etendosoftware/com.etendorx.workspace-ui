@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
@@ -59,7 +59,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   // Watch only the required fields to re-validate when they change
   const requiredValues = useWatch({ name: requiredFieldNames });
 
-  const [hasValidatedInitialLoad, setHasValidatedInitialLoad] = useState(false);
+  const hasValidatedInitialLoadRef = useRef(false);
 
   // Update validation state when form data changes
   useEffect(() => {
@@ -108,15 +108,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
     // Wait for all callouts to finish
     const calloutState = globalCalloutManager.getState();
     if (calloutState.isRunning || calloutState.queueLength > 0 || calloutState.pendingCount > 0) {
-      // If callouts are running, mark that we haven't validated yet
-      if (hasValidatedInitialLoad) {
-        setHasValidatedInitialLoad(false);
-      }
-      return;
-    }
-
-    // If we already validated and callouts are done, don't validate again unless required values change
-    if (hasValidatedInitialLoad && !requiredValues) {
+      hasValidatedInitialLoadRef.current = false;
       return;
     }
 
@@ -125,7 +117,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
 
     const shouldEnableSave = isDirty || (mode === FormMode.NEW && validationResult.isValid);
     shouldEnableSave ? markFormAsChanged() : resetFormChanges();
-    setHasValidatedInitialLoad(true);
+    hasValidatedInitialLoadRef.current = true;
   }, [
     isFormInitializing,
     isSettingInitialValues,
@@ -133,7 +125,6 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
     mode,
     markFormAsChanged,
     resetFormChanges,
-    hasValidatedInitialLoad,
     validateRequiredFields,
     requiredValues,
   ]);
@@ -141,7 +132,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
   // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
   useEffect(() => {
     if (isFormInitializing) {
-      setHasValidatedInitialLoad(false);
+      hasValidatedInitialLoadRef.current = false;
     }
   }, [isFormInitializing]);
 
