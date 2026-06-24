@@ -43,7 +43,6 @@ import {
   type ProcessResponse,
 } from "../ProcessModal/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
-import EmailIcon from "@mui/icons-material/Email";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";

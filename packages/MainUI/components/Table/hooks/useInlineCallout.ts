@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useRef } from "react";
+import { toast } from "sonner";
 import type { Field, FormInitializationResponse, Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
@@ -69,6 +70,14 @@ export const useInlineCallout = ({
 
         if (!response?.data) {
           throw new Error(`No data returned from callout for field "${field.inputName}".`);
+        }
+
+        const rawData = response.data;
+        if (rawData?.response?.status === -1) {
+          const errorMsg = rawData.response.error?.message || "Unknown callout error";
+          logger.warn(`[InlineCallout] Backend callout error for "${field.inputName}": ${errorMsg}`);
+          toast.error(errorMsg);
+          return null;
         }
 
         return response.data as FormInitializationResponse;

@@ -20,6 +20,7 @@ import type { Field, FormInitializationResponse } from "@workspaceui/api-client/
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { FieldValues } from "react-hook-form";
 import { logger } from "@/utils/logger";
+import { toast } from "sonner";
 import { useTabContext } from "@/contexts/tab";
 import { FIC_ERROR_STATUS } from "@/utils/hooks/useFormInitialization/constants";
 
@@ -61,6 +62,7 @@ export const useCallout = ({ field, parentId = "null", rowId = "null", changedCo
         if (rawData?.response?.status === FIC_ERROR_STATUS) {
           const errorMsg = rawData.response.error?.message || "Unknown callout error";
           logger.warn(`Backend callout error for "${field.inputName}": ${errorMsg}`);
+          toast.error(errorMsg);
           return undefined;
         }
 

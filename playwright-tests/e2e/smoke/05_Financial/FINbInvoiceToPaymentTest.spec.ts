@@ -187,7 +187,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     const outstandingInput = page.locator('input[name="outstandingAmount"]').first();
     await outstandingInput.waitFor({ state: "attached", timeout: 10_000 });
     const invoiceTotalStr = await outstandingInput.inputValue();
-    const invoiceTotal = parseFloat(invoiceTotalStr) || 0;
+    const invoiceTotal = Number.parseFloat(invoiceTotalStr) || 0;
 
     // Payment is intentionally set to invoiceTotal + 1.74 to generate a credit of 1.74.
     // This tests Etendo's overpayment/credit tracking feature.

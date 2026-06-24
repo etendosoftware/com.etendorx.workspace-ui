@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import EmailSendModal from "../EmailSendModal";
 import "@testing-library/jest-dom";

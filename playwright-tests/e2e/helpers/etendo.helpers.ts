@@ -1,4 +1,4 @@
-import { type Page, type Frame, type FrameLocator, expect } from "@playwright/test";
+import type { Page, Frame, FrameLocator } from "@playwright/test";
 import { DEFAULT_USER, DEFAULT_PASSWORD, IFRAME_URL } from "../../playwright.config";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
