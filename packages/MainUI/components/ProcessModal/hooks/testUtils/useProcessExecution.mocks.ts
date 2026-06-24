@@ -59,6 +59,6 @@ jest.mock("@/app/actions/process", () => ({}));
 jest.mock("@/app/actions/revalidate", () => ({
   revalidateDopoProcess: jest.fn(),
 }));
-jest.mock("sonner", () => ({ toast: jest.fn() }));
+jest.mock("sonner", () => ({ toast: { success: jest.fn(), warning: jest.fn() } }));
 
 export {};
