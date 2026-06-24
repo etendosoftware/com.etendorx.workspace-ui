@@ -1060,12 +1060,36 @@ export function FormView({
     setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
 
     if (windowIdentifier) {
-      setSelectedRecord(windowIdentifier, tab.id, NEW_RECORD_ID);
+      // Clear child tab selections so stale child records (e.g. a previously created Order
+      // Line) don't re-initialize and re-write shared window session attributes (such as
+      // C_BPartner_ID) while the new header record is being initialized. Otherwise that
+      // re-write races the new-record initialization and can re-trigger header callouts with
+      // a stale business partner. Mirrors handleNavigateToRecord.
+      const children = graph.getChildren(tab);
+      const childIds =
+        children && children.length > 0 ? children.filter((c) => c.window === tab.window).map((c) => c.id) : [];
+
+      if (childIds.length > 0) {
+        setSelectedRecordAndClearChildren(windowIdentifier, tab.id, NEW_RECORD_ID, childIds);
+        for (const child of children ?? []) {
+          graph.clearSelected(child);
+        }
+      } else {
+        setSelectedRecord(windowIdentifier, tab.id, NEW_RECORD_ID);
+      }
       graph.clearSelected(tab);
       graph.clearSelectedMultiple(tab);
     }
     resetFormChanges();
-  }, [windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
+  }, [
+    windowIdentifier,
+    graph,
+    resetFormChanges,
+    setRecordId,
+    setSelectedRecord,
+    setSelectedRecordAndClearChildren,
+    tab,
+  ]);
 
   /**
    * Context value object containing all form view state and handlers.
