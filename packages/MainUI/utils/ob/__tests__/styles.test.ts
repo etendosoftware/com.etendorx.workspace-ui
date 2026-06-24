@@ -1,0 +1,34 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+import { createStyles, MESSAGE_BAR_STYLES } from "../styles";
+
+describe("createStyles", () => {
+  it("exposes the classic MessageBar class names", () => {
+    const styles = createStyles();
+    expect(styles.MessageBar).toEqual(MESSAGE_BAR_STYLES);
+    expect(MESSAGE_BAR_STYLES.leftMsgContainerStyle).toBe("OBMessageBarLeftMsgContainer");
+    expect(MESSAGE_BAR_STYLES.rightMsgContainerStyle).toBe("OBMessageBarRightMsgContainer");
+    expect(MESSAGE_BAR_STYLES.rightMsgTextStyle).toBe("OBMessageBarRightMsgText");
+  });
+
+  it("stays extensible for module-specific namespaces (e.g. OBWPACK)", () => {
+    const styles = createStyles();
+    styles.OBWPACK = { box: "w" };
+    expect(styles.OBWPACK).toEqual({ box: "w" });
+  });
+});

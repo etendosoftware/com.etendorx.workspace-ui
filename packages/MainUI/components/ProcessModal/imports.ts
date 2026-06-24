@@ -29,7 +29,7 @@ export { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 export { useSelected } from "@/hooks/useSelected";
 export { useTranslation } from "@/hooks/useTranslation";
 export { useProcessCallouts } from "./callouts/useProcessCallouts";
-export { useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
+export { useWarehousePlugin, usesCustomComponent } from "./Custom/GenericWarehouseProcess";
 
 // --- Next.js navigation ---
 export { useRouter, useSearchParams } from "next/navigation";
@@ -43,7 +43,7 @@ export { revalidateDopoProcess } from "@/app/actions/revalidate";
 // --- Utilities ---
 export { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 export { executeStringFunction } from "@/utils/functions";
-export { createProcessExpressionContext } from "./utils/processExpressionUtils";
+export { createProcessExpressionContext, isParameterDisplayed } from "./utils/processExpressionUtils";
 export { logger } from "@/utils/logger";
 export { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 export { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -52,15 +52,24 @@ export {
   buildProcessScriptContext,
   applyGridSelection,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withLabelOverride,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
 } from "@/utils/processes/definition/utils";
-export { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
+export { evaluateParameterDefaults, seedBooleanParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 export { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 export {
   isBulkCompletionProcess,
+  buildOnLoadScripts,
+  isBulkParameterRenderable,
   DEFAULT_BULK_COMPLETION_ONLOAD,
 } from "@/utils/process/bulkCompletionUtils";
 export { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
-export { createOBShim } from "@/utils/propertyStore";
+export { createOBShim } from "@/utils/ob/obShim";
 export { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 export { parseSmartClientMessage } from "./Custom/shared/processModalUtils";
 
@@ -71,7 +80,6 @@ export {
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
-  ADD_PAYMENT_ORDER_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 export {
   isPickAndExecute,

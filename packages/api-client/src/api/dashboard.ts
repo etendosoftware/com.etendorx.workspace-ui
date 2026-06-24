@@ -399,7 +399,7 @@ export async function updateWidgetParams(
   const response = await Metadata.client.request(
     `${DASHBOARD_BASE}/dashboard/widget/${encodeURIComponent(instanceId)}/params`,
     {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify({ parameters }),
       headers: JSON_HEADERS,
     }

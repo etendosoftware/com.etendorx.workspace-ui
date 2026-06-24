@@ -62,6 +62,62 @@ interface ManualProcessResult {
   size: "default" | "large";
 }
 
+const isProcessDefinitionMenuItem = (item: Menu): boolean => {
+  return item.type === "ProcessDefinition" && !!item.id;
+};
+
+const isReportAndProcessMenuItem = (item: Menu): boolean => {
+  return item.type === "Process" && !!item.id;
+};
+
+const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton | null => {
+  if (!isProcessDefinitionMenuItem(item) && !isReportAndProcessMenuItem(item)) {
+    return null;
+  }
+
+  // Determine the correct Process ID to use
+  // We prioritize processDefinitionId as it is specific to this item type
+  // Fallback to processId or item.id
+  const targetProcessId = item.processDefinitionId || item.processId || item.id;
+
+  if (item.type === "ProcessDefinition") {
+    // Performance: Debug log removed
+  }
+
+  // Create a minimal ProcessDefinitionButton structure
+  // The ProcessDefinitionModal will load the full process definition metadata using the ID
+  return {
+    id: item.id,
+    name: item.name,
+    action: "P",
+    enabled: true,
+    visible: true,
+    processId: targetProcessId,
+    buttonText: item.name,
+    processInfo: {
+      loadFunction: "",
+      searchKey: "",
+      clientSideValidation: "",
+      _entityName: "ADProcess",
+      id: targetProcessId,
+      name: item.name,
+      javaClassName: "",
+      parameters: [],
+    },
+    processDefinition: {
+      id: targetProcessId,
+      name: item.name,
+      description: item.description || "",
+      javaClassName: "",
+      parameters: {},
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
+    },
+  } as unknown as ProcessDefinitionButton;
+};
+
 /**
  * Gets the iframe configuration for legacy manual processes (Process/Form types).
  * Process Definition entries are handled separately via ProcessDefinitionModal.

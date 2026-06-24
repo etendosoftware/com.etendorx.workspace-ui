@@ -1,4 +1,4 @@
-import { executeStringFunction } from "../functions";
+import { compileStringFunction, executeStringFunction } from "../functions";
 
 describe("executeStringFunction", () => {
   describe("basic arithmetic", () => {
@@ -60,5 +60,41 @@ describe("executeStringFunction", () => {
       const result = await executeStringFunction("() => true");
       expect(result).toBe(true);
     });
+  });
+});
+
+describe("compileStringFunction", () => {
+  it("returns a callable that the caller can invoke many times without re-parsing", () => {
+    const calls: number[] = [];
+    const fn = compileStringFunction("(n) => (track.push(n), n * 2)", { track: calls }) as (n: number) => number;
+
+    expect(fn(1)).toBe(2);
+    expect(fn(5)).toBe(10);
+    expect(fn(7)).toBe(14);
+    expect(calls).toEqual([1, 5, 7]);
+  });
+
+  it("injects context keys as named parameters", () => {
+    const fn = compileStringFunction("(a, b) => db.add(a, b)", {
+      db: { add: (x: number, y: number) => x + y },
+    }) as (a: number, b: number) => number;
+    expect(fn(4, 6)).toBe(10);
+  });
+
+  it("trims leading whitespace before evaluation", () => {
+    const fn = compileStringFunction("\n  (x) => x + 1") as (n: number) => number;
+    expect(fn(41)).toBe(42);
+  });
+
+  it("throws TypeError when the code does not evaluate to a function", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => compileStringFunction("({ value: 1 })")).toThrow(TypeError);
+    consoleSpy.mockRestore();
+  });
+
+  it("throws TypeError for an IIFE (already-invoked function)", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => compileStringFunction("(() => 'invoked')()")).toThrow(TypeError);
+    consoleSpy.mockRestore();
   });
 });

@@ -116,6 +116,50 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
   });
+
+  /** Builds a scriptContext whose OB shim exposes a spyable executeJSON. */
+  const makeScriptContextWithExecuteJSON = (executeJSON: jest.Mock) => ({
+    OB: { Utilities: { Action: { executeJSON } } },
+  });
+
+  it("dispatches the server responseActions registry-first via OB.Utilities.Action.executeJSON", async () => {
+    const responseActions = [
+      { refreshGridParameter: { gridName: "Accounts" } },
+      { refreshGrid: {} },
+      { showVATGrid: {} },
+      { updateVATTotal: { amount: "0.00" } },
+      { showMsgInProcessView: { msgText: "done" } },
+    ];
+    mockFetchJson({ retryExecution: true, responseActions });
+    const executeJSON = jest.fn();
+
+    const { result } = renderHook(() =>
+      useProcessExecution(makeParams({ scriptContext: makeScriptContextWithExecuteJSON(executeJSON) }))
+    );
+    await result.current.executeJavaProcess({});
+
+    // Custom (showVATGrid/updateVATTotal) + built-in refreshes dispatched; the
+    // message key is skipped (handled by the success flow → no double effect).
+    expect(executeJSON).toHaveBeenCalledTimes(1);
+    expect(executeJSON).toHaveBeenCalledWith([
+      { refreshGridParameter: { gridName: "Accounts" } },
+      { refreshGrid: {} },
+      { showVATGrid: {} },
+      { updateVATTotal: { amount: "0.00" } },
+    ]);
+  });
+
+  it("does not call executeJSON when the response has no dispatchable actions", async () => {
+    mockFetchJson({ retryExecution: true });
+    const executeJSON = jest.fn();
+
+    const { result } = renderHook(() =>
+      useProcessExecution(makeParams({ scriptContext: makeScriptContextWithExecuteJSON(executeJSON) }))
+    );
+    await result.current.executeJavaProcess({});
+
+    expect(executeJSON).not.toHaveBeenCalled();
+  });
 });
 
 describe("refreshGrid response action", () => {

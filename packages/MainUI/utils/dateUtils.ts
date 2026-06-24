@@ -1,5 +1,5 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { FIELD_REFERENCE_CODES } from "./form/constants";
+import { FIELD_REFERENCE_CODES, isNumericReference } from "./form/constants";
 
 /**
  * Formats a cell value based on its field metadata
@@ -65,17 +65,7 @@ function isUserReference(field: Field): boolean {
  * Checks if a field is numeric
  */
 function isNumericField(field: Field): boolean {
-  const numericReferences = [
-    FIELD_REFERENCE_CODES.INTEGER.id,
-    FIELD_REFERENCE_CODES.NUMERIC.id,
-    FIELD_REFERENCE_CODES.QUANTITY_22.id,
-    FIELD_REFERENCE_CODES.QUANTITY_29.id,
-    FIELD_REFERENCE_CODES.DECIMAL.id,
-  ];
-
-  return field.column?.reference
-    ? numericReferences.includes(field.column.reference as (typeof numericReferences)[number])
-    : false;
+  return isNumericReference(field.column?.reference);
 }
 
 /**

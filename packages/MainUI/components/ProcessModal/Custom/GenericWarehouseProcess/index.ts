@@ -1,4 +1,5 @@
 export { GenericWarehouseProcess } from "./GenericWarehouseProcess";
+export { usesCustomComponent } from "./customComponentUtils";
 export { useWarehousePlugin } from "./useWarehousePlugin";
 export type { UseWarehousePluginResult } from "./useWarehousePlugin";
 export type {

@@ -163,6 +163,7 @@ jest.mock("react-hook-form", () => ({
     watch: () => ({}),
     control: {},
     reset: jest.fn(),
+    clearErrors: jest.fn(),
   }),
   useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
@@ -178,8 +179,10 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
       id: "P123",
       javaClassName: "com.test.Demo",
       parameters: {},
-      onLoad: "",
-      onProcess: "",
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as any;
 

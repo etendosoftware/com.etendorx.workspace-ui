@@ -15,8 +15,21 @@
  *************************************************************************
  */
 
-import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { BigDecimal } from "@/utils/ob/bigDecimal";
+import { createOBShim } from "@/utils/ob/obShim";
+import type { OBShim } from "@/utils/ob/types";
+import { dispatchBuiltinAction } from "@/utils/processes/definition/actionDispatcherStore";
+import { dialogScriptApi, type DialogScriptApi } from "@/utils/processes/definition/dialogs";
+import { openParameterDialog } from "@/utils/processes/definition/parameterDialogStore";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import type {
+  FooterButtonAction,
+  FooterButtonHandle,
+  MessageBarHandle,
+} from "@/utils/processes/definition/scriptProxies";
 
 /**
  * Auth credentials required to build the process context.
@@ -24,6 +37,10 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 export interface ProcessContextCredentials {
   token: string;
   getCsrfToken: () => string;
+  /** Raw label resolver (e.g. `useLanguage().getLabel`) for `OB.I18N.getLabel`. */
+  getLabel?: (key: string) => string;
+  /** Current UI language code, for `OB.Format.*` locale-derived defaults. */
+  language?: string | null;
 }
 
 /**
@@ -104,6 +121,48 @@ export interface ProcessScriptContext {
     payload?: Record<string, unknown>,
     options?: CallServletOptions
   ) => Promise<ProcessContextResponse<T>>;
+
+  /**
+   * The `OB.*` compatibility shim (translations, formatting, action registry,
+   * property store, …). A single instance per modal so action registration and
+   * module-namespace writes persist across onLoad / onProcess / onChange / onRefresh.
+   */
+  OB: OBShim;
+
+  /**
+   * Promise-based modal dialogs (`confirm` / `warn` / `say`) plus the `isc`
+   * namespace shim, for migrated scripts that gate flow on a user decision.
+   * `confirm` resolves to `true` (OK) / `false` (Cancel); the classic callback
+   * shape is also honoured. See {@link DialogScriptApi}.
+   */
+  confirm: DialogScriptApi["confirm"];
+  warn: DialogScriptApi["warn"];
+  say: DialogScriptApi["say"];
+  isc: DialogScriptApi["isc"];
+
+  /**
+   * In-modal sticky message banner. `messageBar.setMessage(severity, title, text,
+   * actions?)` shows one banner at a time (sanitized HTML body); `.hide()` clears
+   * it. The same handle is exposed as `view.messageBar` inside the parameter/grid
+   * proxies, so process-level hooks (which have no `view`) use `messageBar.*`.
+   */
+  messageBar: MessageBarHandle;
+
+  /**
+   * Classic global `BigDecimal` (decimal amount arithmetic), injected so migrated
+   * hooks keep exact rounding/scale parity with the server-side amount checks
+   * instead of using lossy `Number`. See {@link BigDecimal}.
+   */
+  BigDecimal: typeof BigDecimal;
+
+  /**
+   * Opens an action-time dialog hosting a parameter form built from server field
+   * descriptors (TEXT / CHECK), the new-UI equivalent of classic `isc.DynamicForm`
+   * inside `isc.OBPopup`. Resolves with the collected values, or `null` when the
+   * user cancels. Typically called from a builder registered via
+   * `OB.Utilities.Action.set(<name>, ...)` for a data-only custom response action.
+   */
+  openDynamicForm: typeof openParameterDialog;
 }
 
 /**
@@ -118,7 +177,7 @@ export interface ProcessScriptContext {
  * await executeStringFunction(onLoad, { Metadata, ...ctx }, processDefinition, args);
  */
 export function buildProcessScriptContext(credentials: ProcessContextCredentials): ProcessScriptContext {
-  const { token, getCsrfToken } = credentials;
+  const { token, getCsrfToken, getLabel, language } = credentials;
 
   const authHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json;charset=UTF-8",
@@ -186,7 +245,29 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
     return handleResponse<T>(response);
   };
 
-  return { callAction, callDatasource, callServlet };
+  // One shared OB shim per modal: the action registry and namespace writes
+  // performed in one hook stay visible to the others. Built-in action types
+  // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
+  // through the dispatch store (registered by the modal while it is mounted).
+  // OB.RemoteCallManager.call runs through the same kernel call as callAction.
+  // OB.Datasource.create runs through the api-client datasource (the same path
+  // the grid and selectors use): it builds the full datasource request params
+  // and resolves CSRF server-side, which the raw callDatasource proxy does not.
+  const remoteCall = (handler: string, params: Record<string, unknown>) => callAction(handler, params);
+  const fetchDatasource = (entity: string, payload: Record<string, unknown>) =>
+    datasource.get(entity, payload) as Promise<{ data: unknown }>;
+  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource });
+
+  return {
+    callAction,
+    callDatasource,
+    callServlet,
+    OB,
+    ...dialogScriptApi,
+    messageBar,
+    BigDecimal,
+    openDynamicForm: openParameterDialog,
+  };
 }
 
 /** Shape of a dynamic parameter returned by an onLoad script */
@@ -260,6 +341,278 @@ export function applyStaticParameterValues(param: ProcessParameter, rawValues: u
     updated.refList = updated.refList.filter((opt) => newOptions.includes(opt.value));
   }
   return updated;
+}
+
+/**
+ * Sets a boolean UI flag in an immutable flag map. Short-circuits to the same
+ * reference when the value is unchanged, so a no-op never triggers a re-render.
+ */
+export function withFlag(prev: Record<string, boolean>, key: string, value: boolean): Record<string, boolean> {
+  if (prev[key] === value) return prev;
+  return { ...prev, [key]: value };
+}
+
+/**
+ * Sets a parameter's runtime label override in an immutable map (Classic
+ * `form.getItem(name).title = title`). Keyed by parameter name; short-circuits to
+ * the same reference when unchanged, so a no-op never triggers a re-render.
+ */
+export function withLabelOverride(prev: Record<string, string>, name: string, title: string): Record<string, string> {
+  if (prev[name] === title) return prev;
+  return { ...prev, [name]: title };
+}
+
+/**
+ * Footer-button visibility/enablement toggled imperatively by migrated scripts
+ * (`view.popupButtons` / `view.cancelButton` / the close `X`). Keyed by the
+ * action button's value; the cancel/close flags are modal-wide.
+ */
+export interface ScriptButtonState {
+  hiddenValues: Record<string, boolean>;
+  disabledValues: Record<string, boolean>;
+  /**
+   * Client-side action overrides keyed by the action button's value (Classic
+   * `button.action = fn`). When a value is present its button runs the closure
+   * instead of the standard submit.
+   */
+  actionValues: Record<string, FooterButtonAction>;
+  cancelHidden: boolean;
+  closeHidden: boolean;
+  /** Forces the execute/OK button enabled (set by `view.okButton.enable()`). */
+  okForceEnabled: boolean;
+}
+
+/** Stable empty reference, so the reset effect never builds a fresh object. */
+export const EMPTY_SCRIPT_BUTTON_STATE: ScriptButtonState = {
+  hiddenValues: {},
+  disabledValues: {},
+  actionValues: {},
+  cancelHidden: false,
+  closeHidden: false,
+  okForceEnabled: false,
+};
+
+/** Sets an action button's hidden flag; short-circuits on a no-op (absent = false). */
+export function withButtonHidden(prev: ScriptButtonState, value: string, hidden: boolean): ScriptButtonState {
+  if ((prev.hiddenValues[value] ?? false) === hidden) return prev;
+  return { ...prev, hiddenValues: { ...prev.hiddenValues, [value]: hidden } };
+}
+
+/** Sets an action button's disabled flag; short-circuits on a no-op (absent = false). */
+export function withButtonDisabled(prev: ScriptButtonState, value: string, disabled: boolean): ScriptButtonState {
+  if ((prev.disabledValues[value] ?? false) === disabled) return prev;
+  return { ...prev, disabledValues: { ...prev.disabledValues, [value]: disabled } };
+}
+
+/** Sets the cancel button's hidden flag; short-circuits on a no-op. */
+export function withCancelHidden(prev: ScriptButtonState, hidden: boolean): ScriptButtonState {
+  if (prev.cancelHidden === hidden) return prev;
+  return { ...prev, cancelHidden: hidden };
+}
+
+/** Sets the close (`X`) button's hidden flag; short-circuits on a no-op. */
+export function withCloseHidden(prev: ScriptButtonState, hidden: boolean): ScriptButtonState {
+  if (prev.closeHidden === hidden) return prev;
+  return { ...prev, closeHidden: hidden };
+}
+
+/** Sets the execute/OK button's force-enabled flag; short-circuits on a no-op. */
+export function withOkForceEnabled(prev: ScriptButtonState, enabled: boolean): ScriptButtonState {
+  if (prev.okForceEnabled === enabled) return prev;
+  return { ...prev, okForceEnabled: enabled };
+}
+
+/** Sets an action button's client-side action override; short-circuits on a no-op (same reference). */
+export function withButtonAction(
+  prev: ScriptButtonState,
+  value: string,
+  action: FooterButtonAction
+): ScriptButtonState {
+  if (prev.actionValues[value] === action) return prev;
+  return { ...prev, actionValues: { ...prev.actionValues, [value]: action } };
+}
+
+/**
+ * Resolves a footer button press: runs the script-assigned action override
+ * (Classic `button.action = fn`) when one exists for the value, otherwise the
+ * standard execute. A single branch keeps the click handler trivial.
+ */
+export function runFooterButtonAction(
+  actionValues: Record<string, FooterButtonAction>,
+  value: string,
+  execute: (value: string) => void
+): void {
+  const override = actionValues[value];
+  if (override) {
+    override();
+    return;
+  }
+  execute(value);
+}
+
+/** Routes a button-state update produced by a footer-button handle method. */
+export type ButtonStateUpdater = (updater: (prev: ScriptButtonState) => ScriptButtonState) => void;
+
+/**
+ * Wraps a footer action button as the SmartClient-style handle migrated scripts
+ * reach through `view.popupButtons.members`. The `hide`/`show`/`setDisabled`
+ * methods and the assignable `action` property each route through the modal's
+ * `scriptButtonState` so the footer re-renders accordingly. `action` is exposed
+ * as a setter so the Classic `button.action = fn` assignment is honored verbatim.
+ */
+export function makeFooterButtonHandle(
+  button: { value: string; label: string },
+  setButtonState: ButtonStateUpdater
+): FooterButtonHandle {
+  const handle: FooterButtonHandle = {
+    _buttonValue: button.value,
+    title: button.label,
+    hide: () => setButtonState((prev) => withButtonHidden(prev, button.value, true)),
+    show: () => setButtonState((prev) => withButtonHidden(prev, button.value, false)),
+    setDisabled: (disabled = true) => setButtonState((prev) => withButtonDisabled(prev, button.value, disabled)),
+  };
+  let assignedAction: FooterButtonAction | undefined;
+  Object.defineProperty(handle, "action", {
+    configurable: true,
+    enumerable: true,
+    get: () => assignedAction,
+    set: (action: FooterButtonAction) => {
+      assignedAction = action;
+      setButtonState((prev) => withButtonAction(prev, button.value, action));
+    },
+  });
+  return handle;
+}
+
+/** Default combinator and the id-set operator used when merging grid criteria. */
+const CRITERIA_AND_OPERATOR = "and";
+const CRITERIA_ID_IN_SET_OPERATOR = "inSet";
+const CRITERIA_ID_FIELD = "id";
+
+/** A SmartClient-style advanced criteria object the embedded grid scripts read/build. */
+export interface GridCriteria extends Record<string, unknown> {
+  operator?: string;
+  criteria?: unknown[];
+}
+
+/** Returns a shallow copy of an advanced-criteria object, or an empty one when absent. */
+function normalizeCriteria(criteria: unknown): GridCriteria {
+  if (criteria && typeof criteria === "object") return { ...(criteria as GridCriteria) };
+  return {};
+}
+
+/**
+ * Merges the given record ids into an advanced-criteria object as an `id IN (…)`
+ * sub-criterion, mirroring the classic grid `addSelectedIDsToCriteria`. Returns
+ * the criteria unchanged when there is nothing to add (no ids or not preserving
+ * the selection), so callers can pass the result straight through.
+ */
+export function addSelectedIDsToCriteria(
+  criteria: unknown,
+  selectedIds: string[],
+  preserveSelected = true
+): GridCriteria {
+  const base = normalizeCriteria(criteria);
+  if (!preserveSelected || selectedIds.length === 0) return base;
+  const idCriterion = {
+    fieldName: CRITERIA_ID_FIELD,
+    operator: CRITERIA_ID_IN_SET_OPERATOR,
+    value: selectedIds,
+  };
+  const existing = Array.isArray(base.criteria) ? base.criteria : [];
+  return { ...base, operator: base.operator ?? CRITERIA_AND_OPERATOR, criteria: [...existing, idCriterion] };
+}
+
+/**
+ * Resolves a parameter entry by its map key, `name`, or `dBColumnName` (the map
+ * is keyed by `dBColumnName`, but migrated hooks address items by `name`). Returns
+ * the actual map key and the parameter, or `undefined` when none matches.
+ */
+function resolveParamEntry(prev: ParametersMap, name: string): [string, ProcessParameter] | undefined {
+  if (prev[name]) return [name, prev[name]];
+  for (const [key, parameter] of Object.entries(prev)) {
+    if (parameter.name === name || parameter.dBColumnName === name) return [key, parameter];
+  }
+  return undefined;
+}
+
+/**
+ * Returns the parameters map with `name`'s `mandatory` flag set. Short-circuits
+ * to the same reference when the parameter is missing or already at that value.
+ */
+export function withMandatory(prev: ParametersMap, name: string, required: boolean): ParametersMap {
+  const entry = resolveParamEntry(prev, name);
+  if (!entry) return prev;
+  const [key, parameter] = entry;
+  if (parameter.mandatory === required) return prev;
+  const updated = { ...parameter };
+  updated.mandatory = required;
+  return { ...prev, [key]: updated };
+}
+
+/**
+ * Returns the parameters map with `name`'s `refList` (dropdown options) replaced.
+ * Short-circuits to the same reference when the parameter is missing.
+ */
+export function withRefList(prev: ParametersMap, name: string, refList: ListOption[]): ParametersMap {
+  const entry = resolveParamEntry(prev, name);
+  if (!entry) return prev;
+  const [key, parameter] = entry;
+  const updated = { ...parameter };
+  updated.refList = refList;
+  return { ...prev, [key]: updated };
+}
+
+/** Normalizes a single classic value-map entry into a `ListOption`. */
+function toListOption(entry: unknown): ListOption {
+  if (typeof entry === "string") {
+    return { id: entry, value: entry, label: entry };
+  }
+  const option = entry as Partial<ListOption>;
+  const value = option.value ?? option.id ?? "";
+  return { id: option.id ?? value, value, label: option.label ?? String(value) };
+}
+
+/**
+ * Normalizes a classic dropdown value-map into the new-UI `ListOption[]`.
+ * Accepts an array (of strings or option-like objects) or a plain `{ id: label }`
+ * object; anything else (null / undefined / primitive) yields an empty list.
+ */
+export function normalizeValueMap(map: unknown): ListOption[] {
+  if (Array.isArray(map)) {
+    return map.map(toListOption);
+  }
+  if (map && typeof map === "object") {
+    return Object.entries(map as Record<string, unknown>).map(([key, label]) => ({
+      id: key,
+      value: key,
+      label: String(label),
+    }));
+  }
+  return [];
+}
+
+/**
+ * Returns the parameters map with a dynamically-injected parameter added,
+ * reusing the same mapping as the onLoad `_dynamicParameters` contract.
+ */
+export function addDynamicParameter(prev: ParametersMap, field: DynamicParameter): ParametersMap {
+  const next = { ...prev };
+  injectDynamicParameters([field], next);
+  return next;
+}
+
+/**
+ * Returns the parameters map with one parameter removed. `target` may be the
+ * parameter name or a numeric position (classic `removeField(index)`); an
+ * out-of-range or unknown target short-circuits to the same reference.
+ */
+export function removeParameter(prev: ParametersMap, target: number | string): ParametersMap {
+  const name = typeof target === "number" ? Object.keys(prev)[target] : target;
+  if (!name || !prev[name]) return prev;
+  const next = { ...prev };
+  delete next[name];
+  return next;
 }
 
 /** Keys from the onLoad result that are handled separately and must not be treated as parameter values */
@@ -417,6 +770,28 @@ export function applyMergedParam(
     }
     options[outKey] = value;
   }
+}
+
+/**
+ * One-shot gate for clearing validation errors surfaced during the modal's initial
+ * default/FIC seeding. Classic shows no mandatory error on open; the new form
+ * (`mode: "onChange"`) can flag a mandatory field while defaults are still being
+ * applied. Returns `true` exactly when the clear should run: the modal is open, the
+ * seeding has settled (not loading), and we haven't already cleared this open cycle.
+ *
+ * @param open                  Whether the process modal is open
+ * @param loading               Process metadata still loading
+ * @param initializationLoading Defaults (DefaultsProcessActionHandler) still loading
+ * @param alreadyCleared        Whether the clear already ran for this open cycle
+ */
+export function shouldClearSeedValidationErrors(
+  open: boolean,
+  loading: boolean,
+  initializationLoading: boolean,
+  alreadyCleared: boolean
+): boolean {
+  if (!open || loading || initializationLoading) return false;
+  return !alreadyCleared;
 }
 
 /** Shape of a single filter criteria entry */

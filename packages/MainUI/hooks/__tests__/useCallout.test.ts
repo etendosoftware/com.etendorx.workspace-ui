@@ -20,6 +20,7 @@ import { renderHook } from "@testing-library/react";
 import { useCallout } from "../useCallout";
 import { useTabContext } from "@/contexts/tab";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { toast } from "sonner";
 
 // Mocks
 jest.mock("@/contexts/tab");
@@ -29,6 +30,9 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   },
 }));
 jest.mock("@/utils/logger");
+jest.mock("sonner", () => ({
+  toast: { error: jest.fn() },
+}));
 
 describe("useCallout hook", () => {
   const mockTab = { id: "tab1" } as any;
@@ -64,15 +68,45 @@ describe("useCallout hook", () => {
     expect(response).toEqual({ columnValues: { f1: "v1" } });
   });
 
-  it("should handle backend error status", async () => {
+  it("should handle backend error status and show toast", async () => {
     (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: { response: { status: -1, error: { message: "Error" } } },
+      data: { response: { status: -1, error: { message: "Validation failed" } } },
     });
 
     const { result } = renderHook(() => useCallout({ field: mockField }));
     const response = await result.current({});
 
     expect(response).toBeUndefined();
+    expect(toast.error).toHaveBeenCalledWith("Validation failed");
+  });
+
+  it("should not show toast on successful callout", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { columnValues: { f1: "v1" } },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("should show separate toast for each failing callout", async () => {
+    (Metadata.kernelClient.post as jest.Mock)
+      .mockResolvedValueOnce({
+        data: { response: { status: -1, error: { message: "Error on field A" } } },
+      })
+      .mockResolvedValueOnce({
+        data: { response: { status: -1, error: { message: "Error on field B" } } },
+      });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+    await result.current({});
+
+    expect(toast.error).toHaveBeenCalledTimes(2);
+    expect(toast.error).toHaveBeenCalledWith("Error on field A");
+    expect(toast.error).toHaveBeenCalledWith("Error on field B");
   });
 
   it("should handle network or other errors", async () => {

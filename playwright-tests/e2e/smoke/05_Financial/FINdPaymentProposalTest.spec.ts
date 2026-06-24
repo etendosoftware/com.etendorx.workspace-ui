@@ -31,7 +31,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       await navigateToPurchaseInvoice(page);
 
       // New Record
-      let newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
+      const newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
       await newBtn.waitFor({ state: "visible", timeout: 15_000 });
       await newBtn.click();
       await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });

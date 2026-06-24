@@ -16,6 +16,17 @@
  */
 
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
+import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import type {
+  CallerField,
+  FieldController,
+  FormHandle,
+  GridController,
+  GridResolver,
+  MessageBarHandle,
+  ViewController,
+  ViewData,
+} from "@/utils/processes/definition/scriptProxies";
 import type {
   Field,
   ProcessAction,
@@ -124,6 +135,12 @@ export interface ProcessDefinitionModalProps {
   keepOpenOnSuccess?: boolean;
   /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
   contextRecord?: Record<string, unknown>;
+  /** Window id for a programmatically-opened process (e.g. a nested launch) when no TabContext supplies one. */
+  windowId?: string;
+  /** Window title for a programmatically-opened process (e.g. a nested launch). */
+  windowTitle?: string;
+  /** Launching field/button forwarded by a nested launch, so a nested script reaches `view.callerField.view`. */
+  callerField?: CallerField;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -186,6 +203,24 @@ export interface WindowReferenceGridProps {
   showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
   /** Parent process definition. Used for P&E layout detection; grid selection mode is driven by `windowReferenceTab.obuiappSelectionType`. */
   processDefinition?: ProcessDefinition;
+  /** Compiled `etmetaOnGridLoad` hook for this grid parameter (null when unset). Invoked once per datasource load. */
+  onGridLoadHook?: CompiledParameterHook | null;
+  /** Form adapter used to build the `view`/`form` proxies passed to `onGridLoad`. */
+  gridLoadFormHandle?: FormHandle;
+  /** Backing for `view.messageBar` inside `onGridLoad`. */
+  messageBar?: MessageBarHandle;
+  /** Bridge that makes the `view` action methods + footer chrome live inside `onGridLoad`. */
+  viewController?: ViewController;
+  /** Read-only environment data surfaced on the `view` inside `onGridLoad`. */
+  viewData?: ViewData;
+  /** Publishes this grid's programmable handle to the modal registry (keyed by parameter name). */
+  onRegisterGrid?: (paramKey: string, controller: GridController) => void;
+  /** Removes this grid's handle from the modal registry on unmount. */
+  onUnregisterGrid?: (paramKey: string) => void;
+  /** Makes `view.theForm` item mutations live inside `onGridLoad`. */
+  fieldController?: FieldController;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside `onGridLoad`. */
+  gridResolver?: GridResolver;
 }
 
 export type RowProps = (props: {

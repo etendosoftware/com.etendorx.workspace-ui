@@ -9,9 +9,29 @@ import {
   injectDynamicParameters,
   applyStaticParameterValues,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withLabelOverride,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
+  withButtonHidden,
+  withButtonDisabled,
+  withButtonAction,
+  runFooterButtonAction,
+  makeFooterButtonHandle,
+  withCancelHidden,
+  withCloseHidden,
+  withOkForceEnabled,
+  shouldClearSeedValidationErrors,
+  EMPTY_SCRIPT_BUTTON_STATE,
+  addSelectedIDsToCriteria,
+  type ScriptButtonState,
   type DynamicParameter,
   type ParametersMap,
 } from "../utils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 describe("Process Definition Utils", () => {
@@ -177,6 +197,12 @@ describe("Process Definition Utils", () => {
       expect(ctx.callServlet).toBeInstanceOf(Function);
     });
 
+    it("should expose the shared OB shim", () => {
+      const ctx = buildProcessScriptContext(credentials);
+      expect(ctx.OB.PropertyStore).toBeDefined();
+      expect(typeof ctx.OB.I18N.getLabel).toBe("function");
+    });
+
     it("callAction should POST to kernel endpoint with auth headers", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
@@ -212,6 +238,48 @@ describe("Process Definition Utils", () => {
       expect(calledUrl).toContain("&foo=bar");
     });
 
+    it("OB.RemoteCallManager.call should route through callAction and invoke the callback", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ message: { severity: "success" } }),
+      });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.RemoteCallManager.call("com.example.Handler", { a: 1 }, {}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/erp/org.openbravo.client.kernel?_action=com.example.Handler"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+            "X-CSRF-Token": "csrf-123",
+          }),
+        })
+      );
+      expect(callback).toHaveBeenCalledWith(
+        { status: 0 },
+        { message: { severity: "success" } },
+        { clientContext: undefined }
+      );
+    });
+
+    it("OB.RemoteCallManager.call should report a transport failure as a negative status", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        text: async () => "Server Error",
+      });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.RemoteCallManager.call("com.example.Handler", {}, {}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(callback).toHaveBeenCalledWith({ status: -1 }, null, { clientContext: undefined });
+    });
+
     it("callDatasource should POST to datasource endpoint", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
@@ -239,6 +307,39 @@ describe("Process Definition Utils", () => {
 
       const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0];
       expect(calledUrl).toContain("_startRow=0");
+    });
+
+    it("OB.Datasource.create(...).fetchData should route through the api-client datasource", async () => {
+      const rows = [{ id: 1 }];
+      const getSpy = jest
+        .spyOn(datasource, "get")
+        .mockResolvedValue({ data: { response: { status: 0, data: rows, totalRows: 1 } } });
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.Datasource.create({ dataURL: "/openbravo/org.openbravo.service.datasource/MyEntity" }).fetchData(
+        {},
+        callback
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(getSpy).toHaveBeenCalledWith("MyEntity", expect.objectContaining({ _operationType: "fetch" }));
+      expect(callback).toHaveBeenCalledWith({ status: 0, totalRows: 1 }, rows, { criteria: {} });
+
+      getSpy.mockRestore();
+    });
+
+    it("OB.Datasource.create(...).fetchData should report a transport failure as a negative status", async () => {
+      const getSpy = jest.spyOn(datasource, "get").mockRejectedValue(new Error("Server Error"));
+      const callback = jest.fn();
+
+      const ctx = buildProcessScriptContext(credentials);
+      ctx.OB.Datasource.create({ dataURL: "/a/b/MyEntity" }).fetchData({}, callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(callback).toHaveBeenCalledWith({ status: -1, totalRows: 0 }, [], { criteria: {} });
+
+      getSpy.mockRestore();
     });
 
     it("callServlet should POST to given path", async () => {
@@ -374,6 +475,256 @@ describe("Process Definition Utils", () => {
 
       const result = applyStaticParameterValues(param, "a");
       expect(result).not.toBe(param);
+    });
+  });
+
+  describe("form-item reducers", () => {
+    const params = (): ParametersMap =>
+      ({
+        amount: { name: "amount", mandatory: false, refList: [] },
+        currency: { name: "currency", mandatory: true, refList: [{ value: "USD", label: "USD" }] },
+      }) as unknown as ParametersMap;
+
+    describe("withFlag", () => {
+      it("sets a flag and returns a new reference", () => {
+        const prev = { "a.display": true };
+        const next = withFlag(prev, "a.readonly", true);
+        expect(next).toEqual({ "a.display": true, "a.readonly": true });
+        expect(next).not.toBe(prev);
+      });
+
+      it("short-circuits to the same reference when unchanged", () => {
+        const prev = { "a.readonly": true };
+        expect(withFlag(prev, "a.readonly", true)).toBe(prev);
+      });
+    });
+
+    describe("withLabelOverride", () => {
+      it("sets a label override keyed by parameter name, immutably", () => {
+        const prev = { received_from: "Received From" };
+        const next = withLabelOverride(prev, "fin_financial_account_id", "Withdrawal Account");
+        expect(next).toEqual({ received_from: "Received From", fin_financial_account_id: "Withdrawal Account" });
+        expect(next).not.toBe(prev);
+      });
+
+      it("overwrites an existing override for the same parameter", () => {
+        const prev = { received_from: "Received From" };
+        expect(withLabelOverride(prev, "received_from", "Paid To")).toEqual({ received_from: "Paid To" });
+      });
+
+      it("short-circuits to the same reference when the title is unchanged", () => {
+        const prev = { received_from: "Received From" };
+        expect(withLabelOverride(prev, "received_from", "Received From")).toBe(prev);
+      });
+    });
+
+    describe("shouldClearSeedValidationErrors", () => {
+      it("clears once after seeding settles on an open modal", () => {
+        expect(shouldClearSeedValidationErrors(true, false, false, false)).toBe(true);
+      });
+
+      it("does not clear again once already cleared this open cycle", () => {
+        expect(shouldClearSeedValidationErrors(true, false, false, true)).toBe(false);
+      });
+
+      it("waits while metadata or defaults are still loading", () => {
+        expect(shouldClearSeedValidationErrors(true, true, false, false)).toBe(false);
+        expect(shouldClearSeedValidationErrors(true, false, true, false)).toBe(false);
+      });
+
+      it("never clears while the modal is closed", () => {
+        expect(shouldClearSeedValidationErrors(false, false, false, false)).toBe(false);
+      });
+    });
+
+    describe("footer button-state reducers", () => {
+      it("withButtonHidden / withButtonDisabled set per-value flags immutably", () => {
+        const hidden = withButtonHidden(EMPTY_SCRIPT_BUTTON_STATE, "DONE", true);
+        expect(hidden.hiddenValues).toEqual({ DONE: true });
+        expect(hidden).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+
+        const disabled = withButtonDisabled(hidden, "DONE", true);
+        expect(disabled.disabledValues).toEqual({ DONE: true });
+        expect(disabled.hiddenValues).toEqual({ DONE: true });
+      });
+
+      it("withCancelHidden / withCloseHidden set the modal-wide flags immutably", () => {
+        expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, true).cancelHidden).toBe(true);
+        expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, true).closeHidden).toBe(true);
+      });
+
+      it("withOkForceEnabled sets the force-enabled flag immutably", () => {
+        const forced = withOkForceEnabled(EMPTY_SCRIPT_BUTTON_STATE, true);
+        expect(forced.okForceEnabled).toBe(true);
+        expect(forced).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+      });
+
+      it("short-circuits to the same reference on a no-op", () => {
+        expect(withButtonHidden(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withButtonDisabled(EMPTY_SCRIPT_BUTTON_STATE, "DONE", false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withCancelHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withCloseHidden(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(withOkForceEnabled(EMPTY_SCRIPT_BUTTON_STATE, false)).toBe(EMPTY_SCRIPT_BUTTON_STATE);
+      });
+
+      it("starts with no action overrides", () => {
+        expect(EMPTY_SCRIPT_BUTTON_STATE.actionValues).toEqual({});
+      });
+
+      it("withButtonAction stores the override keyed by value immutably", () => {
+        const action = jest.fn();
+        const next = withButtonAction(EMPTY_SCRIPT_BUTTON_STATE, "UN", action);
+        expect(next.actionValues).toEqual({ UN: action });
+        expect(next).not.toBe(EMPTY_SCRIPT_BUTTON_STATE);
+        expect(EMPTY_SCRIPT_BUTTON_STATE.actionValues).toEqual({});
+      });
+
+      it("withButtonAction short-circuits when the same action is reassigned", () => {
+        const action = jest.fn();
+        const first = withButtonAction(EMPTY_SCRIPT_BUTTON_STATE, "UN", action);
+        expect(withButtonAction(first, "UN", action)).toBe(first);
+      });
+    });
+
+    describe("runFooterButtonAction", () => {
+      const UN_VALUE = "UN";
+
+      it("runs the assigned override and does NOT call execute", () => {
+        const override = jest.fn();
+        const execute = jest.fn();
+        runFooterButtonAction({ [UN_VALUE]: override }, UN_VALUE, execute);
+        expect(override).toHaveBeenCalledTimes(1);
+        expect(execute).not.toHaveBeenCalled();
+      });
+
+      it("falls back to the standard execute when no override exists", () => {
+        const execute = jest.fn();
+        runFooterButtonAction({}, UN_VALUE, execute);
+        expect(execute).toHaveBeenCalledWith(UN_VALUE);
+      });
+    });
+
+    describe("makeFooterButtonHandle", () => {
+      const collectUpdates = () => {
+        const updaters: Array<(prev: ScriptButtonState) => ScriptButtonState> = [];
+        const setButtonState = (updater: (prev: ScriptButtonState) => ScriptButtonState) => updaters.push(updater);
+        return { updaters, setButtonState };
+      };
+
+      it("exposes the button value/title and routes hide/show/setDisabled through the state", () => {
+        const { updaters, setButtonState } = collectUpdates();
+        const handle = makeFooterButtonHandle({ value: "UN", label: "Unmatch" }, setButtonState);
+        expect(handle._buttonValue).toBe("UN");
+        expect(handle.title).toBe("Unmatch");
+
+        handle.hide();
+        expect(updaters[0](EMPTY_SCRIPT_BUTTON_STATE).hiddenValues).toEqual({ UN: true });
+        handle.setDisabled();
+        expect(updaters[1](EMPTY_SCRIPT_BUTTON_STATE).disabledValues).toEqual({ UN: true });
+      });
+
+      it("honors the Classic `button.action = fn` assignment by routing it into the state", () => {
+        const { updaters, setButtonState } = collectUpdates();
+        const handle = makeFooterButtonHandle({ value: "UN", label: "Unmatch" }, setButtonState);
+        const action = jest.fn();
+
+        handle.action = action;
+        expect(handle.action).toBe(action);
+        expect(updaters[0](EMPTY_SCRIPT_BUTTON_STATE).actionValues).toEqual({ UN: action });
+      });
+    });
+
+    describe("withMandatory", () => {
+      it("toggles mandatory immutably", () => {
+        const prev = params();
+        const next = withMandatory(prev, "amount", true);
+        expect(next.amount.mandatory).toBe(true);
+        expect(next).not.toBe(prev);
+        expect(prev.amount.mandatory).toBe(false);
+      });
+
+      it("short-circuits when missing or unchanged", () => {
+        const prev = params();
+        expect(withMandatory(prev, "unknown", true)).toBe(prev);
+        expect(withMandatory(prev, "currency", true)).toBe(prev);
+      });
+
+      it("resolves a parameter addressed by name when the map is keyed by dBColumnName", () => {
+        // Map keyed by dBColumnName ("DocAction"); the hook addresses it by name.
+        const prev = {
+          DocAction: { name: "Document Action", dBColumnName: "DocAction", mandatory: false, refList: [] },
+        } as unknown as ParametersMap;
+        const next = withMandatory(prev, "Document Action", true);
+        expect(next.DocAction.mandatory).toBe(true);
+        expect(next).not.toBe(prev);
+      });
+    });
+
+    describe("withRefList", () => {
+      it("replaces refList immutably", () => {
+        const prev = params();
+        const next = withRefList(prev, "amount", [{ id: "x", value: "x", label: "X" }]);
+        expect(next.amount.refList).toEqual([{ id: "x", value: "x", label: "X" }]);
+        expect(next).not.toBe(prev);
+      });
+
+      it("short-circuits when the parameter is missing", () => {
+        const prev = params();
+        expect(withRefList(prev, "unknown", [])).toBe(prev);
+      });
+
+      it("resolves by name/dBColumnName and writes under the real map key", () => {
+        const options = [{ id: "CO", value: "CO", label: "Book" }];
+        const prev = {
+          DocAction: { name: "Document Action", dBColumnName: "DocAction", mandatory: true, refList: [] },
+        } as unknown as ParametersMap;
+        // Addressed by name (≠ map key): must update the "DocAction" entry.
+        expect(withRefList(prev, "Document Action", options).DocAction.refList).toEqual(options);
+        // Addressed by dBColumnName (== map key): same result.
+        expect(withRefList(prev, "DocAction", options).DocAction.refList).toEqual(options);
+      });
+    });
+
+    describe("normalizeValueMap", () => {
+      it("maps an object to ListOption[]", () => {
+        expect(normalizeValueMap({ a: "A", b: "B" })).toEqual([
+          { id: "a", value: "a", label: "A" },
+          { id: "b", value: "b", label: "B" },
+        ]);
+      });
+
+      it("normalizes an array of strings and of option objects", () => {
+        expect(normalizeValueMap(["x"])).toEqual([{ id: "x", value: "x", label: "x" }]);
+        expect(normalizeValueMap([{ value: "y", label: "Y" }])).toEqual([{ id: "y", value: "y", label: "Y" }]);
+      });
+
+      it("returns an empty list for nullish / primitive input", () => {
+        expect(normalizeValueMap(null)).toEqual([]);
+        expect(normalizeValueMap(undefined)).toEqual([]);
+        expect(normalizeValueMap(42)).toEqual([]);
+      });
+    });
+
+    describe("addDynamicParameter / removeParameter", () => {
+      it("adds a dynamic parameter immutably", () => {
+        const prev = params();
+        const next = addDynamicParameter(prev, { name: "extra", reference: "10" });
+        expect(next.extra).toBeDefined();
+        expect(next).not.toBe(prev);
+        expect(prev.extra).toBeUndefined();
+      });
+
+      it("removes by name and by positional index", () => {
+        const prev = params();
+        expect(removeParameter(prev, "amount").amount).toBeUndefined();
+        expect(removeParameter(prev, 1).currency).toBeUndefined();
+      });
+
+      it("short-circuits on unknown or out-of-range targets", () => {
+        const prev = params();
+        expect(removeParameter(prev, "unknown")).toBe(prev);
+        expect(removeParameter(prev, 9)).toBe(prev);
+      });
     });
   });
 
@@ -551,6 +902,29 @@ describe("Process Definition Utils", () => {
       const options: any = {};
       applyMergedParam("accounting_status", "", parameters, options);
       expect(options.accounting_status).toBeUndefined();
+    });
+  });
+
+  describe("addSelectedIDsToCriteria", () => {
+    const SELECTED = ["a", "b"];
+
+    it("merges an id inSet sub-criterion into an existing criteria object", () => {
+      const result = addSelectedIDsToCriteria({ operator: "or", criteria: [{ fieldName: "x" }] }, SELECTED);
+      expect(result.operator).toBe("or");
+      expect(result.criteria).toEqual([{ fieldName: "x" }, { fieldName: "id", operator: "inSet", value: SELECTED }]);
+    });
+
+    it("defaults to an `and` combinator when starting from empty criteria", () => {
+      const result = addSelectedIDsToCriteria(undefined, SELECTED);
+      expect(result).toEqual({
+        operator: "and",
+        criteria: [{ fieldName: "id", operator: "inSet", value: SELECTED }],
+      });
+    });
+
+    it("returns the normalized criteria unchanged when there is nothing to add", () => {
+      expect(addSelectedIDsToCriteria({ operator: "and" }, [])).toEqual({ operator: "and" });
+      expect(addSelectedIDsToCriteria({ operator: "and" }, SELECTED, false)).toEqual({ operator: "and" });
     });
   });
 });

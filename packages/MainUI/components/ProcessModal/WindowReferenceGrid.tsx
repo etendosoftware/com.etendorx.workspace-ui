@@ -19,6 +19,9 @@ import { FilterAlt, FilterAltOff } from "@mui/icons-material";
 import { IconButton, Tooltip } from "@mui/material";
 import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import TrashIcon from "../../../ComponentLibrary/src/assets/icons/trash.svg";
+import SearchIcon from "../../../ComponentLibrary/src/assets/icons/search.svg";
+import XIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
+import SaveIcon from "../../../ComponentLibrary/src/assets/icons/save.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
@@ -26,6 +29,7 @@ import {
   type EntityData,
   type EntityValue,
   type Column,
+  type Field,
   type Tab,
   type Criteria,
   UIPattern,
@@ -33,7 +37,6 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
-  MRT_EditActionButtons,
   MRT_ShowHideColumnsButton,
   MRT_ToggleDensePaddingButton,
   MRT_ToggleFiltersButton,
@@ -79,11 +82,41 @@ import {
   applyMergedParam,
   buildFilterCriteriaEntry,
   normalizeContextKey,
+  addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
+import { logger } from "@/utils/logger";
+import {
+  buildGridVisibility,
+  createGridProxy,
+  createItemProxy,
+  createViewProxy,
+  ICON_PRESET,
+} from "@/utils/processes/definition/scriptProxies";
+import type {
+  ColumnOnChange,
+  ColumnValidator,
+  FormHandle,
+  GridController,
+  GridProxy,
+  RowActionButton,
+  RowActionContext,
+  RowActionDescriptor,
+  RowActionRenderer,
+  ViewProxy,
+} from "@/utils/processes/definition/scriptProxies";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
 const EMPTY_PATCH: Record<string, number> = Object.freeze({});
+
+// Selection-driven amount fields the substrate syncs/zeroes on selection changes.
+const AMOUNT_FIELD = "amount";
+const PAYMENT_AMOUNT_FIELD = "paymentAmount";
+
+// Pick & Execute fetch param carrying the tabId of the view that owns the process
+// button (the tab the process was launched from). Backend HQL transformers read it
+// to pick the right query branch — see Classic OBPickAndExecuteGrid.transformRequest.
+const BUTTON_OWNER_VIEW_TAB_ID_PARAM = "buttonOwnerViewTabId";
 
 /**
  * Expands a column key to both naming shapes used across the row state:
@@ -342,6 +375,21 @@ export function computeScalarStableKey(values: Record<string, unknown> | null | 
     .join("|");
 }
 
+// Predicate telling whether a record field is read-only (and therefore must not
+// be zeroed). When omitted, every field is treated as editable (legacy behavior).
+type IsFieldReadOnly = (fieldName: string) => boolean;
+
+// True when an amount-like field holds a non-zero value safe to zero (not read-only).
+// Shared by the load-time reset (resetAmountField) and the deselect path
+// (buildDeselectedRecord) so both honor the same read-only guard (e.g. the invoice
+// `amount` cap in Add Invoices).
+const shouldZeroAmountField = (record: EntityData, fieldName: string, isFieldReadOnly?: IsFieldReadOnly): boolean => {
+  if (record[fieldName] === undefined || record[fieldName] === 0) {
+    return false;
+  }
+  return !isFieldReadOnly?.(fieldName);
+};
+
 /**
  * Mirrors Classic SmartClient: marks a record as selected and applies the
  * default payment amount in a single pass. Reused by the initial sync (so
@@ -364,8 +412,15 @@ export function buildSelectedRecord(record: EntityData): EntityData {
 /**
  * Resets payment-related fields on a deselected record.
  * Extracted to reduce cognitive complexity of handleRowSelection.
+ *
+ * Read-only-aware: a field flagged read-only (e.g. the invoice `amount` cap in
+ * Add Invoices) is left untouched, so migrated validations that read it keep
+ * working. Without a predicate it zeroes both amount fields (legacy behavior).
  */
-export function buildDeselectedRecord(record: EntityData): { updated: EntityData; changed: boolean } {
+export function buildDeselectedRecord(
+  record: EntityData,
+  isFieldReadOnly?: IsFieldReadOnly
+): { updated: EntityData; changed: boolean } {
   let updated = record;
   let changed = false;
   if (updated.obSelected) {
@@ -376,12 +431,12 @@ export function buildDeselectedRecord(record: EntityData): { updated: EntityData
     updated = { ...updated, payment: 0 };
     changed = true;
   }
-  if (updated.amount !== undefined && updated.amount !== 0) {
-    updated = { ...updated, amount: 0 };
+  if (shouldZeroAmountField(updated, AMOUNT_FIELD, isFieldReadOnly)) {
+    updated = { ...updated, [AMOUNT_FIELD]: 0 };
     changed = true;
   }
-  if (updated.paymentAmount !== undefined && updated.paymentAmount !== 0) {
-    updated = { ...updated, paymentAmount: 0 };
+  if (shouldZeroAmountField(updated, PAYMENT_AMOUNT_FIELD, isFieldReadOnly)) {
+    updated = { ...updated, [PAYMENT_AMOUNT_FIELD]: 0 };
     changed = true;
   }
   return { updated, changed };
@@ -588,6 +643,112 @@ export const buildEnableEditingPredicate = (
   };
 };
 
+/** Shared sizing for every action icon in the leading column (row buttons, trash, create-row). */
+const ACTION_ICON_CLASS = "h-4 w-4";
+const CREATE_ROW_CANCEL_TESTID = "WindowReferenceGrid__CreateRowCancelButton";
+const CREATE_ROW_SAVE_TESTID = "WindowReferenceGrid__CreateRowSaveButton";
+const CREATE_ROW_CANCEL_FALLBACK = "Cancel";
+const CREATE_ROW_SAVE_FALLBACK = "Save";
+
+interface CreateRowActionButtonsProps {
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row
+  row: any;
+  // biome-ignore lint/suspicious/noExplicitAny: MRT table instance
+  table: any;
+}
+
+/**
+ * Flushes the values typed into MRT's edit inputs for the given creating row into
+ * `row._valuesCache`, mirroring MRT's own submit wiring so the fields MRT knows
+ * about reach `onCreatingRowSave`. Only inputs whose name belongs to this row and
+ * whose key already exists in the value cache are copied. Returns the value cache.
+ */
+export const collectEditInputValues = (
+  // biome-ignore lint/suspicious/noExplicitAny: MRT row internals are untyped
+  row: any,
+  // biome-ignore lint/suspicious/noExplicitAny: MRT table internals are untyped
+  table: any
+) => {
+  const editInputRefs = table?.refs?.editInputRefs?.current ?? {};
+  const valuesCache = row?._valuesCache ?? {};
+  // biome-ignore lint/suspicious/noExplicitAny: input refs are untyped DOM elements
+  for (const input of Object.values<any>(editInputRefs)) {
+    const name = input?.name;
+    if (!name || name.split("_")[0] !== row.id) continue;
+    if (input.value !== undefined && Object.hasOwn(valuesCache, name)) {
+      valuesCache[name] = input.value;
+    }
+  }
+  return valuesCache;
+};
+
+/**
+ * Add/Cancel buttons for the grid's create-row scaffold. Replaces MRT's built-in
+ * edit-action chrome so the create-row icons match the size, spacing and centering
+ * of the other action icons in the column (script row buttons + the trash icon). It
+ * drives MRT's creation flow directly: Cancel discards the scaffold; Save flushes
+ * the edited inputs and hands them to `onCreatingRowSave`.
+ */
+export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsProps) => {
+  const { onCreatingRowSave, onCreatingRowCancel, localization } = table.options;
+  const { isSaving } = table.getState();
+  const cancelLabel = localization?.cancel ?? CREATE_ROW_CANCEL_FALLBACK;
+  const saveLabel = localization?.save ?? CREATE_ROW_SAVE_FALLBACK;
+
+  const handleCancel = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onCreatingRowCancel?.({ row, table });
+    table.setCreatingRow(null);
+    row._valuesCache = {};
+  };
+
+  const handleSubmit = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const values = collectEditInputValues(row, table);
+    onCreatingRowSave?.({
+      exitCreatingMode: () => table.setCreatingRow(null),
+      row,
+      table,
+      values,
+    });
+  };
+
+  return (
+    <div className="w-full flex justify-center items-center gap-1">
+      <Tooltip title={cancelLabel} data-testid="CreateRowCancelTooltip__ce8544">
+        <span>
+          <IconButton aria-label={cancelLabel} onClick={handleCancel} data-testid={CREATE_ROW_CANCEL_TESTID}>
+            <XIcon className={ACTION_ICON_CLASS} data-testid="XIcon__ce8544" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      {onCreatingRowSave && (
+        <Tooltip title={saveLabel} data-testid="CreateRowSaveTooltip__ce8544">
+          <span>
+            <IconButton
+              aria-label={saveLabel}
+              disabled={isSaving}
+              onClick={handleSubmit}
+              data-testid={CREATE_ROW_SAVE_TESTID}>
+              <SaveIcon className={ACTION_ICON_CLASS} data-testid="SaveIcon__ce8544" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Whether the grid must render the leading "Actions" column. It is required when a
+ * row would paint a button (deletable/locally-added rows or script row actions) and
+ * also whenever the grid is creatable: the create-row scaffold must render through
+ * `renderActionsCell` (our custom Add/Cancel buttons) instead of MRT's built-in
+ * edit chrome, which only happens when row actions are enabled.
+ */
+export const shouldShowRowActions = (hasAnyActionableRow: boolean, hasRowActions: boolean, canAdd: boolean): boolean =>
+  hasAnyActionableRow || hasRowActions || canAdd;
+
 interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: MRT row
   row: any;
@@ -597,39 +758,48 @@ interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: handleDeleteRow signature
   onDelete: (row: any) => void;
   deleteRowLabel: string;
+  /** Script-registered row buttons drawn before the delete icon on idle rows. */
+  leadingActions?: React.ReactNode;
 }
 
 /**
  * Row-actions renderer for the P&E grids. Two branches:
  *  - creating row → defer to MRT's built-in Save/Cancel chrome.
- *  - idle row → render trash icon, disabled while another row is being
- *    created (locks the "one row at a time" contract).
+ *  - idle row → render the script row buttons (if any) followed by the trash
+ *    icon, disabled while another row is being created (locks the "one row at a
+ *    time" contract).
  */
-export const renderActionsCell = ({ row, table, canDelete, onDelete, deleteRowLabel }: RenderActionsCellArgs) => {
+export const renderActionsCell = ({
+  row,
+  table,
+  canDelete,
+  onDelete,
+  deleteRowLabel,
+  leadingActions,
+}: RenderActionsCellArgs) => {
   const state = table.getState();
   const isCreating = state.creatingRow?.id === row.id || !row.original?.id;
   if (isCreating) {
-    return <MRT_EditActionButtons row={row} table={table} variant="icon" data-testid="MRT_EditActionButtons__ce8544" />;
+    return <CreateRowActionButtons row={row} table={table} data-testid="CreateRowActionButtons__ce8544" />;
   }
   const lockedByOther = Boolean(state.creatingRow);
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="w-1/2 flex justify-between">
-        {canDelete && (
-          <Tooltip title={deleteRowLabel} data-testid="Tooltip__ce8544">
-            <span>
-              <IconButton
-                onClick={() => onDelete(row)}
-                aria-label={deleteRowLabel}
-                disabled={lockedByOther}
-                data-testid="WindowReferenceGrid__DeleteRowButton">
-                <TrashIcon className="h-4 w-4" data-testid="TrashIcon__ce8544" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-      </div>
+    <div className="w-full flex justify-center items-center gap-1">
+      {leadingActions}
+      {canDelete && (
+        <Tooltip title={deleteRowLabel} data-testid="Tooltip__ce8544">
+          <span>
+            <IconButton
+              onClick={() => onDelete(row)}
+              aria-label={deleteRowLabel}
+              disabled={lockedByOther}
+              data-testid="WindowReferenceGrid__DeleteRowButton">
+              <TrashIcon className={ACTION_ICON_CLASS} data-testid="TrashIcon__ce8544" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
     </div>
   );
 };
@@ -726,16 +896,87 @@ export const GridCellRenderer = (props: any) => {
   return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
 };
 
+// --- Per-row component plugin (declarative inline buttons) -----------------
+
+const ROW_ACTIONS_COLUMN_ID = "script-row-actions";
+/** Widened size of the leading actions column when it also hosts script buttons. */
+const ACTIONS_COLUMN_SIZE_WITH_SCRIPT = 200;
+const ACTIONS_COLUMN_SIZE_DEFAULT = 100;
+const ROW_ACTION_ICON_CLASS = ACTION_ICON_CLASS;
+
+/** Maps a declarative icon preset to its SVG component (no chained ternaries). */
+const ROW_ACTION_ICONS: Record<string, typeof PlusIcon> = {
+  [ICON_PRESET.SEARCH]: SearchIcon,
+  [ICON_PRESET.ADD]: PlusIcon,
+  [ICON_PRESET.CLEAR_RIGHT]: XIcon,
+};
+
+/** Renders one declarative row-action button; an unknown icon preset renders nothing. */
+const RowActionButtonView = ({ button, onActivate }: { button: RowActionButton; onActivate: () => void }) => {
+  const Icon = ROW_ACTION_ICONS[button.icon];
+  if (!Icon) return null;
+  const label = button.prompt ?? button.icon;
+  // Stop propagation so the button never reaches the row-level selection toggle.
+  const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (button.disabled) return;
+    onActivate();
+  };
+  return (
+    <Tooltip title={button.prompt ?? ""} data-testid="RowActionTooltip__ce8544">
+      <span>
+        <IconButton
+          onClick={handleClick}
+          aria-label={label}
+          disabled={button.disabled}
+          data-testid="WindowReferenceGrid__RowActionButton">
+          <Icon className={ROW_ACTION_ICON_CLASS} data-testid="Icon__ce8544" />
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+};
+
+/**
+ * Renders the inline row-action buttons declared by a migrated row renderer.
+ * Returns a fragment (no wrapping element) so the buttons sit as direct siblings
+ * of the delete icon in the leading actions cell — one centered, evenly-spaced row.
+ */
+export const RowActionsCell = ({
+  buttons,
+  onActivate,
+}: {
+  buttons: RowActionButton[];
+  onActivate: (index: number) => void;
+}) => {
+  if (buttons.length === 0) return null;
+  return (
+    <>
+      {buttons.map((button, index) => (
+        <RowActionButtonView
+          key={`${ROW_ACTIONS_COLUMN_ID}-${index}`}
+          button={button}
+          onActivate={() => onActivate(index)}
+          data-testid="RowActionButtonView__ce8544"
+        />
+      ))}
+    </>
+  );
+};
+
 export const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
   let updated = false;
   const newRecord = { ...record };
 
-  if (selectionItem.amount !== undefined && selectionItem.amount !== newRecord.amount) {
-    newRecord.amount = selectionItem.amount;
+  if (selectionItem[AMOUNT_FIELD] !== undefined && selectionItem[AMOUNT_FIELD] !== newRecord[AMOUNT_FIELD]) {
+    newRecord[AMOUNT_FIELD] = selectionItem[AMOUNT_FIELD];
     updated = true;
   }
-  if (selectionItem.paymentAmount !== undefined && selectionItem.paymentAmount !== newRecord.paymentAmount) {
-    newRecord.paymentAmount = selectionItem.paymentAmount;
+  if (
+    selectionItem[PAYMENT_AMOUNT_FIELD] !== undefined &&
+    selectionItem[PAYMENT_AMOUNT_FIELD] !== newRecord[PAYMENT_AMOUNT_FIELD]
+  ) {
+    newRecord[PAYMENT_AMOUNT_FIELD] = selectionItem[PAYMENT_AMOUNT_FIELD];
     updated = true;
   }
 
@@ -745,27 +986,129 @@ export const updateLocalRecordFromSelection = (record: EntityData, selectionItem
   return null;
 };
 
-export const resetLocalRecordFields = (record: EntityData): EntityData | null => {
-  let changed = false;
+// Zeroes a single editable amount field in place. A read-only field (e.g. the
+// invoice `amount` cap in Add Invoices) is left untouched so migrated validations
+// that read it keep working. Returns whether the record was changed.
+const resetAmountField = (record: EntityData, fieldName: string, isFieldReadOnly?: IsFieldReadOnly): boolean => {
+  if (!shouldZeroAmountField(record, fieldName, isFieldReadOnly)) {
+    return false;
+  }
+  record[fieldName] = 0;
+  return true;
+};
+
+export const resetLocalRecordFields = (record: EntityData, isFieldReadOnly?: IsFieldReadOnly): EntityData | null => {
   const newRecord = { ...record };
+  const amountChanged = resetAmountField(newRecord, AMOUNT_FIELD, isFieldReadOnly);
+  const paymentChanged = resetAmountField(newRecord, PAYMENT_AMOUNT_FIELD, isFieldReadOnly);
 
-  if (newRecord.amount !== undefined && newRecord.amount !== 0) {
-    newRecord.amount = 0;
-    changed = true;
-  }
-  if (newRecord.paymentAmount !== undefined && newRecord.paymentAmount !== 0) {
-    newRecord.paymentAmount = 0;
-    changed = true;
-  }
+  return amountChanged || paymentChanged ? newRecord : null;
+};
 
-  return changed ? newRecord : null;
+// Sync the canonical selection cache with an MRT row-selection map: set selected
+// rows, delete the rest. Single source of truth for both selection entry points
+// (checkbox via handleRowSelection and row-body click via handleRowClick), so
+// grid.getSelectedRecords() and onSelectionToggle reflect every user selection.
+export const syncPersistentSelection = (
+  cache: Map<string, EntityData>,
+  recordsList: EntityData[],
+  selection: MRT_RowSelectionState
+): void => {
+  for (const record of recordsList) {
+    const id = String(record.id);
+    if (selection[id]) {
+      cache.set(id, record);
+    } else {
+      cache.delete(id);
+    }
+  }
+};
+
+// Returns a new array with `changes` merged into the row whose id matches; other
+// rows keep their identity. Used both to commit (setLocalRecords) and to refresh
+// the read store synchronously so cell-edit hooks see the just-typed value.
+export const applyEditToRows = (
+  records: EntityData[],
+  rowId: unknown,
+  changes: Record<string, EntityValue>
+): EntityData[] => records.map((r) => (String(r.id) === String(rowId) ? { ...r, ...changes } : r));
+
+// Applies an in-flight cell edit against the committed READ store
+// (`gridApiRef.current.rows`) — the store the script proxy resolves rows from and
+// that `getEditValues`/`getEditedCell`/the display read back. It returns the
+// updated rows when the store holds `rowId`, or `null` when it does not (an MRT
+// create-row, id="mrt-row-create", which persists only on `row.original`). The
+// read store is the authority over `localRecordsRef`: it is at least as fresh
+// (it can be one render ahead during the grid's phantom→real load) and it
+// accumulates synchronous multi-row write bursts (e.g. the distribute loop)
+// within a single tick, so using it as the base prevents both dropped writes and
+// earlier writes being clobbered.
+export const applyEditToReadStore = (
+  readStoreRows: EntityData[],
+  rowId: unknown,
+  changes: Record<string, EntityValue>
+): EntityData[] | null =>
+  readStoreRows.some((r) => String(r.id) === String(rowId)) ? applyEditToRows(readStoreRows, rowId, changes) : null;
+
+// Build the post-write record a column validator must see: the current row data
+// overlaid with the pending changes. Classic validators read the value being
+// written (e.g. `record.amount`), not the stale cell value; validating the
+// pre-write value silently drops legitimate programmatic writes (the distribute
+// loop setting amount=2.07 on a row whose default 0 fails a zero-amount check).
+// Returns a fresh object — it never mutates `rowData`.
+export const buildValidatorCandidate = (
+  rowData: Record<string, unknown>,
+  mergedChanges: Record<string, unknown>
+): Record<string, unknown> => ({ ...rowData, ...(mergedChanges ?? {}) });
+
+// Decides whether the per-column validator gate runs for a cell write. Classic
+// fires cell validators ONLY on interactive (user) edits, never on programmatic
+// writes (a script's `setEditValue` from distribute/seed); replicating that
+// avoids a programmatic write being rejected — and raising a spurious validator
+// message — by a validator that was only ever meant for user input. The gate
+// also stays off during a column-onChange re-entry and when no validator is
+// registered (the prior conditions).
+export const shouldRunColumnValidators = (
+  programmatic: boolean,
+  inColumnOnChange: boolean,
+  validatorCount: number
+): boolean => !programmatic && !inColumnOnChange && validatorCount > 0;
+
+// Outcome of `decideDatasourceSync`: whether the datasource-sync effect should
+// process this render, plus the content signature the caller stores to dedup.
+export interface DatasourceSyncDecision {
+  shouldSync: boolean;
+  signature: string;
+}
+
+// Decides whether the datasource-sync effect should process the current
+// `rawRecords`. It proceeds only when (1) a real datasource fetch has completed
+// — before that the records are a placeholder (initial state or the `skip`
+// phase), NOT a delivered result — and (2) the serialized content differs from
+// the last processed payload (dedup). Gating on the first fetch is what lets an
+// empty result set still reach `onGridLoad`/`dataArrived`: without it the
+// pre-fetch empty placeholder fires those hooks with a phantom `rowCount=0` and
+// advances the dedup signature, so the genuine (also empty) delivery is then
+// skipped. While gated the signature is returned unchanged so the caller never
+// poisons its dedup ref. Classic fires these on data ARRIVAL, not while loading.
+export const decideDatasourceSync = (
+  rawRecords: EntityData[] | undefined,
+  hasFirstFetchCompleted: boolean,
+  lastSignature: string
+): DatasourceSyncDecision => {
+  if (!hasFirstFetchCompleted) {
+    return { shouldSync: false, signature: lastSignature };
+  }
+  const signature = JSON.stringify(rawRecords ?? []);
+  return { shouldSync: signature !== lastSignature, signature };
 };
 
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
   localRecords: EntityData[],
-  setLocalRecords: (records: EntityData[]) => void
+  setLocalRecords: (records: EntityData[]) => void,
+  isFieldReadOnly?: IsFieldReadOnly
 ) => {
   let hasChanges = false;
   const newRecords = [...localRecords];
@@ -782,7 +1125,7 @@ export const syncGridSelectionToLocalRecords = (
         hasChanges = true;
       }
     } else {
-      const reset = resetLocalRecordFields(record);
+      const reset = resetLocalRecordFields(record, isFieldReadOnly);
       if (reset) {
         newRecords[i] = reset;
         hasChanges = true;
@@ -793,6 +1136,34 @@ export const syncGridSelectionToLocalRecords = (
   if (hasChanges) {
     setLocalRecords(newRecords);
   }
+};
+
+// Load-time race guard for the external-selection sync. The modal seeds
+// `_selection: []` (from filterExpressions) before the backend pre-selection has
+// propagated; the zeroing pass would then wipe a pre-selected row's editable
+// `amount`. Defer the pass ONLY while this initial empty pass coincides with rows
+// the backend pre-flagged (`obSelected`) and reconciliation hasn't happened yet.
+// Once a real selection arrives, `reconciled` is set and this never guards again,
+// so later engine/user-driven updates behave exactly as before (non-regressive).
+export const shouldDeferInitialZeroing = (
+  localRecords: EntityData[],
+  externalSelection: unknown[],
+  reconciled: boolean
+): boolean => {
+  if (reconciled || externalSelection.length > 0) {
+    return false;
+  }
+  return localRecords.some((record) => record.obSelected === true);
+};
+
+// Builds an `isFieldReadOnly` predicate from the grid's computed read-only map.
+// A missing/empty map yields a predicate that treats every field as editable,
+// preserving the legacy zeroing behavior for grids without field metadata.
+export const buildIsFieldReadOnly = (fieldReadOnlyMap: Record<string, boolean> | undefined): IsFieldReadOnly => {
+  if (!fieldReadOnlyMap) {
+    return () => false;
+  }
+  return (fieldName: string) => Boolean(fieldReadOnlyMap[fieldName]);
 };
 
 // Helper to find valid matching record in grid
@@ -830,6 +1201,18 @@ interface DatasourceParams {
   criteria?: any;
   [key: string]: any;
 }
+
+/**
+ * Mirrors Classic OBPickAndExecuteGrid.transformRequest: P&E fetches carry the
+ * tabId of the view that owns the process button (the tab the process was launched
+ * from), which backend HQL transformers read to pick the right query branch. Only
+ * set when an owner tab with an id exists (matches Classic's
+ * `buttonOwnerView && buttonOwnerView.tabId` guard).
+ */
+export const applyButtonOwnerViewTabId = (options: DatasourceParams, originTab?: Tab): void => {
+  if (!originTab?.id) return;
+  options[BUTTON_OWNER_VIEW_TAB_ID_PARAM] = originTab.id;
+};
 
 // Standard context variable keys that are always valid filter columns
 const STANDARD_FILTER_KEYS = [
@@ -1020,6 +1403,143 @@ const deepMergeFilterExpressions = (
   return merged;
 };
 
+/** Live grid handles the embedded-grid controller reads at call time. */
+export interface EmbeddedGridApi {
+  rows: EntityData[];
+  refetch?: () => void;
+  criteria: unknown;
+  fields?: Field[];
+  handleRowSelection: (
+    updater: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)
+  ) => void;
+  handleClearSelections: () => void;
+  // biome-ignore lint/suspicious/noExplicitAny: row/changes mirror handleRecordChange's loose shape
+  handleRecordChange: (row: any, changes: any, options?: { programmatic?: boolean }) => void;
+  setRowActions: (renderer: RowActionRenderer) => void;
+}
+
+/**
+ * Builds the programmable grid handle exposed to migrated scripts via
+ * `view.theForm.getItem('<param>').canvas.viewGrid` (and as the first arg of
+ * `onGridLoad`). It is a pure adapter over live getters: `getApi` returns the
+ * current rows / datasource handles, `getSelected` the current selection, and
+ * the two subscriber arrays collect chained lifecycle callbacks. Selection,
+ * edit and refetch all reuse the grid's existing handlers, so script mutations
+ * follow the exact same path as user interactions.
+ */
+/** Resolves a column name from either a string or a classic field object. */
+function resolveColName(col: string | Record<string, unknown>): string {
+  if (typeof col === "string") return col;
+  return String(col?.columnName ?? col?.hqlName ?? col?.inputName ?? col?.name ?? "");
+}
+
+/**
+ * Mutable registries the controller wires script callbacks into. They are shared
+ * (by reference) with the grid component, so a script that subscribes here is
+ * seen by the grid's lifecycle and vice-versa. Bundled into one argument to keep
+ * the controller factory's signature small.
+ */
+export interface EmbeddedGridSubscriptions {
+  dataArrived: Array<(rows: EntityData[]) => void>;
+  selectionChanged: Array<(selection: EntityData[]) => void>;
+  recordChange: Array<(record: EntityData, changes: Record<string, unknown>) => void>;
+  selectionToggle: Array<(record: EntityData, state: boolean) => void>;
+  columnOnChange: Map<string, ColumnOnChange>;
+  columnValidator: Map<string, ColumnValidator>;
+}
+
+export function createEmbeddedGridController(
+  getApi: () => EmbeddedGridApi,
+  getSelected: () => EntityData[],
+  subscriptions: EmbeddedGridSubscriptions
+): GridController {
+  const {
+    dataArrived: dataArrivedSubs,
+    selectionChanged: selectionChangedSubs,
+    recordChange: recordChangeSubs,
+    selectionToggle: selectionToggleSubs,
+    columnOnChange,
+    columnValidator,
+  } = subscriptions;
+  const rows = () => getApi().rows;
+  const setSelectedById = (id: string, isSelected: boolean) =>
+    getApi().handleRowSelection((prev) => ({ ...prev, [id]: isSelected }));
+  return {
+    getSelectedRecords: getSelected,
+    selectRecord: (index) => {
+      const record = rows()[index];
+      if (record) setSelectedById(String(record.id), true);
+    },
+    deselectRecord: (index) => {
+      const record = rows()[index];
+      if (record) setSelectedById(String(record.id), false);
+    },
+    selectSingleRecord: (record) => {
+      getApi().handleClearSelections();
+      if (record) setSelectedById(String(record.id), true);
+    },
+    deselectAllRecords: () => getApi().handleClearSelections(),
+    userSelectAllRecords: () => {
+      const all: MRT_RowSelectionState = {};
+      for (const record of rows()) all[String(record.id)] = true;
+      getApi().handleRowSelection(all);
+    },
+    getRows: rows,
+    getRecord: (index) => rows()[index],
+    getRecordIndex: (record) => rows().findIndex((row) => String(row.id) === String(record?.id)),
+    getEditedRecord: (index) => rows()[index],
+    getTotalRows: () => rows().length,
+    setEditValue: (rowIndex, colName, value) => {
+      const record = rows()[rowIndex];
+      // Programmatic write (script distribute/seed): flag it so handleRecordChange
+      // skips the cell validator gate (Classic never validates programmatic writes).
+      if (record) getApi().handleRecordChange(record, { [colName]: value }, { programmatic: true });
+    },
+    getEditValues: (rowIndex) => (rows()[rowIndex] as Record<string, unknown>) ?? {},
+    getEditedCell: (row, col) => {
+      const index =
+        typeof row === "number" ? row : rows().findIndex((r) => String(r.id) === String((row as EntityData)?.id));
+      return (rows()[index] as Record<string, unknown>)?.[resolveColName(col)];
+    },
+    invalidateCache: () => {
+      getApi().refetch?.();
+    },
+    fetchData: () => {
+      getApi().refetch?.();
+    },
+    getCriteria: () => getApi().criteria,
+    addSelectedIDsToCriteria: (criteria, preserveSelected = true) =>
+      addSelectedIDsToCriteria(
+        criteria,
+        getSelected().map((record) => String(record.id)),
+        preserveSelected
+      ),
+    getFieldByColumnName: (colName) =>
+      (getApi().fields ?? []).find(
+        (field) => field.columnName === colName || field.hqlName === colName || field.inputName === colName
+      ),
+    setRowActions: (renderer) => getApi().setRowActions(renderer),
+    onDataArrived: (fn) => {
+      if (!dataArrivedSubs.includes(fn)) dataArrivedSubs.push(fn);
+    },
+    onSelectionChanged: (fn) => {
+      if (!selectionChangedSubs.includes(fn)) selectionChangedSubs.push(fn);
+    },
+    onRecordChange: (fn) => {
+      if (!recordChangeSubs.includes(fn)) recordChangeSubs.push(fn);
+    },
+    onSelectionToggle: (fn) => {
+      if (!selectionToggleSubs.includes(fn)) selectionToggleSubs.push(fn);
+    },
+    setColumnOnChange: (colName, fn) => {
+      columnOnChange.set(colName, fn);
+    },
+    setColumnValidator: (colName, fn) => {
+      columnValidator.set(colName, fn);
+    },
+  };
+}
+
 const WindowReferenceGrid = ({
   parameter,
   tabId,
@@ -1040,6 +1560,15 @@ const WindowReferenceGrid = ({
   showTitle = true,
   onClose,
   processDefinition,
+  onGridLoadHook,
+  gridLoadFormHandle,
+  messageBar,
+  viewController,
+  viewData,
+  onRegisterGrid,
+  onUnregisterGrid,
+  fieldController,
+  gridResolver,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1183,14 +1712,22 @@ const WindowReferenceGrid = ({
 
     const fields = Object.values(stableWindowReferenceTab.fields);
     for (const field of fields) {
-      const key = (field as any).columnName || (field as any).hqlName;
-      if (key) {
-        map[key] = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
-      }
+      // Index by both identifiers so a lookup by record property name (hqlName,
+      // e.g. `amount`) resolves even when `columnName` differs from it.
+      const readOnly = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
+      const columnName = (field as any).columnName;
+      const hqlName = (field as any).hqlName;
+      if (columnName) map[columnName] = readOnly;
+      if (hqlName) map[hqlName] = readOnly;
     }
 
     return map;
   }, [stableWindowReferenceTab?.fields, fieldReadOnlyContext]);
+
+  // Mirror the read-only map into a ref so the selection-sync effect can read it
+  // without adding it to the effect deps (keeps the existing run timing intact).
+  const fieldReadOnlyMapRef = useRef(fieldReadOnlyMap);
+  fieldReadOnlyMapRef.current = fieldReadOnlyMap;
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
@@ -1398,6 +1935,8 @@ const WindowReferenceGrid = ({
 
     // Required for OBPickAndExecuteDataSource to apply Pick & Execute-specific fetching logic
     options.isPickAndEdit = true;
+    // Send the owner tab so backend HQL transformers pick the right query branch (Classic parity)
+    applyButtonOwnerViewTabId(options, originTab);
     // Match Classic default: send true unless the user has explicitly toggled the filter off
     options.isImplicitFilterApplied = isImplicitFilterApplied ?? true;
 
@@ -1418,6 +1957,7 @@ const WindowReferenceGrid = ({
     sorting,
     stableRawColumns,
     etendoContext,
+    originTab,
   ]);
 
   // `datasourceOptions` legitimately changes content on cell edits because
@@ -1442,6 +1982,7 @@ const WindowReferenceGrid = ({
         tabId: datasourceOptions.tabId,
         processId: datasourceOptions.processId,
         windowId: datasourceOptions.windowId,
+        buttonOwnerViewTabId: datasourceOptions.buttonOwnerViewTabId,
         pageSize: datasourceOptions.pageSize,
       }),
     [datasourceOptions]
@@ -1693,6 +2234,7 @@ const WindowReferenceGrid = ({
     fetchMore,
     addRecordLocally,
     removeRecordLocally,
+    hasFirstFetchCompleted,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
@@ -1781,6 +2323,36 @@ const WindowReferenceGrid = ({
   const [localRecords, setLocalRecords] = useState<EntityData[]>([]);
   const rawRecordsStringRef = useRef<string>("");
 
+  // Programmable grid handle plumbing (declared here so the data-arrived effect
+  // below can reach them; the controller itself is built further down once its
+  // selection/edit handlers exist, and stored into `gridControllerRef`).
+  const gridControllerRef = useRef<GridController | null>(null);
+  const dataArrivedSubsRef = useRef<Array<(rows: EntityData[]) => void>>([]);
+  const selectionChangedSubsRef = useRef<Array<(selection: EntityData[]) => void>>([]);
+  // Per-cell edit subscribers (grid.onRecordChange) and per-toggle selection-delta
+  // subscribers (grid.onSelectionToggle); both additive and empty unless a migrated
+  // script registers into them. Column hooks back grid.setColumnOnChange/Validator.
+  const recordChangeSubsRef = useRef<Array<(record: EntityData, changes: Record<string, unknown>) => void>>([]);
+  const selectionToggleSubsRef = useRef<Array<(record: EntityData, state: boolean) => void>>([]);
+  const columnOnChangeRef = useRef<Map<string, ColumnOnChange>>(new Map());
+  const columnValidatorRef = useRef<Map<string, ColumnValidator>>(new Map());
+  // Ids selected as of the last selectionChanged fire, for the onSelectionToggle diff.
+  const prevSelectionIdsRef = useRef<Set<string>>(new Set());
+  // Guards against the infinite loop when a column onChange calls grid.setEditValue
+  // (which re-enters handleRecordChange and would re-dispatch the column hooks).
+  const inColumnOnChangeRef = useRef(false);
+
+  // Per-row component plugin: a migrated script registers a renderer via
+  // `grid.setRowActions(...)`. The renderer lives in a ref (replacing it needs
+  // no re-render); `hasRowActions` flips once on first registration to add the
+  // inline-buttons column. Without a renderer no column is added (additive).
+  const rowActionsRendererRef = useRef<RowActionRenderer | null>(null);
+  const [hasRowActions, setHasRowActions] = useState(false);
+  const registerRowActions = useCallback((renderer: RowActionRenderer) => {
+    rowActionsRendererRef.current = renderer;
+    setHasRowActions(true);
+  }, []);
+
   // Bumped by `handleRecordChange` whenever `applyFieldInteractions` produces a
   // non-empty sibling patch. Threaded through the grid context so each
   // GridCellEditor sees a new value and its `memo` comparator invalidates,
@@ -1791,10 +2363,17 @@ const WindowReferenceGrid = ({
 
   // Sync with datasource (rawRecords)
   useEffect(() => {
-    // Only update if rawRecords actually changed content
-    const rawString = JSON.stringify(rawRecords || []);
-    if (rawString === rawRecordsStringRef.current) return;
-    rawRecordsStringRef.current = rawString;
+    // Run only once a real fetch has delivered a result and the content changed
+    // (see decideDatasourceSync). The signature is stored even when skipping the
+    // body so the dedup keeps working, but it is left untouched while no fetch
+    // has completed yet — so an empty result set still reaches onGridLoad.
+    const { shouldSync, signature } = decideDatasourceSync(
+      rawRecords,
+      hasFirstFetchCompleted,
+      rawRecordsStringRef.current
+    );
+    rawRecordsStringRef.current = signature;
+    if (!shouldSync) return;
     // Apply the same default-payment logic that `handleRowSelection` runs on
     // user toggle, but synchronously for rows the backend pre-flagged with
     // `obSelected=true`. This collapses the legacy "rows arrive → default
@@ -1803,7 +2382,51 @@ const WindowReferenceGrid = ({
       record?.obSelected ? buildSelectedRecord(record) : record
     );
     setLocalRecords(prepared);
-  }, [rawRecords]);
+
+    // Notify any script-registered `grid.dataArrived` subscribers (mirrors the
+    // classic grid lifecycle hook), independently of whether an onGridLoad body
+    // exists — a script may have subscribed from onLoad via the grid handle.
+    for (const fn of dataArrivedSubsRef.current) fn(prepared);
+
+    // Parameter-level onGridLoad: fire once per datasource payload. `grid` is the
+    // programmable handle (same one reachable via `view.theForm.getItem(...)`),
+    // so reading rows/selection and mutating the grid both work; `view.theForm`
+    // lets the script read sibling parameter values.
+    if (onGridLoadHook && gridLoadFormHandle && messageBar) {
+      const selectedRecords = prepared.filter((record: EntityData) => Boolean(record?.obSelected));
+      const grid = createGridProxy(
+        { rows: prepared, selectedRecords },
+        gridControllerRef.current ?? undefined,
+        fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+      );
+      const view = createViewProxy(gridLoadFormHandle, parameters, {
+        messageBar,
+        grid,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+      });
+      grid.view = view;
+      try {
+        onGridLoadHook(grid, view, parameters);
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] onGridLoad failed", error);
+      }
+    }
+  }, [
+    rawRecords,
+    hasFirstFetchCompleted,
+    onGridLoadHook,
+    gridLoadFormHandle,
+    messageBar,
+    parameters,
+    parameter.name,
+    viewController,
+    viewData,
+    fieldController,
+    gridResolver,
+  ]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
   // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.
@@ -1846,6 +2469,9 @@ const WindowReferenceGrid = ({
 
   // Ref to track last processed selection to prevent redundant updates
   const lastSelectionStringRef = useRef<string>("");
+  // Armed once the first real (non-empty) external selection has been reconciled;
+  // gates `shouldDeferInitialZeroing` so the deferral only applies during initial load.
+  const initialSelectionReconciledRef = useRef<boolean>(false);
 
   // Sync with external updates via gridSelection (e.g. Callouts modifying data)
   useEffect(() => {
@@ -1856,15 +2482,29 @@ const WindowReferenceGrid = ({
 
     const externalSelection = gridData._selection;
 
+    // Don't let the initial empty-selection pass zero a row the backend pre-selected
+    // before its real selection has propagated (fixes pre-selected Amount → 0 at load).
+    if (shouldDeferInitialZeroing(localRecords, externalSelection, initialSelectionReconciledRef.current)) {
+      return;
+    }
+    initialSelectionReconciledRef.current = true;
+
     // OPTIMIZATION: Check if selection actually changed for THIS grid
     // We include amounts in the check because engine updates amounts. Also check paymentAmount.
-    const selectionString = JSON.stringify(externalSelection.map((s: any) => `${s.id}-${s.amount}-${s.paymentAmount}`));
+    const selectionString = JSON.stringify(
+      externalSelection.map((s: any) => `${s.id}-${s[AMOUNT_FIELD]}-${s[PAYMENT_AMOUNT_FIELD]}`)
+    );
     if (selectionString === lastSelectionStringRef.current) {
       return;
     }
     lastSelectionStringRef.current = selectionString;
 
-    syncGridSelectionToLocalRecords(externalSelection, localRecords, setLocalRecords);
+    syncGridSelectionToLocalRecords(
+      externalSelection,
+      localRecords,
+      setLocalRecords,
+      buildIsFieldReadOnly(fieldReadOnlyMapRef.current)
+    );
   }, [gridSelection, parameter.dBColumnName]); // localRecords omitted to prevent cycle
 
   const records = localRecords;
@@ -1956,7 +2596,18 @@ const WindowReferenceGrid = ({
       // Reuse the same `records` array reference when nothing changed — prevents
       // downstream parents from re-rendering on no-op selection toggles.
       let recordsChanged = false;
-      const mappedRecords = records.map((record) => {
+      // Built once: skips zeroing read-only amount fields (e.g. the invoice `amount`
+      // cap in Add Invoices) on deselect, matching the load-time reset.
+      const isFieldReadOnly = buildIsFieldReadOnly(fieldReadOnlyMapRef.current);
+      // Base the selection snapshot on the READ STORE, not the closure `records`
+      // (lagging `localRecords`). A programmatic `setEditValue` updates the read
+      // store synchronously (see handleRecordChange); a `selectRecord` fired right
+      // after it (distribute writes amount=2.07 then selects the row) would
+      // otherwise capture the pre-write value into `_selection`, and the
+      // selection-sync effect would then push that stale value back over the
+      // freshly written one (the Add Payment Order/Invoice amount → 0 bug).
+      const baseRecords = gridApiRef.current?.rows ?? records;
+      const mappedRecords = baseRecords.map((record) => {
         const recordId = String(record.id);
         const isSelected = newSelection[recordId];
 
@@ -1969,7 +2620,7 @@ const WindowReferenceGrid = ({
         } else {
           // Aggressively reset amount to 0 if deselected, regardless of current value
           // Also handle 'paymentAmount' field which is used by Credit grid in Classic
-          const { updated, changed } = buildDeselectedRecord(record);
+          const { updated, changed } = buildDeselectedRecord(record, isFieldReadOnly);
           if (changed) {
             record = updated;
             recordsChanged = true;
@@ -1977,7 +2628,7 @@ const WindowReferenceGrid = ({
         }
         return record;
       });
-      const newRecords = recordsChanged ? mappedRecords : records;
+      const newRecords = recordsChanged ? mappedRecords : baseRecords;
 
       // 2. Update local state if needed
       if (recordsChanged) {
@@ -1987,14 +2638,7 @@ const WindowReferenceGrid = ({
 
       // 3. Update the persistent cache for rows on the current page.
       // Only rows currently in `records` are touched; off-page selections are preserved.
-      for (const record of newRecords) {
-        const id = String(record.id);
-        if (newSelection[id]) {
-          persistentSelectionRef.current.set(id, record);
-        } else {
-          persistentSelectionRef.current.delete(id);
-        }
-      }
+      syncPersistentSelection(persistentSelectionRef.current, newRecords, newSelection);
 
       // 4. Propagate ALL persistently selected rows (including off-page) to the parent.
       onSelectionChange((prev: GridSelectionStructure) => ({
@@ -2084,18 +2728,19 @@ const WindowReferenceGrid = ({
         return record;
       });
 
-      const selectedItems = updatedRecords.filter((record) => {
-        const recordId = String(record.id);
-        return newSelection[recordId];
-      });
+      // Populate the canonical selection cache so a row-body click registers the
+      // selection identically to a checkbox click (handleRowSelection). Without
+      // this, grid.getSelectedRecords() / onSelectionToggle stay empty for clicks.
+      syncPersistentSelection(persistentSelectionRef.current, updatedRecords, newSelection);
 
       setRowSelection(newSelection);
 
-      // Update with the new structure
+      // Update with the new structure, propagating from the same canonical cache
+      // as handleRowSelection so both selection stores stay consistent.
       onSelectionChange((prev: GridSelectionStructure) => ({
         ...prev,
         [parameter.dBColumnName]: {
-          _selection: selectedItems,
+          _selection: Array.from(persistentSelectionRef.current.values()),
           _allRows: updatedRecords,
         },
       }));
@@ -2195,9 +2840,130 @@ const WindowReferenceGrid = ({
     rowSelectionRef.current = rowSelection;
   }, [localRecords, rowSelection]);
 
+  // Builds the {grid, view} script proxies used by the cell-edit hooks, reusing
+  // the same construction as the onGridLoad effect (the grid reads live state via
+  // the controller; `grid.view` wires the view-level fireOnPause/context). Returns
+  // null when the form handle isn't available (read-only / test contexts).
+  const buildCellHookProxies = useCallback((): { grid: GridProxy; view: ViewProxy } | null => {
+    if (!gridLoadFormHandle || !messageBar) return null;
+    const grid = createGridProxy(
+      { rows: localRecordsRef.current, selectedRecords: Array.from(persistentSelectionRef.current.values()) },
+      gridControllerRef.current ?? undefined,
+      fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+    );
+    const view = createViewProxy(gridLoadFormHandle, parameters, {
+      messageBar,
+      grid,
+      controller: fieldController,
+      viewController,
+      gridResolver,
+      data: viewData,
+    });
+    grid.view = view;
+    return { grid, view };
+  }, [
+    gridLoadFormHandle,
+    messageBar,
+    parameters,
+    parameter.name,
+    viewController,
+    viewData,
+    fieldController,
+    gridResolver,
+  ]);
+
+  // Grid-cell variant of the item proxy passed to a per-column onChange / validator:
+  // `getValue`/`record` point at the edited row's cell, `grid`/`view` are wired.
+  const buildColumnItemProxy = useCallback(
+    (formHandle: FormHandle, rowData: Record<string, unknown>, colName: string, grid: GridProxy, view: ViewProxy) => {
+      const item = createItemProxy(formHandle, colName, { columnName: colName }, fieldController, gridResolver);
+      item.getValue = () => rowData?.[colName];
+      item.record = rowData;
+      item.grid = grid;
+      item.view = view;
+      return item;
+    },
+    [fieldController, gridResolver]
+  );
+
+  // Runs registered per-column validators on the changed columns. On rejection it
+  // reverts the edited cell to its prior value (the script already showed its own
+  // message) and returns true so the caller aborts the change — the faithful
+  // equivalent of a classic validator returning false.
+  const rejectByColumnValidator = useCallback(
+    (row: any, mergedChanges: Record<string, unknown>, records: EntityData[]): boolean => {
+      const proxies = buildCellHookProxies();
+      if (!proxies || !gridLoadFormHandle) return false;
+      const { grid, view } = proxies;
+      const rowData = (row.original ?? row) as Record<string, unknown>;
+      // Validate the value(s) being written, not the stale cell value (see
+      // buildValidatorCandidate): a programmatic setEditValue must be checked
+      // against the candidate it writes, otherwise a row whose default fails the
+      // validator (e.g. amount=0) drops every legitimate write.
+      const candidate = buildValidatorCandidate(rowData, mergedChanges);
+      let rejected = false;
+      for (const colName of Object.keys(mergedChanges ?? {})) {
+        const validator = columnValidatorRef.current.get(colName);
+        if (!validator) continue;
+        const item = buildColumnItemProxy(gridLoadFormHandle, candidate, colName, grid, view);
+        if (validator(item, undefined, candidate[colName], candidate as EntityData) === false) {
+          const prior = records.find((r) => String(r.id) === String(row.id)) as Record<string, unknown> | undefined;
+          if (prior && colName in prior) rowData[colName] = prior[colName];
+          rejected = true;
+        }
+      }
+      if (rejected) setSiblingPatchVersion((v) => v + 1);
+      return rejected;
+    },
+    [buildCellHookProxies, buildColumnItemProxy, gridLoadFormHandle]
+  );
+
+  // Fires the cell-edit hooks on every real edit (both create-rows and existing
+  // rows): script `grid.onRecordChange` subscribers, then per-column onChange
+  // handlers. No-op unless a migrated script registered any. The re-entrancy guard
+  // stops a column onChange that calls `grid.setEditValue` from looping forever.
+  const fireCellEditHooks = useCallback(
+    (row: any, mergedChanges: Record<string, unknown>): void => {
+      const hasSubs = recordChangeSubsRef.current.length > 0;
+      const hasColumnOnChange = columnOnChangeRef.current.size > 0;
+      if ((!hasSubs && !hasColumnOnChange) || inColumnOnChangeRef.current) return;
+      const proxies = buildCellHookProxies();
+      if (!proxies || !gridLoadFormHandle) return;
+      const { grid, view } = proxies;
+      const rowData = (row.original ?? row) as Record<string, unknown>;
+      const changes = mergedChanges ?? {};
+
+      for (const fn of recordChangeSubsRef.current) {
+        try {
+          fn(row as EntityData, changes);
+        } catch (error) {
+          logger.error("[WindowReferenceGrid] onRecordChange subscriber failed", error);
+        }
+      }
+
+      if (!hasColumnOnChange) return;
+      inColumnOnChangeRef.current = true;
+      try {
+        for (const colName of Object.keys(changes)) {
+          const onChange = columnOnChangeRef.current.get(colName);
+          if (!onChange) continue;
+          const item = buildColumnItemProxy(gridLoadFormHandle, rowData, colName, grid, view);
+          try {
+            onChange(item, view, view.theForm, grid);
+          } catch (error) {
+            logger.error("[WindowReferenceGrid] column onChange failed", error);
+          }
+        }
+      } finally {
+        inColumnOnChangeRef.current = false;
+      }
+    },
+    [buildCellHookProxies, buildColumnItemProxy, gridLoadFormHandle]
+  );
+
   // Stable handler using refs
   const handleRecordChange = useCallback(
-    (row: any, changes: any) => {
+    (row: any, changes: any, options?: { programmatic?: boolean }) => {
       const records = localRecordsRef.current;
       const selection = rowSelectionRef.current;
 
@@ -2217,45 +2983,174 @@ const WindowReferenceGrid = ({
         setSiblingPatchVersion((v) => v + 1);
       }
 
-      // For rows not yet in localRecords (typical create-row case), the
-      // row.original / _valuesCache mutation plus the version bump above are
-      // the entire effect. The setLocalRecords + onSelectionChange paths below
-      // operate on existing rows only, so we stop here.
-      if (!records.some((r) => String(r.id) === String(row.id))) {
-        return;
+      // Per-column validator gate (classic AD_FIELD validator). Runs only for
+      // interactive edits with registered validators and outside a column-onChange
+      // re-entry; programmatic writes (distribute/seed) are never validated, matching
+      // classic. On reject the edited cell is reverted and the change is aborted.
+      if (
+        shouldRunColumnValidators(!!options?.programmatic, inColumnOnChangeRef.current, columnValidatorRef.current.size)
+      ) {
+        if (rejectByColumnValidator(row, mergedChanges, records)) return;
       }
 
-      // Update state (trigger re-render)
-      setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...mergedChanges } : r)));
+      // Persist the edit against the committed read store (see applyEditToReadStore):
+      // a script-proxy setEditValue targets a row drawn from gridApiRef.current.rows,
+      // which getEditValues / getEditedCell / the cell display also read. Rows absent
+      // from the read store (MRT create-rows, id="mrt-row-create") return null here
+      // and keep the row.original / _valuesCache mutation above as their only state
+      // effect, just firing the cell-edit hooks below.
+      const updatedRecords = applyEditToReadStore(gridApiRef.current.rows, row.id, mergedChanges);
+      if (updatedRecords) {
+        // Update state (trigger re-render)
+        setLocalRecords(updatedRecords);
+        // Reflect the in-flight edit in the read store synchronously, BEFORE the
+        // cell-edit hooks fire below. setLocalRecords commits on the next render, so
+        // without this a migrated onChange reading grid.getEditValues / getEditedCell
+        // (which read gridApiRef.current.rows) would see the previous render's value
+        // (stale-by-one). Classic SmartClient committed the cell value synchronously
+        // before the change handler.
+        gridApiRef.current.rows = updatedRecords;
 
-      // Update selection if selected (read from ref)
-      if (selection[row.id]) {
-        onSelectionChange((prev: GridSelectionStructure) => {
-          const currentSelection = prev[parameter.dBColumnName]?._selection || [];
-          const updatedSelection = currentSelection.map((item) =>
-            String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
-          );
-          return {
-            ...prev,
-            [parameter.dBColumnName]: {
-              ...prev[parameter.dBColumnName],
-              _selection: updatedSelection,
-              _allRows:
-                prev[parameter.dBColumnName]?._allRows?.map((item) =>
-                  String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
-                ) || [],
-            },
-          };
-        });
+        // Update selection if selected (read from ref)
+        if (selection[row.id]) {
+          onSelectionChange((prev: GridSelectionStructure) => {
+            const currentSelection = prev[parameter.dBColumnName]?._selection || [];
+            const updatedSelection = currentSelection.map((item) =>
+              String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
+            );
+            return {
+              ...prev,
+              [parameter.dBColumnName]: {
+                ...prev[parameter.dBColumnName],
+                _selection: updatedSelection,
+                _allRows:
+                  prev[parameter.dBColumnName]?._allRows?.map((item) =>
+                    String(item.id) === String(row.id) ? { ...item, ...mergedChanges } : item
+                  ) || [],
+              },
+            };
+          });
+        }
       }
+
+      // Notify script-registered cell-edit hooks (mirrors the classic per-cell
+      // onChange). Additive: a no-op when no script registered any subscriber.
+      fireCellEditHooks(row, mergedChanges);
     },
-    [parameter.dBColumnName, onSelectionChange, processId]
+    [parameter.dBColumnName, onSelectionChange, processId, rejectByColumnValidator, fireCellEditHooks]
   ); // Dependencies are now minimal and stable
 
   // Update the ref exposed to context
   useEffect(() => {
     handleRecordChangeRef.current = handleRecordChange;
   }, [handleRecordChange]);
+
+  // --- Programmable grid handle (view.theForm.getItem('<param>').canvas.viewGrid)
+  // Live handles the controller reads at call time, refreshed every render so the
+  // controller identity stays stable (the modal keeps it in a registry) while it
+  // always operates on the current rows / selection / datasource handles.
+  const gridApiRef = useRef<EmbeddedGridApi>({
+    rows: localRecords,
+    refetch,
+    criteria: datasourceOptions?.criteria,
+    fields,
+    handleRowSelection,
+    handleClearSelections,
+    handleRecordChange,
+    setRowActions: registerRowActions,
+  });
+  gridApiRef.current = {
+    rows: localRecords,
+    refetch,
+    criteria: datasourceOptions?.criteria,
+    fields,
+    handleRowSelection,
+    handleClearSelections,
+    handleRecordChange,
+    setRowActions: registerRowActions,
+  };
+
+  const gridController = useMemo<GridController>(
+    () =>
+      createEmbeddedGridController(
+        () => gridApiRef.current,
+        () => Array.from(persistentSelectionRef.current.values()),
+        {
+          dataArrived: dataArrivedSubsRef.current,
+          selectionChanged: selectionChangedSubsRef.current,
+          recordChange: recordChangeSubsRef.current,
+          selectionToggle: selectionToggleSubsRef.current,
+          columnOnChange: columnOnChangeRef.current,
+          columnValidator: columnValidatorRef.current,
+        }
+      ),
+    []
+  );
+  gridControllerRef.current = gridController;
+
+  // Register this grid's controller with the modal so scripts reach it through
+  // `view.theForm.getItem('<param>').canvas.viewGrid`. Keyed by parameter name
+  // (the key `resolveFormKey` maps item lookups to).
+  useEffect(() => {
+    if (!onRegisterGrid) return;
+    onRegisterGrid(parameter.name, gridController);
+    return () => onUnregisterGrid?.(parameter.name);
+  }, [onRegisterGrid, onUnregisterGrid, parameter.name, gridController]);
+
+  // Diffs the previous vs current selection and emits one per-toggle delta
+  // (record, state) for each added (true) / removed (false) id. A removed record
+  // may be off the current page, so it is resolved from the persistent cache then
+  // from localRecords. Updates the baseline for the next diff.
+  const emitSelectionToggles = useCallback((selection: EntityData[]) => {
+    const currentIds = new Set(selection.map((r) => String(r.id)));
+    const byId = new Map(selection.map((r) => [String(r.id), r] as const));
+    const fire = (record: EntityData, state: boolean) => {
+      for (const fn of selectionToggleSubsRef.current) {
+        try {
+          fn(record, state);
+        } catch (error) {
+          logger.error("[WindowReferenceGrid] onSelectionToggle subscriber failed", error);
+        }
+      }
+    };
+    for (const id of currentIds) {
+      if (!prevSelectionIdsRef.current.has(id)) {
+        const record = byId.get(id);
+        if (record) fire(record, true);
+      }
+    }
+    for (const id of prevSelectionIdsRef.current) {
+      if (!currentIds.has(id)) {
+        const record =
+          persistentSelectionRef.current.get(id) ?? localRecordsRef.current.find((r) => String(r.id) === id);
+        if (record) fire(record, false);
+      }
+    }
+    prevSelectionIdsRef.current = currentIds;
+  }, []);
+
+  // Notify script `selectionChanged` subscribers on every selection change
+  // (skipping the initial mount so it mirrors a user/programmatic toggle).
+  const selectionChangedReadyRef = useRef(false);
+  useEffect(() => {
+    if (!selectionChangedReadyRef.current) {
+      selectionChangedReadyRef.current = true;
+      // Seed the toggle-diff baseline so the first real toggle diffs against the
+      // mount selection instead of emitting spurious "added" toggles.
+      prevSelectionIdsRef.current = new Set(Array.from(persistentSelectionRef.current.keys()));
+      return;
+    }
+    const selection = Array.from(persistentSelectionRef.current.values());
+    // Existing full-array contract — UNCHANGED (already-migrated processes rely on it).
+    for (const fn of selectionChangedSubsRef.current) fn(selection);
+
+    // Additive per-toggle delta (classic `selectionChanged(record, state)`): diff
+    // the previous vs current selection and emit one toggle per added/removed id.
+    // Gated so it stays a pure no-op unless a script subscribed via onSelectionToggle.
+    if (selectionToggleSubsRef.current.length > 0) {
+      emitSelectionToggles(selection);
+    }
+  }, [rowSelection]);
 
   // Context value for GridCellEditor components (defined here to capture handleRecordChangeRef)
   const gridContextValue = useMemo(
@@ -2288,6 +3183,92 @@ const WindowReferenceGrid = ({
     ]
   );
 
+  // Builds the {record, view, grid} context for a row-action renderer/button,
+  // reusing the exact proxies the onGridLoad path builds so script mutations
+  // follow the same live grid handle.
+  const buildRowActionContext = useCallback(
+    (record: EntityData): RowActionContext | null => {
+      if (!gridLoadFormHandle || !messageBar) return null;
+      const selectedRecords = Array.from(persistentSelectionRef.current.values());
+      const grid = createGridProxy(
+        { rows: localRecords, selectedRecords },
+        gridControllerRef.current ?? undefined,
+        fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
+      );
+      const view = createViewProxy(gridLoadFormHandle, parameters, {
+        messageBar,
+        grid,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+      });
+      grid.view = view;
+      return { record, view, grid };
+    },
+    [
+      gridLoadFormHandle,
+      messageBar,
+      localRecords,
+      parameters,
+      parameter.name,
+      fieldController,
+      viewController,
+      gridResolver,
+      viewData,
+    ]
+  );
+
+  // Calls the registered renderer for one row; a throw is logged and yields no
+  // buttons so the row (and the table) keep rendering.
+  const evaluateRowActions = useCallback(
+    (record: EntityData): RowActionDescriptor | null => {
+      const renderer = rowActionsRendererRef.current;
+      if (!renderer) return null;
+      const ctx = buildRowActionContext(record);
+      if (!ctx) return null;
+      try {
+        return renderer(ctx) ?? null;
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] row action renderer failed", error);
+        return null;
+      }
+    },
+    [buildRowActionContext]
+  );
+
+  // Runs a button's action with a fresh context; a throw is logged, not fatal.
+  const runRowAction = useCallback(
+    (button: RowActionButton, record: EntityData) => {
+      if (button.disabled || !button.action) return;
+      const ctx = buildRowActionContext(record);
+      if (!ctx) return;
+      try {
+        button.action(ctx);
+      } catch (error) {
+        logger.error("[WindowReferenceGrid] row action failed", error);
+      }
+    },
+    [buildRowActionContext]
+  );
+
+  const renderRowActionsCell = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: MRT cell render args
+    ({ row }: any) => {
+      const record = row.original as EntityData;
+      const descriptor = evaluateRowActions(record);
+      if (!descriptor || descriptor.buttons.length === 0) return null;
+      return (
+        <RowActionsCell
+          buttons={descriptor.buttons}
+          onActivate={(index) => runRowAction(descriptor.buttons[index], record)}
+          data-testid="RowActionsCell__ce8544"
+        />
+      );
+    },
+    [evaluateRowActions, runRowAction]
+  );
+
   const finalColumns = useMemo(() => {
     const windowReferenceTab = parameter.window?.tabs?.[0];
     let fields: any[] = [];
@@ -2299,7 +3280,7 @@ const WindowReferenceGrid = ({
       }
     }
 
-    return columns
+    const mappedColumns = columns
       .filter((c) => c.id !== "actions")
       .map((col) => {
         // Identify if column corresponds to a Read-Only field
@@ -2351,6 +3332,10 @@ const WindowReferenceGrid = ({
 
         return newCol;
       });
+
+    // The script row-action buttons are rendered inside the leading actions
+    // column (the "mrt-row-actions" Cell override), not as a trailing column.
+    return mappedColumns;
   }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2392,6 +3377,8 @@ const WindowReferenceGrid = ({
   const hasLocallyAddedRow = (records || []).some((r) => Boolean((r as { _locallyAdded?: boolean })?._locallyAdded));
   const hasAnyDeletableRow = canDelete && (records || []).length > 0;
   const hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow;
+  // Creatable grids must own the create-row chrome too (see shouldShowRowActions).
+  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasRowActions, canAdd);
   const enableEditingPredicate = useMemo(
     () => buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap),
     [finalColumns, windowReferenceTab, fieldReadOnlyMap]
@@ -2497,23 +3484,33 @@ const WindowReferenceGrid = ({
       // gate). Combined with `enableEditing` rejecting rows that already have an
       // `original.id`, no existing row can be entered into edit-mode by the user.
       editDisplayMode: "row",
-      enableRowActions: hasAnyActionableRow,
-      renderRowActions: hasAnyActionableRow
-        ? ({ row, table }) =>
+      enableRowActions: showRowActions,
+      positionActionsColumn: "first",
+      displayColumnDefOptions: {
+        "mrt-row-actions": {
+          size: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          minSize: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          enableResizing: false,
+          // Center the "Actions" header label over the centered icon row.
+          muiTableHeadCellProps: {
+            // align: "center",
+            sx: { "& .Mui-TableHeadCell-Content": { justifyContent: "center" } },
+          },
+          // Own the actions cell directly. MRT's default actions cell forces its
+          // built-in MRT_EditActionButtons for the create-row in row create/edit
+          // mode and never consults `renderRowActions`, so overriding the column
+          // `Cell` is the only way our create-row buttons (and idle-row buttons)
+          // render for every row, including the creating scaffold.
+          Cell: ({ row, table }) =>
             renderActionsCell({
               row,
               table,
               canDelete,
               onDelete: handleDeleteRow,
               deleteRowLabel,
-            })
-        : undefined,
-      positionActionsColumn: "first",
-      displayColumnDefOptions: {
-        "mrt-row-actions": {
-          size: 100,
-          minSize: 100,
-          enableResizing: false,
+              // Script buttons render on real (persisted) rows only.
+              leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
+            }),
         },
       },
       onCreatingRowSave: handleCreateRow,
@@ -2539,7 +3536,9 @@ const WindowReferenceGrid = ({
       deleteRowLabel,
       enableRowSelectionFromMetadata,
       enableEditingPredicate,
-      hasAnyActionableRow,
+      showRowActions,
+      hasRowActions,
+      renderRowActionsCell,
     ]
   );
 
