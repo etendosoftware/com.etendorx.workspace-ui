@@ -88,3 +88,154 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
   });
 });
+
+describe("refreshGrid response action", () => {
+  it("refreshes grid when refreshGrid action is present with retryExecution=true and refreshParent=false", async () => {
+    mockFetchJson({
+      retryExecution: true,
+      refreshParent: false,
+      responseActions: [{ refreshGrid: {} }],
+    });
+    const setGridRefreshKey = jest.fn();
+    const setResult = jest.fn();
+
+    const { result } = renderHook(() => useProcessExecution(makeParams({ setGridRefreshKey, setResult })));
+    await result.current.executeJavaProcess({});
+
+    expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
+    expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
+  });
+});
+
+describe("openDirectTab auto-navigation", () => {
+  it("navigates automatically when openDirectTab accompanies a success message", async () => {
+    const mockRouter = { replace: jest.fn() };
+    let fetchCallCount = 0;
+    global.fetch = jest.fn().mockImplementation(() => {
+      fetchCallCount++;
+      if (fetchCallCount === 1) {
+        // Process execution response
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            responseActions: [
+              { showMsgInProcessView: { msgType: "success", msgText: "Done" } },
+              { openDirectTab: { tabId: "TAB-X", recordId: "REC-Y" } },
+            ],
+          }),
+        });
+      }
+      // handleNavigateToTab tab metadata fetch
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ window: "WIN-X" }),
+      });
+    }) as jest.Mock;
+
+    const { result } = renderHook(() => useProcessExecution(makeParams({ router: mockRouter as any })));
+    await result.current.executeJavaProcess({});
+
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+
+  it("navigates automatically when only openDirectTab is in responseActions (no message)", async () => {
+    const mockRouter = { replace: jest.fn() };
+    let fetchCallCount = 0;
+    global.fetch = jest.fn().mockImplementation(() => {
+      fetchCallCount++;
+      if (fetchCallCount === 1) {
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            responseActions: [{ openDirectTab: { tabId: "TAB-Z", recordId: "REC-Z" } }],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ window: "WIN-Z" }),
+      });
+    }) as jest.Mock;
+
+    const { result } = renderHook(() => useProcessExecution(makeParams({ router: mockRouter as any })));
+    await result.current.executeJavaProcess({});
+
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+
+  it("navigates to grid mode (no recordId) when openDirectTab has no recordId", async () => {
+    const mockRouter = { replace: jest.fn() };
+    let fetchCallCount = 0;
+    global.fetch = jest.fn().mockImplementation(() => {
+      fetchCallCount++;
+      if (fetchCallCount === 1) {
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            responseActions: [
+              { showMsgInProcessView: { msgType: "success", msgText: "Done" } },
+              { openDirectTab: { tabId: "TAB-G" } },
+            ],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ window: "WIN-G" }),
+      });
+    }) as jest.Mock;
+
+    const { result } = renderHook(() => useProcessExecution(makeParams({ router: mockRouter as any })));
+    await result.current.executeJavaProcess({});
+
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+});
+
+describe("multi-record invocation", () => {
+  it("sends one request per selected record when isMultiRecord=true", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Done" } }],
+      }),
+    }) as jest.Mock;
+
+    const { result } = renderHook(() =>
+      useProcessExecution(
+        makeParams({
+          javaClassName: "com.example.MyProcess",
+          button: { processDefinition: { id: "PDef-001", parameters: {}, isMultiRecord: true } },
+          selectedRecords: [{ id: "REC-1" }, { id: "REC-2" }],
+        })
+      )
+    );
+
+    await result.current.handleDirectJavaProcessExecute();
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends a single request when isMultiRecord=false even with multiple records", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Done" } }],
+      }),
+    }) as jest.Mock;
+
+    const { result } = renderHook(() =>
+      useProcessExecution(
+        makeParams({
+          javaClassName: "com.example.MyProcess",
+          button: { processDefinition: { id: "PDef-001", parameters: {}, isMultiRecord: false } },
+          selectedRecords: [{ id: "REC-1" }, { id: "REC-2" }],
+        })
+      )
+    );
+
+    await result.current.handleDirectJavaProcessExecute();
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});
