@@ -615,7 +615,7 @@ export function useProcessExecution({
               ...buildProcessSpecificFields(processId),
               ..._basePayload,
             };
-            await executeJavaProcess(payload, `direct Java process (record ${rec.id})`);
+            await executeJavaProcess(payload, `direct Java process (record ${String(rec.id)})`);
           }
         } else {
           const payload = {
