@@ -313,6 +313,12 @@ export interface Field {
    */
   fieldGroupCollapsed?: boolean;
   /**
+   * Translated display name of the field group in the user's current language.
+   * Falls back to the base-language name when no translation exists.
+   * Takes precedence over fieldGroup$_identifier for group header rendering.
+   */
+  fieldGroupName?: string;
+  /**
    * When true, this column is marked as ISSELECTIONCOLUMN=Y in AD_COLUMN.
    * The grid toolbar renders a default quick-filter input for these columns.
    */
