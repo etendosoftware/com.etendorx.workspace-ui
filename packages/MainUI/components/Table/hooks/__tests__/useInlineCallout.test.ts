@@ -52,8 +52,8 @@ describe("useInlineCallout – error detection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (globalCalloutManager.isSuppressed as jest.Mock).mockReturnValue(false);
-    (globalCalloutManager.executeCallout as jest.Mock).mockImplementation(
-      (_name: string, fn: () => Promise<void>) => fn()
+    (globalCalloutManager.executeCallout as jest.Mock).mockImplementation((_name: string, fn: () => Promise<void>) =>
+      fn()
     );
   });
 

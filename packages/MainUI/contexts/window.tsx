@@ -19,8 +19,7 @@
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { FocusProvider } from "@/contexts/focus";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import { type TabFormState } from "@/utils/url/constants";
+import type { TabFormState } from "@/utils/url/constants";
 import {
   type WindowState,
   type TableState,
