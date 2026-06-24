@@ -189,3 +189,12 @@ export function useDatasourceContext() {
   }
   return context;
 }
+
+/**
+ * Non-throwing variant: returns `undefined` when no provider is mounted.
+ * For consumers that can degrade gracefully (e.g. a process modal whose
+ * parent-grid refresh is a no-op outside a window tree / in tests).
+ */
+export function useOptionalDatasourceContext() {
+  return useContext(DatasourceContext);
+}

@@ -53,8 +53,8 @@ export function useProcessDefinitionTrigger(field: Field): UseProcessDefinitionT
               description: processData.description || "",
               javaClassName: processData.javaClassName || "",
               parameters: processData.parameters || {},
-              onLoad: processData.onLoad || "",
-              onProcess: processData.onProcess || "",
+              // etmetaOnload / etmetaOnprocess / etmetaOnRefresh / etmetaPayscriptLogic
+              // arrive through the spread below and remain nullable, matching the API contract.
               ...processData,
             },
           } as unknown as ProcessDefinitionButton;

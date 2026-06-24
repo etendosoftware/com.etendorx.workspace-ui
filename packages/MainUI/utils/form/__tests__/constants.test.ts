@@ -4,6 +4,7 @@ import {
   FIELD_REFERENCE_CODES,
   PRODUCT_SELECTOR_REFERENCE_IDS,
   getPasswordFieldNames,
+  isNumericReference,
   shouldExcludePasswordField,
 } from "../constants";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
@@ -36,6 +37,23 @@ describe("form/constants", () => {
 
     it("should have PRODUCT_SELECTOR_REFERENCE_IDS as a non-empty array", () => {
       expect(PRODUCT_SELECTOR_REFERENCE_IDS.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("isNumericReference", () => {
+    it("returns true for every numeric reference id (Integer / Number / Quantity / Decimal)", () => {
+      expect(isNumericReference(FIELD_REFERENCE_CODES.INTEGER.id)).toBe(true);
+      expect(isNumericReference(FIELD_REFERENCE_CODES.NUMERIC.id)).toBe(true);
+      expect(isNumericReference(FIELD_REFERENCE_CODES.QUANTITY_22.id)).toBe(true);
+      expect(isNumericReference(FIELD_REFERENCE_CODES.QUANTITY_29.id)).toBe(true);
+      expect(isNumericReference(FIELD_REFERENCE_CODES.DECIMAL.id)).toBe(true);
+    });
+
+    it("returns false for non-numeric references and missing values", () => {
+      expect(isNumericReference(FIELD_REFERENCE_CODES.STRING.id)).toBe(false);
+      expect(isNumericReference(FIELD_REFERENCE_CODES.SELECTOR.id)).toBe(false);
+      expect(isNumericReference("")).toBe(false);
+      expect(isNumericReference()).toBe(false);
     });
   });
 

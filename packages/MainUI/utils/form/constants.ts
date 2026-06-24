@@ -127,6 +127,24 @@ export const FIELD_REFERENCE_CODES = {
 } as const;
 
 /**
+ * Reference ids whose values are numeric (Integer / Number / Quantity / Decimal).
+ * Single source of truth shared by every numeric-detection predicate so the list
+ * is never duplicated.
+ */
+const NUMERIC_REFERENCE_IDS: readonly string[] = [
+  FIELD_REFERENCE_CODES.INTEGER.id,
+  FIELD_REFERENCE_CODES.NUMERIC.id,
+  FIELD_REFERENCE_CODES.QUANTITY_22.id,
+  FIELD_REFERENCE_CODES.QUANTITY_29.id,
+  FIELD_REFERENCE_CODES.DECIMAL.id,
+];
+
+/** True when the given reference id denotes a numeric field (Integer / Number / Quantity / Decimal). */
+export function isNumericReference(reference?: string): boolean {
+  return !!reference && NUMERIC_REFERENCE_IDS.includes(reference);
+}
+
+/**
  * Known product selector reference IDs from Etendo Classic.
  * These are the AD_REFERENCE_ID values used as referenceSearchKey
  * for product-type fields (M_Product_ID).

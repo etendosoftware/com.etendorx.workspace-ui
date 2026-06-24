@@ -19,7 +19,8 @@ import { executeLogic } from "@/payscript";
 import type { PayScriptRules } from "@/payscript";
 import type { ProcessCalloutFunction } from "./processCallouts";
 import { logger } from "@/utils/logger";
-import { getStoredPreferences, createOBShim } from "@/utils/propertyStore";
+import { getStoredPreferences } from "@/utils/propertyStore";
+import { createOBShim } from "@/utils/ob/obShim";
 /**
  * Registry of PayScript rules by process ID
  * In the future, this will be loaded from the backend dynamically

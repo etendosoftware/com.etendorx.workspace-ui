@@ -95,6 +95,55 @@ describe("useProcessDefinitionTrigger", () => {
     expect(result.current.processButtonData).toBeNull();
   });
 
+  it("carries etmeta* hook fields from the API response into the process definition", async () => {
+    mockPost.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        name: "Match Statement",
+        id: "proc-123",
+        javaClassName: "",
+        etmetaOnload: "function(pd, view){ /* onLoad */ }",
+        etmetaOnprocess: "function(pd, view){ /* onProcess */ }",
+        etmetaOnRefresh: "function(view){ /* onRefresh */ }",
+        etmetaPayscriptLogic: "/* shared body */",
+      },
+    });
+
+    const { result } = renderHook(() => useProcessDefinitionTrigger(makeField()));
+
+    await act(async () => {
+      await result.current.triggerProcess("proc-123");
+    });
+
+    const pd = result.current.processButtonData?.processDefinition as Record<string, unknown>;
+    expect(pd.etmetaOnload).toBe("function(pd, view){ /* onLoad */ }");
+    expect(pd.etmetaOnprocess).toBe("function(pd, view){ /* onProcess */ }");
+    expect(pd.etmetaOnRefresh).toBe("function(view){ /* onRefresh */ }");
+    expect(pd.etmetaPayscriptLogic).toBe("/* shared body */");
+  });
+
+  it("does not synthesize legacy onLoad/onProcess keys from the response", async () => {
+    mockPost.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        name: "Plain Process",
+        id: "proc-999",
+        etmetaOnload: "x",
+        etmetaOnprocess: "y",
+      },
+    });
+
+    const { result } = renderHook(() => useProcessDefinitionTrigger(makeField()));
+
+    await act(async () => {
+      await result.current.triggerProcess("proc-999");
+    });
+
+    const pd = result.current.processButtonData?.processDefinition as Record<string, unknown>;
+    expect(pd.onLoad).toBeUndefined();
+    expect(pd.onProcess).toBeUndefined();
+  });
+
   it("handles API error gracefully", async () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockPost.mockRejectedValueOnce(new Error("Network error"));

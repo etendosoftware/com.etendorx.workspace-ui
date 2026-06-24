@@ -31,6 +31,9 @@ import { UploadFileSelector } from "./UploadFileSelector";
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
   logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
+  // Runtime label overrides set by migrated scripts (item.setTitle). Keyed by
+  // parameter name; when present, the override replaces the static label.
+  labelOverrides?: Record<string, string>;
   parameters?: Record<string, ProcessParameter>;
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
@@ -48,7 +51,7 @@ interface ProcessParameterSelectorProps {
   processId?: string;
 }
 
-import { createProcessExpressionContext } from "../utils/processExpressionUtils";
+import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
 
 // ... imports remain the same
 
@@ -83,6 +86,7 @@ export const mapValuesByDBColumnName = (
 const ProcessParameterSelectorImpl = ({
   parameter,
   logicFields,
+  labelOverrides,
   parameters,
   recordValues,
   parentFields,
@@ -110,39 +114,12 @@ const ProcessParameterSelectorImpl = ({
     });
   }, [parameters, values, recordValues, parentFields, session]);
 
-  // Evaluate display logic expression (combine parameter logic with process defaults logic)
-  const isDisplayed = useMemo(() => {
-    // Check process defaults logic first (takes precedence)
-    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
-    if (defaultsDisplayLogic !== undefined) {
-      return defaultsDisplayLogic;
-    }
-
-    // Fallback to parameter's own display logic
-    if (!parameter.displayLogic) return true;
-
-    // Skip compilation if display logic looks like a field name (contains underscores and ends with _logic)
-    if (parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@")) {
-      logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
-      return true; // Default to visible for malformed expressions
-    }
-
-    // WAIT for form data to be available before evaluating expressions
-    if (!values || Object.keys(values).length === 0) {
-      // Form data not loaded yet, default to visible to avoid errors
-      return true;
-    }
-
-    try {
-      const compiledExpr = compileExpression(parameter.displayLogic);
-      // Pass smartContext as both context and values to ensure resolution works for all variable types
-      const result = compiledExpr(evaluationContext, evaluationContext);
-      return result;
-    } catch (error) {
-      logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
-      return true; // Default to visible on error
-    }
-  }, [parameter.displayLogic, parameter.name, parameter.dBColumnName, logicFields, values, evaluationContext]);
+  // Evaluate display logic via the shared helper, so the script-facing
+  // `item.isVisible()` proxy and the rendered field always agree on visibility.
+  const isDisplayed = useMemo(
+    () => isParameterDisplayed({ parameter, logicFields, values, evaluationContext }),
+    [parameter, logicFields, values, evaluationContext]
+  );
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {
@@ -343,7 +320,11 @@ const ProcessParameterSelectorImpl = ({
   return (
     <div className="h-12 flex items-center" title={parameter.description}>
       <div className="w-1/3 flex items-center gap-2 pr-2">
-        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
+        <Label
+          htmlFor={parameter.name}
+          name={labelOverrides?.[parameter.name] ?? parameter.name}
+          data-testid="Label__dac06b"
+        />
         {parameter.mandatory && (
           <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
             *

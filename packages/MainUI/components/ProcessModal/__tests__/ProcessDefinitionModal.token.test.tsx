@@ -215,8 +215,10 @@ describe("ProcessDefinitionModal token handling", () => {
       description: "Test process description",
       javaClassName: "com.test.TestProcess",
       parameters: {},
-      onLoad: null,
-      onProcess: null,
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as any;
 

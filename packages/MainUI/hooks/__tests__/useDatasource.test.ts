@@ -88,6 +88,44 @@ describe("useDatasource hook", () => {
     expect(result.current.records).toHaveLength(0);
   });
 
+  describe("hasFirstFetchCompleted", () => {
+    // Distinguishes "a real datasource fetch has delivered a result" from the
+    // pre-fetch placeholder (initial state or the `skip` phase). Consumers gate
+    // load-time lifecycle hooks on it so an empty result set is fired only once
+    // a genuine fetch completed — not on the empty placeholder.
+
+    it("is false before the first fetch resolves and true once it completes", async () => {
+      const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+
+      expect(result.current.hasFirstFetchCompleted).toBe(false);
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.hasFirstFetchCompleted).toBe(true);
+    });
+
+    it("stays false while `skip` is active even though `loaded` flips true", async () => {
+      const { result } = renderHook(() => useDatasource({ entity: mockEntity, skip: true }));
+
+      // `loaded` is flipped true during skip so consumers hide the spinner, but
+      // no real fetch ran, so `hasFirstFetchCompleted` must remain false.
+      await waitFor(() => expect(result.current.loaded).toBe(true));
+
+      expect(result.current.hasFirstFetchCompleted).toBe(false);
+      expect(datasource.get).not.toHaveBeenCalled();
+    });
+
+    it("becomes true even when the fetch returns zero rows", async () => {
+      (datasource.get as jest.Mock).mockResolvedValue({ ok: true, data: { response: { data: [] } } });
+
+      const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.records).toEqual([]);
+      expect(result.current.hasFirstFetchCompleted).toBe(true);
+    });
+  });
+
   describe("locally-added rows survive refetches", () => {
     // Reproduces the Add Payment / GL Items bug: the user creates a row, the
     // PayScript fires and changes form values, those values feed into

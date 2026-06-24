@@ -1040,6 +1040,13 @@ export type ProcessParameter = {
    * When false or undefined, the field group starts expanded.
    */
   fieldGroupCollapsed?: boolean;
+  // Parameter-level hook bodies migrated from the classic OBUIAPP_Parameter
+  // columns (em_etmeta_on_parameter_change / em_etmeta_on_grid_load). Both are
+  // nullable in the DB and emitted as JSON null when unset. onParameterChange
+  // binds to the parameter's value-change event; onGridLoad binds to an embedded
+  // grid parameter's data-arrived event.
+  etmetaOnParameterChange?: string | null;
+  etmetaOnGridLoad?: string | null;
   /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
   sequenceNumber?: number;
   /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
@@ -1060,10 +1067,21 @@ export type ProcessParameters = Record<string, ProcessParameter>;
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
+  description?: string;
   javaClassName: string;
   parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
+  // Lifecycle hook bodies migrated from the classic OBUIAPP_Process columns
+  // (em_etmeta_onload / em_etmeta_onprocess / em_etmeta_on_refresh) plus the
+  // shared module body (em_etmeta_payscript_logic). All four are nullable in
+  // the DB and emitted as JSON null when unset.
+  etmetaOnload: string | null;
+  etmetaOnprocess: string | null;
+  etmetaOnRefresh: string | null;
+  etmetaPayscriptLogic: string | null;
+  /** Whether the process renders its own custom UI component (built from the
+   *  schema returned by its onLoad) instead of the standard parameter form. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  etmetaCustomComponent?: boolean | "Y" | "N";
   /** Pick and Execute discriminator emitted by the metadata converter. Most
    *  process definitions omit it; only P&E seeds set it to `OBUIAPP_PickAndExecute`. */
   uIPattern?: UIPattern | string;

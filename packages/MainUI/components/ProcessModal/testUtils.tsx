@@ -125,6 +125,7 @@ export const mockFormData = {
   watch: () => ({}),
   control: {},
   reset: jest.fn(),
+  clearErrors: jest.fn(),
 };
 
 export const mockFormState = { isValid: true, isSubmitting: false };

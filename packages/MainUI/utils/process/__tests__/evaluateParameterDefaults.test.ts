@@ -1,9 +1,9 @@
-import { evaluateParameterDefaults } from "../evaluateParameterDefaults";
+import { evaluateParameterDefaults, seedBooleanParameterDefaults } from "../evaluateParameterDefaults";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
   compileExpression: jest.fn((expr: string) => {
-    return (context: Record<string, unknown>, values: Record<string, unknown>) => {
+    return (context: Record<string, unknown>, _values: Record<string, unknown>) => {
       if (expr === "@AD_Org_ID@") return context.AD_Org_ID;
       if (expr === "fail") throw new Error("compile error");
       if (expr === "empty") return "";
@@ -97,5 +97,48 @@ describe("evaluateParameterDefaults", () => {
     };
     const result = evaluateParameterDefaults(params, context, emptyValues);
     expect(result).toEqual({ p1: "org-1", p2: "evaluated:someExpr" });
+  });
+});
+
+describe("seedBooleanParameterDefaults", () => {
+  // ref "20" is FIELD_REFERENCE_CODES.BOOLEAN.id (Yes/No).
+  const BOOLEAN_REF = "20";
+
+  it("seeds false into a Yes/No parameter with no resolved value", () => {
+    const params = { setAmount: makeParam("Set Amount", undefined, BOOLEAN_REF) };
+    const values: Record<string, unknown> = {};
+    seedBooleanParameterDefaults(values, params);
+    expect(values["Set Amount"]).toBe(false);
+  });
+
+  it("seeds false when the value is null or empty string", () => {
+    const params = { a: makeParam("A", undefined, BOOLEAN_REF), b: makeParam("B", undefined, BOOLEAN_REF) };
+    const values: Record<string, unknown> = { A: null, B: "" };
+    seedBooleanParameterDefaults(values, params);
+    expect(values.A).toBe(false);
+    expect(values.B).toBe(false);
+  });
+
+  it("keeps an existing boolean value (true or false) untouched", () => {
+    const params = { on: makeParam("On", undefined, BOOLEAN_REF), off: makeParam("Off", undefined, BOOLEAN_REF) };
+    const values: Record<string, unknown> = { On: true, Off: false };
+    seedBooleanParameterDefaults(values, params);
+    expect(values.On).toBe(true);
+    expect(values.Off).toBe(false);
+  });
+
+  it("leaves non-boolean parameters untouched", () => {
+    const params = { currency: makeParam("Currency", undefined, "95E2A8B50A254B2AAE6774B8C2F28120") };
+    const values: Record<string, unknown> = {};
+    seedBooleanParameterDefaults(values, params);
+    expect("Currency" in values).toBe(false);
+  });
+
+  it("mutates the values object in place", () => {
+    const params = { flag: makeParam("Flag", undefined, BOOLEAN_REF) };
+    const values: Record<string, unknown> = {};
+    const returned = seedBooleanParameterDefaults(values, params);
+    expect(returned).toBeUndefined();
+    expect(values.Flag).toBe(false);
   });
 });

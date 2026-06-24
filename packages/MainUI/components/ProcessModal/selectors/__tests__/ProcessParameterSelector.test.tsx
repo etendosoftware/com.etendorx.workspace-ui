@@ -391,6 +391,45 @@ describe("ProcessParameterSelector", () => {
     expect(screen.getByTestId("upload-file-selector")).toBeInTheDocument();
   });
 
+  it("hides a field gated by display logic while form values are still loading (no flash)", () => {
+    const gatedParameter = { ...baseParameter, displayLogic: "@test_column@==='X'" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={gatedParameter} values={{}} />
+      </TestWrapper>
+    );
+
+    // displayLogic present + empty values → fail-safe hidden, so nothing renders.
+    expect(screen.queryByTestId("generic-selector")).not.toBeInTheDocument();
+  });
+
+  it("still renders a field with no display logic while values load (no regression)", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={baseParameter} values={{}} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
+  });
+
+  it("keeps a display-logic field visible when an explicit logic flag says so (precedence)", () => {
+    const gatedParameter = { ...baseParameter, displayLogic: "@test_column@==='X'" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={gatedParameter}
+          values={{}}
+          logicFields={{ "Test Parameter.display": true }}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
+  });
+
   it("should forward onFileChange to UploadFileSelector", () => {
     const onFileChange = jest.fn();
     const uploadParameter = { ...baseParameter, reference: "Upload File" };

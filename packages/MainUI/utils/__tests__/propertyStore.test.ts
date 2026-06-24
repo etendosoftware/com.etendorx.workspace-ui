@@ -15,36 +15,14 @@
  *************************************************************************
  */
 
-import { savePreferences, clearPreferences, getStoredPreferences } from "../propertyStore";
+import { installLocalStorageMock } from "../testUtils/localStorageMock";
+import { savePreferences, clearPreferences, getStoredPreferences, setStoredPreference } from "../propertyStore";
 
 describe("propertyStore", () => {
   const originalLocalStorage = global.window?.localStorage;
 
   beforeEach(() => {
-    // Mock localStorage
-    const localStorageMock = (() => {
-      let store: Record<string, string> = {};
-      return {
-        getItem: jest.fn((key: string) => store[key] || null),
-        setItem: jest.fn((key: string, value: string) => {
-          store[key] = value.toString();
-        }),
-        removeItem: jest.fn((key: string) => {
-          delete store[key];
-        }),
-        clear: jest.fn(() => {
-          store = {};
-        }),
-      };
-    })();
-
-    if (!global.window) {
-      (global as any).window = {};
-    }
-    Object.defineProperty(global.window, "localStorage", {
-      value: localStorageMock,
-      writable: true,
-    });
+    installLocalStorageMock();
   });
 
   afterAll(() => {
@@ -122,6 +100,22 @@ describe("propertyStore", () => {
 
       expect(getStoredPreferences()).toEqual({});
       global.window = originalWindow;
+    });
+  });
+
+  describe("setStoredPreference", () => {
+    it("should merge a single key without dropping existing preferences", () => {
+      savePreferences({ existing: "keep" });
+      setStoredPreference("UomManagement", "Y");
+
+      expect(getStoredPreferences()).toEqual({ existing: "keep", UomManagement: "Y" });
+    });
+
+    it("should overwrite an existing key", () => {
+      savePreferences({ theme: "dark" });
+      setStoredPreference("theme", "light");
+
+      expect(getStoredPreferences().theme).toBe("light");
     });
   });
 });
