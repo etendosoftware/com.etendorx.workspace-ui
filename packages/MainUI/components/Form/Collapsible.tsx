@@ -58,7 +58,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
     return () => {
       resizeObserver.disconnect();
     };
-  }, [children, isExpanded]);
+  }, [isExpanded]);
 
   // Handle animation
   useEffect(() => {

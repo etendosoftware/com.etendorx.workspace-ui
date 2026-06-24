@@ -52,6 +52,7 @@ import { parseColumns } from "@/utils/tableColumns";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
+  treeSearchTerm?: string;
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
@@ -114,6 +115,7 @@ interface UseTableDataReturn {
 
 export const useTableData = ({
   isTreeMode,
+  treeSearchTerm = "",
   onColumnFilter,
   onLoadFilterOptions,
   onLoadMoreFilterOptions,
@@ -606,8 +608,45 @@ export const useTableData = ({
     setIsImplicitFilterApplied,
   });
 
-  // Display records (tree mode uses flattened, normal mode uses original records)
-  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+  // Apply client-side search filter in tree mode (keeps matches + ancestor chain)
+  const filteredFlattenedRecords = useMemo(() => {
+    if (!shouldUseTreeMode || !treeSearchTerm) return flattenedRecords;
+
+    const lowerSearch = treeSearchTerm.toLowerCase();
+    const matchIds = new Set(
+      flattenedRecords
+        .filter((r) =>
+          String(r._identifier || r.name || "")
+            .toLowerCase()
+            .includes(lowerSearch)
+        )
+        .map((r) => String(r.id))
+    );
+    const keepIds = new Set(matchIds);
+    const idMap = new Map(flattenedRecords.map((r) => [String(r.id), r]));
+
+    for (const id of matchIds) {
+      let current = idMap.get(id);
+      while (current) {
+        let parentId: string | null;
+        if (current.parentId) {
+          parentId = String(current.parentId);
+        } else if (current.__treeParentId) {
+          parentId = String(current.__treeParentId);
+        } else {
+          parentId = null;
+        }
+        if (!parentId || keepIds.has(parentId)) break;
+        keepIds.add(parentId);
+        current = idMap.get(parentId);
+      }
+    }
+
+    return flattenedRecords.filter((r) => keepIds.has(String(r.id)));
+  }, [shouldUseTreeMode, treeSearchTerm, flattenedRecords]);
+
+  // Display records (tree mode uses flattened+filtered, normal mode uses original records)
+  const displayRecords = shouldUseTreeMode ? filteredFlattenedRecords : records;
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(

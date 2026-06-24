@@ -1219,9 +1219,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
   const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
-  const tableWrapperClassName = !shouldShowForm
-    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`
-    : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+  const isTreeSideBySide = toggle && shouldShowForm;
+
+  let tableWrapperClassName: string;
+  if (isTreeSideBySide) {
+    tableWrapperClassName = "w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl";
+  } else if (!shouldShowForm) {
+    tableWrapperClassName = `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`;
+  } else {
+    tableWrapperClassName = "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+  }
 
   return (
     <div
@@ -1234,37 +1241,39 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         isFormView={shouldShowForm}
         data-testid="Toolbar__5893c8"
       />
-      {shouldShowForm && (
-        <div
-          className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
-          <FormView
-            key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
-            mode={formMode}
-            tab={tab}
-            window={window}
-            recordId={effectiveRecordId}
-            setRecordId={handleSetRecordId}
-            uIPattern={tab.uIPattern}
-            isFocused={isFocused}
-            onFocusAcquire={acquire}
-            data-testid="FormView__5893c8"
-          />
+      <div className={`flex flex-1 min-h-0 ${isTreeSideBySide ? "flex-row gap-2" : "relative flex-col"}`}>
+        <div className={tableWrapperClassName}>
+          <AttachmentProvider data-testid="AttachmentProvider__5893c8">
+            <DynamicTable
+              isTreeMode={toggle}
+              setRecordId={handleSetRecordId}
+              onRecordSelection={handleRecordSelection}
+              isVisible={isTreeSideBySide || !shouldShowForm}
+              areFiltersDisabled={advancedFilters.length > 0}
+              uIPattern={tab.uIPattern}
+              isFocused={isFocused}
+              onFocusAcquire={acquire}
+              data-testid="DynamicTable__5893c8"
+            />
+          </AttachmentProvider>
         </div>
-      )}
-      <div className={tableWrapperClassName}>
-        <AttachmentProvider data-testid="AttachmentProvider__5893c8">
-          <DynamicTable
-            isTreeMode={toggle}
-            setRecordId={handleSetRecordId}
-            onRecordSelection={handleRecordSelection}
-            isVisible={!shouldShowForm}
-            areFiltersDisabled={advancedFilters.length > 0}
-            uIPattern={tab.uIPattern}
-            isFocused={isFocused}
-            onFocusAcquire={acquire}
-            data-testid="DynamicTable__5893c8"
-          />
-        </AttachmentProvider>
+        {shouldShowForm && (
+          <div
+            className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
+            <FormView
+              key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
+              mode={formMode}
+              tab={tab}
+              window={window}
+              recordId={effectiveRecordId}
+              setRecordId={handleSetRecordId}
+              uIPattern={tab.uIPattern}
+              isFocused={isFocused}
+              onFocusAcquire={acquire}
+              data-testid="FormView__5893c8"
+            />
+          </div>
+        )}
       </div>
       <Menu
         anchorEl={advancedFiltersAnchor}

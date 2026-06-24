@@ -58,13 +58,17 @@ test.describe("LinkedItems Navigation @smoke", () => {
       };
 
       const openRowFormByText = async (rowText: string | RegExp) => {
-        const btn = page
-          .locator("tr:visible")
-          .filter({ hasText: rowText })
-          .first()
-          .locator('button[data-testid^="form-button-"]');
-        await btn.waitFor({ state: "visible", timeout: 10_000 });
-        await btn.click();
+        // Re-query inside expect.toPass to handle DOM detachment
+        // caused by column virtualisation re-renders.
+        await expect(async () => {
+          const btn = page
+            .locator("tr:visible")
+            .filter({ hasText: rowText })
+            .first()
+            .locator('button[data-testid^="form-button-"]');
+          await btn.scrollIntoViewIfNeeded();
+          await btn.click();
+        }).toPass({ intervals: [500, 1_000, 2_000], timeout: 15_000 });
       };
 
       const openLinkedItemsTab = async () => {

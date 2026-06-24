@@ -99,7 +99,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
     if (windows.length === 0) {
       if (currentParams) {
-        router.replace("/");
+        // Stay on the same /window route segment when clearing params, instead
+        // of navigating to "/". Both render the same Page component, but they
+        // are distinct route segments in App Router — navigating between them
+        // triggers an RSC roundtrip and a full unmount/remount of the page
+        // subtree (including <Home>), which we want to avoid.
+        router.replace("/window");
       }
       return;
     }

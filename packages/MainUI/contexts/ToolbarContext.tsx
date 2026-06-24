@@ -44,6 +44,7 @@ export interface SaveButtonState {
   hasValidationErrors: boolean; // Internal validation
   isSaving: boolean; // Operation progress
   validationErrors: string[]; // User feedback
+  isDocumentProcessing: boolean; // IP state — document locked while processing
 }
 
 // Re-export ToolbarActions for consumers that import it from this file

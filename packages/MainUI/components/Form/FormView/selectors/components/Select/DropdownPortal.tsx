@@ -55,7 +55,7 @@ const DropdownPortal = memo(
       const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
       setShowAbove(shouldShowAbove);
       setIsPositioned(true);
-    });
+    }, [isOpen, viewportData]);
 
     if (!isOpen) return null;
 

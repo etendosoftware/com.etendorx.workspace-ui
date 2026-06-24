@@ -15,11 +15,12 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
@@ -35,12 +36,10 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
-  const windowId = activeWindow?.windowId;
+  // Use the owning window's id from context, not the globally-active window.
+  // The global selector causes windowId to oscillate when the user switches
+  // between windows/dashboard, re-triggering the LinkedItems fetch every time.
+  const windowId = useCurrentWindowId();
   const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
   const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 

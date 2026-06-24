@@ -127,7 +127,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
-import { isSrOneToOneExtension } from "@/utils/window/utils";
+import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -583,6 +583,10 @@ const columnToFieldForEditor = (column: Column): Field => {
     fieldGroup$_identifier: "",
     fieldGroup: "",
     isMandatory: column.isMandatory || false,
+    startinoddcolumn: false,
+    displayOnSameLine: false,
+    obuiappColspan: null,
+    obuiappRowspan: null,
     column: column.column || {},
     id: column.fieldId || column.id,
     module: "",
@@ -868,25 +872,23 @@ const DynamicTable = ({
     isTreeMode,
   });
 
-  // Auto-open FormView for logical SR (Single Record) tabs once the child
-  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
-  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
-  // the parent-selected id is not a valid child id, so we wait for the fetched
-  // records to discover the real child id and then open the form.
+  // Auto-open FormView for SR (Single Record) tabs once records are fetched.
+  // See getSrAutoOpenDecision for the conditions covered.
   useEffect(() => {
-    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
-    if (!tab.defaultEditMode) return;
-    if (isSrOneToOneExtension(tab)) return;
-    if (loading) return;
-    if (displayRecords.length === 0) return;
+    const decision = getSrAutoOpenDecision({
+      uIPattern,
+      tab,
+      loading,
+      displayRecords,
+      parentTab,
+      parentRecord,
+    });
+    if (!decision.open) return;
+    if (srAutoOpenedForParentRef.current === decision.trackingKey) return;
 
-    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
-    if (!parentKey) return;
-    if (srAutoOpenedForParentRef.current === parentKey) return;
-
-    srAutoOpenedForParentRef.current = parentKey;
-    setRecordId(String(displayRecords[0].id));
-  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
+    srAutoOpenedForParentRef.current = decision.trackingKey;
+    setRecordId(decision.recordId);
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
@@ -3276,12 +3278,53 @@ const DynamicTable = ({
     onNew?.();
   }, [parentTab, parentRecord, onNew]);
 
+  const handleTreeArrowRight = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const row = tableRef.current.getRow(selectedIds[0]);
+      if (row?.getCanExpand() && !row.getIsExpanded()) {
+        row.toggleExpanded();
+      }
+    },
+    [shouldUseTreeMode]
+  );
+
+  const handleTreeArrowLeft = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const rowId = selectedIds[0];
+      const row = tableRef.current.getRow(rowId);
+      if (row?.getIsExpanded()) {
+        row.toggleExpanded();
+      } else {
+        const record = effectiveRecords.find((r) => String(r.id) === rowId);
+        const parentId = record?.__treeParentId ? String(record.__treeParentId) : null;
+        if (parentId) {
+          tableRef.current.setRowSelection({ [parentId]: true });
+        }
+      }
+    },
+    [shouldUseTreeMode, effectiveRecords]
+  );
+
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
+      ...(shouldUseTreeMode
+        ? {
+            ArrowRight: { handler: handleTreeArrowRight },
+            ArrowLeft: { handler: handleTreeArrowLeft },
+          }
+        : {}),
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );

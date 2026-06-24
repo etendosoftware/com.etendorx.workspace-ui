@@ -34,6 +34,10 @@ export class ProcessParameterMapper {
       isMandatory: parameter.mandatory || false,
       displayed: true,
       startnewline: false,
+      startinoddcolumn: false,
+      displayOnSameLine: false,
+      obuiappColspan: null,
+      obuiappRowspan: null,
       showInGridView: false,
       isDisplayed: true,
       isActive: true,
@@ -43,7 +47,7 @@ export class ProcessParameterMapper {
 
       // Reference and type information
       column: {
-        length: "255", // Default length, can be overridden
+        length: 255, // Default length, can be overridden
         ...parameter.column,
         reference: mappedReference,
       },

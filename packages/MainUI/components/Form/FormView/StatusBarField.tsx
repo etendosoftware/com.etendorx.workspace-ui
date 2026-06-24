@@ -21,6 +21,7 @@ import { useFieldValue } from "@/hooks/useFieldValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
+import { statusConfig } from "@/utils/columnsConstants";
 
 const resolveTagColors = (color?: string) => {
   if (!color) return { tagColor: undefined, textColor: undefined };
@@ -31,44 +32,62 @@ const resolveTagColors = (color?: string) => {
 
 export default function StatusBarField({ field }: { field: Field }) {
   const { register } = useFormContext();
-  const { displayValue, colorValue } = useFieldValue(field);
+  const { displayValue, colorValue, value } = useFieldValue(field);
   const { t } = useTranslation();
 
-  const formatDisplayValue = (value: string) => {
-    if (value === "Y") return t("common.trueText");
-    if (value === "N") return t("common.falseText");
+  const formatDisplayValue = (v: string) => {
+    if (v === "Y") return t("common.trueText");
+    if (v === "N") return t("common.falseText");
 
-    // Check if this is a LIST field with refList
     if (field.refList && Array.isArray(field.refList)) {
-      const refItem = field.refList.find((item) => item.value === value);
+      const refItem = field.refList.find((item) => item.value === v);
       if (refItem) {
         return refItem.label;
       }
     }
 
-    return value;
+    return v;
   };
 
   const formattedValue = formatDisplayValue(displayValue);
-  const { tagColor, textColor } = resolveTagColors(colorValue);
+
+  // Use the raw stored code (value) for refList/statusConfig lookups.
+  // displayValue is the human-readable identifier ("Completed"), not the code ("CO").
+  const rawCode = typeof value === "string" ? value : "";
+  const refItem =
+    field.refList && Array.isArray(field.refList) ? field.refList.find((item) => item.value === rawCode) : undefined;
+  const effectiveColor = colorValue || refItem?.color;
+  const { tagColor, textColor } = resolveTagColors(effectiveColor);
+
+  const statusIcon = rawCode ? statusConfig[rawCode]?.icon : undefined;
+
+  let badge: React.ReactNode;
+  if (tagColor) {
+    badge = (
+      <Tag
+        label={formattedValue}
+        icon={statusIcon}
+        tagColor={tagColor}
+        textColor={textColor}
+        data-testid={`StatusBarTag__${field.hqlName}`}
+      />
+    );
+  } else if (refItem) {
+    badge = <Tag label={formattedValue} icon={statusIcon} data-testid={`StatusBarTag__${field.hqlName}`} />;
+  } else {
+    badge = (
+      <span className="" {...register(field.hqlName)}>
+        {formattedValue}
+      </span>
+    );
+  }
 
   return (
     <div className="inline-flex gap-1 items-center whitespace-nowrap">
       <label htmlFor={field.hqlName} className="font-semibold">
         {field.name}:
       </label>
-      {tagColor ? (
-        <Tag
-          label={formattedValue}
-          tagColor={tagColor}
-          textColor={textColor}
-          data-testid={`StatusBarTag__${field.hqlName}`}
-        />
-      ) : (
-        <span className="" {...register(field.hqlName)}>
-          {formattedValue}
-        </span>
-      )}
+      {badge}
     </div>
   );
 }

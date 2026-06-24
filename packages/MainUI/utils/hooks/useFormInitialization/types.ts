@@ -23,9 +23,15 @@ export type State =
       loading: false;
       error: Error;
       formInitialization: FormInitializationResponse | null;
+    }
+  | {
+      loading: false;
+      error: null;
+      formInitialization: null;
     };
 
 export type Action =
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; payload: FormInitializationResponse }
-  | { type: "FETCH_ERROR"; payload: Error };
+  | { type: "FETCH_ERROR"; payload: Error }
+  | { type: "CLEAR" };

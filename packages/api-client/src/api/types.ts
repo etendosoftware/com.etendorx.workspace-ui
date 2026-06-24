@@ -146,6 +146,73 @@ export interface SelectorOutField {
   suffix?: string | null;
 }
 
+export interface ADColumn {
+  $ref?: string;
+  _entityName?: string;
+  _identifier?: string;
+  id?: string;
+  active?: boolean;
+  client?: string;
+  organization?: string;
+  module?: string;
+  recordTime?: number;
+  dBColumnName?: string;
+  name?: string;
+  description?: string;
+  helpComment?: string;
+  table?: string;
+  table$_identifier?: string;
+  sequenceNumber?: number;
+  position?: number;
+  length?: number;
+  reference?: string;
+  reference$_identifier?: string;
+  referenceSearchKey?: string | null;
+  referenceSearchKey$_identifier?: string;
+  mandatory?: boolean;
+  updatable?: boolean;
+  keyColumn?: boolean;
+  identifier?: boolean;
+  secondaryKey?: boolean;
+  translation?: boolean;
+  transient?: boolean;
+  transientCondition?: string | null;
+  allowFiltering?: boolean;
+  allowSorting?: boolean;
+  allowedCrossOrganizationReference?: boolean;
+  filterColumn?: boolean;
+  linkToParentColumn?: boolean;
+  childPropertyInParentEntity?: boolean;
+  storedInSession?: boolean;
+  excludeAudit?: boolean;
+  isautosave?: boolean;
+  displayEncription?: boolean;
+  deencryptable?: boolean;
+  defaultValue?: string | null;
+  valueFormat?: string | null;
+  maxValue?: string | null;
+  minValue?: string | null;
+  sqllogic?: string | null;
+  readOnlyLogic?: string | null;
+  validation?: string | null;
+  callout?: string | null;
+  calloutFunction?: string | null;
+  imageHeight?: number | null;
+  imageWidth?: number | null;
+  imageSizeValuesAction?: string;
+  developmentStatus?: string;
+  entityAlias?: string | null;
+  useAutomaticSequence?: boolean;
+  validateOnNew?: boolean;
+  process?: string | null;
+  oBUIAPPProcess?: string | null;
+  oBUIAPPProcess$_identifier?: string;
+  applicationElement?: string;
+  applicationElement$_identifier?: string;
+  propertyPath?: string;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -156,11 +223,31 @@ export interface Field {
   tab: string;
   displayed: boolean;
   startnewline: boolean;
+  startinoddcolumn: boolean;
+  displayOnSameLine: boolean;
+  obuiappColspan: number | null;
+  obuiappRowspan: number | null;
+  displayEncription?: boolean;
+  readOnly?: boolean;
+  displayFieldOnly?: boolean;
+  displayedLength?: number;
+  isFirstFocusedField?: boolean;
+  ignoreInWad?: boolean;
+  recordSortNo?: number | null;
+  obuiappDefaultExpression?: string | null;
+  obuiappSummaryfn?: string | null;
+  obuiappValidator?: string | null;
+  oBUIAPPShowSummary?: boolean;
+  obuiselOutfield?: string | null;
+  onChangeFunction?: string | null;
+  etrxFilterClause?: string | null;
+  displayLogic?: string | null;
+  displaylogicgrid?: string | null;
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
   isMandatory: boolean;
-  column: Record<string, string>;
+  column: ADColumn;
   name: string;
   id: string;
   module: string;
@@ -382,6 +469,12 @@ export interface Tab {
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;
+  hasTree?: boolean;
+  tableId?: string;
+  tableTreeId?: string;
+  isReadOnlyTree?: boolean;
+  showTreeNodeIcons?: boolean;
+  hqlWhereClauseForRootNodes?: string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
   /**
@@ -942,8 +1035,6 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
-  fieldGroup?: string;
-  fieldGroup$_identifier?: string;
   /**
    * When true, the field group (subsection) starts collapsed in the process modal.
    * When false or undefined, the field group starts expanded.
@@ -960,6 +1051,10 @@ export type ProcessParameter = {
   sequenceNumber?: number;
   /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
   dBColumnName: string;
+  /** Field group ID from AD_Fieldgroup_ID — used for visual grouping of parameters. */
+  fieldGroup?: string;
+  /** Field group display name. */
+  fieldGroup$_identifier?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {
