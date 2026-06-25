@@ -64,6 +64,7 @@ import {
   removeParameter,
   evaluateParameterDefaults,
   seedBooleanParameterDefaults,
+  seedSessionColumnDefaults,
   isBulkCompletionProcess,
   buildOnLoadScripts,
   isBulkParameterRenderable,
@@ -647,6 +648,7 @@ function ProcessDefinitionModalContent({
       const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
       Object.assign(combined, evaluatedDefaults);
       seedBooleanParameterDefaults(combined, parameters);
+      seedSessionColumnDefaults(combined, parameters, session || {});
 
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -684,6 +686,7 @@ function ProcessDefinitionModalContent({
     const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
     Object.assign(combined, evaluatedDefaults);
     seedBooleanParameterDefaults(combined, parameters);
+    seedSessionColumnDefaults(combined, parameters, session || {});
 
     const parametersList = Object.values(parameters);
     for (const param of parametersList) {

@@ -201,3 +201,53 @@ export function seedBooleanParameterDefaults(
     }
   }
 }
+
+// Process-parameter columns whose value Classic auto-fills from the request/session
+// context even when the parameter carries no `defaultValue` expression. The session
+// stores them under the "#"-prefixed key (e.g. "#AD_Client_ID").
+const SESSION_COLUMN_NAMES: readonly string[] = ["AD_Client_ID", "AD_Org_ID"];
+const SESSION_KEY_PREFIX = "#";
+
+/** A value counts as empty when it is null, undefined or the empty string. */
+function isBlank(value: unknown): boolean {
+  return value === undefined || value === null || value === "";
+}
+
+/** Resolves a session-global column value, preferring the "#"-prefixed session key. */
+function resolveSessionColumnValue(column: string, session: Record<string, unknown>): unknown {
+  const prefixed = session[`${SESSION_KEY_PREFIX}${column}`];
+  if (!isBlank(prefixed)) return prefixed;
+  const raw = session[column];
+  if (!isBlank(raw)) return raw;
+  return undefined;
+}
+
+/**
+ * Seeds session-global columns (AD_Client_ID / AD_Org_ID) that have no `defaultValue`
+ * expression. Classic pre-fills these from the request/session context, but
+ * DefaultsProcessActionHandler returns nothing for a parameter without an expression,
+ * so a mandatory "Client"/"Organization" parameter would start empty. This mirrors
+ * Classic generally for every process carrying such a parameter. Only blank values are
+ * seeded, so a value already resolved (record field, default, user input) is preserved.
+ * Mutates `values` in place.
+ *
+ * @param values - Current form values (mutated in place)
+ * @param parameters - Record of process parameters
+ * @param session - Session context (typically from useUserStore)
+ */
+export function seedSessionColumnDefaults(
+  values: Record<string, unknown>,
+  parameters: Record<string, ProcessParameter>,
+  session: Record<string, unknown>
+): void {
+  for (const param of Object.values(parameters)) {
+    const column = param.dBColumnName;
+    if (!column || !SESSION_COLUMN_NAMES.includes(column)) continue;
+    if (!isBlank(values[param.name])) continue;
+
+    const sessionValue = resolveSessionColumnValue(column, session);
+    if (sessionValue !== undefined) {
+      values[param.name] = sessionValue;
+    }
+  }
+}
