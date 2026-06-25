@@ -24,6 +24,7 @@
  */
 
 import { logger } from "@/utils/logger";
+import { REPORT_OUTPUT_FORMATS, type ReportOutputFormat } from "./constants";
 
 /** A fetched report file ready to be opened or downloaded. */
 export interface ReportBlob {
@@ -92,4 +93,23 @@ export async function downloadReport(url: string, token: string, fileName: strin
   } catch (error) {
     logger.warn("[ProcessModal] downloadReport failed", error);
   }
+}
+
+interface ReportExportFlags {
+  pdfExport: boolean;
+  xlsExport: boolean;
+  htmlExport: boolean;
+}
+
+/**
+ * Returns the enabled export formats in canonical order: View (HTML) → PDF → Excel (XLS).
+ * Returns an empty array for non-report processes (undefined/null report).
+ */
+export function getReportActions(report: ReportExportFlags | null | undefined): ReportOutputFormat[] {
+  if (!report) return [];
+  const actions: ReportOutputFormat[] = [];
+  if (report.htmlExport) actions.push(REPORT_OUTPUT_FORMATS.HTML);
+  if (report.pdfExport) actions.push(REPORT_OUTPUT_FORMATS.PDF);
+  if (report.xlsExport) actions.push(REPORT_OUTPUT_FORMATS.XLS);
+  return actions;
 }
