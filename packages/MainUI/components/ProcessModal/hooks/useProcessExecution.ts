@@ -340,7 +340,17 @@ export function useProcessExecution({
   const parseProcessResponse = useCallback(
     (res: ExecuteProcessResult): ExecuteProcessResult => {
       const viewMessage = extractMessageFromProcessView(res);
-      const { message, messageType, isHtml, linkTabId, linkRecordId } = viewMessage || extractMessageFromData(res);
+      const {
+        message,
+        messageType,
+        isHtml,
+        linkTabId: msgLinkTabId,
+        linkRecordId: msgLinkRecordId,
+      } = viewMessage || extractMessageFromData(res);
+
+      // When no message action is present (extractMessageFromProcessView returned null),
+      // openDirectTab may still be in responseActions — capture it directly so auto-nav fires.
+      const standaloneOpenTab = viewMessage ? null : findFirstOpenDirectTab(dispatchResponseActions(res.data));
 
       return {
         success: res.success && messageType === "success",
@@ -348,8 +358,8 @@ export function useProcessExecution({
         error: messageType !== "success" ? (message as string | undefined) || res.error : undefined,
         isHtml: isHtml || false,
         messageType,
-        linkTabId,
-        linkRecordId,
+        linkTabId: msgLinkTabId ?? standaloneOpenTab?.tabId,
+        linkRecordId: msgLinkRecordId ?? standaloneOpenTab?.recordId,
       };
     },
     [extractMessageFromProcessView, extractMessageFromData]
@@ -507,14 +517,30 @@ export function useProcessExecution({
           typeof parsedResult.data === "string"
             ? parsedResult.data
             : parsedResult.data?.message || parsedResult.data?.msgText || "";
-        showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
         setShouldTriggerSuccess(true);
-        handleSuccessClose(true);
+        if (linkTabId) {
+          // openDirectTab: navigate immediately (Classic behavior — no user click needed).
+          // recordId may be absent when the handler opens the tab in grid mode.
+          showProcessToast({ isSuccess: messageType === "success", message });
+          onSuccess?.();
+          await handleNavigateToTab(linkTabId, linkRecordId ?? "");
+        } else {
+          showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+          handleSuccessClose(true);
+        }
       } else {
         setResult(parsedResult);
       }
     },
-    [revalidateDopoProcess, showProcessToast, setShouldTriggerSuccess, handleSuccessClose, setResult]
+    [
+      revalidateDopoProcess,
+      showProcessToast,
+      setShouldTriggerSuccess,
+      handleSuccessClose,
+      setResult,
+      handleNavigateToTab,
+      onSuccess,
+    ]
   );
 
   const executeJavaProcess = useCallback(
@@ -540,7 +566,8 @@ export function useProcessExecution({
         if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
-          if (shouldRefreshAfterProcess(resultData)) {
+          const hasRefreshGridAction = dispatchResponseActions(resultData).some((a) => a.kind === "refreshGrid");
+          if (shouldRefreshAfterProcess(resultData) || hasRefreshGridAction) {
             setGridRefreshKey((prev) => prev + 1);
           }
           return;
@@ -665,10 +692,21 @@ export function useProcessExecution({
     async (actionValue?: string) => {
       if (!processId || !javaClassName) return;
       startTransition(async () => {
-        await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
+        const isMultiRecord =
+          (button?.processDefinition?.isMultiRecord === true || button?.processDefinition?.isMultiRecord === "Y") &&
+          selectedRecords.length > 1;
+
+        if (isMultiRecord) {
+          for (const rec of selectedRecords) {
+            const payload = { ...buildStandardJavaPayload(actionValue), recordIds: [String(rec.id)] };
+            await executeJavaProcess(payload, `direct Java process (record ${String(rec.id)})`);
+          }
+        } else {
+          await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
+        }
       });
     },
-    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition]
+    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition, button, selectedRecords]
   );
 
   /**

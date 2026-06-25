@@ -15,7 +15,7 @@
  */
 
 import "../testUtils/useProcessExecution.mocks";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
 
@@ -26,14 +26,49 @@ const mockFetchJson = (data: unknown) => {
   }) as jest.Mock;
 };
 
+const SUCCESS_RESPONSE = {
+  responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Done" } }],
+};
+
+/**
+ * Mocks two sequential fetch calls:
+ *   1st — process execution returning the given responseActions
+ *   2nd — tab metadata fetch used by handleNavigateToTab
+ * Returns the mock router so tests can assert on `replace`.
+ */
+const mockDirectTabNavigation = (responseActions: unknown[]) => {
+  const mockRouter = { replace: jest.fn() };
+  let callCount = 0;
+  global.fetch = jest.fn().mockImplementation(() => {
+    callCount++;
+    return Promise.resolve({
+      ok: true,
+      json: jest.fn().mockResolvedValue(callCount === 1 ? { responseActions } : { window: "WIN-X" }),
+    });
+  }) as jest.Mock;
+  return mockRouter;
+};
+
+const runProcess = async (params: Parameters<typeof makeParams>[0]) => {
+  const { result } = renderHook(() => useProcessExecution(makeParams(params)));
+  await result.current.executeJavaProcess({});
+  return result;
+};
+
+const runDirectTabProcess = async (responseActions: unknown[]) => {
+  const mockRouter = mockDirectTabNavigation(responseActions);
+  const { result } = renderHook(() => useProcessExecution(makeParams({ router: mockRouter })));
+  await result.current.executeJavaProcess({});
+  return mockRouter;
+};
+
 describe("useProcessExecution — executeJavaProcess response flags", () => {
   it("refreshes the grid when retryExecution=true and refreshParent is absent", async () => {
     mockFetchJson({ retryExecution: true });
     const setGridRefreshKey = jest.fn();
     const setResult = jest.fn();
 
-    const { result } = renderHook(() => useProcessExecution(makeParams({ setGridRefreshKey, setResult })));
-    await result.current.executeJavaProcess({});
+    await runProcess({ setGridRefreshKey, setResult });
 
     expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
@@ -43,8 +78,7 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     mockFetchJson({ retryExecution: true, refreshParent: true });
     const setGridRefreshKey = jest.fn();
 
-    const { result } = renderHook(() => useProcessExecution(makeParams({ setGridRefreshKey })));
-    await result.current.executeJavaProcess({});
+    await runProcess({ setGridRefreshKey });
 
     expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
   });
@@ -54,21 +88,17 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     const setGridRefreshKey = jest.fn();
     const setResult = jest.fn();
 
-    const { result } = renderHook(() => useProcessExecution(makeParams({ setGridRefreshKey, setResult })));
-    await result.current.executeJavaProcess({});
+    await runProcess({ setGridRefreshKey, setResult });
 
     expect(setGridRefreshKey).not.toHaveBeenCalled();
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
   });
 
   it("does not set keepOpen=true when retryExecution is absent from the response", async () => {
-    mockFetchJson({
-      responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Done" } }],
-    });
+    mockFetchJson(SUCCESS_RESPONSE);
     const setResult = jest.fn();
 
-    const { result } = renderHook(() => useProcessExecution(makeParams({ setResult })));
-    await result.current.executeJavaProcess({});
+    await runProcess({ setResult });
 
     const keepOpenCall = setResult.mock.calls.find(
       ([arg]) => arg && typeof arg === "object" && "keepOpen" in arg && arg.keepOpen === true
@@ -81,8 +111,7 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     const setGridRefreshKey = jest.fn();
     const setResult = jest.fn();
 
-    const { result } = renderHook(() => useProcessExecution(makeParams({ setGridRefreshKey, setResult })));
-    await result.current.executeJavaProcess({});
+    await runProcess({ setGridRefreshKey, setResult });
 
     expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
@@ -130,5 +159,75 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     await result.current.executeJavaProcess({});
 
     expect(executeJSON).not.toHaveBeenCalled();
+  });
+});
+
+describe("refreshGrid response action", () => {
+  it("refreshes grid when refreshGrid action is present with retryExecution=true and refreshParent=false", async () => {
+    mockFetchJson({
+      retryExecution: true,
+      refreshParent: false,
+      responseActions: [{ refreshGrid: {} }],
+    });
+    const setGridRefreshKey = jest.fn();
+    const setResult = jest.fn();
+
+    await runProcess({ setGridRefreshKey, setResult });
+
+    expect(setGridRefreshKey).toHaveBeenCalledWith(expect.any(Function));
+    expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
+  });
+});
+
+describe("openDirectTab auto-navigation", () => {
+  it("navigates automatically when openDirectTab accompanies a success message", async () => {
+    const mockRouter = await runDirectTabProcess([
+      { showMsgInProcessView: { msgType: "success", msgText: "Done" } },
+      { openDirectTab: { tabId: "TAB-X", recordId: "REC-Y" } },
+    ]);
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+
+  it("navigates automatically when only openDirectTab is in responseActions (no message)", async () => {
+    const mockRouter = await runDirectTabProcess([{ openDirectTab: { tabId: "TAB-Z", recordId: "REC-Z" } }]);
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+
+  it("navigates to grid mode (no recordId) when openDirectTab has no recordId", async () => {
+    const mockRouter = await runDirectTabProcess([
+      { showMsgInProcessView: { msgType: "success", msgText: "Done" } },
+      { openDirectTab: { tabId: "TAB-G" } },
+    ]);
+    expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window"));
+  });
+});
+
+describe("multi-record invocation", () => {
+  const TWO_RECORDS = [{ id: "REC-1" }, { id: "REC-2" }];
+
+  const renderMultiRecordHook = (isMultiRecord: boolean) => {
+    mockFetchJson(SUCCESS_RESPONSE);
+    return renderHook(() =>
+      useProcessExecution(
+        makeParams({
+          javaClassName: "com.example.MyProcess",
+          button: { processDefinition: { id: "PDef-001", parameters: {}, isMultiRecord } },
+          selectedRecords: TWO_RECORDS,
+        })
+      )
+    );
+  };
+
+  it("sends one request per selected record when isMultiRecord=true", async () => {
+    const { result } = renderMultiRecordHook(true);
+    result.current.handleDirectJavaProcessExecute();
+    // startTransition fires the loop without awaiting it — waitFor flushes the microtasks
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+  });
+
+  it("sends a single request when isMultiRecord=false even with multiple records", async () => {
+    const { result } = renderMultiRecordHook(false);
+    await result.current.handleDirectJavaProcessExecute();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
