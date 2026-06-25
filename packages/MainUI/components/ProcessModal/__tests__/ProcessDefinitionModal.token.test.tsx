@@ -120,6 +120,8 @@ jest.mock("@/utils/processes/definition/constants", () => ({
     REPORT_AND_PROCESS: "report-and-process",
   },
   BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
+  BUTTON_REFERENCE_ID: "28",
+  OBUIAPP_REPORT_UI_PATTERN: "OBUIAPP_Report",
 }));
 
 // Mock useProcessCallouts hook
