@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Page, Frame, FrameLocator } from "@playwright/test";
 import { DEFAULT_USER, DEFAULT_PASSWORD, IFRAME_URL } from "../../playwright.config";
 
@@ -573,6 +574,70 @@ export async function disableImplicitFilter(page: Page): Promise<void> {
     await filterToggle.click();
     await page.waitForTimeout(1_000);
   }
+}
+
+/**
+ * Filters a grid by the "Document No." column.
+ * Disables the implicit filter (e.g. processed='N') first, types the value and
+ * waits for the filtered row to appear before returning.
+ */
+export async function filterByDocumentNo(page: Page, value: string): Promise<void> {
+  // Disable implicit filter (e.g. processed='N') before applying our filter
+  await disableImplicitFilter(page);
+
+  const filterInput = page.locator('input[placeholder="Filter Document No...."]').locator("visible=true").first();
+  await filterInput.waitFor({ state: "visible", timeout: 15_000 });
+  await filterInput.clear();
+  await filterInput.fill(value);
+  await filterInput.press("Enter");
+  // Wait for the table to re-render with filtered results before proceeding
+  await page.locator("tr:visible").filter({ hasText: value }).first().waitFor({ state: "visible", timeout: 15_000 });
+}
+
+/**
+ * Opens the form view of the first visible row matching the given text by
+ * clicking its row form button. Re-queries inside expect.toPass to tolerate
+ * DOM detachment caused by column virtualisation re-renders.
+ */
+export async function openRowFormByText(page: Page, rowText: string | RegExp): Promise<void> {
+  await expect(async () => {
+    const btn = page
+      .locator("tr:visible")
+      .filter({ hasText: rowText })
+      .first()
+      .locator('button[data-testid^="form-button-"]');
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
+  }).toPass({ intervals: [500, 1_000, 2_000], timeout: 15_000 });
+}
+
+/**
+ * Selects (checks) the first visible row matching the given text in table mode,
+ * WITHOUT opening the form view. Toggles the row's "Toggle select row" checkbox,
+ * the standard selection control rendered by every grid in the new UI.
+ *
+ * Generic by design — works for any window and any tab within a window: the
+ * `:visible` filter scopes the lookup to the active window's currently-shown tab
+ * grid (inactive windows/tabs stay mounted but hidden), so the caller only needs
+ * to provide text that uniquely identifies the row in that grid.
+ *
+ * Re-queries inside expect.toPass to tolerate DOM detachment caused by column
+ * virtualisation re-renders, and asserts the checkbox ends up checked. Uses
+ * `check()` (idempotent: a no-op if the row is already selected, e.g. when a
+ * grid auto-selects after filtering down to a single row).
+ */
+export async function selectRowByText(page: Page, rowText: string | RegExp): Promise<void> {
+  await expect(async () => {
+    const checkbox = page
+      .locator("tr:visible")
+      .filter({ hasText: rowText })
+      .first()
+      .locator('input[aria-label="Toggle select row"]');
+    await checkbox.scrollIntoViewIfNeeded();
+    // force: true — MUI checkboxes can be momentarily non-interactive during re-render
+    await checkbox.check({ force: true });
+    await expect(checkbox).toBeChecked();
+  }).toPass({ intervals: [500, 1_000, 2_000], timeout: 15_000 });
 }
 
 /**

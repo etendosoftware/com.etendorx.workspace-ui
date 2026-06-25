@@ -4,8 +4,9 @@ import {
   cleanupEtendo,
   selectRoleOrgWarehouse,
   typeInGlobalSearch,
-  disableImplicitFilter,
   openSidebarAndGetSearch,
+  filterByDocumentNo,
+  openRowFormByText,
 } from "../../helpers/etendo.helpers";
 
 test.describe("LinkedItems Navigation @smoke", () => {
@@ -38,37 +39,6 @@ test.describe("LinkedItems Navigation @smoke", () => {
         await menuItem.scrollIntoViewIfNeeded();
         await menuItem.click({ force: true });
         await page.waitForURL(/\/window/, { timeout: 15_000 });
-      };
-
-      const filterByDocumentNo = async (value: string) => {
-        // Disable implicit filter (e.g. processed='N') before applying our filter
-        await disableImplicitFilter(page);
-
-        const filterInput = page.locator('input[placeholder="Filter Document No...."]').locator("visible=true").first();
-        await filterInput.waitFor({ state: "visible", timeout: 15_000 });
-        await filterInput.clear();
-        await filterInput.fill(value);
-        await filterInput.press("Enter");
-        // Wait for the table to re-render with filtered results before proceeding
-        await page
-          .locator("tr:visible")
-          .filter({ hasText: value })
-          .first()
-          .waitFor({ state: "visible", timeout: 15_000 });
-      };
-
-      const openRowFormByText = async (rowText: string | RegExp) => {
-        // Re-query inside expect.toPass to handle DOM detachment
-        // caused by column virtualisation re-renders.
-        await expect(async () => {
-          const btn = page
-            .locator("tr:visible")
-            .filter({ hasText: rowText })
-            .first()
-            .locator('button[data-testid^="form-button-"]');
-          await btn.scrollIntoViewIfNeeded();
-          await btn.click();
-        }).toPass({ intervals: [500, 1_000, 2_000], timeout: 15_000 });
       };
 
       const openLinkedItemsTab = async () => {
@@ -105,8 +75,8 @@ test.describe("LinkedItems Navigation @smoke", () => {
       // PART 1: Sales Order
       // =========================================================================
       await navigateViaSearch("sales order", "Sales Order");
-      await filterByDocumentNo("50012");
-      await openRowFormByText("50012");
+      await filterByDocumentNo(page, "50012");
+      await openRowFormByText(page, "50012");
 
       await openLinkedItemsTab();
       await clickLinkedItemButton("Sales Quotation - Line Tax");
@@ -131,7 +101,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await navigateViaSearch("goods shipment", "Goods Shipment");
 
       await page.waitForTimeout(1_000);
-      await filterByDocumentNo("500014");
+      await filterByDocumentNo(page, "500014");
 
       // Column virtualisation: scroll the table to the right so the pinned
       // actions column with the form button becomes visible.
@@ -142,7 +112,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
           (el as HTMLElement).scrollLeft = (el as HTMLElement).scrollWidth;
         });
 
-      await openRowFormByText("2014");
+      await openRowFormByText(page, "2014");
 
       await openLinkedItemsTab();
       await clickLinkedItemButton("Goods Shipment - Lines");
@@ -165,8 +135,8 @@ test.describe("LinkedItems Navigation @smoke", () => {
       // PART 3: Purchase Invoice
       // =========================================================================
       await navigateViaSearch("purchase invoice", "Purchase Invoice");
-      await filterByDocumentNo("10000017");
-      await openRowFormByText("10000017");
+      await filterByDocumentNo(page, "10000017");
+      await openRowFormByText(page, "10000017");
 
       await openLinkedItemsTab();
       await clickLinkedItemButton("Purchase Invoice - Basic Discounts");
