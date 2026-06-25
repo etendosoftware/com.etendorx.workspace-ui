@@ -37,6 +37,7 @@ import useDisplayLogic from "@/hooks/useDisplayLogic";
 import { useExpressionDependencies } from "@/hooks/useExpressionDependencies";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
@@ -297,7 +298,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
         parentFields: parentTab?.fields,
         context: session,
       });
-      return compiledExpr(smartContext, smartContext);
+      return toClassicBoolean(compiledExpr(smartContext, smartContext));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;

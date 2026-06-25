@@ -94,6 +94,7 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
 import { useLanguage } from "@/contexts/language";
@@ -226,7 +227,7 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
           session,
         });
 
-        isDisplayed = compiledExpr(smartContext, smartContext);
+        isDisplayed = toClassicBoolean(compiledExpr(smartContext, smartContext));
       } catch (error) {
         logger.warn(`Error evaluating display logic for ${parameter.name}`, error);
       }

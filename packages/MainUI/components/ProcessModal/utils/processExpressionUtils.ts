@@ -2,6 +2,7 @@ import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/ty
 import { createSmartContext } from "@/utils/expressions";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 export interface CreateProcessExpressionContextOptions {
   values: Record<string, unknown>;
@@ -111,7 +112,7 @@ export const isParameterDisplayed = ({
 
   try {
     const compiledExpr = compileExpression(parameter.displayLogic);
-    return Boolean(compiledExpr(evaluationContext, evaluationContext));
+    return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext));
   } catch (error) {
     logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
     return true; // Default to visible on error.

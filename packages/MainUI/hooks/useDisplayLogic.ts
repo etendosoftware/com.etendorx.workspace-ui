@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
 import { useExpressionDependencies } from "./useExpressionDependencies";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 interface UseDisplayLogicProps {
   field: Field;
@@ -45,7 +46,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
         context: session,
       });
 
-      return compiledExpr(smartContext, smartContext);
+      return toClassicBoolean(compiledExpr(smartContext, smartContext));
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       logger.error("Unexpected error", error);

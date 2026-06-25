@@ -87,4 +87,21 @@ describe("isParameterDisplayed", () => {
     const result = displayedWith({ parameter: makeParameter({ displayLogic: DISPLAY_LOGIC }) });
     expect(result).toBe(true);
   });
+
+  it("treats bare boolean reference returning 'N' as hidden (toClassicBoolean)", () => {
+    // Simulates @bank_fee@ where bank_fee = "N"
+    mockCompile.mockReturnValue(() => "N");
+    const result = displayedWith({
+      parameter: makeParameter({ displayLogic: "@bank_fee@" }),
+    });
+    expect(result).toBe(false);
+  });
+
+  it("treats bare boolean reference returning 'Y' as visible (toClassicBoolean)", () => {
+    mockCompile.mockReturnValue(() => "Y");
+    const result = displayedWith({
+      parameter: makeParameter({ displayLogic: "@bank_fee@" }),
+    });
+    expect(result).toBe(true);
+  });
 });
