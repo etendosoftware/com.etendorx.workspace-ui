@@ -95,6 +95,7 @@ import {
   type Field,
 } from "./imports";
 import { resolveProcessModalDescription } from "./resolveProcessModalDescription";
+import { findMissingMandatoryParameters } from "./findMissingMandatoryParameters";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
 import { useLanguage } from "@/contexts/language";
@@ -1748,7 +1749,11 @@ function ProcessDefinitionModalContent({
     initializationBlocksSubmit ||
     // A migrated onLoad may force-enable via view.okButton.enable(), overriding
     // only the "mandatory empty" reason (the case it resolves after populating).
-    (hasMandatoryParametersWithoutValue && !scriptButtonState.okForceEnabled) ||
+    // Report and Process keeps the button enabled and validates on click (Classic
+    // parity: the JS1 message is shown on submit, not by graying out the button).
+    (type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+      hasMandatoryParametersWithoutValue &&
+      !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
     (isPE && !gridSelection) ||
@@ -1756,6 +1761,19 @@ function ProcessDefinitionModalContent({
 
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
   okEnabledRef.current = !isActionButtonDisabled;
+
+  // Classic parity: a Report and Process validates its mandatory parameters on
+  // click and shows AD_Message JS1 in the in-modal banner instead of posting when
+  // a required field is empty. handleReportProcessExecute does not validate, so we
+  // guard it here. Values are read at click time so the latest form state is used.
+  const handleReportProcessExecuteGuarded = useCallback(() => {
+    const missing = findMissingMandatoryParameters(parameters, form.getValues(), logicFields);
+    if (missing.length > 0) {
+      messageBar.setMessage("error", null, t("process.missingMandatoryFields"));
+      return;
+    }
+    handleReportProcessExecute();
+  }, [parameters, form, logicFields, handleReportProcessExecute, t]);
 
   const renderModalContent = () => {
     if (warehousePluginLoading && isCustomComponent) {
@@ -1845,7 +1863,7 @@ function ProcessDefinitionModalContent({
                   <Button
                     variant="filled"
                     size="large"
-                    onClick={handleReportProcessExecute}
+                    onClick={handleReportProcessExecuteGuarded}
                     disabled={Boolean(isActionButtonDisabled)}
                     startIcon={getActionButtonContent().icon}
                     className="w-49"

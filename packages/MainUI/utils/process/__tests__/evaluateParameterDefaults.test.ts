@@ -98,6 +98,38 @@ describe("evaluateParameterDefaults", () => {
     const result = evaluateParameterDefaults(params, context, emptyValues);
     expect(result).toEqual({ p1: "org-1", p2: "evaluated:someExpr" });
   });
+
+  describe("global session columns (@AD_Client_ID@ / @AD_Org_ID@)", () => {
+    // The session keeps the current client/org under the "#"-prefixed key.
+    const sessionContext = { "#AD_Client_ID": "client-1", "#AD_Org_ID": "org-9" };
+
+    it("resolves a bare @AD_Client_ID@ from the session context", () => {
+      const params = { p1: makeParam("p1", "@AD_Client_ID@") };
+      const result = evaluateParameterDefaults(params, sessionContext, emptyValues);
+      expect(result).toEqual({ p1: "client-1" });
+    });
+
+    it("resolves a bare @AD_Org_ID@ from the #-prefixed session key", () => {
+      const params = { p1: makeParam("p1", "@AD_Org_ID@") };
+      const result = evaluateParameterDefaults(params, sessionContext, emptyValues);
+      expect(result).toEqual({ p1: "org-9" });
+    });
+
+    it("prefers a matching parent-record field over the session value", () => {
+      // currentValues carries the inp-prefixed record field (inpadClientId).
+      const params = { p1: makeParam("p1", "@AD_Client_ID@") };
+      const result = evaluateParameterDefaults(params, sessionContext, { inpadClientId: "rec-client" });
+      expect(result).toEqual({ p1: "rec-client" });
+    });
+
+    it("does not hijack a real parent-record reference with an unrelated session value", () => {
+      // @C_BPartner_ID@ is not a session column: it must not resolve to any
+      // session value, so it falls through to the expression compiler.
+      const params = { p1: makeParam("p1", "@C_BPartner_ID@") };
+      const result = evaluateParameterDefaults(params, sessionContext, emptyValues);
+      expect(result).toEqual({ p1: "evaluated:@C_BPartner_ID@" });
+    });
+  });
 });
 
 describe("seedBooleanParameterDefaults", () => {

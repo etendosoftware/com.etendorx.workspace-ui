@@ -73,6 +73,16 @@ function evaluateSystemExpression(
       const inpKey = columnNameToInpKey(key);
       const val = currentValues[inpKey] ?? currentValues[inpKey.toLowerCase()] ?? currentValues[key];
       if (val !== undefined && val !== null && val !== "") return val;
+
+      // Fallback: global session columns like AD_Client_ID / AD_Org_ID are written
+      // without the leading "#" as a defaultValue (e.g. "@AD_Client_ID@"), yet they
+      // are session-backed values, not parent-record fields. Classic resolves them
+      // from the request/session context. The session keeps them under the
+      // "#"-prefixed key, so resolve from there when no record field matched. A real
+      // parent-record reference (e.g. @C_BPartner_ID@) is absent from the session, so
+      // this stays undefined and the existing behaviour is preserved.
+      const sessionVal = context[`#${key}`] ?? context[key];
+      if (sessionVal !== undefined && sessionVal !== null && sessionVal !== "") return sessionVal;
     }
   }
 
