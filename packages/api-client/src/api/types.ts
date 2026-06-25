@@ -1074,6 +1074,9 @@ export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
   description?: string;
+  /** Process Help text (AD_Process.Help / OBUIAPP_Process help). Report and
+   *  Process popups display this instead of `description`, mirroring classic. */
+  helpComment?: string;
   javaClassName: string;
   parameters: ProcessParameters;
   // Lifecycle hook bodies migrated from the classic OBUIAPP_Process columns

@@ -94,6 +94,7 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { resolveProcessModalDescription } from "./resolveProcessModalDescription";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
 import { useLanguage } from "@/contexts/language";
@@ -1782,6 +1783,12 @@ function ProcessDefinitionModalContent({
       );
     }
 
+    // Classic parity: Report and Process popups show the process Help text in
+    // their header; other process types keep their description. Uses the local
+    // `processDefinition` state so the helpComment loaded by the metadata fetch
+    // is reflected (button.processDefinition may not carry it).
+    const headerDescription = resolveProcessModalDescription(processDefinition, type);
+
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
@@ -1790,9 +1797,7 @@ function ProcessDefinitionModalContent({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
-                {!!button.processDefinition.description && (
-                  <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
-                )}
+                {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
               </div>
               {!scriptButtonState.closeHidden && (
                 <button
