@@ -109,7 +109,7 @@ describe("TableDirSelector — default first option for mandatory process combos
     { id: SPAIN_ID, _identifier: "Spain" },
     { id: USA_ID, _identifier: "USA" },
   ];
-  const mandatoryField = { ...mockField, isMandatory: true } as any;
+  const mandatoryField = { ...mockField, isMandatory: true };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -146,7 +146,7 @@ describe("TableDirSelector — default first option for mandatory process combos
   it("keeps the invalid value in a standard window (isProcessModal undefined)", async () => {
     setupDatasourceMock(ORG_RECORDS);
 
-    const readValue = renderWithProbe(undefined);
+    const readValue = renderWithProbe();
 
     await waitFor(() => expect(readValue()).toBe(INVALID_ORG));
   });

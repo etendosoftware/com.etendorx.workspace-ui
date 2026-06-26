@@ -7,7 +7,7 @@ import { LEGACY_ACTIONS, LEGACY_MESSAGE_TYPE } from "../../legacyMessageProtocol
 
 jest.mock("@/hooks/useUserContext", () => ({ useUserContext: () => ({ token: "tok" }) }));
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
-  useRuntimeConfig: () => ({ config: { etendoClassicHost: "http://host" } }),
+  useRuntimeConfig: () => ({ config: { etendoClassicHost: "https://host" } }),
 }));
 // The shared IconButton mock drops onClick; override it here so the search button
 // actually opens the popup when clicked.
@@ -107,7 +107,7 @@ describe("LegacySelectorAffix", () => {
 
     expect(openSpy).toHaveBeenCalledTimes(1);
     const url = openSpy.mock.calls[0][0] as string;
-    expect(url).toContain("http://host/meta/legacy/info/Product.html");
+    expect(url).toContain("https://host/meta/legacy/info/Product.html");
     expect(url).toContain("Command=DEFAULT");
     expect(url).toContain("inpIDValue=current-id");
     expect(url).toContain("token=tok");

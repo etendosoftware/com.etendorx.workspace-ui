@@ -37,11 +37,11 @@ describe("parseSelectorPayload", () => {
 });
 
 describe("buildLegacySelectorUrl", () => {
-  const base = { publicHost: "http://host", legacySearchUrl: "/info/Product.html" };
+  const base = { publicHost: "https://host", legacySearchUrl: "/info/Product.html" };
 
   it("builds the legacy forward URL with the default command", () => {
     const url = buildLegacySelectorUrl(base);
-    expect(url).toContain("http://host/meta/legacy/info/Product.html");
+    expect(url).toContain("https://host/meta/legacy/info/Product.html");
     expect(url).toContain("Command=DEFAULT");
   });
 

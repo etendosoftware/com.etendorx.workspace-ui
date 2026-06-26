@@ -40,11 +40,11 @@ const useHarness = (props: HarnessProps) => {
 };
 
 const renderHarness = (props: HarnessProps, defaultValues: Record<string, unknown>) => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => {
     const methods = useForm({ defaultValues });
     return <FormProvider {...methods}>{children}</FormProvider>;
   };
-  return renderHook((p: HarnessProps) => useHarness(p), { wrapper, initialProps: props });
+  return renderHook((p: HarnessProps) => useHarness(p), { wrapper: Wrapper, initialProps: props });
 };
 
 describe("useDefaultFirstOption", () => {
