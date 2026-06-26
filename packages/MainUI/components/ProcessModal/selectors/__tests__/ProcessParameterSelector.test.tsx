@@ -67,6 +67,17 @@ jest.mock("../GenericSelector", () => {
   };
 });
 
+// The legacy search affix is exercised in its own test; here we only assert that
+// ProcessParameterSelector wraps the selector with it when a legacySearchUrl exists.
+jest.mock("../LegacySelectorAffix", () => ({
+  __esModule: true,
+  default: ({ legacySearchUrl, children }: any) => (
+    <div data-testid="legacy-affix" data-url={legacySearchUrl}>
+      {children}
+    </div>
+  ),
+}));
+
 jest.mock("../UploadFileSelector", () => ({
   UploadFileSelector: ({ field, onFileChange }: any) => (
     <div>
@@ -304,6 +315,40 @@ describe("ProcessParameterSelector", () => {
       </TestWrapper>
     );
 
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("wraps the selector with the legacy search affix when the metadata carries legacySearchUrl", () => {
+    const searchParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", legacySearchUrl: "/info/Product.html" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={searchParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("legacy-affix")).toHaveAttribute("data-url", "/info/Product.html");
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("renders the plain selector without the affix when legacySearchUrl is absent", () => {
+    const tableDirParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={tableDirParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.queryByTestId("legacy-affix")).not.toBeInTheDocument();
     expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
   });
 

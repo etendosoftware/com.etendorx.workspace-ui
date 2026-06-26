@@ -27,6 +27,7 @@ import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 // Import existing ProcessModal selectors for fallback
 import GenericSelector from "./GenericSelector";
 import { UploadFileSelector } from "./UploadFileSelector";
+import LegacySelectorAffix from "./LegacySelectorAffix";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
@@ -259,7 +260,7 @@ const ProcessParameterSelectorImpl = ({
         case "product": {
           // Extract static options from selector.response if available
           const staticOptions = parameter.selector?.response;
-          return (
+          const tableDirSelector = (
             <TableDirSelector
               field={mappedField}
               isReadOnly={isReadOnly}
@@ -270,6 +271,18 @@ const ProcessParameterSelectorImpl = ({
               data-testid="TableDirSelector__dac06b"
             />
           );
+          // When the parameter is backed by a Classic Search reference, the metadata
+          // carries the legacy info-window URL: render a search button that opens that
+          // popup (delegated to the legacy UI) and writes the picked record back.
+          const legacySearchUrl = mappedField.selector?.legacySearchUrl;
+          if (typeof legacySearchUrl === "string" && legacySearchUrl.length > 0) {
+            return (
+              <LegacySelectorAffix field={mappedField} legacySearchUrl={legacySearchUrl} isReadOnly={isReadOnly}>
+                {tableDirSelector}
+              </LegacySelectorAffix>
+            );
+          }
+          return tableDirSelector;
         }
 
         case "quantity":
