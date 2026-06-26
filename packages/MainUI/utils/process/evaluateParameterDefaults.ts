@@ -101,9 +101,7 @@ function evaluateSystemExpression(
   if (!singleToken) return undefined;
 
   const key = singleToken[1];
-  return key.startsWith("#")
-    ? resolveSessionToken(key, context)
-    : resolveColumnToken(key, context, currentValues);
+  return key.startsWith("#") ? resolveSessionToken(key, context) : resolveColumnToken(key, context, currentValues);
 }
 
 /**
