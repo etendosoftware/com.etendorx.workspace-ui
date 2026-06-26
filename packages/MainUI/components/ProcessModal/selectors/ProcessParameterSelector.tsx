@@ -277,7 +277,11 @@ const ProcessParameterSelectorImpl = ({
           const legacySearchUrl = mappedField.selector?.legacySearchUrl;
           if (typeof legacySearchUrl === "string" && legacySearchUrl.length > 0) {
             return (
-              <LegacySelectorAffix field={mappedField} legacySearchUrl={legacySearchUrl} isReadOnly={isReadOnly}>
+              <LegacySelectorAffix
+                field={mappedField}
+                legacySearchUrl={legacySearchUrl}
+                isReadOnly={isReadOnly}
+                data-testid="LegacySelectorAffix__dac06b">
                 {tableDirSelector}
               </LegacySelectorAffix>
             );

@@ -30,7 +30,9 @@ describe("parseSelectorPayload", () => {
   });
 
   it("returns null when the payload is missing", () => {
-    expect(parseSelectorPayload({ type: LEGACY_MESSAGE_TYPE, action: LEGACY_ACTIONS.SELECTOR_VALUE_PICKED })).toBeNull();
+    expect(
+      parseSelectorPayload({ type: LEGACY_MESSAGE_TYPE, action: LEGACY_ACTIONS.SELECTOR_VALUE_PICKED })
+    ).toBeNull();
   });
 });
 
