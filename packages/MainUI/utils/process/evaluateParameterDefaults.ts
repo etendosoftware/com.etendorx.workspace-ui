@@ -32,6 +32,45 @@ function columnNameToInpKey(columnName: string): string {
   return `inp${camel}`;
 }
 
+// Single-token variable: @#VARNAME@ (session) or @COLUMN_NAME@ (parent record field).
+// Group 1 captures the inner name, with the leading "#" kept for session variables.
+const SINGLE_TOKEN_RE = /^@(#?[A-Za-z_]\w*)@$/;
+
+/**
+ * Resolves a session variable token like @#AD_Org_ID@ (the key already includes
+ * the leading "#"). Looks it up in the context both with and without the "#".
+ * Returns undefined when no non-blank value is found.
+ */
+function resolveSessionToken(key: string, context: Record<string, unknown>): unknown {
+  const val = context[key] ?? context[key.slice(1)];
+  return isBlank(val) ? undefined : val;
+}
+
+/**
+ * Resolves a parent-record column token like @C_BPartner_ID@.
+ *
+ * First tries the parent record field: currentValues already carries inp* keys
+ * built by buildProcessPayload. If that yields nothing, it falls back to global
+ * session columns (AD_Client_ID / AD_Org_ID) that are written without the leading
+ * "#" as a defaultValue yet are session-backed, not parent-record fields. Classic
+ * resolves these from the request/session context, which keeps them under the
+ * "#"-prefixed key. A real parent-record reference (e.g. @C_BPartner_ID@) is absent
+ * from the session, so it stays undefined and the existing behaviour is preserved.
+ * Returns undefined when no non-blank value is found.
+ */
+function resolveColumnToken(
+  key: string,
+  context: Record<string, unknown>,
+  currentValues: Record<string, unknown>
+): unknown {
+  const inpKey = columnNameToInpKey(key);
+  const recordVal = currentValues[inpKey] ?? currentValues[inpKey.toLowerCase()] ?? currentValues[key];
+  if (!isBlank(recordVal)) return recordVal;
+
+  const sessionVal = context[`#${key}`] ?? context[key];
+  return isBlank(sessionVal) ? undefined : sessionVal;
+}
+
 /**
  * Evaluates simple Etendo system-variable expressions that the backend
  * DefaultsProcessActionHandler may not return for every parameter.
@@ -58,35 +97,13 @@ function evaluateSystemExpression(
   // Well-known system-date variable
   if (trimmed === "@#Date@") return todayISO();
 
-  // Single-token variable: @#VARNAME@ (session) or @COLUMN_NAME@ (parent record field)
-  const singleToken = /^@(#?[A-Za-z_]\w*)@$/.exec(trimmed);
-  if (singleToken) {
-    const key = singleToken[1];
+  const singleToken = SINGLE_TOKEN_RE.exec(trimmed);
+  if (!singleToken) return undefined;
 
-    if (key.startsWith("#")) {
-      // Session variable: look up in context
-      const val = context[key] ?? context[key.slice(1)];
-      if (val !== undefined && val !== null && val !== "") return val;
-    } else {
-      // Parent record field reference (e.g. C_BPartner_ID):
-      // currentValues already has inp* keys built by buildProcessPayload.
-      const inpKey = columnNameToInpKey(key);
-      const val = currentValues[inpKey] ?? currentValues[inpKey.toLowerCase()] ?? currentValues[key];
-      if (val !== undefined && val !== null && val !== "") return val;
-
-      // Fallback: global session columns like AD_Client_ID / AD_Org_ID are written
-      // without the leading "#" as a defaultValue (e.g. "@AD_Client_ID@"), yet they
-      // are session-backed values, not parent-record fields. Classic resolves them
-      // from the request/session context. The session keeps them under the
-      // "#"-prefixed key, so resolve from there when no record field matched. A real
-      // parent-record reference (e.g. @C_BPartner_ID@) is absent from the session, so
-      // this stays undefined and the existing behaviour is preserved.
-      const sessionVal = context[`#${key}`] ?? context[key];
-      if (sessionVal !== undefined && sessionVal !== null && sessionVal !== "") return sessionVal;
-    }
-  }
-
-  return undefined;
+  const key = singleToken[1];
+  return key.startsWith("#")
+    ? resolveSessionToken(key, context)
+    : resolveColumnToken(key, context, currentValues);
 }
 
 /**
