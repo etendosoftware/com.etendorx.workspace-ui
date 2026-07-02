@@ -199,7 +199,9 @@ export const getPasswordFieldNames = (tab?: Tab): Set<string> => {
   if (!tab?.fields) return passwordFields;
 
   for (const field of Object.values(tab.fields)) {
-    if (field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD.id && field.hqlName) {
+    const isPasswordRef = field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD.id;
+    const isEncrypted = field.column?.displayEncription === true;
+    if ((isPasswordRef || isEncrypted) && field.hqlName) {
       passwordFields.add(field.hqlName);
     }
   }
@@ -228,5 +230,8 @@ export const shouldExcludePasswordField = (
 ): boolean => {
   if (isNewRecord) return false;
   if (!passwordFields.has(fieldName)) return false;
-  return value === PASSWORD_PLACEHOLDER;
+  // In edit mode, treat the "***" placeholder AND empty/null values as "no change".
+  // Clearing a password field is equivalent to leaving it unchanged — the backend
+  // should not receive an empty string for an encrypted or hashed column.
+  return value === PASSWORD_PLACEHOLDER || value === "" || value === null || value === undefined;
 };

@@ -75,7 +75,7 @@ export function buildSavePayload({
     }
   }
 
-  // Get password field names to handle them specially
+  // All masked fields (PASSWORD reference + displayEncription)
   const passwordFields = getPasswordFieldNames(tab);
   const isNewRecord = mode === FormMode.NEW;
 
@@ -120,7 +120,9 @@ export function buildSavePayload({
     }
 
     acc[key] = value;
-    // If this is a password field with a real value (not placeholder), also add password_cleartext
+    // Send _cleartext for ALL masked fields — Classic's JsonToDataConverter requires it for
+    // both EncryptedStringDomainType (displayEncription) and HashedStringDomainType (PASSWORD
+    // reference). Without _cleartext the field is silently skipped regardless of its value.
     if (passwordFields.has(key) && value && value !== PASSWORD_PLACEHOLDER) {
       acc[`${key}_cleartext`] = value;
     }
