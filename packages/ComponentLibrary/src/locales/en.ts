@@ -308,6 +308,7 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
     processError: "Process failed",
+    missingMandatoryFields: "You have not filled in all needed fields",
     warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",

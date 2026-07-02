@@ -50,6 +50,10 @@ const PROCESS_META_KEY_IS_SELECTOR_ITEM = "IsSelectorItem";
 const PROCESS_PARAM_AD_ORG_ID = "ad_org_id";
 const PROCESS_META_KEY_ORG = "_org";
 const PROCESS_META_KEY_INP_AD_ORG_ID = "inpadOrgId";
+// Mirrors backend Constants.SELECTOR_DEFINITION_PROPERTY. Sending this id is what
+// makes SelectorDataSourceFilter load the OBUISEL selector and apply its HQL
+// where clause; without it the filter is a no-op and the combo returns no rows.
+const SELECTOR_META_KEY_DEFINITION_ID = "_selectorDefinitionId";
 
 /**
  * Returns true when the value is a non-empty primitive worth forwarding as the
@@ -76,6 +80,13 @@ const hasUsableOrgValue = (value: unknown): boolean => {
  * Without this overlay, server-side `SelectorDataSourceFilter` cannot resolve
  * the parameter's validation rule or evaluate its HQL placeholders.
  */
+// OBUIAPP process definitions (and their parameters) use 32-char hex UUID ids;
+// classic AD_Process / AD_Process_Para use sequential numeric ids.
+const PROCESS_DEFINITION_ID_PATTERN = /^[0-9A-Fa-f]{32}$/;
+
+const isProcessDefinitionId = (id: string | undefined): boolean =>
+  typeof id === "string" && PROCESS_DEFINITION_ID_PATTERN.test(id);
+
 export const buildProcessSelectorOverlay = (
   field: Field,
   processContext: ProcessSelectorContext
@@ -87,11 +98,18 @@ export const buildProcessSelectorOverlay = (
   const columnName = field.columnName || field.hqlName || field.name;
   const overlay: Record<string, unknown> = {
     ...values,
-    [PROCESS_META_KEY_PROCESS_ID]: processId,
-    [PROCESS_META_KEY_SELECTOR_FIELD_ID]: field.id,
     [PROCESS_META_KEY_COLUMN_NAME]: columnName,
     [PROCESS_META_KEY_IS_SELECTOR_ITEM]: true,
   };
+  // Only OBUIAPP defined processes carry a resolvable process definition +
+  // Parameter. For a classic AD_Process (numeric id, e.g. Generate Invoices id
+  // 119) these keys make SelectorDataSourceFilter look up a Parameter by a
+  // classic AD_Process_Para id → null → NPE that DataSourceServlet swallows,
+  // silently dropping the selector's HQL where clause (every row leaks through).
+  if (isProcessDefinitionId(processId)) {
+    overlay[PROCESS_META_KEY_PROCESS_ID] = processId;
+    overlay[PROCESS_META_KEY_SELECTOR_FIELD_ID] = field.id;
+  }
   const adOrgId = values[PROCESS_PARAM_AD_ORG_ID];
   if (hasUsableOrgValue(adOrgId)) {
     overlay[PROCESS_META_KEY_ORG] = adOrgId;
@@ -265,6 +283,15 @@ export const useTableDirDatasource = ({
         return body;
       };
 
+      /**
+       * Carries the OBUISEL selector definition id when the field has one, so the
+       * backend SelectorDataSourceFilter applies the selector's HQL where clause.
+       * Returns an empty object for plain combos (no selector id) so their payload
+       * stays unchanged.
+       */
+      const selectorDefinitionField = (): Partial<BaseBody> =>
+        selectorId ? { [SELECTOR_META_KEY_DEFINITION_ID]: selectorId } : {};
+
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
       const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
@@ -277,6 +304,15 @@ export const useTableDirDatasource = ({
 
       const effectiveSelector = field.selector ?? { ...COMBO_TABLE_SELECTOR_DEFAULTS, fieldId: field.id };
 
+      // Process-parameter selectors have no window tab. Sending empty tab/table ids
+      // makes the backend look up a Tab by "" → null → NPE in getWhereAndFilterClause.
+      // Omitting the keys lets the backend skip the tab where clause (the selector's
+      // own where clause is still applied via `_selectorDefinitionId`).
+      const tabIdentifiers: Partial<BaseBody> = effectiveTabId
+        ? { tabId: effectiveTabId, inpTabId: effectiveTabId }
+        : {};
+      const tableIdentifier: Partial<BaseBody> = effectiveTableId ? { inpTableId: effectiveTableId } : {};
+
       const baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
@@ -284,10 +320,9 @@ export const useTableDirDatasource = ({
         ...effectiveSelector,
         moduleId: field.module,
         windowId,
-        tabId: effectiveTabId,
-        inpTabId: effectiveTabId,
+        ...tabIdentifiers,
         inpwindowId: windowId,
-        inpTableId: effectiveTableId,
+        ...tableIdentifier,
         initiatorField: field.hqlName,
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
@@ -322,6 +357,7 @@ export const useTableDirDatasource = ({
               ...parentData,
               ...invoiceValue,
               ...formValues,
+              ...selectorDefinitionField(),
             };
           }
 
@@ -348,6 +384,7 @@ export const useTableDirDatasource = ({
               ...parentData,
               ...invoiceValue,
               ...buildSelectorContextFormValues(hqlSources, formValues),
+              ...selectorDefinitionField(),
             };
           }
 
@@ -357,7 +394,7 @@ export const useTableDirDatasource = ({
         if (isProductField) {
           return {
             _noCount: "true",
-            ...(selectorId && { _selectorDefinitionId: selectorId }),
+            ...selectorDefinitionField(),
             ...formValues,
             ...invoiceValue,
           };

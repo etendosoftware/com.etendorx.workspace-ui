@@ -3,6 +3,7 @@ import { useTableDirDatasource } from "../useTableDirDatasource";
 import { useTabContext } from "@/contexts/tab";
 import { useFormContext } from "react-hook-form";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { ProcessSelectorContext } from "@/hooks/types";
 
 jest.mock("@/contexts/tab");
@@ -19,6 +20,8 @@ const PROCESS_ID = "60F1E2DEB1B544908CDD4CF99ACA80EB";
 const COLUMN_NAME = "payment_method";
 const FIN_PAYMENT_METHOD_DATASOURCE = "FIN_PaymentMethod";
 const SELECTOR_FILTER_CLASS = "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+const SELECTOR_DEF_ID = "7875FD8CEC604CB3AF3ABDF9D9024CA3";
+const COMBO_TABLE_DATASOURCE = "ComboTableDatasourceService";
 
 const mockField = {
   id: FIELD_ID,
@@ -124,5 +127,132 @@ describe("useTableDirDatasource — process selector overlay", () => {
     expect(params._processDefinitionId).toBeUndefined();
     expect(params._selectorFieldId).toBeUndefined();
     expect(params.IsSelectorItem).toBeUndefined();
+  });
+});
+
+describe("useTableDirDatasource — _selectorDefinitionId forwarding", () => {
+  // An OBUISEL selector (e.g. "Order for invoicing" on C_Order) is filtered server-side
+  // by SelectorDataSourceFilter, which is a no-op unless the request carries
+  // `_selectorDefinitionId`. The hook must forward it for process selectors.
+  const ORDER_DATASOURCE = "C_Order";
+
+  const buildField = (selector: Record<string, unknown>): Field =>
+    ({
+      id: FIELD_ID,
+      hqlName: COLUMN_NAME,
+      columnName: COLUMN_NAME,
+      name: "Sales Order",
+      selector,
+    }) as unknown as Field;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useTabContext as jest.Mock).mockReturnValue({ tab: null, parentTab: null, parentRecord: null });
+    (useFormContext as jest.Mock).mockReturnValue({
+      watch: jest.fn(),
+      getValues: jest.fn(() => ({})),
+    });
+    (datasource.client.post as jest.Mock).mockResolvedValue({
+      data: { response: { data: [] } },
+    });
+  });
+
+  it("forwards _selectorDefinitionId for a custom-entity selector (Order for invoicing)", async () => {
+    const field = buildField({
+      datasourceName: ORDER_DATASOURCE,
+      filterClass: SELECTOR_FILTER_CLASS,
+      _selectorDefinitionId: SELECTOR_DEF_ID,
+    });
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field, isProcessModal: true, processContext: buildProcessContext() })
+    );
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(getLastPostedParams()._selectorDefinitionId).toBe(SELECTOR_DEF_ID);
+  });
+
+  it("does NOT add _selectorDefinitionId for a standard combo without a selector id", async () => {
+    const field = buildField({ datasourceName: COMBO_TABLE_DATASOURCE });
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field, isProcessModal: true, processContext: buildProcessContext() })
+    );
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(getLastPostedParams()._selectorDefinitionId).toBeUndefined();
+  });
+
+  it("omits empty tab/table ids so the backend does not look up a null Tab (NPE guard)", async () => {
+    // A process selector has no window tab (useTabContext → tab: null, field.tab absent).
+    // Sending tabId:"" makes the backend fetch Tab by "" → null → NPE in
+    // getWhereAndFilterClause. The keys must be absent, not empty.
+    const field = buildField({
+      datasourceName: ORDER_DATASOURCE,
+      filterClass: SELECTOR_FILTER_CLASS,
+      _selectorDefinitionId: SELECTOR_DEF_ID,
+    });
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field, isProcessModal: true, processContext: buildProcessContext() })
+    );
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    const params = getLastPostedParams();
+    expect(params.tabId).toBeUndefined();
+    expect(params.inpTabId).toBeUndefined();
+    expect(params.inpTableId).toBeUndefined();
+  });
+
+  it("omits _processDefinitionId/_selectorFieldId for a classic (numeric-id) process", async () => {
+    // Classic AD_Process (e.g. Generate Invoices id 119) has no OBUIAPP process
+    // definition. Sending these keys makes SelectorDataSourceFilter NPE on a
+    // missing Parameter and the servlet then drops the selector where clause.
+    const field = buildField({
+      datasourceName: ORDER_DATASOURCE,
+      filterClass: SELECTOR_FILTER_CLASS,
+      _selectorDefinitionId: SELECTOR_DEF_ID,
+    });
+    const classicContext: ProcessSelectorContext = { processId: "119", values: { ad_org_id: "0" } };
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field, isProcessModal: true, processContext: classicContext })
+    );
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    const params = getLastPostedParams();
+    expect(params._processDefinitionId).toBeUndefined();
+    expect(params._selectorFieldId).toBeUndefined();
+    // The selector id still goes through so the backend applies its where clause.
+    expect(params._selectorDefinitionId).toBe(SELECTOR_DEF_ID);
+    // Harmless selector-item markers are still sent.
+    expect(params.IsSelectorItem).toBe(true);
+  });
+
+  it("keeps _processDefinitionId/_selectorFieldId for an OBUIAPP (UUID) process", async () => {
+    const field = buildField({
+      datasourceName: ORDER_DATASOURCE,
+      filterClass: SELECTOR_FILTER_CLASS,
+      _selectorDefinitionId: SELECTOR_DEF_ID,
+    });
+    const { result } = renderHook(() =>
+      useTableDirDatasource({ field, isProcessModal: true, processContext: buildProcessContext() })
+    );
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    const params = getLastPostedParams();
+    expect(params._processDefinitionId).toBe(PROCESS_ID);
+    expect(params._selectorFieldId).toBe(FIELD_ID);
   });
 });

@@ -32,6 +32,7 @@ export const LEGACY_ACTIONS = {
   IFRAME_UNLOADED: "iframeUnloaded",
   REQUEST_FAILED: "requestFailed",
   OPEN_LEGACY_REPORT: "openLegacyReport",
+  SELECTOR_VALUE_PICKED: "selectorValuePicked",
 } as const;
 
 export type LegacyAction = (typeof LEGACY_ACTIONS)[keyof typeof LEGACY_ACTIONS];

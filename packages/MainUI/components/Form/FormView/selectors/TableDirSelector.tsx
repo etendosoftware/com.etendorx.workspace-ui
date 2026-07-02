@@ -18,6 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "@/components/Form/FormView/selectors/components/Select/Select";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
+import { useDefaultFirstOption } from "@/hooks/useDefaultFirstOption";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import type { ProcessSelectorContext } from "@/hooks/types";
 
@@ -44,6 +45,8 @@ export const TableDirSelector = ({
     processContext,
   });
   const options = useSelectFieldOptions(field, records);
+
+  useDefaultFirstOption({ field, options, loading, enabled: Boolean(isProcessModal) });
 
   return (
     <Select

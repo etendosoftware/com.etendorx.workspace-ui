@@ -64,6 +64,7 @@ import {
   removeParameter,
   evaluateParameterDefaults,
   seedBooleanParameterDefaults,
+  seedSessionColumnDefaults,
   isBulkCompletionProcess,
   buildOnLoadScripts,
   isBulkParameterRenderable,
@@ -98,6 +99,8 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { resolveProcessModalDescription } from "./resolveProcessModalDescription";
+import { findMissingMandatoryParameters } from "./findMissingMandatoryParameters";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
@@ -650,6 +653,7 @@ function ProcessDefinitionModalContent({
       const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
       Object.assign(combined, evaluatedDefaults);
       seedBooleanParameterDefaults(combined, parameters);
+      seedSessionColumnDefaults(combined, parameters, session || {});
 
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -687,6 +691,7 @@ function ProcessDefinitionModalContent({
     const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
     Object.assign(combined, evaluatedDefaults);
     seedBooleanParameterDefaults(combined, parameters);
+    seedSessionColumnDefaults(combined, parameters, session || {});
 
     const parametersList = Object.values(parameters);
     for (const param of parametersList) {
@@ -1752,7 +1757,11 @@ function ProcessDefinitionModalContent({
     initializationBlocksSubmit ||
     // A migrated onLoad may force-enable via view.okButton.enable(), overriding
     // only the "mandatory empty" reason (the case it resolves after populating).
-    (hasMandatoryParametersWithoutValue && !scriptButtonState.okForceEnabled) ||
+    // Report and Process keeps the button enabled and validates on click (Classic
+    // parity: the JS1 message is shown on submit, not by graying out the button).
+    (type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+      hasMandatoryParametersWithoutValue &&
+      !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
     (isPE && !gridSelection) ||
@@ -1760,6 +1769,19 @@ function ProcessDefinitionModalContent({
 
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
   okEnabledRef.current = !isActionButtonDisabled;
+
+  // Classic parity: a Report and Process validates its mandatory parameters on
+  // click and shows AD_Message JS1 in the in-modal banner instead of posting when
+  // a required field is empty. handleReportProcessExecute does not validate, so we
+  // guard it here. Values are read at click time so the latest form state is used.
+  const handleReportProcessExecuteGuarded = useCallback(() => {
+    const missing = findMissingMandatoryParameters(parameters, form.getValues(), logicFields);
+    if (missing.length > 0) {
+      messageBar.setMessage("error", null, t("process.missingMandatoryFields"));
+      return;
+    }
+    handleReportProcessExecute();
+  }, [parameters, form, logicFields, handleReportProcessExecute, t]);
 
   const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
   const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
@@ -1790,6 +1812,12 @@ function ProcessDefinitionModalContent({
       );
     }
 
+    // Classic parity: Report and Process popups show the process Help text in
+    // their header; other process types keep their description. Uses the local
+    // `processDefinition` state so the helpComment loaded by the metadata fetch
+    // is reflected (button.processDefinition may not carry it).
+    const headerDescription = resolveProcessModalDescription(processDefinition, type);
+
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
@@ -1798,9 +1826,7 @@ function ProcessDefinitionModalContent({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
-                {!!button.processDefinition.description && (
-                  <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
-                )}
+                {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
               </div>
               {!scriptButtonState.closeHidden && (
                 <button
@@ -1848,7 +1874,7 @@ function ProcessDefinitionModalContent({
                   <Button
                     variant="filled"
                     size="large"
-                    onClick={handleReportProcessExecute}
+                    onClick={handleReportProcessExecuteGuarded}
                     disabled={Boolean(isActionButtonDisabled)}
                     startIcon={getActionButtonContent().icon}
                     className="w-49"

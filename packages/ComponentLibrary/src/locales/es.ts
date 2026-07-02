@@ -313,6 +313,7 @@ const es = {
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
     processError: "Error mientras se cargaba la informacion del proceso",
+    missingMandatoryFields: "No ha completado todos los campos requeridos",
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
