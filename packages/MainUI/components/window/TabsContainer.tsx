@@ -33,6 +33,7 @@ import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 /**
  * TabsContainer Component
@@ -96,7 +97,7 @@ const TabsGroupRenderer = ({
     try {
       const compiledExpr = compileExpression(expression);
       // We pass the context (which includes session) as the first argument
-      return compiledExpr(context, context);
+      return toClassicBoolean(compiledExpr(context, context));
     } catch {
       return true;
     }
@@ -128,7 +129,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        return compiledExpr(context, context);
+        return toClassicBoolean(compiledExpr(context, context));
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
         return false;

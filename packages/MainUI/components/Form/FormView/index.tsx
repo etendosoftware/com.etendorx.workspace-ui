@@ -175,7 +175,7 @@ export function FormView({
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
   }, []);
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
-  const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
+  const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
   const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
@@ -499,6 +499,21 @@ export function FormView({
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
+
+  // Publish dirty form values to TabContext so the toolbar can react to
+  // display-logic changes before the record is saved.
+  useEffect(() => {
+    setFormValues({});
+    const subscription = formMethods.watch((value, { name }) => {
+      if (name) {
+        setFormValues((prev) => ({ ...prev, [name]: value[name] }));
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+      setFormValues({});
+    };
+  }, [formMethods, setFormValues]);
 
   useDefaultValueReaction({ tab, formMethods, isFormInitializing });
 

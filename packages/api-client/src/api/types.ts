@@ -1097,6 +1097,13 @@ export interface ProcessDefinition extends Record<string, unknown> {
   /** Whether the embedded grid accepts more than one selected row. The
    *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
   isMultiRecord?: boolean | "Y" | "N";
+  /** Report export flags emitted by the metadata backend when uIPattern is "OBUIAPP_Report". */
+  report?: {
+    id: string;
+    pdfExport: boolean;
+    xlsExport: boolean;
+    htmlExport: boolean;
+  };
 }
 
 export interface Labels {

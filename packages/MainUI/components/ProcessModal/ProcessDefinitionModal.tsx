@@ -80,6 +80,10 @@ import {
   PROCESS_TYPES,
   isPickAndExecute,
   PICK_AND_EXECUTE_UI_PATTERN,
+  OBUIAPP_REPORT_UI_PATTERN,
+  REPORT_FORMAT_I18N_KEYS,
+  getReportActions,
+  type ReportOutputFormat,
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
@@ -97,6 +101,7 @@ import {
 } from "./imports";
 import { resolveProcessModalDescription } from "./resolveProcessModalDescription";
 import { findMissingMandatoryParameters } from "./findMissingMandatoryParameters";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUserStore } from "@/stores/userStore";
 import { useLanguage } from "@/contexts/language";
@@ -229,7 +234,7 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
           session,
         });
 
-        isDisplayed = compiledExpr(smartContext, smartContext);
+        isDisplayed = toClassicBoolean(compiledExpr(smartContext, smartContext));
       } catch (error) {
         logger.warn(`Error evaluating display logic for ${parameter.name}`, error);
       }
@@ -1778,6 +1783,9 @@ function ProcessDefinitionModalContent({
     handleReportProcessExecute();
   }, [parameters, form, logicFields, handleReportProcessExecute, t]);
 
+  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
+  const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
+
   const renderModalContent = () => {
     if (warehousePluginLoading && isCustomComponent) {
       return (
@@ -1876,7 +1884,36 @@ function ProcessDefinitionModalContent({
                 </>
               )}
 
+              {isOBUIAPPReport && (!result || !isFinalSuccess) && (
+                <>
+                  {!scriptButtonState.cancelHidden && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      disabled={isPending}
+                      className="w-49"
+                      data-testid="CancelButton__761503">
+                      {t("common.cancel")}
+                    </Button>
+                  )}
+                  {reportActions.map((format) => (
+                    <Button
+                      key={format}
+                      variant="filled"
+                      size="large"
+                      onClick={() => handleExecute(format)}
+                      disabled={Boolean(isActionButtonDisabled)}
+                      className="w-49"
+                      data-testid={`ReportExportButton_${format}__761503`}>
+                      {getLabel(REPORT_FORMAT_I18N_KEYS[format])}
+                    </Button>
+                  ))}
+                </>
+              )}
+
               {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                !isOBUIAPPReport &&
                 (!result || !isFinalSuccess) &&
                 !isPending &&
                 !scriptButtonState.cancelHidden && (
@@ -1891,6 +1928,7 @@ function ProcessDefinitionModalContent({
                 )}
 
               {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                !isOBUIAPPReport &&
                 ((!result || !isFinalSuccess) && availableButtons.length > 0
                   ? availableButtons
                       .filter((btn) => !scriptButtonState.hiddenValues[btn.value])

@@ -53,6 +53,7 @@ interface ProcessParameterSelectorProps {
 }
 
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 // ... imports remain the same
 
@@ -147,8 +148,7 @@ const ProcessParameterSelectorImpl = ({
 
     try {
       const compiledExpr = compileExpression(readOnlyExpression);
-      const result = compiledExpr(evaluationContext, evaluationContext);
-      return result;
+      return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext));
     } catch (error) {
       logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
       return false; // Default to editable on error

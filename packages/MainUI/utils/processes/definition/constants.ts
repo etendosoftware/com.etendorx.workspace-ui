@@ -190,3 +190,19 @@ export const PROCESS_TYPES = {
   PROCESS_DEFINITION: "process-definition",
   REPORT_AND_PROCESS: "report-and-process",
 } as const;
+
+export const OBUIAPP_REPORT_UI_PATTERN = "OBUIAPP_Report";
+
+export const REPORT_OUTPUT_FORMATS = {
+  HTML: "HTML",
+  PDF: "PDF",
+  XLS: "XLS",
+} as const;
+
+export type ReportOutputFormat = (typeof REPORT_OUTPUT_FORMATS)[keyof typeof REPORT_OUTPUT_FORMATS];
+
+export const REPORT_FORMAT_I18N_KEYS: Record<ReportOutputFormat, string> = {
+  HTML: "OBUIAPP_HTMLExport",
+  PDF: "OBUIAPP_PDFExport",
+  XLS: "OBUIAPP_XLSExport",
+};

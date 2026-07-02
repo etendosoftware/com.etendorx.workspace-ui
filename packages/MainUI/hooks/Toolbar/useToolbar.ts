@@ -33,6 +33,7 @@ import {
   buildFormInitializationParams,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 // NOTE: this need a fix in the future
 // Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
@@ -58,7 +59,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   const [error, setError] = useState<Error | null>(null);
 
   const session = useUserStore((s) => s.session);
-  const { tab, parentRecord, parentTab, auxiliaryInputs } = useTabContext();
+  const { tab, parentRecord, parentTab, auxiliaryInputs, formValues } = useTabContext();
   const selectedItems = useSelectedRecords(tab);
   const {
     fields: { actionFields },
@@ -151,7 +152,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       try {
         const checkRecord = (record: Record<string, unknown>) => {
           const smartContext = createSmartContext({
-            values: record,
+            values: { ...record, ...formValues },
             fields: tab.fields,
             auxiliaryInputs: effectiveAuxInputs,
             parentValues: parentRecord || undefined,
@@ -159,7 +160,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
             context: session,
             defaultValue: "",
           });
-          return compiledExpr(smartContext, smartContext);
+          return toClassicBoolean(compiledExpr(smartContext, smartContext));
         };
 
         // For multi-record processes: ALL selected records must satisfy the condition
@@ -171,7 +172,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         return true;
       }
     }) as ProcessButton[];
-  }, [actionFields, selectedItems, session, tab, parentRecord, parentTab, effectiveAuxInputs]);
+  }, [actionFields, selectedItems, session, tab, parentRecord, parentTab, effectiveAuxInputs, formValues]);
 
   const fetchToolbar = useCallback(async () => {
     if (!windowIdentifier) return;
