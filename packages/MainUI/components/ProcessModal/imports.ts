@@ -80,7 +80,12 @@ export {
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
+  OBUIAPP_REPORT_UI_PATTERN,
+  REPORT_OUTPUT_FORMATS,
+  REPORT_FORMAT_I18N_KEYS,
 } from "@/utils/processes/definition/constants";
+export type { ReportOutputFormat } from "@/utils/processes/definition/constants";
+export { getReportActions } from "@/utils/processes/definition/reportActions";
 export {
   isPickAndExecute,
   allowsMultipleRecords,
