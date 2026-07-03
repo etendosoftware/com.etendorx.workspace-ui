@@ -1617,7 +1617,6 @@ const WindowReferenceGrid = ({
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const user = useUserStore((s) => s.user);
   const session = useUserStore((s) => s.session);
-  const currentClient = useUserStore((s) => s.currentClient);
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);

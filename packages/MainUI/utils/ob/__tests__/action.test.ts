@@ -36,7 +36,7 @@ describe("createAction", () => {
     const first = jest.fn();
     const second = jest.fn(() => "second");
     action.set(ACTION_NAME, first);
-    action.set(ACTION_NAME, second);
+    action.set(ACTION_NAME, second); // NOSONAR: re-registering under the same name is the behavior under test
 
     expect(action.execute(ACTION_NAME)).toBe("second");
     expect(first).not.toHaveBeenCalled();

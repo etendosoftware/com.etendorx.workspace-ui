@@ -46,17 +46,11 @@ export async function selectRoleOrgWarehouse(
   // permanently disables the organization/warehouse fields and hangs the
   // test. Matching by name is immune to reordering.
   await page.locator("#role-select").click();
-  await page
-    .locator('[id^="role-select-option-"]')
-    .filter({ hasText: roleName })
-    .click();
+  await page.locator('[id^="role-select-option-"]').filter({ hasText: roleName }).click();
 
   // Same reasoning applies to the organization list.
   await page.locator("#organization-select").click();
-  await page
-    .locator('[id^="organization-select-option-"]')
-    .filter({ hasText: organizationName })
-    .click();
+  await page.locator('[id^="organization-select-option-"]').filter({ hasText: organizationName }).click();
 
   // The specific warehouse doesn't matter to any caller (none override it) —
   // just take whichever one is first for the selected organization.
