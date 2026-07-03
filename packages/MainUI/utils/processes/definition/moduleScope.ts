@@ -132,6 +132,10 @@ export function evaluateModuleScope(body: string, context: Record<string, unknow
   try {
     const contextKeys = Object.keys(context);
     const contextValues = Object.values(context);
+    // NOSONAR: `body` is an Application Dictionary field (Process/Report-and-Process
+    // "Payscript Logic") fetched read-only from the authenticated metadata API. It is
+    // authored by administrators in Etendo Classic, never by end-user input, form
+    // fields, or URL/query parameters reaching this frontend.
     const factory = new Function(...contextKeys, body);
     const scope = factory(...contextValues);
 
