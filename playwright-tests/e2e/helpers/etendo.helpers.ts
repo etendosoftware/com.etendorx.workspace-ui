@@ -31,27 +31,38 @@ export async function cleanupEtendo(page: Page) {
 export async function selectRoleOrgWarehouse(
   page: Page,
   options: {
-    roleOptionId?: string;
-    organizationOptionId?: string;
-    warehouseOptionId?: string;
+    roleName?: string;
+    organizationName?: string;
   } = {}
 ) {
-  const {
-    roleOptionId = "#role-select-option-12",
-    organizationOptionId = "#organization-select-option-3",
-    warehouseOptionId = "#warehouse-select-option-1",
-  } = options;
+  const { roleName = "QA Testing Admin", organizationName = "Spain" } = options;
 
   await page.locator('[data-testid="PersonIcon__120cc9"]').click();
 
-  // Open role dropdown
+  // Open role dropdown and select by visible name instead of a fixed
+  // "#role-select-option-N" index. The backend returns each user's roles
+  // without a stable order, so a numeric index can silently land on a
+  // different role (e.g. "System Administrator") between runs, which then
+  // permanently disables the organization/warehouse fields and hangs the
+  // test. Matching by name is immune to reordering.
   await page.locator("#role-select").click();
+  await page
+    .locator('[id^="role-select-option-"]')
+    .filter({ hasText: roleName })
+    .click();
 
-  await page.locator(`${roleOptionId} > .MuiTypography-root`).click();
+  // Same reasoning applies to the organization list.
   await page.locator("#organization-select").click();
-  await page.locator(`${organizationOptionId} > .MuiTypography-root`).click();
+  await page
+    .locator('[id^="organization-select-option-"]')
+    .filter({ hasText: organizationName })
+    .click();
+
+  // The specific warehouse doesn't matter to any caller (none override it) —
+  // just take whichever one is first for the selected organization.
   await page.locator("#warehouse-select").click();
-  await page.locator(`${warehouseOptionId} > .MuiTypography-root`).click();
+  await page.locator('[id^="warehouse-select-option-"]').first().click();
+
   await page.locator(".PrivateSwitchBase-input").check();
   await page.locator(".text-\\(--color-etendo-contrast-text\\) > :nth-child(2)").click();
 }
