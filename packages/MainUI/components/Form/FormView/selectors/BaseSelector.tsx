@@ -114,7 +114,8 @@ export const compileExpression = (expression: string) => {
 
     // This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
-    const compiled = new Function( // NOSONAR typescript:S1523
+    const compiled = new Function(
+      // NOSONAR typescript:S1523
       "context",
       "currentValues",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
