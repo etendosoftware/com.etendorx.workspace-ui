@@ -1,13 +1,16 @@
-import { useMemo, useState, type UIEvent } from "react";
-import { Dialog, DialogContent, IconButton, Box, Typography } from "@mui/material";
+import { useCallback, useMemo, useState, type UIEvent } from "react";
+import { Dialog, DialogActions, DialogContent, IconButton, Box, Typography } from "@mui/material";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnFiltersState,
+  type MRT_RowSelectionState,
   type MRT_SortingState,
+  type MRT_TableOptions,
 } from "material-react-table";
 import { useDatasource } from "../../../../hooks/useDatasource";
-import type { Field, EntityData, SelectorColumn } from "@workspaceui/api-client/src/api/types";
+import type { Field, EntityData, SelectorColumn, Tab } from "@workspaceui/api-client/src/api/types";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useSelected } from "@/hooks/useSelected";
 import { buildEtendoContext } from "@/utils/contextUtils";
@@ -16,7 +19,7 @@ import { useFormContext } from "react-hook-form";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/language";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import {
   buildSelectorColumnDefs,
   buildDatasourceColumns,
@@ -34,25 +37,102 @@ interface SelectorModalProps {
   onClose: () => void;
   onSelect: (record: EntityData) => void;
   currentDisplayValue?: string;
+  /**
+   * Optional override for the record-values getter. Used by grid cells that
+   * live outside a `react-hook-form` `<FormProvider>` (or inside one whose
+   * values describe a different scope, e.g. the parent process modal). When
+   * omitted, falls back to `useFormContext().getValues`.
+   */
+  getValues?: () => Record<string, unknown>;
+  /**
+   * Optional override for the current tab. Used by grid cells whose ambient
+   * `useTabContext()` returns the *outer* tab (e.g. the form-mode parent),
+   * not the P&E grid's own tab. When omitted, falls back to `useTabContext().tab`.
+   */
+  currentTab?: Tab | null;
+  /**
+   * Enable multi-row selection. When true, row clicks toggle selection
+   * (no auto-close), checkbox column appears, and the dialog footer renders
+   * Cancel/Confirm buttons. Selection is reported via `onMultiSelect`.
+   */
+  multiSelect?: boolean;
+  /**
+   * IDs that should appear pre-selected when the modal opens. Used to round-trip
+   * existing field values (e.g. CSV-stored multi-record selections).
+   */
+  initialSelectedIds?: string[];
+  /**
+   * Optional id→identifier map used to synthesize record stubs when a
+   * pre-selected ID is not present in the currently loaded records page.
+   * Avoids losing the human-readable label when the caller hits Confirm
+   * without scrolling the row into view.
+   */
+  initialSelectedIdentifiersById?: Record<string, string>;
+  /**
+   * Called when the user confirms a multi-record selection. Receives the full
+   * list of selected records (stubs `{id, _identifier}` are synthesized for IDs
+   * that were pre-selected but not currently loaded in the grid).
+   */
+  onMultiSelect?: (records: EntityData[]) => void;
 }
 
-const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps) => {
+const SelectorModal = ({
+  field,
+  isOpen,
+  onClose,
+  onSelect,
+  getValues: getValuesProp,
+  currentTab: currentTabProp,
+  multiSelect = false,
+  initialSelectedIds,
+  initialSelectedIdentifiersById,
+  onMultiSelect,
+}: SelectorModalProps) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const { sx } = useStyle();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<MRT_SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>(() =>
+    Object.fromEntries((initialSelectedIds ?? []).map((id) => [id, true]))
+  );
   const { graph } = useSelected();
-  const { tab: currentTab } = useTabContext();
+  // `useTabContext()` returns `{}` (no `tab`) outside a TabContextProvider — safe.
+  const { tab: tabFromContext } = useTabContext();
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { getValues } = useFormContext();
-  const { session } = useUserContext();
+  // `useFormContext()` returns `null` outside a FormProvider — handle that.
+  const formCtx = useFormContext();
+  const session = useUserStore((s) => s.session);
+
+  const getValues = getValuesProp ?? formCtx?.getValues ?? ((): Record<string, unknown> => ({}));
+  const currentTab = currentTabProp ?? tabFromContext ?? null;
 
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = useMemo(() => {
     const cols = (field.selector?.gridColumns as SelectorColumn[]) || [];
-    return [...cols].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
-  }, [field.selector?.gridColumns]);
+    if (cols.length > 0) {
+      return [...cols].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
+    }
+    // Some selector definitions (e.g. the multi-record OBUISEL "Multi account
+    // status selector") ship with no OBUISEL_SELECTOR_FIELD rows, leaving
+    // `selector.gridColumns` empty. Without at least one column the modal
+    // would only render the checkbox column. Fall back to a single column
+    // showing each record's `_identifier` so the user can still pick rows.
+    if (targetEntity) {
+      return [
+        {
+          id: `${field.id}-fallback-identifier`,
+          header: field.name,
+          accessorKey: "_identifier",
+          enableSorting: true,
+          enableFiltering: true,
+          referenceId: "10",
+          sortNo: 1,
+        } as SelectorColumn,
+      ];
+    }
+    return [];
+  }, [field.selector?.gridColumns, field.id, field.name, targetEntity]);
 
   const datasourceColumns = useMemo(() => buildDatasourceColumns(gridColumns), [gridColumns]);
 
@@ -193,18 +273,76 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     }
   };
 
+  const handleConfirmMultiSelect = useCallback(() => {
+    const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
+    const recordById = new Map<string, EntityData>(records.map((r) => [String(r.id), r]));
+
+    const resolved: EntityData[] = selectedIds.map((id) => {
+      const loaded = recordById.get(id);
+      if (loaded) return loaded;
+      const identifier = initialSelectedIdentifiersById?.[id] ?? id;
+      return { id, _identifier: identifier } as unknown as EntityData;
+    });
+
+    onMultiSelect?.(resolved);
+    onClose();
+  }, [rowSelection, records, initialSelectedIdentifiersById, onMultiSelect, onClose]);
+
+  const multiTableOptions: Partial<MRT_TableOptions<EntityData>> = useMemo(
+    () =>
+      multiSelect
+        ? {
+            enableRowSelection: true,
+            enableMultiRowSelection: true,
+            getRowId: (row) => String(row.id),
+            onRowSelectionChange: setRowSelection,
+            muiTableBodyRowProps: ({ row }) => ({
+              onClick: () => row.toggleSelected(),
+              sx: { cursor: "pointer", ...sx.tableBodyRow, height: "28px" },
+            }),
+          }
+        : {
+            enableRowSelection: false,
+            enableMultiRowSelection: false,
+            muiTableBodyRowProps: ({ row }) => ({
+              onClick: () => {
+                onSelect(row.original);
+                onClose();
+              },
+              sx: { cursor: "pointer", ...sx.tableBodyRow, height: "28px" },
+            }),
+          },
+    [multiSelect, onSelect, onClose, sx.tableBodyRow]
+  );
+
   const table = useMaterialReactTable({
     columns,
     data: records,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     enableColumnFilters: true,
     enableColumnFilterModes: false,
     enableSorting: true,
     enablePagination: false,
-    enableRowSelection: false,
-    enableMultiRowSelection: false,
     manualFiltering: true,
     manualSorting: true,
+    displayColumnDefOptions: {
+      "mrt-row-select": {
+        size: 48,
+        muiTableHeadCellProps: {
+          align: "center",
+          sx: {
+            backgroundColor: "rgba(0, 3, 13, 0.05)",
+            verticalAlign: "middle",
+            "& .Mui-TableHeadCell-Content": { justifyContent: "center", alignItems: "center" },
+          },
+        },
+        muiTableBodyCellProps: {
+          align: "center",
+          sx: { verticalAlign: "middle" },
+        },
+      },
+    },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -215,27 +353,53 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
       columnFilters,
       sorting,
       showColumnFilters: true,
+      rowSelection,
     },
     muiTablePaperProps: { sx: sx.tablePaper },
-    muiTableHeadCellProps: { sx: sx.tableHeadCell },
-    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableHeadCellProps: {
+      sx: {
+        ...sx.tableHeadCell,
+        fontSize: "0.75rem",
+        padding: "4px 8px",
+        lineHeight: 1.2,
+      },
+    },
+    muiTableBodyCellProps: {
+      sx: {
+        ...sx.tableBodyCell,
+        fontSize: "0.75rem",
+        padding: "2px 8px",
+        lineHeight: 1.2,
+      },
+    },
     muiTableBodyProps: { sx: sx.tableBody },
     muiTableContainerProps: {
       onScroll: (event: UIEvent<HTMLDivElement>) => fetchMoreOnBottomReached(event.currentTarget),
       sx: { maxHeight: "60vh" },
     },
-    muiTableBodyRowProps: ({ row }) => ({
-      onClick: () => {
-        onSelect(row.original);
-        onClose();
+    renderEmptyRowsFallback: () => (
+      <div className="flex items-center justify-center p-6 w-full text-(--color-transparent-neutral-60)">
+        {t("common.noDataAvailable")}
+      </div>
+    ),
+    muiFilterTextFieldProps: {
+      sx: {
+        "& .MuiInputBase-input": {
+          fontSize: "0.75rem",
+          padding: "4px 8px",
+        },
       },
-      sx: { cursor: "pointer", ...sx.tableBodyRow },
-    }),
+    },
+    defaultColumn: {
+      minSize: 60,
+      size: 120,
+    },
     initialState: { density: "compact" },
+    ...multiTableOptions,
   });
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth data-testid={`Dialog__${field.id}`}>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="xl" fullWidth data-testid={`Dialog__${field.id}`}>
       <Box className="relative flex justify-center items-center p-4 border-b" data-testid={`Box__${field.id}`}>
         <Typography
           sx={{ fontSize: "1.125rem", fontWeight: 700, textTransform: "none", color: "text.primary" }}
@@ -257,6 +421,26 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
           )}
         </div>
       </DialogContent>
+      {multiSelect && (
+        <DialogActions data-testid={`DialogActions__${field.id}`} className="px-4 py-3 gap-3">
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={onClose}
+            className="w-32"
+            data-testid={`SelectorModalCancel__${field.id}`}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="filled"
+            size="large"
+            onClick={handleConfirmMultiSelect}
+            className="w-32"
+            data-testid={`SelectorModalConfirm__${field.id}`}>
+            {t("common.confirm")}
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };

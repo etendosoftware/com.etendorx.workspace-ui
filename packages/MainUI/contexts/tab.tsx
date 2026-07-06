@@ -34,6 +34,8 @@ interface TabContextI {
   resetFormChanges: () => void;
   auxiliaryInputs: Record<string, string>;
   setAuxiliaryInputs: Dispatch<SetStateAction<Record<string, string>>>;
+  formValues: Record<string, unknown>;
+  setFormValues: Dispatch<SetStateAction<Record<string, unknown>>>;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -41,6 +43,7 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
   const [auxiliaryInputs, setAuxiliaryInputs] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
@@ -63,6 +66,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       resetFormChanges,
       auxiliaryInputs,
       setAuxiliaryInputs,
+      formValues,
+      setFormValues,
     }),
     [
       parentRecord,
@@ -74,6 +79,7 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       markFormAsChanged,
       resetFormChanges,
       auxiliaryInputs,
+      formValues,
     ]
   );
 

@@ -14,8 +14,12 @@
  *************************************************************************
  */
 
-import type { ProcessDefinition, ProcessParameters } from "../../components/ProcessModal/types";
-import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { ProcessDefinition, ProcessParameters, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+
+/**
+ * Column/name of the document-action parameter that drives the bulk flow.
+ */
+export const DOC_ACTION = "DocAction";
 
 /**
  * Default onLoad script for Bulk Completion processes.
@@ -54,21 +58,29 @@ export const DEFAULT_BULK_COMPLETION_ONLOAD = `async (process, context) => {
 }`;
 
 /**
- * Checks if a process should use the default Bulk Completion onLoad logic.
+ * Identifies the document-action parameter that bulk processes render as their
+ * single field.
+ *
+ * @param parameter - The process parameter to test
+ * @returns True when the parameter is the document-action field
+ */
+export const isDocActionParameter = (parameter: ProcessParameter): boolean =>
+  parameter.dBColumnName === DOC_ACTION || parameter.name === DOC_ACTION;
+
+/**
+ * Checks if a process should render as a Bulk Completion process (single
+ * document-action field). This decision is independent of any onLoad script: the
+ * parameter set is intrinsic to the process, so the presence of a migrated
+ * onLoad must not change how the process is rendered.
  *
  * @param processDefinition - The process definition metadata
  * @param parameters - The process parameters
- * @returns True if the process is a Bulk Completion process without a custom onLoad script
+ * @returns True if the process is a Bulk Completion process
  */
 export const isBulkCompletionProcess = (
   processDefinition: ProcessDefinition,
   parameters: ProcessParameters
 ): boolean => {
-  // If onLoad is already defined in metadata, don't override it
-  if (processDefinition.onLoad) {
-    return false;
-  }
-
   // Bulk completion processes must allow multiple records
   const isMultiRecord = processDefinition.isMultiRecord === true || processDefinition.isMultiRecord === "Y";
   if (!isMultiRecord) {
@@ -77,7 +89,51 @@ export const isBulkCompletionProcess = (
 
   // Bulk completion processes typically have a DocAction parameter
   const params = Object.values(parameters) as ProcessParameter[];
-  const hasDocAction = params.some((p) => p.name === "DocAction" || p.dBColumnName === "DocAction");
+  return params.some(isDocActionParameter);
+};
 
-  return hasDocAction;
+/**
+ * Builds the ordered list of onLoad scripts to run when a process modal opens.
+ *
+ * For Bulk Completion processes the default script runs first — it fetches the
+ * valid document actions and filters the DocAction options — so the filtering is
+ * applied for every bulk process regardless of whether it carries a custom
+ * onLoad. A custom `etmetaOnload`, when present, runs afterwards for any
+ * process-specific UI logic (it must not re-fetch the document actions).
+ *
+ * @param etmetaOnload - The process's migrated onLoad script, if any
+ * @param isBulkCompletion - Whether the process renders as Bulk Completion
+ * @returns The onLoad script bodies to execute, in order
+ */
+export const buildOnLoadScripts = (etmetaOnload: string | null | undefined, isBulkCompletion: boolean): string[] => {
+  const scripts: string[] = [];
+  if (isBulkCompletion) {
+    scripts.push(DEFAULT_BULK_COMPLETION_ONLOAD);
+  }
+  if (etmetaOnload) {
+    scripts.push(etmetaOnload);
+  }
+  return scripts;
+};
+
+/**
+ * Decides whether a parameter is rendered while a process is shown in bulk mode.
+ * The document-action field is always rendered; any other parameter is hidden by
+ * default and only rendered once a script explicitly reveals it via `show()`.
+ *
+ * @param parameter - The process parameter to test
+ * @param logicFields - The merged display/readonly flags (includes script flags)
+ * @returns True if the parameter must be rendered in bulk mode
+ */
+export const isBulkParameterRenderable = (
+  parameter: ProcessParameter,
+  logicFields?: Record<string, boolean>
+): boolean => {
+  if (isDocActionParameter(parameter)) {
+    return true;
+  }
+
+  const shownByName = logicFields?.[`${parameter.name}.display`] === true;
+  const shownByColumn = logicFields?.[`${parameter.dBColumnName}.display`] === true;
+  return shownByName || shownByColumn;
 };

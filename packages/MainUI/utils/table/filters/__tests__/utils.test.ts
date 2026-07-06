@@ -90,6 +90,23 @@ describe("Filter Utils", () => {
     it("should return undefined when tableColumnFilters is undefined", () => {
       expect(getTextFilterValue(mockColumn)).toBeUndefined();
     });
+
+    it("should return the text portion when value is a TextFilterValue", () => {
+      const tableColumnFilters = [{ id: "col1", value: { text: "search term", operator: "iContains" } }];
+      expect(getTextFilterValue(mockColumn, tableColumnFilters)).toBe("search term");
+    });
+
+    it("should return the text portion for all TextFilterValue operators", () => {
+      const col = mockColumn;
+      expect(getTextFilterValue(col, [{ id: "col1", value: { text: "A", operator: "iContains" } }])).toBe("A");
+      expect(getTextFilterValue(col, [{ id: "col1", value: { text: "B", operator: "iStartsWith" } }])).toBe("B");
+      expect(getTextFilterValue(col, [{ id: "col1", value: { text: "C", operator: "equals" } }])).toBe("C");
+    });
+
+    it("should return empty string when TextFilterValue text is empty", () => {
+      const tableColumnFilters = [{ id: "col1", value: { text: "", operator: "equals" } }];
+      expect(getTextFilterValue(mockColumn, tableColumnFilters)).toBe("");
+    });
   });
 
   describe("getAvailableOptions", () => {

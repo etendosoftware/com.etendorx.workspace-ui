@@ -33,13 +33,12 @@ jest.mock("@/hooks/useUserContext", () => ({
   }),
 }));
 
-// Mock usePreferences
+// Mock usePreferencesStore
 const mockSetCustomFaviconColor = jest.fn();
-jest.mock("@/contexts/preferences", () => ({
-  usePreferences: () => ({
-    customFaviconColor: null,
-    setCustomFaviconColor: mockSetCustomFaviconColor,
-  }),
+jest.mock("@/stores/preferencesStore", () => ({
+  FAVICON_BADGE_KEY: "settings.favicon_badge",
+  usePreferencesStore: (selector: (s: { customFaviconColor: null; setCustomFaviconColor: jest.Mock }) => unknown) =>
+    selector({ customFaviconColor: null, setCustomFaviconColor: mockSetCustomFaviconColor }),
 }));
 
 // Mock useLocalStorage with stable reference

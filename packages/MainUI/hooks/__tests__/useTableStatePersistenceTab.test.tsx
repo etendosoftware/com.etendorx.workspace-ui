@@ -18,6 +18,7 @@
 import { act, renderHook } from "@testing-library/react";
 import WindowProvider from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
+import { useWindowStore } from "@/stores/windowStore";
 import type React from "react";
 import { setupNextNavigationMocks } from "@/utils/tests/mockHelpers";
 
@@ -65,6 +66,7 @@ describe("useTableStatePersistenceTab", () => {
   };
 
   beforeEach(() => {
+    useWindowStore.setState({ windows: {} });
     mockReplace.mockClear();
     // Clear all search params
     Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));

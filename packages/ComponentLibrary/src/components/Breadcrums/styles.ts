@@ -38,6 +38,7 @@ export const useStyle = () => {
           height: "2rem",
           "& .MuiBreadcrumbs-ol": {
             height: "2rem",
+            flexWrap: "nowrap",
             "& .MuiBreadcrumbs-li": {
               height: "2rem",
             },
@@ -77,6 +78,22 @@ export const useStyle = () => {
           "&:hover": {
             backgroundColor: "transparent",
             border: "none",
+          },
+        },
+        collapseButton: {
+          minWidth: "2rem",
+          height: "1.5rem",
+          padding: "0 0.375rem",
+          borderRadius: "0.375rem",
+          fontSize: "0.875rem",
+          fontWeight: "600",
+          lineHeight: 1,
+          color: theme.palette.baselineColor.neutral[80],
+          backgroundColor: theme.palette.dynamicColor.contrastText,
+          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[20]}`,
+          "&:hover": {
+            backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
+            border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
           },
         },
         iconContainer: {

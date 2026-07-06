@@ -19,21 +19,31 @@ import {
   fetchFormInitialization,
   buildFormInitializationPayload,
   buildFormInitializationParams,
+  buildSessionResetPayload,
   buildSessionAttributes,
   mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
-import { SessionMode, type Tab, type EntityData, type ISession } from "@workspaceui/api-client/src/api/types";
+import {
+  SessionMode,
+  type Tab,
+  type EntityData,
+  type ISession,
+  type Field,
+} from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
 import { buildPayloadByInputName } from "@/utils";
 
 const MULTIPLE_ROW_IDS_KEY = "MULTIPLE_ROW_IDS";
+
+const findEntityKeyColumn = (tab: Tab): Field | undefined =>
+  Object.values(tab.fields).find((field) => field?.column?.keyColumn);
 
 export interface SessionSyncOptions {
   tab: Tab;
   selectedRecords: EntityData[];
   parentId?: string;
   setSession: (updater: (prev: ISession) => ISession) => void;
-  setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setSessionSyncLoading: (loading: boolean) => void;
 }
 
 export const syncSelectedRecordsToSession = async ({
@@ -50,7 +60,7 @@ export const syncSelectedRecordsToSession = async ({
     }
 
     // Find entity key column (same logic as useFormInitialization)
-    const entityKeyColumn = Object.values(tab.fields).find((field) => field?.column?.keyColumn);
+    const entityKeyColumn = findEntityKeyColumn(tab);
 
     if (!entityKeyColumn) {
       logger.warn(`No key column found for tab ${tab.id}`);
@@ -103,5 +113,48 @@ export const syncSelectedRecordsToSession = async ({
     // Don't throw - session sync should not break selection functionality
   } finally {
     setSessionSyncLoading(false);
+  }
+};
+
+export interface ClearRecordContextOptions {
+  tab: Tab;
+  parentId?: string | null;
+}
+
+/**
+ * Clears the record-scoped context that a previously selected/loaded record left in the
+ * server session for this window.
+ *
+ * Why this is needed: opening or selecting a record runs a FormInitialization that stores
+ * record values (e.g. `C_BPartner_ID`) into the classic Tomcat session keyed by
+ * `<window>|<COLUMN>`. When a brand new record is later created, columns without their own
+ * default (like `C_BPartner_ID`) do not overwrite that stale value, so SQL defaults of
+ * sibling columns (e.g. `C_BPartner_Location_ID`, whose default reads `@C_BPartner_ID@`)
+ * resolve against the stale value and trigger callouts that the empty request cannot satisfy
+ * (NPE in OrderBankAccountAssigner). Sending a SETSESSION with empty values resets that
+ * context so the next NEW initialization behaves like the first, clean open.
+ *
+ * This is best-effort: failures are logged and swallowed so they never block opening a form.
+ */
+export const clearRecordContextFromSession = async ({ tab, parentId }: ClearRecordContextOptions): Promise<void> => {
+  try {
+    const entityKeyColumn = findEntityKeyColumn(tab);
+    if (!entityKeyColumn) {
+      logger.warn(`No key column found for tab ${tab.id}; skipping session context reset`);
+      return;
+    }
+
+    const params = buildFormInitializationParams({
+      tab,
+      mode: SessionMode.SETSESSION,
+      recordId: null,
+      parentId: parentId || null,
+    });
+    const payload = buildSessionResetPayload(tab, entityKeyColumn);
+
+    await fetchFormInitialization(params, payload);
+  } catch (error) {
+    logger.error("Failed to clear record context from session:", error);
+    // Don't throw - resetting context must never block opening a form.
   }
 };

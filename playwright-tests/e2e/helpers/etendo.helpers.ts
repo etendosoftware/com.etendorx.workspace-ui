@@ -1,4 +1,4 @@
-import { type Page, type Frame, type FrameLocator, expect } from "@playwright/test";
+import type { Page, Frame, FrameLocator } from "@playwright/test";
 import { DEFAULT_USER, DEFAULT_PASSWORD, IFRAME_URL } from "../../playwright.config";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -11,7 +11,7 @@ export async function loginToEtendo(page: Page, username = DEFAULT_USER, passwor
   await page.locator("#password").clear();
   await page.locator("#password").fill(password);
   await page.locator('[data-testid="Button__602739"]').first().click();
-  await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+  await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function cleanupEtendo(page: Page) {
@@ -31,27 +31,32 @@ export async function cleanupEtendo(page: Page) {
 export async function selectRoleOrgWarehouse(
   page: Page,
   options: {
-    roleOptionId?: string;
-    organizationOptionId?: string;
-    warehouseOptionId?: string;
+    roleName?: string;
+    organizationName?: string;
   } = {}
 ) {
-  const {
-    roleOptionId = "#role-select-option-12",
-    organizationOptionId = "#organization-select-option-3",
-    warehouseOptionId = "#warehouse-select-option-1",
-  } = options;
+  const { roleName = "QA Testing Admin", organizationName = "Spain" } = options;
 
   await page.locator('[data-testid="PersonIcon__120cc9"]').click();
 
-  // Open role dropdown
+  // Open role dropdown and select by visible name instead of a fixed
+  // "#role-select-option-N" index. The backend returns each user's roles
+  // without a stable order, so a numeric index can silently land on a
+  // different role (e.g. "System Administrator") between runs, which then
+  // permanently disables the organization/warehouse fields and hangs the
+  // test. Matching by name is immune to reordering.
   await page.locator("#role-select").click();
+  await page.locator('[id^="role-select-option-"]').filter({ hasText: roleName }).click();
 
-  await page.locator(`${roleOptionId} > .MuiTypography-root`).click();
+  // Same reasoning applies to the organization list.
   await page.locator("#organization-select").click();
-  await page.locator(`${organizationOptionId} > .MuiTypography-root`).click();
+  await page.locator('[id^="organization-select-option-"]').filter({ hasText: organizationName }).click();
+
+  // The specific warehouse doesn't matter to any caller (none override it) —
+  // just take whichever one is first for the selected organization.
   await page.locator("#warehouse-select").click();
-  await page.locator(`${warehouseOptionId} > .MuiTypography-root`).click();
+  await page.locator('[id^="warehouse-select-option-"]').first().click();
+
   await page.locator(".PrivateSwitchBase-input").check();
   await page.locator(".text-\\(--color-etendo-contrast-text\\) > :nth-child(2)").click();
 }
@@ -191,7 +196,14 @@ async function navigateSidebarTo(page: Page, searchText: string, menuTestId: str
   // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
   // persistent SSE connections open, so the network never reaches "idle" state.
   // Increase breadcrumb timeout to tolerate slow server responses during parallel runs.
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).waitFor({ state: "visible", timeout: 30_000 });
+  // Use :visible on the nav to target only the active window's breadcrumb —
+  // inactive windows stay mounted with visibility:hidden and their breadcrumb
+  // may contain matching text that resolves first in DOM order.
+  await page
+    .locator('nav[aria-label="breadcrumb"]:visible')
+    .getByText(tabName)
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
@@ -205,15 +217,17 @@ export async function navigateToGoodsShipment(page: Page) {
  * that navigate through many windows in sequence.
  */
 export async function navigateByMenuTestId(page: Page, searchText: string, menuTestId: string) {
+  // Wait for any loading overlay to clear BEFORE interacting with the sidebar search.
+  // The overlay (div.absolute.h-screen.w-screen) appears after save/process operations
+  // and leaves the search input visible-but-disabled, causing fill() to hang indefinitely.
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
+
   const searchInput = await openSidebarAndGetSearch(page);
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
-
-  // Wait for the loading overlay to clear before clicking (same guard as navigateSidebarTo).
-  await page
-    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-    .catch(() => null);
 
   const menu = page.locator(`[data-testid="${menuTestId}"]`).first();
   await menu.waitFor({ state: "visible", timeout: 10_000 });
@@ -241,7 +255,7 @@ export async function clickSave(page: Page) {
 }
 
 export async function typeName(page: Page, text: string) {
-  const input = page.locator('input[aria-label="Name"]').first();
+  const input = page.locator('input[aria-label="Name"]:visible').first();
   await input.waitFor({ state: "visible", timeout: 20_000 });
   await input.clear();
   await input.fill(text);
@@ -463,8 +477,9 @@ export async function navigateToPaymentIn(page: Page) {
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(/Payment In/i)
+    .first()
     .waitFor({ state: "visible", timeout: 15_000 });
 }
 
@@ -489,8 +504,9 @@ async function navigateByMenuLabel(page: Page, searchText: string, menuLabel: Re
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").evaluate((el) => (el as HTMLElement).click());
 
   await page
-    .locator('nav[aria-label="breadcrumb"]')
+    .locator('nav[aria-label="breadcrumb"]:visible')
     .getByText(breadcrumbLabel)
+    .first()
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 
@@ -541,7 +557,7 @@ export async function navigateToProcessScheduler(page: Page) {
     '[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
   await page.locator(menuSelector).evaluate((el) => (el as HTMLElement).click());
-  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator("table thead:visible").waitFor({ state: "visible", timeout: 30_000 });
 }
 
 /**
@@ -551,7 +567,7 @@ export async function navigateToProcessScheduler(page: Page) {
  * Safe to call when the button is absent or the filter is already off (no-op).
  */
 export async function disableImplicitFilter(page: Page): Promise<void> {
-  const filterToggle = page.locator("button.toolbar-button-filter").first();
+  const filterToggle = page.locator("button.toolbar-button-filter:visible").first();
   await filterToggle.waitFor({ state: "visible", timeout: 5_000 }).catch(() => null);
 
   const isActive = await filterToggle
@@ -582,5 +598,5 @@ export async function navigateToManageRequisitions(page: Page) {
   const manageReqSelector = '[data-testid="MenuTitle__1004400000"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(manageReqSelector).waitFor({ state: "visible", timeout: 10_000 });
   await page.locator(manageReqSelector).evaluate((el) => (el as HTMLElement).click());
-  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator("table thead:visible").waitFor({ state: "visible", timeout: 30_000 });
 }

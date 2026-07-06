@@ -23,27 +23,31 @@ import {
   type Tab,
   type WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
-import {
-  FIELD_REFERENCE_CODES,
-  getPasswordFieldNames,
-  shouldExcludePasswordField,
-  PASSWORD_PLACEHOLDER,
-} from "./form/constants";
+import { FIELD_REFERENCE_CODES } from "./form/constants";
+import { buildSavePayload } from "@/components/Table/utils/saveOperations";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
     case FIELD_REFERENCE_CODES.STRING.id:
+    case FIELD_REFERENCE_CODES.MEMO.id:
+    case FIELD_REFERENCE_CODES.TEXT_LONG.id:
+    case FIELD_REFERENCE_CODES.LINK.id:
+    case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
       return FieldType.TEXT;
     case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
     case FIELD_REFERENCE_CODES.PRODUCT.id:
     case FIELD_REFERENCE_CODES.SELECTOR.id:
+    case FIELD_REFERENCE_CODES.SELECTOR_AS_LINK.id:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
+    case FIELD_REFERENCE_CODES.ASSIGNMENT.id:
+    case FIELD_REFERENCE_CODES.TREE_REFERENCE.id:
       return FieldType.TABLEDIR;
     case FIELD_REFERENCE_CODES.DATE.id:
       return FieldType.DATE;
     case FIELD_REFERENCE_CODES.DATETIME.id:
+    case FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id:
       return FieldType.DATETIME;
     case FIELD_REFERENCE_CODES.BOOLEAN.id:
       return FieldType.BOOLEAN;
@@ -59,7 +63,7 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.LIST;
     case FIELD_REFERENCE_CODES.TIME.id:
       return FieldType.TIME;
-    case "28":
+    case FIELD_REFERENCE_CODES.BUTTON.id:
       return FieldType.BUTTON;
     case FIELD_REFERENCE_CODES.SELECT_30.id:
       return FieldType.SELECT;
@@ -351,48 +355,10 @@ export const buildFormPayload = ({
   csrfToken: string;
   tab?: Tab;
 }) => {
-  const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
-  const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
-  const passwordFields = getPasswordFieldNames(tab);
-  const isNewRecord = mode === FormMode.NEW;
-
-  const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
-    if (!excludedFields.includes(key)) {
-      if (shouldExcludePasswordField(key, value, passwordFields, isNewRecord)) {
-        return acc;
-      }
-      acc[key] = value;
-      if (passwordFields.has(key) && value && value !== PASSWORD_PLACEHOLDER) {
-        acc[`${key}_cleartext`] = value;
-      }
-    }
-    return acc;
-  }, {} as EntityData);
+  const payload = buildSavePayload({ values, oldValues, mode, csrfToken, tab });
 
   if (tab?.fields) {
-    applyExtensionFieldMappings(filteredValues, tab.fields);
-  }
-
-  const payload: any = {
-    dataSource: "isc_OBViewDataSource_0",
-    operationType: mode === FormMode.NEW ? "add" : "update",
-    componentId: "isc_OBViewForm_0",
-    data: {
-      accountingDate: new Date(),
-      ...filteredValues,
-    },
-    csrfToken,
-  };
-
-  if (mode !== FormMode.NEW && oldValues) {
-    const filteredOldValues = Object.entries(oldValues).reduce((acc, [key, value]) => {
-      if (!auditFields.includes(key)) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as EntityData);
-
-    payload.oldValues = filteredOldValues;
+    applyExtensionFieldMappings(payload.data, tab.fields);
   }
 
   return payload;

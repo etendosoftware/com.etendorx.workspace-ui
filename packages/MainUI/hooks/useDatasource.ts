@@ -59,9 +59,18 @@ const loadData = async (
       value: String(treeOptions.parentId ?? -1),
     };
 
-    // Ensure criteria is an array and append parentId criteria
+    // Ensure criteria is an array before spreading. params.criteria can be a
+    // single object (not an array) when the caller collapses allCriteria[0]
+    // for a single-criterion case — spreading a plain object throws "not iterable".
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const currentCriteria = (params.criteria as any[]) || [];
+    const rawCriteria = params.criteria as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let currentCriteria: any[];
+    if (Array.isArray(rawCriteria)) {
+      currentCriteria = rawCriteria;
+    } else {
+      currentCriteria = rawCriteria ? [rawCriteria] : [];
+    }
     processedParams.criteria = [...currentCriteria, parentIdCriteria];
 
     if (treeOptions.tabId) {
@@ -102,6 +111,18 @@ export type UseDatasourceOptions = {
   activeColumnFilters?: MRT_ColumnFiltersState;
   isImplicitFilterApplied?: boolean;
   setIsImplicitFilterApplied?: (value: boolean) => void;
+  /**
+   * Optional override for the refetch-trigger key. When provided, after the
+   * first successful fetch the hook only refetches when this string changes;
+   * `params` is still read fresh on every render so the request body always
+   * reflects the latest values. Use to fold rapidly-changing context into
+   * the payload (e.g. payscript-driven form values) without triggering a
+   * refetch on every change. Until the first fetch completes (`loaded`),
+   * the hook falls back to hashing the full `params` so initialization
+   * updates (e.g. onLoad populating form values) still re-trigger the
+   * pending fetch and make the initial request payload complete.
+   */
+  refetchKey?: string;
 };
 
 export function useDatasource({
@@ -114,6 +135,7 @@ export function useDatasource({
   activeColumnFilters = EMPTY_FILTERS,
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
+  refetchKey,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -122,12 +144,29 @@ export function useDatasource({
 
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
+  // Distinct from `loaded` — that one is also flipped true while `skip` is
+  // active so consumers don't show a spinner during the skip phase. This flag
+  // tracks "has a real fetch completed yet?" and is used by the `refetchKey`
+  // opt-in to know when it's safe to lock the refetch trigger to the narrow
+  // key (vs. the full params hash, which is used during initialization so
+  // onLoad-populated form values can still re-trigger the pending fetch).
+  const [hasFirstFetchCompleted, setHasFirstFetchCompleted] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
   const fetchInProgressRef = useRef(false);
+  // Tracks whether at least one successful fetch has completed. Used to skip
+  // redundant re-fetches triggered by initialization effects in useTableData
+  // (e.g. setTableColumnSorting, setTableColumnVisibility) that re-run this
+  // effect even when the query params haven't changed.
+  const dataLoadedRef = useRef(false);
+  // Tracks the previous "query identity" (everything except page) to detect
+  // filter/entity changes. When the query changes while page > 1 we fetch
+  // page 1 directly and guard against the re-run caused by setPage(1).
+  const prevQueryKeyRef = useRef("");
+  const skipPageResetFetchRef = useRef(false);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -161,6 +200,7 @@ export function useDatasource({
     setRecords([]);
     setPage(1);
     setHasMoreRecords(true);
+    dataLoadedRef.current = false;
   }, []);
 
   const columnFilterCriteria = useMemo(() => {
@@ -182,9 +222,19 @@ export function useDatasource({
     ]
   );
 
-  // Stabilize params to prevent unnecessary fetches
+  // Stabilize params to prevent unnecessary fetches.
+  // Until the first real fetch completes (`hasFirstFetchCompleted === false`),
+  // use the full JSON.stringify of `params` so initialization-time mutations
+  // (e.g. onLoad populating form values that get folded into the request
+  // body) correctly re-trigger the pending fetch and produce a complete
+  // initial request. After the first fetch settles, if the caller provided
+  // a `refetchKey`, honor it: only re-trigger when that key changes
+  // (filter/sort/etc.), ignoring rapidly-changing context like
+  // payscript-driven form scalars.
+  const stableParamsTriggerKey =
+    !hasFirstFetchCompleted || refetchKey === undefined ? JSON.stringify(params) : refetchKey;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+  const stableParams = useMemo(() => params, [stableParamsTriggerKey]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
@@ -208,8 +258,6 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    const hasUserFilters = searchCriteriaArray.length > 0 || columnFilterCriteria.length > 0;
-
     const finalParams: any = {
       ...stableParams,
       ...idParams,
@@ -219,7 +267,10 @@ export function useDatasource({
     };
 
     return finalParams;
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
+    // activeColumnFilters is intentionally omitted: it's already captured by
+    // columnFilterCriteria, which is listed above and changes whenever filters do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
@@ -248,8 +299,24 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setRecords((prev) => {
+          const fetched = data.response.data;
+          if (targetPage !== 1 && !searchQuery) {
+            return prev.concat(fetched);
+          }
+          // Page-1 replace (default and search refetches). Preserve `_locallyAdded`
+          // rows so user-created rows in Pick & Execute input grids (e.g. GL Items
+          // in Add Payment) survive datasource refetches triggered by unrelated
+          // param changes (form values folded into datasourceOptions).
+          const locallyAdded = prev.filter((r) => r._locallyAdded);
+          if (locallyAdded.length === 0) return fetched;
+          const fetchedIds = new Set(fetched.map((r) => String(r.id)));
+          const survivors = locallyAdded.filter((r) => !fetchedIds.has(String(r.id)));
+          return survivors.length === 0 ? fetched : [...survivors, ...fetched];
+        });
         setLoaded(true);
+        setHasFirstFetchCompleted(true);
+        dataLoadedRef.current = true;
       } catch (e) {
         logger.warn(e);
 
@@ -285,22 +352,48 @@ export function useDatasource({
       return;
     }
 
+    // When a filter/entity change causes page to reset to 1 inside this effect,
+    // React will re-run the effect with the new page value. Skip that extra run
+    // to avoid a redundant network request.
+    if (skipPageResetFetchRef.current) {
+      skipPageResetFetchRef.current = false;
+      return;
+    }
+
+    // Compute a key that represents "what data" we want, independent of page.
+    // activeColumnFilters and searchQuery are already baked into queryParams so
+    // they don't need to be listed separately in the dependency array.
+    const queryKey = `${entity}|${pageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
+    const queryChanged = queryKey !== prevQueryKeyRef.current;
+    prevQueryKeyRef.current = queryKey;
+
     setError(undefined);
-    setLoading(true);
 
-    fetchData();
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied, activeColumnFilters]);
-
-  useEffect(() => {
-    // Reset pagination but keep existing records visible until new data arrives,
-    // avoiding the blank-grid flash that reinit() would cause.
-    setPage(1);
-    setHasMoreRecords(true);
-  }, [activeColumnFilters, searchQuery]);
+    if (queryChanged && page !== 1) {
+      // Query (filters/search/entity) changed while on a page > 1.
+      // Fetch page 1 directly instead of first fetching the wrong page and then
+      // resetting — this replaces the old two-request pattern with one correct request.
+      setLoading(true);
+      skipPageResetFetchRef.current = true;
+      setPage(1);
+      setHasMoreRecords(true);
+      fetchData(1);
+    } else if (queryChanged || page > 1 || !dataLoadedRef.current) {
+      // Fetch when: query changed on page 1, loading more pages, or initial load.
+      // Skip when: initialization effects re-run this effect with the same query on
+      // page 1 and data is already loaded — avoids redundant loading-state flashes.
+      setLoading(true);
+      fetchData();
+    }
+  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
       const isSilent = options?.silent === true;
+
+      // Always bypass the response cache on an explicit refetch (e.g. after a
+      // process completes) so the updated record state is always fetched fresh.
+      datasource.clearCacheForEntity(entity);
 
       if (!isSilent) {
         reinit();
@@ -315,7 +408,7 @@ export function useDatasource({
 
       await fetchData(1);
     },
-    [reinit, fetchData]
+    [reinit, fetchData, entity]
   );
 
   return {
@@ -325,6 +418,7 @@ export function useDatasource({
     changePageSize,
     records,
     loaded,
+    hasFirstFetchCompleted,
     activeColumnFilters,
     removeRecordLocally,
     updateRecordLocally,

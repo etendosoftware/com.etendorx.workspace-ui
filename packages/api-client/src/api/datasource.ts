@@ -22,10 +22,16 @@ export class Datasource {
   private static instance: Datasource;
   public client: Client;
   private pendingRequests: Map<string, { promise: Promise<unknown>; timestamp: number }>;
+  // In-memory response cache. Stores completed responses with a TTL so that
+  // re-opening the same tab or switching back does not trigger a redundant request.
+  // Cleared explicitly by clearCache()/clearCacheForEntity() after write operations.
+  private responseCache: Map<string, { data: unknown; expiresAt: number }>;
+  private readonly RESPONSE_CACHE_TTL_MS = 30_000;
 
   private constructor(url: string) {
     this.client = new Client(url);
     this.pendingRequests = new Map();
+    this.responseCache = new Map();
   }
 
   public static getInstance() {
@@ -56,6 +62,7 @@ export class Datasource {
    */
   public clearCache() {
     this.pendingRequests.clear();
+    this.responseCache.clear();
   }
 
   /**
@@ -81,6 +88,19 @@ export class Datasource {
     for (const key of keysToDelete) {
       this.pendingRequests.delete(key);
     }
+
+    // Also evict completed responses for this entity from the response cache
+    const responseCacheKeys = Array.from(this.responseCache.keys());
+    for (const key of responseCacheKeys) {
+      try {
+        const parsed = JSON.parse(key);
+        if (parsed.entity === entity) {
+          this.responseCache.delete(key);
+        }
+      } catch {
+        // Skip invalid keys
+      }
+    }
   }
 
   public get(entity: string, options: Record<string, unknown> = {}) {
@@ -91,17 +111,30 @@ export class Datasource {
       const requestKey = JSON.stringify({ entity, params });
       const now = Date.now();
 
-      // Check if there's an existing pending request
+      // 1. Return a cached completed response if still within TTL
+      const cached = this.responseCache.get(requestKey);
+      if (cached && now < cached.expiresAt) {
+        return Promise.resolve(cached.data);
+      }
+
+      // 2. Reuse an in-flight request for the same key (deduplication)
       const existing = this.pendingRequests.get(requestKey);
       if (existing) {
         return existing.promise;
       }
 
-      // Post to the Next.js API route with entity and params
+      // 3. Make a new request, cache the response on success
       const requestPromise = this.client
         .post("/api/datasource", {
           entity,
           params,
+        })
+        .then((response) => {
+          this.responseCache.set(requestKey, {
+            data: response,
+            expiresAt: Date.now() + this.RESPONSE_CACHE_TTL_MS,
+          });
+          return response;
         })
         .finally(() => {
           // Remove from pending requests when done (success or error)
@@ -154,7 +187,13 @@ export class Datasource {
       return key;
     };
 
-    const formatValue = (value: unknown) => (Array.isArray(value) ? value.join(",") : String(value));
+    // Arrays must be preserved as-is so the proxy (`/api/datasource/route.ts`)
+    // serializes them as repeated form-urlencoded keys
+    // (`accounting_status=id1&accounting_status=id2&...`), which is what Classic
+    // Etendo's OBPickAndExecuteDataSource expects to drive its `IN (...)` filter
+    // for multi-record selectors. Joining them into a CSV here silently
+    // collapses N values into a single param the backend can't decode.
+    const formatValue = (value: unknown) => (Array.isArray(value) ? value : String(value));
 
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;

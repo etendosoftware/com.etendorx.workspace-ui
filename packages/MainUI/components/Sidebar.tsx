@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
-import { useUserContext } from "../hooks/useUserContext";
+import { useExpandedMenuItems } from "../hooks/useExpandedMenuItems";
+import { useUserStore } from "@/stores/userStore";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
@@ -14,8 +15,9 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
@@ -23,7 +25,10 @@ import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constan
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
-import { useFavoritesContext } from "@/contexts/favorites";
+import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
+import { type ExtendedMenu, MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useMetadataZustandStore } from "@/stores/metadataStore";
 
 interface FormData {
   paramUrl: string;
@@ -105,21 +110,31 @@ const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton |
       description: item.description || "",
       javaClassName: "",
       parameters: {},
-      onLoad: "",
-      onProcess: "",
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as unknown as ProcessDefinitionButton;
 };
 
-const getManualProcessConfig = (item: Menu, token: string | null, baseUrl: string): ManualProcessResult | null => {
-  if (item.type === "Process" && item.processId) {
+/**
+ * Gets the iframe configuration for legacy manual processes (Process/Form types).
+ * Process Definition entries are handled separately via ProcessDefinitionModal.
+ */
+const getManualProcessConfig = (
+  item: ExtendedMenu,
+  token: string | null,
+  baseUrl: string
+): ManualProcessResult | null => {
+  if (item.type === MENU_ITEM_TYPES.PROCESS && item.processId) {
     return {
       url: buildProcessUrl(item.processId, token, baseUrl),
       size: "default",
     };
   }
 
-  if (item.type === "Form" && item.formId) {
+  if (item.type === MENU_ITEM_TYPES.FORM && item.formId) {
     // Prefer formUrl from backend; fall back to data.json for older backend versions
     const formPath = item.formUrl ?? (formsData as Record<string, FormData>)[item.formId]?.paramUrl;
     if (!formPath) return null;
@@ -164,14 +179,43 @@ const VersionComponent: React.FC<VersionProps> = () => {
  */
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { token, currentRole, prevRole } = useUserContext();
+  const token = useUserStore((s) => s.token);
+  const currentRole = useUserStore((s) => s.currentRole);
+  const prevRole = useUserStore((s) => s.prevRole);
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const { activeWindow, setWindowActive } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
+  const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
+  const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
+  const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleItemHover = useCallback(
+    (item: Menu) => {
+      const { windowId } = item;
+      if (item.type !== "Window" || !windowId) {
+        return;
+      }
+
+      if (hoverDebounceRef.current) {
+        clearTimeout(hoverDebounceRef.current);
+      }
+
+      hoverDebounceRef.current = setTimeout(() => {
+        prefetchWindowData(windowId);
+      }, 150);
+    },
+    [prefetchWindowData]
+  );
 
   const [searchValue, setSearchValue] = useState("");
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const currentRoleId = currentRole?.id ?? "";
+  const { expandedItems, setExpandedItems } = useExpandedMenuItems(currentRoleId);
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
@@ -197,12 +241,27 @@ export default function Sidebar() {
   }, []);
 
   /**
+   * Opens the ProcessDefinitionModal for a process-like menu intent. Centralises
+   * the state setters so the click handler stays focused on dispatch.
+   *
+   * @param button       The minimal {@link ProcessDefinitionButton} to display.
+   * @param processType  Modal mode (Process Definition or Report and Process).
+   */
+  const openProcessModal = useCallback((button: ProcessDefinitionButton, processType: ProcessType) => {
+    setSelectedProcessDefinitionButton(button);
+    setProcessType(processType);
+    setShowProcessDefinitionModal(true);
+  }, []);
+
+  /**
    * Handles menu item clicks and window navigation.
    *
    * Manages different navigation scenarios:
-   * 1. ProcessDefinition items: Opens ProcessDefinitionModal (new implementation)
-   * 2. Process/Form items: Opens ProcessIframeModal (legacy implementation)
-   * 3. Window items: Opens/activates window using multi-window system
+   * 1. Pick and Execute items: Opens ProcessDefinitionModal (P&E branch)
+   * 2. ProcessDefinition / Report and Process items: Opens ProcessDefinitionModal (generic branch)
+   * 3. Process / Form items: Opens ProcessIframeModal (legacy implementation)
+   * 4. ProcessManual / Report items: Opens Etendo Classic in a popup or new tab
+   * 5. Window items: Opens/activates window using multi-window system
    *
    * Features optimistic UI updates by immediately setting pendingWindowId
    * for visual feedback before state synchronization completes.
@@ -211,21 +270,16 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
-      // Check if this is a ProcessDefinition item that should use the new modal
-      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(item);
-      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(item);
-      const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
+      const extendedItem = item as ExtendedMenu;
 
-      if (isProcessMenuItem) {
-        const processButton = mapMenuToProcessDefinitionButton(item);
-        if (processButton) {
-          setSelectedProcessDefinitionButton(processButton);
-          setShowProcessDefinitionModal(true);
-          setProcessType(
-            isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
-          );
-          return;
-        }
+      const intent = resolveMenuClickIntent(extendedItem);
+      if (intent.kind === MENU_CLICK_INTENT_KINDS.PICK_AND_EXECUTE) {
+        openProcessModal(intent.button, PROCESS_TYPES.PROCESS_DEFINITION);
+        return;
+      }
+      if (intent.kind === MENU_CLICK_INTENT_KINDS.PROCESS_DEFINITION) {
+        openProcessModal(intent.button, intent.processType);
+        return;
       }
 
       // Handle legacy manual processes (Form) as external popup
@@ -235,9 +289,10 @@ export default function Sidebar() {
         return;
       }
 
-      // Handle ProcessManual items - open in Etendo Classic
+      // Handle ProcessManual / Report items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
-      if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
+      const isClassicProcess = item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
+      if (isClassicProcess && processUrl) {
         const classicUrl = buildEtendoClassicBookmarkUrl({
           baseUrl: ETENDO_BASE_URL,
           processUrl,
@@ -245,14 +300,21 @@ export default function Sidebar() {
           token: token,
           kioskMode: true,
         });
-        // Open in js modal
+        const popupBlockedTexts = {
+          title: t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle"),
+          openLabel: t("processModal.gridToolbar.openLegacyReport.openManually"),
+        };
         if (item.isModalProcess) {
-          window.open(classicUrl, "Test", "width=950,height=700");
+          if (!tryOpenReportPopup(classicUrl)) {
+            notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
+          }
           return;
         }
 
         // Fallback: Open in new tab
-        window.open(classicUrl, "_blank");
+        if (!window.open(classicUrl, "_blank")) {
+          notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
+        }
         return;
       }
 
@@ -263,7 +325,7 @@ export default function Sidebar() {
         return;
       }
 
-      if (item.type !== "Window") {
+      if (item.type !== MENU_ITEM_TYPES.WINDOW) {
         return;
       }
 
@@ -276,9 +338,11 @@ export default function Sidebar() {
       setPendingWindowId(windowId);
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      // Eager fetch: start metadata loading immediately on click
+      loadWindowData(windowId).catch(() => {});
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [token, ETENDO_BASE_URL, setWindowActive]
+    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData, openProcessModal]
   );
 
   /**
@@ -338,7 +402,11 @@ export default function Sidebar() {
     }
   }, [currentWindowId, pendingWindowId]);
 
-  const { isFavorite, toggle, setMenuMap } = useFavoritesContext();
+  const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
+  const toggle = useFavoritesStore((s) => s.toggle);
+  const setMenuMap = useFavoritesStore((s) => s.setMenuMap);
+  // Reactive: new reference when favoriteWindowIds changes, so FavoritesDrawerContext consumers re-render.
+  const isFavorite = useCallback((windowId: string) => favoriteWindowIds.has(windowId), [favoriteWindowIds]);
 
   // Build windowId→menuId map from the flat menu tree so the breadcrumb
   // can look up the menuId for the current window without prop drilling.
@@ -350,7 +418,7 @@ export default function Sidebar() {
       }
     }
     const map = new Map<string, string>();
-    collect(menu, map);
+    if (menu?.length) collect(menu, map);
     setMenuMap(map);
   }, [menu, setMenuMap]);
 
@@ -368,6 +436,7 @@ export default function Sidebar() {
     <FavoritesDrawerContext.Provider value={favoritesDrawerValue}>
       <>
         <Drawer
+          key={currentRoleId}
           windowId={currentWindowId}
           pendingWindowId={pendingWindowId}
           logo={EtendoLogotype.src}
@@ -376,6 +445,7 @@ export default function Sidebar() {
           onClick={handleClick}
           onReportClick={handleClick}
           onProcessClick={handleClick}
+          onItemHover={handleItemHover}
           getTranslatedName={getTranslatedName}
           RecentlyViewedComponent={RecentlyViewed}
           VersionComponent={VersionComponent}
@@ -387,7 +457,6 @@ export default function Sidebar() {
           open={showProcessDefinitionModal}
           onClose={handleCloseProcessDefinitionModal}
           button={selectedProcessDefinitionButton}
-          keepOpenOnSuccess
           data-testid="ProcessDefinitionModal__sidebar"
         />
       </>

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { useWindowContext } from "../../../contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTabs } from "../../../contexts/tabs";
 import { useTranslation } from "../../../hooks/useTranslation";
 import WindowTabs from "../../../components/NavigationTabs/WindowTabs";
@@ -43,6 +43,22 @@ jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   ),
 }));
 
+jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
+  __esModule: true,
+  default: ({ open, confirmText, onConfirm, onCancel }: any) =>
+    open ? (
+      <div data-testid="ConfirmModal">
+        <span>{confirmText}</span>
+        <button onClick={onConfirm} data-testid="ConfirmButton">
+          Confirm
+        </button>
+        <button onClick={onCancel} data-testid="CancelButton">
+          Cancel
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock("@/components/NavigationTabs/MenuTabs", () => ({
   __esModule: true,
   default: ({ anchorEl, onClose, onSelect, "data-testid": testId }: any) =>
@@ -59,9 +75,7 @@ jest.mock("@/components/NavigationTabs/MenuTabs", () => ({
     ) : null,
 }));
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: jest.fn(),
-}));
+// useWindowStore is not mocked — we use setState directly
 
 jest.mock("@/contexts/tabs", () => ({
   useTabs: jest.fn(),
@@ -79,7 +93,6 @@ jest.mock("@/hooks/useMetadataContext", () => ({
 import { useMetadataContext } from "../../../hooks/useMetadataContext";
 
 describe("WindowTabs", () => {
-  const mockUseWindowContext = useWindowContext as jest.Mock;
   const mockUseTabs = useTabs as jest.Mock;
   const mockUseTranslation = useTranslation as jest.Mock;
   const mockUseMetadataContext = useMetadataContext as jest.Mock;
@@ -90,6 +103,16 @@ describe("WindowTabs", () => {
   const mockHandleScrollLeft = jest.fn();
   const mockHandleScrollRight = jest.fn();
 
+  /** Helper: set Zustand store state and spy on actions */
+  const setWindowStoreState = (windows: Record<string, any> = {}) => {
+    useWindowStore.setState({
+      windows,
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -97,13 +120,8 @@ describe("WindowTabs", () => {
       t: (key: string) => key,
     });
 
-    mockUseWindowContext.mockReturnValue({
-      windows: [],
-      isHomeRoute: true,
-      cleanupWindow: mockCleanupWindow,
-      setWindowActive: mockSetWindowActive,
-      setAllWindowsInactive: mockSetAllWindowsInactive,
-    });
+    // Default: no windows (home route)
+    setWindowStoreState({});
 
     mockUseTabs.mockReturnValue({
       containerRef: { current: null },
@@ -131,9 +149,16 @@ describe("WindowTabs", () => {
   });
 
   it("renders home button correctly when isHomeRoute is false", () => {
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      isHomeRoute: false,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "W1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
     render(<WindowTabs />);
     const homeButton = screen.getAllByTestId("IconButton__c8117d")[0];
@@ -148,13 +173,25 @@ describe("WindowTabs", () => {
   });
 
   it("renders window tabs", () => {
-    const windows = [
-      { windowIdentifier: "w1", title: "Window 1", isActive: true },
-      { windowIdentifier: "w2", title: "Window 2", isActive: false },
-    ];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "Window 2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -166,10 +203,16 @@ describe("WindowTabs", () => {
   });
 
   it("activates window when tab is clicked", () => {
-    const windows = [{ windowIdentifier: "w1", title: "Window 1", isActive: false }];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -179,13 +222,25 @@ describe("WindowTabs", () => {
   });
 
   it("closes window when close button is clicked", () => {
-    const windows = [
-      { windowIdentifier: "w1", title: "Window 1", isActive: true },
-      { windowIdentifier: "w2", title: "Window 2", isActive: false },
-    ];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "Window 2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
     });
 
     render(<WindowTabs />);
@@ -197,10 +252,16 @@ describe("WindowTabs", () => {
   });
 
   it("optimistically removes window from view when closed", async () => {
-    const windows = [{ windowIdentifier: "w1", title: "Window 1", isActive: true }];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
     });
 
     const { rerender } = render(<WindowTabs />);
@@ -215,10 +276,7 @@ describe("WindowTabs", () => {
     expect(mockCleanupWindow).toHaveBeenCalledWith("w1");
 
     // Simulate prop update where window is actually removed
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows: [],
-    });
+    setWindowStoreState({});
     rerender(<WindowTabs />);
     expect(screen.queryByText("Window 1")).not.toBeInTheDocument();
   });
@@ -300,25 +358,34 @@ describe("WindowTabs", () => {
   });
 
   it("renders separator between tabs correctly", () => {
-    // Logic: showSeparator = index !== activeIndex - 1 && index !== activeIndex;
-    // If we have 3 tabs: [0, 1, 2]. Active is 1.
-    // Index 0: activeIndex=1. 0 !== 1-1 (0) -> False. No separator.
-    // Index 1: activeIndex=1. 1 !== 1 -> False. No separator.
-    // Index 2: activeIndex=1. 2 !== 0 && 2 !== 1 -> True. Separator after 2?
-    // Wait, the separator is rendered AFTER the tab if index < length - 1.
-
-    // Let's try: Active is 0.
-    // Index 0: activeIndex=0. 0 !== -1 && 0 !== 0 -> False.
-    // Index 1: activeIndex=0. 1 !== -1 && 1 !== 0 -> True. Separator after 1?
-
-    const windows = [
-      { windowIdentifier: "w1", title: "W1", isActive: true }, // Index 0
-      { windowIdentifier: "w2", title: "W2", isActive: false }, // Index 1
-      { windowIdentifier: "w3", title: "W3", isActive: false }, // Index 2
-    ];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
-      windows,
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "W1",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      w2: {
+        windowIdentifier: "w2",
+        title: "W2",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w2",
+        initialized: true,
+      },
+      w3: {
+        windowIdentifier: "w3",
+        title: "W3",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w3",
+        initialized: true,
+      },
     });
 
     const { container } = render(<WindowTabs />);
@@ -332,5 +399,118 @@ describe("WindowTabs", () => {
     // i=2: Last element, never has separator after it.
 
     expect(separators.length).toBe(1);
+  });
+
+  it("uses metadata name when window title is empty", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: {},
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    mockUseMetadataContext.mockReturnValue({
+      windowsData: { w1: { name: "Invoice" } },
+    });
+
+    render(<WindowTabs />);
+
+    expect(screen.getByText("Invoice")).toBeInTheDocument();
+  });
+
+  it("shows confirmation modal when closing a dirty window", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+
+    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+    expect(mockCleanupWindow).not.toHaveBeenCalled();
+  });
+
+  it("calls cleanupWindow when confirming dirty window close", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+    fireEvent.click(screen.getByTestId("ConfirmButton"));
+
+    expect(mockCleanupWindow).toHaveBeenCalledWith("w1");
+  });
+
+  it("keeps window visible when canceling dirty window close", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    fireEvent.click(screen.getByTestId("CloseButton"));
+    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("CancelButton"));
+
+    expect(screen.queryByTestId("ConfirmModal")).not.toBeInTheDocument();
+    expect(mockCleanupWindow).not.toHaveBeenCalled();
+    expect(screen.getByText("Window 1")).toBeInTheDocument();
   });
 });

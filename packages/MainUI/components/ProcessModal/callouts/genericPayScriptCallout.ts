@@ -19,7 +19,8 @@ import { executeLogic } from "@/payscript";
 import type { PayScriptRules } from "@/payscript";
 import type { ProcessCalloutFunction } from "./processCallouts";
 import { logger } from "@/utils/logger";
-import { getStoredPreferences, createOBShim } from "@/utils/propertyStore";
+import { getStoredPreferences } from "@/utils/propertyStore";
+import { createOBShim } from "@/utils/ob/obShim";
 /**
  * Registry of PayScript rules by process ID
  * In the future, this will be loaded from the backend dynamically
@@ -165,12 +166,14 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
     }
 
     // Evaluate
-    // We wrap it in return (...) to ensure it's treated as an expression
-    // SECURITY: This relies on 'dslCode' coming from a trusted backend source.
-    // Do not allow end-users to input arbitrary PayScript code here.
+    // We wrap it in return (...) to ensure it's treated as an expression.
+    // SECURITY: `dslCode` (originally `processDefinition.etmetaPayscriptLogic`) is an
+    // Application Dictionary field fetched read-only from the authenticated metadata API
+    // and authored by administrators in Etendo Classic — never end-user input. Do not
+    // allow end-users to input arbitrary PayScript code here.
+    // Inject OB so DSL functions can call OB.PropertyStore.get() as a bare variable.
     // biome-ignore lint/security/noGlobalEval: Dynamic DSL execution required for PayScript engine
-    // Inject OB so DSL functions can call OB.PropertyStore.get() as a bare variable
-    const createRules = new Function("OB", `return ${cleanCode}`);
+    const createRules = new Function("OB", `return ${cleanCode}`); // NOSONAR typescript:S1523
     const rules = createRules(createOBShim());
 
     if (rules && typeof rules === "object") {

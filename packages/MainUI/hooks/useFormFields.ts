@@ -174,7 +174,7 @@ export default function useFormFields(
     >;
 
     for (const [fieldName, field] of Object.entries(fields.formFields)) {
-      const [rawId = "", identifier = ""] = [field.fieldGroup, field.fieldGroup$_identifier];
+      const [rawId = "", identifier = ""] = [field.fieldGroup, field.fieldGroupName || field.fieldGroup$_identifier];
       const id = rawId || "_main";
 
       if (!groups[id]) {

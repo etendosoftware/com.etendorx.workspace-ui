@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import { memo, type FC } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { TextCellEditor } from "./TextCellEditor";
@@ -45,12 +45,13 @@ export interface CellEditorFactoryProps extends CellEditorProps {
  * Provides consistent API across all editor types and handles error states
  * Memoized for performance optimization
  */
-const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
+const CellEditorFactoryComponent: FC<CellEditorFactoryProps> = ({
   fieldType,
   rowId,
   columnId,
   keyboardNavigationManager,
   shouldAutoFocus = false,
+  showTooltip = true,
   ...editorProps
 }) => {
   // Get error message for tooltip display
@@ -119,7 +120,7 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   return (
     <div className={`cell-editor-wrapper ${editorProps.hasError ? "cell-validation-error" : ""}`}>
       {renderEditor()}
-      {editorProps.hasError && errorMessage && (
+      {editorProps.hasError && errorMessage && showTooltip && (
         <div className="cell-error-tooltip" {...errorAttributes}>
           {errorMessage}
         </div>
@@ -129,7 +130,7 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
 };
 
 // Memoize the component for performance optimization
-export const CellEditorFactory = React.memo(CellEditorFactoryComponent, (prevProps, nextProps) => {
+export const CellEditorFactory = memo(CellEditorFactoryComponent, (prevProps, nextProps) => {
   // Custom comparison function for better memoization
   return (
     prevProps.fieldType === nextProps.fieldType &&

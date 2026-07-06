@@ -34,7 +34,8 @@ import { executeStringFunction } from "@/utils/functions";
 import { getPayScriptRules } from "@/components/ProcessModal/callouts/genericPayScriptCallout";
 import { logger } from "@/utils/logger";
 import { createCallAction, createFetchDatasource } from "./warehouseApiHelpers";
-import { createOBShim } from "@/utils/propertyStore";
+import { createOBShim } from "@/utils/ob/obShim";
+import { useLanguage } from "@/contexts/language";
 import type { WarehouseProcessSchema, WarehousePayScriptPlugin } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -54,9 +55,13 @@ export interface UseWarehousePluginResult {
 
 interface UseWarehousePluginOptions {
   processId: string;
-  /** Raw string from processDefinition.onLoad — may be empty if not yet in AD */
+  /** Whether the process is flagged as a custom-component process (em_etmeta_custom_component).
+   *  When false the onLoad is not evaluated here, so a standard process never runs its onLoad
+   *  in this reduced sandbox just to be detected. */
+  isCustomComponent: boolean;
+  /** Raw string from processDefinition.etmetaOnload (em_etmeta_onload column) — may be empty if not yet in AD */
   onLoadCode: string | undefined;
-  /** Raw string from processDefinition.onProcess — may be empty if not yet in AD */
+  /** Raw string from processDefinition.etmetaOnprocess (em_etmeta_onprocess column) — may be empty if not yet in AD */
   onProcessCode: string | undefined;
   /** processDefinition object passed as first arg to onLoad */
   processDefinition: Record<string, unknown>;
@@ -70,6 +75,7 @@ interface UseWarehousePluginOptions {
 
 export function useWarehousePlugin({
   processId,
+  isCustomComponent,
   onLoadCode,
   onProcessCode,
   processDefinition,
@@ -79,9 +85,14 @@ export function useWarehousePlugin({
   const [schema, setSchema] = useState<WarehouseProcessSchema | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { getLabel, language } = useLanguage();
 
   const effectiveOnLoad = onLoadCode;
   const effectiveOnProcess = onProcessCode;
+
+  // Shared OB shim instance for this plugin's scripts (I18N/Format closed over
+  // the current language; PropertyStore, Action, etc.).
+  const ob = useMemo(() => createOBShim({ getLabel, language }), [getLabel, language]);
 
   // Sandboxed helpers for entity lookups and ERP kernel calls.
   // Created via shared factory functions to avoid duplication with GenericWarehouseProcess.
@@ -90,8 +101,9 @@ export function useWarehousePlugin({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally limited deps — processDefinition, callAction and fetchDatasource are stable (derived from token/processId via useMemo)
   useEffect(() => {
-    // If there's no onLoad at all (not in backend, not in fallbacks) → not a warehouse process
-    if (!effectiveOnLoad) {
+    // Only flagged custom-component processes take this path. A standard process
+    // must never run its onLoad in this reduced sandbox just to be classified.
+    if (!isCustomComponent || !effectiveOnLoad) {
       setLoading(false);
       return;
     }
@@ -104,7 +116,7 @@ export function useWarehousePlugin({
         const context = {
           callAction,
           fetchDatasource,
-          OB: createOBShim(), // OB.PropertyStore.get(key) — reads preferences from localStorage
+          OB: ob, // full OB.* shim (PropertyStore, I18N, Format, …)
           fetch: undefined, // explicitly blocked — use callAction / fetchDatasource instead
         };
 
@@ -129,7 +141,7 @@ export function useWarehousePlugin({
     };
 
     run();
-  }, [processId, effectiveOnLoad, selectedRecords[0]?.id, token]);
+  }, [processId, isCustomComponent, effectiveOnLoad, selectedRecords[0]?.id, token]);
 
   // Read the Payscript plugin from registry (registered by ProcessDefinitionModal via EM_Etmeta_Payscript field)
   const rawRules = getPayScriptRules(processId);

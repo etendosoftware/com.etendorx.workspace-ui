@@ -13,8 +13,8 @@ jest.mock("@/app/actions/revalidate", () => ({
 }));
 
 // Mock hooks and components
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {} }),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: any) => selector({ session: {} }),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/PasswordSelector", () => ({
@@ -66,6 +66,17 @@ jest.mock("../GenericSelector", () => {
     return <input data-testid="generic-selector" name={parameter.name} />;
   };
 });
+
+// The legacy search affix is exercised in its own test; here we only assert that
+// ProcessParameterSelector wraps the selector with it when a legacySearchUrl exists.
+jest.mock("../LegacySelectorAffix", () => ({
+  __esModule: true,
+  default: ({ legacySearchUrl, children }: any) => (
+    <div data-testid="legacy-affix" data-url={legacySearchUrl}>
+      {children}
+    </div>
+  ),
+}));
 
 jest.mock("../UploadFileSelector", () => ({
   UploadFileSelector: ({ field, onFileChange }: any) => (
@@ -307,6 +318,40 @@ describe("ProcessParameterSelector", () => {
     expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
   });
 
+  it("wraps the selector with the legacy search affix when the metadata carries legacySearchUrl", () => {
+    const searchParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", legacySearchUrl: "/info/Product.html" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={searchParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("legacy-affix")).toHaveAttribute("data-url", "/info/Product.html");
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("renders the plain selector without the affix when legacySearchUrl is absent", () => {
+    const tableDirParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={tableDirParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.queryByTestId("legacy-affix")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
   it("should render QuantitySelector for quantity references", () => {
     const quantityFormats = ["Quantity"];
 
@@ -389,6 +434,45 @@ describe("ProcessParameterSelector", () => {
     );
 
     expect(screen.getByTestId("upload-file-selector")).toBeInTheDocument();
+  });
+
+  it("hides a field gated by display logic while form values are still loading (no flash)", () => {
+    const gatedParameter = { ...baseParameter, displayLogic: "@test_column@==='X'" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={gatedParameter} values={{}} />
+      </TestWrapper>
+    );
+
+    // displayLogic present + empty values → fail-safe hidden, so nothing renders.
+    expect(screen.queryByTestId("generic-selector")).not.toBeInTheDocument();
+  });
+
+  it("still renders a field with no display logic while values load (no regression)", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={baseParameter} values={{}} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
+  });
+
+  it("keeps a display-logic field visible when an explicit logic flag says so (precedence)", () => {
+    const gatedParameter = { ...baseParameter, displayLogic: "@test_column@==='X'" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={gatedParameter}
+          values={{}}
+          logicFields={{ "Test Parameter.display": true }}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
   });
 
   it("should forward onFileChange to UploadFileSelector", () => {

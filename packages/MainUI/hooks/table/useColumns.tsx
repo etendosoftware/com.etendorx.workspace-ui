@@ -16,7 +16,7 @@
  */
 
 import React, { useMemo } from "react";
-import { parseColumns } from "@/utils/tableColumns";
+import { parseColumns, renderTextCell } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -37,6 +37,26 @@ import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
+
+const TREE_REFERENCE_IDS: Set<string> = new Set([
+  FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
+  FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
+]);
+
+const isTreeReferenceColumn = (column: Column): boolean =>
+  !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
+
+const isBooleanType = (column: Column): boolean => column.type === "boolean" || column.column?._identifier === "YesNo";
+
+const supportsDropdown = (column: Column): boolean =>
+  isBooleanType(column) || isTreeReferenceColumn(column) || ColumnFilterUtils.supportsDropdownFilter(column);
+
+const isCustomJsEnabled = (column: Column): boolean => Boolean(column.customJs && column.customJs.trim().length > 0);
+
+const TEXT_REFERENCE_IDS: Set<string> = new Set(["14", "34", "7CB371C13D204EB69BF370217F692999"]);
+
+const isTextReferenceColumn = (column: Column): boolean =>
+  !!column.column?.reference && TEXT_REFERENCE_IDS.has(column.column.reference);
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -185,10 +205,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     return originalColumns.map((column: Column) => {
       const fieldReference = getFieldReference(column.column?.reference);
       const isReference = isEntityReference(fieldReference);
-      const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+      const isBooleanColumn = isBooleanType(column);
       const isDateColumn = shouldFormatDateColumn(column);
-      const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
-      const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
+      const supportsDropdownFilter = supportsDropdown(column);
+      const isCustomJsColumn = isCustomJsEnabled(column);
 
       // --- Initialize filterState for booleans if it doesn't exist ---
       let filterState = columnFilterStates?.find((f) => f.id === column.id);
@@ -242,6 +262,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           // Use custom sorting function for datetime fields to sort by actual date value
           // rather than the formatted string representation
           sortingFn: isAuditField ? dateTimeSortingFn : dateSortingFn,
+        };
+      }
+
+      // Text / Memo / Rich Text columns — truncate with tooltip
+      if (isTextReferenceColumn(column)) {
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+            const cellValue = cell?.getValue();
+            return renderTextCell(cellValue);
+          },
         };
       }
 

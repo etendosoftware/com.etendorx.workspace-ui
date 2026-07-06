@@ -196,6 +196,7 @@ function buildErpHeaders(
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
   }
+
   if (csrfToken) {
     // Some endpoints expect X-CSRF-Token, others just CSRF-Token or X-Csrf-Token
     headers["X-CSRF-Token"] = csrfToken;

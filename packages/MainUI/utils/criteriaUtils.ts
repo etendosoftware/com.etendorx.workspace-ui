@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import type { Tab, EntityValue } from "@workspaceui/api-client/src/api/types";
+import { type Tab, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 export interface BaseCriteriaOptions {
   tab: Tab;
@@ -97,6 +98,12 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   }
 
   if (parentId && parentId !== "") {
+    // True 1:1 SR tabs share the same PK as the parent — filter by id directly.
+    // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && isSrOneToOneExtension(tab)) {
+      return [{ fieldName: "id", value: parentId as EntityValue, operator: "equals" }];
+    }
+
     // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
     // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
     if (tab.disableParentKeyProperty) {

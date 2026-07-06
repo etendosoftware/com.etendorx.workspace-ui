@@ -23,88 +23,57 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
+import { changePassword as doChangePassword } from "@workspaceui/api-client/src/api/changePassword";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
-import type {
-  ISession,
-  ProfileInfo,
-  SessionResponse,
-  User,
-  CurrentWarehouse,
-  CurrentRole,
-  CurrentClient,
-  CurrentOrganization,
-} from "@workspaceui/api-client/src/api/types";
+import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-client/src/api/types";
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
-import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";
-import { usePrevious } from "@/hooks/usePrevious";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
+import { useUserStore } from "@/stores/userStore";
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const router = useRouter();
-  const [token, setToken] = useLocalStorage<string | null>("token", null);
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<IUserContext["user"]>({} as User);
-  const [session, setSession] = useState<ISession>({});
-  const [isSessionSyncLoading, setSessionSyncLoading] = useState(false);
-  const [currentOrganization, setCurrentOrganization] = useState<CurrentOrganization>();
-  const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
-  const [currentRole, setCurrentRole] = useState<CurrentRole>();
-  const [currentClient, setCurrentClient] = useState<CurrentClient>();
-  const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
 
-  // Login error states
-  const [loginErrorText, setLoginErrorText] = useState<string>("");
-  const [loginErrorDescription, setLoginErrorDescription] = useState<string>("");
-  const prevRole = usePrevious(currentRole);
-  const { t } = useTranslation();
-
-  const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
-    const savedRoles = localStorage.getItem("roles");
-    return savedRoles ? JSON.parse(savedRoles) : [];
-  });
-
-  const INITIAL_PROFILE: ProfileInfo = useMemo(
-    () => ({
-      name: "",
-      email: "",
-      image: "",
-    }),
-    []
-  );
-
-  const [profile, setProfile] = useState<ProfileInfo>(() => {
-    const savedProfile = localStorage.getItem("currentInfo");
-    return savedProfile ? JSON.parse(savedProfile) : INITIAL_PROFILE;
-  });
-
-  const [languages, setLanguages] = useState<LanguageOption[]>([]);
-
-  const setDefaultConfiguration = useCallback(async (config: DefaultConfiguration) => {
-    try {
-      return await apiSetDefaultConfiguration(config);
-    } catch (error) {
-      logger.warn("Error setting default configuration:", error);
-      throw error;
-    }
-  }, []);
-
-  const updateProfile = useCallback((newProfile: ProfileInfo) => {
-    setProfile(newProfile);
-    localStorage.setItem("currentInfo", JSON.stringify(newProfile));
-  }, []);
+  // ── Subscribe to all store state so the context value stays reactive ──────
+  // Each subscription is granular; UserProvider re-renders only when one of
+  // these slices changes, keeping re-renders as focused as possible while
+  // still propagating updates to legacy consumers of UserContext.
+  const token = useUserStore((s) => s.token);
+  const user = useUserStore((s) => s.user);
+  const profile = useUserStore((s) => s.profile);
+  const roles = useUserStore((s) => s.roles);
+  const currentRole = useUserStore((s) => s.currentRole);
+  const prevRole = useUserStore((s) => s.prevRole);
+  const currentClient = useUserStore((s) => s.currentClient);
+  const currentOrganization = useUserStore((s) => s.currentOrganization);
+  const currentWarehouse = useUserStore((s) => s.currentWarehouse);
+  const session = useUserStore((s) => s.session);
+  const languages = useUserStore((s) => s.languages);
+  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const loginErrorText = useUserStore((s) => s.loginErrorText);
+  const loginErrorDescription = useUserStore((s) => s.loginErrorDescription);
 
   const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const updateProfile = useCallback((newProfile: ProfileInfo) => {
+    useUserStore.getState().setProfile(newProfile);
+    localStorage.setItem("currentInfo", JSON.stringify(newProfile));
+  }, []);
 
   const updateSessionInfo = useCallback(
     async (sessionResponse: SessionResponse) => {
@@ -114,9 +83,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         image: sessionResponse.user.image || "",
       };
 
-      // Update session attributes and explicitly set organization ID from current organization
-      // This ensures the organization is always in sync with the role change
-      setSession((prev) => ({
+      useUserStore.getState().setSession((prev: ISession) => ({
         ...prev,
         ...sessionResponse.attributes,
         "#AD_Org_ID": sessionResponse.currentOrganization.id,
@@ -124,29 +91,26 @@ export default function UserProvider(props: React.PropsWithChildren) {
         "#AD_Client_ID": sessionResponse.currentClient.id,
         AD_CLIENT_ID: sessionResponse.currentClient.id,
       }));
+
       updateProfile(currentProfileInfo);
-      setUser(sessionResponse.user);
-      setProfile(currentProfileInfo);
+      useUserStore.getState().setUser(sessionResponse.user);
 
       localStorage.setItem("currentInfo", JSON.stringify(currentProfileInfo));
       localStorage.setItem("currentRole", JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem("currentRoleId", sessionResponse.currentRole.id);
 
       const defaultLanguage = sessionResponse.user.defaultLanguage as Language;
-
       if (!language && defaultLanguage) {
         setLanguage(defaultLanguage);
       }
 
-      setLanguages(Object.values(sessionResponse.languages));
-      setCurrentClient(sessionResponse.currentClient);
-      setCurrentRole(sessionResponse.currentRole);
-      setCurrentOrganization(sessionResponse.currentOrganization);
-      setCurrentWarehouse(sessionResponse.currentWarehouse);
-      setRoles(sessionResponse.roles);
+      useUserStore.getState().setLanguages(Object.values(sessionResponse.languages) as LanguageOption[]);
+      useUserStore.getState().setCurrentClient(sessionResponse.currentClient);
+      useUserStore.getState().setCurrentRole(sessionResponse.currentRole);
+      useUserStore.getState().setCurrentOrganization(sessionResponse.currentOrganization);
+      useUserStore.getState().setCurrentWarehouse(sessionResponse.currentWarehouse);
+      useUserStore.getState().setRoles(sessionResponse.roles);
 
-      // Load all preferences from backend and store in localStorage
-      // These are used by display logic expressions (OB.PropertyStore.get)
       try {
         const prefs = await getPreferences();
         savePreferences(prefs);
@@ -157,42 +121,42 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [language, setLanguage, updateProfile]
   );
 
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  const setDefaultConfiguration = useCallback(async (config: DefaultConfiguration) => {
+    try {
+      return await apiSetDefaultConfiguration(config);
+    } catch (error) {
+      logger.warn("Error setting default configuration:", error);
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Resets all user state (via store) and clears the language —
+   * which requires the useLanguage hook and therefore lives here.
+   */
   const clearUserData = useCallback(() => {
-    setToken(null);
-    setRoles([]);
-    setCurrentRole(undefined);
-    setCurrentWarehouse(undefined);
-    setCurrentOrganization(undefined);
-    setCurrentClient(undefined);
-    setProfile(INITIAL_PROFILE);
-    setUser({} as User);
-    localStorage.removeItem("token");
-    localStorage.removeItem("roles");
-    localStorage.removeItem("currentRole");
-    localStorage.removeItem("currentInfo");
-    localStorage.removeItem("currentWarehouse");
-    localStorage.removeItem("currentLanguage");
-    localStorage.removeItem("language");
+    useUserStore.getState().clearUserDataState();
     clearPreferences();
     setLanguage(null);
-  }, [INITIAL_PROFILE, setToken, setLanguage]);
+  }, [setLanguage]);
 
   const changeProfile = useCallback(
     async (params: { role?: string; client?: string; organization?: string; warehouse?: string }) => {
-      if (!token) {
+      const currentToken = useUserStore.getState().token;
+      if (!currentToken) {
         throw new Error("Authentication token is not available");
       }
 
       try {
         const response = await doChangeProfile(params);
 
-        // Persist the new role BEFORE calling setToken so the verifySession
-        // useEffect does not see a mismatch and revert the role change.
         if (params.role) {
           localStorage.setItem("currentRoleId", params.role);
         }
         localStorage.setItem("token", response.token);
-        setToken(response.token);
+        useUserStore.getState().setToken(response.token);
 
         Metadata.setToken(response.token);
         datasource.setToken(response.token);
@@ -205,31 +169,36 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw error;
       }
     },
-    [setToken, token, updateSessionInfo]
+    [updateSessionInfo]
   );
 
-  const login = useCallback(
-    async (username: string, password: string) => {
-      try {
-        // Clear any existing token and sessions before login to ensure clean state
-        Metadata.setToken("");
-        datasource.setToken("");
-        CopilotClient.setToken("");
+  const changePassword = useCallback(async (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => {
+    try {
+      await doChangePassword(params);
+    } catch (error) {
+      logger.warn("Error changing password:", error instanceof Error ? error.message : "Unknown error");
+      throw error;
+    }
+  }, []);
 
-        const loginResponse = await doLogin(username, password);
+  const login = useCallback(async (username: string, password: string) => {
+    try {
+      Metadata.setToken("");
+      datasource.setToken("");
+      CopilotClient.setToken("");
 
-        localStorage.setItem("token", loginResponse.token);
-        Metadata.setToken(loginResponse.token);
-        datasource.setToken(loginResponse.token);
-        CopilotClient.setToken(loginResponse.token);
-        setToken(loginResponse.token);
-      } catch (e) {
-        logger.warn("Login or session retrieval error:", e);
-        throw e;
-      }
-    },
-    [setToken]
-  );
+      const loginResponse = await doLogin(username, password);
+
+      localStorage.setItem("token", loginResponse.token);
+      Metadata.setToken(loginResponse.token);
+      datasource.setToken(loginResponse.token);
+      CopilotClient.setToken(loginResponse.token);
+      useUserStore.getState().setToken(loginResponse.token);
+    } catch (e) {
+      logger.warn("Login or session retrieval error:", e);
+      throw e;
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -244,62 +213,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [clearUserData]);
 
-  const value = useMemo<IUserContext>(
-    () => ({
-      login,
-      logout,
-      roles,
-      currentRole,
-      profile,
-      changeProfile,
-      currentWarehouse,
-      currentClient,
-      currentOrganization,
-      token,
-      clearUserData,
-      setToken,
-      setDefaultConfiguration,
-      languages,
-      session,
-      setSession,
-      user,
-      prevRole,
-      isSessionSyncLoading,
-      setSessionSyncLoading,
-      isCopilotInstalled,
-      setIsCopilotInstalled,
-      loginErrorText,
-      setLoginErrorText,
-      loginErrorDescription,
-      setLoginErrorDescription,
-      getCsrfToken: () => (session as any).csrfToken || localStorage.getItem("csrfToken") || "",
-    }),
-    [
-      login,
-      roles,
-      currentRole,
-      profile,
-      changeProfile,
-      currentWarehouse,
-      currentClient,
-      currentOrganization,
-      token,
-      clearUserData,
-      setToken,
-      setDefaultConfiguration,
-      languages,
-      session,
-      user,
-      prevRole,
-      isSessionSyncLoading,
-      isCopilotInstalled,
-      setIsCopilotInstalled,
-      loginErrorText,
-      setLoginErrorText,
-      loginErrorDescription,
-      setLoginErrorDescription,
-    ]
-  );
+  // ── Effects ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const verifySession = async () => {
@@ -309,11 +223,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
           setIsVerifyingSession(true);
           let activeToken = token;
 
-          // If the stored token was issued for a different role than the user's last
-          // session (e.g. initial login token has role "0" but the user previously
-          // switched to a specific role), re-authenticate with the saved role so that
-          // every subsequent request — including the dashboard layout GET — uses a
-          // role-scoped token and sees the correct data.
           const savedRoleId = localStorage.getItem("currentRoleId");
           if (savedRoleId) {
             try {
@@ -323,7 +232,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
                 const refreshed = await doChangeProfile({ role: savedRoleId });
                 activeToken = refreshed.token;
                 localStorage.setItem("token", activeToken);
-                setToken(activeToken);
+                useUserStore.getState().setToken(activeToken);
               }
             } catch {
               // JWT decode or changeProfile failed — proceed with the stored token
@@ -345,6 +254,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     };
 
     verifySession().catch(logger.warn);
+    // updateSessionInfo is intentionally excluded to avoid re-running on every
+    // language change; it is stable enough for the session verification flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
@@ -358,7 +270,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
           response.url.includes("org.openbravo.client.kernel") ||
           response.url.includes("meta/labels") ||
           response.url.includes("utility/ReferencedLink") ||
-          // Dashboard widget errors should not log the user out
           response.url.includes("meta/widget") ||
           response.url.includes("meta/dashboard"));
 
@@ -367,8 +278,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         !isIgnorableError
       ) {
         logout();
-        setLoginErrorText(t("login.errors.defaultLogout.title"));
-        setLoginErrorDescription(t("login.errors.defaultLogout.description"));
+        useUserStore.getState().setLoginErrorText(t("login.errors.defaultLogout.title"));
+        useUserStore.getState().setLoginErrorDescription(t("login.errors.defaultLogout.description"));
       }
 
       return response;
@@ -392,6 +303,72 @@ export default function UserProvider(props: React.PropsWithChildren) {
       router.push("/");
     }
   }, [currentRole?.id, prevRole, ready, router]);
+
+  // ── Context value (backward-compat — provides full IUserContext) ───────────
+  //
+  // All state fields are sourced from the Zustand store (subscribed above).
+  // Legacy consumers using useContext(UserContext) or useUserContext() continue
+  // to work unchanged.  New code should import selectors from useUserStore
+  // directly for finer-grained subscriptions.
+
+  const value = useMemo<IUserContext>(
+    () => ({
+      // State (from store subscriptions)
+      token,
+      user,
+      profile,
+      roles,
+      currentRole,
+      prevRole,
+      currentClient,
+      currentOrganization,
+      currentWarehouse,
+      session,
+      languages,
+      isSessionSyncLoading,
+      isCopilotInstalled,
+      loginErrorText,
+      loginErrorDescription,
+      // Actions (hook-dependent — live in UserProvider)
+      login,
+      logout,
+      changeProfile,
+      changePassword,
+      clearUserData,
+      setDefaultConfiguration,
+      // Store setters (stable references — satisfy consumers that call setters)
+      setToken: useUserStore.getState().setToken,
+      setSession: useUserStore.getState().setSession,
+      setSessionSyncLoading: useUserStore.getState().setSessionSyncLoading,
+      setIsCopilotInstalled: useUserStore.getState().setIsCopilotInstalled,
+      setLoginErrorText: useUserStore.getState().setLoginErrorText,
+      setLoginErrorDescription: useUserStore.getState().setLoginErrorDescription,
+      getCsrfToken: useUserStore.getState().getCsrfToken,
+    }),
+    [
+      token,
+      user,
+      profile,
+      roles,
+      currentRole,
+      prevRole,
+      currentClient,
+      currentOrganization,
+      currentWarehouse,
+      session,
+      languages,
+      isSessionSyncLoading,
+      isCopilotInstalled,
+      loginErrorText,
+      loginErrorDescription,
+      login,
+      logout,
+      changeProfile,
+      changePassword,
+      clearUserData,
+      setDefaultConfiguration,
+    ]
+  );
 
   if (!ready) {
     return null;

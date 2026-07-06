@@ -54,7 +54,8 @@ import { useTabContext } from "@/contexts/tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
@@ -68,7 +69,7 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import {
   getDisplayColumnDefOptions,
   getMUITableBodyCellProps,
@@ -78,6 +79,9 @@ import {
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
+import { TreeColumnFilter } from "./TreeColumnFilter";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -123,7 +127,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
-import { isSrOneToOneExtension } from "@/utils/window/utils";
+import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -579,6 +583,10 @@ const columnToFieldForEditor = (column: Column): Field => {
     fieldGroup$_identifier: "",
     fieldGroup: "",
     isMandatory: column.isMandatory || false,
+    startinoddcolumn: false,
+    displayOnSameLine: false,
+    obuiappColspan: null,
+    obuiappRowspan: null,
     column: column.column || {},
     id: column.fieldId || column.id,
     module: "",
@@ -682,6 +690,30 @@ const getHierarchyIcon = (
   return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
 };
 
+/** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
+const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
+  const props = (mrtColumn.columnDef as any)._treeFilterProps;
+  if (!props) return null;
+  return (
+    <TreeColumnFilter
+      column={props.column}
+      entityName={props.entityName}
+      tabId={props.tabId}
+      onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
+        const colId = props.column.id || props.column.columnName;
+        props.onFilterChange((prev: ColumnFiltersState) => {
+          const filtered = prev.filter((f: { id: string }) => f.id !== colId);
+          if (selectedOptions && selectedOptions.length > 0) {
+            return [...filtered, { id: colId, value: selectedOptions }];
+          }
+          return filtered;
+        });
+      }}
+      data-testid="TreeColumnFilter__8ca888"
+    />
+  );
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -695,7 +727,8 @@ const DynamicTable = ({
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
-  const { user, session } = useUserContext();
+  const user = useUserStore((s) => s.user);
+  const session = useUserStore((s) => s.session);
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
@@ -752,7 +785,17 @@ const DynamicTable = ({
     registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
-  const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
+
+  // Zustand store — imperative getters
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
 
@@ -768,7 +811,7 @@ const DynamicTable = ({
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
     useTableStatePersistenceTab({
-      windowIdentifier: activeWindow?.windowIdentifier || "",
+      windowIdentifier,
       tabId: tab.id,
       tabLevel: tab.tabLevel,
     });
@@ -824,29 +867,28 @@ const DynamicTable = ({
     addRecordLocally,
     applyQuickFilter,
     fetchSummary,
+    handleDateTextFilterChange,
   } = useTableData({
     isTreeMode,
   });
 
-  // Auto-open FormView for logical SR (Single Record) tabs once the child
-  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
-  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
-  // the parent-selected id is not a valid child id, so we wait for the fetched
-  // records to discover the real child id and then open the form.
+  // Auto-open FormView for SR (Single Record) tabs once records are fetched.
+  // See getSrAutoOpenDecision for the conditions covered.
   useEffect(() => {
-    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
-    if (!tab.defaultEditMode) return;
-    if (isSrOneToOneExtension(tab)) return;
-    if (loading) return;
-    if (displayRecords.length === 0) return;
+    const decision = getSrAutoOpenDecision({
+      uIPattern,
+      tab,
+      loading,
+      displayRecords,
+      parentTab,
+      parentRecord,
+    });
+    if (!decision.open) return;
+    if (srAutoOpenedForParentRef.current === decision.trackingKey) return;
 
-    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
-    if (!parentKey) return;
-    if (srAutoOpenedForParentRef.current === parentKey) return;
-
-    srAutoOpenedForParentRef.current = parentKey;
-    setRecordId(String(displayRecords[0].id));
-  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
+    srAutoOpenedForParentRef.current = decision.trackingKey;
+    setRecordId(decision.recordId);
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
@@ -949,8 +991,27 @@ const DynamicTable = ({
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
 
-  // Focus management for inline editing - tracks which cell should receive initial focus
-  const [initialFocusCell, setInitialFocusCell] = useState<{ rowId: string; columnName: string } | null>(null);
+  // Report table dirty state to windowStore for tab-close confirmation
+  const hasEditingRows = Object.keys(editingRows).length > 0;
+  useEffect(() => {
+    if (windowIdentifier) {
+      setWindowDirtySource(windowIdentifier, `table:${tab.id}`, hasEditingRows);
+    }
+    return () => {
+      if (windowIdentifier) {
+        setWindowDirtySource(windowIdentifier, `table:${tab.id}`, false);
+      }
+    };
+  }, [hasEditingRows, windowIdentifier, tab.id, setWindowDirtySource]);
+
+  // Focus management for inline editing - stored in a ref so that changing the focus target
+  // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all
+  // column defs and re-render every row). Cells still receive the correct value because they
+  // re-render when editingRows changes, and at that point they read the ref synchronously.
+  const initialFocusCellRef = useRef<{ rowId: string; columnName: string } | null>(null);
+  const setInitialFocusCell = useCallback((cell: { rowId: string; columnName: string } | null) => {
+    initialFocusCellRef.current = cell;
+  }, []);
 
   // Debug comparison completed - issue identified and resolved
 
@@ -1175,15 +1236,16 @@ const DynamicTable = ({
         // Use field.name as the validation key to match Save validation and Callout logic
         const validationKey = fieldMapping.field.name || fieldName;
 
-        // Update validation errors in state
-        const currentErrors = editingRows[rowId]?.validationErrors || {};
+        // Read current errors from the ref (always up-to-date) so this callback
+        // doesn't need editingRows in its deps and won't be recreated on every keystroke.
+        const currentErrors = editingRowsRef.current[rowId]?.validationErrors || {};
         editingRowUtils.setRowValidationErrors(rowId, {
           ...currentErrors,
           [validationKey]: validationResult.error,
         });
       });
     },
-    [columnFieldMappings, editingRows, editingRowUtils]
+    [columnFieldMappings, editingRowUtils]
   );
 
   // Create debounced validation function for real-time feedback with performance monitoring
@@ -2351,7 +2413,7 @@ const DynamicTable = ({
           originalCell={originalCell}
           editingRowUtils={editingRowUtils}
           columnFieldMappings={columnFieldMappings}
-          initialFocusCell={initialFocusCell}
+          initialFocusCell={initialFocusCellRef.current}
           session={session}
           keyboardNavigationManager={keyboardNavigationManager}
           handleCellValueChange={handleCellValueChange}
@@ -2379,7 +2441,6 @@ const DynamicTable = ({
     [
       editingRowUtils,
       columnFieldMappings,
-      initialFocusCell,
       session,
       keyboardNavigationManager,
       handleCellValueChange,
@@ -2423,6 +2484,20 @@ const DynamicTable = ({
 
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
+
+      // Tree reference columns get a tree-aware dropdown filter instead of text
+      const ref = col.column?.reference;
+      if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
+        column.enableColumnFilter = true;
+        // Store props on column for the stable TreeColumnFilterWrapper to read
+        (column as Record<string, unknown>)._treeFilterProps = {
+          column: col,
+          entityName: tab.entityName,
+          tabId: tab.id,
+          onFilterChange: handleMRTColumnFiltersChange,
+        };
+        column.Filter = TreeColumnFilterWrapper;
+      }
 
       return column;
     });
@@ -2489,7 +2564,16 @@ const DynamicTable = ({
     }
 
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
+  }, [
+    baseColumns,
+    shouldUseTreeMode,
+    renderActionsColumnCell,
+    renderDataColumnCell,
+    tableColumnVisibility,
+    tab.entityName,
+    tab.id,
+    handleMRTColumnFiltersChange,
+  ]);
 
   // Helper function to check if a row is being edited
 
@@ -2497,14 +2581,12 @@ const DynamicTable = ({
 
   // Initialize row selection from URL parameters with proper validation and logging
   const urlBasedRowSelection = useMemo(() => {
-    // Use proper URL state management instead of search params
-    const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window) {
       return {};
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(activeWindow.windowIdentifier, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -2516,12 +2598,10 @@ const DynamicTable = ({
     }
 
     return {};
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records]);
 
   /** Track URL selection changes to detect direct navigation */
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
@@ -2551,7 +2631,7 @@ const DynamicTable = ({
     if (currentURLSelection) {
       previousURLSelection.current = currentURLSelection;
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records]);
 
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
@@ -2588,6 +2668,17 @@ const DynamicTable = ({
         }
       }
 
+      // Conditional styling for document status
+      const VOIDED_STATUS = "VO";
+      const recordData = record as Record<string, unknown> | undefined;
+      const docStatus = recordData?.docStatus as string | undefined;
+      const isActive = recordData?.active;
+      if (docStatus === VOIDED_STATUS) {
+        rowClassName = `${rowClassName} table-row-voided`.trim();
+      } else if (isActive === false || isActive === "N") {
+        rowClassName = `${rowClassName} table-row-inactive`.trim();
+      }
+
       // Determine drop target overlay styling for drag and drop interactions
       let dropIndicatorClass = "";
       if (shouldUseTreeMode && dropTarget?.id === rowId) {
@@ -2606,6 +2697,19 @@ const DynamicTable = ({
             target.closest(".inline-edit-cell-container")
           ) {
             return;
+          }
+
+          // ED: auto-save the currently editing row when the user clicks a different row
+          if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
+            const editingIds = editingRowUtils.getEditingRowIds();
+            if (editingIds.length > 0 && !editingIds.includes(rowId)) {
+              const editingRowId = editingIds[0];
+              const editingRowData = editingRowUtils.getEditingRowData(editingRowId);
+              if (editingRowData?.hasUnsavedChanges) {
+                handleSaveRow(editingRowId);
+                return;
+              }
+            }
           }
 
           // Don't allow row selection changes while editing (to prevent accidental data loss)
@@ -2669,7 +2773,6 @@ const DynamicTable = ({
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowIdentifier = activeWindow?.windowIdentifier;
             const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
@@ -2727,6 +2830,19 @@ const DynamicTable = ({
           };
         })(),
 
+        onBlur: (e: React.FocusEvent<HTMLTableRowElement>) => {
+          const focusLeft = !e.currentTarget.contains(e.relatedTarget as Node);
+          if (!focusLeft) return;
+          if (editingData?.isNew) {
+            handleSaveRow(rowId);
+          } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
+            const blurEditingData = editingRowUtils.getEditingRowData(rowId);
+            if (blurEditingData?.hasUnsavedChanges) {
+              handleSaveRow(rowId);
+            }
+          }
+        },
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -2757,6 +2873,8 @@ const DynamicTable = ({
       dropTarget,
       getNodeDragProps,
       getNodeDropProps,
+      uIPattern,
+      handleSaveRow,
     ]
   );
 
@@ -3017,21 +3135,49 @@ const DynamicTable = ({
         selectedRecords: t("table.counter.selectedRecords"),
         recordsLoaded: t("table.counter.recordsLoaded"),
       };
+      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+      // that Etendo Classic shows in the quick-filter bar above the grid.
+      const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
       return (
-        <RecordCounterBar
-          totalRecords={total}
-          loadedRecords={loaded}
-          selectedCount={selCount}
-          isLoading={loading}
-          labels={labels}
-          actions={
-            <>
-              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
-              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-            </>
-          }
-          data-testid="RecordCounterBar__8ca888"
-        />
+        <>
+          <RecordCounterBar
+            totalRecords={total}
+            loadedRecords={loaded}
+            selectedCount={selCount}
+            isLoading={loading}
+            labels={labels}
+            actions={
+              <>
+                <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+                <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+              </>
+            }
+            data-testid="RecordCounterBar__8ca888"
+          />
+          {quickFilterCols.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
+              {quickFilterCols.map((col: Column) => {
+                const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
+                const currentValue =
+                  currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
+                return (
+                  <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
+                    <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">
+                      {col.header}:
+                    </span>
+                    <input
+                      type="text"
+                      value={currentValue}
+                      onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
+                      placeholder="…"
+                      className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       );
     },
     enableBottomToolbar: false,
@@ -3111,7 +3257,6 @@ const DynamicTable = ({
 
       const parent = graph.getParent(tab);
       if (parent) {
-        const windowIdentifier = activeWindow?.windowIdentifier;
         const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
         if (!parentSelectedInURL) return;
       }
@@ -3125,7 +3270,7 @@ const DynamicTable = ({
 
       setRecordId(record.id as string);
     },
-    [effectiveRecords, tableContainerRef, graph, tab, activeWindow, getSelectedRecord, setRecordId]
+    [effectiveRecords, tableContainerRef, graph, tab, windowIdentifier, getSelectedRecord, setRecordId]
   );
 
   const handleNewWithParentGuard = useCallback(() => {
@@ -3133,12 +3278,53 @@ const DynamicTable = ({
     onNew?.();
   }, [parentTab, parentRecord, onNew]);
 
+  const handleTreeArrowRight = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const row = tableRef.current.getRow(selectedIds[0]);
+      if (row?.getCanExpand() && !row.getIsExpanded()) {
+        row.toggleExpanded();
+      }
+    },
+    [shouldUseTreeMode]
+  );
+
+  const handleTreeArrowLeft = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!shouldUseTreeMode || !tableRef.current) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const rowId = selectedIds[0];
+      const row = tableRef.current.getRow(rowId);
+      if (row?.getIsExpanded()) {
+        row.toggleExpanded();
+      } else {
+        const record = effectiveRecords.find((r) => String(r.id) === rowId);
+        const parentId = record?.__treeParentId ? String(record.__treeParentId) : null;
+        if (parentId) {
+          tableRef.current.setRowSelection({ [parentId]: true });
+        }
+      }
+    },
+    [shouldUseTreeMode, effectiveRecords]
+  );
+
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
+      ...(shouldUseTreeMode
+        ? {
+            ArrowRight: { handler: handleTreeArrowRight },
+            ArrowLeft: { handler: handleTreeArrowLeft },
+          }
+        : {}),
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
@@ -3215,9 +3401,6 @@ const DynamicTable = ({
 
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -3264,13 +3447,11 @@ const DynamicTable = ({
         scrollToIndex(selectedIndex);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -3293,14 +3474,12 @@ const DynamicTable = ({
     // This allows the selection to persist when filters change or pagination occurs,
     // ensuring that if the record reappears (or if we are just viewing other data),
     // the logical selection remains intact.
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
 
   // Handle browser navigation and direct link access
   // NOTE: Disabled for tabs with children - their selection is handled atomically
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -3336,7 +3515,7 @@ const DynamicTable = ({
         return () => clearTimeout(timeoutId);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, records, graph]);
 
   // Sync records to graph for cache optimization
   useEffect(() => {
@@ -3347,8 +3526,6 @@ const DynamicTable = ({
 
   /** Restore selection from URL on mount */
   useEffect(() => {
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }
@@ -3367,7 +3544,7 @@ const DynamicTable = ({
       table.setRowSelection({ [urlSelectedId]: true });
       hasRestoredSelection.current = true;
     }
-  }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
+  }, [windowId, windowIdentifier, tab.window, records, getSelectedRecord, tab.id]);
 
   /**
    * Reset hasRestoredSelection when the target selected record ID changes.
@@ -3375,14 +3552,13 @@ const DynamicTable = ({
    * (e.g., after cloning a record and navigating to the clone).
    */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (urlSelectedId !== prevRestorationId.current) {
       prevRestorationId.current = urlSelectedId;
       hasRestoredSelection.current = false;
     }
-  }, [activeWindow, getSelectedRecord, tab.id]);
+  }, [windowIdentifier, getSelectedRecord, tab.id]);
 
   /**
    * When the table becomes visible again (user navigates back from form/clone view),
@@ -3395,7 +3571,6 @@ const DynamicTable = ({
 
     if (!becameVisible) return;
 
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
@@ -3405,7 +3580,7 @@ const DynamicTable = ({
     if (!recordExists) {
       refetch();
     }
-  }, [isVisible, activeWindow, getSelectedRecord, tab.id, records, refetch]);
+  }, [isVisible, windowIdentifier, getSelectedRecord, tab.id, records, refetch]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {

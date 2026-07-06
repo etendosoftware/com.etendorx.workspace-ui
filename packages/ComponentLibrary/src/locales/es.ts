@@ -22,6 +22,8 @@ const es = {
     confirm: "Confirmar",
     close: "Cerrar",
     closing: "Cerrando...",
+    unsavedChangesCloseMessage:
+      "Tiene cambios sin guardar que se perderán. ¿Está seguro de que desea cerrar esta ventana?",
     execute: "Ejecutar",
     register: "Registrar",
     save: "Guardar",
@@ -134,6 +136,8 @@ const es = {
     noRecordsError: "No hay registros seleccionados",
     noRecords: "Por favor, crea un nuevo registro",
     copyError: "¡Copiado erróneo! Inténtelo nuevamente o contáctese con soporte.",
+    staleObjectError:
+      "El registro ha sido modificado por otro usuario o proceso. Por favor, actualice e intente nuevamente.",
   },
   errors: {
     tableError: {
@@ -283,10 +287,21 @@ const es = {
     profile: {
       tooltipButtonProfile: "Configuración de la cuenta",
       passwordLabel: "Contraseña",
+      currentPasswordLabel: "Contraseña actual",
       newPasswordLabel: "Nueva Contraseña",
       confirmPasswordLabel: "Confirmar Nueva Contraseña",
       signOffTooltip: "Cerrar sesión",
       saveAsDefault: "Guardar perfil por defecto",
+      passwordChangedSuccess: "Contraseña cambiada correctamente",
+      passwordMismatch: "Las contraseñas no coinciden",
+      passwordRequired: "Todos los campos de contraseña son requeridos",
+      errorCurrentPwdIncorrect: "La contraseña actual es incorrecta",
+      errorDifferentPassword: "La nueva contraseña debe ser diferente a la actual",
+      errorIncorrectPwd: "La nueva contraseña no es válida",
+      errorUnequalPwd: "Las contraseñas no coinciden",
+      errorNotStrongEnough:
+        "La contraseña no es suficientemente segura. Use mayúsculas, minúsculas, números y caracteres especiales",
+      errorGeneric: "Error al cambiar la contraseña",
     },
   },
   breadcrumb: {
@@ -298,9 +313,35 @@ const es = {
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
     processError: "Error mientras se cargaba la informacion del proceso",
+    missingMandatoryFields: "No ha completado todos los campos requeridos",
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
+    legacyProcessUnresolved: {
+      title: "Este proceso no puede abrirse",
+      description: "No pudimos cargar los parámetros necesarios. Contacta con soporte.",
+    },
+    pickAndExecuteNotImplemented:
+      "El proceso tiene UI Pattern igual a 'Pick and Execute' y no está implementado. Contactarse con soporte.",
+  },
+  processModal: {
+    gridToolbar: {
+      addRow: "Agregar fila",
+      deleteRow: "Eliminar fila",
+      processingMessage: "Procesando...",
+      fallbackMessage: {
+        title: "No se pudo capturar la respuesta",
+        text: "No se pudo capturar la respuesta del proceso. Verifica el estado manualmente.",
+      },
+      requestFailed: {
+        title: "El proceso no pudo ejecutarse",
+        text: "El proceso no pudo ejecutarse. Contacta a soporte.",
+      },
+      openLegacyReport: {
+        popupBlockedTitle: "El navegador bloqueó la ventana del reporte.",
+        openManually: "Abrir reporte",
+      },
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

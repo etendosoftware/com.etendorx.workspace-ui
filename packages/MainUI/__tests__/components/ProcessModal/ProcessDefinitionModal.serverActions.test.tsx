@@ -60,6 +60,8 @@ jest.mock("@/utils/processes/definition/constants", () => ({
     REPORT_AND_PROCESS: "report-and-process",
   },
   BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
+  BUTTON_REFERENCE_ID: "28",
+  OBUIAPP_REPORT_UI_PATTERN: "OBUIAPP_Report",
 }));
 
 // Minimal mocks for heavy dependencies
@@ -87,9 +89,11 @@ jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getSelectedMultiple: () => [] } }),
 }));
 
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {}, token: "mock-token", getCsrfToken: () => "mock-csrf-token" }),
-}));
+// ProcessDefinitionModal reads from useUserStore (Zustand) — set state before tests
+const { useUserStore } = jest.requireActual("@/stores/userStore");
+beforeAll(() => {
+  useUserStore.setState({ session: {}, token: "mock-token", getCsrfToken: () => "mock-csrf-token" });
+});
 
 jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
   useProcessConfig: () => ({ fetchConfig: jest.fn(), loading: false, error: null, config: {} }),
@@ -161,6 +165,7 @@ jest.mock("react-hook-form", () => ({
     watch: () => ({}),
     control: {},
     reset: jest.fn(),
+    clearErrors: jest.fn(),
   }),
   useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
@@ -176,8 +181,10 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
       id: "P123",
       javaClassName: "com.test.Demo",
       parameters: {},
-      onLoad: "",
-      onProcess: "",
+      etmetaOnload: null,
+      etmetaOnprocess: null,
+      etmetaOnRefresh: null,
+      etmetaPayscriptLogic: null,
     },
   } as any;
 

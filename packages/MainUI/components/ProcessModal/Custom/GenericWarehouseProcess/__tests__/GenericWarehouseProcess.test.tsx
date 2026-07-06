@@ -3,11 +3,16 @@ import { GenericWarehouseProcess } from "../GenericWarehouseProcess";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useBoxManager } from "../../shared/useBoxManager";
 import { createCallAction } from "../warehouseApiHelpers";
 import { executeStringFunction } from "@/utils/functions";
 import { toast } from "sonner";
+
+// Async assertions here depend on a mocked scan promise resolving plus a React re-render.
+// Under heavy parallel test load the default 1s waitFor budget can be exceeded purely due to
+// CPU contention (the assertions themselves are correct), so give them extra headroom.
+const ASYNC_WAIT = { timeout: 5000 };
 
 // Mock dependencies
 jest.mock("@/hooks/useTranslation");
@@ -16,7 +21,7 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
-jest.mock("@/contexts/window");
+jest.mock("@/stores/windowStore");
 jest.mock("../../shared/useBoxManager");
 jest.mock("../warehouseApiHelpers");
 jest.mock("@/utils/functions");
@@ -106,7 +111,9 @@ describe("GenericWarehouseProcess", () => {
     (useUserContext as jest.Mock).mockReturnValue({ token: "fake-token" });
     (useRouter as jest.Mock).mockReturnValue({ replace: jest.fn() });
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
-    (useWindowContext as jest.Mock).mockReturnValue({ triggerRecovery: jest.fn(), isRecoveryLoading: false });
+    (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({ triggerRecovery: jest.fn(), isRecoveryLoading: false })
+    );
     (useBoxManager as jest.Mock).mockReturnValue({
       boxCount: 1,
       currentBox: 1,
@@ -181,7 +188,7 @@ describe("GenericWarehouseProcess", () => {
 
     await waitFor(() => {
       expect(screen.getByText("5")).toBeInTheDocument();
-    });
+    }, ASYNC_WAIT);
   });
 
   it("shows error on failed scan", async () => {
@@ -202,7 +209,7 @@ describe("GenericWarehouseProcess", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Error X")).toBeInTheDocument();
-    });
+    }, ASYNC_WAIT);
   });
 
   it("shows confirmation dialog if pending lines exist", () => {
@@ -258,7 +265,7 @@ describe("GenericWarehouseProcess", () => {
       expect(executeStringFunction).toHaveBeenCalled();
       expect(toast.success).toHaveBeenCalled();
       expect(mockOnClose).toHaveBeenCalled();
-    });
+    }, ASYNC_WAIT);
   });
 
   it("updates totals when manual box qty changes", () => {

@@ -30,15 +30,11 @@ function generateCsrfToken(): string {
   }
 
   // Fallback: generate random hex string
-  const array = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    crypto.getRandomValues(array);
-  } else {
-    // Last resort fallback for environments without crypto
-    for (let i = 0; i < array.length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
-    }
+  if (typeof crypto === "undefined" || !crypto.getRandomValues) {
+    throw new Error("No cryptographically secure random source available to generate CSRF token");
   }
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
 
   return Array.from(array)
     .map((b) => b.toString(16).padStart(2, "0"))

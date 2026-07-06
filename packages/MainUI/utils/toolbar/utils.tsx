@@ -110,7 +110,7 @@ const isVisibleButton = (
 ) => {
   if (!button.active) return false;
 
-  const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
+  const isFindButtonInFormView = (isFormView || isTreeNodeView) && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
@@ -119,6 +119,17 @@ const isVisibleButton = (
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
   const isSaveViewButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
 
+  const uIPattern = tab?.uIPattern;
+  const isNewForSrOrEd =
+    button.action === TOOLBAR_BUTTONS_ACTIONS.NEW &&
+    (uIPattern === UIPattern.EDIT_ONLY || uIPattern === UIPattern.EDIT_AND_DELETE_ONLY);
+  const isWriteActionForRo =
+    uIPattern === UIPattern.READ_ONLY &&
+    (button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.DELETE ||
+      button.action === TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD);
+
   return (
     !isFindButtonInFormView &&
     !isSaveButtonInNonFormView &&
@@ -126,7 +137,9 @@ const isVisibleButton = (
     !isToggleTreeView &&
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
-    !isSaveViewButtonInFormView
+    !isSaveViewButtonInFormView &&
+    !isNewForSrOrEd &&
+    !isWriteActionForRo
   );
 };
 
@@ -240,32 +253,36 @@ export const createButtonByType = ({
     const isEditOnly = uIPattern === UIPattern.EDIT_ONLY;
     const isEditAndDeleteOnly = uIPattern === UIPattern.EDIT_AND_DELETE_ONLY;
 
+    const isDocumentProcessing = saveButtonState?.isDocumentProcessing ?? false;
+
     const actionHandlers = {
-      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
+      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () =>
+        buildDisableConfig(!(isFormView || hasSelectedRecord) || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => {
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!hasSelectedRecord || patternDisabled);
+        return buildDisableConfig(!hasSelectedRecord || patternDisabled || isDocumentProcessing);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
-      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () =>
+        buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => {
         const patternDisabled = isReadOnly || isEditOnly || isEditAndDeleteOnly;
-        return buildDisableConfig(!hasParentRecordSelected || patternDisabled);
+        return buildDisableConfig(!hasParentRecordSelected || patternDisabled || isDocumentProcessing);
       },
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
         const patternDisabled = isReadOnly;
         const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected || patternDisabled;
         const additionalDisabled = saveButtonState ? saveButtonState.isSaving : false;
-        return buildDisableConfig(baseDisabled || additionalDisabled);
+        return buildDisableConfig(baseDisabled || additionalDisabled || isDocumentProcessing);
       },
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         const isCloneEnabled = tab?.obuiappShowCloneButton;
         const isSingleSelection = hasSelectedRecord;
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled);
+        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled || isDocumentProcessing);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
     };
 
     const handler = actionHandlers[button.action];

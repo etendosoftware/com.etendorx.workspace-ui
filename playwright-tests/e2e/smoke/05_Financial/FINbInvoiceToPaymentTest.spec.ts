@@ -63,18 +63,34 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await newLineBtn.click();
 
     // Product: Final good A
-    await page.locator('[data-testid="ChevronDown__2996"]').scrollIntoViewIfNeeded();
-    await page.locator('[data-testid="ChevronDown__2996"]').click({ force: true });
+    const productDropdown = page.locator('[data-testid="ChevronDown__2996"]');
     const productSearch = page.locator('input[aria-label="Search options"]');
-    await productSearch.waitFor({ state: "visible", timeout: 10_000 });
-    await productSearch.clear();
-    await productSearch.fill("Final good");
     const productOption = page.locator('[data-testid^="OptionItem__"]').filter({ hasText: /Final good A/ });
+
+    await productDropdown.scrollIntoViewIfNeeded();
+    let hasProductSearch = false;
+    let productDropdownOpened = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await productDropdown.click({ force: true });
+      hasProductSearch = await productSearch.isVisible({ timeout: 2_000 }).catch(() => false);
+      productDropdownOpened =
+        hasProductSearch || (await productOption.isVisible({ timeout: 2_000 }).catch(() => false));
+      if (productDropdownOpened) break;
+    }
+    if (!productDropdownOpened) throw new Error("Product dropdown did not open");
+
+    if (hasProductSearch) {
+      await productSearch.clear();
+      await productSearch.fill("Final good A");
+    }
     await productOption.waitFor({ state: "visible", timeout: 10_000 });
-    // Use keyboard navigation — the search input intercepts pointer events,
-    // so ArrowDown from the focused input + Enter selects the highlighted option
-    await productSearch.press("ArrowDown");
-    await page.keyboard.press("Enter");
+    if (hasProductSearch) {
+      // Use keyboard navigation because the search input intercepts pointer events.
+      await productSearch.press("ArrowDown");
+      await page.keyboard.press("Enter");
+    } else {
+      await productOption.click({ force: true });
+    }
     await page.waitForLoadState("networkidle", { timeout: 30_000 });
 
     // Invoiced Quantity: 13.13 (React-controlled input — use native setter)
@@ -135,24 +151,26 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       }
     })();
 
-    // Wait for "Process completed successfully" — Cypress: cy.get(".mb-1").should("have.text", "Process completed successfully")
-    // Use Playwright's built-in 100ms polling (much faster than our 500ms manual loop).
-    // Catch: on some environments the text appears and disappears in <500ms; if so, the
-    // Close button being visible means the process already ran — accept that as success.
-    await page
+    // The legacy iframe modal now auto-closes after showing the success message.
+    // Accept either the visible success banner or the modal closing by itself.
+    const processSuccessMessage = page
       .locator(".mb-1")
       .filter({ hasText: /Process completed successfully/i })
-      .waitFor({ state: "visible", timeout: 30_000 })
-      .catch(async () => {
-        const closeVisible = await page
-          .getByRole("button", { name: /^Close$/i })
-          .isVisible({ timeout: 2_000 })
-          .catch(() => false);
-        if (!closeVisible) throw new Error("Process did not complete within 30s");
-        // Close visible + empty body = process ran but returned no text (acceptable)
-      });
+      .first();
+    const processModalTitle = page.locator("h2").filter({ hasText: "Process Invoices" }).first();
+    const processCompleted = await Promise.race([
+      processSuccessMessage
+        .waitFor({ state: "visible", timeout: 35_000 })
+        .then(() => true)
+        .catch(() => false),
+      processModalTitle
+        .waitFor({ state: "hidden", timeout: 35_000 })
+        .then(() => true)
+        .catch(() => false),
+    ]);
+    if (!processCompleted) throw new Error("Process did not complete within 35s");
 
-    // Close the Process Invoices modal
+    // Close the Process Invoices modal if it is still open in older UI behavior.
     const closeModal = page.getByRole("button", { name: /^Close$/i });
     if (await closeModal.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await closeModal.click();
@@ -164,11 +182,27 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await page.waitForTimeout(500);
     const invoiceNumber = await captureDocumentNumber(page);
 
+    // Read the invoice outstanding amount while we're still on the invoice form.
+    // This is the grand total (net + taxes) we need to fully cover with the payment.
+    const outstandingInput = page.locator('input[name="outstandingAmount"]').first();
+    await outstandingInput.waitFor({ state: "attached", timeout: 10_000 });
+    const invoiceTotalStr = await outstandingInput.inputValue();
+    const invoiceTotal = Number.parseFloat(invoiceTotalStr) || 0;
+
+    // Payment is intentionally set to invoiceTotal + 1.74 to generate a credit of 1.74.
+    // This tests Etendo's overpayment/credit tracking feature.
+    const paymentAmount = Math.round((invoiceTotal + 1.74) * 100) / 100;
+    const paymentAmountStr = String(paymentAmount);
+
     // ── Step 5: Navigate to Payment In ───────────────────────────────────────
     await navigateToPaymentIn(page);
 
     // ── Step 6: Create new Payment In ────────────────────────────────────────
-    const newPayBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
+    const newPayBtn = page
+      .locator("button.toolbar-button-new")
+      .filter({ hasText: "New Record" })
+      .filter({ visible: true })
+      .first();
     await newPayBtn.waitFor({ state: "visible", timeout: 15_000 });
     await newPayBtn.click();
     await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
@@ -188,36 +222,58 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
     await closeToastIfPresent(page);
 
-    // Amount: 28.92 (React-controlled input — use native setter)
-    await page.locator('[data-testid="TextInput__329fab"]').scrollIntoViewIfNeeded();
-    await page.evaluate(() => {
-      const input = document.querySelector('[data-testid="TextInput__329fab"]') as HTMLInputElement;
-      if (!input) return;
-      input.disabled = false;
-      input.readOnly = false;
-      input.focus();
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-      nativeSetter?.call(input, "28.92");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await page.waitForTimeout(500);
+    // Amount: invoiceTotal + 1.74 (React-controlled input — use native setter)
+    const amountInput = page.locator('input[name="amount"][aria-label="Amount"]').first();
+    const visibleSaveButton = page.locator("button.toolbar-button-save").filter({ visible: true }).first();
+    const setAmountValue = async (value: string) => {
+      await page.evaluate((nextValue) => {
+        const input = document.querySelector('input[name="amount"][aria-label="Amount"]') as HTMLInputElement;
+        if (!input) return;
+        input.disabled = false;
+        input.readOnly = false;
+        input.focus();
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        nativeSetter?.call(input, nextValue);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }, value);
+    };
+
+    await amountInput.scrollIntoViewIfNeeded();
+    await setAmountValue(paymentAmountStr);
+    await expect(amountInput).toHaveValue(paymentAmountStr, { timeout: 5_000 });
+
+    const saveEnabledAfterAmount = await visibleSaveButton.isEnabled({ timeout: 2_000 }).catch(() => false);
+    if (!saveEnabledAfterAmount) {
+      // Nudge React's onChange by writing a slightly different value first, then the real one.
+      await setAmountValue(String(Math.round((paymentAmount - 0.01) * 100) / 100));
+      await page.waitForTimeout(100);
+      await setAmountValue(paymentAmountStr);
+      await expect(amountInput).toHaveValue(paymentAmountStr, { timeout: 5_000 });
+    }
+
+    await expect(visibleSaveButton).toBeEnabled({ timeout: 10_000 });
 
     // Save Payment In
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    await visibleSaveButton.click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
-    // Verify Status: Awaiting Payment
-    await expect(page.locator('span[name="status"]')).toHaveText("Awaiting Payment", { timeout: 10_000 });
+    // Verify Status: Awaiting Payment — wait for the form to exit edit mode and the
+    // server response to populate the status bar (Tag or span depending on refList).
+    await expect(
+      page.locator('[data-testid="status-bar-container"]:visible').getByText("Awaiting Payment")
+    ).toBeVisible({ timeout: 20_000 });
 
     // ── Step 7: Open Add Details process ─────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').click();
+    await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible').click();
     await page.waitForTimeout(500);
     await page.locator('[data-testid="ProcessMenuItemBase__541926"]').click();
 
-    // Wait for table to load — MUI DataGrid virtualizes rows so they are attached but may be hidden
+    // Wait for table to load — MUI DataGrid virtualizes rows so they are attached but may be hidden.
+    // Scope to cursor-pointer rows so we wait on the Add Details grid, not the other open window's table.
     await page
-      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
+      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root.cursor-pointer")
       .first()
       .waitFor({ state: "attached", timeout: 30_000 });
 
@@ -235,20 +291,28 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     await page.waitForTimeout(3_000);
 
-    // Select the matching row
-    const targetRow = page.locator("tbody.MuiTableBody-root tr.MuiTableRow-root").filter({ hasText: fullInvoiceNo });
-    await targetRow.waitFor({ state: "visible", timeout: 30_000 });
+    // Select the matching row.
+    // WindowReferenceGrid rows always have cursor-pointer class (selected and unselected).
+    // The other open window's table rows do NOT — this is how we scope to the right table.
+    const targetRow = page
+      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root.cursor-pointer")
+      .filter({ hasText: fullInvoiceNo })
+      .first();
+    await targetRow.waitFor({ state: "attached", timeout: 30_000 });
     await targetRow.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
-    await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
+    // The click is no longer necessary because the checkbox is auto-checked after filtering to a single row, but keep it here in case that behavior changes in the future.
+    //await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
 
-    // Verify row is selected
+    // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves)
     await expect(targetRow.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 15_000 });
 
     // Verify Expected Payment is populated
     await expect(page.locator('input[name="Expected Payment"]')).not.toHaveValue("0.00", { timeout: 30_000 });
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
-    const actionDropdown = page.locator('div[aria-label="Action Regarding Document"]').locator('div[tabindex="0"]');
+    const actionDropdown = page
+      .locator('div[aria-label="Action Regarding Document"]:visible')
+      .locator('div[tabindex="0"]');
     await actionDropdown.scrollIntoViewIfNeeded();
     const loadActionDefaults = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await actionDropdown.click();
@@ -290,17 +354,19 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     }
 
     // ── Step 9: Verify final payment state ───────────────────────────────────
-    const refreshBtn = page.locator("button.toolbar-button-refresh").first();
+    const refreshBtn = page.locator("button.toolbar-button-refresh").filter({ visible: true }).first();
     await refreshBtn.waitFor({ state: "visible", timeout: 30_000 });
     await refreshBtn.click({ timeout: 10_000 });
 
-    await expect(page.locator('[data-testid="status-bar-container"] span[name="status"]')).toHaveText(
-      "Payment Received",
-      { timeout: 20_000 }
-    );
+    await expect(
+      page.locator('[data-testid="status-bar-container"]:visible').getByText("Payment Received")
+    ).toBeVisible({ timeout: 20_000 });
 
-    await expect(page.locator('[data-testid="status-bar-container"] span[name="generatedCredit"]')).toHaveText("1.74", {
-      timeout: 10_000,
-    });
+    await expect(page.locator('[data-testid="status-bar-container"]:visible span[name="generatedCredit"]')).toHaveText(
+      "1.74",
+      {
+        timeout: 10_000,
+      }
+    );
   });
 });

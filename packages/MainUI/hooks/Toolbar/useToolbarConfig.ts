@@ -16,7 +16,7 @@
  */
 
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -32,7 +32,8 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
 import { getNewTabFormState } from "@/utils/window/utils";
@@ -90,15 +91,21 @@ export const useToolbarConfig = ({
     t,
   });
 
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
 
   const closeActionModal = useCallback(() => {
     setActionModal((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
   const { tab } = useTabContext();
-  const { activeWindow, clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } =
-    useWindowContext();
+
+  const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
@@ -106,10 +113,10 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
-  const selectedRecordId = useMemo(() => {
-    if (!activeWindow?.windowIdentifier || !tab) return null;
-    return getSelectedRecord(activeWindow.windowIdentifier, tab.id);
-  }, [activeWindow?.windowIdentifier, tab, getSelectedRecord]);
+  const selectedRecordId = useWindowStore((s) => {
+    if (!windowIdentifier || !tab) return null;
+    return s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord ?? null;
+  });
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -153,8 +160,8 @@ export const useToolbarConfig = ({
         onAfterClose: () => {
           setIsDeleting(false);
 
-          if (activeWindow?.windowIdentifier && tab) {
-            clearSelectedRecord(activeWindow.windowIdentifier, tab.id);
+          if (windowIdentifier && tab) {
+            clearSelectedRecord(windowIdentifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
           }
@@ -231,7 +238,7 @@ export const useToolbarConfig = ({
     }
   }, []);
   const handleCopyRecord = useCallback(() => {
-    if (!tab || !activeWindow || isEmptyArray(selectedIds)) return;
+    if (!tab || !windowIdentifier || isEmptyArray(selectedIds)) return;
 
     const isComplexClone = tab.obuiappCloneChildren;
     const title = t("common.confirm");
@@ -239,9 +246,8 @@ export const useToolbarConfig = ({
 
     const handleRequest = async (cloneWithChildren: boolean) => {
       setActionModal((prev) => ({ ...prev, isLoading: true }));
-      const windowIdentifier = activeWindow?.windowIdentifier;
 
-      const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
+      const { ok, data } = await copyRecordRequest(tab, selectedIds, tab.window, cloneWithChildren);
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
 
@@ -332,7 +338,7 @@ export const useToolbarConfig = ({
   }, [
     tab,
     selectedIds,
-    activeWindow,
+    windowIdentifier,
     t,
     closeActionModal,
     showErrorModal,

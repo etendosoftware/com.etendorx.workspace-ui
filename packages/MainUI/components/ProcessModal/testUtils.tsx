@@ -72,6 +72,8 @@ export const mockProcessDefinitionConstants = {
     REPORT_AND_PROCESS: "report-and-process",
   },
   BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
+  BUTTON_REFERENCE_ID: "28",
+  OBUIAPP_REPORT_UI_PATTERN: "OBUIAPP_Report",
 };
 
 // Mock Implementations for Jest
@@ -125,6 +127,7 @@ export const mockFormData = {
   watch: () => ({}),
   control: {},
   reset: jest.fn(),
+  clearErrors: jest.fn(),
 };
 
 export const mockFormState = { isValid: true, isSubmitting: false };

@@ -34,6 +34,7 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
     },
   },
 }));
+jest.mock("@/stores/userStore");
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/hooks/useTranslation");
 
@@ -88,11 +89,15 @@ describe("useDeleteRecord - Parent Refresh Integration", () => {
     } as unknown as Response & { data?: unknown });
 
     // Mock other required hooks
+    require("@/stores/userStore").useUserStore.mockImplementation((selector: (s: any) => any) =>
+      selector({
+        user: { id: "test-user" },
+        setLoginErrorText: jest.fn(),
+        setLoginErrorDescription: jest.fn(),
+      })
+    );
     require("@/hooks/useUserContext").useUserContext.mockReturnValue({
-      user: { id: "test-user" },
       logout: jest.fn(),
-      setLoginErrorText: jest.fn(),
-      setLoginErrorDescription: jest.fn(),
     });
 
     require("@/hooks/useTranslation").useTranslation.mockReturnValue({

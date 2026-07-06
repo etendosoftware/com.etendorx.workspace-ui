@@ -19,7 +19,6 @@ export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
 export const CREATE_LINES_FROM_ORDER_RECEIPT_PROCESS_ID = "19B7ADFA1E844099A940B4D179EE4062";
 export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
-export const ADD_PAYMENT_ORDER_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
 export const CREATE_LINES_FROM_RECEIPT_ID = "7737CA7330FD49FBA7EBC225E85F2BC9";
 export const LANDED_COST_PROCESS = "96FE01F2F12F45FC8ED4A1978EBD034C";
 export const REACTIVATE_LANDED_COST_PROCESS = "C600DAD457664EFDA6B1AA76931552BA";
@@ -78,13 +77,6 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.documentStatus@": "inpdocstatus",
       "@Invoice.totalPaid@": "inptotalpaid",
     },
-    staticOptions: {},
-  },
-  [ADD_PAYMENT_ORDER_PROCESS_ID]: {
-    inpColumnId: "C_Order_ID",
-    inpPrimaryKeyColumnId: "inpcOrderId",
-    defaultKeys: {},
-    dynamicKeys: {},
     staticOptions: {},
   },
   [CREATE_LINES_FROM_ORDER_RECEIPT_PROCESS_ID]: {
@@ -198,3 +190,19 @@ export const PROCESS_TYPES = {
   PROCESS_DEFINITION: "process-definition",
   REPORT_AND_PROCESS: "report-and-process",
 } as const;
+
+export const OBUIAPP_REPORT_UI_PATTERN = "OBUIAPP_Report";
+
+export const REPORT_OUTPUT_FORMATS = {
+  HTML: "HTML",
+  PDF: "PDF",
+  XLS: "XLS",
+} as const;
+
+export type ReportOutputFormat = (typeof REPORT_OUTPUT_FORMATS)[keyof typeof REPORT_OUTPUT_FORMATS];
+
+export const REPORT_FORMAT_I18N_KEYS: Record<ReportOutputFormat, string> = {
+  HTML: "OBUIAPP_HTMLExport",
+  PDF: "OBUIAPP_PDFExport",
+  XLS: "OBUIAPP_XLSExport",
+};

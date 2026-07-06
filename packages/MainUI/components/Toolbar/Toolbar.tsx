@@ -22,7 +22,7 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -35,11 +35,14 @@ import { useTranslation } from "../../hooks/useTranslation";
 import ProcessIframeModal from "../ProcessModal/Iframe";
 import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
+  isProcessActionButton,
+  type ProcessActionButton,
   type ProcessButton,
   ProcessButtonType,
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
@@ -52,7 +55,8 @@ import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
@@ -77,19 +81,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const {
-    activeWindow,
-    getTabFormState,
-    clearChildrenSelections,
-    setTableFilters,
-    setTableVisibility,
-    setTableSorting,
-    setTableOrder,
-    setTableImplicitFilterApplied,
-  } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action/getter references
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+  const setTableFilters = useWindowStore((s) => s.setTableFilters);
+  const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
+  const setTableSorting = useWindowStore((s) => s.setTableSorting);
+  const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
+  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -99,14 +108,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
-
-  // Table state for Save View feature — reads current grid state to persist
-  const windowIdentifier = activeWindow?.windowIdentifier ?? "";
-  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({
-      windowIdentifier,
-      tabId: tab?.id ?? "",
-    });
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    tableColumnSorting,
+    tableColumnOrder,
+    activeLevels,
+    activeTabsByLevel,
+  } = useTableStatePersistenceTab({
+    windowIdentifier,
+    tabId: tab?.id ?? "",
+  });
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -133,11 +145,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
-    if (!activeWindow || !tab?.id) return false;
-    const navigationState = activeWindow.navigation;
-    // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
-    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
-  }, [activeWindow, tab?.id]);
+    if (!tab?.id) return false;
+    return activeLevels.includes(1) && activeTabsByLevel.has(1);
+  }, [activeLevels, activeTabsByLevel, tab?.id]);
 
   // Manage temporary filter tooltip visibility
   useEffect(() => {
@@ -173,6 +183,32 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     setAnchorEl(null);
   }, []);
 
+  const handleLegacyUnresolved = useCallback(() => {
+    toast.error(t("process.legacyProcessUnresolved.title"), {
+      description: t("process.legacyProcessUnresolved.description"),
+    });
+  }, [t]);
+
+  const runProcessAction = useCallback(
+    async (button: ProcessActionButton, recordId: string) => {
+      try {
+        const response = await handleProcessClick(button, recordId);
+        setProcessResponse(response);
+        setSelectedProcessActionButton(button);
+        if (response.showInIframe) {
+          setOpenIframeModal(true);
+        }
+      } catch (error) {
+        if (error instanceof LegacyProcessUnresolvedError) {
+          handleLegacyUnresolved();
+          return;
+        }
+        throw error;
+      }
+    },
+    [handleProcessClick, handleLegacyUnresolved]
+  );
+
   const handleSaveViewMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       if (!saveViewAnchorEl) {
@@ -196,17 +232,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       order: typeof tableColumnOrder;
       implicitFilterApplied: boolean;
     }) => {
-      if (!activeWindow?.windowIdentifier || !tab?.id) return;
-      const wi = activeWindow.windowIdentifier;
+      if (!windowIdentifier || !tab?.id) return;
       const ti = tab.id;
-      setTableFilters(wi, ti, state.filters);
-      setTableVisibility(wi, ti, state.visibility);
-      setTableSorting(wi, ti, state.sorting);
-      setTableOrder(wi, ti, state.order);
-      setTableImplicitFilterApplied(wi, ti, state.implicitFilterApplied);
+      setTableFilters(windowIdentifier, ti, state.filters);
+      setTableVisibility(windowIdentifier, ti, state.visibility);
+      setTableSorting(windowIdentifier, ti, state.sorting);
+      setTableOrder(windowIdentifier, ti, state.order);
+      setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
     },
     [
-      activeWindow?.windowIdentifier,
+      windowIdentifier,
       tab?.id,
       setTableFilters,
       setTableVisibility,
@@ -227,17 +262,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       const record = selectedRecord || selectedRecords[0];
       if (!record) return;
 
-      if (ProcessButtonType.PROCESS_ACTION in button) {
-        const response = await handleProcessClick(button, String(record.id));
-        setProcessResponse(response);
-        setSelectedProcessActionButton(button);
-        if (response.showInIframe) {
-          setOpenIframeModal(true);
-        } else if (response.responseActions?.[0]?.showMsgInProcessView) {
-          // If there's an error and not an iframe, show it in actionModal or similar.
-          // For now, logging it clearly, as the previous logic just hung infinitely.
-          console.error("Process error:", response.responseActions[0].showMsgInProcessView);
-        }
+      if (isProcessActionButton(button)) {
+        await runProcessAction(button, String(record.id));
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -247,7 +273,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       handleMenuClose();
     },
-    [handleMenuClose, handleProcessClick, selectedRecord, selectedRecords]
+    [handleMenuClose, runProcessAction, selectedRecord, selectedRecords]
   );
 
   const handleSearchChange = useCallback(
@@ -293,7 +319,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       const childTabs = graph.getChildren(tab);
       const childTabIdsInFormView: string[] = [];
       const hasChildTabs = childTabs && childTabs.length > 0;
-      const windowIdentifier = activeWindow?.windowIdentifier;
 
       if (hasChildTabs && windowIdentifier) {
         childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
@@ -325,7 +350,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isFormView,
     formViewRefetch,
-    activeWindow,
+    windowIdentifier,
     processChildTabsInFormView,
     clearChildrenSelections,
   ]);
@@ -583,6 +608,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         isOpen={openIframeModal}
         onClose={handleCloseProcess}
         url={processResponse?.iframeUrl}
+        formParams={processResponse?.iframeFormParams ?? null}
         title={selectedProcessActionButton?.name}
         onProcessSuccess={handleCompleteRefresh}
         tabId={tab.id}

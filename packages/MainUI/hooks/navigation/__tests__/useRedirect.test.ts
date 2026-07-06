@@ -25,10 +25,9 @@ const mockCreateDefaultTabState = jest.fn();
 const mockGetCachedMenu = jest.fn();
 const mockGetWindow = jest.fn();
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({
-    setWindowActive: mockSetWindowActive,
-  }),
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({ setWindowActive: mockSetWindowActive }),
 }));
 
 jest.mock("@/utils/window/utils", () => ({

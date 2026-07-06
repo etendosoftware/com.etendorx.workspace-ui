@@ -16,7 +16,7 @@
  */
 
 import { useFormContext } from "react-hook-form";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { FormMode, type Field, type Tab } from "@workspaceui/api-client/src/api/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
@@ -31,6 +31,7 @@ import NoteSection from "./Sections/noteSection";
 import AttachmentSection from "./Sections/AttachmentSection";
 import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import { useTranslation } from "@/hooks/useTranslation";
+import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -64,7 +65,7 @@ export function FormFields({
   isReadOnly,
 }: FormFieldsProps) {
   const { watch } = useFormContext();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const [noteCount, setNoteCount] = useState(initialNoteCount);
   const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =
@@ -192,15 +193,20 @@ export function FormFields({
               onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}
               data-testid="Collapsible__38e4a6">
               <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
-                {Object.entries(group.fields).map(([hqlName, field]) => (
-                  <BaseSelector
-                    field={field}
-                    key={hqlName}
-                    formMode={mode}
-                    forceReadOnly={isReadOnly}
-                    data-testid="BaseSelector__38e4a6"
-                  />
-                ))}
+                {(() => {
+                  const fieldArray = Object.values(group.fields);
+                  const layoutMap = computeFieldLayout(fieldArray);
+                  return Object.entries(group.fields).map(([hqlName, field]) => (
+                    <BaseSelector
+                      field={field}
+                      key={hqlName}
+                      formMode={mode}
+                      forceReadOnly={isReadOnly}
+                      colStart={layoutMap.get(field.id)?.colStart}
+                      data-testid="BaseSelector__38e4a6"
+                    />
+                  ));
+                })()}
               </div>
             </Collapsible>
           </div>

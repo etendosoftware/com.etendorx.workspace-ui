@@ -87,9 +87,9 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
   const hiddenTabs = useMemo(() => content.slice(visibleCount), [content, visibleCount]);
 
   const renderTab = useCallback(
-    (tab: TabContent, index: number) => (
+    (tab: TabContent, _index: number) => (
       <Tab
-        key={index}
+        key={tab.label}
         label={
           <TabLabel
             icon={
@@ -126,7 +126,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
       <Menu anchorEl={anchorEl} onClose={handleClose}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
-            key={index}
+            key={tab.label}
             onClick={() => {
               onChange(index + visibleCount);
               tab.onClick();

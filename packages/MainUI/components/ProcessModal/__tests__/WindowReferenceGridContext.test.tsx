@@ -3,7 +3,7 @@ import type React from "react";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "../WindowReferenceGridContext";
 import "@testing-library/jest-dom";
 
-const makeContextValue = () => ({
+const makeContextValue = (overrides: Record<string, unknown> = {}) => ({
   effectiveRecordValuesRef: { current: {} },
   parametersRef: { current: {} },
   fieldsRef: { current: [] },
@@ -14,6 +14,9 @@ const makeContextValue = () => ({
   tabId: "TAB-001",
   fieldReadOnlyMap: {},
   shouldSendOrg: false,
+  createRowErrors: new Set<string>(),
+  clearCellError: jest.fn(),
+  ...overrides,
 });
 
 describe("WindowReferenceGridProvider", () => {
@@ -44,5 +47,18 @@ describe("useWindowReferenceGridContext", () => {
       renderHook(() => useWindowReferenceGridContext());
     }).toThrow("useWindowReferenceGridContext must be used within WindowReferenceGridProvider");
     spy.mockRestore();
+  });
+
+  it("exposes the create-row error set and the clearCellError callback", () => {
+    const createRowErrors = new Set<string>(["c_glitem_id"]);
+    const clearCellError = jest.fn();
+    const value = makeContextValue({ createRowErrors, clearCellError });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <WindowReferenceGridProvider value={value}>{children}</WindowReferenceGridProvider>
+    );
+    const { result } = renderHook(() => useWindowReferenceGridContext(), { wrapper });
+    expect(result.current.createRowErrors.has("c_glitem_id")).toBe(true);
+    result.current.clearCellError("c_glitem_id");
+    expect(clearCellError).toHaveBeenCalledWith("c_glitem_id");
   });
 });

@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
@@ -23,36 +22,28 @@ jest.mock("@/contexts/ToolbarContext", () => ({
     isAdvancedFilterApplied: false,
   }),
 }));
+jest.mock("@/hooks/useSelected", () => require("../__testUtils__/toolbarMocks").UseSelectedMock);
+jest.mock("@/contexts/window", () => require("../__testUtils__/toolbarMocks").WindowContextMock);
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ graph: { getChildren: () => [] } }),
 }));
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({
-    activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
-    getTabFormState: jest.fn(),
-    clearChildrenSelections: jest.fn(),
-    getTableState: jest.fn(() => ({
-      filters: [],
-      sorting: [],
-      visibility: {},
-      order: [],
-      implicitFilterApplied: false,
-      advancedCriteria: [],
-    })),
-    getNavigationState: jest.fn(() => ({
-      activeLevels: [],
-      activeTabsByLevel: new Map(),
-    })),
-    setTableFilters: jest.fn(),
-    setTableVisibility: jest.fn(),
-    setTableSorting: jest.fn(),
-    setTableOrder: jest.fn(),
-    setTableImplicitFilterApplied: jest.fn(),
-    setTableAdvancedCriteria: jest.fn(),
-    setNavigationActiveLevels: jest.fn(),
-    setNavigationActiveTabsByLevel: jest.fn(),
-  }),
-}));
+// Initialize Zustand store with a default active window for Toolbar tests
+import { useWindowStore } from "@/stores/windowStore";
+beforeEach(() => {
+  useWindowStore.setState({
+    windows: {
+      "win-id": {
+        windowId: "win-id",
+        windowIdentifier: "win-id",
+        isActive: true,
+        initialized: true,
+        title: "",
+        navigation: { activeLevels: [], activeTabsByLevel: new Map(), initialized: false },
+        tabs: {},
+      },
+    },
+  });
+});
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({
   useProcessExecution: () => ({ executeProcess: jest.fn() }),
 }));
@@ -81,23 +72,14 @@ jest.mock("@/hooks/Toolbar/useProcessButton", () => ({
   useProcessButton: () => ({ handleProcessClick: jest.fn() }),
 }));
 
-// Mock IconButton and IconButtonWithText from component library
-jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
-  __esModule: true,
-  default: ({ children, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {children}
-    </button>
-  ),
-}));
-jest.mock("@workspaceui/componentlibrary/src/components/IconButtonWithText", () => ({
-  __esModule: true,
-  default: ({ text, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {text}
-    </button>
-  ),
-}));
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButton",
+  () => require("../__testUtils__/toolbarMocks").IconButtonMock
+);
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButtonWithText",
+  () => require("../__testUtils__/toolbarMocks").IconButtonWithTextMock
+);
 
 // Mock EmailSendModal
 jest.mock("../Modals/EmailSendModal", () => ({
@@ -127,6 +109,10 @@ jest.mock("@workspaceui/componentlibrary/src/components/ActionModal", () => ({
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
   __esModule: true,
   default: () => <div data-testid="confirm-modal" />,
+}));
+
+jest.mock("@/hooks/useAutoApplyDefaultView", () => ({
+  useAutoApplyDefaultView: jest.fn(),
 }));
 
 // Mock sonner

@@ -3,9 +3,8 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendimport XIcon from "../../../assets/icons/x.svg";
-o_license.txt
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  * implied. See the License for the specific language governing rights
@@ -19,7 +18,7 @@ o_license.txt
 import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
@@ -37,6 +36,7 @@ import useDisplayLogic from "@/hooks/useDisplayLogic";
 import { useExpressionDependencies } from "@/hooks/useExpressionDependencies";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
@@ -112,9 +112,10 @@ export const compileExpression = (expression: string) => {
       var alert = undefined;
     `;
 
-    // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
+    // This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
     const compiled = new Function(
+      // NOSONAR typescript:S1523
       "context",
       "currentValues",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
@@ -134,11 +135,76 @@ const isImmediateCalloutField = (reference: string) => {
   return fieldEntry?.calloutTrigger === CALLOUT_TRIGGERS.ON_CHANGE;
 };
 
-const BaseSelectorComp = ({
-  field,
-  formMode = FormMode.EDIT,
-  forceReadOnly,
-}: { field: Field; formMode?: FormMode; forceReadOnly?: boolean }) => {
+// Build _gridVisibleProperties so that the FIC in CHANGE mode can identify
+// property fields and compute their values from DB when a related FK field
+// changes (e.g. selecting a new "file" populates the read-only "Type" field).
+// Classic always sends this list in callout payloads.
+const buildGridVisibleProperties = (tab: { fields: Record<string, Field> }) =>
+  Object.values(tab.fields)
+    .filter((f) => f.displayed && f.columnName)
+    .flatMap((f) => {
+      const propertyPath = f.column?.propertyPath;
+      if (propertyPath) {
+        return [f.columnName, propertyPath.replace(/\./g, "$")];
+      }
+      return [f.columnName];
+    });
+
+// Populate callout inputs from selector out-fields metadata.
+// For type "calloutInput": append the suffix to the field's inputName so the
+// backend callout receives the hidden input (e.g. inpmProductId_CURR).
+// For type "field": directly set the target form field value from the selected record.
+const applyOutFields = (
+  field: Field,
+  optionData: Record<string, unknown> | undefined,
+  calloutData: Record<string, any>,
+  setValue: (name: string, value: unknown, options?: { shouldDirty: boolean }) => void
+) => {
+  const outFields = field.selector?.outFields;
+  if (!outFields?.length || !optionData) return;
+
+  for (const outField of outFields) {
+    const rawValue = optionData[outField.selectorFieldProperty];
+    if (outField.type === "calloutInput" && outField.suffix) {
+      calloutData[`${field.inputName}${outField.suffix}`] = String(rawValue ?? "");
+    } else if (outField.type === "field" && outField.targetHqlName) {
+      const val = rawValue ?? "";
+      setValue(outField.targetHqlName, val, { shouldDirty: false });
+      const identifierKey = `${outField.selectorFieldProperty}$_identifier`;
+      if (optionData[identifierKey]) {
+        setValue(`${outField.targetHqlName}$_identifier`, optionData[identifierKey], { shouldDirty: false });
+      }
+    }
+  }
+};
+
+const COL_START_CLASS: Record<number, string> = {
+  1: "col-start-1",
+  2: "col-start-2",
+  3: "col-start-3",
+};
+const COL_SPAN_CLASS: Record<number, string> = {
+  1: "col-span-1",
+  2: "col-span-2",
+  3: "col-span-3",
+};
+const ROW_SPAN_CLASS: Record<number, string> = {
+  1: "row-span-1",
+  2: "row-span-2",
+  3: "row-span-3",
+  4: "row-span-4",
+  5: "row-span-5",
+  6: "row-span-6",
+};
+
+interface BaseSelectorProps {
+  field: Field;
+  formMode?: FormMode;
+  forceReadOnly?: boolean;
+  colStart?: number;
+}
+
+const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colStart }: BaseSelectorProps) => {
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
@@ -163,7 +229,7 @@ const BaseSelectorComp = ({
     );
   }, [tab.fields]);
   const { recordId } = useParams<{ recordId: string }>();
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const parentData = useFormParent();
 
   const getParentId = useCallback(() => {
@@ -232,7 +298,7 @@ const BaseSelectorComp = ({
         parentFields: parentTab?.fields,
         context: session,
       });
-      return compiledExpr(smartContext, smartContext);
+      return toClassicBoolean(compiledExpr(smartContext, smartContext));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
@@ -309,19 +375,7 @@ const BaseSelectorComp = ({
           payload[standardChangedColumn] = payload[field.inputName];
         }
 
-        // Build _gridVisibleProperties so that the FIC in CHANGE mode can identify
-        // property fields and compute their values from DB when a related FK field
-        // changes (e.g. selecting a new "file" populates the read-only "Type" field).
-        // Classic always sends this list in callout payloads.
-        const gridVisibleProperties = Object.values(tab.fields)
-          .filter((f) => f.displayed && f.columnName)
-          .flatMap((f) => {
-            const propertyPath = f.column?.propertyPath;
-            if (propertyPath) {
-              return [f.columnName, propertyPath.replace(/\./g, "$")];
-            }
-            return [f.columnName];
-          });
+        const gridVisibleProperties = buildGridVisibleProperties(tab);
 
         const calloutData = {
           ...session,
@@ -336,23 +390,7 @@ const BaseSelectorComp = ({
           _gridVisibleProperties: gridVisibleProperties,
         } as Record<string, any>;
 
-        //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
-        if (field.inputName === "inpmProductId" && optionData) {
-          // Pricing fields (for order/invoice windows)
-          calloutData.inpmProductId_CURR =
-            optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
-          calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
-          calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
-          calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
-          calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
-
-          // Inventory/warehouse fields (from ProductStockView data)
-          calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
-          calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
-          calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
-          calloutData.inpmProductId_PUOM = "";
-          calloutData.inpmProductId_PQTY = "";
-        }
+        applyOutFields(field, optionData, calloutData, setValue);
 
         const data = skipDebounce ? await executeCalloutBase(calloutData) : await debouncedCallout(calloutData);
 
@@ -381,8 +419,10 @@ const BaseSelectorComp = ({
       field.column.callout,
       field.inputName,
       field.hqlName,
+      field.selector,
       tab,
       getValues,
+      setValue,
       fieldsByHqlName,
       session,
       fieldsByColumnName,
@@ -494,7 +534,7 @@ const BaseSelectorComp = ({
   useEffect(() => {
     if (isFormInitializing || isSettingInitialValues) {
       previousValue.current = value;
-    } else if (isImmediateCalloutField(field.column.reference)) {
+    } else if (isImmediateCalloutField(field.column.reference ?? "")) {
       runCallout();
     }
   }, [isFormInitializing, isSettingInitialValues, value, field.column.reference, runCallout]);
@@ -509,13 +549,27 @@ const BaseSelectorComp = ({
 
   if (isDisplayed) {
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
+    const isMemo = field.column.reference === FIELD_REFERENCE_CODES.MEMO.id;
     const isImage = field.column.reference === FIELD_REFERENCE_CODES.IMAGE.id;
-    const isExpandedField = isTextLong || isImage;
-    const containerClasses = isExpandedField ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
+    const isRichText = field.column.reference === FIELD_REFERENCE_CODES.RICH_TEXT.id;
+    const isMultiSelector = field.column.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id;
+    const isExpandedField = isTextLong || isMemo || isImage || isRichText || isMultiSelector;
+    const rowspanFromMeta = field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : null;
+    const containerClasses = isExpandedField
+      ? `${rowspanFromMeta ?? "row-span-4"} flex items-start pt-2`
+      : "h-12 flex items-center";
+    const layoutClasses = [
+      colStart != null ? COL_START_CLASS[colStart] : undefined,
+      field.obuiappColspan != null ? COL_SPAN_CLASS[field.obuiappColspan] : undefined,
+      !isExpandedField && field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return (
       <div
-        className={`${containerClasses} title={field.helpComment || ''}`}
+        className={[containerClasses, layoutClasses].filter(Boolean).join(" ")}
+        title={field.helpComment || ""}
         aria-describedby={field.helpComment ? `${field.name}-help` : ""}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) {

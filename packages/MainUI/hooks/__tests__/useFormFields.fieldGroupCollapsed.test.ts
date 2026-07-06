@@ -61,73 +61,74 @@ const makeTab = (fields: Record<string, Field>): Tab =>
     entityName: "Entity",
   }) as unknown as Tab;
 
+const getGroup = (fields: Record<string, Field>, groupId = "group1") => {
+  const { result } = renderHook(() => useFormFields(makeTab(fields), "rec1", FormMode.EDIT));
+  return result.current.groups.find(([id]) => id === groupId);
+};
+
 describe("useFormFields — fieldGroupCollapsed threading", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("sets fieldGroupCollapsed to true on the group when the first field has fieldGroupCollapsed: true", () => {
-    const tab = makeTab({
-      field1: makeField({ hqlName: "field1", fieldGroupCollapsed: true }),
-    });
-
-    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
-
-    const group = result.current.groups.find(([id]) => id === "group1");
+  it.each([
+    { collapsed: true as boolean | undefined, expected: true },
+    { collapsed: false as boolean | undefined, expected: false },
+    { collapsed: undefined, expected: undefined },
+  ])("threads fieldGroupCollapsed=$collapsed to the group", ({ collapsed, expected }) => {
+    const group = getGroup({ field1: makeField({ hqlName: "field1", fieldGroupCollapsed: collapsed }) });
     expect(group).toBeDefined();
-    expect(group![1].fieldGroupCollapsed).toBe(true);
-  });
-
-  it("sets fieldGroupCollapsed to false on the group when the first field has fieldGroupCollapsed: false", () => {
-    const tab = makeTab({
-      field1: makeField({ hqlName: "field1", fieldGroupCollapsed: false }),
-    });
-
-    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
-
-    const group = result.current.groups.find(([id]) => id === "group1");
-    expect(group).toBeDefined();
-    expect(group![1].fieldGroupCollapsed).toBe(false);
-  });
-
-  it("leaves fieldGroupCollapsed undefined on the group when the field does not carry it", () => {
-    const tab = makeTab({
-      field1: makeField({ hqlName: "field1" }),
-    });
-
-    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
-
-    const group = result.current.groups.find(([id]) => id === "group1");
-    expect(group).toBeDefined();
-    expect(group![1].fieldGroupCollapsed).toBeUndefined();
+    expect(group![1].fieldGroupCollapsed).toBe(expected);
   });
 
   it("preserves fieldGroupCollapsed from the first field when multiple fields share the same group", () => {
-    const tab = makeTab({
+    const group = getGroup({
       field1: makeField({ hqlName: "field1", sequenceNumber: 10, fieldGroupCollapsed: true }),
       field2: makeField({ hqlName: "field2", sequenceNumber: 20, fieldGroupCollapsed: false }),
     });
-
-    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
-
     // The group is created on first encounter (field1), so collapsed = true
-    const group = result.current.groups.find(([id]) => id === "group1");
     expect(group).toBeDefined();
     expect(group![1].fieldGroupCollapsed).toBe(true);
   });
 
-  it("produces distinct groups for fields belonging to different fieldGroups, each with their own fieldGroupCollapsed", () => {
+  it("produces distinct groups with independent fieldGroupCollapsed values", () => {
     const tab = makeTab({
       field1: makeField({ hqlName: "field1", fieldGroup: "g1", fieldGroupCollapsed: true }),
       field2: makeField({ hqlName: "field2", fieldGroup: "g2", fieldGroupCollapsed: false }),
     });
-
     const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
-
     const g1 = result.current.groups.find(([id]) => id === "g1");
     const g2 = result.current.groups.find(([id]) => id === "g2");
 
     expect(g1![1].fieldGroupCollapsed).toBe(true);
     expect(g2![1].fieldGroupCollapsed).toBe(false);
+  });
+});
+
+describe("useFormFields — fieldGroupName as group identifier", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      label: "uses fieldGroupName when present",
+      overrides: { fieldGroupName: "Grupo Uno", fieldGroup$_identifier: "Group One" },
+      expected: "Grupo Uno",
+    },
+    {
+      label: "falls back to fieldGroup$_identifier when fieldGroupName is absent",
+      overrides: { fieldGroup$_identifier: "Group One" },
+      expected: "Group One",
+    },
+    {
+      label: "falls back to fieldGroup$_identifier when fieldGroupName is empty",
+      overrides: { fieldGroupName: "", fieldGroup$_identifier: "Group One" },
+      expected: "Group One",
+    },
+  ])("$label", ({ overrides, expected }) => {
+    const group = getGroup({ field1: makeField({ hqlName: "field1", fieldGroup: "group1", ...overrides }) });
+    expect(group).toBeDefined();
+    expect(group![1].identifier).toBe(expected);
   });
 });

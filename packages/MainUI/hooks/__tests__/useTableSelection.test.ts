@@ -20,11 +20,15 @@ import { renderHook } from "@testing-library/react";
 import useTableSelection from "../useTableSelection";
 import { useSelected } from "@/hooks/useSelected";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 // Mocks
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
-jest.mock("@/contexts/window");
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "win_1"),
+  useCurrentWindowId: jest.fn(() => "win1"),
+}));
 jest.mock("@/utils/logger");
 jest.mock("@/utils/structures", () => ({
   mapBy: jest.fn((arr, key) => {
@@ -60,11 +64,20 @@ describe("useTableSelection", () => {
       setSession: jest.fn(),
       setSessionSyncLoading: jest.fn(),
     });
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowId: "win1", windowIdentifier: "win_1" },
+    useWindowStore.setState({
+      windows: {
+        win_1: {
+          windowId: "win1",
+          windowIdentifier: "win_1",
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
       setSelectedRecord: mockSetSelectedRecord,
       clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: mockGetSelectedRecord,
     });
   });
 
@@ -90,12 +103,22 @@ describe("useTableSelection", () => {
   });
 
   it("should do nothing if window is inactive", () => {
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowId: "win-different", windowIdentifier: "diff" },
+    useWindowStore.setState({
+      windows: {
+        diff: {
+          windowId: "win-different",
+          windowIdentifier: "diff",
+          isActive: true,
+          initialized: true,
+          title: "",
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          tabs: {},
+        },
+      },
       setSelectedRecord: mockSetSelectedRecord,
       clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: mockGetSelectedRecord,
     });
+    (useCurrentWindowId as jest.Mock).mockReturnValue("win-different");
 
     const rowSelection = { r1: true };
     renderHook(() => useTableSelection(mockTab, mockRecords, rowSelection));

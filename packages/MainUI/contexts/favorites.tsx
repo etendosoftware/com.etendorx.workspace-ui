@@ -17,130 +17,45 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
-import { toggleFavorite as toggleFavoriteApi, fetchFavorites } from "@workspaceui/api-client/src/api/dashboard";
-import type { FavoriteItem } from "@workspaceui/api-client/src/api/dashboard";
-import { logger } from "@/utils/logger";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useCallback, useEffect } from "react";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useUserStore } from "@/stores/userStore";
 
-interface FavoritesContextType {
-  isFavorite: (windowId: string) => boolean;
-  toggle: (menuId: string, windowId?: string) => Promise<void>;
-  /**
-   * Fallback seed: called by FavoritesRenderer if the GET /favorites endpoint
-   * is not yet available. Seeds only once and only if no fetch succeeded.
-   */
-  seed: (items: FavoriteItem[]) => void;
-  /** Register the windowId→menuId map built from the menu tree (for breadcrumb lookup). */
-  setMenuMap: (map: Map<string, string>) => void;
-  menuIdByWindowId: Map<string, string>;
-  /**
-   * Subscribe a callback that fires after each successful toggle.
-   * Returns an unsubscribe function.
-   */
-  subscribeToToggle: (fn: () => void) => () => void;
-}
-
-export const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
-
+/**
+ * Triggers a role-scoped re-fetch of favorites whenever the current role changes.
+ * State lives in Zustand — this provider only handles the role-change side-effect.
+ */
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { currentRole } = useUserContext();
+  const currentRole = useUserStore((s) => s.currentRole);
   const roleId = currentRole?.id;
 
-  const [favoriteWindowIds, setFavoriteWindowIds] = useState<Set<string>>(new Set());
-  const [menuIdByWindowId, setMenuIdByWindowIdState] = useState<Map<string, string>>(new Map());
-
-  // Track whether state was seeded from an authoritative source (fetch or seed)
-  // to avoid the fallback seed overwriting a successful fetch.
-  const seededRef = useRef(false);
-
-  // Listeners notified after each successful toggle (used by Home to refresh the widget).
-  const toggleListenersRef = useRef<Set<() => void>>(new Set());
-
-  // Re-fetch from GET /meta/favorites whenever the role changes so the sidebar
-  // star state stays in sync with the role-scoped backend response.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: roleId is a hook-derived value, not a static outer-scope reference
   useEffect(() => {
-    seededRef.current = false;
-    setFavoriteWindowIds(new Set());
-    fetchFavorites()
-      .then((data) => {
-        seededRef.current = true;
-        setFavoriteWindowIds(new Set(data.items.map((i) => i.windowId)));
-      })
-      .catch((err) => {
-        // Endpoint may not exist yet — fall back to seeding from widget data.
-        logger.warn("[FavoritesContext] GET /favorites not available, will seed from widget:", err);
-      });
+    useFavoritesStore.getState().resetForRole();
+    useFavoritesStore.getState().fetchForRole();
   }, [roleId]);
 
-  const isFavorite = useCallback((windowId: string) => favoriteWindowIds.has(windowId), [favoriteWindowIds]);
-
-  const subscribeToToggle = useCallback((fn: () => void) => {
-    toggleListenersRef.current.add(fn);
-    return () => {
-      toggleListenersRef.current.delete(fn);
-    };
-  }, []);
-
-  const toggle = useCallback(async (menuId: string, windowId?: string) => {
-    // Optimistic update
-    if (windowId) {
-      setFavoriteWindowIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(windowId)) next.delete(windowId);
-        else next.add(windowId);
-        return next;
-      });
-    }
-
-    try {
-      const result = await toggleFavoriteApi(menuId);
-      // Confirm the server's authoritative action
-      if (windowId) {
-        setFavoriteWindowIds((prev) => {
-          const next = new Set(prev);
-          if (result.action === "removed") next.delete(windowId);
-          else next.add(windowId);
-          return next;
-        });
-      }
-      // Notify subscribers (e.g. Home refreshes the FAVORITES widget)
-      for (const fn of toggleListenersRef.current) fn();
-    } catch (err) {
-      logger.warn("[FavoritesContext] Failed to toggle favorite:", err);
-      // Revert optimistic update
-      if (windowId) {
-        setFavoriteWindowIds((prev) => {
-          const next = new Set(prev);
-          if (next.has(windowId)) next.delete(windowId);
-          else next.add(windowId);
-          return next;
-        });
-      }
-    }
-  }, []);
-
-  const seed = useCallback((items: FavoriteItem[]) => {
-    if (seededRef.current) return;
-    seededRef.current = true;
-    setFavoriteWindowIds(new Set(items.map((i) => i.windowId)));
-  }, []);
-
-  const setMenuMap = useCallback((map: Map<string, string>) => {
-    setMenuIdByWindowIdState(map);
-  }, []);
-
-  const contextValue = useMemo(
-    () => ({ isFavorite, toggle, seed, setMenuMap, menuIdByWindowId, subscribeToToggle }),
-    [isFavorite, toggle, seed, setMenuMap, menuIdByWindowId, subscribeToToggle]
-  );
-
-  return <FavoritesContext.Provider value={contextValue}>{children}</FavoritesContext.Provider>;
+  return <>{children}</>;
 }
 
-export function useFavoritesContext(): FavoritesContextType {
-  const ctx = useContext(FavoritesContext);
-  if (!ctx) throw new Error("useFavoritesContext must be used within FavoritesProvider");
-  return ctx;
+/**
+ * Backward-compatible hook — new code should import from @/stores/favoritesStore.
+ *
+ * Reconstructs the original API shape including a reactive `isFavorite` callback
+ * that changes reference when favorites change, preserving existing render behavior.
+ */
+export function useFavoritesContext() {
+  const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
+  const toggle = useFavoritesStore((s) => s.toggle);
+  const seed = useFavoritesStore((s) => s.seed);
+  const setMenuMap = useFavoritesStore((s) => s.setMenuMap);
+  const menuIdByWindowId = useFavoritesStore((s) => s.menuIdByWindowId);
+  const subscribeToToggle = useFavoritesStore((s) => s.subscribeToToggle);
+
+  // Reactive: changes reference when favoriteWindowIds changes so that consumers
+  // downstream (e.g. FavoritesDrawerContext) re-render after a toggle.
+  const isFavorite = useCallback((windowId: string) => favoriteWindowIds.has(windowId), [favoriteWindowIds]);
+
+  return { isFavorite, toggle, seed, setMenuMap, menuIdByWindowId, subscribeToToggle };
 }

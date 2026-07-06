@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import type React from "react";
+import { useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Modal from "../../Modal";
 import Button from "../../../../ComponentLibrary/src/components/Button/Button";

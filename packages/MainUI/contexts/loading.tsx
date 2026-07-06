@@ -17,45 +17,18 @@
 
 "use client";
 
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { useLoadingStore } from "@/stores/loadingStore";
 
-type LoadingContextType = {
-  isLoading: boolean;
-  showLoading: () => void;
-  hideLoading: () => void;
-};
+// Re-export for backward compatibility during migration.
+// New code should import directly from @/stores/loadingStore.
+export const useLoading = () => ({
+  isLoading: useLoadingStore((s) => s.isLoading),
+  showLoading: useLoadingStore((s) => s.showLoading),
+  hideLoading: useLoadingStore((s) => s.hideLoading),
+});
 
-const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
-
-export default function LoadingProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const showLoading = useCallback(() => {
-    setIsLoading(true);
-  }, []);
-
-  const hideLoading = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
-  const value = useMemo<LoadingContextType>(
-    () => ({ isLoading, showLoading, hideLoading }),
-    [isLoading, showLoading, hideLoading]
-  );
-
-  return <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>;
+// LoadingProvider is now a no-op wrapper — Zustand does not need providers.
+// Kept here so layout.tsx does not require changes in this phase.
+export default function LoadingProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
-
-export const useLoading = (): LoadingContextType => {
-  const context = useContext(LoadingContext);
-
-  if (context === undefined) {
-    throw new Error("useLoading must be used within a LoadingProvider");
-  }
-
-  return context;
-};

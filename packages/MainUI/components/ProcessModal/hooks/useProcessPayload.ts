@@ -25,11 +25,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import {
-  PROCESS_DEFINITION_DATA,
-  WINDOW_SPECIFIC_KEYS,
-  ADD_PAYMENT_ORDER_PROCESS_ID,
-} from "@/utils/processes/definition/constants";
+import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { GridSelectionStructure } from "../ProcessDefinitionModal";
 
@@ -121,7 +117,6 @@ export function useProcessPayload({
   gridSelection,
   record,
   recordValues,
-  processId,
   selectedRecords,
 }: UseProcessPayloadParams): UseProcessPayloadReturn {
   const getMappedFormValues = useCallback(() => {
@@ -183,12 +178,6 @@ export function useProcessPayload({
   const getMergedProcessValues = useCallback(
     (extraValues: Record<string, any> = {}) => {
       const populatedGrids = getPopulatedGrids();
-      const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
-
-      if (isAddPayment) {
-        return mapKeysWithDefaults({ ...form.getValues(), ...populatedGrids });
-      }
-
       const formValues = getMappedFormValues();
       resolveDocAction(formValues);
 
@@ -198,7 +187,7 @@ export function useProcessPayload({
         ...populatedGrids,
       });
     },
-    [processId, form, getPopulatedGrids, getMappedFormValues, resolveDocAction]
+    [getPopulatedGrids, getMappedFormValues, resolveDocAction]
   );
 
   const buildProcessSpecificFields = useCallback(

@@ -30,6 +30,7 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   breadcrumbsSize,
   handleActionMenuOpen,
   handleHomeNavigation,
+  onBackClick,
 }) => {
   const theme = useTheme();
   const { sx } = useStyle();
@@ -40,13 +41,17 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (onBackClick) {
+        onBackClick();
+        return;
+      }
       if (breadcrumbsSize > 1 && item?.onClick) {
         item.onClick();
         return;
       }
       handleHomeNavigation();
     },
-    [handleHomeNavigation, breadcrumbsSize, item]
+    [onBackClick, handleHomeNavigation, breadcrumbsSize, item]
   );
 
   return (
@@ -65,10 +70,17 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
         <>
           <Typography
             noWrap
-            sx={sx.lastItemTypography}
+            sx={{
+              ...sx.lastItemTypography,
+              ...(item.onClick || (item.actions && item.actions.length > 0)
+                ? { cursor: "pointer", "&:hover": { textDecoration: "underline" } }
+                : {}),
+            }}
             onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
               if (item.actions && item.actions.length > 0) {
                 handleActionMenuOpen(e, item.actions);
+              } else if (item.onClick) {
+                item.onClick();
               }
             }}>
             {item.label}
