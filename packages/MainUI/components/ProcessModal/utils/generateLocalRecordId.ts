@@ -25,14 +25,14 @@ export const generateLocalRecordId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID().replace(/-/g, "").toUpperCase();
   }
-  // NOSONAR: Math.random() is only a fallback for environments without Web Crypto
+  // Math.random() is only a fallback for environments without Web Crypto
   // (the crypto.randomUUID branch above is preferred and always used when available).
   // The id it produces is a local-only, ephemeral key for an unsaved grid row — never
   // a security token, session id, or anything else where predictability/collision matters.
   // It is discarded and replaced by the real database-generated id once the record is saved.
   return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
     .replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
+      const r = (Math.random() * 16) | 0; // NOSONAR typescript:S2245
       const v = c === "x" ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     })

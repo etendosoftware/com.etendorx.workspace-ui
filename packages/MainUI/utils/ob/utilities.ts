@@ -40,6 +40,21 @@ function buildCharacterPool(
 }
 
 /**
+ * Picks `count` indices in `[0, max)` using a CSPRNG when available. This is exposed to
+ * Application Dictionary scripts as `OB.Utilities.generateRandomString`, and callers may
+ * use it for anything from display codes to temporary passwords, so it must not rely on
+ * a statistically predictable source of randomness.
+ */
+function randomIndices(count: number, max: number): number[] {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const buffer = new Uint32Array(count);
+    crypto.getRandomValues(buffer);
+    return Array.from(buffer, (v) => v % max);
+  }
+  return Array.from({ length: count }, () => Math.floor(Math.random() * max)); // NOSONAR typescript:S2245
+}
+
+/**
  * Direct port of classic `OB.Utilities.generateRandomString`. Generates a
  * pseudo-random string of `stringLength` characters from the selected pools.
  * Returns an empty string when no pool is enabled.
@@ -56,10 +71,7 @@ export function generateRandomString(
   if (chars === "") {
     return "";
   }
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    const index = Math.floor(Math.random() * chars.length);
-    result += chars.charAt(index);
-  }
-  return result;
+  return randomIndices(length, chars.length)
+    .map((index) => chars.charAt(index))
+    .join("");
 }
