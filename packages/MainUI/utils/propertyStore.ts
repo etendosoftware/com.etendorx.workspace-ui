@@ -68,27 +68,17 @@ export function getStoredPreferences(): Record<string, any> {
 }
 
 /**
- * Creates an OB shim object compatible with legacy Openbravo/Etendo expressions.
- * Provides `OB.PropertyStore.get(key)` so that onLoad, onProcess and PayScript
- * scripts can read preferences using the same API as the classic UI.
+ * Merges a single preference key into the stored preferences, preserving the
+ * rest. Backing for the `OB.PropertyStore.set(key, value)` shim.
  *
- * @example
- * // Inside an onLoad or onProcess script (injected via executeStringFunction context):
- * const showUOM = OB.PropertyStore.get('UomManagement') === 'Y';
+ * @param key - Preference key to write
+ * @param value - Value to store (coerced to its JSON representation)
  */
-export function createOBShim(): Record<string, unknown> {
-  return {
-    PropertyStore: {
-      get: (key: string): string | undefined => {
-        const prefs = getStoredPreferences();
-        if (prefs[key] !== undefined) return String(prefs[key]);
-        // Case-insensitive fallback
-        const lowerKey = key.toLowerCase();
-        for (const k of Object.keys(prefs)) {
-          if (k.toLowerCase() === lowerKey) return String(prefs[k]);
-        }
-        return undefined;
-      },
-    },
-  };
+export function setStoredPreference(key: string, value: unknown) {
+  const prefs = getStoredPreferences();
+  prefs[key] = value;
+  savePreferences(prefs);
 }
+
+// NOTE: `createOBShim` (the full OB.* shim) now lives in `utils/ob/obShim.ts`.
+// Import it from there directly.

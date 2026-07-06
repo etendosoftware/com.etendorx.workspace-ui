@@ -27,7 +27,7 @@ import {
 import { useCallback, useMemo, useReducer, useEffect, useRef } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useCurrentRecord } from "./useCurrentRecord";
 import {
   buildFormInitializationPayload,
@@ -36,6 +36,7 @@ import {
   buildSessionAttributes,
   mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
+import { clearRecordContextFromSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
 /**
@@ -56,7 +57,7 @@ const initialState: State = {
  * @returns Updated state based on the action type
  *
  */
-const reducer = (state: State, action: Action): State => {
+export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FETCH_START":
       return { loading: true, error: null, formInitialization: null };
@@ -64,6 +65,8 @@ const reducer = (state: State, action: Action): State => {
       return { loading: false, error: null, formInitialization: action.payload };
     case "FETCH_ERROR":
       return { loading: false, error: action.payload, formInitialization: state.formInitialization };
+    case "CLEAR":
+      return { loading: false, error: null, formInitialization: null };
     default:
       return state;
   }
@@ -96,7 +99,8 @@ export type useFormInitialization = State & {
  *
  */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
-  const { setSession, setSessionSyncLoading } = useUserContext();
+  const setSession = useUserStore((s) => s.setSession);
+  const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { error, formInitialization, loading } = state;
@@ -147,12 +151,20 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
 
       const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn, record);
 
+      // When creating a new record on a root tab, first wipe the record-scoped context left
+      // in the server session by a previously selected/booked record. Otherwise stale values
+      // (e.g. C_BPartner_ID) leak into SQL defaults of sibling columns and trigger callouts
+      // that the empty request cannot satisfy (NPE in OrderBankAccountAssigner).
+      const isRootTabCall = params.get("PARENT_ID") === "null";
+      if (mode === FormMode.NEW && isRootTabCall) {
+        await clearRecordContextFromSession({ tab, parentId });
+      }
+
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-      const isRootTabCall = params.get("PARENT_ID") === "null";
       setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes, isRootTabCall));
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
@@ -165,7 +177,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     } finally {
       setSessionSyncLoading(false);
     }
-  }, [params, parentData, setSession, setSessionSyncLoading, tab, mode, record]);
+  }, [params, parentData, parentId, setSession, setSessionSyncLoading, tab, mode, record]);
 
   /**
    * Finds the primary key column field in the tab's field configuration
@@ -240,6 +252,14 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     // Wait for record to finish loading before initializing form
     // This ensures audit fields are available when enrichWithAuditFields is called
     if (params && !recordLoading) {
+      // Guard: avoid FIC call when EDIT mode hasn't resolved a recordId yet (race condition
+      // where the table auto-selects the first record after this effect fires).
+      // Dispatch CLEAR so loading stays false instead of hanging at true indefinitely.
+      if (mode === FormMode.EDIT && !recordId) {
+        dispatch({ type: "CLEAR" });
+        return;
+      }
+
       // Create unique key for current params to track if we already fetched with these
       // Use params.toString() instead of JSON.stringify because URLSearchParams serializes to {}
       const paramsKey = params.toString();

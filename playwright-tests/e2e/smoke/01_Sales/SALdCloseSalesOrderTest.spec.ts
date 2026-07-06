@@ -34,8 +34,9 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
       .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
       .evaluate((el) => (el as HTMLElement).click());
     await page
-      .locator('nav[aria-label="breadcrumb"]')
+      .locator('nav[aria-label="breadcrumb"]:visible')
       .getByText(/Sales Order/i)
+      .first()
       .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────
@@ -91,8 +92,8 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await closeToastIfPresent(page);
 
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
-    await page.locator(".rounded-2xl > :nth-child(1)").click();
+    await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible').first().click();
+    await page.locator(".rounded-2xl > :nth-child(1):visible").click();
     await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
       timeout: 10_000,
     });
@@ -108,11 +109,11 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
 
     // ── Step 6: Close the Order ───────────────────────────────────────────────
     // We are already on the booked record — no need to navigate away and re-find it.
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').first().click();
+    await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible > span').first().click();
 
     // Use text matching instead of positional :nth-child — "Close" is not always the first item
     await page
-      .locator(".rounded-2xl div")
+      .locator(".rounded-2xl div:visible")
       .filter({ hasText: /^Close$/ })
       .first()
       .click();

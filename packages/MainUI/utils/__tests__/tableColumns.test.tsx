@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { parseColumns } from "../tableColumns";
+import { render, screen } from "@testing-library/react";
+import { parseColumns, renderTextCell } from "../tableColumns";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
@@ -347,6 +348,25 @@ describe("tableColumns", () => {
         // Should not throw
         expect(() => parseColumns([{} as Field])).not.toThrow();
       });
+    });
+  });
+
+  describe("renderTextCell", () => {
+    it("should render the value in a span with truncate class", () => {
+      const result = renderTextCell("A very long text that should be truncated");
+      render(<div>{result}</div>);
+      const span = screen.getByText("A very long text that should be truncated");
+      expect(span).toBeInTheDocument();
+      expect(span.className).toContain("truncate");
+    });
+
+    it("should return empty string for null/undefined", () => {
+      expect(renderTextCell(null)).toBe("");
+      expect(renderTextCell(undefined)).toBe("");
+    });
+
+    it("should handle empty string", () => {
+      expect(renderTextCell("")).toBe("");
     });
   });
 });

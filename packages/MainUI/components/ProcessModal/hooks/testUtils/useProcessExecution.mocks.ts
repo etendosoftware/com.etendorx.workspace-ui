@@ -47,10 +47,6 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: { kernelClient: { post: jest.fn() } },
 }));
 
-jest.mock("@/utils/propertyStore", () => ({
-  createOBShim: jest.fn(() => ({})),
-}));
-
 jest.mock("@/utils/process/gridNormalization", () => ({
   normalizeGridValues: jest.fn((v: unknown) => v),
 }));
@@ -59,6 +55,6 @@ jest.mock("@/app/actions/process", () => ({}));
 jest.mock("@/app/actions/revalidate", () => ({
   revalidateDopoProcess: jest.fn(),
 }));
-jest.mock("sonner", () => ({ toast: jest.fn() }));
+jest.mock("sonner", () => ({ toast: { success: jest.fn(), warning: jest.fn() } }));
 
 export {};

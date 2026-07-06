@@ -223,7 +223,9 @@ describe("useFormInitialState", () => {
         columnValues: { IsActive: { value: "N" } },
       } as any;
       const { result } = renderHook(() => useFormInitialState(formInit));
-      expect(result.current?.active).toBe("N");
+      // "N" is the Classic representation of false for YES_NO fields and must be
+      // converted to a proper boolean so BooleanSelector doesn't treat it as truthy.
+      expect(result.current?.active).toBe(false);
     });
 
     it("does not apply @SQL= or @ColumnName@ patterns as static defaults", () => {

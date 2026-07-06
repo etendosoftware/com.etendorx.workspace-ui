@@ -99,7 +99,50 @@ export const FIELD_REFERENCE_CODES = {
 
   // Upload File reference (for process parameters)
   UPLOAD_FILE: { id: "715C53D4FEA74B28B74F14AE65BC5C16", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // SelectorAsLink — renders as a navigable link in labels (OBUISEL_SelectorAsLink Reference)
+  SELECTOR_AS_LINK: { id: "80B1630792EA46F298A3FBF81E77EF9C", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Rich Text Area — HTML WYSIWYG editor
+  RICH_TEXT: { id: "7CB371C13D204EB69BF370217F692999", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Multi-record selector (OBUISEL_Multi Selector Reference)
+  MULTI_SELECTOR: { id: "87E6CFF8F71548AFA33F181C317970B5", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Memo — large text area (same rendering as Text)
+  MEMO: { id: "34", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Link — URL field, renders as clickable hyperlink in read-only
+  LINK: { id: "800101", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+
+  // Assignment — resource assignment FK (ref 33 in Classic).
+  // Uses TableDirDomainType in Classic; mapped to TableDirSelector.
+  ASSIGNMENT: { id: "33", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Tree Reference — hierarchical FK selector (e.g. Characteristic Values)
+  TREE_REFERENCE: { id: "8C57A4A2E05F4261A1FADF47C30398AD", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
+  // Product Characteristics — always read-only concatenated description
+  PRODUCT_CHARACTERISTICS: { id: "C632F1CFF5A1453EB28BDF44A70478F8", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 } as const;
+
+/**
+ * Reference ids whose values are numeric (Integer / Number / Quantity / Decimal).
+ * Single source of truth shared by every numeric-detection predicate so the list
+ * is never duplicated.
+ */
+const NUMERIC_REFERENCE_IDS: readonly string[] = [
+  FIELD_REFERENCE_CODES.INTEGER.id,
+  FIELD_REFERENCE_CODES.NUMERIC.id,
+  FIELD_REFERENCE_CODES.QUANTITY_22.id,
+  FIELD_REFERENCE_CODES.QUANTITY_29.id,
+  FIELD_REFERENCE_CODES.DECIMAL.id,
+];
+
+/** True when the given reference id denotes a numeric field (Integer / Number / Quantity / Decimal). */
+export function isNumericReference(reference?: string): boolean {
+  return !!reference && NUMERIC_REFERENCE_IDS.includes(reference);
+}
 
 /**
  * Known product selector reference IDs from Etendo Classic.
@@ -156,7 +199,9 @@ export const getPasswordFieldNames = (tab?: Tab): Set<string> => {
   if (!tab?.fields) return passwordFields;
 
   for (const field of Object.values(tab.fields)) {
-    if (field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD.id && field.hqlName) {
+    const isPasswordRef = field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD.id;
+    const isEncrypted = field.column?.displayEncription === true;
+    if ((isPasswordRef || isEncrypted) && field.hqlName) {
       passwordFields.add(field.hqlName);
     }
   }
@@ -185,5 +230,8 @@ export const shouldExcludePasswordField = (
 ): boolean => {
   if (isNewRecord) return false;
   if (!passwordFields.has(fieldName)) return false;
-  return value === PASSWORD_PLACEHOLDER;
+  // In edit mode, treat the "***" placeholder AND empty/null values as "no change".
+  // Clearing a password field is equivalent to leaving it unchanged — the backend
+  // should not receive an empty string for an encrypted or hashed column.
+  return value === PASSWORD_PLACEHOLDER || value === "" || value === null || value === undefined;
 };

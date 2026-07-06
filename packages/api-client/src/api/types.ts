@@ -78,6 +78,21 @@ export interface DatasourceOptions {
 export interface ProcessAction extends Record<string, unknown> {
   id: string;
   name: string;
+  /** Relative path to the Classic action page (e.g. "/SalesOrder/Header_Edition.html"). Resolved by the backend. */
+  url?: string;
+  /** Value for the Classic Command parameter (e.g. "BUTTONDocAction104", "DEFAULT"). Resolved by the backend. */
+  command?: string;
+  /** DB column name of the table primary key (e.g. "C_Order_ID"). Resolved by the backend. */
+  keyColumnName?: string;
+  /** Input parameter name for the record ID in the Classic request (same as keyColumnName). Resolved by the backend. */
+  inpkeyColumnId?: string;
+  /**
+   * Additional `inp{...}` parameters to send with the legacy request. Values may be literals
+   * or placeholders (`$recordId`, `$windowId`, `$tabId`, `$tableId`, `$record.<DBColumnName>`).
+   * The backend derives one entry per active column of the tab's table, mirroring the hidden
+   * inputs the Classic form would have submitted.
+   */
+  additionalParameters?: Record<string, string>;
 }
 
 export interface GridProps {
@@ -123,6 +138,81 @@ export interface SelectorColumn {
   [key: string]: unknown;
 }
 
+export interface SelectorOutField {
+  type: "field" | "calloutInput";
+  selectorFieldProperty: string;
+  targetColumnName?: string | null;
+  targetHqlName?: string | null;
+  suffix?: string | null;
+}
+
+export interface ADColumn {
+  $ref?: string;
+  _entityName?: string;
+  _identifier?: string;
+  id?: string;
+  active?: boolean;
+  client?: string;
+  organization?: string;
+  module?: string;
+  recordTime?: number;
+  dBColumnName?: string;
+  name?: string;
+  description?: string;
+  helpComment?: string;
+  table?: string;
+  table$_identifier?: string;
+  sequenceNumber?: number;
+  position?: number;
+  length?: number;
+  reference?: string;
+  reference$_identifier?: string;
+  referenceSearchKey?: string | null;
+  referenceSearchKey$_identifier?: string;
+  mandatory?: boolean;
+  updatable?: boolean;
+  keyColumn?: boolean;
+  identifier?: boolean;
+  secondaryKey?: boolean;
+  translation?: boolean;
+  transient?: boolean;
+  transientCondition?: string | null;
+  allowFiltering?: boolean;
+  allowSorting?: boolean;
+  allowedCrossOrganizationReference?: boolean;
+  filterColumn?: boolean;
+  linkToParentColumn?: boolean;
+  childPropertyInParentEntity?: boolean;
+  storedInSession?: boolean;
+  excludeAudit?: boolean;
+  isautosave?: boolean;
+  displayEncription?: boolean;
+  deencryptable?: boolean;
+  defaultValue?: string | null;
+  valueFormat?: string | null;
+  maxValue?: string | null;
+  minValue?: string | null;
+  sqllogic?: string | null;
+  readOnlyLogic?: string | null;
+  validation?: string | null;
+  callout?: string | null;
+  calloutFunction?: string | null;
+  imageHeight?: number | null;
+  imageWidth?: number | null;
+  imageSizeValuesAction?: string;
+  developmentStatus?: string;
+  entityAlias?: string | null;
+  useAutomaticSequence?: boolean;
+  validateOnNew?: boolean;
+  process?: string | null;
+  oBUIAPPProcess?: string | null;
+  oBUIAPPProcess$_identifier?: string;
+  applicationElement?: string;
+  applicationElement$_identifier?: string;
+  propertyPath?: string;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -133,11 +223,31 @@ export interface Field {
   tab: string;
   displayed: boolean;
   startnewline: boolean;
+  startinoddcolumn: boolean;
+  displayOnSameLine: boolean;
+  obuiappColspan: number | null;
+  obuiappRowspan: number | null;
+  displayEncription?: boolean;
+  readOnly?: boolean;
+  displayFieldOnly?: boolean;
+  displayedLength?: number;
+  isFirstFocusedField?: boolean;
+  ignoreInWad?: boolean;
+  recordSortNo?: number | null;
+  obuiappDefaultExpression?: string | null;
+  obuiappSummaryfn?: string | null;
+  obuiappValidator?: string | null;
+  oBUIAPPShowSummary?: boolean;
+  obuiselOutfield?: string | null;
+  onChangeFunction?: string | null;
+  etrxFilterClause?: string | null;
+  displayLogic?: string | null;
+  displaylogicgrid?: string | null;
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
   isMandatory: boolean;
-  column: Record<string, string>;
+  column: ADColumn;
   name: string;
   id: string;
   module: string;
@@ -151,6 +261,7 @@ export interface Field {
     hasTableRelated?: boolean;
     hasProcessDefinitionRelated?: boolean;
     gridColumns?: SelectorColumn[];
+    outFields?: SelectorOutField[];
     [key: string]: unknown;
   };
   refList: RefListField[];
@@ -158,6 +269,7 @@ export interface Field {
   referencedWindowId: string;
   referencedTabId: string;
   displayLogicExpression?: string;
+  gridDisplayLogicExpression?: string;
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;
@@ -200,6 +312,17 @@ export interface Field {
    * When false or undefined, the field group starts expanded.
    */
   fieldGroupCollapsed?: boolean;
+  /**
+   * Translated display name of the field group in the user's current language.
+   * Falls back to the base-language name when no translation exists.
+   * Takes precedence over fieldGroup$_identifier for group header rendering.
+   */
+  fieldGroupName?: string;
+  /**
+   * When true, this column is marked as ISSELECTIONCOLUMN=Y in AD_COLUMN.
+   * The grid toolbar renders a default quick-filter input for these columns.
+   */
+  isSelectionColumn?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -243,6 +366,11 @@ export interface Column {
    * When set, the column should be rendered as a navigable link in the grid.
    */
   clientclass?: string | null;
+  /**
+   * When true, this column is marked ISSELECTIONCOLUMN=Y and should be shown
+   * as a default quick-filter input in the grid toolbar.
+   */
+  isSelectionColumn?: boolean;
 }
 
 export interface MappedField {
@@ -312,6 +440,7 @@ export enum UIPattern {
   EDIT_ONLY = "SR",
   EDIT_AND_DELETE_ONLY = "ED",
   STANDARD = "STD",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface AuxiliaryInput {
@@ -336,6 +465,7 @@ export interface Tab {
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;
+  filterName?: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
   hqlorderbyclause?: string;
@@ -345,8 +475,34 @@ export interface Tab {
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;
+  hasTree?: boolean;
+  tableId?: string;
+  tableTreeId?: string;
+  isReadOnlyTree?: boolean;
+  showTreeNodeIcons?: boolean;
+  hqlWhereClauseForRootNodes?: string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_ADD. When true, the P&E grid for this tab shows
+   * an "Add row" button that opens an inline-editable new row (same rule as the
+   * classic UI in OBViewTab#isAllowAdd()).
+   */
+  obuiappCanAdd?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_CAN_DELETE. When true, the P&E grid shows a
+   * per-row trash icon that removes the row from the local grid buffer
+   * (no backend call) — matches classic UI behavior for tabs like APRM GL Items.
+   */
+  obuiappCanDelete?: boolean;
+  /**
+   * Mirrors AD_Tab.EM_OBUIAPP_SHOW_SELECT. When false, the grid hides the
+   * row-selection checkbox column (e.g. GL Items, where the backend reads
+   * `_allRows` and selection has no semantic meaning).
+   */
+  obuiappShowSelect?: boolean;
+  /** "M" = multiple (default), "S" = single, "N" = none */
+  obuiappSelectionType?: "M" | "S" | "N" | null;
   process?: string;
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
@@ -378,6 +534,7 @@ export interface Menu {
   id: string;
   name: string;
   windowId?: string;
+  windowType?: `${WindowType}`;
   recordId?: string;
   tableId?: string;
   window?: Window | null;
@@ -419,6 +576,7 @@ export enum WindowType {
   M = "M",
   Q = "Q",
   T = "T",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface LoginResponse {
@@ -883,6 +1041,26 @@ export type ProcessParameter = {
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;
+  /**
+   * When true, the field group (subsection) starts collapsed in the process modal.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
+  // Parameter-level hook bodies migrated from the classic OBUIAPP_Parameter
+  // columns (em_etmeta_on_parameter_change / em_etmeta_on_grid_load). Both are
+  // nullable in the DB and emitted as JSON null when unset. onParameterChange
+  // binds to the parameter's value-change event; onGridLoad binds to an embedded
+  // grid parameter's data-arrived event.
+  etmetaOnParameterChange?: string | null;
+  etmetaOnGridLoad?: string | null;
+  /** Sequence number from AD_PROCESS_PARA.seqno — used for ordering the parameter popup fields. */
+  sequenceNumber?: number;
+  /** DB column name from AD_PROCESS_PARA.dbcolumnname. */
+  dBColumnName: string;
+  /** Field group ID from AD_Fieldgroup_ID — used for visual grouping of parameters. */
+  fieldGroup?: string;
+  /** Field group display name. */
+  fieldGroup$_identifier?: string;
 } & Record<string, string>;
 
 export interface SelectorInfo extends Record<string, unknown> {
@@ -895,10 +1073,37 @@ export type ProcessParameters = Record<string, ProcessParameter>;
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
+  description?: string;
+  /** Process Help text (AD_Process.Help / OBUIAPP_Process help). Report and
+   *  Process popups display this instead of `description`, mirroring classic. */
+  helpComment?: string;
   javaClassName: string;
   parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
+  // Lifecycle hook bodies migrated from the classic OBUIAPP_Process columns
+  // (em_etmeta_onload / em_etmeta_onprocess / em_etmeta_on_refresh) plus the
+  // shared module body (em_etmeta_payscript_logic). All four are nullable in
+  // the DB and emitted as JSON null when unset.
+  etmetaOnload: string | null;
+  etmetaOnprocess: string | null;
+  etmetaOnRefresh: string | null;
+  etmetaPayscriptLogic: string | null;
+  /** Whether the process renders its own custom UI component (built from the
+   *  schema returned by its onLoad) instead of the standard parameter form. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  etmetaCustomComponent?: boolean | "Y" | "N";
+  /** Pick and Execute discriminator emitted by the metadata converter. Most
+   *  process definitions omit it; only P&E seeds set it to `OBUIAPP_PickAndExecute`. */
+  uIPattern?: UIPattern | string;
+  /** Whether the embedded grid accepts more than one selected row. The
+   *  converter may emit it as boolean or as the legacy `"Y"`/`"N"` string. */
+  isMultiRecord?: boolean | "Y" | "N";
+  /** Report export flags emitted by the metadata backend when uIPattern is "OBUIAPP_Report". */
+  report?: {
+    id: string;
+    pdfExport: boolean;
+    xlsExport: boolean;
+    htmlExport: boolean;
+  };
 }
 
 export interface Labels {

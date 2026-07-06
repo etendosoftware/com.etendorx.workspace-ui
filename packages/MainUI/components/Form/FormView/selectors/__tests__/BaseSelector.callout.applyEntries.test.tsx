@@ -31,8 +31,8 @@ jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({
 }));
 jest.mock("@/hooks/useDisplayLogic", () => ({ __esModule: true, default: () => true }));
 jest.mock("@/hooks/useFormParent", () => ({ __esModule: true, default: () => ({}) }));
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {} }),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: any) => selector({ session: {} }),
 }));
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({

@@ -23,6 +23,8 @@ const en = {
     confirm: "Confirm",
     close: "Close",
     closing: "Closing...",
+    unsavedChangesCloseMessage:
+      "You have unsaved changes that will be lost. Are you sure you want to close this window?",
     execute: "Execute",
     register: "Register",
     save: "Save",
@@ -135,6 +137,7 @@ const en = {
     noRecordsError: "There is no records selected",
     noRecords: "Please create a new record",
     copyError: "Copy failed! Please try again or contact support.",
+    staleObjectError: "The record has been modified by another user or process. Please refresh and try again.",
   },
   errors: {
     tableError: {
@@ -280,10 +283,20 @@ const en = {
     profile: {
       tooltipButtonProfile: "Account Settings",
       passwordLabel: "Password",
+      currentPasswordLabel: "Current Password",
       newPasswordLabel: "New Password",
       confirmPasswordLabel: "Confirm password",
       signOffTooltip: "Log out",
       saveAsDefault: "Save as default",
+      passwordChangedSuccess: "Password changed successfully",
+      passwordMismatch: "Passwords do not match",
+      passwordRequired: "All password fields are required",
+      errorCurrentPwdIncorrect: "Current password is incorrect",
+      errorDifferentPassword: "New password must be different from the current one",
+      errorIncorrectPwd: "New password is invalid",
+      errorUnequalPwd: "Passwords do not match",
+      errorNotStrongEnough: "Password is not strong enough. Use uppercase, lowercase, numbers and special characters",
+      errorGeneric: "Failed to change password",
     },
   },
   breadcrumb: {
@@ -295,10 +308,36 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
     processError: "Process failed",
+    missingMandatoryFields: "You have not filled in all needed fields",
     warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",
     executionTimeout: "Process execution timed out. Please try again.",
+    legacyProcessUnresolved: {
+      title: "This process can't be opened",
+      description: "We couldn't load the required parameters. Please contact support.",
+    },
+    pickAndExecuteNotImplemented:
+      "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
+  },
+  processModal: {
+    gridToolbar: {
+      addRow: "Add row",
+      deleteRow: "Delete row",
+      processingMessage: "Processing...",
+      fallbackMessage: {
+        title: "Could not capture response",
+        text: "Could not capture the process response. Please verify status manually.",
+      },
+      requestFailed: {
+        title: "The process could not be executed",
+        text: "The process could not be executed. Please contact support.",
+      },
+      openLegacyReport: {
+        popupBlockedTitle: "The browser blocked the report popup.",
+        openManually: "Open report",
+      },
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

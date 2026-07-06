@@ -29,8 +29,8 @@ jest.mock("@/contexts/tab", () => ({
 jest.mock("@/contexts/language", () => ({
   useLanguage: jest.fn(),
 }));
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: jest.fn(),
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: jest.fn(),
 }));
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: jest.fn(),
@@ -84,8 +84,8 @@ describe("SelectorModal", () => {
     const { useLanguage } = require("@/contexts/language");
     useLanguage.mockReturnValue(createMockLanguageContext());
 
-    const { useUserContext } = require("@/hooks/useUserContext");
-    useUserContext.mockReturnValue(createMockUserContext());
+    const { useUserStore } = require("@/stores/userStore");
+    useUserStore.mockImplementation((selector: any) => selector(createMockUserContext()));
 
     const { useSelected } = require("@/hooks/useSelected");
     useSelected.mockReturnValue({ graph: {} });
@@ -194,6 +194,45 @@ describe("SelectorModal", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("synthesizes a fallback `_identifier` column when selector.gridColumns is empty (e.g. multi-selector without OBUISEL_SELECTOR_FIELD rows)", () => {
+    const fieldWithEmptyGridColumns = createMockField({
+      name: "Accounting Status",
+      selector: {
+        datasourceName: "List",
+        gridColumns: [],
+      },
+    });
+
+    const { buildSelectorColumnDefs } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorColumnDefs.mockClear();
+
+    render(
+      <SelectorModal field={fieldWithEmptyGridColumns} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />
+    );
+
+    // The first positional arg should be the synthesized fallback column array
+    const callArgs = buildSelectorColumnDefs.mock.calls[0]?.[0];
+    expect(callArgs).toHaveLength(1);
+    expect(callArgs[0]).toMatchObject({
+      accessorKey: "_identifier",
+      header: "Accounting Status",
+    });
+  });
+
+  it("does NOT synthesize a fallback column when targetEntity is also missing (no datasource → modal cannot fetch anyway)", () => {
+    const bareField = createMockField({
+      referencedEntity: undefined as unknown as string,
+      selector: { gridColumns: [] },
+    });
+
+    const { buildSelectorColumnDefs } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorColumnDefs.mockClear();
+
+    render(<SelectorModal field={bareField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    expect(buildSelectorColumnDefs.mock.calls[0]?.[0]).toEqual([]);
+  });
+
   it("passes correct parameters to datasource hook", () => {
     const { useDatasource } = require("@/hooks/useDatasource");
     useDatasource.mockReturnValue({
@@ -254,5 +293,75 @@ describe("SelectorModal", () => {
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  describe("optional getValues / currentTab overrides (grid mode)", () => {
+    // These tests pin the contract used by `GridCellEditor`: when a P&E grid
+    // opens the modal, the row's data and the P&E tab must take precedence
+    // over the ambient form/tab contexts (which point at the outer record).
+    it("forwards the `getValues` prop to useSelectorDefaultCriteria when provided", () => {
+      const customGetValues = jest.fn(() => ({ rowField: "row-value" }));
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(
+        <SelectorModal
+          field={defaultField}
+          isOpen={true}
+          onClose={mockOnClose}
+          onSelect={mockOnSelect}
+          getValues={customGetValues}
+        />
+      );
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.getValues).toBe(customGetValues);
+    });
+
+    it("falls back to useFormContext().getValues when no `getValues` prop is supplied", () => {
+      const formContextGetValues = jest.fn(() => ({ fromForm: true }));
+      (useFormContext as jest.Mock).mockReturnValue({
+        ...createMockFormContext(),
+        getValues: formContextGetValues,
+      });
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.getValues).toBe(formContextGetValues);
+    });
+
+    it("forwards the `currentTab` prop to useSelectorDefaultCriteria when provided", () => {
+      const customTab = { id: "PE-TAB", window: "PE-WINDOW", table: "PE-TABLE", fields: {} };
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(
+        <SelectorModal
+          field={defaultField}
+          isOpen={true}
+          onClose={mockOnClose}
+          onSelect={mockOnSelect}
+          // biome-ignore lint/suspicious/noExplicitAny: test override, real type comes from api-client
+          currentTab={customTab as any}
+        />
+      );
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.currentTab).toEqual(customTab);
+    });
+
+    it("falls back to useTabContext().tab when no `currentTab` prop is supplied", () => {
+      // `useTabContext` is re-mocked here so we can compare against the *same*
+      // tab object the component received (instead of a freshly built helper).
+      const ambientTab = { id: "ambient-tab", window: "ambient-window", fields: {} };
+      const { useTabContext } = require("@/contexts/tab");
+      useTabContext.mockReturnValue({ tab: ambientTab });
+      const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+
+      render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+      const callArgs = (useSelectorDefaultCriteria as jest.Mock).mock.calls.at(-1)[0];
+      expect(callArgs.currentTab).toBe(ambientTab);
+    });
   });
 });

@@ -29,7 +29,8 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
-import { useWindowContext } from "../../contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -46,9 +47,12 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
+import { parseColumns } from "@/utils/tableColumns";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
+  treeSearchTerm?: string;
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
@@ -111,6 +115,7 @@ interface UseTableDataReturn {
 
 export const useTableData = ({
   isTreeMode,
+  treeSearchTerm = "",
   onColumnFilter,
   onLoadFilterOptions,
   onLoadMoreFilterOptions,
@@ -129,13 +134,15 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const {
-    activeWindow,
-    getTabFormState,
-    getTabInitializedWithDirectLink,
-    setTabInitializedWithDirectLink,
-    getSelectedRecord,
-  } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action references
+  const setTabInitializedWithDirectLink = useWindowStore((s) => s.setTabInitializedWithDirectLink);
+
+  // Zustand store — imperative getters
+  const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
+  }, []);
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 
@@ -151,7 +158,7 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
   } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier || "",
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
@@ -161,23 +168,24 @@ export const useTableData = ({
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
   // its own selection), fall back to the URL-persisted selected record ID for the parent tab.
   // This prevents child tabs from showing an empty table while waiting for the graph to sync.
-  const parentIdFromUrl =
-    parentTab && activeWindow?.windowIdentifier
-      ? getSelectedRecord(activeWindow.windowIdentifier, parentTab.id)
-      : undefined;
+  // Reactive subscription — re-render when parent selection changes in the store
+  const parentIdFromUrl = useWindowStore((s) => {
+    if (!parentTab || !windowIdentifier) return undefined;
+    return s.windows[windowIdentifier]?.tabs[parentTab.id]?.selectedRecord;
+  });
   const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const tabFormState = activeWindow?.windowIdentifier
-    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
-    : undefined;
+  // Reactive subscription — re-render when form state changes
+  const tabFormState = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
+  );
   const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
   const rawColumns = useMemo(() => {
-    const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
@@ -232,9 +240,9 @@ export const useTableData = ({
       // Always use columnName as the filter ID for consistency
       const filterKey = column?.columnName || columnId;
 
-      // For date filters, pass the value as a string (not as FilterOption array)
-      // This preserves range filter detection (e.g., "2025-09-29 - 2025-09-30")
-      const mrtFilter = filterValue?.trim()
+      const hasContent = Boolean(filterValue?.trim());
+
+      const mrtFilter = hasContent
         ? {
             id: filterKey,
             value: filterValue,
@@ -410,12 +418,13 @@ export const useTableData = ({
 
   // Helper to find parent field name
   const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
+    // True 1:1 SR tabs share the same PK as the parent — filter by "id".
+    // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab)) {
+      return { fieldName: "id", directReference: true };
+    }
+
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      // SR (Single Record) tabs share the same entity/table as the parent and have
-      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
-      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
-        return { fieldName: "id", directReference: true };
-      }
       return { fieldName: "_dummy", directReference: false };
     }
 
@@ -599,8 +608,45 @@ export const useTableData = ({
     setIsImplicitFilterApplied,
   });
 
-  // Display records (tree mode uses flattened, normal mode uses original records)
-  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+  // Apply client-side search filter in tree mode (keeps matches + ancestor chain)
+  const filteredFlattenedRecords = useMemo(() => {
+    if (!shouldUseTreeMode || !treeSearchTerm) return flattenedRecords;
+
+    const lowerSearch = treeSearchTerm.toLowerCase();
+    const matchIds = new Set(
+      flattenedRecords
+        .filter((r) =>
+          String(r._identifier || r.name || "")
+            .toLowerCase()
+            .includes(lowerSearch)
+        )
+        .map((r) => String(r.id))
+    );
+    const keepIds = new Set(matchIds);
+    const idMap = new Map(flattenedRecords.map((r) => [String(r.id), r]));
+
+    for (const id of matchIds) {
+      let current = idMap.get(id);
+      while (current) {
+        let parentId: string | null;
+        if (current.parentId) {
+          parentId = String(current.parentId);
+        } else if (current.__treeParentId) {
+          parentId = String(current.__treeParentId);
+        } else {
+          parentId = null;
+        }
+        if (!parentId || keepIds.has(parentId)) break;
+        keepIds.add(parentId);
+        current = idMap.get(parentId);
+      }
+    }
+
+    return flattenedRecords.filter((r) => keepIds.has(String(r.id)));
+  }, [shouldUseTreeMode, treeSearchTerm, flattenedRecords]);
+
+  // Display records (tree mode uses flattened+filtered, normal mode uses original records)
+  const displayRecords = shouldUseTreeMode ? filteredFlattenedRecords : records;
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
@@ -918,8 +964,6 @@ export const useTableData = ({
   /** Initialize implicit filter state */
   useEffect(() => {
     if (!hasInitializedDirectLink.current) {
-      const windowIdentifier = activeWindow?.windowIdentifier;
-
       const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
@@ -954,14 +998,13 @@ export const useTableData = ({
     tabFormState,
     setTableColumnFilters,
     tableColumnFilters,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     setTabInitializedWithDirectLink,
   ]);
 
   /** Clear ID filter when returning to grid mode from manual navigation */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     // If we are NOT in form mode (meaning we are in grid/table mode)
@@ -989,14 +1032,13 @@ export const useTableData = ({
     initialIsFilterApplied,
     isImplicitFilterApplied,
     setIsImplicitFilterApplied,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     getTabInitializedWithDirectLink,
   ]);
 
   /** Detect manual filter removal and clear direct link flag */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
@@ -1007,7 +1049,7 @@ export const useTableData = ({
     if (!hasIdFilter && wasInitializedWithDirectLink) {
       setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
     }
-  }, [tableColumnFilters, activeWindow, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
+  }, [tableColumnFilters, windowIdentifier, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
 
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
@@ -1102,48 +1144,47 @@ export const useTableData = ({
     setPrevShouldUseTreeMode(shouldUseTreeMode);
   }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
 
-  // Update flattened records when tree data changes
+  // Update flattened records when tree data changes.
+  // Non-tree mode reads `records` directly (see displayRecords), so no sync needed there.
   useEffect(() => {
     if (shouldUseTreeMode) {
       const flattened = buildFlattenedRecords(records, expanded, childrenData);
       setFlattenedRecords(flattened);
-    } else {
-      setFlattenedRecords(records);
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  // Initialize column visibility based on tab configuration
+  // Initialize column visibility and default sorting in a single effect so React 18 batches
+  // both setState calls into one re-render instead of two.
   useEffect(() => {
-    if (!isEmptyObject(tableColumnVisibility)) return;
+    const visNeedsInit = isEmptyObject(tableColumnVisibility);
+    const sortNeedsInit = tableColumnSorting.length === 0;
 
-    const initialVisibility: MRT_VisibilityState = {};
-    if (tab.fields) {
+    if (!visNeedsInit && !sortNeedsInit) return;
+
+    if (visNeedsInit && tab.fields) {
+      const initialVisibility: MRT_VisibilityState = {};
       for (const field of Object.values(tab.fields)) {
         if (field.showInGridView !== undefined && field.name) {
           initialVisibility[field.name] = field.showInGridView;
         }
       }
+      setTableColumnVisibility(initialVisibility);
     }
 
-    setTableColumnVisibility(initialVisibility);
-  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
-
-  // Initialize default sorting
-  useEffect(() => {
-    // Only initialize if there's no current sorting
-    if (tableColumnSorting.length === 0 && tab.fields) {
+    if (sortNeedsInit && tab.fields) {
       const defaultSort = getDefaultSort();
-
       if (defaultSort) {
-        setTableColumnSorting([
-          {
-            id: defaultSort.id,
-            desc: defaultSort.desc,
-          },
-        ]);
+        setTableColumnSorting([{ id: defaultSort.id, desc: defaultSort.desc }]);
       }
     }
-  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
+  }, [
+    tab.fields,
+    tableColumnVisibility,
+    tableColumnSorting.length,
+    setTableColumnVisibility,
+    setTableColumnSorting,
+    getDefaultSort,
+  ]);
 
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(

@@ -23,34 +23,42 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useTranslation } from "@/hooks/useTranslation";
 
 import TabsContainer from "@/components/window/TabsContainer";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useMetadataZustandStore } from "@/stores/metadataStore";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 
 export default function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { windowId, windowIdentifier } = window;
-  const { error, loading, getWindowMetadata } = useMetadataContext();
-  const { isRecoveryLoading, recoveryError } = useWindowContext();
+  const { error: metadataError, isWindowLoading, loadWindowData, getWindowMetadata } = useMetadataContext();
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  const recoveryError = useWindowStore((s) => s.recoveryError);
+
+  // Trigger metadata load for THIS window if not yet loaded.
+  // This ensures each mounted window loads its own metadata independently of
+  // the MetadataSynchronizer, which may be focused on another active window.
+  useEffect(() => {
+    if (windowId && !getWindowMetadata(windowId) && !isWindowLoading(windowId)) {
+      loadWindowData(windowId).catch((err) => {
+        console.error("Error loading window metadata:", err);
+      });
+    }
+  }, [windowId, getWindowMetadata, isWindowLoading, loadWindowData]);
+
+  const loading = isWindowLoading(windowId);
+  const error = windowId ? metadataError : undefined;
 
   const { t } = useTranslation();
 
   const previousWindowIdentifier = useRef(windowIdentifier);
 
-  /**
-   * Calculate window metadata based on windowId.
-   * This is memoized to avoid unnecessary recalculations.
-   */
-  const windowData: Etendo.WindowMetadata | undefined = useMemo(() => {
-    try {
-      return getWindowMetadata(windowId);
-    } catch (error) {
-      console.error("Error fetching window metadata for windowId:", windowId, error);
-      return undefined;
-    }
-  }, [windowId, getWindowMetadata]);
+  // Subscribe reactively to the metadata for this window.
+  // Using a Zustand selector ensures re-render when this window's metadata loads.
+  const windowData = useMetadataZustandStore((s) => s.windowsData[windowId]);
 
   /**
    * Handle windowIdentifier changes to show loading state during transitions.
@@ -109,12 +117,17 @@ export default function Window({ window }: { window: WindowState }) {
   }
 
   return (
-    <SelectedProvider
-      tabs={windowData.tabs}
-      windowId={windowId}
+    <CurrentWindowProvider
       windowIdentifier={windowIdentifier}
-      data-testid="SelectedProvider__56042a">
-      <TabsContainer windowData={windowData} data-testid="TabsContainer__56042a" />
-    </SelectedProvider>
+      windowId={windowId}
+      data-testid="CurrentWindowProvider__56042a">
+      <SelectedProvider
+        tabs={windowData.tabs}
+        windowId={windowId}
+        windowIdentifier={windowIdentifier}
+        data-testid="SelectedProvider__56042a">
+        <TabsContainer windowData={windowData} data-testid="TabsContainer__56042a" />
+      </SelectedProvider>
+    </CurrentWindowProvider>
   );
 }

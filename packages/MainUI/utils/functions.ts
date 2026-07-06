@@ -44,20 +44,35 @@
  * Consider validating or restricting the code parameter to prevent code injection attacks.
  */
 
-export async function executeStringFunction(code: string, context = {}, ...args: unknown[]) {
+/**
+ * Compiles a function-expression string into a callable, injecting context
+ * variables as named parameters. Use this when a script body is going to be
+ * invoked many times (e.g. an `onRefresh` handler stored on a view object)
+ * so the `new Function(...)` parse happens once.
+ *
+ * @throws TypeError if the compiled code does not evaluate to a function.
+ */
+export function compileStringFunction(
+  code: string,
+  context: Record<string, unknown> = {}
+): (...args: unknown[]) => unknown {
   const contextKeys = Object.keys(context);
   const contextValues = Object.values(context);
   // .trim() prevents ASI issues when the string starts with a newline
   // (e.g. template literals: `\nasync (...) => {}`)
-  const fn = new Function(...contextKeys, `return ${code.trim()}`);
-  const evaluatedFn = fn(...contextValues);
+  // `code` always originates from an Application Dictionary JS hook (onLoad, onProcess,
+  // onRefresh, onParameterChange, onGridLoad, column customJs) fetched read-only from the
+  // authenticated metadata API and authored by administrators in Etendo Classic — never
+  // from end-user input reaching this frontend.
+  const factory = new Function(...contextKeys, `return ${code.trim()}`); // NOSONAR typescript:S1523
+  const evaluatedFn = factory(...contextValues);
 
   if (typeof evaluatedFn !== "function") {
     // This usually means the script is stored as an IIFE `(async () => {})()` or as a
     // plain value instead of a function expression `async () => {}`.
     // Log the first 120 chars to help identify the format.
     console.error(
-      `[executeStringFunction] Expected a function but got "${typeof evaluatedFn}". ` +
+      `[compileStringFunction] Expected a function but got "${typeof evaluatedFn}". ` +
         `Code preview: ${code.trim().substring(0, 120)}`
     );
     throw new TypeError(
@@ -66,5 +81,11 @@ export async function executeStringFunction(code: string, context = {}, ...args:
     );
   }
 
-  return await evaluatedFn(...args);
+  return evaluatedFn as (...args: unknown[]) => unknown;
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: legacy callers consume the return value loosely (e.g. result?.data) — keep the original any contract.
+export async function executeStringFunction(code: string, context = {}, ...args: unknown[]): Promise<any> {
+  const fn = compileStringFunction(code, context);
+  return await fn(...args);
 }

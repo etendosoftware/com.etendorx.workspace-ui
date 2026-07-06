@@ -24,7 +24,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 import {
@@ -33,6 +33,7 @@ import {
   buildFormInitializationParams,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 // NOTE: this need a fix in the future
 // Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
@@ -46,9 +47,10 @@ const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
  * These are processes that are incorrectly configured in the backend.
  * TODO: These should be fixed in Etendo Classic metadata by setting isMultiRecord = false
  */
-const SINGLE_RECORD_ONLY_PROCESSES = new Set([
-  "EM_APRM_AddPayment", // Add Payment - processes individual orders, not bulk
-]);
+// Empty by design: Add Payment (the only former entry) moved to the generic
+// metadata-driven mechanism, so it is no longer forced single-record here. The
+// generic guard is kept for any future backend-misconfigured `isMultiRecord` process.
+const SINGLE_RECORD_ONLY_PROCESSES = new Set<string>();
 
 export function useToolbar(windowIdentifier: string, tabId?: string) {
   const cacheKey = `${windowIdentifier}-${tabId || "default"}`;
@@ -56,8 +58,8 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   const [loading, setLoading] = useState(!!windowIdentifier && !toolbarCache.has(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
-  const { session } = useUserContext();
-  const { tab, parentRecord, parentTab, auxiliaryInputs } = useTabContext();
+  const session = useUserStore((s) => s.session);
+  const { tab, parentRecord, parentTab, auxiliaryInputs, formValues } = useTabContext();
   const selectedItems = useSelectedRecords(tab);
   const {
     fields: { actionFields },
@@ -150,7 +152,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       try {
         const checkRecord = (record: Record<string, unknown>) => {
           const smartContext = createSmartContext({
-            values: record,
+            values: { ...record, ...formValues },
             fields: tab.fields,
             auxiliaryInputs: effectiveAuxInputs,
             parentValues: parentRecord || undefined,
@@ -158,7 +160,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
             context: session,
             defaultValue: "",
           });
-          return compiledExpr(smartContext, smartContext);
+          return toClassicBoolean(compiledExpr(smartContext, smartContext));
         };
 
         // For multi-record processes: ALL selected records must satisfy the condition
@@ -170,7 +172,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         return true;
       }
     }) as ProcessButton[];
-  }, [actionFields, selectedItems, session, tab, parentRecord, parentTab, effectiveAuxInputs]);
+  }, [actionFields, selectedItems, session, tab, parentRecord, parentTab, effectiveAuxInputs, formValues]);
 
   const fetchToolbar = useCallback(async () => {
     if (!windowIdentifier) return;

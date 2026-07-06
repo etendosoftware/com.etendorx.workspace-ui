@@ -97,6 +97,8 @@ export interface CellEditorProps {
   // Optional functions for dynamic option loading (TABLEDIR fields)
   loadOptions?: (field: Field, searchQuery?: string, contextData?: Record<string, unknown>) => Promise<RefListField[]>;
   isLoadingOptions?: (fieldName: string) => boolean;
+  /** When false, suppresses browser-native title tooltips on the editor element. Defaults to true (tooltips visible). */
+  showTooltip?: boolean;
 }
 
 /**

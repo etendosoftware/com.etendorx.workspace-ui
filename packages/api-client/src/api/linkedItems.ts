@@ -24,6 +24,14 @@ import type {
   LinkedItem,
 } from "./types";
 
+function parseLinkedItemsResponse(data: LinkedItemsResponse | string): LinkedItemsResponse {
+  if (typeof data === "string") {
+    return JSON.parse(data) as LinkedItemsResponse;
+  }
+
+  return data;
+}
+
 /**
  * Fetches the categories of linked items for a given record
  */
@@ -44,9 +52,9 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    })) as { data: LinkedItemsResponse; ok: boolean; status: number };
+    })) as { data: LinkedItemsResponse | string; ok: boolean; status: number };
 
-    responseData = response.data;
+    responseData = parseLinkedItemsResponse(response.data);
 
     if (!response.ok) {
       throw new Error(`API call failed with status ${response.status}`);
@@ -80,13 +88,13 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    })) as { data: LinkedItemsResponse; ok: boolean; status: number };
+    })) as { data: LinkedItemsResponse | string; ok: boolean; status: number };
 
     if (!response.ok) {
       throw new Error(`API call failed with status ${response.status}`);
     }
 
-    responseData = response.data;
+    responseData = parseLinkedItemsResponse(response.data);
   } catch (error) {
     throw new Error(`Error fetching linked items: ${error instanceof Error ? error.message : String(error)}`);
   }

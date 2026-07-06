@@ -165,3 +165,56 @@ Current testing approach uses Jest with React Testing Library:
 - Hook testing for MainUI
 - API client unit tests
 - See `TESTING.md` for detailed testing guidelines and coverage requirements
+
+## Git Conventions (Git Police)
+
+This repository is enforced by the Git Police bot. All branches, commits, and PRs MUST follow these rules.
+
+### Branch Naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feature/<JIRA_ID>` | `feature/ETP-1234` |
+| Feature (backport) | `feature/<JIRA_ID>-Y<yy>` | `feature/ETP-1234-Y25` |
+| Hotfix | `hotfix/<JIRA_ID>` | `hotfix/ETP-1234` |
+| Hotfix (with issue) | `hotfix/#<issue>-<JIRA_ID>` | `hotfix/#12-ETP-1234` |
+| Hotfix (backport) | `hotfix/#<issue>-<JIRA_ID>-Y<yy>` | `hotfix/#12-ETP-1234-Y25` |
+| Epic | `epic/<JIRA_ID>` | `epic/ETP-1234` |
+| Epic (backport) | `epic/<JIRA_ID>-Y<yy>` | `epic/ETP-1234-Y25` |
+
+JIRA_ID format: 2-4 uppercase letters + hyphen + 1-4 digit number (e.g. `ETP-1234`, `ABC-56`).
+
+### Commit Messages
+
+**First line MUST be ≤80 characters.** Format depends on branch type:
+
+| Branch type | Commit format | Example |
+|-------------|---------------|---------|
+| `feature/*` | `Feature <JIRA_ID>: <description>` | `Feature ETP-1234: Add user login` |
+| `hotfix/*` | `Hotfix <JIRA_ID>: <description>` | `Hotfix ETP-1234: Fix null pointer` |
+| `hotfix/#N-*` | `Issue #<N>: <description>` | `Issue #12: Fix null pointer` |
+| `epic/*` | `Epic <JIRA_ID>: <description>` | `Epic ETP-1234: Add auth module` |
+
+For `Issue #N:` commits, the second line must contain the JIRA ID (e.g. `ETP-789`).
+
+### PR Titles
+
+PR title must match the branch type and include the JIRA ID:
+
+| Branch | PR title prefix |
+|--------|----------------|
+| `feature/ETP-123` | `Feature ETP-123: ...` |
+| `hotfix/ETP-123` | `Hotfix ETP-123: ...` |
+| `hotfix/#10-ETP-123` | `Issue #10: ...` |
+| `epic/ETP-123` | `Epic ETP-123: ...` |
+
+### PR Destination Branches
+
+| Source branch | Allowed targets |
+|---------------|----------------|
+| `feature/*` | `develop`, `feature/*`, `epic/*` |
+| `feature/*-Y*` | `epic/*-Y*`, `release/*` |
+| `hotfix/*` | `main`, `master` |
+| `hotfix/*-Y*` | `release/*` |
+| `epic/*` | `develop` |
+| `epic/*-Y*` | `release/*` |

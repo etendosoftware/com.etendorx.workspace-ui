@@ -16,9 +16,21 @@
  */
 
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
+import type { CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import type {
+  CallerField,
+  FieldController,
+  FormHandle,
+  GridController,
+  GridResolver,
+  MessageBarHandle,
+  ViewController,
+  ViewData,
+} from "@/utils/processes/definition/scriptProxies";
 import type {
   Field,
   ProcessAction,
+  ProcessDefinition,
   RefListField,
   EntityData,
   EntityValue,
@@ -76,9 +88,13 @@ export interface ProcessResponse {
       msgText: string;
     };
   }>;
+  /** Default true when absent. Triggers a parent grid refresh in Etendo Classic. */
   refreshParent?: boolean;
+  /** Default false when absent. Keeps the popup open so the user can re-execute. */
+  retryExecution?: boolean;
   showInIframe?: boolean;
   iframeUrl?: string;
+  iframeFormParams?: Record<string, string> | null;
 }
 
 export interface MessageStylesType {
@@ -95,6 +111,7 @@ export interface ProcessIframeModalClosedProps {
 export interface ProcessIframeModalOpenProps {
   isOpen: true;
   url?: string;
+  formParams?: Record<string, string> | null;
   title?: string;
   tabId: string;
   onProcessSuccess?: () => void;
@@ -118,6 +135,12 @@ export interface ProcessDefinitionModalProps {
   keepOpenOnSuccess?: boolean;
   /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
   contextRecord?: Record<string, unknown>;
+  /** Window id for a programmatically-opened process (e.g. a nested launch) when no TabContext supplies one. */
+  windowId?: string;
+  /** Window title for a programmatically-opened process (e.g. a nested launch). */
+  windowTitle?: string;
+  /** Launching field/button forwarded by a nested launch, so a nested script reaches `view.callerField.view`. */
+  callerField?: CallerField;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -150,15 +173,6 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  description?: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
-}
 export interface ResponseMessage {
   msgText: string;
   msgTitle: string;
@@ -187,6 +201,26 @@ export interface WindowReferenceGridProps {
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
   showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
+  /** Parent process definition. Used for P&E layout detection; grid selection mode is driven by `windowReferenceTab.obuiappSelectionType`. */
+  processDefinition?: ProcessDefinition;
+  /** Compiled `etmetaOnGridLoad` hook for this grid parameter (null when unset). Invoked once per datasource load. */
+  onGridLoadHook?: CompiledParameterHook | null;
+  /** Form adapter used to build the `view`/`form` proxies passed to `onGridLoad`. */
+  gridLoadFormHandle?: FormHandle;
+  /** Backing for `view.messageBar` inside `onGridLoad`. */
+  messageBar?: MessageBarHandle;
+  /** Bridge that makes the `view` action methods + footer chrome live inside `onGridLoad`. */
+  viewController?: ViewController;
+  /** Read-only environment data surfaced on the `view` inside `onGridLoad`. */
+  viewData?: ViewData;
+  /** Publishes this grid's programmable handle to the modal registry (keyed by parameter name). */
+  onRegisterGrid?: (paramKey: string, controller: GridController) => void;
+  /** Removes this grid's handle from the modal registry on unmount. */
+  onUnregisterGrid?: (paramKey: string) => void;
+  /** Makes `view.theForm` item mutations live inside `onGridLoad`. */
+  fieldController?: FieldController;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside `onGridLoad`. */
+  gridResolver?: GridResolver;
 }
 
 export type RowProps = (props: {

@@ -54,11 +54,13 @@ import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
+import { getDocumentStatus, getProcessing } from "@/utils/processes/manual/utils";
+import { DEFAULT_DOC_STATUS } from "@/utils/processes/manual/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -156,11 +158,24 @@ export function FormView({
   // triggered by the NEW→EDIT transition is treated as a data refresh (uses setValue
   // instead of form.reset) rather than a full form reconstruction.
   const justSavedFromNewRef = useRef(false);
+  // Set to true after a successful EDIT-mode save so the subsequent data refresh
+  // resets defaultValues (via stableReset) to clear isDirty.
+  const justSavedInEditRef = useRef(false);
 
   const { graph } = useSelected();
-  const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const activeWindow = useMemo(() => {
+    const wins = Object.values(windowsObj);
+    return wins.find((w) => w.isActive) ?? null;
+  }, [windowsObj]);
+  const windowIdentifier = activeWindow?.windowIdentifier;
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
-  const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
+  const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
   const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
@@ -203,12 +218,32 @@ export function FormView({
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
 
+  const docStatus = useMemo(
+    () => (initialState ? getDocumentStatus(initialState as Record<string, unknown>) : DEFAULT_DOC_STATUS),
+    [initialState]
+  );
+
+  const isDocumentProcessing = useMemo(
+    () => docStatus === "IP" || getProcessing((initialState as Record<string, unknown>) ?? {}) === "Y",
+    [docStatus, initialState]
+  );
+
   // Determine read-only state from two sources:
   // 1. Tab-level uIPattern "RO" — the tab itself is defined as read-only
   // 2. Record-level _readOnly — the backend security layer (DAL) marks this specific
   //    record as read-only for the current role (e.g. system records with org='0'
   //    are not writable by non-system roles even if the window access is isreadwrite='Y')
-  const isReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
+  const baseReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
+
+  // Status-driven override:
+  //   IP — always locked (processing in progress)
+  //   RE — always editable (re-opened), overrides any _readOnly=true from completed state
+  //   All other statuses — use baseReadOnly as-is
+  const isReadOnly = useMemo(() => {
+    if (isDocumentProcessing) return true;
+    if (docStatus === "RE") return uIPattern === UIPattern.READ_ONLY;
+    return baseReadOnly;
+  }, [isDocumentProcessing, docStatus, uIPattern, baseReadOnly]);
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {
@@ -241,6 +276,10 @@ export function FormView({
         .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
         .join(",");
 
+      // Evict the entity from the response cache so the fetch below always
+      // returns the post-process/post-save state, not a 30-second-old snapshot.
+      datasource.clearCacheForEntity(tab.entityName);
+
       // Fetch the record first so the graph is updated before refetch() runs.
       // Running them in parallel caused a race: if refetch() completed first, the graph-sync
       // useEffect would compute availableFormData from the stale graph record and cache that
@@ -256,9 +295,7 @@ export function FormView({
         ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       })) as { data: { response?: { data?: EntityData[] } } };
 
-      const currentlySelectedId = activeWindow?.windowIdentifier
-        ? getSelectedRecord(activeWindow.windowIdentifier, tab.id)
-        : null;
+      const currentlySelectedId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : null;
 
       if (currentlySelectedId && currentlySelectedId !== recordId) {
         // Stop right here if the user has navigated or cloned to another record while we fetched.
@@ -283,7 +320,7 @@ export function FormView({
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
     }
-  }, [recordId, tab, graph, refetch, updateRecordInDatasource, activeWindow?.windowIdentifier, getSelectedRecord]);
+  }, [recordId, tab, graph, refetch, updateRecordInDatasource, windowIdentifier, getSelectedRecord]);
 
   useEffect(() => {
     if (registerFormViewRefetch) {
@@ -370,8 +407,6 @@ export function FormView({
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
     if (!windowIdentifier) return null;
 
     if (currentRecordId === NEW_RECORD_ID) {
@@ -400,7 +435,7 @@ export function FormView({
     }
 
     return null;
-  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
+  }, [windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
 
   const { addRecentDocument } = useRecentDocuments();
 
@@ -464,6 +499,21 @@ export function FormView({
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
+
+  // Publish dirty form values to TabContext so the toolbar can react to
+  // display-logic changes before the record is saved.
+  useEffect(() => {
+    setFormValues({});
+    const subscription = formMethods.watch((value, { name }) => {
+      if (name) {
+        setFormValues((prev) => ({ ...prev, [name]: value[name] }));
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+      setFormValues({});
+    };
+  }, [formMethods, setFormValues]);
 
   useDefaultValueReaction({ tab, formMethods, isFormInitializing });
 
@@ -622,8 +672,12 @@ export function FormView({
 
     if (isDataRefresh) {
       applyDataRefresh(processedData);
-      if (isPostNewSave) {
-        // After a NEW→EDIT save, update defaultValues to match ALL current form values
+      const isPostEditSave = justSavedInEditRef.current;
+      if (isPostEditSave) {
+        justSavedInEditRef.current = false;
+      }
+      if (isPostNewSave || isPostEditSave) {
+        // After a save, update defaultValues to match ALL current form values
         // (including $\_entries dropdown arrays not present in processedData) so that
         // react-hook-form's isDirty correctly becomes false. keepValues: true avoids
         // re-rendering form inputs — only formState subscribers (e.g. save button) update.
@@ -821,7 +875,6 @@ export function FormView({
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowIdentifier = activeWindow?.windowIdentifier;
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
@@ -847,6 +900,7 @@ export function FormView({
         // when the refetch completes
       } else {
         // For EDIT mode, manually refetch to get updated calculated fields
+        justSavedInEditRef.current = true;
         await refetch();
         setIsFormInitializing(false);
       }
@@ -904,7 +958,7 @@ export function FormView({
       currentMode,
       graph,
       tab,
-      activeWindow?.windowIdentifier,
+      windowIdentifier,
       showSuccessModal,
       setRecordId,
       setSelectedRecord,
@@ -984,8 +1038,8 @@ export function FormView({
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.windowIdentifier && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
+      if (windowIdentifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {
@@ -994,7 +1048,7 @@ export function FormView({
       }
       setRecordId(newRecordId);
     },
-    [setRecordId, graph, tab, activeWindow, setSelectedRecordAndClearChildren]
+    [setRecordId, graph, tab, windowIdentifier, setSelectedRecordAndClearChildren]
   );
 
   /**
@@ -1020,13 +1074,37 @@ export function FormView({
     setCurrentRecordId(NEW_RECORD_ID);
     setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
 
-    if (activeWindow?.windowIdentifier) {
-      setSelectedRecord(activeWindow.windowIdentifier, tab.id, NEW_RECORD_ID);
+    if (windowIdentifier) {
+      // Clear child tab selections so stale child records (e.g. a previously created Order
+      // Line) don't re-initialize and re-write shared window session attributes (such as
+      // C_BPartner_ID) while the new header record is being initialized. Otherwise that
+      // re-write races the new-record initialization and can re-trigger header callouts with
+      // a stale business partner. Mirrors handleNavigateToRecord.
+      const children = graph.getChildren(tab);
+      const childIds =
+        children && children.length > 0 ? children.filter((c) => c.window === tab.window).map((c) => c.id) : [];
+
+      if (childIds.length > 0) {
+        setSelectedRecordAndClearChildren(windowIdentifier, tab.id, NEW_RECORD_ID, childIds);
+        for (const child of children ?? []) {
+          graph.clearSelected(child);
+        }
+      } else {
+        setSelectedRecord(windowIdentifier, tab.id, NEW_RECORD_ID);
+      }
       graph.clearSelected(tab);
       graph.clearSelectedMultiple(tab);
     }
     resetFormChanges();
-  }, [activeWindow?.windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
+  }, [
+    windowIdentifier,
+    graph,
+    resetFormChanges,
+    setRecordId,
+    setSelectedRecord,
+    setSelectedRecordAndClearChildren,
+    tab,
+  ]);
 
   /**
    * Context value object containing all form view state and handlers.
@@ -1123,6 +1201,7 @@ export function FormView({
               showErrorModal={showErrorModal}
               mode={currentMode}
               isFocused={isFocused}
+              isDocumentProcessing={isDocumentProcessing}
               data-testid="FormActions__1a0853"
             />
           </form>

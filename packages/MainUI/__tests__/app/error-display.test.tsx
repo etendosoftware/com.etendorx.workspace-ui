@@ -79,9 +79,9 @@ describe("ErrorDisplay Component", () => {
   it("should render error image", () => {
     render(<ErrorDisplay {...defaultProps} />);
 
-    const image = screen.getByTestId("Image__2e88cf");
+    const image = screen.getByRole("img", { name: "Error" });
     expect(image).toBeInTheDocument();
-    expect(image).toHaveAttribute("alt", "Error");
+    expect(image).toHaveAttribute("aria-label", "Error");
   });
 
   it("should not render description when not provided", () => {
@@ -225,15 +225,15 @@ describe("ErrorDisplay Component", () => {
     it("should render image with testid", () => {
       render(<ErrorDisplay {...defaultProps} />);
 
-      const image = screen.getByTestId("Image__2e88cf");
+      const image = screen.getByRole("img", { name: "Error" });
       expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute("alt", "Error");
+      expect(image).toHaveAttribute("aria-label", "Error");
     });
 
     it("should have correct image dimensions", () => {
       render(<ErrorDisplay {...defaultProps} />);
 
-      const image = screen.getByTestId("Image__2e88cf");
+      const image = screen.getByRole("img", { name: "Error" });
       expect(image).toHaveAttribute("width", "240");
       expect(image).toHaveAttribute("height", "240");
     });

@@ -1,4 +1,4 @@
-import { syncSelectedRecordsToSession } from "../sessionSync";
+import { syncSelectedRecordsToSession, clearRecordContextFromSession } from "../sessionSync";
 import { SessionMode } from "@workspaceui/api-client/src/api/types";
 import * as formUtils from "@/utils/hooks/useFormInitialization/utils";
 import type {
@@ -14,6 +14,7 @@ jest.mock("@/utils/hooks/useFormInitialization/utils", () => ({
   fetchFormInitialization: jest.fn(),
   buildFormInitializationPayload: jest.fn(),
   buildFormInitializationParams: jest.fn(),
+  buildSessionResetPayload: jest.fn(() => ({})),
   buildSessionAttributes: jest.fn(),
   mergeSessionAttributes: jest.fn((prev, next) => {
     const preserved: any = {};
@@ -454,5 +455,119 @@ describe("syncSelectedRecordsToSession", () => {
         })
       ).resolves.not.toThrow();
     });
+  });
+});
+
+describe("clearRecordContextFromSession", () => {
+  const mockField: Field = {
+    hqlName: "testField",
+    inputName: "testInput",
+    columnName: "test_column",
+    process: "",
+    shownInStatusBar: false,
+    tab: "test-tab",
+    displayed: true,
+    startnewline: false,
+    showInGridView: true,
+    fieldGroup$_identifier: "test_field_group",
+    fieldGroup: "test_field_group",
+    isMandatory: false,
+    column: { keyColumn: "true" },
+    name: "Test Field",
+    id: "test-field-id",
+    module: "test_module",
+    hasDefaultValue: false,
+    refColumnName: "",
+    targetEntity: "",
+    gridProps: {} as GridProps,
+    type: "string",
+    field: [],
+    refList: [],
+    referencedEntity: "",
+    referencedWindowId: "",
+    referencedTabId: "",
+    isReadOnly: false,
+    isDisplayed: true,
+    sequenceNumber: 1,
+    isUpdatable: true,
+    description: "Test Field Description",
+    helpComment: "Test Field Help",
+  };
+
+  const mockTab: Tab = {
+    id: "test-tab",
+    name: "Test Tab",
+    title: "Test Tab Title",
+    window: "test-window",
+    tabLevel: 0,
+    parentTabId: undefined,
+    uIPattern: "STD",
+    table: "test_table",
+    entityName: "TestEntity",
+    fields: { testField: mockField },
+    parentColumns: [],
+    _identifier: "test_identifier",
+    records: {},
+    hqlfilterclause: "",
+    hqlwhereclause: "",
+    sQLWhereClause: "",
+    module: "test_module",
+  };
+
+  const emptyResponse: FormInitializationResponse = {
+    columnValues: {},
+    auxiliaryInputValues: {},
+    sessionAttributes: {},
+    dynamicCols: [],
+    attachmentExists: false,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should issue a SETSESSION reset request with the reset payload", async () => {
+    const mockBuildParams = jest
+      .spyOn(formUtils, "buildFormInitializationParams")
+      .mockReturnValue(new URLSearchParams());
+    const resetPayload = { testInput: "", _gridVisibleProperties: ["test_column"] };
+    const mockBuildReset = jest.spyOn(formUtils, "buildSessionResetPayload").mockReturnValue(resetPayload);
+    const mockFetch = jest.spyOn(formUtils, "fetchFormInitialization").mockResolvedValue(emptyResponse);
+
+    await clearRecordContextFromSession({ tab: mockTab });
+
+    expect(mockBuildParams).toHaveBeenCalledWith(expect.objectContaining({ mode: SessionMode.SETSESSION }));
+    expect(mockBuildReset).toHaveBeenCalledWith(mockTab, expect.objectContaining({ inputName: "testInput" }));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(expect.any(URLSearchParams), resetPayload);
+  });
+
+  it("should forward parentId to the params builder", async () => {
+    const mockBuildParams = jest
+      .spyOn(formUtils, "buildFormInitializationParams")
+      .mockReturnValue(new URLSearchParams());
+    jest.spyOn(formUtils, "buildSessionResetPayload").mockReturnValue({});
+    jest.spyOn(formUtils, "fetchFormInitialization").mockResolvedValue(emptyResponse);
+
+    await clearRecordContextFromSession({ tab: mockTab, parentId: "parent-9" });
+
+    expect(mockBuildParams).toHaveBeenCalledWith(expect.objectContaining({ parentId: "parent-9" }));
+  });
+
+  it("should do nothing when no key column is found", async () => {
+    const tabWithoutKey: Tab = { ...mockTab, fields: {} };
+    const mockFetch = jest.spyOn(formUtils, "fetchFormInitialization");
+
+    await clearRecordContextFromSession({ tab: tabWithoutKey });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("should swallow API errors without throwing", async () => {
+    jest.spyOn(formUtils, "buildFormInitializationParams").mockReturnValue(new URLSearchParams());
+    jest.spyOn(formUtils, "buildSessionResetPayload").mockReturnValue({});
+    jest.spyOn(formUtils, "fetchFormInitialization").mockRejectedValue(new Error("API Error"));
+
+    await expect(clearRecordContextFromSession({ tab: mockTab })).resolves.not.toThrow();
   });
 });

@@ -42,25 +42,31 @@ import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { createOBShim } from "@/utils/propertyStore";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
+import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
+import {
+  type DispatchedAction,
+  dispatchResponseActions,
+  findFirstMessage,
+  findFirstOpenDirectTab,
+  readDispatchableResponseActions,
+} from "../utils/responseActionDispatcher";
+import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
+import {
+  createFormHandle,
+  createViewProxy,
+  type CallerField,
+  type FieldController,
+  type GridResolver,
+  type ViewController,
+  type ViewData,
+} from "@/utils/processes/definition/scriptProxies";
+import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
 // ---------------------------------------------------------------------------
-
-interface ProcessViewMsg {
-  msgType?: string;
-  msgTitle?: string;
-  msgText?: string;
-}
-
-interface ResponseAction {
-  showMsgInProcessView?: ProcessViewMsg;
-  showMsgInView?: ProcessViewMsg;
-  smartclientSay?: { message?: string };
-}
 
 interface ExtractedMessage {
   message: unknown;
@@ -69,6 +75,53 @@ interface ExtractedMessage {
   linkTabId?: string;
   linkRecordId?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Pure helpers for executeJavaProcess
+// ---------------------------------------------------------------------------
+
+/** Registry-first dispatcher of the OB shim (`OB.Utilities.Action.executeJSON`). */
+type ActionExecuteJSON = (jsonArray: unknown) => void;
+
+/**
+ * Reads `OB.Utilities.Action.executeJSON` from the shared script context. The
+ * same per-modal OB shim instance that `onLoad` used to register process actions
+ * (e.g. `showVATGrid`) is reachable here, so dispatching the kernel response
+ * through it runs those registered actions plus the built-in ones.
+ */
+const getActionExecuteJSON = (ctx: Record<string, unknown>): ActionExecuteJSON | undefined =>
+  (ctx.OB as { Utilities?: { Action?: { executeJSON?: ActionExecuteJSON } } } | undefined)?.Utilities?.Action
+    ?.executeJSON;
+
+const KERNEL_ENDPOINT = "/api/erp/org.openbravo.client.kernel";
+
+const buildKernelEndpoint = (args: {
+  processId?: string;
+  windowId?: string | number;
+  javaClassName?: string;
+}): string => {
+  const qs = new URLSearchParams();
+  if (args.processId) qs.set("processId", args.processId);
+  if (args.windowId !== undefined && args.windowId !== null && args.windowId !== "") {
+    qs.set("windowId", String(args.windowId));
+  }
+  if (args.javaClassName) qs.set("_action", args.javaClassName);
+  return `${KERNEL_ENDPOINT}?${qs.toString()}`;
+};
+
+/** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
+const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Execution failed");
+  }
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Param / return types
@@ -80,13 +133,33 @@ export interface UseProcessExecutionParams {
   javaClassName: string | undefined;
   windowId: string | number;
   tabId: string;
-  onProcess: any;
+  /** Body of em_etmeta_onprocess column, evaluated as a function expression on submit. */
+  etmetaOnprocess: string | null | undefined;
+  /**
+   * Pre-compiled body of em_etmeta_on_refresh. Attached to the view-arg passed
+   * to the string function so migrated code can call view.onRefreshFunction(view)
+   * exactly like classic SmartClient does.
+   */
+  onRefreshFunction: ((view: unknown) => unknown) | undefined;
   // Context
   tab: Tab | undefined;
+  /** Forwarded launcher field; present only for nested (script-launched) opens. */
+  callerField?: CallerField;
   record: EntityData | undefined;
   initialState: Record<string, any> | undefined;
   selectedRecords: EntityData[];
-  processScriptContext: any;
+  /**
+   * Script context shared by every migrated hook ({ Metadata, ...processScriptContext,
+   * ...moduleScope }). Used as the onProcess injection context so module-scope helpers
+   * resolve by bare name on submit too.
+   */
+  scriptContext: Record<string, unknown>;
+  /** View-level bridge + read-only data, so onProcess's second arg is the canonical view. */
+  viewController?: ViewController;
+  viewData?: ViewData;
+  fieldController?: FieldController;
+  /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside onProcess. */
+  gridResolver?: GridResolver;
   // biome-ignore lint/suspicious/noExplicitAny: button shape varies by process type
   button: any;
   parameters: Record<string, ProcessParameter>;
@@ -147,12 +220,18 @@ export function useProcessExecution({
   javaClassName,
   windowId,
   tabId,
-  onProcess,
+  etmetaOnprocess,
+  onRefreshFunction,
   tab,
+  callerField,
   record,
   initialState,
   selectedRecords,
-  processScriptContext,
+  scriptContext,
+  viewController,
+  viewData,
+  fieldController,
+  gridResolver,
   button,
   parameters,
   form,
@@ -191,38 +270,31 @@ export function useProcessExecution({
   // -------------------------------------------------------------------------
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult): ExtractedMessage | null => {
-    const data = res.data;
-    const responseActions =
-      data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
+    const actions: DispatchedAction[] = dispatchResponseActions(res.data);
+    const message = findFirstMessage(actions);
+    // Prefer the structured `openDirectTab` action over the legacy SmartClient
+    // HTML link parser. The fallback still kicks in when the handler embeds
+    // `openDirectTab('TAB','REC')` inside the message HTML (older handlers).
+    const structuredOpenDirectTab = findFirstOpenDirectTab(actions);
 
-    if (!responseActions) return null;
-
-    let actionWithMsg: ResponseAction | undefined;
-    if (Array.isArray(responseActions)) {
-      actionWithMsg = responseActions.find(
-        (action: ResponseAction) => action.showMsgInProcessView || action.showMsgInView || action.smartclientSay
-      );
-    } else if (typeof responseActions === "object") {
-      actionWithMsg = responseActions as ResponseAction;
-    }
-
-    const msgView = actionWithMsg?.showMsgInProcessView ?? actionWithMsg?.showMsgInView;
-    if (msgView) {
-      const rawMsg = msgView.msgText || "";
-      const parsed = parseSmartClientMessage(rawMsg);
+    if (message) {
+      const rawMsg = message.payload.msgText || "";
+      const parsedHtml = parseSmartClientMessage(rawMsg);
       return {
-        message: rawMsg || parsed.text,
-        messageType: msgView.msgType,
+        message: rawMsg || parsedHtml.text,
+        messageType: message.payload.msgType,
         isHtml: /<[a-z][\s\S]*>/i.test(rawMsg),
-        linkTabId: parsed.tabId,
-        linkRecordId: parsed.recordId,
+        linkTabId: structuredOpenDirectTab?.tabId ?? parsedHtml.tabId,
+        linkRecordId: structuredOpenDirectTab?.recordId ?? parsedHtml.recordId,
       };
     }
 
-    const smartclientSay = actionWithMsg?.smartclientSay;
-    if (smartclientSay?.message) {
+    const smartclientSayAction = actions.find(
+      (a): a is Extract<DispatchedAction, { kind: "smartclientSay" }> => a.kind === "smartclientSay"
+    );
+    if (smartclientSayAction?.payload.message) {
       return {
-        message: smartclientSay.message,
+        message: smartclientSayAction.payload.message,
         messageType: "success",
         isHtml: true,
       };
@@ -268,7 +340,17 @@ export function useProcessExecution({
   const parseProcessResponse = useCallback(
     (res: ExecuteProcessResult): ExecuteProcessResult => {
       const viewMessage = extractMessageFromProcessView(res);
-      const { message, messageType, isHtml, linkTabId, linkRecordId } = viewMessage || extractMessageFromData(res);
+      const {
+        message,
+        messageType,
+        isHtml,
+        linkTabId: msgLinkTabId,
+        linkRecordId: msgLinkRecordId,
+      } = viewMessage || extractMessageFromData(res);
+
+      // When no message action is present (extractMessageFromProcessView returned null),
+      // openDirectTab may still be in responseActions — capture it directly so auto-nav fires.
+      const standaloneOpenTab = viewMessage ? null : findFirstOpenDirectTab(dispatchResponseActions(res.data));
 
       return {
         success: res.success && messageType === "success",
@@ -276,8 +358,8 @@ export function useProcessExecution({
         error: messageType !== "success" ? (message as string | undefined) || res.error : undefined,
         isHtml: isHtml || false,
         messageType,
-        linkTabId,
-        linkRecordId,
+        linkTabId: msgLinkTabId ?? standaloneOpenTab?.tabId,
+        linkRecordId: msgLinkRecordId ?? standaloneOpenTab?.recordId,
       };
     },
     [extractMessageFromProcessView, extractMessageFromData]
@@ -435,53 +517,63 @@ export function useProcessExecution({
           typeof parsedResult.data === "string"
             ? parsedResult.data
             : parsedResult.data?.message || parsedResult.data?.msgText || "";
-        showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
         setShouldTriggerSuccess(true);
-        handleSuccessClose(true);
+        if (linkTabId) {
+          // openDirectTab: navigate immediately (Classic behavior — no user click needed).
+          // recordId may be absent when the handler opens the tab in grid mode.
+          showProcessToast({ isSuccess: messageType === "success", message });
+          onSuccess?.();
+          await handleNavigateToTab(linkTabId, linkRecordId ?? "");
+        } else {
+          showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+          handleSuccessClose(true);
+        }
       } else {
         setResult(parsedResult);
       }
     },
-    [revalidateDopoProcess, showProcessToast, setShouldTriggerSuccess, handleSuccessClose, setResult]
+    [
+      revalidateDopoProcess,
+      showProcessToast,
+      setShouldTriggerSuccess,
+      handleSuccessClose,
+      setResult,
+      handleNavigateToTab,
+      onSuccess,
+    ]
   );
 
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
       try {
-        const baseUrl = "/api/erp/org.openbravo.client.kernel";
-        const queryParams = new URLSearchParams();
-        if (processId) queryParams.set("processId", processId);
-        if (tab?.window) queryParams.set("windowId", tab.window.toString());
-        if (javaClassName) queryParams.set("_action", javaClassName);
-
-        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
         const hasFiles = Object.keys(fileParams).length > 0;
         const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
-        const response = await fetch(apiUrl, requestInit);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Execution failed");
-        }
-
-        let resultData = null;
-        try {
-          resultData = await response.json();
-        } catch {}
-
-        const hasRetryExecution =
-          resultData?.retryExecution === true ||
-          resultData?.response?.retryExecution === true ||
-          resultData?.response?.data?.retryExecution === true;
-
+        const resultData = await fetchAndParseJson(apiUrl, requestInit);
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
-        if (hasRetryExecution) {
+        // Dispatch the server `responseActions` registry-first, mirroring the
+        // classic `OB.Utilities.Action.executeJSON(responseActions)` the process
+        // popup runs after every execution. This fires process-registered actions
+        // (e.g. `showVATGrid`) and the built-in grid refreshes; message/navigation
+        // keys are skipped because the success flow below already handles them.
+        const dispatchableActions = readDispatchableResponseActions(resultData);
+        if (dispatchableActions.length > 0) {
+          getActionExecuteJSON(scriptContext)?.(dispatchableActions);
+        }
+
+        if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
-        } else {
-          await handleJavaProcessResult(parsedResult);
+          const hasRefreshGridAction = dispatchResponseActions(resultData).some((a) => a.kind === "refreshGrid");
+          if (shouldRefreshAfterProcess(resultData) || hasRefreshGridAction) {
+            setGridRefreshKey((prev) => prev + 1);
+          }
+          return;
         }
+
+        await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -492,11 +584,14 @@ export function useProcessExecution({
       tab?.window,
       javaClassName,
       fileParams,
+      scriptContext,
       buildMultipartRequest,
       buildJsonRequest,
       parseProcessResponse,
       handleJavaProcessResult,
       setResult,
+      setShouldTriggerSuccess,
+      setGridRefreshKey,
     ]
   );
 
@@ -550,38 +645,39 @@ export function useProcessExecution({
     ]
   );
 
-  const handleDirectJavaProcessExecute = useCallback(
-    async (actionValue?: string) => {
-      if (!processId || !javaClassName) return;
-      startTransition(async () => {
-        const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId as string] : null;
-        const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+  /**
+   * Builds the standard Java-process execution payload — the new-UI counterpart
+   * of Classic's `allProperties` (parent record context at the top level +
+   * `_params` with the process form values + `_buttonValue` / `_entityName`).
+   * Shared by the direct-Java path and the `actionHandlerCall()` reproduction
+   * (`runStandardExecution`) so both send an identical request.
+   */
+  const buildStandardJavaPayload = useCallback(
+    (actionValue?: string): Record<string, unknown> => {
+      const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId as string] : null;
+      const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
-        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+      const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
-        const params = getMergedProcessValues({ ...getMappedFormValues(), ...extraKey });
-        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+      const params = getMergedProcessValues({ ...getMappedFormValues(), ...extraKey });
+      const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
 
-        const payload = {
-          recordIds: getRecordIds(),
-          _buttonValue: actionValue || "DONE",
-          _entityName: tab?.entityName || "",
-          ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
-          ...buildProcessSpecificFields(processId),
-          ..._basePayload,
-        };
-
-        await executeJavaProcess(payload, "direct Java process");
-      });
+      return {
+        recordIds: getRecordIds(),
+        _buttonValue: actionValue || "DONE",
+        _entityName: tab?.entityName || "",
+        ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
+        ...buildProcessSpecificFields(processId),
+        ..._basePayload,
+      };
     },
     [
       tab,
       processId,
-      javaClassName,
       windowId,
       record,
       parameters,
@@ -589,16 +685,58 @@ export function useProcessExecution({
       getMappedFormValues,
       getRecordIds,
       buildProcessSpecificFields,
-      executeJavaProcess,
-      startTransition,
     ]
+  );
+
+  const handleDirectJavaProcessExecute = useCallback(
+    async (actionValue?: string) => {
+      if (!processId || !javaClassName) return;
+      startTransition(async () => {
+        const isMultiRecord =
+          (button?.processDefinition?.isMultiRecord === true || button?.processDefinition?.isMultiRecord === "Y") &&
+          selectedRecords.length > 1;
+
+        if (isMultiRecord) {
+          for (const rec of selectedRecords) {
+            const payload = { ...buildStandardJavaPayload(actionValue), recordIds: [String(rec.id)] };
+            await executeJavaProcess(payload, `direct Java process (record ${String(rec.id)})`);
+          }
+        } else {
+          await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
+        }
+      });
+    },
+    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition, button, selectedRecords]
+  );
+
+  /**
+   * Faithful reproduction of Classic's `actionHandlerCall()` for migrated
+   * `onProcess` scripts (`view.executeProcess()`). The platform builds the
+   * standard payload and posts it to the process's configured Java class —
+   * exactly as the Classic framework does — then dispatches any server
+   * `responseActions` registry-first. It is intentionally side-effect-light (no
+   * `setResult`/toast/retry): the returned response flows back through the
+   * `onProcess` return so the modal handles the message once.
+   */
+  const runStandardExecution = useCallback(
+    async (actionValue?: string): Promise<unknown> => {
+      const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
+      const resultData = await fetchAndParseJson(apiUrl, buildJsonRequest(buildStandardJavaPayload(actionValue)));
+
+      const dispatchableActions = readDispatchableResponseActions(resultData);
+      if (dispatchableActions.length > 0) {
+        getActionExecuteJSON(scriptContext)?.(dispatchableActions);
+      }
+
+      return resultData;
+    },
+    [processId, tab?.window, javaClassName, scriptContext, buildJsonRequest, buildStandardJavaPayload]
   );
 
   const extractResponseMessage = useCallback(
     (result: any) => {
-      if (result?.responseActions?.[0]?.showMsgInProcessView || result?.responseActions?.[0]?.showMsgInView) {
-        return result.responseActions[0].showMsgInProcessView ?? result.responseActions[0].showMsgInView;
-      }
+      const message = findFirstMessage(dispatchResponseActions(result));
+      if (message) return message.payload;
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }
@@ -608,6 +746,111 @@ export function useProcessExecution({
       return { msgType: "success", msgText: t("process.completedSuccessfully") };
     },
     [t]
+  );
+
+  /**
+   * Builds the canonical `view` proxy passed as the onProcess second argument.
+   * It carries the data fields the migrated scripts read (recordIds, windowId,
+   * DocAction, …) and the full view surface (theForm, messageBar, refresh, …).
+   * Shared by the standard onProcess path and the Pick&Execute pre-submit
+   * validation hook so both expose an identical surface to the migrated script.
+   */
+  const buildOnProcessView = useCallback(
+    (actionValue?: string) => {
+      const formValues = form.getValues();
+      resolveDocAction(formValues);
+
+      const completePayload = tab ? buildProcessPayload(record || {}, tab, initialState || {}, formValues) : {};
+
+      return createViewProxy(createFormHandle(form), parameters, {
+        messageBar,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+        // Classic `actionHandlerCall()` equivalent for migrated onProcess scripts.
+        executeProcess: runStandardExecution,
+        hookData: {
+          _buttonValue: actionValue || "DONE",
+          buttonValue: actionValue || "DONE",
+          windowId: tab?.window,
+          tabId: tab?.id || tabId || "",
+          entityName: tab?.entityName,
+          recordIds: selectedRecords?.map((r) => r.id),
+          // Mirrors classic SmartClient view.onRefreshFunction so migrated
+          // scripts can refresh the modal grid/form after async actions. The
+          // parent's refresh after a nested process closes is wired through the
+          // process stack (ProcessStackHost fires the launcher's onRefreshFunction).
+          onRefreshFunction,
+          ...completePayload,
+        },
+      });
+    },
+    [
+      form,
+      resolveDocAction,
+      tab,
+      record,
+      initialState,
+      parameters,
+      messageBar,
+      fieldController,
+      viewController,
+      gridResolver,
+      viewData,
+      runStandardExecution,
+      tabId,
+      selectedRecords,
+      onRefreshFunction,
+    ]
+  );
+
+  /**
+   * Pre-submit validation hook for Pick&Execute / Window-Reference processes.
+   * For these, the Done button posts straight to the Java handler via
+   * `handleWindowReferenceExecute`, so the migrated `em_etmeta_onprocess` runs
+   * here as a client-side guard BEFORE the submit (the faithful equivalent of
+   * Classic's `clientSideValidationFail()`). The script returns
+   * `{ severity: 'error', text }` to abort the submit, or `undefined` to proceed.
+   * It must NOT call `view.executeProcess()` — the platform performs the submit.
+   *
+   * @returns `true` if the submit may proceed, `false` if validation aborted it.
+   */
+  const runPreSubmitValidation = useCallback(
+    async (actionValue?: string): Promise<boolean> => {
+      if (!etmetaOnprocess) return true;
+      const processView = buildOnProcessView(actionValue);
+      try {
+        const stringFnResult = await executeStringFunction(
+          etmetaOnprocess,
+          scriptContext,
+          button.processDefinition,
+          processView
+        );
+        const result = stringFnResult?.data ?? stringFnResult;
+        const responseMessage = extractResponseMessage(result);
+
+        if (responseMessage.msgType === "error") {
+          messageBar.setMessage("error", null, responseMessage.msgText);
+          setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
+          return false;
+        }
+        return true;
+      } catch (error) {
+        logger.warn("Error in Pick&Execute pre-submit validation:", error);
+        messageBar.setMessage("error", null, error instanceof Error ? error.message : "Unknown error");
+        return false;
+      }
+    },
+    [
+      buildOnProcessView,
+      etmetaOnprocess,
+      scriptContext,
+      button.processDefinition,
+      extractResponseMessage,
+      messageBar,
+      setResult,
+    ]
   );
 
   const handleExecute = useCallback(
@@ -620,50 +863,54 @@ export function useProcessExecution({
 
       setResult(null);
       if (hasWindowReference) {
+        // Run the migrated pre-submit onProcess validation (if any) before
+        // posting to the Java handler. Previously em_etmeta_onprocess was never
+        // evaluated for P&E/Window-Reference processes (the early return below).
+        if (etmetaOnprocess && shouldRunProcessLifecycleHooks({ tab, callerField })) {
+          const canProceed = await runPreSubmitValidation(actionValue);
+          if (!canProceed) return; // message already shown; do not submit
+        }
         await handleWindowReferenceExecute(actionValue);
         return;
       }
 
-      if (!onProcess && javaClassName) {
+      if (!etmetaOnprocess && javaClassName) {
         await handleDirectJavaProcessExecute(actionValue);
         return;
       }
 
-      if (!onProcess || !tab) return;
+      if (!etmetaOnprocess || !shouldRunProcessLifecycleHooks({ tab, callerField })) return;
 
       startTransition(async () => {
-        const formValues = form.getValues();
-        resolveDocAction(formValues);
-
-        const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
-
-        const stringFunctionPayload = {
-          _buttonValue: actionValue || "DONE",
-          buttonValue: actionValue || "DONE",
-          windowId: tab.window,
-          tabId: tab?.id || tabId || "",
-          entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload,
-        };
+        // The onProcess second argument is the canonical view (see buildOnProcessView).
+        const processView = buildOnProcessView(actionValue);
 
         try {
           const stringFnResult = await executeStringFunction(
-            onProcess,
-            { Metadata, OB: createOBShim(), ...processScriptContext },
+            etmetaOnprocess,
+            // Shared hook context: OB (single instance per modal) plus module-scope
+            // helpers, so onProcess resolves bare-name helpers like the other hooks.
+            scriptContext,
             button.processDefinition,
-            stringFunctionPayload
+            processView
           );
 
           const result = stringFnResult?.data ?? stringFnResult;
+
+          // Dispatch the non-message response actions (refreshGrid,
+          // refreshGridParameter, setSelectorValueFromRecord, report) before the
+          // success-close runs and possibly unmounts the modal. The message and
+          // openDirectTab kinds are intentionally left to the flow below.
+          dispatchProcessReturnActions(result);
+
           const responseMessage = extractResponseMessage(result);
 
-          const msgType = responseMessage.msgType || responseMessage.severity;
+          const msgType = responseMessage.msgType;
           const isSuccess = msgType === "success";
           const isWarning = msgType === "warning";
 
           if (isSuccess || isWarning) {
-            const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
+            const message = responseMessage.msgText || t("process.completedSuccessfully");
 
             showProcessToast({
               isSuccess,
@@ -687,18 +934,14 @@ export function useProcessExecution({
       hasWindowReference,
       handleWindowReferenceExecute,
       handleDirectJavaProcessExecute,
-      onProcess,
+      runPreSubmitValidation,
+      buildOnProcessView,
+      etmetaOnprocess,
       javaClassName,
       tab,
-      tabId,
-      record,
-      initialState,
+      callerField,
       button.processDefinition,
-      selectedRecords,
-      form,
-      parameters,
-      processScriptContext,
-      resolveDocAction,
+      scriptContext,
       availableButtons,
       setResult,
       setGridRefreshKey,

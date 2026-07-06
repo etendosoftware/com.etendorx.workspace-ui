@@ -18,7 +18,7 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useFormInitialization } from "../useFormInitialization";
 import { useTabContext } from "@/contexts/tab";
-import { useUserContext } from "../useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useCurrentRecord } from "../useCurrentRecord";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import {
@@ -28,7 +28,7 @@ import {
 } from "@/utils/hooks/useFormInitialization/utils";
 
 jest.mock("@/contexts/tab");
-jest.mock("../useUserContext");
+jest.mock("@/stores/userStore");
 jest.mock("../useCurrentRecord");
 jest.mock("../useFormParent", () => jest.fn(() => ({ parentField: "parentVal" })));
 jest.mock("@/utils/hooks/useFormInitialization/utils");
@@ -48,10 +48,12 @@ describe("useFormInitialization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useTabContext as jest.Mock).mockReturnValue({ parentRecord: { id: "p1" } });
-    (useUserContext as jest.Mock).mockReturnValue({
-      setSession: mockSetSession,
-      setSessionSyncLoading: mockSetSessionSyncLoading,
-    });
+    (useUserStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) =>
+      selector({
+        setSession: mockSetSession,
+        setSessionSyncLoading: mockSetSessionSyncLoading,
+      })
+    );
     (useCurrentRecord as jest.Mock).mockReturnValue({ record: null, loading: false });
     (buildFormInitializationParams as jest.Mock).mockReturnValue(new URLSearchParams("p=1"));
     (buildFormInitializationPayload as jest.Mock).mockReturnValue({});

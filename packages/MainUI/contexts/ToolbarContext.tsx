@@ -17,11 +17,13 @@
 
 "use client";
 
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { globalCalloutManager } from "@/services/callouts";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
-import { logger } from "@/utils/logger";
+import { useToolbarStore, defaultActions, defaultSaveButtonState } from "@/stores/toolbarStore";
+import type { ToolbarActions } from "@/stores/toolbarStore";
 
 /**
  * Options for save operations.
@@ -42,292 +44,155 @@ export interface SaveButtonState {
   hasValidationErrors: boolean; // Internal validation
   isSaving: boolean; // Operation progress
   validationErrors: string[]; // User feedback
+  isDocumentProcessing: boolean; // IP state — document locked while processing
 }
 
+// Re-export ToolbarActions for consumers that import it from this file
+export type { ToolbarActions };
+
 /**
- * Available toolbar actions that can be registered by components.
- * Each action represents a common operation that can be triggered from the toolbar.
- * Components should implement these actions according to their specific needs
- * and register them using the registerActions function from ToolbarContext.
+ * ToolbarProvider — per-tab bridge between React hooks and the Zustand toolbar store.
+ *
+ * This provider is mounted once per tab inside TabContextProvider (see contexts/tab.tsx).
+ * It is responsible for:
+ *  1. Initializing and cleaning up the per-tab store slot.
+ *  2. Creating `wrappedOnSave` (which needs React hooks for parent-tab refresh logic)
+ *     and registering it in the store whenever its dependencies change.
+ *  3. Bridging globalCalloutManager events into store state updates.
+ *
+ * No React Context value is provided — all state lives in useToolbarStore keyed by tab.id.
  */
-type ToolbarActions = {
-  /**
-   * Save the current record or form data.
-   * @param options - Save options including showModal and skipFormStateUpdate flags
-   * @returns Promise that resolves when save operation is complete
-   */
-  save: (options: SaveOptions) => Promise<boolean>;
-
-  /**
-   * Refresh the current view or data.
-   * Typically reloads data from the server or resets the current state.
-   */
-  refresh: () => Promise<void>;
-
-  /**
-   * Create a new record or navigate to create mode.
-   * Usually clears the form and sets up for new record creation.
-   */
-  new: () => void;
-
-  /**
-   * Navigate back to the previous view or parent level.
-   * Commonly used to return from form view to table view.
-   */
-  back: () => void;
-
-  /**
-   * Open or toggle the filter interface.
-   * Allows users to filter data in table views.
-   */
-  filter: () => void;
-  treeView: () => void;
-
-  /**
-   * Export the current data to CSV format.
-   * Exports selected records or all visible records depending on context.
-   */
-  exportCSV: () => Promise<void>;
-
-  /**
-   * Open or toggle column filters for table views.
-   * @param buttonRef - Optional reference to the button element that triggered the action,
-   *                   used for positioning dropdown/popover filters
-   */
-  columnFilters: (buttonRef?: HTMLElement | null) => void;
-
-  /**
-   * Print the current document.
-   */
-  printDocument: () => Promise<void>;
-
-  /**
-   * Print the current record.
-   */
-  printRecord: () => Promise<void>;
-  /**
-   * Open the Advanced Filters modal.
-   */
-  advancedFilters: (anchorEl?: HTMLElement) => void;
-};
-
-type ToolbarContextType = {
-  onSave: (options: SaveOptions) => Promise<boolean>;
-  onRefresh: () => Promise<void>;
-  onNew: () => void;
-  onBack: () => void;
-  onFilter: () => void;
-  onExportCSV: () => Promise<void>;
-  onToggleTreeView: () => void;
-  onAdvancedFilters: (anchorEl?: HTMLElement) => void;
-  onColumnFilters: (buttonRef?: HTMLElement | null) => void;
-  onPrintDocument: () => Promise<void>;
-  onPrintRecord: () => Promise<void>;
-  registerActions: (actions: Partial<ToolbarActions>) => void;
-  saveButtonState: SaveButtonState;
-  setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
-  formViewRefetch?: () => Promise<void>;
-  registerFormViewRefetch?: (refetch: () => Promise<void>) => void;
-  attachmentAction?: () => void;
-  registerAttachmentAction?: (action: (() => void) | undefined) => void;
-  shouldOpenAttachmentModal: boolean;
-  setShouldOpenAttachmentModal: (open: boolean) => void;
-  isImplicitFilterApplied: boolean;
-  setIsImplicitFilterApplied: React.Dispatch<React.SetStateAction<boolean>>;
-  isAdvancedFilterApplied: boolean;
-  setIsAdvancedFilterApplied: React.Dispatch<React.SetStateAction<boolean>>;
-};
-
-const initialState: ToolbarActions = {
-  save: async (_options: SaveOptions) => false,
-  refresh: async () => {},
-  new: () => {},
-  back: () => {},
-  filter: () => {},
-  columnFilters: () => {},
-  treeView: () => {},
-  exportCSV: async () => {},
-  printDocument: async () => {},
-  printRecord: async () => {},
-  advancedFilters: () => {},
-};
-
-const ToolbarContext = createContext<ToolbarContextType>({
-  onSave: async (_options: SaveOptions) => false,
-  onRefresh: async () => {},
-  onNew: () => {},
-  onBack: () => {},
-  onFilter: () => {},
-  onExportCSV: async () => {},
-  onToggleTreeView: () => {},
-  onAdvancedFilters: () => {},
-  onColumnFilters: () => {},
-  onPrintDocument: async () => {},
-  onPrintRecord: async () => {},
-  registerActions: () => {},
-  saveButtonState: {
-    isCalloutLoading: false,
-    hasValidationErrors: false,
-    isSaving: false,
-    validationErrors: [],
-  },
-  setSaveButtonState: () => {},
-  shouldOpenAttachmentModal: false,
-  setShouldOpenAttachmentModal: () => {},
-  isImplicitFilterApplied: false,
-  setIsImplicitFilterApplied: () => {},
-  isAdvancedFilterApplied: false,
-  setIsAdvancedFilterApplied: () => {},
-} as ToolbarContextType);
-
-export const useToolbarContext = () => useContext(ToolbarContext);
-
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
-  const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
-  const [attachmentAction, setAttachmentAction] = useState<(() => void) | undefined>();
-  const [shouldOpenAttachmentModal, setShouldOpenAttachmentModal] = useState(false);
-
-  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(false);
-  const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
-  const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
-    isCalloutLoading: false,
-    hasValidationErrors: false,
-    isSaving: false,
-    validationErrors: [],
-  });
-
-  const registerFormViewRefetch = useCallback((refetch: () => Promise<void>) => {
-    setFormViewRefetch(() => refetch);
-  }, []);
-
-  const registerAttachmentAction = useCallback((action: (() => void) | undefined) => {
-    if (action) {
-      logger.info("[ToolbarContext] Registering attachment action");
-      setAttachmentAction(() => action);
-    } else {
-      logger.info("[ToolbarContext] Clearing attachment action");
-      setAttachmentAction(undefined);
-    }
-  }, []);
-
-  const [
-    {
-      new: onNew,
-      refresh: onRefresh,
-      treeView: onToggleTreeView,
-      save: originalOnSave, // Original save function from registered actions
-      back: onBack,
-      filter: onFilter,
-      exportCSV: onExportCSV,
-      columnFilters: onColumnFilters,
-      printDocument: onPrintDocument,
-      printRecord: onPrintRecord,
-      advancedFilters: onAdvancedFilters,
-    },
-    setActions,
-  ] = useState<ToolbarActions>(initialState);
-
-  // Access tab context for level information and refresh context for parent coordination
   const { tab } = useTabContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
+  // Use empty string as fallback so effects always run (avoids stale listener state).
+  // Tests that render ToolbarProvider without a real tab will use "" as the store key.
+  const tabId = tab?.id ?? "";
 
+  // Lifecycle: init/destroy the per-tab store slot
+  useEffect(() => {
+    useToolbarStore.getState().initTab(tabId);
+    return () => {
+      useToolbarStore.getState().destroyTab(tabId);
+    };
+  }, [tabId]);
+
+  // Read raw save from store — re-creates wrappedSave whenever the registered impl changes
+  const rawSave = useToolbarStore((s) => s.byTabId[tabId]?.registeredActions.save ?? defaultActions.save);
+
+  // wrappedOnSave adds parent-tab refresh logic on top of whatever save impl is registered
   const wrappedOnSave = useCallback(
     async (options: SaveOptions): Promise<boolean> => {
-      const succeeded = await originalOnSave(options);
-
-      // Only refresh parent tabs when save actually succeeded.
-      // Previously this ran unconditionally, causing a double refresh on success
-      // (once here, once via refetchDatasource in onSuccess) and an unnecessary
-      // refresh on backend failure that wiped unsaved child tab data.
+      const succeeded = await rawSave(options);
       if (succeeded && tab?.tabLevel && tab.tabLevel > 0) {
         await triggerParentRefreshes(tab.tabLevel);
       }
-
       return succeeded;
     },
-    [originalOnSave, tab?.tabLevel, triggerParentRefreshes]
+    [rawSave, tab?.tabLevel, triggerParentRefreshes]
   );
 
-  // Event-based callout monitoring
+  // Register wrappedOnSave into the store whenever it changes
+  useEffect(() => {
+    useToolbarStore.getState().setWrappedSave(tabId, wrappedOnSave);
+  }, [tabId, wrappedOnSave]);
+
+  // Bridge globalCalloutManager events into store saveButtonState
   useEffect(() => {
     const handleCalloutStart = () => {
-      setSaveButtonState((prev) => ({ ...prev, isCalloutLoading: true }));
+      useToolbarStore.getState().setSaveButtonState(tabId, (prev) => ({ ...prev, isCalloutLoading: true }));
     };
 
     const handleCalloutEnd = () => {
-      setSaveButtonState((prev) => ({ ...prev, isCalloutLoading: false }));
+      useToolbarStore.getState().setSaveButtonState(tabId, (prev) => ({ ...prev, isCalloutLoading: false }));
     };
 
-    // Subscribe to callout events
     globalCalloutManager.on("calloutStart", handleCalloutStart);
     globalCalloutManager.on("calloutEnd", handleCalloutEnd);
 
-    // Set initial state from callout manager
-    setSaveButtonState((prev) => ({
+    // Sync initial callout state
+    useToolbarStore.getState().setSaveButtonState(tabId, (prev) => ({
       ...prev,
       isCalloutLoading: globalCalloutManager.isCalloutRunning(),
     }));
 
     return () => {
-      // Cleanup event listeners
       globalCalloutManager.off("calloutStart", handleCalloutStart);
       globalCalloutManager.off("calloutEnd", handleCalloutEnd);
     };
-  }, []);
+  }, [tabId]);
 
-  const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
-    setActions((prev) => ({ ...prev, ...newActions }));
-  }, []);
+  return <>{children}</>;
+};
 
-  const value = useMemo(
-    () => ({
-      onSave: wrappedOnSave, // Use wrapped version instead of originalOnSave
-      onRefresh,
-      onNew,
-      onBack,
-      onFilter,
-      onExportCSV,
-      onColumnFilters,
-      onToggleTreeView,
-      onPrintDocument,
-      onPrintRecord,
-      onAdvancedFilters,
-      registerActions,
-      saveButtonState,
-      setSaveButtonState,
-      formViewRefetch,
-      registerFormViewRefetch,
-      attachmentAction,
-      registerAttachmentAction,
-      shouldOpenAttachmentModal,
-      setShouldOpenAttachmentModal,
-      isImplicitFilterApplied,
-      setIsImplicitFilterApplied,
-      isAdvancedFilterApplied,
-      setIsAdvancedFilterApplied,
-    }),
-    [
-      wrappedOnSave,
-      onRefresh,
-      onNew,
-      onBack,
-      onFilter,
-      onExportCSV,
-      onColumnFilters,
-      onToggleTreeView,
-      onPrintRecord,
-      onAdvancedFilters,
-      registerActions,
-      saveButtonState,
-      formViewRefetch,
-      registerFormViewRefetch,
-      attachmentAction,
-      registerAttachmentAction,
-      shouldOpenAttachmentModal,
-      isImplicitFilterApplied,
-      isAdvancedFilterApplied,
-    ]
-  );
+/**
+ * Backward-compatible hook that reads from the Zustand toolbar store for the current tab.
+ *
+ * All consumers of this hook work unchanged — it returns the same shape as the old
+ * React Context. Components that want selective subscriptions (fewer re-renders) should
+ * import `useToolbarStore` directly with a granular selector.
+ *
+ * Must be called inside a TabContextProvider (i.e. inside a tab tree).
+ */
+export const useToolbarContext = () => {
+  const { tab } = useTabContext();
+  const tabId = tab?.id ?? "";
 
-  return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;
+  const state = useToolbarStore(useShallow((s) => s.byTabId[tabId] ?? null));
+
+  return {
+    onSave: state?.wrappedSave ?? defaultActions.save,
+    onRefresh: state?.registeredActions.refresh ?? defaultActions.refresh,
+    onNew: state?.registeredActions.new ?? defaultActions.new,
+    onBack: state?.registeredActions.back ?? defaultActions.back,
+    onFilter: state?.registeredActions.filter ?? defaultActions.filter,
+    onExportCSV: state?.registeredActions.exportCSV ?? defaultActions.exportCSV,
+    onToggleTreeView: state?.registeredActions.treeView ?? defaultActions.treeView,
+    onAdvancedFilters: state?.registeredActions.advancedFilters ?? defaultActions.advancedFilters,
+    onColumnFilters: state?.registeredActions.columnFilters ?? defaultActions.columnFilters,
+    onPrintDocument: state?.registeredActions.printDocument ?? defaultActions.printDocument,
+    onPrintRecord: state?.registeredActions.printRecord ?? defaultActions.printRecord,
+
+    registerActions: useCallback(
+      (actions: Partial<ToolbarActions>) => useToolbarStore.getState().registerRawActions(tabId, actions),
+      [tabId]
+    ),
+
+    saveButtonState: state?.saveButtonState ?? defaultSaveButtonState,
+    setSaveButtonState: useCallback(
+      (updater: SaveButtonState | ((prev: SaveButtonState) => SaveButtonState)) =>
+        useToolbarStore.getState().setSaveButtonState(tabId, updater),
+      [tabId]
+    ),
+
+    formViewRefetch: state?.formViewRefetch,
+    registerFormViewRefetch: useCallback(
+      (refetch?: () => Promise<void>) => useToolbarStore.getState().registerFormViewRefetch(tabId, refetch),
+      [tabId]
+    ),
+
+    attachmentAction: state?.attachmentAction,
+    registerAttachmentAction: useCallback(
+      (action?: () => void) => useToolbarStore.getState().registerAttachmentAction(tabId, action),
+      [tabId]
+    ),
+
+    shouldOpenAttachmentModal: state?.shouldOpenAttachmentModal ?? false,
+    setShouldOpenAttachmentModal: useCallback(
+      (open: boolean) => useToolbarStore.getState().setShouldOpenAttachmentModal(tabId, open),
+      [tabId]
+    ),
+
+    isImplicitFilterApplied: state?.isImplicitFilterApplied ?? false,
+    setIsImplicitFilterApplied: useCallback(
+      (value: boolean) => useToolbarStore.getState().setIsImplicitFilterApplied(tabId, value),
+      [tabId]
+    ),
+
+    isAdvancedFilterApplied: state?.isAdvancedFilterApplied ?? false,
+    setIsAdvancedFilterApplied: useCallback(
+      (value: boolean) => useToolbarStore.getState().setIsAdvancedFilterApplied(tabId, value),
+      [tabId]
+    ),
+  };
 };

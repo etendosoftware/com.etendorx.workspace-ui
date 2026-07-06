@@ -1,11 +1,12 @@
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
 import { useExpressionDependencies } from "./useExpressionDependencies";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 interface UseDisplayLogicProps {
   field: Field;
@@ -13,7 +14,7 @@ interface UseDisplayLogicProps {
 }
 
 export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { tab, record, parentRecord, parentTab, auxiliaryInputs } = useTabContext();
 
   const formValues = useExpressionDependencies(field.displayLogicExpression);
@@ -45,7 +46,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
         context: session,
       });
 
-      return compiledExpr(smartContext, smartContext);
+      return toClassicBoolean(compiledExpr(smartContext, smartContext));
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       logger.error("Unexpected error", error);

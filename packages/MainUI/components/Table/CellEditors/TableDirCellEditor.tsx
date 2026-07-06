@@ -22,9 +22,8 @@ import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 
-import Image from "next/image";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
-import checkIconUrl from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg?url";
+import CheckCircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
 
 /**
  * TABLEDIR cell editor that uses a dropdown similar to MultiSelect but for single selection
@@ -43,6 +42,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   shouldAutoFocus = false,
   loadOptions,
   isLoadingOptions,
+  showTooltip = true,
 }) => {
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
   const [dynamicOptions, setDynamicOptions] = useState<RefListField[]>([]);
@@ -546,7 +546,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
           ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
           ${anchorEl ? "ring-2 ring-blue-500 border-blue-500" : ""}
         `}
-        title={hasError ? "This field has validation errors" : field.name}
+        title={showTooltip && hasError ? "This field has validation errors" : undefined}
         aria-label={field.name}
         aria-invalid={hasError}
         aria-expanded={!!anchorEl}
@@ -598,7 +598,12 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
               tabIndex={-1}>
               <span className="text-gray-500">(None)</span>
               {localValue === "" && (
-                <Image src={checkIconUrl} alt="Selected" width={16} height={16} data-testid={"Image__" + field.id} />
+                <CheckCircleFilledIcon
+                  width={16}
+                  height={16}
+                  aria-label="Selected"
+                  data-testid={"Image__" + field.id}
+                />
               )}
             </div>
           )}
@@ -623,11 +628,10 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                   tabIndex={-1}>
                   <span className="truncate">{option.label}</span>
                   {isSelected && (
-                    <Image
-                      src={checkIconUrl}
-                      alt="Selected"
+                    <CheckCircleFilledIcon
                       width={16}
                       height={16}
+                      aria-label="Selected"
                       data-testid={"Image__" + field.id}
                     />
                   )}

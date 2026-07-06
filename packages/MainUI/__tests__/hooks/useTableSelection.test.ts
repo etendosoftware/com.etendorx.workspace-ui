@@ -22,19 +22,16 @@ import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/se
 import useTableSelection from "../../hooks/useTableSelection";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 // Mock dependencies
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/utils/hooks/useTableSelection/sessionSync");
-jest.mock("@/contexts/window", () => {
-  const actual = jest.requireActual("@/contexts/window");
-  return {
-    ...actual,
-    useWindowContext: jest.fn(),
-  };
-});
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: jest.fn(() => "window1_123456789"),
+  useCurrentWindowId: jest.fn(() => "window1"),
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     debug: jest.fn(),
@@ -64,7 +61,7 @@ jest.mock("next/navigation", () => ({
 // Setup mock implementations
 const mockUseSelected = useSelected as jest.MockedFunction<typeof useSelected>;
 const mockUseUserContext = useUserContext as jest.MockedFunction<typeof useUserContext>;
-const mockUseWindowContext = useWindowContext as jest.MockedFunction<typeof useWindowContext>;
+// useWindowStore is used directly — we set state via setState
 const mockSyncSelectedRecordsToSession = syncSelectedRecordsToSession as jest.MockedFunction<
   typeof syncSelectedRecordsToSession
 >;
@@ -158,36 +155,21 @@ beforeEach(() => {
   mockUseUserContext.mockReturnValue(mockUserContext);
   mockSyncSelectedRecordsToSession.mockResolvedValue(undefined);
 
-  // Mock WindowContext to provide activeWindow and context functions
-  mockUseWindowContext.mockReturnValue({
-    activeWindow: {
-      windowId: "window1",
-      windowIdentifier: "window1_123456789",
-      order: 1,
-      tabs: {},
+  // Set Zustand store state with an active window
+  useWindowStore.setState({
+    windows: {
+      window1_123456789: {
+        windowId: "window1",
+        windowIdentifier: "window1_123456789",
+        isActive: true,
+        initialized: true,
+        title: "",
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        tabs: {},
+      },
     },
-    windows: [],
     setSelectedRecord: jest.fn(),
     clearSelectedRecord: jest.fn(),
-    getSelectedRecord: jest.fn(() => undefined),
-    getTabFormState: jest.fn(() => undefined),
-    clearChildrenSelections: jest.fn(),
-    setSelectedRecordAndClearChildren: jest.fn(),
-    addWindow: jest.fn(),
-    removeWindow: jest.fn(),
-    updateWindow: jest.fn(),
-    setActiveWindow: jest.fn(),
-    getAllWindows: jest.fn(() => []),
-    getActiveWindow: jest.fn(() => null),
-    getWindow: jest.fn(() => undefined),
-    addTab: jest.fn(),
-    removeTab: jest.fn(),
-    updateTab: jest.fn(),
-    getTab: jest.fn(() => undefined),
-    setTabFormState: jest.fn(),
-    clearTabFormState: jest.fn(),
-    isRecoveryLoading: false,
-    setIsRecoveryLoading: jest.fn(),
   });
 });
 

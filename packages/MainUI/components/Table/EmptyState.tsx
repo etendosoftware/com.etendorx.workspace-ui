@@ -29,12 +29,14 @@ const EmptyState = ({
   onContextMenu,
   onInsertRow,
   uIPattern,
+  containerStyle,
 }: {
   table?: MRT_TableInstance<EntityData>;
   maxWidth?: number;
   onContextMenu?: (event: React.MouseEvent) => void;
   onInsertRow?: () => void;
   uIPattern?: UIPattern;
+  containerStyle?: React.CSSProperties;
 }) => {
   const { t } = useTranslation();
   maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
@@ -46,7 +48,7 @@ const EmptyState = ({
   return (
     <div
       className="flex flex-col items-center justify-center text-center py-8 flex-1 min-h-0 w-full"
-      style={{ maxWidth }}
+      style={{ maxWidth, ...containerStyle }}
       onContextMenu={onContextMenu}>
       <div className="w-16 h-8 text-gray-300 pointer-events-none" />
       <h3 className="text-lg font-semibold text-gray-700 mb-2 pointer-events-none">{t("table.labels.emptyRecords")}</h3>

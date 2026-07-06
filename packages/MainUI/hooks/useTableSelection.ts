@@ -40,10 +40,14 @@ import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useCallback, useEffect, useRef } from "react";
-import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
-import { useUserContext } from "@/hooks/useUserContext";
+import {
+  syncSelectedRecordsToSession,
+  clearRecordContextFromSession,
+} from "@/utils/hooks/useTableSelection/sessionSync";
+import { useUserStore } from "@/stores/userStore";
 import { logger } from "@/utils/logger";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import type { TabFormState } from "@/utils/url/constants";
 import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
 
@@ -121,6 +125,158 @@ const processSelectedRecords = (
   return { selectedRecords, lastSelected };
 };
 
+type PersistSelectionPayload = {
+  windowIdentifier: string;
+  tabId: string;
+  recordId: string;
+  selectedRecords: EntityData[];
+  parentId: Tab["parentTabId"];
+  tabForSession: Tab;
+};
+
+type DebouncedPersistSelection = ((payload: PersistSelectionPayload) => void) & { cancel: () => void };
+
+/**
+ * Returns true when at least one child tab of `tab` (in the same window) is currently shown
+ * in FormView mode. Used to avoid clearing/overriding the parent selection while a child form
+ * is open. Returns false when there are no children or the form-state getter is unavailable.
+ */
+const isAnyChildInFormView = (
+  graph: ReturnType<typeof useSelected>["graph"],
+  tab: Tab,
+  windowIdentifier: string,
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined
+): boolean => {
+  if (!getTabFormState) return false;
+  return graph.getChildren(tab)?.some((child) => getTabFormState(windowIdentifier, child.id)?.mode === "form") ?? false;
+};
+
+/**
+ * Handles clearing the selected record in context when table selection becomes empty.
+ * Guards against clearing parent selection while a child tab is in FormView mode.
+ */
+const handleDeselectInContext = (
+  windowIdentifier: string,
+  tab: Tab,
+  rowSelection: MRT_RowSelectionState,
+  graph: ReturnType<typeof useSelected>["graph"],
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void,
+  clearChildrenSelections: (
+    windowIdentifier: string,
+    childTabIds: string[],
+    isParentSelectionChanging?: boolean
+  ) => void
+): void => {
+  const hasTableSelection = Object.keys(rowSelection).length > 0;
+  if (hasTableSelection) return;
+
+  const hasChildInFormView = isAnyChildInFormView(graph, tab, windowIdentifier, getTabFormState);
+
+  if (!hasChildInFormView) {
+    clearSelectedRecord(windowIdentifier, tab.id);
+
+    // Cascade clear ALL descendant tabs so no stale selection survives in the store
+    const descendantIds: string[] = [];
+    const collectDescendants = (parentTab: Tab) => {
+      const kids = graph.getChildren(parentTab);
+      if (!kids) return;
+      for (const child of kids) {
+        if (child.window === tab.window) {
+          descendantIds.push(child.id);
+          collectDescendants(child);
+        }
+      }
+    };
+    collectDescendants(tab);
+    if (descendantIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, descendantIds, true);
+    }
+  } else {
+    logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+  }
+};
+
+/**
+ * Applies the side effects triggered when the set of selected record IDs changes:
+ *  - a single record selected on a visible table updates the URL (debounced for keyboard nav);
+ *  - a full deselect clears the record context (and, on a root tab, the stale server session).
+ * Extracted from the main selection effect to keep its cognitive complexity low; behaviour is
+ * identical to the previous inline block.
+ */
+const handleSelectionIdChange = (params: {
+  selectedRecords: EntityData[];
+  isTableVisible: boolean;
+  fromKeyboard: boolean;
+  windowIdentifier: string;
+  tab: Tab;
+  rowSelection: MRT_RowSelectionState;
+  graph: ReturnType<typeof useSelected>["graph"];
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined;
+  debouncedPersistSelection: DebouncedPersistSelection;
+  setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string) => void;
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
+  clearChildrenSelections: (
+    windowIdentifier: string,
+    childTabIds: string[],
+    isParentSelectionChanging?: boolean
+  ) => void;
+}): void => {
+  const {
+    selectedRecords,
+    isTableVisible,
+    fromKeyboard,
+    windowIdentifier,
+    tab,
+    rowSelection,
+    graph,
+    getTabFormState,
+    debouncedPersistSelection,
+    setSelectedRecord,
+    clearSelectedRecord,
+    clearChildrenSelections,
+  } = params;
+
+  if (selectedRecords.length === 1 && isTableVisible) {
+    // Case A: Single Record Selected (table must be visible to update URL)
+    const recordId = String(selectedRecords[0].id);
+    if (fromKeyboard) {
+      // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
+      // + deferred scroll) behind a short debounce so each key press does not kick off
+      // a full re-render chain (useCurrentRecord → FIC → Toolbar). The graph is still
+      // updated synchronously by the caller so the visible row highlight never lags.
+      debouncedPersistSelection({
+        windowIdentifier,
+        tabId: tab.id,
+        recordId,
+        selectedRecords,
+        parentId: tab.parentTabId,
+        tabForSession: tab,
+      });
+    } else {
+      debouncedPersistSelection.cancel();
+      setSelectedRecord(windowIdentifier, tab.id, recordId);
+    }
+  } else if (selectedRecords.length === 0) {
+    // Deselect all — guard against clearing parent selection while a child tab is in FormView.
+    debouncedPersistSelection.cancel();
+    handleDeselectInContext(
+      windowIdentifier,
+      tab,
+      rowSelection,
+      graph,
+      getTabFormState,
+      clearSelectedRecord,
+      clearChildrenSelections
+    );
+    // On a root tab, also wipe the record-scoped context left in the server session by the
+    // previously selected record, so a later NEW record starts from a clean session state.
+    if (!tab.parentTabId) {
+      clearRecordContextFromSession({ tab, parentId: tab.parentTabId });
+    }
+  }
+};
+
 /**
  * Updates the global selection graph with the current table selection state.
  *
@@ -147,34 +303,6 @@ const processSelectedRecords = (
  * });
  * ```
  */
-/**
- * Handles clearing the selected record in context when table selection becomes empty.
- * Guards against clearing parent selection while a child tab is in FormView mode.
- */
-const handleDeselectInContext = (
-  windowIdentifier: string,
-  tab: Tab,
-  rowSelection: MRT_RowSelectionState,
-  graph: ReturnType<typeof useSelected>["graph"],
-  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
-  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void
-): void => {
-  const hasTableSelection = Object.keys(rowSelection).length > 0;
-  if (hasTableSelection) return;
-
-  const children = graph.getChildren(tab);
-  const hasChildInFormView = children?.some((child) => {
-    if (!getTabFormState) return false;
-    return getTabFormState(windowIdentifier, child.id)?.mode === "form";
-  });
-
-  if (!hasChildInFormView) {
-    clearSelectedRecord(windowIdentifier, tab.id);
-  } else {
-    logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
-  }
-};
-
 const updateGraphSelection = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
@@ -264,9 +392,25 @@ export default function useTableSelection(
   options?: UseTableSelectionOptions
 ) {
   const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
-    useWindowContext();
-  const { setSession, setSessionSyncLoading } = useUserContext();
+
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const windowId = useCurrentWindowId();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+
+  // Zustand store — imperative getters
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+
+  const setSession = useUserStore((s) => s.setSession);
+  const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 
@@ -277,14 +421,7 @@ export default function useTableSelection(
   optionsRef.current = { isKeyboardNavigationSource, onStableSelection };
 
   const persistSelection = useCallback(
-    (payload: {
-      windowIdentifier: string;
-      tabId: string;
-      recordId: string;
-      selectedRecords: EntityData[];
-      parentId: Tab["parentTabId"];
-      tabForSession: Tab;
-    }) => {
+    (payload: PersistSelectionPayload) => {
       setSelectedRecord(payload.windowIdentifier, payload.tabId, payload.recordId);
       if (payload.selectedRecords.length > 0) {
         syncSelectedRecordsToSession({
@@ -302,8 +439,6 @@ export default function useTableSelection(
 
   const debouncedPersistSelection = useDebouncedCallback(persistSelection, KEYBOARD_NAV_DEBOUNCE_MS);
 
-  const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.windowIdentifier;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount
@@ -381,31 +516,20 @@ export default function useTableSelection(
     // (form view), its rowSelection can be stale and must not override the URL that was
     // set by the form navigation — doing so would navigate away from the current record.
     if (hasSelectionIdChanged) {
-      if (selectedRecords.length === 1 && isTableVisible) {
-        // Case A: Single Record Selected (table must be visible to update URL)
-        const recordId = String(selectedRecords[0].id);
-        if (fromKeyboard) {
-          // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
-          // + deferred scroll) behind a short debounce so each key press does not kick off
-          // a full re-render chain (useCurrentRecord → FIC → Toolbar). The graph is still
-          // updated synchronously below so the visible row highlight never lags.
-          debouncedPersistSelection({
-            windowIdentifier,
-            tabId: tab.id,
-            recordId,
-            selectedRecords,
-            parentId: tab.parentTabId,
-            tabForSession: tab,
-          });
-        } else {
-          debouncedPersistSelection.cancel();
-          setSelectedRecord(windowIdentifier, tab.id, recordId);
-        }
-      } else if (selectedRecords.length === 0) {
-        // Deselect all — guard against clearing parent selection while a child tab is in FormView.
-        debouncedPersistSelection.cancel();
-        handleDeselectInContext(windowIdentifier, tab, rowSelection, graph, getTabFormState, clearSelectedRecord);
-      }
+      handleSelectionIdChange({
+        selectedRecords,
+        isTableVisible,
+        fromKeyboard,
+        windowIdentifier,
+        tab,
+        rowSelection,
+        graph,
+        getTabFormState,
+        debouncedPersistSelection,
+        setSelectedRecord,
+        clearSelectedRecord,
+        clearChildrenSelections,
+      });
     }
 
     // 6. Update Graph (Global State) — always synchronous to keep UI responsive
@@ -416,10 +540,7 @@ export default function useTableSelection(
     // 2. The table is currently VISIBLE (grid mode), AND
     // 3. No child tab is currently in FormView mode, AND
     // 4. Not from keyboard navigation (keyboard path runs it via the debounced persist).
-    const hasChildInFormView = graph.getChildren(tab)?.some((child) => {
-      if (!getTabFormState) return false;
-      return getTabFormState(windowIdentifier, child.id)?.mode === "form";
-    });
+    const hasChildInFormView = isAnyChildInFormView(graph, tab, windowIdentifier, getTabFormState);
 
     if (selectedRecords.length > 0 && hasSelectionIdChanged && isTableVisible && !hasChildInFormView && !fromKeyboard) {
       syncSelectedRecordsToSession({
@@ -437,6 +558,7 @@ export default function useTableSelection(
     tab,
     windowIdentifier,
     clearSelectedRecord,
+    clearChildrenSelections,
     setSelectedRecord,
     currentWindowId,
     getSelectedRecord,

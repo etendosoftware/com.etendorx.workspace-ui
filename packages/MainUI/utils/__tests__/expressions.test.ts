@@ -260,4 +260,35 @@ describe("expressions - createEvaluationContext", () => {
       expect(sym in context).toBe(false);
     });
   });
+
+  describe("Server-mangled # session attributes (_-prefixed)", () => {
+    const SHOW_ACCT_PROP = "_ShowAcct";
+
+    it("resolves _ShowAcct from preferences when context has no #ShowAcct", () => {
+      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ ShowAcct: "Y" });
+      const context = createEvaluationContext({ context: {} });
+      expect(context[SHOW_ACCT_PROP]).toBe("Y");
+    });
+
+    it("prefers context['#AD_Org_ID'] over prefs when the session attribute is present", () => {
+      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ AD_Org_ID: "pref" });
+      const context = createEvaluationContext({ context: { "#AD_Org_ID": "0" } });
+      expect(context._AD_Org_ID).toBe("0");
+    });
+
+    it("falls back to prefs when neither context nor record has the attribute", () => {
+      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ IsAcctDimCentrally: "N" });
+      const context = createEvaluationContext({});
+      expect(context._IsAcctDimCentrally).toBe("N");
+    });
+
+    it("does not shadow legitimate _identifier / _entityName record values", () => {
+      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ identifier: "WRONG" });
+      const context = createEvaluationContext({
+        values: { _identifier: "Record A", _entityName: "MyEntity" },
+      });
+      expect(context._identifier).toBe("Record A");
+      expect(context._entityName).toBe("MyEntity");
+    });
+  });
 });

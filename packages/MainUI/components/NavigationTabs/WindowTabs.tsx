@@ -26,10 +26,11 @@ import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import type { WindowState } from "@/utils/window/constants";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 
 const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, any>) => {
   const windowTitle = window.title;
@@ -44,7 +45,14 @@ const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, 
 
 export default function WindowTabs() {
   const { t } = useTranslation();
-  const { windows, isHomeRoute, cleanupWindow, setWindowActive, setAllWindowsInactive } = useWindowContext();
+  const windowsObj = useWindowStore((s) => s.windows);
+  const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
+  const activeWindow = useMemo(() => windows.find((w) => w.isActive) ?? null, [windows]);
+  const isHomeRoute = !activeWindow;
+  const cleanupWindow = useWindowStore((s) => s.cleanupWindow);
+  const setWindowActive = useWindowStore((s) => s.setWindowActive);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
   const { windowsData } = useMetadataContext();
 
   const {
@@ -59,6 +67,7 @@ export default function WindowTabs() {
   } = useTabs();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [closingWindowIds, setClosingWindowIds] = useState<Set<string>>(new Set());
+  const [pendingCloseWindow, setPendingCloseWindow] = useState<WindowState | null>(null);
 
   const handleTabMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -77,13 +86,29 @@ export default function WindowTabs() {
 
   const handleCloseWindow = useCallback(
     (window: WindowState) => {
-      // Optimistic removal for instant feedback
+      const isDirty = Object.values(dirtyWindows[window.windowIdentifier] ?? {}).some(Boolean);
+      if (isDirty) {
+        setPendingCloseWindow(window);
+        return;
+      }
+      // Clean window — close immediately
       setClosingWindowIds((prev) => new Set(prev).add(window.windowIdentifier));
-      // Clean up table state for this window
       cleanupWindow(window.windowIdentifier);
     },
-    [cleanupWindow]
+    [cleanupWindow, dirtyWindows]
   );
+
+  const handleConfirmClose = useCallback(() => {
+    if (pendingCloseWindow) {
+      setClosingWindowIds((prev) => new Set(prev).add(pendingCloseWindow.windowIdentifier));
+      cleanupWindow(pendingCloseWindow.windowIdentifier);
+      setPendingCloseWindow(null);
+    }
+  }, [pendingCloseWindow, cleanupWindow]);
+
+  const handleCancelClose = useCallback(() => {
+    setPendingCloseWindow(null);
+  }, []);
 
   const visibleWindows = useMemo(
     () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
@@ -182,6 +207,18 @@ export default function WindowTabs() {
         onClose={handleTabMenuClose}
         onSelect={handleSelectWindow}
         data-testid="MenuTabs__c8117d"
+      />
+      <ConfirmModal
+        open={pendingCloseWindow !== null}
+        confirmText={
+          t("common.unsavedChangesCloseMessage") ||
+          "You have unsaved changes that will be lost. Are you sure you want to close this window?"
+        }
+        saveLabel={t("common.close") || "Close"}
+        secondaryButtonLabel={t("common.cancel") || "Cancel"}
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        data-testid="ConfirmModal__c8117d"
       />
     </div>
   );

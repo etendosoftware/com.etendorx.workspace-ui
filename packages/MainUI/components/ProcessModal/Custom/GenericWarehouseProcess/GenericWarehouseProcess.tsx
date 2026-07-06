@@ -38,8 +38,8 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
-import { useUserContext } from "@/hooks/useUserContext";
-import { useWindowContext } from "@/contexts/window";
+import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 import { parseSmartClientMessage, INITIAL_CONFIRM_DIALOG, type ConfirmDialogState } from "../shared/processModalUtils";
@@ -68,7 +68,7 @@ import type {
 interface GenericWarehouseProcessProps {
   schema: WarehouseProcessSchema;
   payscriptPlugin: WarehousePayScriptPlugin | null;
-  /** Raw onProcess function string from processDefinition.onProcess */
+  /** Raw onProcess function string from processDefinition.etmetaOnprocess */
   onProcessCode: string | undefined;
   processId: string;
   onClose: () => void;
@@ -88,10 +88,11 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   onSuccess,
 }) => {
   const { t } = useTranslation();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   // ---------------------------------------------------------------------------
   // State — initialized from schema.initialData

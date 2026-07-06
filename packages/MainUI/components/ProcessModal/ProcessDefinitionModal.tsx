@@ -29,16 +29,14 @@
  *
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { FormProvider, useForm, useFormState } from "react-hook-form";
+import { type FieldValues, FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
+import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import ChevronDownIcon from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
-  useWindowContext,
-  useUserContext,
   // Hooks
   useProcessConfig,
   useProcessInitialization,
@@ -47,6 +45,7 @@ import {
   useTranslation,
   useProcessCallouts,
   useWarehousePlugin,
+  usesCustomComponent,
   // Next.js
   useRouter,
   useSearchParams,
@@ -56,11 +55,20 @@ import {
   buildProcessScriptContext,
   applyGridSelection,
   updateParametersFromOnLoadResult,
+  withFlag,
+  withLabelOverride,
+  withMandatory,
+  withRefList,
+  normalizeValueMap,
+  addDynamicParameter,
+  removeParameter,
   evaluateParameterDefaults,
+  seedBooleanParameterDefaults,
+  seedSessionColumnDefaults,
   isBulkCompletionProcess,
-  DEFAULT_BULK_COMPLETION_ONLOAD,
+  buildOnLoadScripts,
+  isBulkParameterRenderable,
   registerPayScriptDSL,
-  createOBShim,
   compileExpression,
   logger,
   FIELD_REFERENCE_CODES,
@@ -70,9 +78,16 @@ import {
   BUTTON_LIST_REFERENCE_ID,
   BUTTON_REFERENCE_ID,
   PROCESS_TYPES,
+  isPickAndExecute,
+  PICK_AND_EXECUTE_UI_PATTERN,
+  OBUIAPP_REPORT_UI_PATTERN,
+  REPORT_FORMAT_I18N_KEYS,
+  getReportActions,
+  type ReportOutputFormat,
   // Components
   GenericWarehouseProcess,
   createProcessExpressionContext,
+  isParameterDisplayed,
   executeStringFunction,
   // Types
   type ExecuteProcessResult,
@@ -84,33 +99,62 @@ import {
   type EntityData,
   type Field,
 } from "./imports";
+import { resolveProcessModalDescription } from "./resolveProcessModalDescription";
+import { findMissingMandatoryParameters } from "./findMissingMandatoryParameters";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { useWindowStore } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
+import { useLanguage } from "@/contexts/language";
+import { useOptionalDatasourceContext } from "@/contexts/datasourceContext";
 import Modal from "../Modal";
 import Loading from "../loading";
 import { ToastContent } from "../ToastContent";
 import WindowReferenceGrid from "./WindowReferenceGrid";
+import ProcessDialogHost from "./ProcessDialogHost";
+import ParameterDialogHost from "./ParameterDialogHost";
+import ProcessMessageBar from "./ProcessMessageBar";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
 import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProcessFICCallout";
-
-const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
-  const [expanded, setExpanded] = useState(true);
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-left cursor-pointer select-none">
-        <ChevronDownIcon
-          className={`h-3.5 w-3.5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
-          data-testid="ChevronDownIcon__761503"
-        />
-        <span className="text-sm font-medium text-gray-700">{title}</span>
-      </button>
-      <div style={{ display: expanded ? "block" : "none" }}>{children}</div>
-    </div>
-  );
-};
+import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
+import { useGridRowValidation } from "./hooks/useGridRowValidation";
+import { useFormDefaultsSync } from "./hooks/useFormDefaultsSync";
+import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
+import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
+import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
+import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/definition/moduleScope";
+import {
+  createFormHandle,
+  createViewProxy,
+  findParameter,
+  resolveFormKey,
+  type FieldController,
+  type GridController,
+  type GridResolver,
+  type ViewController,
+  type ViewData,
+} from "@/utils/processes/definition/scriptProxies";
+import {
+  makeFooterButtonHandle,
+  runFooterButtonAction,
+  withCancelHidden,
+  withCloseHidden,
+  withOkForceEnabled,
+  shouldClearSeedValidationErrors,
+  EMPTY_SCRIPT_BUTTON_STATE,
+  type ScriptButtonState,
+} from "@/utils/processes/definition/utils";
+import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { pushProcess } from "@/utils/processes/definition/processStack";
+import {
+  DEFAULT_PROCESS_PARAM_GROUP_ID,
+  groupProcessParametersByFieldGroup,
+  type ProcessParameterGroup,
+} from "./utils/groupProcessParametersByFieldGroup";
+import { buildSuccessBannerMessage } from "./utils/responseBanner";
+import { CollapsibleSection } from "./components/CollapsibleSection";
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -148,6 +192,9 @@ export const FALLBACK_RESULT = {};
 
 /** Reference ID for window reference field types */
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
+
+/** Stable empty reference used when a process has no shared module scope. */
+const EMPTY_MODULE_SCOPE: Record<string, unknown> = {};
 
 // ---------------------------------------------------------------------------
 // evaluateWindowReferenceDisplay — display-logic evaluation for grid params
@@ -187,7 +234,7 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
           session,
         });
 
-        isDisplayed = compiledExpr(smartContext, smartContext);
+        isDisplayed = toClassicBoolean(compiledExpr(smartContext, smartContext));
       } catch (error) {
         logger.warn(`Error evaluating display logic for ${parameter.name}`, error);
       }
@@ -197,6 +244,36 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
   }
   return isDisplayed;
 };
+
+/**
+ * Best-effort keyboard focus for a migrated `form.focusInItem(name)` call. The
+ * modal's selectors render a real input with a `name` attribute, so a DOM lookup
+ * is the reliable path; react-hook-form's `setFocus` is the fallback for inputs
+ * that forward a ref.
+ */
+function focusFormField(form: UseFormReturn, name: string): void {
+  if (typeof document !== "undefined") {
+    const element = document.querySelector(`[name="${name}"]`);
+    if (element instanceof HTMLElement) {
+      element.focus();
+      return;
+    }
+  }
+  try {
+    form.setFocus(name as never);
+  } catch {
+    // Best-effort: nothing focusable matched the requested item.
+  }
+}
+
+/** Returns the grid-selection structure with every loaded row selected. */
+function selectAllGridRows(prev: GridSelectionStructure): GridSelectionStructure {
+  const next: GridSelectionStructure = {};
+  for (const [gridName, grid] of Object.entries(prev)) {
+    next[gridName] = { ...grid, _selection: [...grid._allRows] };
+  }
+  return next;
+}
 
 // ---------------------------------------------------------------------------
 // ProcessDefinitionModalContent
@@ -218,31 +295,80 @@ function ProcessDefinitionModalContent({
   type,
   keepOpenOnSuccess,
   contextRecord,
+  windowId: windowIdProp,
+  callerField: callerFieldProp,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
+  const { getLabel, language } = useLanguage();
   const { graph } = useSelected();
   const { tab, record: tabRecord } = useTabContext();
+  const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
-  const { session, token, getCsrfToken } = useUserContext();
+  const session = useUserStore((s) => s.session);
+  const token = useUserStore((s) => s.token);
+  const getCsrfToken = useUserStore((s) => s.getCsrfToken);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
+  const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
-  const { onProcess, onLoad } = processDefinition;
+  const { etmetaOnprocess, etmetaOnload, etmetaOnRefresh } = processDefinition;
 
   // Build the reusable process script context (auth-aware HTTP helpers)
   // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
   const processScriptContext = useMemo(
-    () => buildProcessScriptContext({ token: token || "", getCsrfToken }),
-    [token, getCsrfToken]
+    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language }),
+    [token, getCsrfToken, getLabel, language]
+  );
+
+  // Shared module scope: when em_etmeta_payscript_logic holds a JS module body
+  // (declarations, not a PayScript DSL expression), evaluate it once per open so
+  // its helpers/constants/state are visible to every hook. The body runs with the
+  // shared OB shim in context, so its OB.<NS>.* registrations persist too. DSL
+  // bodies (the existing case) keep their registry path untouched.
+  const { moduleScope, isPayscriptDsl } = useMemo(() => {
+    const body = processDefinition.etmetaPayscriptLogic;
+    if (!open || !body || !body.trim()) {
+      return { moduleScope: EMPTY_MODULE_SCOPE, isPayscriptDsl: false };
+    }
+    if (classifyPayscriptBody(body) === "dsl") {
+      return { moduleScope: EMPTY_MODULE_SCOPE, isPayscriptDsl: true };
+    }
+    return {
+      moduleScope: evaluateModuleScope(body, { Metadata, ...processScriptContext }),
+      isPayscriptDsl: false,
+    };
+  }, [open, processDefinition.etmetaPayscriptLogic, processScriptContext]);
+
+  // Single script context shared by every migrated hook (onLoad / onProcess /
+  // onRefresh / onParameterChange / onGridLoad). Module-scope helpers are spread
+  // last so they resolve by bare name; reserved context names (OB, callAction,
+  // messageBar, …) must not be redeclared as helpers.
+  const scriptHookContext = useMemo(
+    () => ({ Metadata, ...processScriptContext, ...moduleScope }),
+    [processScriptContext, moduleScope]
+  );
+
+  // Compile etmetaOnRefresh once into a callable so we can attach it to the
+  // "view" argument passed into onLoad/onProcess (mirrors classic's
+  // view.onRefreshFunction; see processView.ts). undefined when the column is null.
+  const onRefreshFunction: OnRefreshFunction | undefined = useMemo(
+    () => compileOnRefreshFunction(etmetaOnRefresh, scriptHookContext),
+    [etmetaOnRefresh, scriptHookContext]
   );
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
 
-  // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
+  // Custom-component processes (em_etmeta_custom_component) provide their own UI
+  // built from the schema their onLoad returns. The flag is declarative, so a
+  // standard process never runs its onLoad just to be classified.
+  const isCustomComponent = usesCustomComponent(processDefinition);
+
+  // Warehouse plugin — evaluated only for custom-component processes; its onLoad
+  // returns the schema (type: 'warehouseProcess') used to render GenericWarehouseProcess.
   const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
 
   const {
@@ -252,8 +378,9 @@ function ProcessDefinitionModalContent({
     loading: warehousePluginLoading,
   } = useWarehousePlugin({
     processId,
-    onLoadCode: onLoad,
-    onProcessCode: typeof onProcess === "string" ? onProcess : undefined,
+    isCustomComponent,
+    onLoadCode: etmetaOnload ?? undefined,
+    onProcessCode: typeof etmetaOnprocess === "string" ? etmetaOnprocess : undefined,
     processDefinition: processDefinition as Record<string, unknown>,
     selectedRecords: selectedRecordsForPlugin as { id: string }[],
     token: token ?? "",
@@ -283,6 +410,12 @@ function ProcessDefinitionModalContent({
   // Using a ref avoids triggering re-renders that would cause infinite loops.
   const onLoadFilterExpressionsRef = useRef<Record<string, Record<string, string>>>({});
 
+  // Identity of the open session for which onLoad already ran. onLoad must run
+  // once per open (classic semantics: the popup's onLoad fires once), keyed on
+  // stable record ids — NOT object references — so a parent-grid refetch
+  // triggered by a script (e.g. refreshGrid) cannot re-fire onLoad in a loop.
+  const onLoadIdentityRef = useRef<string | null>(null);
+
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -297,22 +430,15 @@ function ProcessDefinitionModalContent({
   );
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
-  // Register PayScript DSL if available in process definition
+  // Register PayScript DSL if the em_etmeta_payscript_logic column holds a DSL
+  // expression. JS module bodies take the shared-scope path instead (see the
+  // moduleScope memo above) and must not be registered as DSL.
   useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-        setRulesRegistered(true);
-      }
+    if (processDefinition.id && isPayscriptDsl && processDefinition.etmetaPayscriptLogic) {
+      registerPayScriptDSL(processDefinition.id, processDefinition.etmetaPayscriptLogic);
+      setRulesRegistered(true);
     }
-  }, [processDefinition]);
+  }, [processDefinition, isPayscriptDsl]);
 
   useEffect(() => {
     let active = true;
@@ -378,7 +504,7 @@ function ProcessDefinitionModalContent({
       }
 
       const individualMapped = individualButtons.map((p) => ({
-        value: p.dBColumnName,
+        value: p.dBColumnName ?? "",
         label: p.name,
       }));
       buttons.push(...individualMapped);
@@ -405,17 +531,16 @@ function ProcessDefinitionModalContent({
 
   const windowReferenceTab = firstWindowReferenceParam?.window?.tabs?.[0] as Tab;
   const tabId = windowReferenceTab?.id || "";
-  const windowId = tab?.window || "";
+  const windowId = tab?.window || windowIdProp || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
     return buildPayloadByInputName(record, tab.fields);
   }, [record, tab?.fields]);
 
-  const hasWindowReference = useMemo(
-    () => Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID),
-    [parameters]
-  );
+  // Pick-and-Execute discriminator: prefers the explicit `uiPattern` from metadata
+  // and falls back to the presence of a Window Reference parameter for legacy seeds.
+  const isPE = useMemo(() => isPickAndExecute(button.processDefinition), [button.processDefinition]);
 
   const {
     fetchConfig,
@@ -456,20 +581,50 @@ function ProcessDefinitionModalContent({
   // These take precedence over the static initialization values.
   const [calloutLogicFields, setCalloutLogicFields] = useState<Record<string, boolean>>({});
 
-  // Combined view: static defaults + dynamic callout updates (callout wins on conflict)
+  // Display / readonly flags toggled imperatively by migrated scripts (item.show /
+  // hide / setDisabled). Merged last so a script's explicit choice wins.
+  const [scriptLogicFields, setScriptLogicFields] = useState<Record<string, boolean>>({});
+
+  // Field labels retitled imperatively by migrated scripts (item.setTitle, Classic
+  // `item.title = …`). Keyed by parameter name; empty means the static label is used.
+  const [scriptLabelOverrides, setScriptLabelOverrides] = useState<Record<string, string>>({});
+
+  // Footer-button visibility/enablement toggled imperatively by migrated scripts
+  // (view.popupButtons / view.cancelButton / the close X). Reset on each open.
+  const [scriptButtonState, setScriptButtonState] = useState<ScriptButtonState>(EMPTY_SCRIPT_BUTTON_STATE);
+
+  // Pending view.fireOnPause callbacks, keyed by id so a later call for the same
+  // id replaces the earlier pending one. Cleared when the modal closes.
+  const onPauseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Live execute-button enabled state, so the async onLoad callback's
+  // `view.okButton.isEnabled()` reads the current value (not a render-time stale).
+  // Updated each render once `isActionButtonDisabled` is computed (below).
+  const okEnabledRef = useRef(false);
+
+  // Combined view: static defaults < dynamic callout updates < script overrides.
   const logicFields = useMemo(
-    () => ({ ...staticLogicFields, ...calloutLogicFields }),
-    [staticLogicFields, calloutLogicFields]
+    () => ({ ...staticLogicFields, ...calloutLogicFields, ...scriptLogicFields }),
+    [staticLogicFields, calloutLogicFields, scriptLogicFields]
   );
 
-  // Reset callout logic fields when the modal closes
+  // Reset callout + script logic fields when the modal closes
   useEffect(() => {
-    if (!open) setCalloutLogicFields({});
+    if (!open) {
+      setCalloutLogicFields({});
+      setScriptLogicFields({});
+      setScriptLabelOverrides({});
+    }
   }, [open]);
 
   const isBulkCompletion = useMemo(
     () => isBulkCompletionProcess(processDefinition, parameters),
     [processDefinition, parameters]
+  );
+
+  const onLoadScripts = useMemo(
+    () => buildOnLoadScripts(etmetaOnload, isBulkCompletion),
+    [etmetaOnload, isBulkCompletion]
   );
 
   // Stable processConfig object for WindowReferenceGrid — prevents new reference on every render.
@@ -497,6 +652,8 @@ function ProcessDefinitionModalContent({
       };
       const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
       Object.assign(combined, evaluatedDefaults);
+      seedBooleanParameterDefaults(combined, parameters);
+      seedSessionColumnDefaults(combined, parameters, session || {});
 
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -533,6 +690,8 @@ function ProcessDefinitionModalContent({
 
     const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
     Object.assign(combined, evaluatedDefaults);
+    seedBooleanParameterDefaults(combined, parameters);
+    seedSessionColumnDefaults(combined, parameters, session || {});
 
     const parametersList = Object.values(parameters);
     for (const param of parametersList) {
@@ -549,12 +708,26 @@ function ProcessDefinitionModalContent({
     mode: "onChange",
   });
 
+  // Re-applies process defaults when availableFormData changes (async defaults,
+  // session, parameters) while preserving values set by onLoad/onChange scripts
+  // (e.g. view.theForm.getItem(...).setValue(...)) so a later reset cannot wipe them.
+  useFormDefaultsSync(form, availableFormData as FieldValues);
+
+  // Clear validation errors raised during the initial default/FIC seeding, once per
+  // open, after seeding settles — Classic shows no mandatory error on open. Normal
+  // onChange/submit validation is unaffected afterwards.
+  const seedErrorsClearedRef = useRef(false);
   useEffect(() => {
-    const hasFormData = Object.keys(availableFormData).length > 0;
-    if (hasFormData) {
-      form.reset(availableFormData);
+    if (!open) {
+      seedErrorsClearedRef.current = false;
+      return;
     }
-  }, [availableFormData, form]);
+    if (!shouldClearSeedValidationErrors(open, loading, initializationLoading, seedErrorsClearedRef.current)) {
+      return;
+    }
+    seedErrorsClearedRef.current = true;
+    form.clearErrors();
+  }, [open, loading, initializationLoading, form]);
 
   // Initialize gridSelection from filterExpressions
   useEffect(() => {
@@ -573,8 +746,181 @@ function ProcessDefinitionModalContent({
   const rawFormValues = form.watch();
   // Stabilize reference: only change identity when values actually change (deep equality).
   // Prevents WindowReferenceGrid and display-logic from re-running on every unrelated render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const formValues = useMemo(() => rawFormValues, [JSON.stringify(rawFormValues)]);
+  const formValuesRef = useRef(rawFormValues);
+  if (JSON.stringify(formValuesRef.current) !== JSON.stringify(rawFormValues)) {
+    formValuesRef.current = rawFormValues;
+  }
+  const formValues = formValuesRef.current;
+
+  // Parameter-level migrated JS hooks. `onParameterChange` is bound centrally to
+  // value changes; `onGridLoad` is compiled per grid parameter and handed to its
+  // WindowReferenceGrid. Both share `scriptHookContext` (built above) with the
+  // process-level hooks, so module-scope helpers resolve here too.
+  const scriptFormHandle = useMemo(() => createFormHandle(form), [form]);
+
+  // Live `parameters` snapshot for the controller's synchronous reads (getValueMap),
+  // avoiding a stale closure without rebuilding the controller on every change.
+  const parametersRef = useRef(parameters);
+  useEffect(() => {
+    parametersRef.current = parameters;
+  }, [parameters]);
+
+  // Resolves a parameter's current visibility from the same inputs the rendered
+  // selector uses, so the script-facing `item.isVisible()` agrees with what the
+  // user sees. Recomputed every render into a ref so the (identity-stable)
+  // controller below reads fresh state without rebuilding (which would
+  // re-subscribe the onChange hook).
+  const isParamDisplayedRef = useRef<(name: string) => boolean>(() => true);
+  isParamDisplayedRef.current = (name: string) => {
+    const parameter = findParameter(name, parameters);
+    if (!parameter) return true;
+    const evaluationContext = createProcessExpressionContext({
+      values: formValues,
+      parameters,
+      recordValues: recordValues || {},
+      parentFields: tab?.fields,
+      session,
+    });
+    return isParameterDisplayed({ parameter, logicFields, values: formValues, evaluationContext });
+  };
+
+  // Imperative bridge backing the form-item API (item.setRequired / setDisabled /
+  // show / hide / setValueMap / form.addField / ...). Built from stable setters,
+  // refs and the form instance, so its identity is stable and the onChange
+  // subscription below never re-subscribes.
+  const fieldController = useMemo<FieldController>(
+    () => ({
+      setRequired: (name, required) => setParameters((prev) => withMandatory(prev, name, required)),
+      setDisabled: (name, disabled) => setScriptLogicFields((prev) => withFlag(prev, `${name}.readonly`, disabled)),
+      setDisplayed: (name, displayed) => setScriptLogicFields((prev) => withFlag(prev, `${name}.display`, displayed)),
+      isDisplayed: (name) => isParamDisplayedRef.current(name),
+      setTitle: (name, title) => setScriptLabelOverrides((prev) => withLabelOverride(prev, name, title)),
+      setValueMap: (name, map) => setParameters((prev) => withRefList(prev, name, normalizeValueMap(map))),
+      getValueMap: (name) => findParameter(name, parametersRef.current)?.refList ?? [],
+      addField: (field) => setParameters((prev) => addDynamicParameter(prev, field)),
+      removeField: (target) => setParameters((prev) => removeParameter(prev, target)),
+      focusField: (name) => focusFormField(form, name),
+    }),
+    [form]
+  );
+
+  // Read-only environment data surfaced on the `view` (pure values; no controller
+  // needed). The same object reaches every hook via the canonical view builder.
+  const viewData = useMemo<ViewData>(
+    () => ({
+      windowId,
+      // A nested launch forwards its launcher field (carrying the launcher's view, so the nested
+      // script reaches `view.callerField.view`); a top-level open derives it from the button.
+      callerField: callerFieldProp ?? {
+        id: button.processDefinition.fieldId as string | undefined,
+        name: (button.processDefinition.fieldName ?? button.name) as string | undefined,
+        columnId: button.processDefinition.columnId as string | undefined,
+        record: record ?? undefined,
+      },
+      parentWindow: tab ?? undefined,
+      sourceView: tab ?? undefined,
+      parentRecord: recordValues ?? (record as Record<string, unknown>) ?? undefined,
+      activeTabId: tab?.id,
+    }),
+    [windowId, button, record, recordValues, tab, callerFieldProp]
+  );
+
+  // Lifecycle actions + footer chrome behind the `view`. Mirrors fieldController:
+  // each method delegates to a real modal handle, so the proxies stay pure.
+  const viewController = useMemo<ViewController>(
+    () => ({
+      refresh: () => {
+        if (tab?.id) refetchDatasource?.(tab.id);
+        setGridRefreshKey((prev) => prev + 1);
+      },
+      fireOnPause: (id, fn, delay) => {
+        const timers = onPauseTimersRef.current;
+        const pending = timers.get(id);
+        if (pending) clearTimeout(pending);
+        timers.set(
+          id,
+          setTimeout(() => {
+            timers.delete(id);
+            fn();
+          }, delay)
+        );
+      },
+      // Force a recompute of the reactive stores the form/footer already read.
+      handleReadOnlyLogic: () => setScriptLogicFields((prev) => ({ ...prev })),
+      handleButtonsStatus: () => setScriptButtonState((prev) => ({ ...prev })),
+      getSelection: () => selectedRecords as EntityData[],
+      selectAllRecords: () => setGridSelection((prev) => selectAllGridRows(prev)),
+      getFooterButtons: () => availableButtons.map((btn) => makeFooterButtonHandle(btn, setScriptButtonState)),
+      setCancelHidden: (hidden) => setScriptButtonState((prev) => withCancelHidden(prev, hidden)),
+      setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
+      isOkButtonEnabled: () => okEnabledRef.current,
+      enableOkButton: () => setScriptButtonState((prev) => withOkForceEnabled(prev, true)),
+      // Layer a nested process modal on top; on its close (X or success) the host
+      // fires this (parent) view's onRefreshFunction, mirroring classic behaviour.
+      openProcess: (params) =>
+        pushProcess({
+          ...params,
+          windowId: params.windowId ?? windowId,
+          callerField: { ...(params.callerField ?? viewData.callerField), view: viewData },
+          onClose: () => onRefreshFunction?.(viewData),
+        }),
+    }),
+    [
+      tab?.id,
+      refetchDatasource,
+      setGridRefreshKey,
+      selectedRecords,
+      setGridSelection,
+      availableButtons,
+      windowId,
+      viewData,
+      onRefreshFunction,
+    ]
+  );
+
+  // Registry of the embedded grids' programmable handles, keyed by parameter
+  // name. Each WindowReferenceGrid registers/unregisters its controller; the
+  // resolver below lets any hook reach a grid through
+  // `view.theForm.getItem('<param>').canvas.viewGrid`.
+  const gridControllersRef = useRef<Map<string, GridController>>(new Map());
+  const registerGrid = useCallback((paramKey: string, controller: GridController) => {
+    gridControllersRef.current.set(paramKey, controller);
+  }, []);
+  const unregisterGrid = useCallback((paramKey: string) => {
+    gridControllersRef.current.delete(paramKey);
+  }, []);
+  // Reads the live registry by-invocation (via parametersRef), so its identity is
+  // stable and proxies need not rebuild when grids mount/unmount.
+  const gridResolver = useCallback<GridResolver>(
+    (name) => gridControllersRef.current.get(resolveFormKey(name, parametersRef.current)),
+    []
+  );
+
+  // `view.messageBar` / `messageBar` is the in-modal banner (rendered by
+  // <ProcessMessageBar/>); the same singleton handle reaches every hook.
+  useParameterChangeHooks({
+    form,
+    parameters,
+    context: scriptHookContext,
+    messageBar,
+    fieldController,
+    viewController,
+    viewData,
+    gridResolver,
+    // Suppress onChange hooks during the initial default/FIC seeding (same signal
+    // the callout hooks use); Classic only fires onChange on a user change.
+    enabled: open && !loading && !initializationLoading,
+  });
+
+  const gridLoadHooks = useMemo(() => {
+    const map = new Map<string, CompiledParameterHook | null>();
+    for (const param of Object.values(parameters)) {
+      if (param.etmetaOnGridLoad) {
+        map.set(param.id || param.name, compileParameterHook(param.etmetaOnGridLoad, scriptHookContext));
+      }
+    }
+    return map;
+  }, [parameters, scriptHookContext]);
 
   const handleGridUpdate = useCallback(
     (gridName: string, data: unknown) => {
@@ -701,6 +1047,22 @@ function ProcessDefinitionModalContent({
     });
   }, [loading, initializationLoading, parameters, formValues]);
 
+  const peGrids = useMemo(() => {
+    if (!isPE) return [];
+    return Object.values(parameters)
+      .filter((p) => p.reference === WINDOW_REFERENCE_ID && p.window?.tabs)
+      .map((p) => {
+        const paramTab = p.window!.tabs![0] as Tab;
+        const key = p.dBColumnName || p.name;
+        return {
+          selectedRows: gridSelection[key]?._selection ?? [],
+          fields: paramTab?.fields,
+        };
+      });
+  }, [isPE, parameters, gridSelection]);
+
+  const { hasInvalidSelection } = useGridRowValidation({ grids: peGrids });
+
   const handleClose = useCallback(() => {
     if (isPending) return;
     setResult(null);
@@ -740,12 +1102,18 @@ function ProcessDefinitionModalContent({
     javaClassName,
     windowId,
     tabId,
-    onProcess,
+    etmetaOnprocess,
+    onRefreshFunction,
     tab,
+    callerField: callerFieldProp,
     record: record ?? undefined,
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
-    processScriptContext,
+    scriptContext: scriptHookContext,
+    viewController,
+    viewData,
+    fieldController,
+    gridResolver,
     button,
     parameters,
     form,
@@ -764,7 +1132,7 @@ function ProcessDefinitionModalContent({
     buildWindowSpecificFields,
     getMappedFormValues,
     resolveDocAction,
-    hasWindowReference,
+    hasWindowReference: isPE,
     availableButtons,
     isPending,
     shouldTriggerSuccess,
@@ -777,6 +1145,41 @@ function ProcessDefinitionModalContent({
     initialParameters: button.processDefinition.parameters,
     fileParams,
   });
+
+  // Register the action-dispatch handlers so migrated scripts
+  // (OB.Utilities.Action.executeJSON) and the onProcess return path can turn
+  // each classic response-action type into a side effect while this modal is open.
+  useActionDispatchContext({
+    // refreshGrid refetches the launching tab's grid (targeted, no reopen) —
+    // never onSuccess, which closes/reloads the modal and would loop from onLoad.
+    refreshParentGrid: useCallback(() => {
+      if (tab?.id) refetchDatasource?.(tab.id);
+    }, [refetchDatasource, tab?.id]),
+    refreshModalGrid: useCallback(() => setGridRefreshKey((prev) => prev + 1), [setGridRefreshKey]),
+    navigateToTab: handleNavigateToTab,
+    token: token ?? "",
+  });
+
+  // Start each modal open with a clean message bar. The bar's lifetime is owned
+  // here (not by ProcessMessageBar's unmount), so a message set by onLoad/onChange
+  // survives the loading-spinner ↔ form transitions that mount/unmount the host.
+  // The script-driven footer state is reset on the same open so it never leaks
+  // between sessions.
+  useEffect(() => {
+    if (open) {
+      messageBar.hide();
+      setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
+    }
+  }, [open]);
+
+  // Clear any pending view.fireOnPause callbacks when the modal unmounts.
+  useEffect(() => {
+    const timers = onPauseTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
 
   // -------------------------------------------------------------------------
   // useEffect — onLoad execution
@@ -820,14 +1223,14 @@ function ProcessDefinitionModalContent({
   );
 
   useEffect(() => {
-    if (open && hasWindowReference) {
+    if (open && isPE) {
       const loadConfig = async () => {
         const combinedPayload = { ...recordValues, ...session };
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, recordValues, session, tabId, open, hasWindowReference]);
+  }, [fetchConfig, recordValues, session, tabId, open, isPE]);
 
   useEffect(() => {
     if (initializationError) {
@@ -884,16 +1287,89 @@ function ProcessDefinitionModalContent({
     loadProcessMetadata();
   }, [open, processId, button.processDefinition.parameters, type]);
 
+  // Report and Process subtype with uipattern = "Pick and Execute" is not implemented.
+  // Surface a warning and close the modal to avoid a broken render (no Window Reference
+  // parameter → empty grid + no Done payload).
+  useEffect(() => {
+    if (!open) return;
+    if (type !== PROCESS_TYPES.REPORT_AND_PROCESS) return;
+    if (processDefinition?.uIPattern !== PICK_AND_EXECUTE_UI_PATTERN) return;
+    toast.warning(t("process.pickAndExecuteNotImplemented"));
+    onClose();
+  }, [open, type, processDefinition?.uIPattern, t, onClose]);
+
   useEffect(() => {
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
+    } else {
+      // Allow onLoad to run again the next time the modal opens.
+      onLoadIdentityRef.current = null;
     }
   }, [button.processDefinition.parameters, open]);
 
   useEffect(() => {
+    // Runs the migrated onLoad scripts once per open session (keyed on the selected
+    // record ids). Returns "stop" when fetchOptions must bail without scheduling the
+    // trailing loading reset — either the identity was already processed (loading is
+    // turned off here, mirroring the dedup path) or a script signalled an early stop
+    // (loading intentionally left on) — and "done" once the scripts ran to completion.
+    // Defined as a sibling of fetchOptions so it shares the same closure (no params).
+    const runOnLoadScripts = async (): Promise<"stop" | "done"> => {
+      const onLoadIdentity = `${processId}|${(selectedRecords ?? []).map((r) => r.id).join(",")}`;
+      if (onLoadIdentityRef.current === onLoadIdentity) {
+        setLoading(false);
+        return "stop";
+      }
+      onLoadIdentityRef.current = onLoadIdentity;
+
+      // The onLoad second argument is the canonical view: it carries the
+      // data fields the migrated scripts read (selectedRecords, tabId, …) and
+      // the full view surface (theForm, messageBar, refresh, windowId, …).
+      // Built once and shared across every script so they operate on the same
+      // form/view.
+      const onLoadView = createViewProxy(createFormHandle(form), parameters, {
+        messageBar,
+        controller: fieldController,
+        viewController,
+        gridResolver,
+        data: viewData,
+        hookData: {
+          selectedRecords,
+          tabId: tab?.id || "",
+          tableId: tab?.table || "",
+          parentRecord: recordValues,
+          // Mirrors classic SmartClient view.onRefreshFunction so migrated
+          // scripts can call view.onRefreshFunction(view) to rebuild the modal.
+          onRefreshFunction,
+        },
+      });
+
+      for (const onLoadScript of onLoadScripts) {
+        const result = await executeStringFunction(
+          onLoadScript,
+          scriptHookContext,
+          button.processDefinition,
+          onLoadView
+        );
+
+        if (result) {
+          const shouldStop = handleOnLoadResult(result);
+          if (shouldStop) return "stop";
+        }
+      }
+
+      // onLoad ran post-seed; clear any validation error it or the seed raised
+      // (e.g. a mandatory field flagged before its default landed) so the modal
+      // opens clean, as Classic does. Normal onChange/submit validation is
+      // unaffected afterwards. Complements the seed-settle clear (which covers
+      // processes without an onLoad script).
+      form.clearErrors();
+      return "done";
+    };
+
     const fetchOptions = async () => {
       if (!open) return;
       if (warehousePluginLoading) return;
@@ -901,29 +1377,31 @@ function ProcessDefinitionModalContent({
         setLoading(false);
         return;
       }
+      // Run onLoad (and the field validation it can trigger) only AFTER the async
+      // process-defaults / FIC seed completes. Classic seeds synchronously before
+      // onLoad; running it on an unseeded form leaves all context undefined, so
+      // imperative show/hide (e.g. the multicurrency fields) no-ops and mandatory
+      // fields flag on open. The effect re-runs once initializationLoading flips to
+      // false (it is a dependency below). Warehouse-plugin processes return earlier
+      // and never reach this gate.
+      if (initializationLoading) return;
 
       try {
         setLoading(true);
 
-        const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
+        const gate = shouldRunProcessLifecycleHooks({ tab, callerField: callerFieldProp });
+        const hasRunnableOnLoad = onLoadScripts.length > 0 && gate;
 
-        if (effectiveOnLoad && tab) {
-          const result = await executeStringFunction(
-            effectiveOnLoad,
-            { Metadata, OB: createOBShim(), ...processScriptContext },
-            button.processDefinition,
-            {
-              selectedRecords,
-              tabId: tab.id || "",
-              tableId: tab.table || "",
-              parentRecord: recordValues,
-            }
-          );
-
-          if (result) {
-            const shouldStop = handleOnLoadResult(result);
-            if (shouldStop) return;
-          }
+        // Run onLoad once per open session (keyed on the selected record ids, which
+        // are stable across refetches), but only lock the identity when there is
+        // actually something to run. A premature run — before the metadata fetch
+        // populates `etmetaOnload`, so `onLoadScripts` is still empty — must NOT
+        // consume the lock, or the later run that has the scripts would be skipped.
+        // Locking on a real run still prevents a script-triggered parent-grid
+        // refresh from re-firing onLoad (which would loop).
+        if (hasRunnableOnLoad) {
+          const outcome = await runOnLoadScripts();
+          if (outcome === "stop") return;
         }
 
         setTimeout(() => setLoading(false), 300);
@@ -936,16 +1414,24 @@ function ProcessDefinitionModalContent({
     fetchOptions();
   }, [
     button.processDefinition,
-    onLoad,
+    onRefreshFunction,
     open,
     selectedRecords,
     recordValues,
     tab,
-    isBulkCompletion,
-    processScriptContext,
+    onLoadScripts,
+    scriptHookContext,
     warehousePluginLoading,
     warehouseSchema,
     handleOnLoadResult,
+    form,
+    parameters,
+    fieldController,
+    viewController,
+    viewData,
+    gridResolver,
+    callerFieldProp,
+    initializationLoading,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1049,17 +1535,16 @@ function ProcessDefinitionModalContent({
     if (isFinalSuccess) return null;
 
     if (result.keepOpen && result.success) {
-      const rawMsg =
-        typeof result.data === "string"
-          ? result.data
-          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
-      const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
-      const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
+      // Only render the success banner when the server explicitly emitted a
+      // message via `responseActions[].showMsgInProcessView` (Classic UX:
+      // silent on actions like Search that only refresh the grid).
+      const parsed = buildSuccessBannerMessage(result.data, result.isHtml);
+      if (!parsed) return null;
       return (
         <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
           <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
           <div className="border-(--color-active-40) rounded p-2">
-            <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
+            <ToastContent message={parsed.msgText} isHtml={parsed.isHtml} data-testid="ToastContent__761503" />
           </div>
         </div>
       );
@@ -1098,32 +1583,26 @@ function ProcessDefinitionModalContent({
     return parameter.window.tabs[0] as Tab;
   }, []);
 
-  const renderParameters = () => {
-    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
-    // Only hide parameters when execution fully completed (isFinalSuccess).
-    if (result?.success && !result?.keepOpen) return null;
+  const isWindowReferenceParameter = useCallback(
+    (parameter: ProcessParameter) => parameter.reference === WINDOW_REFERENCE_ID,
+    []
+  );
 
-    const parametersList = Object.values(parameters)
-      .filter((p) => {
-        // @ts-ignore
-        if (p.active === false) return false;
-        if (isBulkCompletion) {
-          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
-        }
-        return true;
-      })
-      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+  const resolveGroupTitle = useCallback((group: ProcessParameterGroup): string => group.identifier, []);
 
-    const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
-
-    for (const parameter of parametersList) {
-      // @ts-ignore
-      if (parameter.active === false) continue;
-      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) continue;
-
-      if (parameter.reference === WINDOW_REFERENCE_ID) {
-        const isDisplayed = evaluateWindowReferenceDisplay({
+  const isParameterRenderable = useCallback(
+    (parameter: ProcessParameter): boolean => {
+      // @ts-ignore — `active` is not in the public ProcessParameter type but
+      // the metadata payload carries it; mirroring the previous behaviour.
+      if (parameter.active === false) return false;
+      if (isBulkCompletion) {
+        return isBulkParameterRenderable(parameter, logicFields);
+      }
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID || parameter.reference === BUTTON_REFERENCE_ID) {
+        return false;
+      }
+      if (isWindowReferenceParameter(parameter)) {
+        return evaluateWindowReferenceDisplay({
           parameter,
           logicFields,
           formValues,
@@ -1133,61 +1612,124 @@ function ProcessDefinitionModalContent({
           recordValues: recordValues || {},
           parentFields: tab?.fields,
         });
-
-        if (!isDisplayed) continue;
-
-        const parameterTab = getTabForParameter(parameter);
-        windowReferences.push(
-          <CollapsibleSection
-            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
-            title={parameter.name}
-            data-testid="CollapsibleSection__761503">
-            <WindowReferenceGrid
-              parameter={parameter}
-              parameters={parameters}
-              selectedRecordsCount={selectedRecordsCount}
-              onSelectionChange={setGridSelection}
-              gridSelection={gridSelection}
-              tabId={parameterTab?.id || ""}
-              entityName={parameterTab?.entityName || ""}
-              windowReferenceTab={parameterTab || windowReferenceTab}
-              processConfig={stableProcessConfig}
-              processConfigLoading={processConfigLoading}
-              processConfigError={processConfigError}
-              recordValues={recordValues}
-              currentValues={formValues}
-              originTab={tab}
-              showTitle={false}
-              onClose={onClose}
-              data-testid="WindowReferenceGrid__761503"
-            />
-          </CollapsibleSection>
-        );
-      } else {
-        selectors.push(
-          <ProcessParameterSelector
-            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-            parameter={parameter}
-            logicFields={logicFields}
-            parameters={parameters}
-            recordValues={recordValues || undefined}
-            parentFields={tab?.fields}
-            selectedRecordsCount={selectedRecordsCount}
-            onFileChange={handleFileChange}
-            data-testid="ProcessParameterSelector__761503"
-          />
-        );
       }
-    }
+      return true;
+    },
+    [
+      isBulkCompletion,
+      isWindowReferenceParameter,
+      logicFields,
+      formValues,
+      availableFormData,
+      parameters,
+      session,
+      recordValues,
+      tab?.fields,
+    ]
+  );
 
+  const renderScalarParameter = (parameter: ProcessParameter) => (
+    <ProcessParameterSelector
+      key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+      parameter={parameter}
+      logicFields={logicFields}
+      labelOverrides={scriptLabelOverrides}
+      parameters={parameters}
+      recordValues={recordValues || undefined}
+      parentFields={tab?.fields}
+      selectedRecordsCount={selectedRecordsCount}
+      onFileChange={handleFileChange}
+      values={formValues}
+      processId={processId}
+      data-testid="ProcessParameterSelector__761503"
+    />
+  );
+
+  const renderWindowReferenceParameter = (parameter: ProcessParameter) => {
+    const parameterTab = getTabForParameter(parameter);
+    return (
+      <WindowReferenceGrid
+        key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
+        parameter={parameter}
+        parameters={parameters}
+        selectedRecordsCount={selectedRecordsCount}
+        onSelectionChange={setGridSelection}
+        gridSelection={gridSelection}
+        tabId={parameterTab?.id || ""}
+        entityName={parameterTab?.entityName || ""}
+        windowReferenceTab={parameterTab || windowReferenceTab}
+        processConfig={stableProcessConfig}
+        processConfigLoading={processConfigLoading}
+        processConfigError={processConfigError}
+        recordValues={recordValues}
+        currentValues={formValues}
+        originTab={tab}
+        showTitle={false}
+        onClose={onClose}
+        processDefinition={button.processDefinition}
+        onGridLoadHook={gridLoadHooks.get(parameter.id || parameter.name) ?? null}
+        gridLoadFormHandle={scriptFormHandle}
+        messageBar={messageBar}
+        viewController={viewController}
+        viewData={viewData}
+        onRegisterGrid={registerGrid}
+        onUnregisterGrid={unregisterGrid}
+        fieldController={fieldController}
+        gridResolver={gridResolver}
+        data-testid="WindowReferenceGrid__761503"
+      />
+    );
+  };
+
+  const renderGroupBody = (group: ProcessParameterGroup) => {
+    const scalars = group.parameters.filter((p) => !isWindowReferenceParameter(p));
+    const windowRefs = group.parameters.filter(isWindowReferenceParameter);
     return (
       <>
-        {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+        {scalars.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{scalars.map(renderScalarParameter)}</div>
         )}
-        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
+        {windowRefs.length > 0 && (
+          <div className="w-full flex flex-col gap-4 mt-2">{windowRefs.map(renderWindowReferenceParameter)}</div>
+        )}
       </>
     );
+  };
+
+  const renderGroup = (group: ProcessParameterGroup) => {
+    if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) {
+      return (
+        <div key={`group-${group.id}`} className="w-full">
+          {renderGroupBody(group)}
+        </div>
+      );
+    }
+    return (
+      <CollapsibleSection
+        key={`group-${group.id}`}
+        title={resolveGroupTitle(group)}
+        initiallyExpanded={!group.fieldGroupCollapsed}
+        data-testid="CollapsibleSection__761503">
+        {renderGroupBody(group)}
+      </CollapsibleSection>
+    );
+  };
+
+  const renderParameters = () => {
+    // When retryExecution=true (keepOpen), keep the form visible so the user can re-execute.
+    // Only hide parameters when execution fully completed (isFinalSuccess).
+    if (result?.success && !result?.keepOpen) return null;
+
+    const visibleParameters = Object.values(parameters)
+      .filter(isParameterRenderable)
+      // "sequenceNumber" is set explicitly by the backend builder;
+      // "seqno" is the fallback key emitted by some OpenBravo JSON serializer versions.
+      .sort((a, b) => (Number(a.sequenceNumber ?? a.seqno) || 0) - (Number(b.sequenceNumber ?? b.seqno) || 0));
+
+    const groups = groupProcessParametersByFieldGroup(visibleParameters);
+    if (groups.length === 0) return null;
+
+    return <div className="w-full flex flex-col gap-4 mb-4">{groups.map(renderGroup)}</div>;
   };
 
   const getActionButtonContent = () => {
@@ -1213,13 +1755,39 @@ function ProcessDefinitionModalContent({
     isPending ||
     loadingMetadata ||
     initializationBlocksSubmit ||
-    hasMandatoryParametersWithoutValue ||
+    // A migrated onLoad may force-enable via view.okButton.enable(), overriding
+    // only the "mandatory empty" reason (the case it resolves after populating).
+    // Report and Process keeps the button enabled and validates on click (Classic
+    // parity: the JS1 message is shown on submit, not by graying out the button).
+    (type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+      hasMandatoryParametersWithoutValue &&
+      !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
-    (hasWindowReference && !gridSelection);
+    (isPE && !gridSelection) ||
+    (isPE && hasInvalidSelection);
+
+  // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
+  okEnabledRef.current = !isActionButtonDisabled;
+
+  // Classic parity: a Report and Process validates its mandatory parameters on
+  // click and shows AD_Message JS1 in the in-modal banner instead of posting when
+  // a required field is empty. handleReportProcessExecute does not validate, so we
+  // guard it here. Values are read at click time so the latest form state is used.
+  const handleReportProcessExecuteGuarded = useCallback(() => {
+    const missing = findMissingMandatoryParameters(parameters, form.getValues(), logicFields);
+    if (missing.length > 0) {
+      messageBar.setMessage("error", null, t("process.missingMandatoryFields"));
+      return;
+    }
+    handleReportProcessExecute();
+  }, [parameters, form, logicFields, handleReportProcessExecute, t]);
+
+  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
+  const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
 
   const renderModalContent = () => {
-    if (warehousePluginLoading && onLoad) {
+    if (warehousePluginLoading && isCustomComponent) {
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
@@ -1244,6 +1812,12 @@ function ProcessDefinitionModalContent({
       );
     }
 
+    // Classic parity: Report and Process popups show the process Help text in
+    // their header; other process types keep their description. Uses the local
+    // `processDefinition` state so the helpComment loaded by the metadata fetch
+    // is reflected (button.processDefinition may not carry it).
+    const headerDescription = resolveProcessModalDescription(processDefinition, type);
+
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
@@ -1252,21 +1826,23 @@ function ProcessDefinitionModalContent({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
-                {button.processDefinition.description && (
-                  <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
-                )}
+                {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                disabled={isPending}>
-                <CloseIcon data-testid="CloseIcon__761503" />
-              </button>
+              {!scriptButtonState.closeHidden && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                  disabled={isPending}>
+                  <CloseIcon data-testid="CloseIcon__761503" />
+                </button>
+              )}
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
+              {/* In-modal message bar driven by migrated scripts (view.messageBar / messageBar). */}
+              <ProcessMessageBar data-testid="ProcessMessageBar__761503" />
               <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 {(loading || initializationLoading) && !result && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
@@ -1284,19 +1860,21 @@ function ProcessDefinitionModalContent({
             <div className="flex gap-3 justify-end mx-3 my-3">
               {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && (
                 <>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={handleClose}
-                    disabled={isPending}
-                    className="w-49"
-                    data-testid="CancelButton__761503">
-                    {t("common.cancel")}
-                  </Button>
+                  {!scriptButtonState.cancelHidden && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      disabled={isPending}
+                      className="w-49"
+                      data-testid="CancelButton__761503">
+                      {t("common.cancel")}
+                    </Button>
+                  )}
                   <Button
                     variant="filled"
                     size="large"
-                    onClick={handleReportProcessExecute}
+                    onClick={handleReportProcessExecuteGuarded}
                     disabled={Boolean(isActionButtonDisabled)}
                     startIcon={getActionButtonContent().icon}
                     className="w-49"
@@ -1306,31 +1884,70 @@ function ProcessDefinitionModalContent({
                 </>
               )}
 
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && !isPending && (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={handleClose}
-                  className="w-49"
-                  data-testid="CloseButton__761503">
-                  {t("common.close")}
-                </Button>
+              {isOBUIAPPReport && (!result || !isFinalSuccess) && (
+                <>
+                  {!scriptButtonState.cancelHidden && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      disabled={isPending}
+                      className="w-49"
+                      data-testid="CancelButton__761503">
+                      {t("common.cancel")}
+                    </Button>
+                  )}
+                  {reportActions.map((format) => (
+                    <Button
+                      key={format}
+                      variant="filled"
+                      size="large"
+                      onClick={() => handleExecute(format)}
+                      disabled={Boolean(isActionButtonDisabled)}
+                      className="w-49"
+                      data-testid={`ReportExportButton_${format}__761503`}>
+                      {getLabel(REPORT_FORMAT_I18N_KEYS[format])}
+                    </Button>
+                  ))}
+                </>
               )}
 
               {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                !isOBUIAPPReport &&
+                (!result || !isFinalSuccess) &&
+                !isPending &&
+                !scriptButtonState.cancelHidden && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={handleClose}
+                    className="w-49"
+                    data-testid="CloseButton__761503">
+                    {t("common.close")}
+                  </Button>
+                )}
+
+              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                !isOBUIAPPReport &&
                 ((!result || !isFinalSuccess) && availableButtons.length > 0
-                  ? availableButtons.map((btn) => (
-                      <Button
-                        key={btn.value}
-                        variant="filled"
-                        size="large"
-                        onClick={() => handleExecute(btn.value)}
-                        disabled={Boolean(isActionButtonDisabled)}
-                        className="w-49"
-                        data-testid={`ExecuteButton_${btn.value}__761503`}>
-                        {btn.label}
-                      </Button>
-                    ))
+                  ? availableButtons
+                      .filter((btn) => !scriptButtonState.hiddenValues[btn.value])
+                      .map((btn) => (
+                        <Button
+                          key={btn.value}
+                          variant="filled"
+                          size="large"
+                          onClick={() =>
+                            runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)
+                          }
+                          disabled={
+                            Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
+                          }
+                          className="w-49"
+                          data-testid={`ExecuteButton_${btn.value}__761503`}>
+                          {btn.label}
+                        </Button>
+                      ))
                   : (!result || !isFinalSuccess) && (
                       <Button
                         variant="filled"
@@ -1353,9 +1970,15 @@ function ProcessDefinitionModalContent({
   return (
     <>
       {open && !isFinalSuccess && (
-        <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
-          {renderModalContent()}
-        </Modal>
+        <>
+          <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
+            {renderModalContent()}
+          </Modal>
+          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
+          <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
+          {/* Host for action-time dynamic parameter forms (openDynamicForm); unmounts with the modal. */}
+          <ParameterDialogHost data-testid="ParameterDialogHost__761503" />
+        </>
       )}
     </>
   );

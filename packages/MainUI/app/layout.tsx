@@ -24,7 +24,6 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import ThemeProvider from "@workspaceui/componentlibrary/src/components/ThemeProvider";
 import LanguageProvider from "@/contexts/language";
-import LoadingProvider from "@/contexts/loading";
 import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import { MetadataStoreProvider } from "@/contexts/metadataStore";
@@ -95,10 +94,8 @@ export default async function RootLayout({
                         <WindowProvider data-testid="WindowProvider__ba7569">
                           <FavoritesProvider data-testid="FavoritesProvider__ba7569">
                             <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
-                            <LoadingProvider data-testid="LoadingProvider__ba7569">
-                              <Layout data-testid="Layout__ba7569">{children}</Layout>
-                              <Toaster data-testid="Toaster__ba7569" />
-                            </LoadingProvider>
+                            <Layout data-testid="Layout__ba7569">{children}</Layout>
+                            <Toaster data-testid="Toaster__ba7569" />
                           </FavoritesProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>

@@ -34,8 +34,9 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
-import { useWindowContext } from "@/contexts/window";
-import { useUserContext } from "@/hooks/useUserContext";
+import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
@@ -112,23 +113,46 @@ const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
-  const {
-    activeWindow,
-    clearSelectedRecord,
-    getTabFormState,
-    setSelectedRecord,
-    getSelectedRecord,
-    clearTabFormState,
-    setTabFormState,
-    clearChildrenSelections,
-    getTableState,
-    setTableAdvancedCriteria,
-  } = useWindowContext();
+  const windowIdentifier = useCurrentWindowIdentifier();
+
+  // Zustand store — stable action references
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const setTabFormState = useWindowStore((s) => s.setTabFormState);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
+  const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
+  const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+
+  // Zustand store — imperative getters (for use in callbacks/effects, not render)
+  const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
+  }, []);
+  const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
+  }, []);
+  const getTableState = useCallback((windowIdentifier: string, tabId: string) => {
+    return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
+  }, []);
+
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
+
+  // Zustand store — reactive subscriptions (re-render when these change)
+  const reactiveTabFormState = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.form : undefined
+  );
+  const reactiveSelectedRecordId = useWindowStore((s) =>
+    windowIdentifier ? s.windows[windowIdentifier]?.tabs[tab.id]?.selectedRecord : undefined
+  );
+  const parentTabId = graph?.getParent(tab)?.id;
+  const reactiveParentSelectedRecordId = useWindowStore((s) => {
+    if (!parentTabId || !windowIdentifier) return undefined;
+    return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
+  });
   const { unregisterRefresh } = useTabRefreshContext();
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
@@ -140,8 +164,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
   // This prevents re-opening the form view after the user explicitly closes it.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
-
-  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const { isFocused, acquire } = useFocusRegion(tab.id, {
     onBlur: async () => {
@@ -158,8 +180,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [tab.tabLevel, acquire]);
 
-  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
-  const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
+  const tabFormState = reactiveTabFormState;
+  const selectedRecordId = reactiveSelectedRecordId;
 
   const currentMode = tabFormState?.mode || TAB_MODES.TABLE;
   const currentRecordId = tabFormState?.recordId || "";
@@ -167,13 +189,43 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // For child tabs, verify parent has selection before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordId =
-    parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
+  const parentSelectedRecordId = reactiveParentSelectedRecordId;
   const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
+  // SR (Single Record) tabs share the same entity/record as the parent.
+  // They should show form view by default (like Classic) instead of loading a grid first.
+  // Always use parentSelectedRecordId directly — since SR child.id === parent.id,
+  // there's no need to fall back to currentRecordId (which may be stale during the
+  // render cycle before the reset effect clears it).
+  const isSrTab = tab.uIPattern === UIPattern.EDIT_ONLY && tab.defaultEditMode;
+  const effectiveRecordId = isSrTab && parentSelectedRecordId ? parentSelectedRecordId : currentRecordId;
+
+  // When the parent record changes, reset child tab state (exit form view, clear selection).
+  // This replaces the implicit re-render that useWindowContext provided in the pre-Zustand architecture.
+  // For SR tabs this clears stale form state so effectiveRecordId picks up the new parentId.
+  const prevParentRecordRef = useRef<string | undefined>(parentSelectedRecordId);
+  useEffect(() => {
+    const prev = prevParentRecordRef.current;
+    prevParentRecordRef.current = parentSelectedRecordId;
+
+    // Skip initial mount — prev is always undefined on first render.
+    // This prevents clearing the form state that auto-open or SR default just set.
+    if (prev === undefined) return;
+    if (prev === parentSelectedRecordId) return;
+    if (!parentTab || !windowIdentifier) return;
+
+    // Parent changed — clear this child tab's form state and selection
+    clearTabFormState(windowIdentifier, tab.id);
+    clearSelectedRecord(windowIdentifier, tab.id);
+    graph.clearSelected(tab);
+  }, [parentSelectedRecordId, parentTab, windowIdentifier, tab, clearTabFormState, clearSelectedRecord, graph]);
+
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
+  const isSrDefaultForm = isSrTab && parentHasSelection;
   const shouldShowForm =
-    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
+    isSrDefaultForm ||
+    hasFormViewState ||
+    isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
@@ -232,13 +284,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
-          // Clear children tabs when deselecting parent record
-          const children = graph.getChildren(tab);
-          if (children && children.length > 0) {
-            const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-            if (childIds.length > 0) {
-              clearChildrenSelections(windowIdentifier, childIds);
+          // Recursively collect ALL descendant tab IDs so deselection cascades through all levels
+          const descendantIds: string[] = [];
+          const collectDescendants = (parentTab: typeof tab) => {
+            const children = graph.getChildren(parentTab);
+            if (!children) return;
+            for (const child of children) {
+              if (child.window === tab.window) {
+                descendantIds.push(child.id);
+                collectDescendants(child);
+              }
             }
+          };
+          collectDescendants(tab);
+          if (descendantIds.length > 0) {
+            clearChildrenSelections(windowIdentifier, descendantIds, true);
           }
 
           setTimeout(() => {
@@ -258,29 +318,47 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowIdentifier, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
-    if (windowIdentifier) {
-      const currentFormState = getTabFormState(windowIdentifier, tab.id);
-      const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+    if (!windowIdentifier) return;
 
-      if (isInFormView) {
-        clearTabFormState(windowIdentifier, tab.id);
-      } else {
+    const currentFormState = getTabFormState(windowIdentifier, tab.id);
+    const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
+
+    if (isInFormView) {
+      clearTabFormState(windowIdentifier, tab.id);
+      if (tab.uIPattern === UIPattern.EDIT_ONLY) {
         clearSelectedRecord(windowIdentifier, tab.id);
-
-        // Also clear children if this tab has any
-        const children = graph.getChildren(tab);
-        if (children && children.length > 0) {
-          const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
-          if (childIds.length > 0) {
-            clearChildrenSelections(windowIdentifier, childIds);
-          }
-        }
-
-        // Clear graph selection
         graph.clearSelected(tab);
       }
+      return;
     }
-  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
+
+    if (tab.tabLevel === 0) {
+      setAllWindowsInactive();
+      return;
+    }
+
+    clearSelectedRecord(windowIdentifier, tab.id);
+
+    const childIds =
+      graph
+        .getChildren(tab)
+        ?.filter((c) => c.window === tab.window)
+        .map((c) => c.id) ?? [];
+    if (childIds.length > 0) {
+      clearChildrenSelections(windowIdentifier, childIds);
+    }
+
+    graph.clearSelected(tab);
+  }, [
+    windowIdentifier,
+    clearTabFormState,
+    tab,
+    getTabFormState,
+    clearSelectedRecord,
+    clearChildrenSelections,
+    graph,
+    setAllWindowsInactive,
+  ]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
@@ -1141,9 +1219,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
   const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
-  const tableWrapperClassName = !shouldShowForm
-    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`
-    : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+  const isTreeSideBySide = toggle && shouldShowForm;
+
+  let tableWrapperClassName: string;
+  if (isTreeSideBySide) {
+    tableWrapperClassName = "w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl";
+  } else if (!shouldShowForm) {
+    tableWrapperClassName = `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`;
+  } else {
+    tableWrapperClassName = "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+  }
 
   return (
     <div
@@ -1156,36 +1241,39 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         isFormView={shouldShowForm}
         data-testid="Toolbar__5893c8"
       />
-      {shouldShowForm && (
-        <div
-          className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
-          <FormView
-            mode={formMode}
-            tab={tab}
-            window={window}
-            recordId={currentRecordId}
-            setRecordId={handleSetRecordId}
-            uIPattern={tab.uIPattern}
-            isFocused={isFocused}
-            onFocusAcquire={acquire}
-            data-testid="FormView__5893c8"
-          />
+      <div className={`flex flex-1 min-h-0 ${isTreeSideBySide ? "flex-row gap-2" : "relative flex-col"}`}>
+        <div className={tableWrapperClassName}>
+          <AttachmentProvider data-testid="AttachmentProvider__5893c8">
+            <DynamicTable
+              isTreeMode={toggle}
+              setRecordId={handleSetRecordId}
+              onRecordSelection={handleRecordSelection}
+              isVisible={isTreeSideBySide || !shouldShowForm}
+              areFiltersDisabled={advancedFilters.length > 0}
+              uIPattern={tab.uIPattern}
+              isFocused={isFocused}
+              onFocusAcquire={acquire}
+              data-testid="DynamicTable__5893c8"
+            />
+          </AttachmentProvider>
         </div>
-      )}
-      <div className={tableWrapperClassName}>
-        <AttachmentProvider data-testid="AttachmentProvider__5893c8">
-          <DynamicTable
-            isTreeMode={toggle}
-            setRecordId={handleSetRecordId}
-            onRecordSelection={handleRecordSelection}
-            isVisible={!shouldShowForm}
-            areFiltersDisabled={advancedFilters.length > 0}
-            uIPattern={tab.uIPattern}
-            isFocused={isFocused}
-            onFocusAcquire={acquire}
-            data-testid="DynamicTable__5893c8"
-          />
-        </AttachmentProvider>
+        {shouldShowForm && (
+          <div
+            className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
+            <FormView
+              key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
+              mode={formMode}
+              tab={tab}
+              window={window}
+              recordId={effectiveRecordId}
+              setRecordId={handleSetRecordId}
+              uIPattern={tab.uIPattern}
+              isFocused={isFocused}
+              onFocusAcquire={acquire}
+              data-testid="FormView__5893c8"
+            />
+          </div>
+        )}
       </div>
       <Menu
         anchorEl={advancedFiltersAnchor}

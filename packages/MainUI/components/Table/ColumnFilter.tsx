@@ -7,7 +7,17 @@ import {
   type FilterOption,
 } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { MultiSelect } from "../Form/FormView/selectors/components/MultiSelect";
+import { TreeColumnFilter } from "./TreeColumnFilter";
 import { useTranslation } from "@/hooks/useTranslation";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+const TREE_REFERENCE_IDS: Set<string> = new Set([
+  FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
+  FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id,
+]);
+
+const isTreeColumn = (column: Column): boolean =>
+  !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
 
 export interface ColumnFilterProps {
   column: Column;
@@ -41,7 +51,8 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   const isBooleanColumn =
     column.type === "boolean" || column.column?._identifier === "YesNo" || column.column?.reference === "20";
 
-  const supportsDropdown = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+  const isTree = isTreeColumn(column);
+  const supportsDropdown = isBooleanColumn || isTree || ColumnFilterUtils.supportsDropdownFilter(column);
 
   const booleanOptions = useMemo<FilterOption[]>(
     () => [
@@ -60,6 +71,8 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
         id: option.id,
         label: option.label,
         value: option.value ?? option.id,
+        parentId: option.parentId,
+        isCharacteristic: option.isCharacteristic,
       }));
 
     // Ensure selected options are always present for label display, even before the dropdown loads
@@ -83,10 +96,28 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   };
 
   const handleLoadMore = () => {
-    if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column) && !isBooleanColumn) {
+    if (onLoadMoreOptions && (ColumnFilterUtils.isTableDirColumn(column) || isTree) && !isBooleanColumn) {
       onLoadMoreOptions(filterState?.searchQuery);
     }
   };
+
+  if (isTree) {
+    return (
+      <TreeColumnFilter
+        options={availableOptions}
+        selectedValues={selectedValues}
+        onSelectionChange={handleSelectionChange}
+        onSearch={handleSearchChange}
+        onFocus={onLoadOptions}
+        onLoadMore={handleLoadMore}
+        loading={filterState?.loading || false}
+        hasMore={filterState?.hasMore || false}
+        placeholder={`Filter ${column.name || column.columnName}...`}
+        filterState={filterState}
+        data-testid="TreeColumnFilter__a8fea9"
+      />
+    );
+  }
 
   return (
     <MultiSelect

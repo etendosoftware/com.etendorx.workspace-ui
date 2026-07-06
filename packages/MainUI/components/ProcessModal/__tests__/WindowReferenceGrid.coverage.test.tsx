@@ -26,8 +26,18 @@ import {
   buildGridCriteria,
   resolveSortBy,
   buildDeselectedRecord,
+  applyEditToRows,
+  applyEditToReadStore,
+  buildValidatorCandidate,
+  shouldRunColumnValidators,
+  applyButtonOwnerViewTabId,
+  decideDatasourceSync,
   syncGridSelectionToLocalRecords,
+  shouldDeferInitialZeroing,
+  syncPersistentSelection,
+  buildIsFieldReadOnly,
   findMatchingRecord,
+  isFieldVisibleForContext,
 } from "../WindowReferenceGrid";
 import "@testing-library/jest-dom";
 
@@ -89,11 +99,35 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       expect(updated?.amount).toBe(20);
     });
 
+    it("updateLocalRecordFromSelection does NOT overwrite when the selection amount matches the record", () => {
+      // Regression guard for the Add Payment Order/Invoice "amount -> 0" clobber:
+      // once the selection snapshot carries the freshly distributed value (the
+      // handleRowSelection read-store fix), the selection-sync becomes idempotent
+      // and must NOT push the (now-equal) amount back over the grid's value.
+      const record = { id: "1", amount: 2.07 };
+      const selection = { id: "1", amount: 2.07 };
+      expect(updateLocalRecordFromSelection(record as any, selection)).toBeNull();
+    });
+
     it("resetLocalRecordFields should reset specific fields", () => {
       const record = { id: "1", amount: 10, paymentAmount: 5 };
       const reset = resetLocalRecordFields(record as any);
       expect(reset?.amount).toBe(0);
       expect(reset?.paymentAmount).toBe(0);
+    });
+
+    it("resetLocalRecordFields should preserve a read-only amount and still zero an editable field", () => {
+      const record = { id: "1", amount: 10, paymentAmount: 5 };
+      const isFieldReadOnly = (fieldName: string) => fieldName === "amount";
+      const reset = resetLocalRecordFields(record as any, isFieldReadOnly);
+      expect(reset?.amount).toBe(10); // read-only invoice amount is kept
+      expect(reset?.paymentAmount).toBe(0); // editable field still zeroed
+    });
+
+    it("resetLocalRecordFields should return null when every resettable field is read-only", () => {
+      const record = { id: "1", amount: 10, paymentAmount: 5 };
+      const reset = resetLocalRecordFields(record as any, () => true);
+      expect(reset).toBeNull();
     });
 
     it("applyDynamicKeys should apply org and client keys", () => {
@@ -218,6 +252,25 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       expect(updated.amount).toBe(0);
       expect(updated.paymentAmount).toBe(0);
     });
+
+    it("preserves a read-only amount and still zeroes an editable paymentAmount", () => {
+      const record = { id: "1", obSelected: true, amount: 20, paymentAmount: 30 } as EntityData;
+      const isFieldReadOnly = (field: string) => field === "amount";
+      const { updated, changed } = buildDeselectedRecord(record, isFieldReadOnly);
+      expect(changed).toBe(true);
+      expect(updated.obSelected).toBe(false);
+      expect(updated.amount).toBe(20);
+      expect(updated.paymentAmount).toBe(0);
+    });
+
+    it("does not zero any amount field when every field is read-only (obSelected still clears)", () => {
+      const record = { id: "1", obSelected: true, amount: 20, paymentAmount: 30 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record, () => true);
+      expect(changed).toBe(true);
+      expect(updated.obSelected).toBe(false);
+      expect(updated.amount).toBe(20);
+      expect(updated.paymentAmount).toBe(30);
+    });
   });
 
   describe("GridTopToolbar", () => {
@@ -246,28 +299,32 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       expect(screen.getByText("2 table.selection.multiple")).toBeInTheDocument();
     });
 
-    it("should handle filter button click to remove implicit filter", () => {
-      render(<GridTopToolbar {...mockProps} />);
+    it("should handle implicit filter button click to remove implicit filter", () => {
+      const propsWithImplicitFilter = {
+        ...mockProps,
+        initialIsFilterApplied: true,
+        isImplicitFilterApplied: true,
+      };
 
-      const filterButton = screen.getByTestId("MRT_ToggleFiltersButton__ce8544");
+      render(<GridTopToolbar {...propsWithImplicitFilter} />);
+
+      const filterButton = screen.getByTestId("implicit-filter-button");
       fireEvent.click(filterButton);
 
       expect(mockProps.setIsImplicitFilterApplied).toHaveBeenCalledWith(false);
     });
 
-    it("should handle filter button click to clear column filters when implicit filter is not applied", () => {
+    it("should disable the implicit filter button when implicit filter is not applied", () => {
       const propsWithoutImplicitFilter = {
         ...mockProps,
+        initialIsFilterApplied: true,
         isImplicitFilterApplied: false,
       };
 
       render(<GridTopToolbar {...propsWithoutImplicitFilter} />);
 
-      const filterButton = screen.getByTestId("MRT_ToggleFiltersButton__ce8544");
-      fireEvent.click(filterButton);
-
-      expect(mockTable.setColumnFilters).toHaveBeenCalledWith([]);
-      expect(mockProps.handleMRTColumnFiltersChange).toHaveBeenCalledWith([]);
+      const filterButton = screen.getByTestId("implicit-filter-button");
+      expect(filterButton).toBeDisabled();
     });
 
     it("should call handleClearSelections when clear button is clicked", () => {
@@ -334,6 +391,185 @@ describe("syncGridSelectionToLocalRecords", () => {
     expect(updated[1].amount).toBe(0);
     expect(updated[1].paymentAmount).toBe(0);
   });
+
+  it("keeps a read-only amount on unselected rows while zeroing the editable field", () => {
+    const setLocalRecords = jest.fn();
+    const localRecords = [makeRecord({ id: "2", amount: 100, paymentAmount: 20 })];
+    const isFieldReadOnly = (fieldName: string) => fieldName === "amount";
+    syncGridSelectionToLocalRecords([], localRecords, setLocalRecords, isFieldReadOnly);
+    expect(setLocalRecords).toHaveBeenCalledTimes(1);
+    const updated = setLocalRecords.mock.calls[0][0] as EntityData[];
+    expect(updated[0].amount).toBe(100); // read-only invoice amount preserved
+    expect(updated[0].paymentAmount).toBe(0); // editable field still zeroed
+  });
+});
+
+describe("shouldDeferInitialZeroing", () => {
+  const preSelected = [{ id: "1", amount: 100, obSelected: true }] as EntityData[];
+  const notSelected = [{ id: "1", amount: 100, obSelected: false }] as EntityData[];
+
+  it("defers the initial empty pass while a backend pre-selected row is pending", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [], false)).toBe(true);
+  });
+
+  it("does not defer once a real (non-empty) selection has arrived", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [{ id: "1" }], false)).toBe(false);
+  });
+
+  it("does not defer after reconciliation (later updates behave normally)", () => {
+    expect(shouldDeferInitialZeroing(preSelected, [], true)).toBe(false);
+  });
+
+  it("does not defer when no row is pre-selected (no regression for plain grids)", () => {
+    expect(shouldDeferInitialZeroing(notSelected, [], false)).toBe(false);
+  });
+});
+
+describe("syncPersistentSelection", () => {
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData => ({ id: "1", ...overrides }) as EntityData;
+
+  it("sets selected rows and ignores unselected ones", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    const r2 = makeRecord({ id: "2" });
+    syncPersistentSelection(cache, [r1, r2], { "1": true });
+    expect(Array.from(cache.keys())).toEqual(["1"]);
+    expect(cache.get("1")).toBe(r1);
+    expect(cache.has("2")).toBe(false);
+  });
+
+  it("deletes a previously cached row when it is re-synced as unselected", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    const r2 = makeRecord({ id: "2" });
+    syncPersistentSelection(cache, [r1, r2], { "1": true });
+    syncPersistentSelection(cache, [r1, r2], { "2": true });
+    expect(cache.has("1")).toBe(false);
+    expect(cache.get("2")).toBe(r2);
+  });
+
+  it("empties the cache when nothing is selected", () => {
+    const cache = new Map<string, EntityData>();
+    const r1 = makeRecord({ id: "1" });
+    syncPersistentSelection(cache, [r1], { "1": true });
+    syncPersistentSelection(cache, [r1], {});
+    expect(cache.size).toBe(0);
+  });
+
+  it("keys the cache by String(record.id) for non-string ids", () => {
+    const cache = new Map<string, EntityData>();
+    const record = makeRecord({ id: 7 as unknown as string });
+    syncPersistentSelection(cache, [record], { "7": true });
+    expect(cache.get("7")).toBe(record);
+  });
+});
+
+describe("applyEditToRows", () => {
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData => ({ id: "1", ...overrides }) as EntityData;
+
+  it("merges changes into the matching row and keeps other rows' identity", () => {
+    const r1 = makeRecord({ id: "1", settlementAmount: 1 });
+    const r2 = makeRecord({ id: "2", settlementAmount: 2 });
+    const result = applyEditToRows([r1, r2], "1", { settlementAmount: 99 });
+    expect(result[0]).toEqual({ id: "1", settlementAmount: 99 });
+    expect(result[0]).not.toBe(r1);
+    expect(result[1]).toBe(r2);
+  });
+
+  it("matches the row by String(id) for non-string ids", () => {
+    const record = makeRecord({ id: 7 as unknown as string, settlementAmount: 1 });
+    const result = applyEditToRows([record], 7, { settlementAmount: 5 });
+    expect(result[0].settlementAmount).toBe(5);
+  });
+
+  it("returns an equivalent array with no row mutated when no id matches", () => {
+    const r1 = makeRecord({ id: "1", settlementAmount: 1 });
+    const result = applyEditToRows([r1], "missing", { settlementAmount: 99 });
+    expect(result[0]).toBe(r1);
+  });
+});
+
+describe("applyButtonOwnerViewTabId", () => {
+  // Classic OBPickAndExecuteGrid.transformRequest sends the owner tab's id so backend
+  // HQL transformers pick the right query branch; we mirror it only when an owner tab
+  // with an id exists (otherwise the P&E grid comes back empty).
+  const tab = (id: unknown) => ({ id }) as unknown as Parameters<typeof applyButtonOwnerViewTabId>[1];
+
+  it("sets buttonOwnerViewTabId from the origin tab id when present", () => {
+    const options: Record<string, unknown> = { tabId: "grid-tab" };
+    applyButtonOwnerViewTabId(options, tab("owner-tab"));
+    expect(options.buttonOwnerViewTabId).toBe("owner-tab");
+    expect(options.tabId).toBe("grid-tab");
+  });
+
+  it("does not add the key when originTab is undefined", () => {
+    const options: Record<string, unknown> = { tabId: "grid-tab" };
+    applyButtonOwnerViewTabId(options);
+    expect(options).not.toHaveProperty("buttonOwnerViewTabId");
+  });
+
+  it("does not add the key when originTab has a falsy id", () => {
+    const options: Record<string, unknown> = {};
+    applyButtonOwnerViewTabId(options, tab(""));
+    expect(options).not.toHaveProperty("buttonOwnerViewTabId");
+  });
+});
+
+describe("decideDatasourceSync", () => {
+  const row = (id: string): EntityData => ({ id }) as EntityData;
+
+  it("does not sync and leaves the signature untouched before the first fetch completes", () => {
+    // The pre-fetch placeholder must never poison the dedup signature, otherwise
+    // the genuine (possibly empty) delivery would be deduped away afterwards.
+    const decision = decideDatasourceSync([], false, "prev");
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe("prev");
+  });
+
+  it("ignores the placeholder content while gated, even with rows present", () => {
+    const decision = decideDatasourceSync([row("1")], false, "");
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe("");
+  });
+
+  it("syncs an empty result set once the first fetch completed (drives the onGridLoad message)", () => {
+    const decision = decideDatasourceSync([], true, "");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe("[]");
+  });
+
+  it("syncs when the delivered content differs from the last signature", () => {
+    const decision = decideDatasourceSync([row("1")], true, "[]");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe(JSON.stringify([row("1")]));
+  });
+
+  it("does not re-sync identical delivered content (dedup)", () => {
+    const signature = JSON.stringify([row("1")]);
+    const decision = decideDatasourceSync([row("1")], true, signature);
+    expect(decision.shouldSync).toBe(false);
+    expect(decision.signature).toBe(signature);
+  });
+
+  it("treats undefined records as an empty array", () => {
+    const decision = decideDatasourceSync(undefined, true, "");
+    expect(decision.shouldSync).toBe(true);
+    expect(decision.signature).toBe("[]");
+  });
+});
+
+describe("buildIsFieldReadOnly", () => {
+  it("returns true only for fields flagged read-only in the map", () => {
+    const isFieldReadOnly = buildIsFieldReadOnly({ amount: true, paymentAmount: false });
+    expect(isFieldReadOnly("amount")).toBe(true);
+    expect(isFieldReadOnly("paymentAmount")).toBe(false);
+    expect(isFieldReadOnly("unknown")).toBe(false);
+  });
+
+  it("treats every field as editable when the map is missing or empty", () => {
+    expect(buildIsFieldReadOnly(undefined)("amount")).toBe(false);
+    expect(buildIsFieldReadOnly({})("amount")).toBe(false);
+  });
 });
 
 describe("findMatchingRecord", () => {
@@ -369,5 +605,203 @@ describe("findMatchingRecord", () => {
   it("returns undefined when neither parentContextId nor contextDocNo match any record", () => {
     const records = [{ id: "1", documentNo: "DOC-1" }];
     expect(findMatchingRecord(records, "NOPE", "NOPE")).toBeUndefined();
+  });
+});
+
+describe("isFieldVisibleForContext", () => {
+  // Server-rewritten expression that mirrors what classic UI produces via
+  // `DimensionDisplayUtility.computeAccountingDimensionDisplayLogic` for a
+  // BPartner field on an APP/Lines tab: visible when either the legacy
+  // `$Element_BP` is "Y" (decentralized config) or the per-doctype-level
+  // `$Element_BP_<DOCBASETYPE>_L` is "Y" (centralized config).
+  const KEY_CENTRALLY = "$IsAcctDimCentrally";
+  const KEY_BP_LEGACY = "$Element_BP";
+  const KEY_BP_APP_L = "$Element_BP_APP_L";
+  const BP_REWRITTEN_EXPR =
+    "(context.$IsAcctDimCentrally === 'N' && context.$Element_BP === 'Y') || " +
+    "(context.$IsAcctDimCentrally === 'Y' && context['$Element_BP_' + OB.Utilities.getValue(currentValues, \"DOCBASETYPE\") + '_L'] === 'Y')";
+
+  const baseField = {
+    name: "BPartner",
+    isActive: true,
+    displayed: true,
+    showInGridView: true,
+  };
+
+  it("returns false when isActive is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, isActive: false }, {}, {})).toBe(false);
+  });
+
+  it("returns false when displayed is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, displayed: false }, {}, {})).toBe(false);
+  });
+
+  it("returns false when showInGridView is false", () => {
+    expect(isFieldVisibleForContext({ ...baseField, showInGridView: false }, {}, {})).toBe(false);
+  });
+
+  it("returns true when there is no display logic and no grid display logic", () => {
+    expect(isFieldVisibleForContext(baseField, {}, {})).toBe(true);
+  });
+
+  it("returns false when gridDisplayLogicExpression evaluates to false", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "false" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(false);
+  });
+
+  it("returns true when gridDisplayLogicExpression evaluates to true", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "true" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(true);
+  });
+
+  it("fails open (returns true) when gridDisplayLogicExpression is unparseable", () => {
+    const field = { ...baseField, gridDisplayLogicExpression: "this is not valid !!" };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(true);
+  });
+
+  it("hides BPartner when centralized mode and per-doctype flag is 'N' (matches classic Product/CostCenter case)", () => {
+    const session = {
+      [KEY_CENTRALLY]: "Y",
+      [KEY_BP_APP_L]: "N",
+      [KEY_BP_LEGACY]: "",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(false);
+  });
+
+  it("shows BPartner when centralized mode and per-doctype flag is 'Y' (matches classic BPartner/Project case)", () => {
+    const session = {
+      [KEY_CENTRALLY]: "Y",
+      [KEY_BP_APP_L]: "Y",
+      [KEY_BP_LEGACY]: "",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(true);
+  });
+
+  it("shows BPartner when decentralized mode and legacy $Element_BP is 'Y'", () => {
+    const session = {
+      [KEY_CENTRALLY]: "N",
+      [KEY_BP_LEGACY]: "Y",
+      [KEY_BP_APP_L]: "N",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(true);
+  });
+
+  it("hides BPartner when decentralized mode and legacy $Element_BP is empty", () => {
+    const session = {
+      [KEY_CENTRALLY]: "N",
+      [KEY_BP_LEGACY]: "",
+      [KEY_BP_APP_L]: "Y",
+    };
+    const context = { ...session, DOCBASETYPE: "APP" };
+    const field = { ...baseField, gridDisplayLogicExpression: BP_REWRITTEN_EXPR };
+    expect(isFieldVisibleForContext(field, session, context)).toBe(false);
+  });
+
+  it("evaluates displayLogicExpression independently of gridDisplayLogicExpression", () => {
+    const field = {
+      ...baseField,
+      displayLogicExpression: "false",
+      gridDisplayLogicExpression: "true",
+    };
+    expect(isFieldVisibleForContext(field, {}, {})).toBe(false);
+  });
+
+  describe("applyEditToReadStore", () => {
+    const READ_STORE: EntityData[] = [
+      { id: "1", amount: 0, outstandingAmount: 2.07 } as unknown as EntityData,
+      { id: "2", amount: 0, outstandingAmount: 5 } as unknown as EntityData,
+    ];
+
+    it("applies the edit when the read store holds the row and reflects it on read-back", () => {
+      const updated = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      expect(updated).not.toBeNull();
+      // The script proxy's getEditValues reads the row back by index from this store.
+      expect((updated as EntityData[])[0].amount).toBe(2.07);
+      // Untouched rows are preserved.
+      expect((updated as EntityData[])[1].amount).toBe(0);
+    });
+
+    it("returns null for a create-row absent from the read store (row.original-only path)", () => {
+      expect(applyEditToReadStore(READ_STORE, "mrt-row-create", { amount: 9 })).toBeNull();
+      expect(applyEditToReadStore([], "1", { amount: 9 })).toBeNull();
+    });
+
+    it("does not mutate the input rows (returns a fresh array)", () => {
+      const updated = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      expect(updated).not.toBe(READ_STORE);
+      expect(READ_STORE[0].amount).toBe(0);
+    });
+
+    it("accumulates successive writes when each result feeds the next (single-tick distribute loop)", () => {
+      // Mirrors the distribute loop: each setEditValue uses the prior result (the
+      // synchronously-updated read store) as the next base, so writes do not clobber.
+      const afterRow0 = applyEditToReadStore(READ_STORE, "1", { amount: 2.07 });
+      const afterRow1 = applyEditToReadStore(afterRow0 as EntityData[], "2", { amount: 5 });
+      expect((afterRow1 as EntityData[])[0].amount).toBe(2.07);
+      expect((afterRow1 as EntityData[])[1].amount).toBe(5);
+    });
+  });
+
+  describe("buildValidatorCandidate", () => {
+    // The pre-write row a column validator was (wrongly) fed before the fix: a
+    // default row whose amount=0 fails a zero-amount validator.
+    const ROW_DATA = { id: "1", amount: 0, outstandingAmount: 2.07, writeoff: false };
+
+    it("overlays the pending changes so the written column reflects the new value", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate.amount).toBe(2.07);
+    });
+
+    it("preserves untouched columns from the row data", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate.outstandingAmount).toBe(2.07);
+      expect(candidate.writeoff).toBe(false);
+    });
+
+    it("does not mutate the input row data (returns a fresh object)", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, { amount: 2.07 });
+      expect(candidate).not.toBe(ROW_DATA);
+      expect(ROW_DATA.amount).toBe(0);
+    });
+
+    it("returns a safe copy of the row data when there are no changes", () => {
+      const candidate = buildValidatorCandidate(ROW_DATA, {});
+      expect(candidate).toEqual(ROW_DATA);
+      expect(candidate).not.toBe(ROW_DATA);
+    });
+
+    it("makes a zero-amount validator accept the candidate that the pre-write row would have rejected", () => {
+      // Mirrors AP.orderInvoiceGridValidation: reject amount===0, accept otherwise.
+      const validate = (record: { amount: number }) => record.amount !== 0;
+      // Pre-write row → rejected (the bug); candidate with the written value → accepted.
+      expect(validate(ROW_DATA)).toBe(false);
+      expect(validate(buildValidatorCandidate(ROW_DATA, { amount: 2.07 }) as { amount: number })).toBe(true);
+    });
+  });
+
+  describe("shouldRunColumnValidators", () => {
+    it("skips validation for a programmatic write even when validators are registered", () => {
+      // Bug repro: distribute/seed setEditValue must NOT be gated (classic never
+      // validates programmatic writes), so no spurious rejection/message on open.
+      expect(shouldRunColumnValidators(true, false, 1)).toBe(false);
+    });
+
+    it("runs validation for an interactive edit with a registered validator", () => {
+      expect(shouldRunColumnValidators(false, false, 1)).toBe(true);
+    });
+
+    it("skips validation when no validator is registered", () => {
+      expect(shouldRunColumnValidators(false, false, 0)).toBe(false);
+    });
+
+    it("skips validation during a column-onChange re-entry", () => {
+      expect(shouldRunColumnValidators(false, true, 1)).toBe(false);
+    });
   });
 });

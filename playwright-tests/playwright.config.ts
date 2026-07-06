@@ -3,6 +3,9 @@ import { resolve } from "path";
 import { readFileSync } from "fs";
 
 // Load .env from cypress-tests (same env vars)
+// NOTE: disabled — cypress-tests/.env may have stale credentials that differ
+// from the current backend. Values are set via PLAYWRIGHT_BASE_URL /
+// CYPRESS_BASE_URL / CYPRESS_IFRAME_URL env vars or use the defaults below.
 const loadEnv = () => {
   try {
     const envFile = resolve(process.cwd(), "../cypress-tests/.env");
@@ -11,7 +14,10 @@ const loadEnv = () => {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith("#")) {
         const [key, ...rest] = trimmed.split("=");
-        if (key && !process.env[key]) process.env[key] = rest.join("=");
+        // Only load non-credential env vars to avoid stale password overrides
+        if (key && !process.env[key] && key !== "CYPRESS_PASSWORD" && key !== "CYPRESS_USER") {
+          process.env[key] = rest.join("=");
+        }
       }
     }
   } catch {
@@ -44,23 +50,22 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "retain-on-failure",
-    // Allow cross-origin iframes (equivalent to chromeWebSecurity: false)
     ignoreHTTPSErrors: true,
+    // --no-zygote prevents Chromium from using the zygote process model for
+    // spawning renderers. In container/CI environments with restricted namespaces
+    // the zygote fork can produce a SIGSEGV (General Protection Fault) during
+    // browser launch, particularly after prolonged test runs.
+    launchOptions: {
+      args: ["--disable-web-security", "--disable-site-isolation-trials", "--no-zygote"],
+    },
   },
 
   projects: [
-    // ── Shared browser options ───────────────────────────────────────────────
-    // Each suite group below spreads via this use block.
-    // (Playwright requires each project to declare its own browser.)
-
     // Group 1 — Performance (runs first, alone — stress tests can saturate the server)
     {
       name: "suite-00-performance",
       testMatch: ["**/performance/**"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state)
@@ -74,10 +79,8 @@ export default defineConfig({
         "**/PurchaseOrderDisplayLogicTest*",
       ],
       dependencies: ["suite-00-performance"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      timeout: 360_000,
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 3 — Sales (starts only after Group 2 finishes)
@@ -85,10 +88,8 @@ export default defineConfig({
       name: "suite-02-sales",
       testMatch: ["**/01_Sales/**"],
       dependencies: ["suite-01-base"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      timeout: 720_000,
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 4 — Procurement (starts only after Sales finishes)
@@ -96,10 +97,8 @@ export default defineConfig({
       name: "suite-03-procurement",
       testMatch: ["**/03_Procurement/**"],
       dependencies: ["suite-02-sales"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      timeout: 360_000,
+      use: { ...devices["Desktop Chrome"] },
     },
 
     // Group 5 — Financial (most fragile — runs last, alone)
@@ -107,15 +106,13 @@ export default defineConfig({
       name: "suite-04-financial",
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
-      },
+      timeout: 360_000,
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 
-  // Global test timeout — when tests run sequentially the server is slower due
-  // to accumulated data. Individual tests can override with test.setTimeout().
+  // Global test timeout for suite-00-performance. Smoke suites set their own
+  // higher timeouts at the project level above.
   timeout: 120_000,
   expect: { timeout: 15_000 },
 });

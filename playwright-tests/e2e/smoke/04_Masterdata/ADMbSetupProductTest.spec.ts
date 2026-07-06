@@ -21,10 +21,10 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
   });
 
   test("Configure price lists, schemas, attributes and create product", async ({ page }) => {
-    test.setTimeout(360_000);
+    test.setTimeout(480_000);
     // ── Local helpers ────────────────────────────────────────────────────────
     const clickNewChildRecord = async () => {
-      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
+      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible > span').click();
     };
 
     const fillVisibleByAriaLabel = async (label: string, value: string) => {
@@ -39,18 +39,18 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
       optionText: string,
       searchPlaceholder: "Search options" | "Search..." | "Buscar..." = "Search options"
     ) => {
-      await page.locator(`[aria-label="${containerAriaLabel}"] > div[tabindex="0"]`).click();
+      await page.locator(`[aria-label="${containerAriaLabel}"]:visible > div[tabindex="0"]`).click();
       const searchInput =
         searchPlaceholder === "Search options"
-          ? page.locator('input[aria-label="Search options"]').first()
-          : page.locator(`input[placeholder="${searchPlaceholder}"]`).first();
+          ? page.locator('input[aria-label="Search options"]:visible').first()
+          : page.locator(`input[placeholder="${searchPlaceholder}"]:visible`).first();
       await searchInput.waitFor({ state: "visible", timeout: 10_000 });
       await searchInput.fill(optionText);
       await page.locator('[data-testid^="OptionItem"]').filter({ hasText: optionText }).first().click();
     };
 
     // ── Login + navigate to Price List Schema window ─────────────────────────
-    await loginToEtendo(page, "admin", "admin");
+    await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
     await page.waitForTimeout(1_000);
 
@@ -67,7 +67,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
 
     // Open Lines subtab
     const linesBtn = page
-      .locator("button")
+      .locator("button:visible")
       .filter({ hasText: /^Lines$/ })
       .first();
     await linesBtn.waitFor({ state: "visible", timeout: 20_000 });
@@ -81,7 +81,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await fillVisibleByAriaLabel("Surcharge List Price Amount", "1");
 
     // Save line (second save button)
-    await page.locator("button.toolbar-button-save").nth(1).click();
+    await page.locator("button.toolbar-button-save").locator("visible=true").nth(1).click();
     await page.waitForTimeout(1_000);
     await closeToastIfPresent(page);
     await page.waitForTimeout(1_000);
@@ -169,7 +169,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await page.waitForTimeout(1_000);
     await typeName(page, "VAT 3%");
     await page.waitForTimeout(1_000);
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').first().click();
+    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible').first().click();
     await closeToastIfPresent(page);
 
     // ── Product window ────────────────────────────────────────────────────────

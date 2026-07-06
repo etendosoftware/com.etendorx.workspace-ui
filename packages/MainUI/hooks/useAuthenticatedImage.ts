@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUserContext } from "./useUserContext";
+import { useUserStore } from "@/stores/userStore";
 
 export function useAuthenticatedImage(imageId: string | null, cacheKey?: number): string | null {
-  const { token } = useUserContext();
+  const token = useUserStore((s) => s.token);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {

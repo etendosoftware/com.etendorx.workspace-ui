@@ -27,6 +27,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
     item,
     onClick,
+    onItemHover,
     open,
     isSearchActive,
     onToggleExpand,
@@ -134,6 +135,20 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [open, hasChildren]
     );
 
+    const handleMouseEnterLeaf = useCallback(() => {
+      if (!hasChildren && onItemHover) {
+        onItemHover(item);
+      }
+    }, [hasChildren, onItemHover, item]);
+
+    const handleCombinedMouseEnter = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        handleMouseEnter(event);
+        handleMouseEnterLeaf();
+      },
+      [handleMouseEnter, handleMouseEnterLeaf]
+    );
+
     const handleMouseLeave = useCallback(() => {
       if (!open) {
         hoverTimeoutRef.current = setTimeout(() => {
@@ -201,7 +216,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         className={sectionClasses}
         aria-expanded={expanded}
         onKeyDown={handleKeyDown}
-        onMouseEnter={handleMouseEnter}
+        onMouseEnter={handleCombinedMouseEnter}
         onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
@@ -221,6 +236,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                 key={subitem.id}
                 item={subitem}
                 onClick={onClick}
+                onItemHover={onItemHover}
                 open={open}
                 isSearchActive={isSearchActive}
                 onToggleExpand={getToggleFunction(subitem.id)}
@@ -259,6 +275,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                   key={subitem.id}
                   item={subitem}
                   onClick={handleClickAndClose}
+                  onItemHover={onItemHover}
                   open={true}
                   isSearchActive={isSearchActive}
                   onToggleExpand={getToggleFunction(subitem.id)}

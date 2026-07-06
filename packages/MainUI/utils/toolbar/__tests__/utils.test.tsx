@@ -4,6 +4,16 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 
+const makeButtonMetadata = (action: string): ToolbarButtonMetadata =>
+  ({
+    action,
+    name: action,
+    active: true,
+    section: "left",
+    buttonType: "ACTION",
+    windows: [],
+  }) as ToolbarButtonMetadata;
+
 describe("Toolbar utils createButtonByType", () => {
   const defaultTab = { uIPattern: "STD" } as Tab;
   const defaultButton = {
@@ -30,6 +40,64 @@ describe("Toolbar utils createButtonByType", () => {
     expect(result.disabled).toBe(true);
   });
 
+  describe("isDocumentProcessing", () => {
+    const processingState = { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true };
+    const idleState = { isSaving: false, isCalloutLoading: false, isDocumentProcessing: false };
+
+    const propsWithRecord = {
+      ...defaultProps,
+      hasFormChanges: false,
+      selectedRecordsLength: 1,
+      hasParentRecordSelected: true,
+    };
+
+    it("disables SAVE when isDocumentProcessing=true", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SAVE),
+        saveButtonState: processingState,
+        hasFormChanges: false,
+      });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("does NOT disable SAVE when isDocumentProcessing=false", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SAVE),
+        saveButtonState: idleState,
+        hasFormChanges: true,
+      });
+      expect(result.disabled).toBe(false);
+    });
+
+    it.each([
+      TOOLBAR_BUTTONS_ACTIONS.NEW,
+      TOOLBAR_BUTTONS_ACTIONS.DELETE,
+      TOOLBAR_BUTTONS_ACTIONS.CANCEL,
+      TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT,
+      TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL,
+    ])("disables %s when isDocumentProcessing=true", (action) => {
+      const result = createButtonByType({
+        ...propsWithRecord,
+        button: makeButtonMetadata(action),
+        saveButtonState: processingState,
+      });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("disables PRINT_RECORD when isDocumentProcessing=true", () => {
+      const tab = { ...defaultTab, process$_identifier: "Print Document" } as Tab;
+      const result = createButtonByType({
+        ...propsWithRecord,
+        tab,
+        button: makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD),
+        saveButtonState: processingState,
+      });
+      expect(result.disabled).toBe(true);
+    });
+  });
+
   it("should NOT disable save button when isCalloutLoading is true but isSaving is false", () => {
     const result = createButtonByType({
       ...defaultProps,
@@ -50,37 +118,27 @@ describe("Toolbar utils createButtonByType", () => {
 });
 
 describe("getButtonStyles", () => {
-  const makeButton = (action: string): ToolbarButtonMetadata =>
-    ({
-      action,
-      name: action,
-      active: true,
-      section: "left",
-      buttonType: "ACTION",
-      windows: [],
-    }) as ToolbarButtonMetadata;
-
   it("returns form-specific class when isFormView=true and action=NEW", () => {
-    const result = getButtonStyles(makeButton(TOOLBAR_BUTTONS_ACTIONS.NEW), true);
+    const result = getButtonStyles(makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.NEW), true);
     expect(result).toContain("toolbar-button-new-form");
   });
 
   it("returns standard NEW style when isFormView=false", () => {
-    const result = getButtonStyles(makeButton(TOOLBAR_BUTTONS_ACTIONS.NEW), false);
+    const result = getButtonStyles(makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.NEW), false);
     expect(result).toContain("toolbar-button-new");
     expect(result).not.toContain("toolbar-button-new-form");
   });
 
   it("returns SAVE style", () => {
-    expect(getButtonStyles(makeButton(TOOLBAR_BUTTONS_ACTIONS.SAVE))).toContain("toolbar-button-save");
+    expect(getButtonStyles(makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SAVE))).toContain("toolbar-button-save");
   });
 
   it("returns REFRESH style", () => {
-    expect(getButtonStyles(makeButton(TOOLBAR_BUTTONS_ACTIONS.REFRESH))).toContain("toolbar-button-refresh");
+    expect(getButtonStyles(makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.REFRESH))).toContain("toolbar-button-refresh");
   });
 
   it("returns undefined for unknown action", () => {
-    expect(getButtonStyles(makeButton("UNKNOWN_ACTION"))).toBeUndefined();
+    expect(getButtonStyles(makeButtonMetadata("UNKNOWN_ACTION"))).toBeUndefined();
   });
 });
 

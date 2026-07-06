@@ -47,7 +47,9 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     };
 
     const clickOptionButton = async (text: string | RegExp) => {
-      const btn = page.getByRole("button", { name: text }).first();
+      // Scope to the last open menu portal so table-header TextFilter operator
+      // buttons (=, ⊃, →) with the same labels are never matched by mistake.
+      const btn = page.locator('div[role="menu"]').last().getByRole("button", { name: text }).first();
       await btn.waitFor({ state: "visible", timeout: 10_000 });
       await btn.click();
     };
@@ -169,9 +171,15 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
 
     await clickOptionButton("Add condition");
 
-    // Switch the AND connector to OR
-    await clickParentOfSpanWithText("AND");
-    await page.locator("span").filter({ hasText: /^OR$/ }).first().click();
+    // Switch the AND connector to OR (retry in case the dropdown closes on first click)
+    const orSpan = page.locator("span").filter({ hasText: /^OR$/ }).first();
+    await expect(async () => {
+      if (!(await orSpan.isVisible())) {
+        await clickParentOfSpanWithText(/^AND$/);
+      }
+      await expect(orSpan).toBeVisible();
+    }).toPass({ timeout: 10_000 });
+    await orSpan.click();
 
     await clickTabIndexZeroWithText("Column", "last");
     await page.locator("span.text-gray-700").filter({ hasText: "Total Gross Amount" }).first().click();

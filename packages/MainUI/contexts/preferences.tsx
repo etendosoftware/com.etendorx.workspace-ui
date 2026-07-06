@@ -1,25 +1,10 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { FAVICON_BADGE_KEY, usePreferencesStore } from "@/stores/preferencesStore";
 
-const FAVICON_BADGE_KEY = "settings.favicon_badge";
 const BASE_FAVICON_PATH = "/favicon.ico";
-
-interface PreferencesContextType {
-  customFaviconColor: string | null;
-  setCustomFaviconColor: (color: string | null) => void;
-}
-
-const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined);
-
-export const usePreferences = () => {
-  const context = useContext(PreferencesContext);
-  if (!context) {
-    throw new Error("usePreferences must be used within a PreferencesProvider");
-  }
-  return context;
-};
 
 /**
  * Updates the favicon link tag in the document head
@@ -68,56 +53,48 @@ const drawFaviconWithBadge = (baseImage: HTMLImageElement, color: string): strin
   return canvas.toDataURL("image/png");
 };
 
+// Re-export for backward compatibility during migration.
+// New code should import directly from @/stores/preferencesStore.
+export const usePreferences = () => ({
+  customFaviconColor: usePreferencesStore((s) => s.customFaviconColor),
+  setCustomFaviconColor: usePreferencesStore((s) => s.setCustomFaviconColor),
+});
+
+/**
+ * Hydrates the store from localStorage and keeps the favicon DOM element in sync.
+ * State lives in Zustand — this provider only handles browser side-effects.
+ */
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [faviconColor, setFaviconColor] = useState<string | null>(null);
+  const customFaviconColor = usePreferencesStore((s) => s.customFaviconColor);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize from localStorage on mount
+  // Hydrate store from localStorage on mount (bypasses the action to avoid a redundant write)
   useEffect(() => {
     const savedColor = localStorage.getItem(FAVICON_BADGE_KEY);
-    if (savedColor) {
-      setFaviconColor(savedColor);
-    }
+    usePreferencesStore.setState({ customFaviconColor: savedColor });
     setIsInitialized(true);
-  }, []);
-
-  // Wrapper to persist color changes to localStorage
-  const setCustomFaviconColor = useCallback((color: string | null) => {
-    setFaviconColor(color);
-    if (color) {
-      localStorage.setItem(FAVICON_BADGE_KEY, color);
-    } else {
-      localStorage.removeItem(FAVICON_BADGE_KEY);
-    }
   }, []);
 
   // Update favicon whenever color changes
   useEffect(() => {
     if (!isInitialized) return;
 
-    // If no color, restore original favicon
-    if (!faviconColor) {
+    if (!customFaviconColor) {
       updateFaviconLink(BASE_FAVICON_PATH);
       return;
     }
 
-    // Load the base favicon and draw the badge
     const img = new Image();
     img.onload = () => {
-      const faviconWithBadge = drawFaviconWithBadge(img, faviconColor);
+      const faviconWithBadge = drawFaviconWithBadge(img, customFaviconColor);
       updateFaviconLink(faviconWithBadge);
     };
     img.onerror = (e) => {
       console.warn("Failed to load base favicon for badge overlay", e);
     };
-    // Add a cache buster to the favicon URL to ensure browsers always fetch the latest version.
+    // Cache-buster to ensure browsers always fetch the latest version
     img.src = `${BASE_FAVICON_PATH}?v=${Date.now()}`;
-  }, [faviconColor, isInitialized]);
+  }, [customFaviconColor, isInitialized]);
 
-  const value = useMemo(
-    () => ({ customFaviconColor: faviconColor, setCustomFaviconColor }),
-    [faviconColor, setCustomFaviconColor]
-  );
-
-  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
+  return <>{children}</>;
 };

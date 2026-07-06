@@ -215,4 +215,53 @@ describe("getParams", () => {
     const result = getParams({ ...baseProps, isPostedProcess: true, processAction: baseProcessAction });
     expect(result.get("inpdocaction")).toBeTruthy();
   });
+
+  it("resolves $record.<col> against a record using the snake_case key as-is", () => {
+    const result = getParams({
+      ...baseProps,
+      record: { Processed: "N" },
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: { inpprocessed: "$record.Processed" },
+      },
+    });
+    expect(result.get("inpprocessed")).toBe("N");
+  });
+
+  it("resolves $record.<col> when the record exposes the column in camelCase", () => {
+    const result = getParams({
+      ...baseProps,
+      record: { adClientId: "CLIENT-X" },
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: { inpadClientId: "$record.AD_Client_ID" },
+      },
+    });
+    expect(result.get("inpadClientId")).toBe("CLIENT-X");
+  });
+
+  it("resolves $record.<col> to null when the column is absent from the record", () => {
+    const result = getParams({
+      ...baseProps,
+      record: {},
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: { inpfoo: "$record.Foo" },
+      },
+    });
+    expect(result.get("inpfoo")).toBeNull();
+  });
+
+  it("uses last-wins when additionalParameters override a hardcoded key", () => {
+    const result = getParams({
+      ...baseProps,
+      record: { adClientId: "OVERRIDDEN" },
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: { inpadClientId: "$record.AD_Client_ID" },
+      },
+    });
+    // .getAll() must return a single entry; the backend value wins.
+    expect(result.getAll("inpadClientId")).toEqual(["OVERRIDDEN"]);
+  });
 });

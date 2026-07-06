@@ -1,7 +1,8 @@
-import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
+import type { ProcessParameter, Field, EntityValue } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
-import { useMemo } from "react";
-import { useUserContext } from "@/hooks/useUserContext";
+import type { ProcessSelectorContext } from "@/hooks/types";
+import { memo, useMemo } from "react";
+import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -18,6 +19,7 @@ import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirS
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
 import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
 import { ImageSelector } from "@/components/Form/FormView/selectors/ImageSelector";
+import { MultiRecordSelector } from "@/components/Form/FormView/selectors/MultiRecordSelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
@@ -25,18 +27,33 @@ import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 // Import existing ProcessModal selectors for fallback
 import GenericSelector from "./GenericSelector";
 import { UploadFileSelector } from "./UploadFileSelector";
+import LegacySelectorAffix from "./LegacySelectorAffix";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
   logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
+  // Runtime label overrides set by migrated scripts (item.setTitle). Keyed by
+  // parameter name; when present, the override replaces the static label.
+  labelOverrides?: Record<string, string>;
   parameters?: Record<string, ProcessParameter>;
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
   selectedRecordsCount?: number;
   onFileChange?: (paramName: string, file: File | null) => void;
+  // Stabilized form values passed from the parent. Each selector previously called
+  // `watch()` on its own, registering 20–30 global subscribers that re-rendered
+  // every selector on every keystroke. Receiving values as a prop lets the parent
+  // own the single subscription and React.memo skip re-renders of unaffected selectors.
+  values?: Record<string, unknown>;
+  // Process Definition id propagated from `ProcessDefinitionModal`. Combined
+  // with `values`, it lets tabledir selectors build the cascading datasource
+  // payload (`_processDefinitionId`, `_selectorFieldId`, raw form keys) that
+  // Classic emits via `OBSelectorItem.prepareDSRequest`.
+  processId?: string;
 }
 
-import { createProcessExpressionContext } from "../utils/processExpressionUtils";
+import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
+import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
 // ... imports remain the same
 
@@ -44,18 +61,44 @@ import { createProcessExpressionContext } from "../utils/processExpressionUtils"
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
  */
-export const ProcessParameterSelector = ({
+const EMPTY_VALUES: Record<string, unknown> = {};
+
+/**
+ * Translates a form-values map keyed by ProcessParameter display names into a
+ * map keyed by raw `dBColumnName`s. Mirrors the Classic pickList payload —
+ * `OB.getParameters().get('received_in')` server-side expects raw keys, not
+ * `"Received In"`. Returns `{}` when `parameters` is empty.
+ */
+export const mapValuesByDBColumnName = (
+  values: Record<string, unknown>,
+  parameters: Record<string, ProcessParameter> | undefined
+): Record<string, EntityValue> => {
+  const out: Record<string, EntityValue> = {};
+  if (!parameters) return out;
+  for (const parameter of Object.values(parameters)) {
+    const dbKey = parameter.dBColumnName;
+    if (!dbKey) continue;
+    const value = values[parameter.name];
+    if (value === undefined) continue;
+    out[dbKey] = value as EntityValue;
+  }
+  return out;
+};
+
+const ProcessParameterSelectorImpl = ({
   parameter,
   logicFields,
+  labelOverrides,
   parameters,
   recordValues,
   parentFields,
   selectedRecordsCount,
   onFileChange,
+  values = EMPTY_VALUES,
+  processId,
 }: ProcessParameterSelectorProps) => {
-  const { session } = useUserContext();
+  const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
-  const values = watch(); // Watch all form values for reactive logic evaluation
 
   // Map ProcessParameter to Field interface for FormView selector compatibility
   const mappedField = useMemo(() => {
@@ -73,39 +116,12 @@ export const ProcessParameterSelector = ({
     });
   }, [parameters, values, recordValues, parentFields, session]);
 
-  // Evaluate display logic expression (combine parameter logic with process defaults logic)
-  const isDisplayed = useMemo(() => {
-    // Check process defaults logic first (takes precedence)
-    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
-    if (defaultsDisplayLogic !== undefined) {
-      return defaultsDisplayLogic;
-    }
-
-    // Fallback to parameter's own display logic
-    if (!parameter.displayLogic) return true;
-
-    // Skip compilation if display logic looks like a field name (contains underscores and ends with _logic)
-    if (parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@")) {
-      logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
-      return true; // Default to visible for malformed expressions
-    }
-
-    // WAIT for form data to be available before evaluating expressions
-    if (!values || Object.keys(values).length === 0) {
-      // Form data not loaded yet, default to visible to avoid errors
-      return true;
-    }
-
-    try {
-      const compiledExpr = compileExpression(parameter.displayLogic);
-      // Pass smartContext as both context and values to ensure resolution works for all variable types
-      const result = compiledExpr(evaluationContext, evaluationContext);
-      return result;
-    } catch (error) {
-      logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
-      return true; // Default to visible on error
-    }
-  }, [parameter.displayLogic, parameter.name, parameter.dBColumnName, logicFields, values, evaluationContext]);
+  // Evaluate display logic via the shared helper, so the script-facing
+  // `item.isVisible()` proxy and the rendered field always agree on visibility.
+  const isDisplayed = useMemo(
+    () => isParameterDisplayed({ parameter, logicFields, values, evaluationContext }),
+    [parameter, logicFields, values, evaluationContext]
+  );
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {
@@ -132,8 +148,7 @@ export const ProcessParameterSelector = ({
 
     try {
       const compiledExpr = compileExpression(readOnlyExpression);
-      const result = compiledExpr(evaluationContext, evaluationContext);
-      return result;
+      return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext));
     } catch (error) {
       logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
       return false; // Default to editable on error
@@ -144,6 +159,22 @@ export const ProcessParameterSelector = ({
   const fieldType = useMemo(() => {
     return ProcessParameterMapper.getFieldType(parameter);
   }, [parameter]);
+
+  // Built only when the modal supplies a processId. The hook reads this to
+  // emit the process-level cascade payload (raw param keys + meta keys) that
+  // Classic injects from `OBSelectorItem.prepareDSRequest`. Stays `undefined`
+  // for non-process contexts so the standard selector flow is untouched.
+  //
+  // The form is registered with display-name keys (e.g. "Payment Method",
+  // "Invoice Organization") because that's how ProcessParameterMapper sets
+  // `field.hqlName`. Classic's payload uses the raw `dBColumnName` keys
+  // (`payment_method`, `ad_org_id`). We remap here by walking the parameters
+  // metadata: each entry contributes `values[parameter.name]` under its
+  // `dBColumnName`.
+  const processContext = useMemo<ProcessSelectorContext | undefined>(() => {
+    if (!processId) return undefined;
+    return { processId, values: mapValuesByDBColumnName(values, parameters) };
+  }, [processId, values, parameters]);
 
   // Don't render if display logic evaluates to false
   // EXCEPT for auxiliary logic fields (*_readonly_logic, *_display_logic) which need to be in the form
@@ -229,16 +260,33 @@ export const ProcessParameterSelector = ({
         case "product": {
           // Extract static options from selector.response if available
           const staticOptions = parameter.selector?.response;
-          return (
+          const tableDirSelector = (
             <TableDirSelector
               field={mappedField}
               isReadOnly={isReadOnly}
               isProcessModal={true}
               selectedRecordsCount={selectedRecordsCount}
               staticOptions={staticOptions}
+              processContext={processContext}
               data-testid="TableDirSelector__dac06b"
             />
           );
+          // When the parameter is backed by a Classic Search reference, the metadata
+          // carries the legacy info-window URL: render a search button that opens that
+          // popup (delegated to the legacy UI) and writes the picked record back.
+          const legacySearchUrl = mappedField.selector?.legacySearchUrl;
+          if (typeof legacySearchUrl === "string" && legacySearchUrl.length > 0) {
+            return (
+              <LegacySelectorAffix
+                field={mappedField}
+                legacySearchUrl={legacySearchUrl}
+                isReadOnly={isReadOnly}
+                data-testid="LegacySelectorAffix__dac06b">
+                {tableDirSelector}
+              </LegacySelectorAffix>
+            );
+          }
+          return tableDirSelector;
         }
 
         case "quantity":
@@ -246,6 +294,15 @@ export const ProcessParameterSelector = ({
 
         case "image":
           return <ImageSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ImageSelector__dac06b" />;
+
+        case "multiselect":
+          return (
+            <MultiRecordSelector
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              data-testid="MultiRecordSelector__dac06b"
+            />
+          );
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {
@@ -280,7 +337,11 @@ export const ProcessParameterSelector = ({
   return (
     <div className="h-12 flex items-center" title={parameter.description}>
       <div className="w-1/3 flex items-center gap-2 pr-2">
-        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
+        <Label
+          htmlFor={parameter.name}
+          name={labelOverrides?.[parameter.name] ?? parameter.name}
+          data-testid="Label__dac06b"
+        />
         {parameter.mandatory && (
           <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
             *
@@ -292,5 +353,7 @@ export const ProcessParameterSelector = ({
     </div>
   );
 };
+
+export const ProcessParameterSelector = memo(ProcessParameterSelectorImpl);
 
 export default ProcessParameterSelector;

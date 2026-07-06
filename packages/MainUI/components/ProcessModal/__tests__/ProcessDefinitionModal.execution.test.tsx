@@ -2,7 +2,7 @@ import { render, waitFor } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import type React from "react";
 // Keep imports for things used in the test body
-import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton } from "../testUtils";
+import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton, mockFormData } from "../testUtils";
 
 // Mock executeStringFunction
 const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
@@ -35,8 +35,12 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => require("../testUtils").mockTabContextData,
 }));
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({ triggerRecovery: jest.fn(), isRecoveryLoading: false }),
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: (selector: (s: any) => any) =>
+    selector({
+      triggerRecovery: jest.fn(),
+      isRecoveryLoading: false,
+    }),
 }));
 
 jest.mock("@/hooks/useSelected", () => ({
@@ -47,8 +51,15 @@ jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+// Configurable seed-loading flag so a test can simulate the async process-defaults
+// seed being in-flight (true) vs complete (false). Defaults to false, preserving
+// the behaviour every other test in this file relies on.
+let mockInitializationLoading = false;
 jest.mock("@/hooks/useProcessInitialization", () => ({
-  useProcessInitialization: () => require("../testUtils").mockProcessInitializationData,
+  useProcessInitialization: () => ({
+    ...require("../testUtils").mockProcessInitializationData,
+    loading: mockInitializationLoading,
+  }),
 }));
 
 jest.mock("@/hooks/useProcessInitialState", () => ({
@@ -124,7 +135,7 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     return render(<ProcessDefinitionModal button={button} open={true} onClose={mockClose} onSuccess={mockSuccess} />);
   };
 
-  test("Direct Java Process Execution (no onProcess, javaClassName present)", async () => {
+  test("Direct Java Process Execution (no etmetaOnprocess, javaClassName present)", async () => {
     const directJavaButton = {
       name: "Java Process",
       processDefinition: {
@@ -132,7 +143,7 @@ describe("ProcessDefinitionModal Execution Flows", () => {
         name: "Test Java Process",
         javaClassName: "com.test.TestProcess",
         parameters: {},
-        onProcess: null, // No JS handler
+        etmetaOnprocess: null, // No JS handler
       },
     };
 
@@ -203,6 +214,53 @@ describe("ProcessDefinitionModal Execution Flows", () => {
         expect.stringContaining("/api/process/report-and-process/TEST_PINSTANCE_ID"),
         expect.anything()
       );
+    });
+  });
+
+  describe("onLoad seed timing", () => {
+    const ON_LOAD_CODE = "view.theForm.getItem('payment_method').hide();";
+    const onLoadButton = {
+      name: "OnLoad Process",
+      processDefinition: {
+        id: "TEST_ONLOAD_ID",
+        name: "Test OnLoad",
+        parameters: {},
+        etmetaOnload: ON_LOAD_CODE,
+      },
+    };
+
+    afterEach(() => {
+      // Restore the default so the rest of the file is unaffected.
+      mockInitializationLoading = false;
+    });
+
+    test("does NOT run onLoad while the process-defaults seed is in-flight", async () => {
+      mockInitializationLoading = true;
+      renderModal(onLoadButton);
+
+      // Flush pending microtasks; onLoad must stay deferred (Classic seeds first).
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockExecuteStringFunction).not.toHaveBeenCalled();
+    });
+
+    test("runs onLoad once the seed completes and clears seed-time validation errors", async () => {
+      // onLoad returns nothing so the loop does not early-return before clearErrors.
+      mockExecuteStringFunction.mockResolvedValueOnce(undefined);
+      mockInitializationLoading = false;
+      renderModal(onLoadButton);
+
+      await waitFor(() => {
+        expect(mockExecuteStringFunction).toHaveBeenCalledWith(
+          ON_LOAD_CODE,
+          expect.anything(),
+          expect.anything(),
+          expect.anything()
+        );
+      });
+      await waitFor(() => {
+        expect(mockFormData.clearErrors).toHaveBeenCalled();
+      });
     });
   });
 });
