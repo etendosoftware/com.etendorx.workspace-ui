@@ -60,11 +60,11 @@ export function compileStringFunction(
   const contextValues = Object.values(context);
   // .trim() prevents ASI issues when the string starts with a newline
   // (e.g. template literals: `\nasync (...) => {}`)
-  // NOSONAR: `code` always originates from an Application Dictionary JS hook
-  // (onLoad, onProcess, onRefresh, onParameterChange, onGridLoad, column customJs)
-  // fetched read-only from the authenticated metadata API and authored by
-  // administrators in Etendo Classic — never from end-user input reaching this frontend.
-  const factory = new Function(...contextKeys, `return ${code.trim()}`);
+  // `code` always originates from an Application Dictionary JS hook (onLoad, onProcess,
+  // onRefresh, onParameterChange, onGridLoad, column customJs) fetched read-only from the
+  // authenticated metadata API and authored by administrators in Etendo Classic — never
+  // from end-user input reaching this frontend.
+  const factory = new Function(...contextKeys, `return ${code.trim()}`); // NOSONAR typescript:S1523
   const evaluatedFn = factory(...contextValues);
 
   if (typeof evaluatedFn !== "function") {

@@ -3,9 +3,8 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendimport XIcon from "../../../assets/icons/x.svg";
-o_license.txt
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  * implied. See the License for the specific language governing rights
@@ -113,9 +112,9 @@ export const compileExpression = (expression: string) => {
       var alert = undefined;
     `;
 
-    // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
+    // This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
-    const compiled = new Function(
+    const compiled = new Function( // NOSONAR typescript:S1523
       "context",
       "currentValues",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
