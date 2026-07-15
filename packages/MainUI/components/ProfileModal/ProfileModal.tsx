@@ -98,6 +98,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     return null;
   });
 
+  // Track whether the user explicitly picked an org/warehouse. On a role switch we auto-fill
+  // these for display only; we must NOT send them, so the backend computes the role's real
+  // defaults (matching Classic UI) instead of us forcing organizations[0]/warehouses[0].
+  const [orgManuallySelected, setOrgManuallySelected] = useState(false);
+  const [warehouseManuallySelected, setWarehouseManuallySelected] = useState(false);
+
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
     const currentLang = languages.find((lang) => lang.language === language);
     return currentLang
@@ -143,6 +149,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleRoleChange = useCallback(
     (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
       setSelectedRole(value);
+      // Switching role means "let the backend decide org/warehouse" until the user picks one.
+      setOrgManuallySelected(false);
+      setWarehouseManuallySelected(false);
 
       if (value) {
         const selectedRoleData = roles.find((role) => role.id === value.value);
@@ -176,11 +185,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedOrg(value ?? DefaultOrg);
+    setOrgManuallySelected(true);
+    // Changing org clears the warehouse; let the backend default it unless the user picks one.
     setSelectedWarehouse(null);
+    setWarehouseManuallySelected(false);
   }, []);
 
   const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedWarehouse(value);
+    setWarehouseManuallySelected(true);
     if (value) {
       localStorage.setItem("currentWarehouse", JSON.stringify(value));
     }
@@ -226,11 +239,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       params.role = selectedRole.value;
     }
 
-    if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
+    if (orgManuallySelected && selectedOrg && selectedOrg.value !== currentOrganization?.id) {
       params.organization = selectedOrg.value;
     }
 
-    if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
+    if (warehouseManuallySelected && selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
       params.warehouse = selectedWarehouse.value;
 
       const newWarehouse = {
@@ -243,7 +256,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
 
     return params;
-  }, [selectedRole, currentRole, selectedOrg, currentOrganization, selectedWarehouse, currentWarehouse]);
+  }, [
+    selectedRole,
+    currentRole,
+    selectedOrg,
+    currentOrganization,
+    selectedWarehouse,
+    currentWarehouse,
+    orgManuallySelected,
+    warehouseManuallySelected,
+  ]);
 
   const saveConfigurationDefaults = useCallback(
     async (languageChanged: boolean) => {
