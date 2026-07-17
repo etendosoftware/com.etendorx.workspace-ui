@@ -259,7 +259,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             }}
             onMouseLeave={handleMouseLeave}>
             <MenuLibrary
-              className="max-h-76 w-full max-w-60 overflow-y-scroll hide-scrollbar"
+              className="w-full max-w-60 overflow-y-auto"
               anchorEl={anchorEl}
               offsetX={62}
               offsetY={-98}
