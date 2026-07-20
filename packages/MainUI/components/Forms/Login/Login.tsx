@@ -8,11 +8,13 @@ import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
-import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import { useUserStore } from "@/stores/userStore";
+import { useSSO } from "../../../hooks/useSSO";
+import ProviderIconButtons from "../../SSO/ProviderIconButtons";
 
 export default function Login({ title, onSubmit }: LoginProps) {
+  const { config, startAuth0, startMiddleware } = useSSO({ autoCallback: true });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [progressWidth, setProgressWidth] = useState(0);
@@ -141,23 +143,27 @@ export default function Login({ title, onSubmit }: LoginProps) {
             )}
           </Button>
 
-          <div className="relative flex items-center my-4">
-            <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
-            <span className="font-inter font-medium text-xs leading-4 tracking-normal mx-4 border-(--color-transparent-neutral-70)">
-              {t("login.buttons.orGoogle")}
-            </span>
-            <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
-          </div>
+          {config?.enabled && (
+            <>
+              <div className="relative flex items-center my-4">
+                <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
+                <span className="font-inter font-medium text-xs leading-4 tracking-normal mx-4 border-(--color-transparent-neutral-70)">
+                  {t("login.sso.divider")}
+                </span>
+                <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
+              </div>
 
-          <Button
-            disabled
-            variant="outlined"
-            type="submit"
-            size="large"
-            startIcon={<GoogleIcon data-testid="GoogleIcon__602739" />}
-            data-testid="Button__602739">
-            {t("login.buttons.google")}
-          </Button>
+              {config.authType === "Auth0" && (
+                <Button variant="outlined" type="button" size="large" onClick={startAuth0} data-testid="Button__602739">
+                  {t("login.sso.buttons.auth0")}
+                </Button>
+              )}
+
+              {config.authType === "Middleware" && (
+                <ProviderIconButtons providers={config.providers} onSelect={startMiddleware} />
+              )}
+            </>
+          )}
         </form>
         <Version
           title={`Copyright © 2021-${new Date().getFullYear()} FUTIT SERVICES, S.L.\n${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
