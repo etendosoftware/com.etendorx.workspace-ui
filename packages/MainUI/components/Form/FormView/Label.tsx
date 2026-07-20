@@ -35,7 +35,6 @@ function LabelCmp({ field }: { field: Field }) {
 
   if (
     field.fieldGroup !== "audit" &&
-    value &&
     isReference &&
     isAccessible &&
     field.column.referenceSearchKey$_identifier !== CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
@@ -43,11 +42,14 @@ function LabelCmp({ field }: { field: Field }) {
     const windowId = field.referencedWindowId || "";
     const windowTitle = field.name;
     const referencedTabId = field.referencedTabId || "";
-    const selectedRecordId = String(value);
+    // Empty value: redirect still opens the target window, but in its default
+    // (unfiltered) state, matching Classic UI — see useRedirect.handleAction.
+    const selectedRecordId = value ? String(value) : undefined;
 
-    // Build context for ReferencedLink resolution (same as Etendo Classic)
+    // Build context for ReferencedLink resolution (same as Etendo Classic).
+    // Only meaningful when there's a record to resolve against.
     const referencedLinkContext =
-      field.id && field.referencedEntity
+      selectedRecordId && field.id && field.referencedEntity
         ? {
             entityName: field.referencedEntity,
             fieldId: field.id,

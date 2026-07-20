@@ -22,6 +22,9 @@ import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
+import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
+import { reconstructState } from "@/utils/recovery/stateReconstructor";
+import type { ParsedUrlState } from "@/utils/recovery/urlStateParser";
 
 /**
  * Response from the Etendo Classic ReferencedLink endpoint.
@@ -180,20 +183,58 @@ export const useRedirect = () => {
       });
 
       const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-      const defaultTabState = createDefaultTabState(tabLevel);
-      const tabs = {
-        [resolvedTabId]: {
-          ...defaultTabState,
-          form: {
-            recordId: selectedRecordId,
-            mode: TAB_MODES.FORM,
-            formMode: FORM_MODES.EDIT,
+
+      // Empty field: open the target window in its default (unfiltered) state,
+      // matching Classic UI behavior (same as opening the window from the Menu).
+      if (!selectedRecordId) {
+        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs: {} } });
+        return;
+      }
+
+      // Reuse the same hierarchy calculation + state reconstruction pipeline used
+      // for page-reload state recovery, so parent context (Level > 0 tabs) and
+      // navigation state are populated correctly instead of only the target tab.
+      try {
+        const windowMetadata = await Metadata.getWindow(resolvedWindowId);
+        const targetTab = windowMetadata.tabs?.find((t) => t.id === resolvedTabId);
+        const parsedUrlState: ParsedUrlState = {
+          windowIdentifier: newWindowIdentifier,
+          tabId: resolvedTabId,
+          recordId: selectedRecordId,
+          windowId: resolvedWindowId,
+          tabTitle: resolvedTitle,
+          tabLevel: targetTab?.tabLevel ?? tabLevel,
+          keyParameter: "",
+        };
+
+        const hierarchy = await calculateHierarchy(parsedUrlState, windowMetadata);
+        const reconstructed = await reconstructState(hierarchy, windowMetadata);
+
+        setWindowActive({
+          windowIdentifier: newWindowIdentifier,
+          windowData: {
+            title: resolvedTitle,
+            tabs: reconstructed.tabs,
+            navigation: reconstructed.navigation,
           },
-          selectedRecord: selectedRecordId,
-        } as TabState,
-      };
-      const windowData = { title: resolvedTitle, tabs };
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
+        });
+      } catch (err) {
+        console.warn("[useRedirect] Hierarchy reconstruction failed, falling back to single-tab state:", err);
+
+        const defaultTabState = createDefaultTabState(tabLevel);
+        const tabs = {
+          [resolvedTabId]: {
+            ...defaultTabState,
+            form: {
+              recordId: selectedRecordId,
+              mode: TAB_MODES.FORM,
+              formMode: FORM_MODES.EDIT,
+            },
+            selectedRecord: selectedRecordId,
+          } as TabState,
+        };
+        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
+      }
     },
     [setWindowActive, resolveViaReferencedLink]
   );
