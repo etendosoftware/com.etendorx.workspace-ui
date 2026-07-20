@@ -479,7 +479,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             <span className="font-inter font-medium text-sm text-(--color-transparent-neutral-70)">
               {t("navigation.profile.linkWith")}
             </span>
-            <ProviderIconButtons providers={ssoConfig.providers} onSelect={startLink} />
+            <ProviderIconButtons
+              providers={ssoConfig.providers}
+              onSelect={startLink}
+              data-testid="ProviderIconButtons__75987a"
+            />
           </div>
         )}
       </Menu>

@@ -45,6 +45,7 @@ export default function ProviderIconButtons({
             {Icon ? (
               <Icon
                 className={`h-6 w-6 ${MONOCHROME.has(provider.name) ? "[&_path]:fill-(--color-baseline-100)" : ""}`}
+                data-testid="Icon__589f72"
               />
             ) : (
               <span className="text-xs font-medium">{label(provider.name)}</span>

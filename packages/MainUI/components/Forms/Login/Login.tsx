@@ -160,7 +160,11 @@ export default function Login({ title, onSubmit }: LoginProps) {
               )}
 
               {config.authType === "Middleware" && (
-                <ProviderIconButtons providers={config.providers} onSelect={startMiddleware} />
+                <ProviderIconButtons
+                  providers={config.providers}
+                  onSelect={startMiddleware}
+                  data-testid="ProviderIconButtons__602739"
+                />
               )}
             </>
           )}
