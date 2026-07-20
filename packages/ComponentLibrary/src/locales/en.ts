@@ -297,6 +297,10 @@ const en = {
       errorUnequalPwd: "Passwords do not match",
       errorNotStrongEnough: "Password is not strong enough. Use uppercase, lowercase, numbers and special characters",
       errorGeneric: "Failed to change password",
+      linkWith: "Link user with:",
+      linking: "Linking your account…",
+      linkSuccess: "Account linked successfully",
+      linkError: "Failed to link account",
     },
   },
   breadcrumb: {
@@ -373,6 +377,24 @@ const en = {
         title: "System Error - Session Closed",
         description:
           "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+      },
+    },
+    sso: {
+      divider: "Or continue with",
+      buttons: {
+        auth0: "Continue with SSO",
+        continueWith: "Continue with",
+      },
+      errors: {
+        notLinked: {
+          title: "Account not linked",
+          description:
+            "Your SSO account is not linked to an Etendo user. Sign in with username and password first, then link your account from the settings menu.",
+        },
+        failed: {
+          title: "Sign-in failed",
+          description: "We couldn't sign you in with that provider. Please try again.",
+        },
       },
     },
     or: "OR",
