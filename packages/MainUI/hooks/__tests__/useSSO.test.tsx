@@ -1,7 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useSSO } from "../useSSO";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useUserStore } from "@/stores/userStore";
 
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({ Metadata: { setToken: jest.fn() } }));
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({ datasource: { setToken: jest.fn() } }));
@@ -13,7 +12,6 @@ const setLoginErrorText = jest.fn();
 const setLoginErrorDescription = jest.fn();
 const setToken = jest.fn();
 jest.mock("@/stores/userStore", () => {
-  const selectors = { setLoginErrorText: (...a: unknown[]) => setLoginErrorText(...a) };
   const store = (selector: (s: unknown) => unknown) =>
     selector({
       setLoginErrorText: (...a: unknown[]) => setLoginErrorText(...a),
@@ -22,7 +20,7 @@ jest.mock("@/stores/userStore", () => {
   (store as unknown as { getState: () => unknown }).getState = () => ({
     setToken: (...a: unknown[]) => setToken(...a),
   });
-  return { useUserStore: store, __selectors: selectors };
+  return { useUserStore: store };
 });
 
 const AUTH0 = {
@@ -178,6 +176,3 @@ describe("useSSO", () => {
     expect(JSON.parse(callbackCall[1].body)).toEqual({ code: "the-code", redirectUri: "http://localhost:3000" });
   });
 });
-
-// Silence the intentionally-unused re-export to keep the mock self-documenting.
-void useUserStore;
