@@ -28,13 +28,13 @@ const AUTH0 = {
   authType: "Auth0",
   domain: "etendo.auth0.com",
   clientId: "abc123",
-  callbackUrl: "http://cb",
+  callbackUrl: "https://cb",
 };
 const MIDDLEWARE = {
   enabled: true,
   authType: "Middleware",
   middlewareUrl: "https://sso.etendo.cloud",
-  redirectUri: "http://backend/cb",
+  redirectUri: "https://backend/cb",
   accountId: "acc-1",
   providers: [{ id: "google-oauth2", name: "google" }],
 };
@@ -58,7 +58,7 @@ function installStorage(name: "localStorage" | "sessionStorage") {
 function mockLocation(search = "") {
   Object.defineProperty(window, "location", {
     configurable: true,
-    value: { origin: "http://localhost:3000", pathname: "/", search, assign },
+    value: { origin: "https://localhost:3000", pathname: "/", search, assign },
   });
 }
 
@@ -107,7 +107,7 @@ describe("useSSO", () => {
     const url = assign.mock.calls[0][0] as string;
     expect(url).toContain("https://etendo.auth0.com/authorize");
     expect(url).toContain("client_id=abc123");
-    expect(url).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3000");
+    expect(url).toContain("redirect_uri=https%3A%2F%2Flocalhost%3A3000");
     expect(url).toContain("state=test-state");
   });
 
@@ -120,7 +120,7 @@ describe("useSSO", () => {
     expect(url).toContain("https://sso.etendo.cloud/login");
     expect(url).toContain("provider=google-oauth2");
     expect(url).toContain("account_id=acc-1");
-    expect(url).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3000");
+    expect(url).toContain("redirect_uri=https%3A%2F%2Flocalhost%3A3000");
   });
 
   it("startLink points the redirect at the link-callback route", async () => {
@@ -129,7 +129,7 @@ describe("useSSO", () => {
     await waitFor(() => expect(result.current.config).toEqual(MIDDLEWARE));
     act(() => result.current.startLink("google-oauth2"));
     const url = assign.mock.calls[0][0] as string;
-    expect(url).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fsso%2Flink-callback");
+    expect(url).toContain("redirect_uri=https%3A%2F%2Flocalhost%3A3000%2Fsso%2Flink-callback");
   });
 
   it("does not auto-exchange without the autoCallback flag", async () => {
@@ -173,6 +173,6 @@ describe("useSSO", () => {
     renderHook(() => useSSO({ autoCallback: true }));
     await waitFor(() => expect(setToken).toHaveBeenCalledWith("jwt-code"));
     const callbackCall = (global.fetch as jest.Mock).mock.calls.find((c) => String(c[0]).includes("/callback"));
-    expect(JSON.parse(callbackCall[1].body)).toEqual({ code: "the-code", redirectUri: "http://localhost:3000" });
+    expect(JSON.parse(callbackCall[1].body)).toEqual({ code: "the-code", redirectUri: "https://localhost:3000" });
   });
 });

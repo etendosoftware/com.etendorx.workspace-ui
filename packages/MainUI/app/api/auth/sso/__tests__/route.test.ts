@@ -17,7 +17,7 @@ const headers = (opts: { setCookie?: string[]; csrf?: string } = {}) => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  process.env.ETENDO_CLASSIC_URL = "http://erp/etendo";
+  process.env.ETENDO_CLASSIC_URL = "https://erp/etendo";
 });
 
 describe("SSO proxy route", () => {
@@ -27,7 +27,7 @@ describe("SSO proxy route", () => {
     );
     const res = await GET({} as never, { params: params(["config"]) });
     const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
-    expect(calledUrl).toBe("http://erp/etendo/sws/com.etendoerp.metadata.meta/sso/config");
+    expect(calledUrl).toBe("https://erp/etendo/sws/com.etendoerp.metadata.meta/sso/config");
     expect(res).toEqual({ body: { enabled: true }, status: 200 });
   });
 
