@@ -43,6 +43,12 @@ export default defineConfig({
   workers: 2,
   fullyParallel: false,
 
+  // Retry transient failures. On CI the Chromium launch can SIGSEGV in the
+  // container (see --no-zygote note below), and it lands on a random spec each
+  // run — a retry clears it. Real regressions fail all attempts. 0 locally so
+  // flakes surface during development.
+  retries: process.env.CI ? 2 : 0,
+
   use: {
     baseURL: BASE_URL,
     headless: true,
