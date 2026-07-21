@@ -22,6 +22,9 @@ import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
+import type { ParsedUrlState } from "@/utils/recovery/urlStateParser";
+import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
+import { reconstructState } from "@/utils/recovery/stateReconstructor";
 
 /**
  * Response from the Etendo Classic ReferencedLink endpoint.
@@ -180,20 +183,61 @@ export const useRedirect = () => {
       });
 
       const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-      const defaultTabState = createDefaultTabState(tabLevel);
-      const tabs = {
-        [resolvedTabId]: {
-          ...defaultTabState,
-          form: {
-            recordId: selectedRecordId,
-            mode: TAB_MODES.FORM,
-            formMode: FORM_MODES.EDIT,
+
+      // Empty field: open the target window in its default (unfiltered) Grid state,
+      // matching Classic UI behavior instead of forcing a Form View with no record.
+      if (!selectedRecordId) {
+        const tabs = { [resolvedTabId]: createDefaultTabState(tabLevel) };
+        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
+        return;
+      }
+
+      // Record present: reuse the same hierarchy calculation + state reconstruction used for
+      // page-reload recovery, so parent tabs (levels above the target) get their selectedRecord
+      // and filters populated too. Without this, redirecting into a sub-tab (tabLevel > 0) left
+      // parent tabs empty, so the child tab had no context to render against.
+      try {
+        const windowMetadata = await Metadata.getWindow(resolvedWindowId);
+        const targetTab = windowMetadata.tabs.find((t) => t.id === resolvedTabId);
+
+        const parsedState: ParsedUrlState = {
+          windowIdentifier: newWindowIdentifier,
+          tabId: resolvedTabId,
+          recordId: selectedRecordId,
+          windowId: resolvedWindowId,
+          tabTitle: resolvedTitle,
+          tabLevel: targetTab?.tabLevel ?? tabLevel,
+          keyParameter: "",
+        };
+
+        const hierarchy = await calculateHierarchy(parsedState, windowMetadata);
+        const reconstructed = await reconstructState(hierarchy, windowMetadata);
+
+        setWindowActive({
+          windowIdentifier: newWindowIdentifier,
+          windowData: {
+            title: resolvedTitle,
+            tabs: reconstructed.tabs,
+            navigation: reconstructed.navigation,
+            initialized: true,
           },
-          selectedRecord: selectedRecordId,
-        } as TabState,
-      };
-      const windowData = { title: resolvedTitle, tabs };
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
+        });
+      } catch (err) {
+        console.warn("[useRedirect] Hierarchy reconstruction failed, falling back to single-tab state:", err);
+        const defaultTabState = createDefaultTabState(tabLevel);
+        const tabs = {
+          [resolvedTabId]: {
+            ...defaultTabState,
+            form: {
+              recordId: selectedRecordId,
+              mode: TAB_MODES.FORM,
+              formMode: FORM_MODES.EDIT,
+            },
+            selectedRecord: selectedRecordId,
+          } as TabState,
+        };
+        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
+      }
     },
     [setWindowActive, resolveViaReferencedLink]
   );
@@ -210,7 +254,14 @@ export const useRedirect = () => {
     }: HandleClickRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
-      handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel, referencedLinkContext });
+      return handleAction({
+        windowId,
+        windowTitle,
+        referencedTabId,
+        selectedRecordId,
+        tabLevel,
+        referencedLinkContext,
+      });
     },
     [handleAction]
   );
@@ -228,7 +279,14 @@ export const useRedirect = () => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel, referencedLinkContext });
+        return handleAction({
+          windowId,
+          windowTitle,
+          referencedTabId,
+          selectedRecordId,
+          tabLevel,
+          referencedLinkContext,
+        });
       }
     },
     [handleAction]
