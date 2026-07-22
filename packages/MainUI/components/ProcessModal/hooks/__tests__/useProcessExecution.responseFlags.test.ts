@@ -16,6 +16,7 @@
 
 import "../testUtils/useProcessExecution.mocks";
 import { renderHook, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import { useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
 
@@ -159,6 +160,33 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     await result.current.executeJavaProcess({});
 
     expect(executeJSON).not.toHaveBeenCalled();
+  });
+});
+
+describe("SyncServerButton-style error response (responseActions as a single-key map)", () => {
+  it("surfaces the error via setResult (inline banner) and skips the toast, since the modal stays open", async () => {
+    // Real payload from com.smf.schedule.servers.ad_actionbutton.SyncServerButton.
+    mockFetchJson({
+      responseActions: {
+        showMsgInProcessView: {
+          severity: "error",
+          msgType: "error",
+          msgTitle: "Error",
+          msgText: "Synchronization error:  The requested item does not exist.",
+        },
+      },
+      retryExecution: true,
+      refreshParent: true,
+    });
+    const setResult = jest.fn();
+
+    await runProcess({ setResult });
+
+    expect(setResult).toHaveBeenCalledWith(
+      expect.objectContaining({ keepOpen: true, success: false, messageType: "error" })
+    );
+    // The modal renders this same message inline (renderResponse()); a toast would duplicate it.
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });
 

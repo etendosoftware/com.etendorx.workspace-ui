@@ -167,7 +167,12 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     defaultKeys: {},
     dynamicKeys: {},
     staticOptions: {},
-    skipParamsLevel: true,
+    // Unlike Sync/Start-Stop/Request Domain, this process has a real form
+    // parameter (confirm_server_name) that DeleteServerButton reads from the
+    // classic `_params` JSONObject. Flattening it (skipParamsLevel: true) drops
+    // the `_params` key entirely, so the handler can't find the confirmation
+    // value and falls back to a generic error instead of the real one.
+    skipParamsLevel: false,
   },
   [FUNDS_TRANSFER_PROCESS_ID]: {
     inpColumnId: "FIN_Financial_Account_ID",
