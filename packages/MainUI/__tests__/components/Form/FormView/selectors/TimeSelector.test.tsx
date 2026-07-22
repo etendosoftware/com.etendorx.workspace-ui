@@ -22,17 +22,25 @@ import type React from "react";
 import { TimeSelector } from "@/components/Form/FormView/selectors/TimeSelector";
 import { createMockTimeField } from "../../../../../utils/tests/timeTestUtils";
 
-// Mock date utils
-jest.mock("@/utils/date/utils", () => ({
-  formatUTCTimeToLocal: jest.fn((value: string) => {
-    if (!value) return "";
-    return value.includes("T") ? "12:00:00" : value;
-  }),
-  formatLocalTimeToUTCPayload: jest.fn((value: string) => {
-    if (!value) return "";
-    return `2025-01-28T${value}`;
-  }),
-}));
+// Mock date utils. getTimeFormatters returns the UTC pair (absolute=false) or the
+// pass-through absolute pair (absolute=true) so the component's mode selection is testable.
+jest.mock("@/utils/date/utils", () => {
+  const formatUTCTimeToLocal = jest.fn((value: string) => (value ? (value.includes("T") ? "12:00:00" : value) : ""));
+  const formatLocalTimeToUTCPayload = jest.fn((value: string) => (value ? `2025-01-28T${value}` : ""));
+  const formatAbsoluteTimeToDisplay = jest.fn((value: string) => (value ? (value.includes("T") ? "09:30:00" : value) : ""));
+  const formatDisplayToAbsoluteTimePayload = jest.fn((value: string) => (value ? `2025-06-01T${value}` : ""));
+  return {
+    formatUTCTimeToLocal,
+    formatLocalTimeToUTCPayload,
+    formatAbsoluteTimeToDisplay,
+    formatDisplayToAbsoluteTimePayload,
+    getTimeFormatters: jest.fn((absolute: boolean) =>
+      absolute
+        ? { toDisplay: formatAbsoluteTimeToDisplay, toPayload: formatDisplayToAbsoluteTimePayload }
+        : { toDisplay: formatUTCTimeToLocal, toPayload: formatLocalTimeToUTCPayload }
+    ),
+  };
+});
 
 // Mock ClockIcon
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/clock.svg", () => {
@@ -442,6 +450,56 @@ describe("TimeSelector", () => {
 
       const input = screen.getByLabelText("Test Time");
       expect(input.className).toContain("[&::-webkit-calendar-picker-indicator]:hidden");
+    });
+  });
+
+  describe("Absolute mode (no timezone conversion)", () => {
+    const dateUtils = jest.requireMock("@/utils/date/utils");
+
+    it("should select the UTC formatters when absolute is not set", () => {
+      render(
+        <TestWrapper>
+          <TimeSelector field={mockField} />
+        </TestWrapper>
+      );
+
+      expect(dateUtils.getTimeFormatters).toHaveBeenCalledWith(false);
+    });
+
+    it("should select the absolute formatters when absolute is true", () => {
+      render(
+        <TestWrapper>
+          <TimeSelector field={mockField} absolute />
+        </TestWrapper>
+      );
+
+      expect(dateUtils.getTimeFormatters).toHaveBeenCalledWith(true);
+    });
+
+    it("should display the stored value without timezone shift", async () => {
+      render(
+        <TestWrapper defaultValues={{ testTime: "2024-06-01T09:30:00" }}>
+          <TimeSelector field={mockField} absolute />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Test Time")).toHaveValue("09:30:00");
+      });
+      expect(dateUtils.formatAbsoluteTimeToDisplay).toHaveBeenCalledWith("2024-06-01T09:30:00");
+    });
+
+    it("should write the literal time payload on change", () => {
+      render(
+        <TestWrapper>
+          <TimeSelector field={mockField} absolute />
+        </TestWrapper>
+      );
+
+      fireEvent.change(screen.getByLabelText("Test Time"), { target: { value: "14:15:00" } });
+
+      expect(dateUtils.formatDisplayToAbsoluteTimePayload).toHaveBeenCalledWith("14:15:00");
+      expect(dateUtils.formatLocalTimeToUTCPayload).not.toHaveBeenCalledWith("14:15:00");
     });
   });
 });

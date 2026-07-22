@@ -195,6 +195,17 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Image" })).toBe("image");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Upload File" })).toBe("uploadfile");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "UploadFile" })).toBe("uploadfile");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Time" })).toBe("time");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Absolute Time" })).toBe("time");
+    });
+
+    it("should return 'time' for the Time and Absolute Time reference ids", () => {
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: FIELD_REFERENCE_CODES.TIME.id })).toBe(
+        "time"
+      );
+      expect(
+        ProcessParameterMapper.getFieldType({ ...mockParameter, reference: FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id })
+      ).toBe("time");
     });
 
     it("should default to text for undefined reference", () => {

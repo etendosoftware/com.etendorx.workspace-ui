@@ -62,6 +62,7 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.LIST_13.id:
       return FieldType.LIST;
     case FIELD_REFERENCE_CODES.TIME.id:
+    case FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id:
       return FieldType.TIME;
     case FIELD_REFERENCE_CODES.BUTTON.id:
       return FieldType.BUTTON;

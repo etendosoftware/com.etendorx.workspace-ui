@@ -19,7 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect, useMemo } from "react";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
-import { formatUTCTimeToLocal, formatLocalTimeToUTCPayload } from "@/utils/date/utils";
+import { getTimeFormatters } from "@/utils/date/utils";
 import { getInputClassNames, getButtonClassNames, getLabelClassNames } from "@/utils/date/constants";
 
 interface TimeSelectorProps {
@@ -28,12 +28,15 @@ interface TimeSelectorProps {
   label?: string;
   error?: boolean;
   helperText?: string;
+  /** When true, the value is treated as an "Absolute Time": no timezone conversion. */
+  absolute?: boolean;
 }
 
-export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: TimeSelectorProps) => {
+export const TimeSelector = ({ field, isReadOnly, error, helperText, label, absolute = false }: TimeSelectorProps) => {
   const { setValue, formState, watch } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
   const fieldName = field.hqlName;
+  const { toDisplay, toPayload } = useMemo(() => getTimeFormatters(absolute), [absolute]);
 
   // Watch value from form state to sync
   const formValue = watch(fieldName);
@@ -49,9 +52,8 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
       return;
     }
 
-    const localTime = formatUTCTimeToLocal(String(formValue));
-    setDisplayValue(localTime);
-  }, [formValue]);
+    setDisplayValue(toDisplay(String(formValue)));
+  }, [formValue, toDisplay]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const timeValue = e.target.value; // "HH:MM:SS" or "HH:MM"
@@ -64,9 +66,7 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
       return;
     }
 
-    // Convert local time to UTC payload
-    const utcPayload = formatLocalTimeToUTCPayload(timeValue);
-    setValue(fieldName, utcPayload, { shouldDirty: true, shouldValidate: true });
+    setValue(fieldName, toPayload(timeValue), { shouldDirty: true, shouldValidate: true });
   };
 
   const inputClassNames = useMemo(

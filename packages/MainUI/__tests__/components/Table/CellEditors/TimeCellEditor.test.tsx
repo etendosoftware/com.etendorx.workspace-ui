@@ -19,18 +19,27 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { TimeCellEditor } from "@/components/Table/CellEditors/TimeCellEditor";
 import { createMockTimeField } from "../../../../utils/tests/timeTestUtils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
-// Mock date utils
-jest.mock("@/utils/date/utils", () => ({
-  formatUTCTimeToLocal: jest.fn((value: string) => {
-    if (!value) return "";
-    return value.includes("T") ? "12:00:00" : value;
-  }),
-  formatLocalTimeToUTCPayload: jest.fn((value: string) => {
-    if (!value) return "";
-    return `2025-01-28T${value}`;
-  }),
-}));
+// Mock date utils. getTimeFormatters returns the UTC pair (absolute=false) or the
+// pass-through absolute pair (absolute=true) so the component's mode selection is testable.
+jest.mock("@/utils/date/utils", () => {
+  const formatUTCTimeToLocal = jest.fn((value: string) => (value ? (value.includes("T") ? "12:00:00" : value) : ""));
+  const formatLocalTimeToUTCPayload = jest.fn((value: string) => (value ? `2025-01-28T${value}` : ""));
+  const formatAbsoluteTimeToDisplay = jest.fn((value: string) => (value ? (value.includes("T") ? "09:30:00" : value) : ""));
+  const formatDisplayToAbsoluteTimePayload = jest.fn((value: string) => (value ? `2025-06-01T${value}` : ""));
+  return {
+    formatUTCTimeToLocal,
+    formatLocalTimeToUTCPayload,
+    formatAbsoluteTimeToDisplay,
+    formatDisplayToAbsoluteTimePayload,
+    getTimeFormatters: jest.fn((absolute: boolean) =>
+      absolute
+        ? { toDisplay: formatAbsoluteTimeToDisplay, toPayload: formatDisplayToAbsoluteTimePayload }
+        : { toDisplay: formatUTCTimeToLocal, toPayload: formatLocalTimeToUTCPayload }
+    ),
+  };
+});
 
 // Mock ClockIcon
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/clock.svg", () => {
@@ -261,6 +270,40 @@ describe("TimeCellEditor", () => {
 
       const input = screen.getByLabelText("Test Time");
       expect(input).toHaveValue("");
+    });
+  });
+
+  describe("Absolute mode (no timezone conversion)", () => {
+    const dateUtils = jest.requireMock("@/utils/date/utils");
+    const absoluteField = createMockTimeField({
+      column: { reference: FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id },
+    });
+
+    it("should select the UTC formatters for a regular time field", () => {
+      render(<TimeCellEditor {...defaultProps} />);
+
+      expect(dateUtils.getTimeFormatters).toHaveBeenCalledWith(false);
+    });
+
+    it("should select the absolute formatters when the field is an Absolute Time reference", () => {
+      render(<TimeCellEditor {...defaultProps} field={absoluteField} />);
+
+      expect(dateUtils.getTimeFormatters).toHaveBeenCalledWith(true);
+    });
+
+    it("should display the stored value without timezone shift", () => {
+      render(<TimeCellEditor {...defaultProps} field={absoluteField} value="2024-06-01T09:30:00" />);
+
+      expect(screen.getByLabelText("Test Time")).toHaveValue("09:30:00");
+      expect(dateUtils.formatAbsoluteTimeToDisplay).toHaveBeenCalledWith("2024-06-01T09:30:00");
+    });
+
+    it("should call onChange with the literal time payload", () => {
+      render(<TimeCellEditor {...defaultProps} field={absoluteField} />);
+
+      fireEvent.change(screen.getByLabelText("Test Time"), { target: { value: "14:15:00" } });
+
+      expect(mockOnChange).toHaveBeenCalledWith("2025-06-01T14:15:00");
     });
   });
 });
