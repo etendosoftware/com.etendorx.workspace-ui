@@ -25,10 +25,12 @@ import LogoutIcon from "@workspaceui/componentlibrary/src/assets/icons/log-out.s
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { UserProfileProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
   const { styles } = useStyle();
   const { logout } = useUserContext();
+  const { t } = useTranslation();
 
   const handleSignOff = useCallback(async () => {
     await logout();
@@ -43,7 +45,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
       />
       <div className="top-4 right-4 z-10 absolute">
         <IconButton
-          tooltip="Log out"
+          tooltip={t("common.logout")}
           onClick={handleSignOff}
           className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4"
           data-testid="IconButton__d71b83">
