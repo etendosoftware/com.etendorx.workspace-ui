@@ -185,6 +185,11 @@ describe("GenericSelector", () => {
       field: { column: { reference: FIELD_REFERENCE_CODES.TIME.id }, id: "1" },
     },
     {
+      title: "ABSOLUTE_TIME fields",
+      expected: "TimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id }, id: "abs-time-1" },
+    },
+    {
       title: "LIST_17 fields",
       expected: "ListSelector",
       field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17.id } },

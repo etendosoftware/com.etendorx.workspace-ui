@@ -42,4 +42,12 @@ describe("utils/index - getFieldReference", () => {
   it("should return FieldType.WINDOW for WINDOW reference", () => {
     expect(getFieldReference(FIELD_REFERENCE_CODES.WINDOW.id)).toBe(FieldType.WINDOW);
   });
+
+  it("should return FieldType.TIME for TIME reference", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.TIME.id)).toBe(FieldType.TIME);
+  });
+
+  it("should return FieldType.TIME for ABSOLUTE_TIME reference", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id)).toBe(FieldType.TIME);
+  });
 });

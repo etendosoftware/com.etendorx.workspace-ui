@@ -14,6 +14,7 @@ import { BooleanSelector } from "@/components/Form/FormView/selectors/BooleanSel
 import { NumericSelector } from "@/components/Form/FormView/selectors/NumericSelector";
 import { DateSelector } from "@/components/Form/FormView/selectors/DateSelector";
 import DatetimeSelector from "@/components/Form/FormView/selectors/DatetimeSelector";
+import { TimeSelector } from "@/components/Form/FormView/selectors/TimeSelector";
 import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
@@ -54,6 +55,7 @@ interface ProcessParameterSelectorProps {
 
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 // ... imports remain the same
 
@@ -243,6 +245,16 @@ const ProcessParameterSelectorImpl = ({
         case "datetime":
           return (
             <DatetimeSelector field={mappedField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__dac06b" />
+          );
+
+        case "time":
+          return (
+            <TimeSelector
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              absolute={mappedField.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id}
+              data-testid="TimeSelector__dac06b"
+            />
           );
 
         case "select":

@@ -83,10 +83,41 @@ export const mockFormatLocalTimeToUTCPayload = jest.fn((value: string) => {
 });
 
 /**
+ * Mock implementation for formatAbsoluteTimeToDisplay (no timezone conversion).
+ * Returns "09:30:00" for ISO datetime strings, otherwise the value as-is.
+ */
+export const mockFormatAbsoluteTimeToDisplay = jest.fn((value: string) => {
+  if (!value) return "";
+  return value.includes("T") ? "09:30:00" : value;
+});
+
+/**
+ * Mock implementation for formatDisplayToAbsoluteTimePayload (no timezone conversion).
+ * Returns an ISO datetime string using a fixed date and the literal time.
+ */
+export const mockFormatDisplayToAbsoluteTimePayload = jest.fn((value: string) => {
+  if (!value) return "";
+  return `2025-06-01T${value}`;
+});
+
+/**
+ * Mock implementation for getTimeFormatters. Returns the absolute (pass-through)
+ * pair when `absolute` is true, otherwise the UTC round-trip pair.
+ */
+export const mockGetTimeFormatters = jest.fn((absolute: boolean) =>
+  absolute
+    ? { toDisplay: mockFormatAbsoluteTimeToDisplay, toPayload: mockFormatDisplayToAbsoluteTimePayload }
+    : { toDisplay: mockFormatUTCTimeToLocal, toPayload: mockFormatLocalTimeToUTCPayload }
+);
+
+/**
  * Standard date utils mock configuration.
  * Use this with jest.mock("@/utils/date/utils", () => getDateUtilsMock())
  */
 export const getDateUtilsMock = () => ({
   formatUTCTimeToLocal: mockFormatUTCTimeToLocal,
   formatLocalTimeToUTCPayload: mockFormatLocalTimeToUTCPayload,
+  formatAbsoluteTimeToDisplay: mockFormatAbsoluteTimeToDisplay,
+  formatDisplayToAbsoluteTimePayload: mockFormatDisplayToAbsoluteTimePayload,
+  getTimeFormatters: mockGetTimeFormatters,
 });
