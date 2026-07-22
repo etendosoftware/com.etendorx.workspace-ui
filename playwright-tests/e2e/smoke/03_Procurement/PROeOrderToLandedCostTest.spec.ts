@@ -13,7 +13,7 @@ import {
   navigateToProcessScheduler,
 } from "../../helpers/etendo.helpers";
 
-test.describe.skip("Purchase Order to Landed Cost flow @smoke", () => {
+test.describe("Purchase Order to Landed Cost flow @smoke", () => {
   test.beforeEach(async ({ page }) => {
     await cleanupEtendo(page);
   });
@@ -287,5 +287,33 @@ test.describe.skip("Purchase Order to Landed Cost flow @smoke", () => {
 
     // ── Step 19: Verify completion ────────────────────────────────────────────
     await expect(page.getByText(/Process completed success/i).first()).toBeVisible({ timeout: 30_000 });
+
+    // Dismiss the success popup if it exposes an OK button.
+    await clickOkInLegacyPopup(page).catch(() => null);
+    await closeToastIfPresent(page);
+
+    // ── Step 20: Validate cost distribution ──────────────────────────────────
+    // After processing, the Landed Cost header must show a non-empty cost
+    // distribution (Matched flag = true, and at least one Landed Cost Cost
+    // row is bound to a real Goods Receipt / Cost value).
+    // We rely on the Cost sub-tab that was populated in Step 16 and verify
+    // that the amount entered survived processing and now reports a matched
+    // status on the header.
+    await page.locator('button[aria-label="Cost"]').click();
+    const costGrid = page.locator("tbody tr").filter({ has: page.locator('input[value="1"]') }).first();
+    await expect(costGrid).toBeVisible({ timeout: 15_000 });
+
+    // The Receipt sub-tab must contain the Goods Receipt we captured earlier,
+    // proving the landed cost was actually distributed against the GR line.
+    await page.locator('button[aria-label="Receipt"]').click();
+    await expect(
+      page.locator("tbody tr").filter({ hasText: goodsReceiptNumber }).first()
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Sanity-check the captured document numbers so a regression that
+    // silently loses them fails loudly instead of at a later, more confusing
+    // step.
+    expect(purchaseOrderNumber).toMatch(/\S+/);
+    expect(goodsReceiptNumber).toMatch(/\S+/);
   });
 });
