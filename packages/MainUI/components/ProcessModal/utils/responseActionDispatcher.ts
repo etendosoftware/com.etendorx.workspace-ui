@@ -100,17 +100,32 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
 /**
- * Reads the `responseActions` array from any of the three nested paths used
+ * Normalizes a raw `responseActions` field into the `[{ actionType: payload }]`
+ * shape the rest of this module expects. Some handlers (e.g.
+ * `SyncServerButton`) emit it as a single `{ actionType: payload, ... }` map
+ * instead of an array — split each entry into its own single-key object so
+ * `dispatchSingle` (which only reads the first key) sees every action.
+ */
+const normalizeResponseActions = (responseActions: unknown): unknown[] => {
+  if (Array.isArray(responseActions)) return responseActions;
+  if (isPlainObject(responseActions)) {
+    return Object.entries(responseActions).map(([key, value]) => ({ [key]: value }));
+  }
+  return [];
+};
+
+/**
+ * Reads the `responseActions` field from any of the three nested paths used
  * by Etendo Classic handlers. Returns an empty array when the field is
- * absent or not an array — callers should not have to unwrap further.
+ * absent — callers should not have to unwrap further.
  */
 export const readResponseActions = (data: unknown): unknown[] => {
   if (!isPlainObject(data)) return [];
-  if (Array.isArray(data.responseActions)) return data.responseActions;
+  if (data.responseActions !== undefined) return normalizeResponseActions(data.responseActions);
   const response = isPlainObject(data.response) ? data.response : undefined;
-  if (response && Array.isArray(response.responseActions)) return response.responseActions;
+  if (response?.responseActions !== undefined) return normalizeResponseActions(response.responseActions);
   const nested = response && isPlainObject(response.data) ? response.data : undefined;
-  if (nested && Array.isArray(nested.responseActions)) return nested.responseActions;
+  if (nested?.responseActions !== undefined) return normalizeResponseActions(nested.responseActions);
   return [];
 };
 
