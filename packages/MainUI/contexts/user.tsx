@@ -389,13 +389,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
       return <LoginScreen data-testid="LoginScreen__2e05d2" />;
     }
     if (isSessionLoading) {
-      return <SessionLoading />;
+      return <SessionLoading data-testid="SessionLoading__2e05d2" />;
     }
     return props.children;
   };
 
   if (!ready) {
-    return <SessionLoading />;
+    return <SessionLoading data-testid="SessionLoading__2e05d2" />;
   }
 
   return <UserContext.Provider value={value}>{renderContent()}</UserContext.Provider>;

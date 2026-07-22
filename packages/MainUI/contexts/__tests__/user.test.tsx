@@ -67,18 +67,16 @@ jest.mock("@/utils/propertyStore", () => ({
 // as the entry point to trigger login() from within the provider tree.
 jest.mock("@/screens/Login", () => {
   const ReactLib = require("react");
-  return {
-    __esModule: true,
-    default: () => {
-      const { UserContext: Ctx } = require("../user");
-      const ctx = ReactLib.useContext(Ctx);
-      return ReactLib.createElement(
-        "button",
-        { "data-testid": "trigger-login", onClick: () => ctx.login("user", "pass") },
-        "login"
-      );
-    },
+  const MockLoginScreen = () => {
+    const { UserContext: Ctx } = require("../user");
+    const ctx = ReactLib.useContext(Ctx);
+    return ReactLib.createElement(
+      "button",
+      { "data-testid": "trigger-login", onClick: () => ctx.login("user", "pass") },
+      "login"
+    );
   };
+  return { __esModule: true, default: MockLoginScreen };
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
