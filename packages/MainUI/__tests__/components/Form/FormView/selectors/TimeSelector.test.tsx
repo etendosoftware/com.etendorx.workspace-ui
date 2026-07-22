@@ -27,7 +27,9 @@ import { createMockTimeField } from "../../../../../utils/tests/timeTestUtils";
 jest.mock("@/utils/date/utils", () => {
   const formatUTCTimeToLocal = jest.fn((value: string) => (value ? (value.includes("T") ? "12:00:00" : value) : ""));
   const formatLocalTimeToUTCPayload = jest.fn((value: string) => (value ? `2025-01-28T${value}` : ""));
-  const formatAbsoluteTimeToDisplay = jest.fn((value: string) => (value ? (value.includes("T") ? "09:30:00" : value) : ""));
+  const formatAbsoluteTimeToDisplay = jest.fn((value: string) =>
+    value ? (value.includes("T") ? "09:30:00" : value) : ""
+  );
   const formatDisplayToAbsoluteTimePayload = jest.fn((value: string) => (value ? `2025-06-01T${value}` : ""));
   return {
     formatUTCTimeToLocal,
