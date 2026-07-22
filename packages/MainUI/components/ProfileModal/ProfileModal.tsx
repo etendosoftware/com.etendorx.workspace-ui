@@ -34,6 +34,7 @@ import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useWindowStore } from "@/stores/windowStore";
+import { toast } from "sonner";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -376,6 +377,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       }
     } catch (error) {
       logger.warn("Error changing role, warehouse, or saving default configuration:", error);
+      // Surface the failure instead of silently swallowing it: the backend save can fail
+      // (e.g. it returns an unparseable/empty response) and the modal must not appear dead.
+      toast.error(t("navigation.profile.configSaveError"));
     }
   }, [
     currentSection,
