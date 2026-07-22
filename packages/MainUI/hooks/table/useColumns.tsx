@@ -265,14 +265,14 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Text / Memo / Rich Text columns — truncate with tooltip
+      // Text / Memo / Rich Text columns — truncate with tooltip.
+      // Read from `renderedCellValue` (always propagated by MRT and by the
+      // `originalCell` wrapper in Table/index.tsx) instead of `cell`, which is
+      // not forwarded when this Cell is invoked as `originalCell`.
       if (isTextReferenceColumn(column)) {
         columnConfig = {
           ...columnConfig,
-          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
-            const cellValue = cell?.getValue();
-            return renderTextCell(cellValue);
-          },
+          Cell: ({ renderedCellValue }: { renderedCellValue: React.ReactNode }) => renderTextCell(renderedCellValue),
         };
       }
 
