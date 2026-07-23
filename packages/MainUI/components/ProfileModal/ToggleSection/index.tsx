@@ -173,6 +173,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onRoleChange}
               iconLeft={icons[Item.Role]}
               isOptionEqualToValue={isOptionEqualToValue}
+              disableClearable
               data-testid="Select__da17cd"
             />
             <Select
@@ -194,6 +195,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               iconLeft={icons[Item.Organization]}
               isOptionEqualToValue={isOptionEqualToValue}
               disabled={!selectedClient || isSystem}
+              disableClearable
               data-testid="Select__da17cd"
             />
             <Select
@@ -205,6 +207,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               iconLeft={icons[Item.Warehouse]}
               disabled={!selectedOrg || isSystem}
               isOptionEqualToValue={isOptionEqualToValue}
+              disableClearable
               data-testid="Select__da17cd"
             />
             <Select
@@ -215,6 +218,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onLanguageChange}
               iconLeft={icons[Item.Language]}
               isOptionEqualToValue={isOptionEqualToValue}
+              disableClearable
               data-testid="Select__da17cd"
             />
           </FormControl>
