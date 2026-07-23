@@ -222,11 +222,20 @@ export function useDatasource({
     dataLoadedRef.current = false;
   }, []);
 
+  // The `id` filter (used to hard-filter/position a grid on a specific record, e.g.
+  // reconstructed ancestor tabs from a linked-item navigation) is handled separately
+  // below instead of through createColumnFilterCriteria: that helper requires a
+  // matching `Column` (built from tab.fields, i.e. real AD_Fields), but the primary
+  // key is virtually never exposed as a field/column on a tab, so the lookup would
+  // silently drop the filter. Read it directly off the raw MRT filter state instead.
+  const idColumnFilter = useMemo(() => activeColumnFilters.find((f) => f.id === "id"), [activeColumnFilters]);
+
   const columnFilterCriteria = useMemo(() => {
-    if (!columns || !activeColumnFilters.length) {
+    const nonIdFilters = activeColumnFilters.filter((f) => f.id !== "id");
+    if (!columns || !nonIdFilters.length) {
       return [];
     }
-    return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+    return LegacyColumnFilterUtils.createColumnFilterCriteria(nonIdFilters, columns);
   }, [activeColumnFilters, columns]);
 
   // Memoize treeOptions to prevent unnecessary reference changes
@@ -273,12 +282,14 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
-    const filterById = columnFilterCriteria.find((criteria) => criteria.fieldName === "id");
-    const hasIdFilter = Boolean(filterById);
+    const hasIdFilter = Boolean(idColumnFilter);
+    if (hasIdFilter) {
+      allCriteria = [...allCriteria, { fieldName: "id", operator: "equals", value: idColumnFilter?.value }];
+    }
     // Only position-navigate when enabled (form mode). In grid mode the retained
     // `id` criterion (added above) hard-filters to the single record instead.
     const idParams =
-      hasIdFilter && enableDirectNavigation ? { targetRecordId: filterById?.value, directNavigation: true } : {};
+      hasIdFilter && enableDirectNavigation ? { targetRecordId: idColumnFilter?.value, directNavigation: true } : {};
 
     const finalParams: any = {
       ...stableParams,
@@ -290,9 +301,18 @@ export function useDatasource({
 
     return finalParams;
     // activeColumnFilters is intentionally omitted: it's already captured by
-    // columnFilterCriteria, which is listed above and changes whenever filters do.
+    // columnFilterCriteria and idColumnFilter, both listed above and changing
+    // whenever filters do.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, enableDirectNavigation]);
+  }, [
+    stableParams,
+    searchQuery,
+    columns,
+    columnFilterCriteria,
+    idColumnFilter,
+    isImplicitFilterApplied,
+    enableDirectNavigation,
+  ]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {

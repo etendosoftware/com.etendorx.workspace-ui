@@ -59,8 +59,9 @@ describe("useDatasource hook", () => {
   it("retries a fetch requested while another was in flight (default-view filter race)", async () => {
     // Make filter criteria reflect the active filters so changing them changes queryParams.
     const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
-    (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation((filters: MRT_ColumnFiltersState) =>
-      (filters ?? []).map((f) => ({ fieldName: f.id, operator: "equals", value: f.value }))
+    (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(
+      (filters: MRT_ColumnFiltersState) =>
+        (filters ?? []).map((f) => ({ fieldName: f.id, operator: "equals", value: f.value }))
     );
 
     // The initial (unfiltered) fetch stays in flight until we resolve it manually.
@@ -102,15 +103,12 @@ describe("useDatasource hook", () => {
   });
 
   describe("directNavigation gating", () => {
-    const columns = [{ id: "id", columnName: "id" }] as unknown as Column[];
+    // No "id" entry here on purpose: a tab's `columns` come from its AD_Fields
+    // (see parseColumns), and the primary key is virtually never exposed as one.
+    // createColumnFilterCriteria's column lookup would never match "id", so these
+    // tests must pass without relying on it (regression test for that gap).
+    const columns = [{ id: "name", columnName: "name" }] as unknown as Column[];
     const idFilter = [{ id: "id", value: "REC1" }] as MRT_ColumnFiltersState;
-
-    beforeEach(() => {
-      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
-      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => [
-        { fieldName: "id", operator: "equals", value: "REC1" },
-      ]);
-    });
 
     it("sets directNavigation when enabled (form mode)", async () => {
       renderHook(() =>
