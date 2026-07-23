@@ -245,14 +245,19 @@ const calculateParentRecordId = async (
   try {
     // Query datasource to get child record data
 
-    // Basic datasource params
+    // Basic datasource params. `targetRecordId` alone does NOT filter the result set —
+    // it only takes effect paired with `directNavigation: true` (Classic then POSITIONS
+    // the page on that record, surrounding rows included), which is a grid-UI concern
+    // this point lookup doesn't want. Without an explicit `id` criteria, the request
+    // returns the entity's default/unfiltered list and `data[0]` is an arbitrary row —
+    // not the record we asked for. The `id` criteria below is what actually filters.
     const params = {
       targetRecordId: childRecordId,
       filterByParentProperty: parentKeyField,
       windowId: windowId,
       tabId: childTab.id,
       isImplicitFilterApplied: "true",
-      criteria: [],
+      criteria: [{ fieldName: "id", operator: "equals", value: childRecordId }],
       pageSize: "100",
       noActiveFilter: "true",
       startRow: "0",
