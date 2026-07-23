@@ -49,6 +49,17 @@ jest.mock("@/contexts/focus", () => ({
   }),
 }));
 
+const mockClearSelected = jest.fn();
+const mockGetChildren = jest.fn(() => []);
+jest.mock("@/hooks/useSelected", () => ({
+  useSelected: () => ({
+    graph: {
+      clearSelected: mockClearSelected,
+      getChildren: mockGetChildren,
+    },
+  }),
+}));
+
 // Mock Component Library Breadcrumb to simplify assertions
 const mockFavToggle = jest.fn();
 let mockMenuIdByWindowId: Map<string, string> = new Map();

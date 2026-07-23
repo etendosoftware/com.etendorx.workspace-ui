@@ -306,6 +306,7 @@ const es = {
       linking: "Vinculando tu cuenta…",
       linkSuccess: "Cuenta vinculada correctamente",
       linkError: "No se pudo vincular la cuenta",
+      configSaveError: "No se pudo guardar la configuración del perfil",
     },
   },
   breadcrumb: {

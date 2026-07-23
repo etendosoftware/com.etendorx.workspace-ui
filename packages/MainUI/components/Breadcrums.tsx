@@ -32,6 +32,7 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useFocusContext } from "@/contexts/focus";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useSelected } from "@/hooks/useSelected";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -78,7 +79,10 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
   }, []);
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
+  const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
+  const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
   const setAllWindowsInactive = useWindowStore((s) => s.setAllWindowsInactive);
+  const { graph } = useSelected();
   const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
   const toggle = useFavoritesStore((s) => s.toggle);
   const menuIdByWindowId = useFavoritesStore((s) => s.menuIdByWindowId);
@@ -245,14 +249,42 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       const formState = getTabFormState(windowIdentifier, tabId);
       if (formState?.mode === TAB_MODES.FORM) {
         clearTabFormState(windowIdentifier, tabId);
+        clearSelectedRecord(windowIdentifier, tabId);
+        graph.clearSelected(focusedTab);
         return;
       }
     }
 
     if (tabLevel === 0) {
       setAllWindowsInactive();
+      return;
     }
-  }, [activeFocusId, allTabsFormatted, windowIdentifier, getTabFormState, clearTabFormState, setAllWindowsInactive]);
+
+    if (tabId && windowIdentifier) {
+      clearSelectedRecord(windowIdentifier, tabId);
+
+      const childIds =
+        graph
+          .getChildren(focusedTab)
+          ?.filter((c) => c.window === focusedTab?.window)
+          .map((c) => c.id) ?? [];
+      if (childIds.length > 0) {
+        clearChildrenSelections(windowIdentifier, childIds);
+      }
+
+      graph.clearSelected(focusedTab);
+    }
+  }, [
+    activeFocusId,
+    allTabsFormatted,
+    windowIdentifier,
+    getTabFormState,
+    clearTabFormState,
+    clearSelectedRecord,
+    clearChildrenSelections,
+    setAllWindowsInactive,
+    graph,
+  ]);
 
   const handleHomeClick = useCallback(() => {
     setAllWindowsInactive();

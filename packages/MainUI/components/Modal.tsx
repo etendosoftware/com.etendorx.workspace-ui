@@ -43,14 +43,18 @@ export default function Modal({
     if (open) {
       const handler = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
+          // Capture phase + stopPropagation so this Escape closes only the modal and does not
+          // also reach the form's document-level Escape handler (which would navigate to Grid).
+          // ponytail: closes the outermost modal if two custom Modals ever stack; not a case today.
+          e.stopPropagation();
           onClose?.();
         }
       };
 
-      document.addEventListener("keydown", handler);
+      document.addEventListener("keydown", handler, true);
 
       return () => {
-        document.removeEventListener("keydown", handler);
+        document.removeEventListener("keydown", handler, true);
       };
     }
   }, [onClose, open]);

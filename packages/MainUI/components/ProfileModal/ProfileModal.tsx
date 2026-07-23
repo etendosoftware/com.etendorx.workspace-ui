@@ -36,6 +36,8 @@ import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useWindowStore } from "@/stores/windowStore";
 import { useSSO } from "@/hooks/useSSO";
 import ProviderIconButtons from "../SSO/ProviderIconButtons";
+import { toast } from "sonner";
+import { computeProfileUpdates } from "./profileUpdates";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -127,6 +129,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         value: currentWarehouse.id,
         id: currentWarehouse.id,
       });
+    } else {
+      // The refreshed session has no warehouse for this profile; clear the stale
+      // selection instead of leaving a warehouse that belongs to the previous role/org.
+      setSelectedWarehouse(null);
     }
   }, [currentRole, currentOrganization, currentWarehouse]);
 
@@ -177,10 +183,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     [roles]
   );
 
-  const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedOrg(value ?? DefaultOrg);
-    setSelectedWarehouse(null);
-  }, []);
+  const handleOrgChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      const org = value ?? DefaultOrg;
+      setSelectedOrg(org);
+      // Parity with Classic (ob-user-profile-widget.js itemChanged): selecting an
+      // organization moves the warehouse to that org's first warehouse.
+      const role = roles.find((r) => r.id === selectedRole?.value);
+      const firstWarehouse = role?.organizations.find((o) => o.id === org.value)?.warehouses?.[0];
+      setSelectedWarehouse(
+        firstWarehouse ? { title: firstWarehouse.name, value: firstWarehouse.id, id: firstWarehouse.id } : null
+      );
+    },
+    [roles, selectedRole]
+  );
 
   const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedWarehouse(value);
@@ -223,26 +239,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, []);
 
   const getProfileUpdates = useCallback(() => {
-    const params: { role?: string; organization?: string; warehouse?: string } = {};
+    const params = computeProfileUpdates({
+      selectedRole,
+      selectedOrg,
+      selectedWarehouse,
+      currentRole,
+      currentOrganization,
+      currentWarehouse,
+    });
 
-    if (selectedRole && selectedRole.value !== currentRole?.id) {
-      params.role = selectedRole.value;
-    }
-
-    if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
-      params.organization = selectedOrg.value;
-    }
-
-    if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
-      params.warehouse = selectedWarehouse.value;
-
-      const newWarehouse = {
-        id: selectedWarehouse.id,
-        title: selectedWarehouse.title,
-        value: selectedWarehouse.value,
-      };
-      setSelectedWarehouse(newWarehouse);
-      localStorage.setItem("currentWarehouse", JSON.stringify(newWarehouse));
+    if (params.warehouse && selectedWarehouse) {
+      localStorage.setItem("currentWarehouse", JSON.stringify(selectedWarehouse));
     }
 
     return params;
@@ -357,6 +364,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       }
     } catch (error) {
       logger.warn("Error changing role, warehouse, or saving default configuration:", error);
+      // Surface the failure instead of silently swallowing it: the backend save can fail
+      // (e.g. it returns an unparseable/empty response) and the modal must not appear dead.
+      toast.error(t("navigation.profile.configSaveError"));
     }
   }, [
     currentSection,

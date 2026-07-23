@@ -301,6 +301,7 @@ const en = {
       linking: "Linking your account…",
       linkSuccess: "Account linked successfully",
       linkError: "Failed to link account",
+      configSaveError: "Failed to save profile configuration",
     },
   },
   breadcrumb: {
