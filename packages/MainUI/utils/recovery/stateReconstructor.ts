@@ -1,13 +1,27 @@
 import { getNewTabFormState, createDefaultTabState } from "@/utils/window/utils";
 import { TAB_MODES, FORM_MODES } from "@/utils/url/constants";
 import type { CalculatedHierarchy, TabHierarchyNode } from "./hierarchyCalculator";
-import type { WindowMetadata, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { WindowMetadata, EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { TabState, NavigationState } from "@/utils/window/constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
+
+/**
+ * A reconstructed tab's record that needs its Classic session context established.
+ * The recovery flow uses these to run a SETSESSION sync per tab (root -> leaf) so the
+ * `<windowId>|<column>` session attributes exist before session-dependent requests
+ * (e.g. the linked-items UsedByLink servlet) fire. Ordered root-first by the caller.
+ */
+export interface SessionSyncTarget {
+  tab: Tab;
+  recordId: string;
+  parentId: string | null;
+}
 
 export interface ReconstructedState {
   tabs: { [tabId: string]: TabState };
   navigation: NavigationState;
+  /** Per-tab records whose Classic session context must be established (root -> leaf). */
+  sessionSyncTargets: SessionSyncTarget[];
 }
 
 /**
@@ -132,6 +146,27 @@ export const reconstructState = async (
     }
   }
 
+  // Build the per-tab session-sync targets (root -> leaf). Each parent tab is
+  // reconstructed in grid mode with a programmatic selection, so it never triggers
+  // the grid-selection SETSESSION that normal navigation performs; without this the
+  // parent tabs' `<windowId>|<column>` session attributes (e.g. AD_Client_ID) are
+  // never set and backend calls like UsedByLink fail with "Session attribute required".
+  const levelToRecordId = new Map<number, string>();
+  for (const node of tabChain) {
+    const rec = tabs[node.tabId]?.selectedRecord;
+    if (rec) levelToRecordId.set(node.level, rec);
+  }
+  const sessionSyncTargets: SessionSyncTarget[] = tabChain
+    .map((node) => ({
+      tab: node.tab,
+      recordId: tabs[node.tabId]?.selectedRecord ?? "",
+      parentId: levelToRecordId.get(node.level - 1) ?? null,
+      level: node.level,
+    }))
+    .filter((target) => target.recordId !== "")
+    .sort((a, b) => a.level - b.level)
+    .map(({ tab, recordId, parentId }) => ({ tab, recordId, parentId }));
+
   return {
     tabs,
     navigation: {
@@ -139,6 +174,7 @@ export const reconstructState = async (
       activeTabsByLevel,
       initialized: true,
     },
+    sessionSyncTargets,
   };
 };
 

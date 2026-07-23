@@ -6,7 +6,9 @@ import { parseWindowRecoveryData } from "@/utils/url/utils";
 import { parseUrlState, getWindowName } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
+import { syncReconstructedHierarchyToSession } from "@/utils/recovery/reconstructedSessionSync";
 import { createRecoveryWindowState, getWindowIdFromIdentifier } from "@/utils/window/utils";
+import { useUserStore } from "@/stores/userStore";
 import type { WindowState } from "@/utils/window/constants";
 
 /**
@@ -115,6 +117,17 @@ export const useGlobalUrlStateRecovery = () => {
 
               // Step 3: Reconstruct state - query parent records bottom-up
               const reconstructed = await reconstructState(hierarchy, metadata);
+
+              // Step 3b: Establish the Classic session context for every reconstructed
+              // record (root -> leaf). Parent tabs are selected programmatically and never
+              // fire the grid-selection SETSESSION, so without this their session
+              // attributes (e.g. <windowId>|AD_Client_ID) are missing and backend calls
+              // like the linked-items UsedByLink servlet fail. Awaited so the session is
+              // set before the window state is applied and forms/panels render.
+              await syncReconstructedHierarchyToSession(reconstructed.sessionSyncTargets, {
+                setSession: useUserStore.getState().setSession,
+                setSessionSyncLoading: useUserStore.getState().setSessionSyncLoading,
+              });
 
               // Build complete window state with all tabs configured
               windowState = {

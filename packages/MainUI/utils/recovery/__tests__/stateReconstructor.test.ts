@@ -561,6 +561,21 @@ describe("reconstructState", () => {
       consoleErrorSpy.mockRestore();
     });
 
+    it("returns session-sync targets root -> leaf with parent record ids", async () => {
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
+
+      mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
+
+      const result = await reconstructState(hierarchy, windowMetadata);
+
+      // Ordered root (level 0) first so the parent session context is established
+      // before the child; each target carries its parent's record id.
+      expect(result.sessionSyncTargets).toEqual([
+        { tab: expect.objectContaining({ id: "tab1" }), recordId: "parent456", parentId: null },
+        { tab: expect.objectContaining({ id: "tab2" }), recordId: "child123", parentId: "parent456" },
+      ]);
+    });
+
     it("should mark reconstructed tabs as initialized with a direct link (target and parents)", async () => {
       const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
