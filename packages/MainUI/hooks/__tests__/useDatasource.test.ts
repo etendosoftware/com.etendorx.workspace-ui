@@ -101,6 +101,40 @@ describe("useDatasource hook", () => {
     expect(JSON.stringify(secondCallParams)).toContain("Order 1");
   });
 
+  describe("directNavigation gating", () => {
+    const columns = [{ id: "id", columnName: "id" }] as unknown as Column[];
+    const idFilter = [{ id: "id", value: "REC1" }] as MRT_ColumnFiltersState;
+
+    beforeEach(() => {
+      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => [
+        { fieldName: "id", operator: "equals", value: "REC1" },
+      ]);
+    });
+
+    it("sets directNavigation when enabled (form mode)", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: true })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBe(true);
+      expect(params.targetRecordId).toBe("REC1");
+    });
+
+    it("hard-filters without directNavigation when disabled (grid mode), keeping the id criterion", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: false })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBeUndefined();
+      expect(params.targetRecordId).toBeUndefined();
+      // The id criterion is still sent, so the grid hard-filters to the single record.
+      expect(JSON.stringify(params.criteria)).toContain("REC1");
+    });
+  });
+
   it("should handle error during fetch", async () => {
     (datasource.get as jest.Mock).mockRejectedValue(new Error("Fetch failed"));
 

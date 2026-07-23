@@ -123,6 +123,15 @@ export type UseDatasourceOptions = {
    * pending fetch and make the initial request payload complete.
    */
   refetchKey?: string;
+  /**
+   * When an `id` column filter is present, the request normally sets
+   * `directNavigation: true` so Classic returns the page positioned on the record
+   * (used to place the grid behind an open form). In grid mode we instead want the
+   * `id` filter to HARD-filter to exactly that record (e.g. reconstructed ancestor
+   * tabs after a linked-item navigation). Pass `false` to disable directNavigation
+   * so the retained `id` criterion filters to a single row. Defaults to `true`.
+   */
+  enableDirectNavigation?: boolean;
 };
 
 export function useDatasource({
@@ -136,6 +145,7 @@ export function useDatasource({
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
   refetchKey,
+  enableDirectNavigation = true,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -265,7 +275,10 @@ export function useDatasource({
 
     const filterById = columnFilterCriteria.find((criteria) => criteria.fieldName === "id");
     const hasIdFilter = Boolean(filterById);
-    const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
+    // Only position-navigate when enabled (form mode). In grid mode the retained
+    // `id` criterion (added above) hard-filters to the single record instead.
+    const idParams =
+      hasIdFilter && enableDirectNavigation ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
     const finalParams: any = {
       ...stableParams,
@@ -279,7 +292,7 @@ export function useDatasource({
     // activeColumnFilters is intentionally omitted: it's already captured by
     // columnFilterCriteria, which is listed above and changes whenever filters do.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
+  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, enableDirectNavigation]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
