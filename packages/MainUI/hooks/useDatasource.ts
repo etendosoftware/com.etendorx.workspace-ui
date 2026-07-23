@@ -222,20 +222,26 @@ export function useDatasource({
     dataLoadedRef.current = false;
   }, []);
 
-  // The `id` filter (used to hard-filter/position a grid on a specific record, e.g.
-  // reconstructed ancestor tabs from a linked-item navigation) is handled separately
-  // below instead of through createColumnFilterCriteria: that helper requires a
-  // matching `Column` (built from tab.fields, i.e. real AD_Fields), but the primary
-  // key is virtually never exposed as a field/column on a tab, so the lookup would
-  // silently drop the filter. Read it directly off the raw MRT filter state instead.
+  // The MRT filter id `"id"` does NOT always mean "the entity's raw primary key
+  // column" — some grids (e.g. WindowReferenceGrid's generic Order/Invoice
+  // reference column) legitimately have a real `Column` whose `id` happens to be
+  // `"id"` but whose actual queryable field (`filterFieldName`) is something else
+  // entirely (e.g. a text reference). For those, createColumnFilterCriteria below
+  // already resolves the filter correctly and must be left alone. Only fall back to
+  // a raw `id` equality (further down) when NO such Column exists — e.g. reconstructed
+  // ancestor tabs from a linked-item navigation, whose primary key is virtually never
+  // a real AD_Field/column, so the lookup below would otherwise silently drop it.
   const idColumnFilter = useMemo(() => activeColumnFilters.find((f) => f.id === "id"), [activeColumnFilters]);
+  const hasIdColumn = useMemo(
+    () => (columns ?? []).some((col) => col.id === "id" || col.columnName === "id"),
+    [columns]
+  );
 
   const columnFilterCriteria = useMemo(() => {
-    const nonIdFilters = activeColumnFilters.filter((f) => f.id !== "id");
-    if (!columns || !nonIdFilters.length) {
+    if (!columns || !activeColumnFilters.length) {
       return [];
     }
-    return LegacyColumnFilterUtils.createColumnFilterCriteria(nonIdFilters, columns);
+    return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
   }, [activeColumnFilters, columns]);
 
   // Memoize treeOptions to prevent unnecessary reference changes
@@ -282,10 +288,14 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
-    const hasIdFilter = Boolean(idColumnFilter);
-    if (hasIdFilter) {
+    // A real Column for "id" means createColumnFilterCriteria above already resolved
+    // this filter correctly (via filterFieldName) — don't also inject a raw equality
+    // on top of it, and don't treat it as an id-navigation filter below.
+    const missingIdColumn = Boolean(idColumnFilter) && !hasIdColumn;
+    if (missingIdColumn) {
       allCriteria = [...allCriteria, { fieldName: "id", operator: "equals", value: idColumnFilter?.value }];
     }
+    const hasIdFilter = missingIdColumn;
     // Only position-navigate when enabled (form mode). In grid mode the retained
     // `id` criterion (added above) hard-filters to the single record instead.
     const idParams =
@@ -310,6 +320,7 @@ export function useDatasource({
     columns,
     columnFilterCriteria,
     idColumnFilter,
+    hasIdColumn,
     isImplicitFilterApplied,
     enableDirectNavigation,
   ]);

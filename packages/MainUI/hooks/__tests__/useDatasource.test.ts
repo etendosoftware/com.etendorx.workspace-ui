@@ -133,6 +133,41 @@ describe("useDatasource hook", () => {
     });
   });
 
+  describe("id filter with a real matching Column (e.g. generic reference grids)", () => {
+    // Some grids (e.g. WindowReferenceGrid's Order/Invoice reference column) have a
+    // real Column whose `id` happens to be literally "id" but whose actual queryable
+    // field is something else entirely (resolved via filterFieldName). Regression
+    // test: this must NOT be hijacked into a raw entity-id equality / directNavigation
+    // positioning — that silently drops the real text-search criteria and the grid
+    // stops filtering (shows the unfiltered default list instead).
+    const columns = [{ id: "id", columnName: "id" }] as unknown as Column[];
+    const idFilter = [{ id: "id", value: "I/36" }] as MRT_ColumnFiltersState;
+
+    beforeEach(() => {
+      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => [
+        { fieldName: "reference", operator: "iContains", value: "I/36" },
+      ]);
+    });
+
+    afterEach(() => {
+      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => []);
+    });
+
+    it("defers to the column-resolved criteria instead of a raw id equality", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: true })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBeUndefined();
+      expect(params.targetRecordId).toBeUndefined();
+      expect(JSON.stringify(params.criteria)).toContain("reference");
+      expect(JSON.stringify(params.criteria)).not.toContain('"fieldName":"id"');
+    });
+  });
+
   it("should handle error during fetch", async () => {
     (datasource.get as jest.Mock).mockRejectedValue(new Error("Fetch failed"));
 
