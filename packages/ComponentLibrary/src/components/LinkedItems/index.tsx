@@ -36,6 +36,13 @@ export interface LinkedItemsProps {
   loadingText: string;
   noCategoriesText: string;
   noSelectedCategoryText: string;
+  /**
+   * When false, the categories fetch is deferred. Used to wait until the record's
+   * session context is established (form initialization / session sync) before
+   * calling the backend, which requires the `<windowId>|<keyColumn>` session
+   * attribute to be set. Defaults to true to preserve existing behavior.
+   */
+  ready?: boolean;
 }
 
 export const LinkedItems = memo(
@@ -49,6 +56,7 @@ export const LinkedItems = memo(
     loadingText,
     noCategoriesText,
     noSelectedCategoryText,
+    ready = true,
   }: LinkedItemsProps) => {
     const [categories, setCategories] = useState<LinkedItemCategory[]>([]);
     const [items, setItems] = useState<LinkedItem[]>([]);
@@ -90,7 +98,10 @@ export const LinkedItems = memo(
       // Skip fetch when windowId or recordId are not yet stable (e.g., during session
       // updates triggered by callouts). This prevents redundant UsedByLink requests
       // that fire every time the session refreshes between callout processing.
-      if (!windowId || !recordId || recordId === "new") return;
+      // Also wait until `ready` — the backend UsedByLink servlet requires the record's
+      // `<windowId>|<keyColumn>` session attribute, which is only set once form
+      // initialization / session sync completes.
+      if (!windowId || !recordId || recordId === "new" || !ready) return;
 
       let isMounted = true;
 
@@ -117,7 +128,7 @@ export const LinkedItems = memo(
       return () => {
         isMounted = false;
       };
-    }, [windowId, entityName, recordId, onFetchCategories]);
+    }, [windowId, entityName, recordId, onFetchCategories, ready]);
 
     const loadingContent = useMemo(
       () => (
