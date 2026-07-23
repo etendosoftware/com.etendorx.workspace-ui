@@ -167,6 +167,15 @@ export function useDatasource({
   // page 1 directly and guard against the re-run caused by setPage(1).
   const prevQueryKeyRef = useRef("");
   const skipPageResetFetchRef = useRef(false);
+  // When a fetch is requested while another is already in flight (e.g. a default
+  // saved-view's filters land in the store just after the initial unfiltered fetch
+  // started), we remember the requested page here and re-run the fetch once the
+  // in-flight one settles. Without this the guarded-out fetch is silently dropped
+  // and never retried, leaving the grid showing unfiltered records until a manual
+  // refresh. `fetchDataRef` always points at the latest fetchData closure so the
+  // retry uses the current queryParams, not the stale in-flight one.
+  const pendingFetchRef = useRef<number | null>(null);
+  const fetchDataRef = useRef<((targetPage?: number) => Promise<void>) | null>(null);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -274,8 +283,11 @@ export function useDatasource({
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
-      // Prevent duplicate fetches
+      // Prevent duplicate fetches. If another fetch is already running, remember
+      // this request so it runs once the in-flight fetch settles (see finally) —
+      // otherwise a query change arriving mid-flight is dropped and never retried.
       if (fetchInProgressRef.current) {
+        pendingFetchRef.current = targetPage;
         return;
       }
 
@@ -328,6 +340,13 @@ export function useDatasource({
       } finally {
         setLoading(false);
         fetchInProgressRef.current = false;
+        // If a fetch was requested while this one was in flight, run it now with
+        // the latest closure (current queryParams), so the most recent query wins.
+        if (pendingFetchRef.current !== null) {
+          const nextPage = pendingFetchRef.current;
+          pendingFetchRef.current = null;
+          void fetchDataRef.current?.(nextPage);
+        }
       }
     },
     [
@@ -341,6 +360,10 @@ export function useDatasource({
       setIsImplicitFilterApplied,
     ]
   );
+
+  // Keep a stable pointer to the latest fetchData so the retry in fetchData's
+  // finally block runs against the current queryParams, not a stale closure.
+  fetchDataRef.current = fetchData;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {

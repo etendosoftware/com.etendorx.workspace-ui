@@ -19,6 +19,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useDatasource } from "../useDatasource";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { Column, MRT_ColumnFiltersState } from "@workspaceui/api-client/src/api/types";
 
 // Mocks
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
@@ -53,6 +54,51 @@ describe("useDatasource hook", () => {
 
     expect(datasource.get).toHaveBeenCalledWith(mockEntity, expect.any(Object));
     expect(result.current.records).toEqual(mockRecords);
+  });
+
+  it("retries a fetch requested while another was in flight (default-view filter race)", async () => {
+    // Make filter criteria reflect the active filters so changing them changes queryParams.
+    const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+    (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation((filters: MRT_ColumnFiltersState) =>
+      (filters ?? []).map((f) => ({ fieldName: f.id, operator: "equals", value: f.value }))
+    );
+
+    // The initial (unfiltered) fetch stays in flight until we resolve it manually.
+    let resolveFirst: (v: unknown) => void = () => {};
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
+    (datasource.get as jest.Mock)
+      .mockReturnValueOnce(firstPromise)
+      .mockResolvedValue({ ok: true, data: { response: { data: mockRecords } } });
+
+    const columns = [{ id: "name", columnName: "name", accessorKey: "name" }] as unknown as Column[];
+    const { rerender } = renderHook(
+      ({ filters }: { filters: MRT_ColumnFiltersState }) =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: filters }),
+      { initialProps: { filters: [] as MRT_ColumnFiltersState } }
+    );
+
+    // Initial fetch fired and is still in flight.
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(1));
+
+    // Default-view filters land WHILE the initial fetch is in flight.
+    rerender({ filters: [{ id: "name", value: "Order 1" }] });
+
+    // That filtered fetch is guarded out (a fetch is in progress) — queued, not sent yet.
+    expect(datasource.get).toHaveBeenCalledTimes(1);
+
+    // The initial fetch settles -> the queued filtered fetch must run automatically.
+    await act(async () => {
+      resolveFirst({ ok: true, data: { response: { data: mockRecords } } });
+      await firstPromise;
+    });
+
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(2));
+
+    // The retried request carried the filter criteria (the whole point of the fix).
+    const secondCallParams = (datasource.get as jest.Mock).mock.calls[1][1];
+    expect(JSON.stringify(secondCallParams)).toContain("Order 1");
   });
 
   it("should handle error during fetch", async () => {
