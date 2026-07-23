@@ -378,7 +378,7 @@ export function useDatasource({
         if (pendingFetchRef.current !== null) {
           const nextPage = pendingFetchRef.current;
           pendingFetchRef.current = null;
-          void fetchDataRef.current?.(nextPage);
+          fetchDataRef.current?.(nextPage);
         }
       }
     },
