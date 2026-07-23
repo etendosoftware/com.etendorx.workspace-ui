@@ -111,6 +111,13 @@ export const reconstructState = async (
       },
       // Set selected record for both target and parent tabs
       selectedRecord: currentRecordId,
+      // Mark every reconstructed tab as direct-link-initialized. Without this, the
+      // table's "clear ID filter when returning to grid mode" effect strips the id
+      // filter above from the (grid-mode) parent tabs, so they reload their default
+      // list and lose the reconstructed selection — leaving parent tabs empty when
+      // opening a nested linked item. The flag is cleared later if the user removes
+      // the filter manually (see useTableData "Detect manual filter removal").
+      initializedWithDirectLink: true,
     };
 
     // Add to active tabs by level map
