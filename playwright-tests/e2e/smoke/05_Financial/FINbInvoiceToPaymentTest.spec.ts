@@ -200,16 +200,25 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // between the completion refresh and the record reloading. Reading it too early
     // (only guaranteed under CI load) yields invoiceTotal=0 → paymentAmount=1.74, which
     // then cascades into a wrong Add Details allocation and a stuck payment execution.
+    // Capture the value INSIDE the poll and require it stable across two consecutive
+    // reads: a separate inputValue() after the poll is a TOCTOU — the poll passes on a
+    // ">0" sample while the field flickers back to 0, and the follow-up read grabs the 0.
+    let invoiceTotal = 0;
+    let prevRead = -1;
     await expect
       .poll(
-        async () => Number.parseFloat((await outstandingInput.inputValue().catch(() => "0")).replace(",", ".")) || 0,
+        async () => {
+          const v = Number.parseFloat((await outstandingInput.inputValue().catch(() => "0")).replace(",", ".")) || 0;
+          const settled = v > 0 && v === prevRead;
+          prevRead = v;
+          if (settled) invoiceTotal = v;
+          return settled ? v : 0;
+        },
         {
           timeout: 15_000,
         }
       )
       .toBeGreaterThan(0);
-    const invoiceTotalStr = await outstandingInput.inputValue();
-    const invoiceTotal = Number.parseFloat(invoiceTotalStr) || 0;
 
     // Payment is intentionally set to invoiceTotal + 1.74 to generate a credit of 1.74.
     // This tests Etendo's overpayment/credit tracking feature.
