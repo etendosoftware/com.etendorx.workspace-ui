@@ -345,17 +345,16 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
     // Assert the invoice was allocated its full outstanding amount before executing.
-    // Add Payment distributes `pool = actual_payment − amount_inv_ords` across the
-    // selected invoices (OB.APRM.AddPayment.doSelectionChanged), where amount_inv_ords
-    // is the sum of amounts on ALL already-selected rows — including residual invoices
-    // left auto-selected off-page by prior payments for this business partner. On a
-    // clean DB amount_inv_ords is 0 → the invoice gets its full outstanding; when the
-    // shared "Customer A" carries leftovers from earlier runs, pool shrinks to the
-    // overpayment and the invoice is under-allocated, producing a payment whose
-    // AddPaymentActionHandler never completes. Off-page selections cannot be cleared
-    // from the UI, so this is a data-isolation problem, not a timing one. Assert the
-    // real allocation (not the static per-row "Expected Payment") so a dirty environment
-    // fails fast with a clear message instead of a 60s Execute timeout.
+    // The Add Payment on-parameter-change rule (process metadata em_etmeta_payscript_logic)
+    // under CI load collapses the selected invoice's allocation to the overpayment
+    // remainder (e.g. 1.74 for a 27.18 invoice / 28.92 payment) instead of its full
+    // outstanding, producing a payment whose AddPaymentActionHandler never completes.
+    // The grid loads clean (all rows obSelected=false, amount=0), so this is NOT a
+    // residual-selection/data problem — it is a defect in the allocation recompute
+    // (leading hypothesis: it double-counts the selected row's own amount into the
+    // distributable pool). Tracked separately. Assert the real allocation (not the
+    // static per-row "Expected Payment", which always equals the outstanding) so a
+    // regression fails fast with a clear message instead of a 60s Execute timeout.
     const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
     const readAllocated = async () =>
       Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
@@ -363,9 +362,9 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       .poll(readAllocated, {
         timeout: 15_000,
         message:
-          "Invoice under-allocated in Add Payment — 'Customer A' has residual selected invoices " +
-          "from prior runs (amount_inv_ords != 0). Environment is not isolated; clean the business " +
-          "partner's draft/awaiting payments before the financial suite.",
+          "Invoice under-allocated in Add Payment: allocated Total is the overpayment remainder, " +
+          "not the invoice outstanding. Defect in the Add Payment allocation recompute " +
+          "(em_etmeta_payscript_logic), not this test.",
       })
       .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
