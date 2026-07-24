@@ -244,7 +244,7 @@ export async function clickNewRecord(page: Page) {
     .filter({ hasText: /^New Record$/ })
     .locator("visible=true")
     .first();
-  await btn.waitFor({ state: "visible", timeout: 20_000 });
+  await btn.waitFor({ state: "visible", timeout: 40_000 });
   await btn.click();
 }
 

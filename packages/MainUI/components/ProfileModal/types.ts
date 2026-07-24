@@ -105,7 +105,11 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   languages: LanguageOption[];
   languagesFlags: string;
   // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
-  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
+  changeProfile: (params: {
+    role?: string;
+    organization?: string;
+    warehouse?: string;
+  }) => Promise<LoginResponse | void>;
 }
 
 export interface UserProfileProps {

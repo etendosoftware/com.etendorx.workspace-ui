@@ -22,9 +22,9 @@ import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
+import type { ParsedUrlState } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
-import type { ParsedUrlState } from "@/utils/recovery/urlStateParser";
 
 /**
  * Response from the Etendo Classic ReferencedLink endpoint.
@@ -184,20 +184,23 @@ export const useRedirect = () => {
 
       const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
 
-      // Empty field: open the target window in its default (unfiltered) state,
-      // matching Classic UI behavior (same as opening the window from the Menu).
+      // Empty field: open the target window in its default (unfiltered) Grid state,
+      // matching Classic UI behavior instead of forcing a Form View with no record.
       if (!selectedRecordId) {
-        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs: {} } });
+        const tabs = { [resolvedTabId]: createDefaultTabState(tabLevel) };
+        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
         return;
       }
 
-      // Reuse the same hierarchy calculation + state reconstruction pipeline used
-      // for page-reload state recovery, so parent context (Level > 0 tabs) and
-      // navigation state are populated correctly instead of only the target tab.
+      // Record present: reuse the same hierarchy calculation + state reconstruction used for
+      // page-reload recovery, so parent tabs (levels above the target) get their selectedRecord
+      // and filters populated too. Without this, redirecting into a sub-tab (tabLevel > 0) left
+      // parent tabs empty, so the child tab had no context to render against.
       try {
         const windowMetadata = await Metadata.getWindow(resolvedWindowId);
-        const targetTab = windowMetadata.tabs?.find((t) => t.id === resolvedTabId);
-        const parsedUrlState: ParsedUrlState = {
+        const targetTab = windowMetadata.tabs.find((t) => t.id === resolvedTabId);
+
+        const parsedState: ParsedUrlState = {
           windowIdentifier: newWindowIdentifier,
           tabId: resolvedTabId,
           recordId: selectedRecordId,
@@ -207,7 +210,7 @@ export const useRedirect = () => {
           keyParameter: "",
         };
 
-        const hierarchy = await calculateHierarchy(parsedUrlState, windowMetadata);
+        const hierarchy = await calculateHierarchy(parsedState, windowMetadata);
         const reconstructed = await reconstructState(hierarchy, windowMetadata);
 
         setWindowActive({
@@ -216,11 +219,11 @@ export const useRedirect = () => {
             title: resolvedTitle,
             tabs: reconstructed.tabs,
             navigation: reconstructed.navigation,
+            initialized: true,
           },
         });
       } catch (err) {
         console.warn("[useRedirect] Hierarchy reconstruction failed, falling back to single-tab state:", err);
-
         const defaultTabState = createDefaultTabState(tabLevel);
         const tabs = {
           [resolvedTabId]: {
@@ -251,7 +254,14 @@ export const useRedirect = () => {
     }: HandleClickRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
-      handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel, referencedLinkContext });
+      return handleAction({
+        windowId,
+        windowTitle,
+        referencedTabId,
+        selectedRecordId,
+        tabLevel,
+        referencedLinkContext,
+      });
     },
     [handleAction]
   );
@@ -269,7 +279,14 @@ export const useRedirect = () => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel, referencedLinkContext });
+        return handleAction({
+          windowId,
+          windowTitle,
+          referencedTabId,
+          selectedRecordId,
+          tabLevel,
+          referencedLinkContext,
+        });
       }
     },
     [handleAction]
