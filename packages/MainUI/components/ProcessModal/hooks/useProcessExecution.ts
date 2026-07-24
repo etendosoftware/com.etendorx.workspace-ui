@@ -312,6 +312,14 @@ export function useProcessExecution({
       };
     }
 
+    if (typeof res.data?.error === "string" && res.data.error) {
+      return {
+        message: res.data.error,
+        messageType: "error",
+        isHtml: false,
+      };
+    }
+
     if (res.data && typeof res.data === "object" && "text" in res.data) {
       return {
         message: res.data.text,
@@ -439,14 +447,21 @@ export function useProcessExecution({
 
   const showProcessToast = useCallback(
     (params: {
-      isSuccess: boolean;
+      messageType: "success" | "warning" | "error";
       message: string;
       linkTabId?: string;
       linkRecordId?: string;
     }) => {
-      const { isSuccess, message, linkTabId, linkRecordId } = params;
-      const toastFn = isSuccess ? toast.success : toast.warning;
-      const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
+      const { messageType, message, linkTabId, linkRecordId } = params;
+      let toastFn = toast.error;
+      let title = t("process.processError");
+      if (messageType === "success") {
+        toastFn = toast.success;
+        title = t("process.completedSuccessfully");
+      } else if (messageType === "warning") {
+        toastFn = toast.warning;
+        title = t("process.warning");
+      }
 
       const parsed =
         typeof message === "string"
@@ -521,14 +536,16 @@ export function useProcessExecution({
         if (linkTabId) {
           // openDirectTab: navigate immediately (Classic behavior — no user click needed).
           // recordId may be absent when the handler opens the tab in grid mode.
-          showProcessToast({ isSuccess: messageType === "success", message });
+          showProcessToast({ messageType, message });
           onSuccess?.();
           await handleNavigateToTab(linkTabId, linkRecordId ?? "");
         } else {
-          showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+          showProcessToast({ messageType, message, linkTabId, linkRecordId });
           handleSuccessClose(true);
         }
       } else {
+        // The modal stays open on error and `renderResponse()` already shows this
+        // message inline — no toast, to avoid double-reporting the same error.
         setResult(parsedResult);
       }
     },
@@ -565,6 +582,8 @@ export function useProcessExecution({
 
         if (shouldRetryAfterProcess(resultData)) {
           setShouldTriggerSuccess(true);
+          // The modal stays open (keepOpen: true) and `renderResponse()` already
+          // shows this message inline — no toast, to avoid double-reporting it.
           setResult({ ...parsedResult, keepOpen: true });
           const hasRefreshGridAction = dispatchResponseActions(resultData).some((a) => a.kind === "refreshGrid");
           if (shouldRefreshAfterProcess(resultData) || hasRefreshGridAction) {
@@ -913,7 +932,7 @@ export function useProcessExecution({
             const message = responseMessage.msgText || t("process.completedSuccessfully");
 
             showProcessToast({
-              isSuccess,
+              messageType: isSuccess ? "success" : "warning",
               message,
               linkTabId: (result as any)?.linkTabId,
               linkRecordId: (result as any)?.linkRecordId,
@@ -922,6 +941,8 @@ export function useProcessExecution({
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
+            // The modal stays open on error and `renderResponse()` already shows
+            // this message inline — no toast, to avoid double-reporting it.
             setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
           }
         } catch (error) {
@@ -1024,7 +1045,7 @@ export function useProcessExecution({
             const message = status.errorMsg || (isSuccess ? t("process.completedSuccessfully") : "");
 
             showProcessToast({
-              isSuccess,
+              messageType: isSuccess ? "success" : "warning",
               message,
             });
 

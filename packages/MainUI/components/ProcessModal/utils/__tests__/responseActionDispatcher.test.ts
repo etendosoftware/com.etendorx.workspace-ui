@@ -62,8 +62,20 @@ describe("readResponseActions", () => {
     expect(readResponseActions({ response: { data: {} } })).toEqual([]);
   });
 
-  it("returns an empty array when responseActions is not an array", () => {
-    expect(readResponseActions({ responseActions: { showMsgInView: {} } })).toEqual([]);
+  it("normalizes a single-map responseActions object into a one-entry array", () => {
+    // e.g. SyncServerButton emits `{ responseActions: { showMsgInProcessView: {...} } }`
+    // instead of the array form other handlers use.
+    expect(readResponseActions({ responseActions: { showMsgInView: {} } })).toEqual([{ showMsgInView: {} }]);
+  });
+
+  it("splits a multi-key responseActions object into one entry per key", () => {
+    expect(readResponseActions({ responseActions: { refreshGrid: {}, showMsgInView: { msgText: "ok" } } })).toEqual([
+      { refreshGrid: {} },
+      { showMsgInView: { msgText: "ok" } },
+    ]);
+  });
+
+  it("returns an empty array when responseActions is a non-object, non-array value", () => {
     expect(readResponseActions({ responseActions: "oops" })).toEqual([]);
   });
 
