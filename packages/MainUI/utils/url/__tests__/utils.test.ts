@@ -234,7 +234,7 @@ describe("URL Utility Functions", () => {
       });
     });
 
-    it("should only include tabs with both selectedRecord and form.recordId", () => {
+    it("should only include tabs with a selectedRecord", () => {
       const windows: WindowState[] = [
         createMockWindowState("143", "143_123456", {
           tab1: createMockTabState(0, "rec1", ""),
@@ -244,8 +244,41 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      // Should only have window identifier, no tab or record
-      expect(result).toBe("wi_0=143_123456");
+      // tab1 has a selectedRecord (even though form.recordId is empty) so it's encoded;
+      // tab2 has no selectedRecord so it's excluded regardless of form.recordId
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        ti_0: "tab1",
+        ri_0: "rec1",
+      });
+    });
+
+    it("should include a TABLE-mode tab (selectedRecord set, no form.recordId) over a shallower FORM-mode ancestor", () => {
+      const windows: WindowState[] = [
+        createMockWindowState(
+          "143",
+          "143_123456",
+          {
+            tab1: createMockTabState(0, "rec1", "rec1"),
+            tab2: createMockTabStateEmpty(1, "rec2"),
+          },
+          true,
+          createMockNavigation(
+            new Map([
+              [0, "tab1"],
+              [1, "tab2"],
+            ])
+          )
+        ),
+      ];
+
+      const result = buildWindowsUrlParams(windows);
+
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        ti_0: "tab2",
+        ri_0: "rec2",
+      });
     });
 
     it("should handle empty windows array", () => {
@@ -553,7 +586,7 @@ describe("URL Utility Functions", () => {
   });
 
   describe("Edge cases and integration", () => {
-    it("should handle buildWindowsUrlParams with window having empty form object", () => {
+    it("should still include a tab with an empty form object as long as it has a selectedRecord", () => {
       const windows: WindowState[] = [
         createMockWindowState(
           "143",
@@ -566,7 +599,27 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      expect(result).toBe("wi_0=143_123456"); // No tab or record included
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        ti_0: "tab1",
+        ri_0: "rec1",
+      });
+    });
+
+    it("should exclude a tab with no selectedRecord even if it has form.recordId set", () => {
+      const windows: WindowState[] = [
+        createMockWindowState(
+          "143",
+          "143_123456",
+          { tab1: createMockTabState(0, undefined, "rec1") },
+          true,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
+      ];
+
+      const result = buildWindowsUrlParams(windows);
+
+      expect(result).toBe("wi_0=143_123456");
     });
 
     it("should handle parseWindowRecoveryData with non-sequential indices", () => {

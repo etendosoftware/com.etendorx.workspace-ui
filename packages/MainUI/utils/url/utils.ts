@@ -29,11 +29,11 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
     // Always add window identifier
     params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${index}`, window.windowIdentifier);
 
-    // Find the tab with highest level that has both tabId and selectedRecord
+    // Find the tab with highest level that has a selection — a grid-selected
+    // (TABLE mode) row counts too, not just a tab drilled into FORM mode, so the
+    // deepest breadcrumb entry isn't silently dropped from the URL on refresh.
     const tabEntries = Object.entries(window.tabs);
-    const tabsWithRecordsForms = tabEntries.filter(
-      ([_, tabState]) => tabState.selectedRecord && tabState.form.recordId
-    );
+    const tabsWithRecordsForms = tabEntries.filter(([_, tabState]) => tabState.selectedRecord);
 
     if (tabsWithRecordsForms.length > 0) {
       // Find the tab with the highest level (deepest)
