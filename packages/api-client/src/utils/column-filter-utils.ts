@@ -88,10 +88,6 @@ export class ColumnFilterUtils {
     );
   }
 
-  static needsDistinctValues(column: Column): boolean {
-    return !!(column.datasourceId || column.referencedEntity);
-  }
-
   /**
    * Get filter options for a select column (from refList)
    * Only returns active options (where active is undefined or true)
