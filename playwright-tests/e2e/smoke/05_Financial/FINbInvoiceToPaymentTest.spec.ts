@@ -68,15 +68,25 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     const productOption = page.locator('[data-testid^="OptionItem__"]').filter({ hasText: /Final good A/ });
 
     await productDropdown.scrollIntoViewIfNeeded();
+    const openedIndicator = productSearch.or(productOption).first();
     let hasProductSearch = false;
     let productDropdownOpened = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      // Don't re-click if it's already open — a second click toggles the dropdown closed.
+      if (await openedIndicator.isVisible().catch(() => false)) {
+        productDropdownOpened = true;
+        break;
+      }
       await productDropdown.click({ force: true });
-      hasProductSearch = await productSearch.isVisible({ timeout: 2_000 }).catch(() => false);
-      productDropdownOpened =
-        hasProductSearch || (await productOption.isVisible({ timeout: 2_000 }).catch(() => false));
-      if (productDropdownOpened) break;
+      try {
+        await openedIndicator.waitFor({ state: "visible", timeout: 4_000 });
+        productDropdownOpened = true;
+        break;
+      } catch {
+        /* not open yet — retry */
+      }
     }
+    hasProductSearch = await productSearch.isVisible().catch(() => false);
     if (!productDropdownOpened) throw new Error("Product dropdown did not open");
 
     if (hasProductSearch) {
