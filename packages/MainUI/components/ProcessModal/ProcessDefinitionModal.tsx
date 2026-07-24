@@ -154,6 +154,7 @@ import {
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
 import { buildSuccessBannerMessage } from "./utils/responseBanner";
+import { isMandatoryParameterMissing } from "./utils/isMandatoryParameterMissing";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 
 // ---------------------------------------------------------------------------
@@ -1016,36 +1017,19 @@ function ProcessDefinitionModalContent({
   const hasMandatoryParametersWithoutValue = useMemo(() => {
     if (loading || initializationLoading) return false;
 
-    return Object.values(parameters).some((p) => {
-      // @ts-ignore
-      if (!p.mandatory || p.active === false) return false;
-      if (p.defaultValue) return false;
-
-      const fieldName = p.name;
-      const dbColumnName = p.dBColumnName;
-
-      let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
-      if (fieldValue === undefined && dbColumnName) {
-        fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
-      }
-
-      const isRegisteredByName = fieldName in formValues;
-      const isRegisteredByDBColumn = dbColumnName && dbColumnName in formValues;
-      if (!isRegisteredByName && !isRegisteredByDBColumn) return false;
-
-      const isEmpty =
-        fieldValue === null ||
-        fieldValue === undefined ||
-        fieldValue === "" ||
-        (Array.isArray(fieldValue) && fieldValue.length === 0);
-
-      if (logicFields && dbColumnName) {
-        if (logicFields[`${dbColumnName}.display`] === false) return false;
-      }
-
-      return isEmpty;
-    });
-  }, [loading, initializationLoading, parameters, formValues]);
+    // Visibility comes from the same source of truth as the rendered selector, so a
+    // mandatory parameter hidden by its display logic (or an explicit override) does
+    // not keep the button disabled — matching Classic, which validates visible fields.
+    return Object.values(parameters).some((parameter) =>
+      isMandatoryParameterMissing({
+        parameter,
+        formValues,
+        isDisplayed: isParamDisplayedRef.current,
+      })
+    );
+    // logicFields is read indirectly through isParamDisplayedRef; keep it in deps so
+    // the check recomputes when a callout/script toggles a parameter's visibility.
+  }, [loading, initializationLoading, parameters, formValues, logicFields]);
 
   const peGrids = useMemo(() => {
     if (!isPE) return [];

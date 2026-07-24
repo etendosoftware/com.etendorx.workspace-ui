@@ -302,6 +302,7 @@ const es = {
       errorNotStrongEnough:
         "La contraseña no es suficientemente segura. Use mayúsculas, minúsculas, números y caracteres especiales",
       errorGeneric: "Error al cambiar la contraseña",
+      configSaveError: "No se pudo guardar la configuración del perfil",
     },
   },
   breadcrumb: {

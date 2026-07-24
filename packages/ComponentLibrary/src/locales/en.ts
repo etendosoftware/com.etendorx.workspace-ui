@@ -297,6 +297,7 @@ const en = {
       errorUnequalPwd: "Passwords do not match",
       errorNotStrongEnough: "Password is not strong enough. Use uppercase, lowercase, numbers and special characters",
       errorGeneric: "Failed to change password",
+      configSaveError: "Failed to save profile configuration",
     },
   },
   breadcrumb: {

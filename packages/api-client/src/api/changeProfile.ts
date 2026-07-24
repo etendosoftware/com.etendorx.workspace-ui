@@ -21,6 +21,7 @@ import type { LoginResponse } from "./types";
 
 interface ChangeProfilePayload {
   role?: string;
+  organization?: string;
   warehouse?: string;
 }
 
@@ -70,8 +71,8 @@ export default async function handler(req: any, res: any) {
       return res.status(401).json({ message: "Unauthorized: No token provided" });
     }
 
-    const { role, warehouse } = req.body;
-    const data = await changeProfile({ role, warehouse });
+    const { role, organization, warehouse } = req.body;
+    const data = await changeProfile({ role, organization, warehouse });
 
     return res.status(200).json(data);
   } catch (error) {

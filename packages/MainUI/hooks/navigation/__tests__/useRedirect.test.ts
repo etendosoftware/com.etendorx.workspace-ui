@@ -24,6 +24,8 @@ const mockGetNewWindowIdentifier = jest.fn();
 const mockCreateDefaultTabState = jest.fn();
 const mockGetCachedMenu = jest.fn();
 const mockGetWindow = jest.fn();
+const mockCalculateHierarchy = jest.fn();
+const mockReconstructState = jest.fn();
 
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: (selector: (s: Record<string, unknown>) => unknown) =>
@@ -49,6 +51,14 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   },
 }));
 
+jest.mock("@/utils/recovery/hierarchyCalculator", () => ({
+  calculateHierarchy: (...args: unknown[]) => mockCalculateHierarchy(...args),
+}));
+
+jest.mock("@/utils/recovery/stateReconstructor", () => ({
+  reconstructState: (...args: unknown[]) => mockReconstructState(...args),
+}));
+
 describe("useRedirect", () => {
   // ============================================================================
   // Test Setup
@@ -58,6 +68,24 @@ describe("useRedirect", () => {
     jest.clearAllMocks();
     mockGetNewWindowIdentifier.mockReturnValue("window-123_1234567890");
     mockCreateDefaultTabState.mockReturnValue({ expanded: false, loading: false });
+    mockGetWindow.mockResolvedValue({
+      id: "window-123",
+      tabs: [{ id: "tab-456", tabLevel: 0, fields: {} }],
+    });
+    mockCalculateHierarchy.mockResolvedValue({
+      targetTab: { tabId: "tab-456", level: 0, recordId: "record-789", children: [] },
+      parentTabs: [],
+      rootTab: { tabId: "tab-456", level: 0, recordId: "record-789", children: [] },
+    });
+    mockReconstructState.mockResolvedValue({
+      tabs: {
+        "tab-456": {
+          form: { recordId: "record-789", mode: "FORM", formMode: "EDIT" },
+          selectedRecord: "record-789",
+        },
+      },
+      navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: true },
+    });
   });
 
   // ============================================================================
@@ -140,12 +168,12 @@ describe("useRedirect", () => {
       expect(event.preventDefault).toHaveBeenCalled();
     });
 
-    it("should call setWindowActive with correct data", () => {
+    it("should call setWindowActive with correct data", async () => {
       const { result } = renderHook(() => useRedirect());
       const event = createClickEvent();
 
-      act(() => {
-        result.current.handleClickRedirect({ e: event, ...defaultParams });
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...defaultParams });
       });
 
       expect(mockSetWindowActive).toHaveBeenCalledWith({
@@ -182,27 +210,117 @@ describe("useRedirect", () => {
       consoleSpy.mockRestore();
     });
 
-    it("should use tabLevel 0 as default", () => {
+    it("should use tabLevel 0 as default when field is empty", async () => {
       const { result } = renderHook(() => useRedirect());
       const event = createClickEvent();
-      const { tabLevel, ...paramsWithoutLevel } = defaultParams;
+      const { tabLevel, selectedRecordId, ...paramsWithoutLevel } = defaultParams;
 
-      act(() => {
-        result.current.handleClickRedirect({ e: event, ...paramsWithoutLevel });
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...paramsWithoutLevel });
       });
 
       expect(mockCreateDefaultTabState).toHaveBeenCalledWith(0);
     });
 
-    it("should use provided tabLevel", () => {
+    it("should use provided tabLevel when field is empty", async () => {
       const { result } = renderHook(() => useRedirect());
       const event = createClickEvent();
 
-      act(() => {
-        result.current.handleClickRedirect({ e: event, ...defaultParams, tabLevel: 2 });
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...defaultParams, selectedRecordId: "", tabLevel: 2 });
       });
 
       expect(mockCreateDefaultTabState).toHaveBeenCalledWith(2);
+    });
+
+    it("should open the target window in default Grid state (no form, no selection) when field is empty", async () => {
+      const { result } = renderHook(() => useRedirect());
+      const event = createClickEvent();
+
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...defaultParams, selectedRecordId: "" });
+      });
+
+      expect(mockCalculateHierarchy).not.toHaveBeenCalled();
+      expect(mockSetWindowActive).toHaveBeenCalledWith({
+        windowIdentifier: "window-123_1234567890",
+        windowData: {
+          title: "Test Window",
+          tabs: { "tab-456": { expanded: false, loading: false } },
+        },
+      });
+    });
+
+    it("should reconstruct parent tab state when redirecting into a sub-tab", async () => {
+      mockGetWindow.mockResolvedValue({
+        id: "window-123",
+        tabs: [
+          { id: "parent-tab", tabLevel: 0, fields: {} },
+          { id: "tab-456", tabLevel: 1, fields: {} },
+        ],
+      });
+      mockReconstructState.mockResolvedValue({
+        tabs: {
+          "parent-tab": { selectedRecord: "parent-record" },
+          "tab-456": {
+            form: { recordId: "record-789", mode: "FORM", formMode: "EDIT" },
+            selectedRecord: "record-789",
+          },
+        },
+        navigation: { activeLevels: [1], activeTabsByLevel: new Map([[1, "tab-456"]]), initialized: true },
+      });
+
+      const { result } = renderHook(() => useRedirect());
+      const event = createClickEvent();
+
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...defaultParams, tabLevel: 1 });
+      });
+
+      expect(mockCalculateHierarchy).toHaveBeenCalledWith(
+        expect.objectContaining({ tabId: "tab-456", recordId: "record-789", tabLevel: 1 }),
+        expect.objectContaining({ id: "window-123" })
+      );
+      expect(mockSetWindowActive).toHaveBeenCalledWith({
+        windowIdentifier: "window-123_1234567890",
+        windowData: expect.objectContaining({
+          tabs: expect.objectContaining({
+            "parent-tab": expect.objectContaining({ selectedRecord: "parent-record" }),
+            "tab-456": expect.objectContaining({ selectedRecord: "record-789" }),
+          }),
+          navigation: expect.objectContaining({ activeLevels: [1] }),
+        }),
+      });
+    });
+
+    it("should fall back to a single-tab form state when hierarchy reconstruction fails", async () => {
+      mockCalculateHierarchy.mockRejectedValue(new Error("Parent key field not found"));
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      const { result } = renderHook(() => useRedirect());
+      const event = createClickEvent();
+
+      await act(async () => {
+        await result.current.handleClickRedirect({ e: event, ...defaultParams });
+      });
+
+      expect(mockSetWindowActive).toHaveBeenCalledWith({
+        windowIdentifier: "window-123_1234567890",
+        windowData: expect.objectContaining({
+          tabs: expect.objectContaining({
+            "tab-456": expect.objectContaining({
+              form: { recordId: "record-789", mode: "FORM", formMode: "EDIT" },
+              selectedRecord: "record-789",
+            }),
+          }),
+        }),
+      });
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[useRedirect] Hierarchy reconstruction failed, falling back to single-tab state:",
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
@@ -239,12 +357,12 @@ describe("useRedirect", () => {
       it.each([
         { key: "Enter", shouldTrigger: true },
         { key: " ", shouldTrigger: true },
-      ])("should trigger redirect for '$key' key", ({ key, shouldTrigger }) => {
+      ])("should trigger redirect for '$key' key", async ({ key, shouldTrigger }) => {
         const { result } = renderHook(() => useRedirect());
         const event = createKeyboardEvent(key);
 
-        act(() => {
-          result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
+        await act(async () => {
+          await result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
         });
 
         if (shouldTrigger) {
@@ -269,12 +387,12 @@ describe("useRedirect", () => {
       );
     });
 
-    it("should call setWindowActive with correct data when Enter is pressed", () => {
+    it("should call setWindowActive with correct data when Enter is pressed", async () => {
       const { result } = renderHook(() => useRedirect());
       const event = createKeyboardEvent("Enter");
 
-      act(() => {
-        result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
+      await act(async () => {
+        await result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
       });
 
       expect(mockSetWindowActive).toHaveBeenCalledWith({

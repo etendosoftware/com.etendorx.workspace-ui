@@ -194,6 +194,10 @@ export const useUserStore = create<UserStore>()(
         localStorage.removeItem("token");
         localStorage.removeItem("roles");
         localStorage.removeItem("currentRole");
+        // currentRoleId persists the active role across page reloads; it must be cleared on
+        // logout so the next fresh login honors the user's backend default role (not the last
+        // role used before logout), matching Classic UI.
+        localStorage.removeItem("currentRoleId");
         localStorage.removeItem("currentInfo");
         localStorage.removeItem("currentWarehouse");
         localStorage.removeItem("currentLanguage");

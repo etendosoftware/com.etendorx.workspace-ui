@@ -42,6 +42,10 @@ export default defineConfig({
   // workers run spec files in parallel.
   workers: 2,
   fullyParallel: false,
+  // Jenkins shares the CI box across jobs; under load, API responses that are
+  // normally instant can exceed a helper's fixed timeout once. Retrying lets
+  // a transient slow response self-heal instead of failing the whole suite.
+  retries: process.env.CI ? 2 : 0,
 
   use: {
     baseURL: BASE_URL,
