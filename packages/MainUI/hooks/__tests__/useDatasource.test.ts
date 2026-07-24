@@ -19,6 +19,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useDatasource } from "../useDatasource";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { Column, MRT_ColumnFiltersState } from "@workspaceui/api-client/src/api/types";
 
 // Mocks
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
@@ -53,6 +54,118 @@ describe("useDatasource hook", () => {
 
     expect(datasource.get).toHaveBeenCalledWith(mockEntity, expect.any(Object));
     expect(result.current.records).toEqual(mockRecords);
+  });
+
+  it("retries a fetch requested while another was in flight (default-view filter race)", async () => {
+    // Make filter criteria reflect the active filters so changing them changes queryParams.
+    const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+    (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(
+      (filters: MRT_ColumnFiltersState) =>
+        (filters ?? []).map((f) => ({ fieldName: f.id, operator: "equals", value: f.value }))
+    );
+
+    // The initial (unfiltered) fetch stays in flight until we resolve it manually.
+    let resolveFirst: (v: unknown) => void = () => {};
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
+    (datasource.get as jest.Mock)
+      .mockReturnValueOnce(firstPromise)
+      .mockResolvedValue({ ok: true, data: { response: { data: mockRecords } } });
+
+    const columns = [{ id: "name", columnName: "name", accessorKey: "name" }] as unknown as Column[];
+    const { rerender } = renderHook(
+      ({ filters }: { filters: MRT_ColumnFiltersState }) =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: filters }),
+      { initialProps: { filters: [] as MRT_ColumnFiltersState } }
+    );
+
+    // Initial fetch fired and is still in flight.
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(1));
+
+    // Default-view filters land WHILE the initial fetch is in flight.
+    rerender({ filters: [{ id: "name", value: "Order 1" }] });
+
+    // That filtered fetch is guarded out (a fetch is in progress) — queued, not sent yet.
+    expect(datasource.get).toHaveBeenCalledTimes(1);
+
+    // The initial fetch settles -> the queued filtered fetch must run automatically.
+    await act(async () => {
+      resolveFirst({ ok: true, data: { response: { data: mockRecords } } });
+      await firstPromise;
+    });
+
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(2));
+
+    // The retried request carried the filter criteria (the whole point of the fix).
+    const secondCallParams = (datasource.get as jest.Mock).mock.calls[1][1];
+    expect(JSON.stringify(secondCallParams)).toContain("Order 1");
+  });
+
+  describe("directNavigation gating", () => {
+    // No "id" entry here on purpose: a tab's `columns` come from its AD_Fields
+    // (see parseColumns), and the primary key is virtually never exposed as one.
+    // createColumnFilterCriteria's column lookup would never match "id", so these
+    // tests must pass without relying on it (regression test for that gap).
+    const columns = [{ id: "name", columnName: "name" }] as unknown as Column[];
+    const idFilter = [{ id: "id", value: "REC1" }] as MRT_ColumnFiltersState;
+
+    it("sets directNavigation when enabled (form mode)", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: true })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBe(true);
+      expect(params.targetRecordId).toBe("REC1");
+    });
+
+    it("hard-filters without directNavigation when disabled (grid mode), keeping the id criterion", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: false })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBeUndefined();
+      expect(params.targetRecordId).toBeUndefined();
+      // The id criterion is still sent, so the grid hard-filters to the single record.
+      expect(JSON.stringify(params.criteria)).toContain("REC1");
+    });
+  });
+
+  describe("id filter with a real matching Column (e.g. generic reference grids)", () => {
+    // Some grids (e.g. WindowReferenceGrid's Order/Invoice reference column) have a
+    // real Column whose `id` happens to be literally "id" but whose actual queryable
+    // field is something else entirely (resolved via filterFieldName). Regression
+    // test: this must NOT be hijacked into a raw entity-id equality / directNavigation
+    // positioning — that silently drops the real text-search criteria and the grid
+    // stops filtering (shows the unfiltered default list instead).
+    const columns = [{ id: "id", columnName: "id" }] as unknown as Column[];
+    const idFilter = [{ id: "id", value: "I/36" }] as MRT_ColumnFiltersState;
+
+    beforeEach(() => {
+      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => [
+        { fieldName: "reference", operator: "iContains", value: "I/36" },
+      ]);
+    });
+
+    afterEach(() => {
+      const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+      (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(() => []);
+    });
+
+    it("defers to the column-resolved criteria instead of a raw id equality", async () => {
+      renderHook(() =>
+        useDatasource({ entity: mockEntity, columns, activeColumnFilters: idFilter, enableDirectNavigation: true })
+      );
+      await waitFor(() => expect(datasource.get).toHaveBeenCalled());
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params.directNavigation).toBeUndefined();
+      expect(params.targetRecordId).toBeUndefined();
+      expect(JSON.stringify(params.criteria)).toContain("reference");
+      expect(JSON.stringify(params.criteria)).not.toContain('"fieldName":"id"');
+    });
   });
 
   it("should handle error during fetch", async () => {

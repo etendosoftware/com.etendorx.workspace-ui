@@ -47,6 +47,7 @@ jest.mock("@/utils/url/utils");
 jest.mock("@/utils/recovery/urlStateParser");
 jest.mock("@/utils/recovery/hierarchyCalculator");
 jest.mock("@/utils/recovery/stateReconstructor");
+jest.mock("@/utils/recovery/reconstructedSessionSync");
 
 const mockUseSearchParams = useSearchParams as jest.Mock;
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;

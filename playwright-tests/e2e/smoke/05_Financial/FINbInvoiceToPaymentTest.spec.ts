@@ -68,15 +68,25 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     const productOption = page.locator('[data-testid^="OptionItem__"]').filter({ hasText: /Final good A/ });
 
     await productDropdown.scrollIntoViewIfNeeded();
+    const openedIndicator = productSearch.or(productOption).first();
     let hasProductSearch = false;
     let productDropdownOpened = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      // Don't re-click if it's already open — a second click toggles the dropdown closed.
+      if (await openedIndicator.isVisible().catch(() => false)) {
+        productDropdownOpened = true;
+        break;
+      }
       await productDropdown.click({ force: true });
-      hasProductSearch = await productSearch.isVisible({ timeout: 2_000 }).catch(() => false);
-      productDropdownOpened =
-        hasProductSearch || (await productOption.isVisible({ timeout: 2_000 }).catch(() => false));
-      if (productDropdownOpened) break;
+      try {
+        await openedIndicator.waitFor({ state: "visible", timeout: 4_000 });
+        productDropdownOpened = true;
+        break;
+      } catch {
+        /* not open yet — retry */
+      }
     }
+    hasProductSearch = await productSearch.isVisible().catch(() => false);
     if (!productDropdownOpened) throw new Error("Product dropdown did not open");
 
     if (hasProductSearch) {
@@ -186,8 +196,29 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // This is the grand total (net + taxes) we need to fully cover with the payment.
     const outstandingInput = page.locator('input[name="outstandingAmount"]').first();
     await outstandingInput.waitFor({ state: "attached", timeout: 10_000 });
-    const invoiceTotalStr = await outstandingInput.inputValue();
-    const invoiceTotal = Number.parseFloat(invoiceTotalStr) || 0;
+    // Wait until the field holds the real grand total, not the transient "0" it shows
+    // between the completion refresh and the record reloading. Reading it too early
+    // (only guaranteed under CI load) yields invoiceTotal=0 → paymentAmount=1.74, which
+    // then cascades into a wrong Add Details allocation and a stuck payment execution.
+    // Capture the value INSIDE the poll and require it stable across two consecutive
+    // reads: a separate inputValue() after the poll is a TOCTOU — the poll passes on a
+    // ">0" sample while the field flickers back to 0, and the follow-up read grabs the 0.
+    let invoiceTotal = 0;
+    let prevRead = -1;
+    await expect
+      .poll(
+        async () => {
+          const v = Number.parseFloat((await outstandingInput.inputValue().catch(() => "0")).replace(",", ".")) || 0;
+          const settled = v > 0 && v === prevRead;
+          prevRead = v;
+          if (settled) invoiceTotal = v;
+          return settled ? v : 0;
+        },
+        {
+          timeout: 15_000,
+        }
+      )
+      .toBeGreaterThan(0);
 
     // Payment is intentionally set to invoiceTotal + 1.74 to generate a credit of 1.74.
     // This tests Etendo's overpayment/credit tracking feature.
@@ -299,15 +330,44 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       .filter({ hasText: fullInvoiceNo })
       .first();
     await targetRow.waitFor({ state: "attached", timeout: 30_000 });
-    await targetRow.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
-    // The click is no longer necessary because the checkbox is auto-checked after filtering to a single row, but keep it here in case that behavior changes in the future.
-    //await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
+    const rowCheckbox = targetRow.locator('input[aria-label="Toggle select row"]');
+    await rowCheckbox.scrollIntoViewIfNeeded();
+    // Explicitly select the row. The invoice is NOT auto-selected here: for a
+    // manually-created Payment In the backend does not pre-flag it (obSelected=false),
+    // and the grid's context auto-select resolves the payment's document number rather
+    // than the invoice's, so findMatchingRecord never matches. Click to select, guarding
+    // against toggling off in case auto-select ever does fire.
+    if (!(await rowCheckbox.isChecked().catch(() => false))) {
+      await rowCheckbox.click({ force: true });
+    }
 
-    // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves)
-    await expect(targetRow.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 15_000 });
+    // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
+    await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
-    // Verify Expected Payment is populated
-    await expect(page.locator('input[name="Expected Payment"]')).not.toHaveValue("0.00", { timeout: 30_000 });
+    // The invoice's allocated payment ("Total") must reach the full invoice amount
+    // before executing. Under CI load the initial distribute (WindowReferenceGrid)
+    // races with the selection-sync and can leave the selected row holding only the
+    // overpayment remainder, so the footer settles on a partial (e.g. 1.74 for a 27.18
+    // invoice); executing that produces a payment whose AddPaymentActionHandler never
+    // completes. The per-row "Expected Payment" field is NOT a valid signal — it always
+    // equals the outstanding regardless of allocation. A clean deselect→reselect zeroes
+    // the row amount and re-runs the distribution against the settled single selection,
+    // converging on the full amount without the load-time race.
+    const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
+    const readAllocated = async () =>
+      Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
+    const isFullyAllocated = async () => Math.abs((await readAllocated()) - invoiceTotal) < 0.005;
+
+    for (let attempt = 0; attempt < 4 && !(await isFullyAllocated()); attempt++) {
+      await rowCheckbox.click({ force: true }); // deselect → zeroes the row amount
+      await expect(rowCheckbox).not.toBeChecked({ timeout: 10_000 });
+      await page.waitForTimeout(500);
+      await rowCheckbox.click({ force: true }); // reselect → re-distributes the full payment
+      await expect(rowCheckbox).toBeChecked({ timeout: 10_000 });
+      await page.waitForTimeout(800);
+    }
+
+    await expect.poll(readAllocated, { timeout: 15_000 }).toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page

@@ -460,4 +460,39 @@ describe("ERP slug route coverage", () => {
       expect(response.status).toBe(200);
     });
   });
+
+  describe("Session cookie capture", () => {
+    it("captures the ERP JSESSIONID from a mutation response into the session store", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (k: string) => {
+            if (k === "set-cookie") return "JSESSIONID=NEWSESSION123; Path=/etendo; HttpOnly";
+            if (k === "content-type") return "application/json";
+            return null;
+          },
+          has: () => false,
+        },
+        json: async () => ({ ok: true }),
+        text: async () => '{"ok":true}',
+        arrayBuffer: async () => new TextEncoder().encode('{"ok":true}').buffer,
+      });
+
+      const req = createMockRequest(
+        "POST",
+        "https://localhost/api/erp/meta/legacy/utility/UsedByLink.html",
+        {},
+        "Command=JSONCategory"
+      );
+      await POST(req, { params: Promise.resolve({ slug: ["meta", "legacy", "utility", "UsedByLink.html"] }) });
+
+      // The rotating JSESSIONID must be persisted so the next request reuses the same
+      // backend session (keeping SETSESSION state alive for e.g. UsedByLink).
+      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
+    });
+  });
 });

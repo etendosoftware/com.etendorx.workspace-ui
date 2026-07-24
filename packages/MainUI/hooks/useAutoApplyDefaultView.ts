@@ -21,6 +21,7 @@ import { logger } from "@/utils/logger";
 import { parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
 import type { RawSavedViewRecord } from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
 
 const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
@@ -89,6 +90,15 @@ export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }
           logger.warn("[useAutoApplyDefaultView] Default view has no parseable config:", sv.name);
           return;
         }
+
+        // A linked-item navigation may have reconstructed this tab's selection (hard
+        // filter to one record) between mount and this fetch resolving. The default
+        // view is a per-tab preference, not tied to a specific record, so it must not
+        // clobber that reconstructed filter — otherwise the ancestor grid silently
+        // reverts to showing every record instead of the one the user navigated to.
+        const isDirectLink =
+          useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
+        if (isDirectLink) return;
 
         appliedRef.current.add(key);
         onApplyView({

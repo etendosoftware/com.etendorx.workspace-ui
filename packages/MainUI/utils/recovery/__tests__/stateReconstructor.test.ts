@@ -386,7 +386,7 @@ describe("reconstructState", () => {
         windowId: "143",
         tabId: "tab2",
         isImplicitFilterApplied: "true",
-        criteria: [],
+        criteria: [{ fieldName: "id", operator: "equals", value: "child123" }],
         pageSize: "100",
         noActiveFilter: "true",
         startRow: "0",
@@ -561,6 +561,38 @@ describe("reconstructState", () => {
       consoleErrorSpy.mockRestore();
     });
 
+    it("returns session-sync targets root -> leaf with parent record ids", async () => {
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
+
+      mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
+
+      const result = await reconstructState(hierarchy, windowMetadata);
+
+      // Ordered root (level 0) first so the parent session context is established
+      // before the child; each target carries its parent's record id.
+      expect(result.sessionSyncTargets).toEqual([
+        { tab: expect.objectContaining({ id: "tab1" }), recordId: "parent456", parentId: null },
+        { tab: expect.objectContaining({ id: "tab2" }), recordId: "child123", parentId: "parent456" },
+      ]);
+    });
+
+    it("should mark reconstructed tabs as initialized with a direct link (target and parents)", async () => {
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
+
+      mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
+
+      const result = await reconstructState(hierarchy, windowMetadata);
+
+      // Both the target and the ancestor tab must be flagged so the table's
+      // "clear ID filter in grid mode" effect does NOT strip the reconstruction's
+      // id filter — otherwise the parent tabs load their default list and lose the
+      // reconstructed selection (empty parent tabs on nested linked items).
+      expect(result.tabs["tab2"].initializedWithDirectLink).toBe(true);
+      expect(result.tabs["tab1"].initializedWithDirectLink).toBe(true);
+      // The parent tab keeps its id filter targeting the reconstructed record.
+      expect(result.tabs["tab1"].table.filters).toEqual([{ id: "id", value: "parent456" }]);
+    });
+
     it("should create tab states with implicit filter applied", async () => {
       const rootTab = createMockTab("tab1", 0, "RootEntity", false);
       const targetNode = createMockTabNode("tab1", rootTab, 0, { recordId: "root123" });
@@ -642,7 +674,7 @@ describe("reconstructState", () => {
         windowId: "143",
         tabId: "tab2",
         isImplicitFilterApplied: "true",
-        criteria: [],
+        criteria: [{ fieldName: "id", operator: "equals", value: "child123" }],
         pageSize: "100",
         noActiveFilter: "true",
         startRow: "0",

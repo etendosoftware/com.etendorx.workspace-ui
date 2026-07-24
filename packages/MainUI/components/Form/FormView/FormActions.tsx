@@ -35,6 +35,7 @@ interface FormActionsProps {
   onNew: () => void;
   refetch: () => Promise<void>;
   onSave: (options: SaveOptions) => Promise<boolean>;
+  discardChanges: () => void;
   showErrorModal: (message: string) => void;
   mode: FormMode;
   isFocused?: boolean;
@@ -46,6 +47,7 @@ export function FormActions({
   onNew,
   refetch,
   onSave,
+  discardChanges,
   showErrorModal,
   mode,
   isFocused,
@@ -194,12 +196,23 @@ export function FormActions({
     resetFormChanges();
   }, [refetch, resetFormChanges]);
 
-  const handleBack = useCallback(() => {
+  const navigateBack = useCallback(() => {
     if (windowIdentifier) {
       clearTabFormState(windowIdentifier, tab.id);
     }
     resetFormChanges();
   }, [windowIdentifier, clearTabFormState, tab, resetFormChanges]);
+
+  const handleBack = useCallback(() => {
+    if (isDirty) {
+      // Discard pending changes: re-apply the last-loaded record data (restoring
+      // reference-field identifiers) and stay in Form View. This clears the dirty
+      // state, so the next Cancel click will navigate back to the grid.
+      discardChanges();
+      return;
+    }
+    navigateBack();
+  }, [isDirty, discardChanges, navigateBack]);
 
   const handleNew = useCallback(() => {
     onNew();
@@ -216,8 +229,8 @@ export function FormActions({
       const saved = await handleSave({ showModal: false });
       if (!saved) return;
     }
-    handleBack();
-  }, [isDirty, handleSave, handleBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+    navigateBack();
+  }, [isDirty, handleSave, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   useKeyboardShortcuts(
     {

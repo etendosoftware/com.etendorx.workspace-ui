@@ -17,10 +17,14 @@
 
 import { renderHook, act } from "@testing-library/react";
 import { useAutoApplyDefaultView } from "../useAutoApplyDefaultView";
+import { useWindowStore } from "@/stores/windowStore";
 
 jest.mock("@/utils/logger");
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (s: any) => any) => selector({ token: "test-token" }),
+}));
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: { getState: jest.fn(() => ({ windows: {} })) },
 }));
 
 // ---------------------------------------------------------------------------
@@ -197,6 +201,18 @@ describe("useAutoApplyDefaultView", () => {
     await act(async () => {});
 
     expect(onApplyView).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not clobber a linked-item reconstruction's hard filter (initializedWithDirectLink)", async () => {
+    jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord()]));
+    (useWindowStore.getState as jest.Mock).mockReturnValueOnce({
+      windows: { "win-1": { tabs: { "tab-abc": { initializedWithDirectLink: true } } } },
+    });
+    const onApplyView = jest.fn();
+
+    await renderAndWait(onApplyView);
+
+    expect(onApplyView).not.toHaveBeenCalled();
   });
 
   it("restores implicitFilterApplied:false when it was saved as false", async () => {
