@@ -309,14 +309,19 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       .filter({ hasText: fullInvoiceNo })
       .first();
     await targetRow.waitFor({ state: "attached", timeout: 30_000 });
-    await targetRow.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
-    // The click is no longer necessary because the checkbox is auto-checked after filtering to a single row, but keep it here in case that behavior changes in the future.
-    //await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
+    const rowCheckbox = targetRow.locator('input[aria-label="Toggle select row"]');
+    await rowCheckbox.scrollIntoViewIfNeeded();
+    // Explicitly select the row. The invoice is NOT auto-selected here: for a
+    // manually-created Payment In the backend does not pre-flag it (obSelected=false),
+    // and the grid's context auto-select resolves the payment's document number rather
+    // than the invoice's, so findMatchingRecord never matches. Click to select, guarding
+    // against toggling off in case auto-select ever does fire.
+    if (!(await rowCheckbox.isChecked().catch(() => false))) {
+      await rowCheckbox.click({ force: true });
+    }
 
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
-    // Timeout bumped from 15s: the auto-select-on-single-row-filter path (context match +
-    // state update) occasionally lags on the fragile Financial suite under load.
-    await expect(targetRow.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 30_000 });
+    await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
     // Verify Expected Payment is populated
     await expect(page.locator('input[name="Expected Payment"]')).not.toHaveValue("0.00", { timeout: 30_000 });
