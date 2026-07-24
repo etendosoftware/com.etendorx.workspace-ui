@@ -344,30 +344,30 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
-    // The invoice's allocated payment ("Total") must reach the full invoice amount
-    // before executing. Under CI load the initial distribute (WindowReferenceGrid)
-    // races with the selection-sync and can leave the selected row holding only the
-    // overpayment remainder, so the footer settles on a partial (e.g. 1.74 for a 27.18
-    // invoice); executing that produces a payment whose AddPaymentActionHandler never
-    // completes. The per-row "Expected Payment" field is NOT a valid signal — it always
-    // equals the outstanding regardless of allocation. A clean deselect→reselect zeroes
-    // the row amount and re-runs the distribution against the settled single selection,
-    // converging on the full amount without the load-time race.
+    // Assert the invoice was allocated its full outstanding amount before executing.
+    // Add Payment distributes `pool = actual_payment − amount_inv_ords` across the
+    // selected invoices (OB.APRM.AddPayment.doSelectionChanged), where amount_inv_ords
+    // is the sum of amounts on ALL already-selected rows — including residual invoices
+    // left auto-selected off-page by prior payments for this business partner. On a
+    // clean DB amount_inv_ords is 0 → the invoice gets its full outstanding; when the
+    // shared "Customer A" carries leftovers from earlier runs, pool shrinks to the
+    // overpayment and the invoice is under-allocated, producing a payment whose
+    // AddPaymentActionHandler never completes. Off-page selections cannot be cleared
+    // from the UI, so this is a data-isolation problem, not a timing one. Assert the
+    // real allocation (not the static per-row "Expected Payment") so a dirty environment
+    // fails fast with a clear message instead of a 60s Execute timeout.
     const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
     const readAllocated = async () =>
       Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
-    const isFullyAllocated = async () => Math.abs((await readAllocated()) - invoiceTotal) < 0.005;
-
-    for (let attempt = 0; attempt < 4 && !(await isFullyAllocated()); attempt++) {
-      await rowCheckbox.click({ force: true }); // deselect → zeroes the row amount
-      await expect(rowCheckbox).not.toBeChecked({ timeout: 10_000 });
-      await page.waitForTimeout(500);
-      await rowCheckbox.click({ force: true }); // reselect → re-distributes the full payment
-      await expect(rowCheckbox).toBeChecked({ timeout: 10_000 });
-      await page.waitForTimeout(800);
-    }
-
-    await expect.poll(readAllocated, { timeout: 15_000 }).toBeGreaterThanOrEqual(invoiceTotal - 0.005);
+    await expect
+      .poll(readAllocated, {
+        timeout: 15_000,
+        message:
+          "Invoice under-allocated in Add Payment — 'Customer A' has residual selected invoices " +
+          "from prior runs (amount_inv_ords != 0). Environment is not isolated; clean the business " +
+          "partner's draft/awaiting payments before the financial suite.",
+      })
+      .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page
