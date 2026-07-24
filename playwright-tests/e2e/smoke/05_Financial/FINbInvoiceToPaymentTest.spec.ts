@@ -344,25 +344,30 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
-    // Wait for the selection's amount allocation to fully settle before executing.
-    // Selecting the invoice triggers an async callout that allocates the payment across
-    // the invoice; a mere "not 0.00" check is too weak — under CI load the field is
-    // briefly populated with a partial amount (e.g. just the overpayment) while the
-    // real allocation is still in flight, and executing then sends an incomplete
-    // payment whose AddPaymentActionHandler never completes. Poll until Expected
-    // Payment reaches the invoice total so we execute only against a settled allocation.
-    await expect
-      .poll(
-        async () => {
-          const v = await page
-            .locator('input[name="Expected Payment"]')
-            .inputValue()
-            .catch(() => "0");
-          return Number.parseFloat(v.replace(",", ".")) || 0;
-        },
-        { timeout: 30_000 }
-      )
-      .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
+    // The invoice's allocated payment ("Total") must reach the full invoice amount
+    // before executing. Under CI load the initial distribute (WindowReferenceGrid)
+    // races with the selection-sync and can leave the selected row holding only the
+    // overpayment remainder, so the footer settles on a partial (e.g. 1.74 for a 27.18
+    // invoice); executing that produces a payment whose AddPaymentActionHandler never
+    // completes. The per-row "Expected Payment" field is NOT a valid signal — it always
+    // equals the outstanding regardless of allocation. A clean deselect→reselect zeroes
+    // the row amount and re-runs the distribution against the settled single selection,
+    // converging on the full amount without the load-time race.
+    const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
+    const readAllocated = async () =>
+      Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
+    const isFullyAllocated = async () => Math.abs((await readAllocated()) - invoiceTotal) < 0.005;
+
+    for (let attempt = 0; attempt < 4 && !(await isFullyAllocated()); attempt++) {
+      await rowCheckbox.click({ force: true }); // deselect → zeroes the row amount
+      await expect(rowCheckbox).not.toBeChecked({ timeout: 10_000 });
+      await page.waitForTimeout(500);
+      await rowCheckbox.click({ force: true }); // reselect → re-distributes the full payment
+      await expect(rowCheckbox).toBeChecked({ timeout: 10_000 });
+      await page.waitForTimeout(800);
+    }
+
+    await expect.poll(readAllocated, { timeout: 15_000 }).toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page
