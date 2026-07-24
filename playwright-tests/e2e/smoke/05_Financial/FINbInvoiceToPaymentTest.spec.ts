@@ -345,16 +345,16 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
     // Assert the invoice was allocated its full outstanding amount before executing.
-    // The Add Payment on-parameter-change rule (process metadata em_etmeta_payscript_logic)
-    // under CI load collapses the selected invoice's allocation to the overpayment
-    // remainder (e.g. 1.74 for a 27.18 invoice / 28.92 payment) instead of its full
-    // outstanding, producing a payment whose AddPaymentActionHandler never completes.
-    // The grid loads clean (all rows obSelected=false, amount=0), so this is NOT a
-    // residual-selection/data problem — it is a defect in the allocation recompute
-    // (leading hypothesis: it double-counts the selected row's own amount into the
-    // distributable pool). Tracked separately. Assert the real allocation (not the
-    // static per-row "Expected Payment", which always equals the outstanding) so a
-    // regression fails fast with a clear message instead of a 60s Execute timeout.
+    // Root cause (proven by running the real Add Payment payscript against this exact
+    // scenario): the rule is correct and the grid loads clean (all rows obSelected=false,
+    // amount=0) — but under CI load a second onParameterChange feeds the rule
+    // actual_payment = the overpayment remainder (e.g. 1.74) instead of the real payment
+    // (28.92), so distributeAmount allocates min(1.74, 27.18) = 1.74. This exactly
+    // reproduces the observed footer (1.74) and difference (25.44). It is NOT dirty grid
+    // data and NOT the payscript rule itself — it is upstream context-building feeding a
+    // stale/derived actual_payment on recompute. Tracked separately. Assert the real
+    // allocation (not the static per-row "Expected Payment", which always equals the
+    // outstanding) so a regression fails fast instead of a 60s Execute timeout.
     const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
     const readAllocated = async () =>
       Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
@@ -363,8 +363,8 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
         timeout: 15_000,
         message:
           "Invoice under-allocated in Add Payment: allocated Total is the overpayment remainder, " +
-          "not the invoice outstanding. Defect in the Add Payment allocation recompute " +
-          "(em_etmeta_payscript_logic), not this test.",
+          "not the invoice outstanding. The payscript receives actual_payment = the overpayment on " +
+          "recompute (upstream context bug), not a test defect.",
       })
       .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
