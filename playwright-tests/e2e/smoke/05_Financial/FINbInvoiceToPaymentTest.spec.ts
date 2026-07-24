@@ -196,6 +196,18 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // This is the grand total (net + taxes) we need to fully cover with the payment.
     const outstandingInput = page.locator('input[name="outstandingAmount"]').first();
     await outstandingInput.waitFor({ state: "attached", timeout: 10_000 });
+    // Wait until the field holds the real grand total, not the transient "0" it shows
+    // between the completion refresh and the record reloading. Reading it too early
+    // (only guaranteed under CI load) yields invoiceTotal=0 → paymentAmount=1.74, which
+    // then cascades into a wrong Add Details allocation and a stuck payment execution.
+    await expect
+      .poll(
+        async () => Number.parseFloat((await outstandingInput.inputValue().catch(() => "0")).replace(",", ".")) || 0,
+        {
+          timeout: 15_000,
+        }
+      )
+      .toBeGreaterThan(0);
     const invoiceTotalStr = await outstandingInput.inputValue();
     const invoiceTotal = Number.parseFloat(invoiceTotalStr) || 0;
 
@@ -323,8 +335,25 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
-    // Verify Expected Payment is populated
-    await expect(page.locator('input[name="Expected Payment"]')).not.toHaveValue("0.00", { timeout: 30_000 });
+    // Wait for the selection's amount allocation to fully settle before executing.
+    // Selecting the invoice triggers an async callout that allocates the payment across
+    // the invoice; a mere "not 0.00" check is too weak — under CI load the field is
+    // briefly populated with a partial amount (e.g. just the overpayment) while the
+    // real allocation is still in flight, and executing then sends an incomplete
+    // payment whose AddPaymentActionHandler never completes. Poll until Expected
+    // Payment reaches the invoice total so we execute only against a settled allocation.
+    await expect
+      .poll(
+        async () => {
+          const v = await page
+            .locator('input[name="Expected Payment"]')
+            .inputValue()
+            .catch(() => "0");
+          return Number.parseFloat(v.replace(",", ".")) || 0;
+        },
+        { timeout: 30_000 }
+      )
+      .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page
