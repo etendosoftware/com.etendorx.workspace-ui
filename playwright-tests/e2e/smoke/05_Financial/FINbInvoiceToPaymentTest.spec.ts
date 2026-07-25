@@ -17,6 +17,16 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
   test("Creates Sales Invoice, completes it, creates Payment In and links the invoice", async ({ page }) => {
     test.setTimeout(360_000);
+    // ETP-4369 temporary diagnostic: surface the Add Payment payscript ctx values
+    // (logged by genericPayScriptCallout) into the CI stdout so we can pin the 1.74
+    // allocation on the next run. Remove together with the callout-side log.
+    page.on("console", (msg) => {
+      const text = msg.text();
+      if (text.includes("[FINb-diag]")) {
+        // eslint-disable-next-line no-console
+        console.log(text);
+      }
+    });
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
