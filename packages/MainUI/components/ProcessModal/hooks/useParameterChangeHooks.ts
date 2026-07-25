@@ -118,7 +118,25 @@ export function useParameterChangeHooks({
     const firing = new Set<string>();
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
+    // ── ETP-4369 temporary diagnostic (Add Payment shape) ─────────────────────
+    // The DSL engine never runs for Add Payment (confirmed), so the 1.74 allocation
+    // must come from these migrated on_parameter_change hooks. Log which hooks exist
+    // and, on each fire, the actual_payment the form holds. Remove once resolved.
+    {
+      const v0 = form.getValues() as Record<string, unknown>;
+      if ("actual_payment" in v0 || "Actual Payment" in v0) {
+        console.warn(`[FINb-diag] paramHooks fields=[${[...compiledHooks.keys()].join(", ")}]`);
+      }
+    }
+
     const runHook = (name: string, hook: CompiledParameterHook) => {
+      const v = form.getValues() as Record<string, unknown>;
+      if ("actual_payment" in v || "Actual Payment" in v) {
+        console.warn(
+          `[FINb-diag] hook="${name}" actual_payment=${JSON.stringify(v.actual_payment)} ` +
+            `"Actual Payment"=${JSON.stringify(v["Actual Payment"])} inpgrandtotal=${JSON.stringify(v.inpgrandtotal)}`
+        );
+      }
       firing.add(name);
       try {
         const item = createItemProxy(
