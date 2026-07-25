@@ -78,22 +78,24 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
       _preferences: getStoredPreferences(),
     };
 
-    // ── ETP-4369 temporary diagnostic (Add Payment only) ──────────────────────
+    // ── ETP-4369 temporary diagnostic (Add Payment shape) ─────────────────────
     // Prints the exact actual_payment/credit the rule receives on each pass so we
     // can pin whether the CI-only 1.74 allocation comes from a corrupted
-    // actual_payment in the context or a re-entrant credit. Remove once resolved.
-    if (processId === "9BED7889E1034FE68BD85D5D16857320") {
-      // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only loose access to loosely-typed context/grid
-      const c = context as any;
-      // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only loose access
-      const gs = gridSelection as any;
+    // actual_payment in the context or a re-entrant credit. Gated by shape (the
+    // order_invoice grid / actual_payment key) because the registered processId is
+    // not the AD_Process id; also logs processId to reveal it. Remove once resolved.
+    // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only loose access to loosely-typed context/grid
+    const c = context as any;
+    // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only loose access
+    const gs = gridSelection as any;
+    if ("actual_payment" in c || gs?.order_invoice) {
       const inv = (gs?.order_invoice?._selection ?? []).map(
         // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only row shape
         (r: any) => `${r.id}:amt=${r.amount}/out=${r.outstandingAmount}`
       );
       const creditSel = (gs?.credit_to_use?._selection ?? []).length;
       logger.warn(
-        `[FINb-diag] AddPayment pass — actual_payment=${JSON.stringify(c.actual_payment)} ` +
+        `[FINb-diag] pid=${processId} actual_payment=${JSON.stringify(c.actual_payment)} ` +
           `actualPayment=${JSON.stringify(c.actualPayment)} ActualPayment=${JSON.stringify(c.ActualPayment)} ` +
           `"Actual Payment"=${JSON.stringify(c["Actual Payment"])} inpgrandtotal=${JSON.stringify(c.inpgrandtotal)} ` +
           `used_credit=${JSON.stringify(c.used_credit)} credit_sel=${creditSel} order_invoice=[${inv.join(", ")}]`
