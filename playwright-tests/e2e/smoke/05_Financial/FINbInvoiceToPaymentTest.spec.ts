@@ -368,15 +368,34 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
     const readAllocated = async () =>
       Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
-    await expect
-      .poll(readAllocated, {
-        timeout: 15_000,
-        message:
-          "Invoice under-allocated in Add Payment: allocated Total is the overpayment remainder, " +
-          "not the invoice outstanding. The payscript receives actual_payment = the overpayment on " +
-          "recompute (upstream context bug), not a test defect.",
-      })
-      .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
+    // ETP-4369 temporary diagnostic: the app strips console.* in the CI prod build,
+    // so instrumentation pushes to window.__FINB_DIAG__ instead. Read it here (Node
+    // console.log is not stripped) to pin which layer computes the allocation and the
+    // actual_payment it receives. Remove together with the app-side probes.
+    const dumpDiag = async (label: string) => {
+      const diag = (await page.evaluate(
+        () => (window as unknown as { __FINB_DIAG__?: string[] }).__FINB_DIAG__ || []
+      )) as string[];
+      // eslint-disable-next-line no-console
+      console.log(
+        `[FINb-diag] ${label} (${diag.length} entries):\n${diag.map((d, i) => `  ${i + 1}. ${d}`).join("\n")}`
+      );
+    };
+    await dumpDiag("before-guard");
+    try {
+      await expect
+        .poll(readAllocated, {
+          timeout: 15_000,
+          message:
+            "Invoice under-allocated in Add Payment: allocated Total is the overpayment remainder, " +
+            "not the invoice outstanding. The payscript receives actual_payment = the overpayment on " +
+            "recompute (upstream context bug), not a test defect.",
+        })
+        .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
+    } catch (e) {
+      await dumpDiag("on-failure");
+      throw e;
+    }
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page

@@ -108,6 +108,29 @@ export function useParameterChangeHooks({
   }, [parameters, context]);
 
   useEffect(() => {
+    // ── ETP-4369 temporary probe (window-based; console.* is stripped in the CI
+    // prod build). Fires even with 0 compiled hooks, so we learn whether Add Payment
+    // uses this layer at all (vs module scope). Gate-independent (scans amount keys).
+    // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only loose scan
+    const amountish = (vals: Record<string, any>) =>
+      Object.entries(vals)
+        .filter(([k]) => /payment|amount|total|difference|credit/i.test(k))
+        .map(([k, val]) => `${k}=${JSON.stringify(val)}`)
+        .join(" ");
+    const finbDiag = (msg: string) => {
+      try {
+        // biome-ignore lint/suspicious/noExplicitAny: diagnostic-only global
+        const g = globalThis as any;
+        if (!g.__FINB_DIAG__) g.__FINB_DIAG__ = [];
+        g.__FINB_DIAG__.push(msg);
+      } catch {
+        /* never break */
+      }
+    };
+    {
+      const amt = amountish(form.getValues() as Record<string, unknown>);
+      if (amt) finbDiag(`paramHooks-effect size=${compiledHooks.size} | ${amt}`);
+    }
     if (compiledHooks.size === 0) {
       return;
     }
@@ -118,25 +141,15 @@ export function useParameterChangeHooks({
     const firing = new Set<string>();
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    // ── ETP-4369 temporary diagnostic (Add Payment shape) ─────────────────────
-    // The DSL engine never runs for Add Payment (confirmed), so the 1.74 allocation
-    // must come from these migrated on_parameter_change hooks. Log which hooks exist
-    // and, on each fire, the actual_payment the form holds. Remove once resolved.
+    // (diagnostic helpers `amountish` / `finbDiag` defined above, pre-return)
     {
-      const v0 = form.getValues() as Record<string, unknown>;
-      if ("actual_payment" in v0 || "Actual Payment" in v0) {
-        console.warn(`[FINb-diag] paramHooks fields=[${[...compiledHooks.keys()].join(", ")}]`);
-      }
+      const amt = amountish(form.getValues() as Record<string, unknown>);
+      if (amt) finbDiag(`paramHooks n=${compiledHooks.size} fields=[${[...compiledHooks.keys()].join(", ")}] | ${amt}`);
     }
 
     const runHook = (name: string, hook: CompiledParameterHook) => {
-      const v = form.getValues() as Record<string, unknown>;
-      if ("actual_payment" in v || "Actual Payment" in v) {
-        console.warn(
-          `[FINb-diag] hook="${name}" actual_payment=${JSON.stringify(v.actual_payment)} ` +
-            `"Actual Payment"=${JSON.stringify(v["Actual Payment"])} inpgrandtotal=${JSON.stringify(v.inpgrandtotal)}`
-        );
-      }
+      const amt = amountish(form.getValues() as Record<string, unknown>);
+      if (amt) finbDiag(`hook="${name}" | ${amt}`);
       firing.add(name);
       try {
         const item = createItemProxy(
