@@ -297,29 +297,6 @@ export const executeLogic = (rules: PayScriptRules, context: Record<string, any>
   try {
     const util = createUtil(context);
 
-    // ── ETP-4369 temporary diagnostic (window-based; console.* is stripped in the
-    // CI prod build via next.config removeConsole/drop_console). executeLogic is the
-    // SINGLE place compute() runs. Pushes to window.__FINB_DIAG__ (not stripped);
-    // the test reads it. Gated by the rule id. Remove once resolved.
-    if ((rules as { id?: string })?.id === "APRM_ADD_PAYMENT_V1") {
-      try {
-        const gs = (context._gridSelection || {}) as Record<string, { _selection?: any[] }>;
-        const inv = (gs.order_invoice?._selection ?? []).map(
-          (r: any) => `${r.id}:amt=${r.amount}/out=${r.outstandingAmount}`
-        );
-        const g = globalThis as any;
-        if (!g.__FINB_DIAG__) g.__FINB_DIAG__ = [];
-        g.__FINB_DIAG__.push(
-          `engine actual_payment=${JSON.stringify(context.actual_payment)} ` +
-            `"Actual Payment"=${JSON.stringify(context["Actual Payment"])} inpgrandtotal=${JSON.stringify(context.inpgrandtotal)} ` +
-            `used_credit=${JSON.stringify(context.used_credit)} ` +
-            `credit_sel=${(gs.credit_to_use?._selection ?? []).length} order_invoice=[${inv.join(", ")}]`
-        );
-      } catch {
-        /* diagnostic must never break execution */
-      }
-    }
-
     const computed = rules.compute ? rules.compute(context, util) : {};
     const transformations = rules.transform ? rules.transform(context, computed, util) : {};
     const validations = rules.validate ? rules.validate(context, computed, util) : [];

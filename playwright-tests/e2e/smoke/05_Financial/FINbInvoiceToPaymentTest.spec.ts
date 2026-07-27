@@ -17,16 +17,6 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
   test("Creates Sales Invoice, completes it, creates Payment In and links the invoice", async ({ page }) => {
     test.setTimeout(360_000);
-    // ETP-4369 temporary diagnostic: surface the Add Payment payscript ctx values
-    // (logged by genericPayScriptCallout) into the CI stdout so we can pin the 1.74
-    // allocation on the next run. Remove together with the callout-side log.
-    page.on("console", (msg) => {
-      const text = msg.text();
-      if (text.includes("[FINb-diag]")) {
-        // eslint-disable-next-line no-console
-        console.log(text);
-      }
-    });
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
@@ -354,48 +344,16 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // Verify row is selected (row stays cursor-pointer after selection, so the locator still resolves).
     await expect(rowCheckbox).toBeChecked({ timeout: 30_000 });
 
-    // Assert the invoice was allocated its full outstanding amount before executing.
-    // Root cause (proven by running the real Add Payment payscript against this exact
-    // scenario): the rule is correct and the grid loads clean (all rows obSelected=false,
-    // amount=0) — but under CI load a second onParameterChange feeds the rule
-    // actual_payment = the overpayment remainder (e.g. 1.74) instead of the real payment
-    // (28.92), so distributeAmount allocates min(1.74, 27.18) = 1.74. This exactly
-    // reproduces the observed footer (1.74) and difference (25.44). It is NOT dirty grid
-    // data and NOT the payscript rule itself — it is upstream context-building feeding a
-    // stale/derived actual_payment on recompute. Tracked separately. Assert the real
-    // allocation (not the static per-row "Expected Payment", which always equals the
-    // outstanding) so a regression fails fast instead of a 60s Execute timeout.
+    // Wait for the payment allocation to settle to the full invoice amount before
+    // executing. Selecting the invoice triggers an async recompute of the footer
+    // "Amount on Invoices and/or Orders"; executing before it settles sends an
+    // incomplete payment whose AddPaymentActionHandler never completes. Poll the real
+    // allocated total (not the static per-row "Expected Payment", which always equals
+    // the outstanding regardless of allocation).
     const allocatedTotal = page.locator('input[aria-label="Amount on Invoices and/or Orders"]').first();
     const readAllocated = async () =>
       Number.parseFloat((await allocatedTotal.inputValue().catch(() => "0")).replace(",", ".")) || 0;
-    // ETP-4369 temporary diagnostic: the app strips console.* in the CI prod build,
-    // so instrumentation pushes to window.__FINB_DIAG__ instead. Read it here (Node
-    // console.log is not stripped) to pin which layer computes the allocation and the
-    // actual_payment it receives. Remove together with the app-side probes.
-    const dumpDiag = async (label: string) => {
-      const diag = (await page.evaluate(
-        () => (window as unknown as { __FINB_DIAG__?: string[] }).__FINB_DIAG__ || []
-      )) as string[];
-      // eslint-disable-next-line no-console
-      console.log(
-        `[FINb-diag] ${label} (${diag.length} entries):\n${diag.map((d, i) => `  ${i + 1}. ${d}`).join("\n")}`
-      );
-    };
-    await dumpDiag("before-guard");
-    try {
-      await expect
-        .poll(readAllocated, {
-          timeout: 15_000,
-          message:
-            "Invoice under-allocated in Add Payment: allocated Total is the overpayment remainder, " +
-            "not the invoice outstanding. The payscript receives actual_payment = the overpayment on " +
-            "recompute (upstream context bug), not a test defect.",
-        })
-        .toBeGreaterThanOrEqual(invoiceTotal - 0.005);
-    } catch (e) {
-      await dumpDiag("on-failure");
-      throw e;
-    }
+    await expect.poll(readAllocated, { timeout: 15_000 }).toBeGreaterThanOrEqual(invoiceTotal - 0.005);
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
     const actionDropdown = page

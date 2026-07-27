@@ -186,10 +186,6 @@ export function useDatasource({
   // retry uses the current queryParams, not the stale in-flight one.
   const pendingFetchRef = useRef<number | null>(null);
   const fetchDataRef = useRef<((targetPage?: number) => Promise<void>) | null>(null);
-  // Query key of the most recent render, used to decide whether a fetch that was
-  // deferred while another was in flight is actually needed (query changed) or a
-  // redundant same-query duplicate that should be dropped.
-  const latestQueryKeyRef = useRef("");
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -340,11 +336,6 @@ export function useDatasource({
       }
 
       fetchInProgressRef.current = true;
-      // Snapshot the query this fetch is serving, so the deferred-fetch retry in the
-      // finally block can tell a real query change (must retry) from a same-query
-      // duplicate (drop it — retrying reloads identical data and needlessly re-runs
-      // downstream reconcilers, e.g. the Add Payment grid's payscript allocation).
-      const startedQueryKey = latestQueryKeyRef.current;
       const safePageSize = pageSize ?? 1000;
 
       try {
@@ -394,21 +385,11 @@ export function useDatasource({
         setLoading(false);
         fetchInProgressRef.current = false;
         // If a fetch was requested while this one was in flight, run it now with
-        // the latest closure (current queryParams) — but ONLY if the query actually
-        // changed since this fetch started. A same-query deferral is redundant: it
-        // reloads identical data and makes downstream reconcilers run an extra time
-        // (the Add Payment reference grid then re-runs its payscript allocation over
-        // the already-allocated selection, collapsing it to the overpayment remainder).
+        // the latest closure (current queryParams), so the most recent query wins.
         if (pendingFetchRef.current !== null) {
           const nextPage = pendingFetchRef.current;
           pendingFetchRef.current = null;
-          // Retry when the query changed (filters/search/entity) OR a different page
-          // was requested (pagination — queryKey is deliberately page-independent).
-          // Drop only a true duplicate: same query AND same page.
-          const queryChanged = latestQueryKeyRef.current !== startedQueryKey;
-          if (queryChanged || nextPage !== targetPage) {
-            fetchDataRef.current?.(nextPage);
-          }
+          fetchDataRef.current?.(nextPage);
         }
       }
     },
@@ -452,7 +433,6 @@ export function useDatasource({
     const queryKey = `${entity}|${pageSize}|${JSON.stringify(queryParams)}|${JSON.stringify(memoizedTreeOptions)}|${String(isImplicitFilterApplied)}`;
     const queryChanged = queryKey !== prevQueryKeyRef.current;
     prevQueryKeyRef.current = queryKey;
-    latestQueryKeyRef.current = queryKey;
 
     setError(undefined);
 
