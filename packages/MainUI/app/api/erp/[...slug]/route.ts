@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
+import { setErpSessionCookie, getErpCsrfToken } from "../../_utils/sessionStore";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
 import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
 
@@ -338,13 +339,38 @@ function parseFinalMutationResponse(responseText: string): unknown {
 }
 
 /**
+ * Persists the ERP `JSESSIONID` returned by Classic back into the per-token session
+ * store, so the backend HTTP session stays sticky across requests. Without this the
+ * cookie is captured only at login and goes stale when Classic rotates the session
+ * (or the in-memory store is lost), causing every request to get a fresh, empty
+ * session. Session-dependent legacy servlets (e.g. UsedByLink, which reads the current
+ * record from `<windowId>|<keyColumn>` set by a prior FIC/SETSESSION) then fail.
+ */
+function captureErpSessionCookie(userToken: string | null | undefined, response: Response): void {
+  if (!userToken) return;
+  const setCookie = response?.headers?.get?.("set-cookie");
+  if (!setCookie) return;
+  const match = setCookie.match(/JSESSIONID=([^;,\s]+)/i);
+  if (!match) return;
+  try {
+    setErpSessionCookie(userToken, {
+      cookieHeader: `JSESSIONID=${match[1]}`,
+      csrfToken: getErpCsrfToken(userToken),
+    });
+  } catch {
+    // Never let session-store bookkeeping break the proxied request.
+  }
+}
+
+/**
  * Handles mutation requests (non-cached) to the ERP system
  */
 async function handleMutationRequest(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: RequestBody
+  requestBody: RequestBody,
+  userToken?: string
 ): Promise<unknown> {
   const fetchOptions: RequestInit = {
     method,
@@ -360,9 +386,11 @@ async function handleMutationRequest(
   }
 
   let response = await fetch(erpUrl, fetchOptions);
+  captureErpSessionCookie(userToken, response);
 
   if (response.status >= 300 && response.status < 400 && response.headers.has("location")) {
     response = await followRedirects(response, erpUrl, method, headers, requestBody);
+    captureErpSessionCookie(userToken, response);
   }
 
   if (!response.ok) {
@@ -515,9 +543,13 @@ async function fetchErpData({
   requestBody: RequestBody;
   contentType: string;
 }): Promise<unknown> {
-  if (isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
+  // Route every non-GET request through the (non-cached) mutation path. Besides being
+  // correct — POST/PUT/DELETE responses must never be cached — this is the only path
+  // that exposes ERP response headers, letting us capture the rotating JSESSIONID and
+  // keep the backend session sticky (see captureErpSessionCookie).
+  if (method !== "GET" || isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
     const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
-    return handleMutationRequest(erpUrl, method, headers, requestBody);
+    return handleMutationRequest(erpUrl, method, headers, requestBody, userToken);
   }
   const queryParams = method === "GET" ? new URL(request.url).search : "";
   // Cached requests only handle string bodies (not streams)

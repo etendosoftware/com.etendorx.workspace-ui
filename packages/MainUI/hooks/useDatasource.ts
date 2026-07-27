@@ -123,6 +123,15 @@ export type UseDatasourceOptions = {
    * pending fetch and make the initial request payload complete.
    */
   refetchKey?: string;
+  /**
+   * When an `id` column filter is present, the request normally sets
+   * `directNavigation: true` so Classic returns the page positioned on the record
+   * (used to place the grid behind an open form). In grid mode we instead want the
+   * `id` filter to HARD-filter to exactly that record (e.g. reconstructed ancestor
+   * tabs after a linked-item navigation). Pass `false` to disable directNavigation
+   * so the retained `id` criterion filters to a single row. Defaults to `true`.
+   */
+  enableDirectNavigation?: boolean;
 };
 
 export function useDatasource({
@@ -136,6 +145,7 @@ export function useDatasource({
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
   refetchKey,
+  enableDirectNavigation = true,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -167,6 +177,15 @@ export function useDatasource({
   // page 1 directly and guard against the re-run caused by setPage(1).
   const prevQueryKeyRef = useRef("");
   const skipPageResetFetchRef = useRef(false);
+  // When a fetch is requested while another is already in flight (e.g. a default
+  // saved-view's filters land in the store just after the initial unfiltered fetch
+  // started), we remember the requested page here and re-run the fetch once the
+  // in-flight one settles. Without this the guarded-out fetch is silently dropped
+  // and never retried, leaving the grid showing unfiltered records until a manual
+  // refresh. `fetchDataRef` always points at the latest fetchData closure so the
+  // retry uses the current queryParams, not the stale in-flight one.
+  const pendingFetchRef = useRef<number | null>(null);
+  const fetchDataRef = useRef<((targetPage?: number) => Promise<void>) | null>(null);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -202,6 +221,21 @@ export function useDatasource({
     setHasMoreRecords(true);
     dataLoadedRef.current = false;
   }, []);
+
+  // The MRT filter id `"id"` does NOT always mean "the entity's raw primary key
+  // column" — some grids (e.g. WindowReferenceGrid's generic Order/Invoice
+  // reference column) legitimately have a real `Column` whose `id` happens to be
+  // `"id"` but whose actual queryable field (`filterFieldName`) is something else
+  // entirely (e.g. a text reference). For those, createColumnFilterCriteria below
+  // already resolves the filter correctly and must be left alone. Only fall back to
+  // a raw `id` equality (further down) when NO such Column exists — e.g. reconstructed
+  // ancestor tabs from a linked-item navigation, whose primary key is virtually never
+  // a real AD_Field/column, so the lookup below would otherwise silently drop it.
+  const idColumnFilter = useMemo(() => activeColumnFilters.find((f) => f.id === "id"), [activeColumnFilters]);
+  const hasIdColumn = useMemo(
+    () => (columns ?? []).some((col) => col.id === "id" || col.columnName === "id"),
+    [columns]
+  );
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) {
@@ -254,9 +288,18 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
-    const filterById = columnFilterCriteria.find((criteria) => criteria.fieldName === "id");
-    const hasIdFilter = Boolean(filterById);
-    const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
+    // A real Column for "id" means createColumnFilterCriteria above already resolved
+    // this filter correctly (via filterFieldName) — don't also inject a raw equality
+    // on top of it, and don't treat it as an id-navigation filter below.
+    const missingIdColumn = Boolean(idColumnFilter) && !hasIdColumn;
+    if (missingIdColumn) {
+      allCriteria = [...allCriteria, { fieldName: "id", operator: "equals", value: idColumnFilter?.value }];
+    }
+    const hasIdFilter = missingIdColumn;
+    // Only position-navigate when enabled (form mode). In grid mode the retained
+    // `id` criterion (added above) hard-filters to the single record instead.
+    const idParams =
+      hasIdFilter && enableDirectNavigation ? { targetRecordId: idColumnFilter?.value, directNavigation: true } : {};
 
     const finalParams: any = {
       ...stableParams,
@@ -268,14 +311,27 @@ export function useDatasource({
 
     return finalParams;
     // activeColumnFilters is intentionally omitted: it's already captured by
-    // columnFilterCriteria, which is listed above and changes whenever filters do.
+    // columnFilterCriteria and idColumnFilter, both listed above and changing
+    // whenever filters do.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
+  }, [
+    stableParams,
+    searchQuery,
+    columns,
+    columnFilterCriteria,
+    idColumnFilter,
+    hasIdColumn,
+    isImplicitFilterApplied,
+    enableDirectNavigation,
+  ]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
-      // Prevent duplicate fetches
+      // Prevent duplicate fetches. If another fetch is already running, remember
+      // this request so it runs once the in-flight fetch settles (see finally) —
+      // otherwise a query change arriving mid-flight is dropped and never retried.
       if (fetchInProgressRef.current) {
+        pendingFetchRef.current = targetPage;
         return;
       }
 
@@ -328,6 +384,13 @@ export function useDatasource({
       } finally {
         setLoading(false);
         fetchInProgressRef.current = false;
+        // If a fetch was requested while this one was in flight, run it now with
+        // the latest closure (current queryParams), so the most recent query wins.
+        if (pendingFetchRef.current !== null) {
+          const nextPage = pendingFetchRef.current;
+          pendingFetchRef.current = null;
+          fetchDataRef.current?.(nextPage);
+        }
       }
     },
     [
@@ -341,6 +404,10 @@ export function useDatasource({
       setIsImplicitFilterApplied,
     ]
   );
+
+  // Keep a stable pointer to the latest fetchData so the retry in fetchData's
+  // finally block runs against the current queryParams, not a stale closure.
+  fetchDataRef.current = fetchData;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {

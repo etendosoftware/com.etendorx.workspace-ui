@@ -611,6 +611,19 @@ export function FormView({
     [stableReset]
   );
 
+  /**
+   * Discards pending edits by re-applying the last-loaded record data locally
+   * (no server round-trip). Reuses the full-initialization path so the form's
+   * values AND react-hook-form's defaultValues are both reset to the cached
+   * `availableFormData` — which includes the reference-field identifiers and
+   * option entries. This restores the human-readable labels (not raw ids) and
+   * leaves the form non-dirty, so a subsequent Cancel click navigates to the grid.
+   */
+  const discardChanges = useCallback(() => {
+    if (!availableFormData) return;
+    applyFullInitialization(processFormData(availableFormData, tab.fields));
+  }, [availableFormData, tab.fields, applyFullInitialization]);
+
   const hasDataChanged = useCallback((formData: any) => {
     // Prevent resetting if the data hasn't actually changed.
     // Exclude `$_entries` keys (dropdown option lists) from the comparison: they can be
@@ -1198,6 +1211,7 @@ export function FormView({
               onNew={handleNewRecord}
               refetch={refreshRecordAndSession}
               onSave={handleSave}
+              discardChanges={discardChanges}
               showErrorModal={showErrorModal}
               mode={currentMode}
               isFocused={isFocused}
