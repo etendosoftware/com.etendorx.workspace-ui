@@ -20,7 +20,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useWindowStore } from "@/stores/windowStore";
+import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
+import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
@@ -42,6 +44,14 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   const windowId = useCurrentWindowId();
   const triggerRecovery = useWindowStore((s) => s.triggerRecovery);
   const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  // The backend UsedByLink servlet requires the record's `<windowId>|<keyColumn>`
+  // session attribute, which is only populated once form initialization / session
+  // sync completes. On the URL-recovery navigation path (linked-item click) there is
+  // no prior grid-selection SETSESSION, so fetching before this is ready fails with
+  // "Session attribute required". Gate the fetch until both signals settle.
+  const { isFormInitializing } = useFormInitializationContext();
+  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  const ready = !isFormInitializing && !isSessionSyncLoading;
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -122,6 +132,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
       windowId={windowId || ""}
       entityName={entityName}
       recordId={recordId}
+      ready={ready}
       onFetchCategories={handleFetchCategories}
       onFetchItems={handleFetchItems}
       onItemClick={handleItemClick}

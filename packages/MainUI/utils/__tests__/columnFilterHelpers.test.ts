@@ -129,7 +129,7 @@ describe("columnFilterHelpers", () => {
   });
 
   describe("loadTableDirFilterOptions", () => {
-    it("should load TABLEDIR options with datasourceId (uses distinct values approach)", async () => {
+    it("should use the _distinct query on the grid's own entity when entityName is present, matching Classic", async () => {
       const mockColumn = createTableDirColumn({
         id: "organization",
         columnName: "organization",
@@ -147,7 +147,8 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(result).toEqual(mockData);
-      // When column has datasourceId, needsDistinctValues returns true, uses entityName and columnName
+      // entityName takes priority over datasourceId: queries distinct values scoped to the grid's own records,
+      // and isImplicitFilterApplied is always forced to true regardless of what the caller passed in
       expect(mockFetchFilterOptions).toHaveBeenCalledWith({
         datasourceId: "SalesOrder",
         searchQuery: undefined,
@@ -155,13 +156,44 @@ describe("columnFilterHelpers", () => {
         distinctField: "organization",
         tabId: "tab123",
         offset: 0,
-        isImplicitFilterApplied: undefined,
+        isImplicitFilterApplied: true,
         extraParams: undefined,
       });
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
 
-    it("should load TABLEDIR options with referencedEntity (uses distinct values approach)", async () => {
+    it("should fall back to the referenced datasource when there is no entityName but datasourceId is present", async () => {
+      const mockColumn = createTableDirColumn({
+        id: "organization",
+        columnName: "organization",
+        datasourceId: "Organization",
+      });
+      const mockData = [{ id: "org1", value: "org1", label: "Organization 1" }];
+      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
+      const mockSetFilterOptions = createMockSetFilterOptions();
+
+      const result = await loadTableDirFilterOptions({
+        column: mockColumn,
+        columnId: "organization",
+        tabId: "tab123",
+        entityName: undefined,
+        fetchFilterOptions: mockFetchFilterOptions,
+        setFilterOptions: mockSetFilterOptions,
+      });
+
+      expect(result).toEqual(mockData);
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith({
+        datasourceId: "Organization",
+        selectorDefinitionId: undefined,
+        searchQuery: undefined,
+        limit: 20,
+        offset: 0,
+        isImplicitFilterApplied: undefined,
+        extraParams: undefined,
+      });
+    });
+
+    it("should fall back to referencedEntity when there is no entityName and no datasourceId", async () => {
       const mockColumn = createTableDirColumn({
         id: "businessPartner",
         columnName: "businessPartner",
@@ -170,29 +202,53 @@ describe("columnFilterHelpers", () => {
         selectorDefinitionId: "selector123",
         datasourceId: undefined,
       });
-      const mockData = [
-        { id: "bp1", value: "bp1", label: "Partner 1" },
-        { id: "bp2", value: "bp2", label: "Partner 2" },
-      ];
+      const mockData = [{ id: "bp1", value: "bp1", label: "Partner 1" }];
+      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
+      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      const { result, mockFetchFilterOptions } = await runLoadTableDirTest({
+      const result = await loadTableDirFilterOptions({
         column: mockColumn,
         columnId: "businessPartner",
-        mockData,
+        tabId: "tab123",
+        entityName: undefined,
+        fetchFilterOptions: mockFetchFilterOptions,
+        setFilterOptions: mockSetFilterOptions,
       });
 
       expect(result).toEqual(mockData);
-      // When column has referencedEntity, needsDistinctValues returns true, uses entityName and columnName
       expect(mockFetchFilterOptions).toHaveBeenCalledWith({
-        datasourceId: "SalesOrder",
+        datasourceId: "BusinessPartner",
+        selectorDefinitionId: "selector123",
         searchQuery: undefined,
         limit: 20,
-        distinctField: "businessPartner",
-        tabId: "tab123",
         offset: 0,
         isImplicitFilterApplied: undefined,
         extraParams: undefined,
       });
+    });
+
+    it("should return no options without fetching when there is no entityName, datasourceId, or referencedEntity", async () => {
+      const mockColumn = createTableDirColumn({
+        id: "characteristic",
+        columnName: "characteristic",
+        datasourceId: undefined,
+        referencedEntity: undefined,
+      });
+      const mockFetchFilterOptions = createMockFetchFilterOptions([]);
+      const mockSetFilterOptions = createMockSetFilterOptions();
+
+      const result = await loadTableDirFilterOptions({
+        column: mockColumn,
+        columnId: "characteristic",
+        searchQuery: undefined,
+        tabId: "tab123",
+        entityName: undefined,
+        fetchFilterOptions: mockFetchFilterOptions,
+        setFilterOptions: mockSetFilterOptions,
+      });
+
+      expect(result).toEqual([]);
+      expect(mockFetchFilterOptions).not.toHaveBeenCalled();
     });
 
     it("should handle pagination with offset and pageSize", async () => {
@@ -210,7 +266,7 @@ describe("columnFilterHelpers", () => {
         pageSize: 10,
       });
 
-      // Column has datasourceId, so uses distinct values approach
+      // entityName is present, so it queries distinct values on the grid's own entity
       expect(mockFetchFilterOptions).toHaveBeenCalledWith({
         datasourceId: "SalesOrder",
         searchQuery: undefined,
@@ -218,7 +274,7 @@ describe("columnFilterHelpers", () => {
         distinctField: "product",
         tabId: "tab123",
         offset: 20,
-        isImplicitFilterApplied: undefined,
+        isImplicitFilterApplied: true,
         extraParams: undefined,
       });
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);

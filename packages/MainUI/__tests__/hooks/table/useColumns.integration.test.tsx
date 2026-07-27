@@ -15,34 +15,40 @@
  *************************************************************************
  */
 
-import { renderHook } from "@testing-library/react";
+import type React from "react";
+import { render, renderHook, screen } from "@testing-library/react";
 import { useColumns } from "@/hooks/table/useColumns";
 import type { Tab, Field, GridProps } from "@workspaceui/api-client/src/api/types";
 
-// Mock the dependencies
-jest.mock("@/utils/tableColumns", () => ({
-  parseColumns: jest.fn((fields) =>
-    fields.map((field: Field) => {
-      const column: any = {
-        id: field.name,
-        header: field.name,
-        accessorFn: (row: Record<string, unknown>) => row[field.name],
-        columnName: field.name,
-        name: field.name,
-        _identifier: field.name,
-        fieldId: field.id,
-        column: field.column || {},
-      };
+// Mock the dependencies. Keep the real `renderTextCell` so the text-reference
+// Cell renders exactly like production (truncation + tooltip).
+jest.mock("@/utils/tableColumns", () => {
+  const actual = jest.requireActual("@/utils/tableColumns");
+  return {
+    renderTextCell: actual.renderTextCell,
+    parseColumns: jest.fn((fields) =>
+      fields.map((field: Field) => {
+        const column: any = {
+          id: field.name,
+          header: field.name,
+          accessorFn: (row: Record<string, unknown>) => row[field.name],
+          columnName: field.name,
+          name: field.name,
+          _identifier: field.name,
+          fieldId: field.id,
+          column: field.column || {},
+        };
 
-      if (field.etmetaCustomjs) {
-        // Simular la creación de Cell a partir de custom JS
-        column.Cell = new Function("record", `return (${field.etmetaCustomjs})(record)`);
-      }
+        if (field.etmetaCustomjs) {
+          // Simular la creación de Cell a partir de custom JS
+          column.Cell = new Function("record", `return (${field.etmetaCustomjs})(record)`);
+        }
 
-      return column;
-    })
-  ),
-}));
+        return column;
+      })
+    ),
+  };
+});
 
 jest.mock("@workspaceui/api-client/src/utils/metadata", () => ({
   isEntityReference: jest.fn(() => false),
@@ -231,5 +237,54 @@ describe("useColumns integration with custom JS", () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].name).toBe("normalField");
+  });
+
+  // Regression: text/memo/rich-text columns (reference 14/34/richtext) rendered empty
+  // because their Cell read only from `cell.getValue()`. In production the Cell is invoked
+  // as `originalCell({ renderedCellValue, row, table })` (Table/index.tsx DataColumnCell),
+  // i.e. WITHOUT `cell`, so the value must come from `renderedCellValue`.
+  describe("text reference columns", () => {
+    const TEXT_LONG_REFERENCE_ID = "14";
+
+    const buildTextTab = (): Tab => ({
+      ...mockTab,
+      fields: {
+        title: {
+          ...mockTab.fields.normalField,
+          name: "title",
+          hqlName: "title",
+          inputName: "title",
+          columnName: "title",
+          id: "text-1",
+          column: { reference: TEXT_LONG_REFERENCE_ID } as unknown as Field["column"],
+        },
+      },
+    });
+
+    // Invokes a column Cell the same way DataColumnCell does: no `cell`, only `renderedCellValue`.
+    const renderCellWithoutCell = (cell: (props: unknown) => React.ReactNode, renderedCellValue: unknown) => {
+      const cellNode = cell({ renderedCellValue, row: { original: {} }, table: {} });
+      return render(<div>{cellNode}</div>);
+    };
+
+    it("renders the value from renderedCellValue when cell is not provided", () => {
+      const { result } = renderHook(() => useColumns(buildTextTab()));
+      const column = result.current.find((col) => col.name === "title");
+
+      expect(column?.Cell).toBeDefined();
+      renderCellWithoutCell(column?.Cell as (props: unknown) => React.ReactNode, "Hola mundo");
+
+      expect(screen.getByText("Hola mundo")).toBeInTheDocument();
+    });
+
+    it("renders empty for a null/empty text value", () => {
+      const { result } = renderHook(() => useColumns(buildTextTab()));
+      const column = result.current.find((col) => col.name === "title");
+
+      const { container } = renderCellWithoutCell(column?.Cell as (props: unknown) => React.ReactNode, "");
+
+      expect(container).toHaveTextContent("");
+      expect(screen.queryByText("Hola mundo")).not.toBeInTheDocument();
+    });
   });
 });

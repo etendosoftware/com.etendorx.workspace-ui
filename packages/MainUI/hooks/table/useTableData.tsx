@@ -606,6 +606,10 @@ export const useTableData = ({
     activeColumnFilters: tableColumnFilters,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     setIsImplicitFilterApplied,
+    // Position-navigate only while a form is open (grid behind the form). In grid
+    // mode an `id` filter (e.g. reconstructed ancestor tabs from a linked-item nav)
+    // must hard-filter to the single record, matching Classic.
+    enableDirectNavigation: tabFormState?.mode === "form",
   });
 
   // Apply client-side search filter in tree mode (keeps matches + ancestor chain)
