@@ -273,6 +273,23 @@ describe("columnFilterHelpers", () => {
       expect(mockFetchFilterOptions).not.toHaveBeenCalled();
     });
 
+    it("should return no options without fetching when the distinct path has entityName but no columnName", async () => {
+      const mockColumn = createTableDirColumn({ id: "noCol", columnName: undefined });
+      const mockFetchFilterOptions = createMockFetchFilterOptions([]);
+      const mockSetFilterOptions = createMockSetFilterOptions();
+
+      const result = await loadTableDirFilterOptions({
+        column: mockColumn,
+        columnId: "noCol",
+        ...COMMON_PARAMS,
+        fetchFilterOptions: mockFetchFilterOptions,
+        setFilterOptions: mockSetFilterOptions,
+      });
+
+      expect(result).toEqual([]);
+      expect(mockFetchFilterOptions).not.toHaveBeenCalled();
+    });
+
     it("should handle pagination with offset and pageSize", async () => {
       const mockColumn = createTableDirColumn();
       const mockData = [

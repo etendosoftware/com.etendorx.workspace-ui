@@ -23,14 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import {
-  type DatasourceOptions,
-  type EntityData,
-  type Column,
-  UIPattern,
-  WindowType,
-} from "@workspaceui/api-client/src/api/types";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { type DatasourceOptions, type EntityData, type Column, UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -48,7 +41,12 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
-import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
+import {
+  mapSummariesToBackend,
+  getSummaryCriteria,
+  getDefaultImplicitFilter,
+  resolveImplicitFilterToggle,
+} from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
@@ -196,17 +194,7 @@ export const useTableData = ({
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
-  // Mirrors Classic's OBViewGridComponent.isHasFilterClause(): the implicit filter defaults ON
-  // when the tab has an HQL filter clause OR when it is a root tab of a transactional ("T")
-  // window — those apply a default recent/unprocessed-records filter even with no clause.
-  // The SQL/HQL *where* clause is intentionally NOT a trigger: Classic always applies it
-  // server-side regardless of the funnel, so it must not drive the toggle's default (ETP-4381).
-  const initialIsFilterApplied = useMemo(() => {
-    const hasFilterClause = (tab.hqlfilterclause?.length ?? 0) > 0;
-    const isTransactionalRootTab =
-      tab.tabLevel === 0 && Metadata.getCachedWindow(tab.window)?.windowType === WindowType.T;
-    return hasFilterClause || isTransactionalRootTab;
-  }, [tab.hqlfilterclause, tab.tabLevel, tab.window]);
+  const initialIsFilterApplied = useMemo(() => getDefaultImplicitFilter(tab), [tab]);
 
   // Column filters
   const {
@@ -967,12 +955,27 @@ export const useTableData = ({
     [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
   );
 
-  // Symmetric toggle: the funnel must be able to turn the implicit filter back ON, not only OFF.
-  // Uses the effective value (state ?? metadata default) so the first click from the seeded
-  // default flips correctly (ETP-4381).
+  // Funnel behavior (ETP-4381):
+  //  - Direct-link view (an "id" filter is pinning a single record): clear it to return to the
+  //    full, implicit-filtered list — same affordance as before.
+  //  - Otherwise: symmetric toggle of the implicit filter using the effective value
+  //    (state ?? metadata default), so it can be turned back ON, not only OFF. Keeping the
+  //    button as a real toggle gives the user a way to restore consistency from the UI.
   const handleToggleImplicitFilters = useCallback(() => {
-    setIsImplicitFilterApplied(!(isImplicitFilterApplied ?? initialIsFilterApplied));
-  }, [isImplicitFilterApplied, initialIsFilterApplied, setIsImplicitFilterApplied]);
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const action = resolveImplicitFilterToggle({ hasIdFilter, isImplicitFilterApplied, initialIsFilterApplied });
+    if (action.type === "clearColumnFilters") {
+      handleMRTColumnFiltersChange([]);
+    } else {
+      setIsImplicitFilterApplied(action.value);
+    }
+  }, [
+    tableColumnFilters,
+    isImplicitFilterApplied,
+    initialIsFilterApplied,
+    setIsImplicitFilterApplied,
+    handleMRTColumnFiltersChange,
+  ]);
 
   const hasInitializedDirectLink = useRef(false);
 
@@ -1094,12 +1097,17 @@ export const useTableData = ({
     prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
   }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
-  /** Sync implicit filter state with toolbar context */
+  /**
+   * Sync implicit filter state with toolbar context (drives the funnel's pressed/active visual).
+   * Uses the same effective value as the datasource (state ?? metadata default) so the button
+   * never disagrees with what is actually being filtered; `|| hasIdFilter` only adds the
+   * "restricted to a linked record" indicator and is NOT persisted to saved views (ETP-4381).
+   */
   useEffect(() => {
     const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
-    const isFiltered = (isImplicitFilterApplied ?? false) || hasIdFilter;
+    const isFiltered = (isImplicitFilterApplied ?? initialIsFilterApplied) || hasIdFilter;
     setToolbarFilterApplied(isFiltered);
-  }, [isImplicitFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
+  }, [isImplicitFilterApplied, initialIsFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {
