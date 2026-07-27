@@ -23,7 +23,14 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import { type DatasourceOptions, type EntityData, type Column, UIPattern } from "@workspaceui/api-client/src/api/types";
+import {
+  type DatasourceOptions,
+  type EntityData,
+  type Column,
+  UIPattern,
+  WindowType,
+} from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -189,9 +196,17 @@ export const useTableData = ({
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
+  // Mirrors Classic's OBViewGridComponent.isHasFilterClause(): the implicit filter defaults ON
+  // when the tab has an HQL filter clause OR when it is a root tab of a transactional ("T")
+  // window — those apply a default recent/unprocessed-records filter even with no clause.
+  // The SQL/HQL *where* clause is intentionally NOT a trigger: Classic always applies it
+  // server-side regardless of the funnel, so it must not drive the toggle's default (ETP-4381).
   const initialIsFilterApplied = useMemo(() => {
-    return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
-  }, [tab.hqlfilterclause, tab.sQLWhereClause]);
+    const hasFilterClause = (tab.hqlfilterclause?.length ?? 0) > 0;
+    const isTransactionalRootTab =
+      tab.tabLevel === 0 && Metadata.getCachedWindow(tab.window)?.windowType === WindowType.T;
+    return hasFilterClause || isTransactionalRootTab;
+  }, [tab.hqlfilterclause, tab.tabLevel, tab.window]);
 
   // Column filters
   const {
@@ -284,7 +299,7 @@ export const useTableData = ({
           entityName: tab.entityName,
           fetchFilterOptions,
           setFilterOptions,
-          isImplicitFilterApplied,
+          isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
         });
       }
 
@@ -295,7 +310,16 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity, isImplicitFilterApplied]
+    [
+      rawColumns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadFilterOptions,
+      tab.id,
+      treeEntity,
+      isImplicitFilterApplied,
+      initialIsFilterApplied,
+    ]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -328,7 +352,7 @@ export const useTableData = ({
         setFilterOptions,
         offset,
         pageSize,
-        isImplicitFilterApplied,
+        isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       });
     },
     [
@@ -340,6 +364,7 @@ export const useTableData = ({
       treeEntity,
       advancedColumnFilters,
       isImplicitFilterApplied,
+      initialIsFilterApplied,
     ]
   );
 
@@ -942,13 +967,12 @@ export const useTableData = ({
     [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
   );
 
+  // Symmetric toggle: the funnel must be able to turn the implicit filter back ON, not only OFF.
+  // Uses the effective value (state ?? metadata default) so the first click from the seeded
+  // default flips correctly (ETP-4381).
   const handleToggleImplicitFilters = useCallback(() => {
-    if (!isImplicitFilterApplied) {
-      handleMRTColumnFiltersChange([]);
-      return;
-    }
-    setIsImplicitFilterApplied(false);
-  }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
+    setIsImplicitFilterApplied(!(isImplicitFilterApplied ?? initialIsFilterApplied));
+  }, [isImplicitFilterApplied, initialIsFilterApplied, setIsImplicitFilterApplied]);
 
   const hasInitializedDirectLink = useRef(false);
 

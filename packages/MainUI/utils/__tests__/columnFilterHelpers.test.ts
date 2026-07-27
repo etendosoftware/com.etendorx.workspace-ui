@@ -69,8 +69,9 @@ const runLoadTableDirTest = async (params: {
   offset?: number;
   pageSize?: number;
   searchQuery?: string;
+  isImplicitFilterApplied?: boolean;
 }) => {
-  const { column, columnId, mockData, offset = 0, pageSize = 20, searchQuery } = params;
+  const { column, columnId, mockData, offset = 0, pageSize = 20, searchQuery, isImplicitFilterApplied } = params;
   const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
   const mockSetFilterOptions = createMockSetFilterOptions();
 
@@ -83,6 +84,7 @@ const runLoadTableDirTest = async (params: {
     setFilterOptions: mockSetFilterOptions,
     offset,
     pageSize,
+    isImplicitFilterApplied,
   });
 
   return { result, mockFetchFilterOptions, mockSetFilterOptions };
@@ -144,11 +146,12 @@ describe("columnFilterHelpers", () => {
         column: mockColumn,
         columnId: "organization",
         mockData,
+        isImplicitFilterApplied: true,
       });
 
       expect(result).toEqual(mockData);
       // entityName takes priority over datasourceId: queries distinct values scoped to the grid's own records,
-      // and isImplicitFilterApplied is always forced to true regardless of what the caller passed in
+      // forwarding the caller's implicit-filter flag (the grid's funnel state) — ETP-4381
       expect(mockFetchFilterOptions).toHaveBeenCalledWith({
         datasourceId: "SalesOrder",
         searchQuery: undefined,
@@ -160,6 +163,25 @@ describe("columnFilterHelpers", () => {
         extraParams: undefined,
       });
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
+    });
+
+    it("should forward isImplicitFilterApplied=false to the _distinct query when the grid funnel is off (ETP-4381)", async () => {
+      const mockColumn = createTableDirColumn({
+        id: "organization",
+        columnName: "organization",
+        datasourceId: "Organization",
+      });
+      const mockData = [{ id: "org1", value: "org1", label: "Organization 1" }];
+
+      const { mockFetchFilterOptions } = await runLoadTableDirTest({
+        column: mockColumn,
+        columnId: "organization",
+        mockData,
+        isImplicitFilterApplied: false,
+      });
+
+      // The dropdown must NOT force the implicit filter when the user turned it off on the grid.
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith(expect.objectContaining({ isImplicitFilterApplied: false }));
     });
 
     it("should fall back to the referenced datasource when there is no entityName but datasourceId is present", async () => {
@@ -264,6 +286,7 @@ describe("columnFilterHelpers", () => {
         mockData,
         offset: 20,
         pageSize: 10,
+        isImplicitFilterApplied: true,
       });
 
       // entityName is present, so it queries distinct values on the grid's own entity

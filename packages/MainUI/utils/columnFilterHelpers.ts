@@ -72,6 +72,7 @@ interface FetchViaDistinctParams {
   pageSize: number;
   offset: number;
   fetchFilterOptions: FetchFilterOptionsFunction;
+  isImplicitFilterApplied?: boolean;
   extraParams?: Record<string, unknown>;
 }
 
@@ -112,9 +113,10 @@ const fetchViaReferencedDatasource = ({
  * `_distinct` query on the grid's own entity, scoped to the tab's context, returning only
  * the values of this column that actually occur among the grid's records (e.g. only the
  * 2 "leadStatus" values present among Leads, not the full "ETCRM_LeadStatus" catalog).
- * Classic always applies the tab's implicit filter (org/security/active-record scoping)
- * for this kind of pick-list query, so `isImplicitFilterApplied` is fixed to `true` here
- * regardless of the grid's own (unrelated) implicit-filter toggle state.
+ * The distinct query honors the grid's own implicit-filter toggle (`isImplicitFilterApplied`):
+ * when the user turns the funnel off on the grid, the column filter dropdown must show values
+ * from the now-unfiltered record set too, otherwise there is no way to clear the implicit
+ * filter from the per-column requests (ETP-4381).
  * Classic backend expects HQL property names (e.g. "businessPartner"), not DB column names.
  * filterFieldName is set from field._key (HQL property name) in WindowReferenceGrid rawColumns.
  */
@@ -126,6 +128,7 @@ const fetchViaDistinct = ({
   pageSize,
   offset,
   fetchFilterOptions,
+  isImplicitFilterApplied,
   extraParams,
 }: FetchViaDistinctParams): Promise<FilterOption[]> => {
   if (!entityName || !column.columnName) return Promise.resolve([]);
@@ -139,7 +142,7 @@ const fetchViaDistinct = ({
     distinctField,
     tabId,
     offset,
-    isImplicitFilterApplied: true,
+    isImplicitFilterApplied,
     extraParams,
   });
 };
@@ -170,6 +173,7 @@ export const loadTableDirFilterOptions = async ({
           pageSize,
           offset,
           fetchFilterOptions,
+          isImplicitFilterApplied,
           extraParams,
         })
       : await fetchViaReferencedDatasource({
