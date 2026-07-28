@@ -24,7 +24,7 @@ export const transformColumnsWithCustomJs = (originalColumns: Column[]): Column[
     if (column.customJs?.trim()) {
       return transformColumnWithCustomJs(column);
     }
-
+    //
     return column;
   });
 };
