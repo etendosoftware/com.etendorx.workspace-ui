@@ -21,14 +21,16 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
 jest.mock("@/utils", () => ({
+  // Must return the real FieldType enum values (lowercase) so accessorFn's
+  // `reference === FieldType.BOOLEAN/LIST` branches are actually exercised.
   getFieldReference: jest.fn((ref: string) => {
     const refMap: Record<string, string> = {
-      "20": "BOOLEAN",
-      "17": "LIST",
-      "19": "TABLEDIR",
-      "10": "STRING",
+      "20": "boolean",
+      "17": "list",
+      "19": "tabledir",
+      "10": "text",
     };
-    return refMap[ref] || "STRING";
+    return refMap[ref] || "text";
   }),
 }));
 
@@ -340,6 +342,78 @@ describe("tableColumns", () => {
 
         const testData = { field_column: "Column Value" };
         expect(result[0].accessorFn?.(testData)).toBe("Column Value");
+      });
+
+      // These invoke accessorFn to exercise the render helpers; we assert on the returned
+      // React element's props (no DOM render needed) to avoid coupling to the Tag internals.
+      const tagProps = (node: unknown) => (node as React.ReactElement<{ label?: string; tagColor?: string }>).props;
+
+      it("returns a Yes/No tag for boolean fields", () => {
+        const fields = createFields([{ name: "active", hqlName: "active", column: { reference: "20" } }]);
+        const result = parseColumns(fields);
+
+        expect(tagProps(result[0].accessorFn?.({ active: true })).label).toBe("Yes");
+        expect(tagProps(result[0].accessorFn?.({ active: false })).label).toBe("No");
+      });
+
+      it("returns the refList label for list fields", () => {
+        const fields = createFields([
+          {
+            name: "status",
+            hqlName: "status",
+            column: { reference: "17" },
+            refList: [{ value: "A", label: "Active" }],
+          },
+        ]);
+        const result = parseColumns(fields);
+
+        expect(tagProps(result[0].accessorFn?.({ status: "A" })).label).toBe("Active");
+      });
+
+      it("returns empty string for a list value with no matching refList entry", () => {
+        const fields = createFields([
+          {
+            name: "status",
+            hqlName: "status",
+            column: { reference: "17" },
+            refList: [{ value: "A", label: "Active" }],
+          },
+        ]);
+        const result = parseColumns(fields);
+
+        expect(result[0].accessorFn?.({ status: "Z" })).toBe("");
+      });
+
+      it("falls back to the identifier when a list value is null", () => {
+        const fields = createFields([{ name: "status", hqlName: "status", column: { reference: "17" }, refList: [] }]);
+        const result = parseColumns(fields);
+
+        expect(result[0].accessorFn?.({ status: null, status$_identifier: "Fallback" })).toBe("Fallback");
+      });
+
+      it("returns a colored tag for FK fields with a valid color field", () => {
+        const fields = createFields([
+          {
+            name: "partner",
+            hqlName: "partner",
+            column: { reference: "19" },
+            colorFieldName: "myColor",
+          } as Partial<Field>,
+        ]);
+        const result = parseColumns(fields);
+
+        const props = tagProps(result[0].accessorFn?.({ partner$_identifier: "Acme", partner$myColor: "#ff0000" }));
+        expect(props.label).toBe("Acme");
+        expect(props.tagColor).toBe("#ff0000");
+      });
+
+      it("auto-detects a $color field when colorFieldName is absent", () => {
+        const fields = createFields([{ name: "partner", hqlName: "partner", column: { reference: "19" } }]);
+        const result = parseColumns(fields);
+
+        const props = tagProps(result[0].accessorFn?.({ partner$_identifier: "Beta", partner$color: "not-a-color" }));
+        expect(props.label).toBe("Beta");
+        expect(props.tagColor).toBeUndefined();
       });
     });
 

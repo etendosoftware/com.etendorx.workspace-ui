@@ -36,6 +36,8 @@ export interface SaveViewMenuProps {
   currentSorting: MRT_SortingState;
   currentOrder: string[];
   isImplicitFilterApplied: boolean;
+  /** Metadata default implicit-filter state, used when resetting to the standard view. */
+  defaultImplicitFilterApplied: boolean;
   onApplyView: (state: {
     filters: MRT_ColumnFiltersState;
     visibility: MRT_VisibilityState;
@@ -54,6 +56,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentSorting,
   currentOrder,
   isImplicitFilterApplied,
+  defaultImplicitFilterApplied,
   onApplyView,
 }) => {
   const { t } = useTranslation();
@@ -126,7 +129,17 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     } catch {
       setOperationError(t("savedViews.error"));
     }
-  }, [newViewName, tabId, currentFilters, currentVisibility, currentSorting, currentOrder, saveView, t]);
+  }, [
+    newViewName,
+    tabId,
+    currentFilters,
+    currentVisibility,
+    currentSorting,
+    currentOrder,
+    isImplicitFilterApplied,
+    saveView,
+    t,
+  ]);
 
   const handleSaveCancel = useCallback(() => {
     setShowSaveInput(false);
@@ -154,9 +167,15 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       setOperationError(t("savedViews.setDefaultError"));
       return;
     }
-    onApplyView({ filters: [], visibility: {}, sorting: [], order: [], implicitFilterApplied: true });
+    onApplyView({
+      filters: [],
+      visibility: {},
+      sorting: [],
+      order: [],
+      implicitFilterApplied: defaultImplicitFilterApplied,
+    });
     onClose();
-  }, [unsetDefaultView, tabId, onApplyView, onClose, t]);
+  }, [unsetDefaultView, tabId, onApplyView, onClose, t, defaultImplicitFilterApplied]);
 
   const handleApplyView = useCallback(
     (view: ParsedSavedView) => {
