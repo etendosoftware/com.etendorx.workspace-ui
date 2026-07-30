@@ -49,6 +49,20 @@ describe("Notes API", () => {
 
       await expect(fetchNotes({ tableId: "100", recordId: "200" })).rejects.toThrow("Failed to fetch notes: 500");
     });
+
+    it("should return an empty list when the servlet sends no data", async () => {
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: true } as any);
+
+      await expect(fetchNotes({ tableId: "100", recordId: "200" })).resolves.toEqual([]);
+    });
+
+    it("should encode the table and record ids", async () => {
+      const spyRequest = jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: true, data: [] } as any);
+
+      await fetchNotes({ tableId: "table/1", recordId: "record 2" });
+
+      expect(spyRequest).toHaveBeenCalledWith("/notes?table=table%2F1&record=record%202", { method: "GET" });
+    });
   });
 
   describe("createNote", () => {
@@ -72,6 +86,26 @@ describe("Notes API", () => {
         expect.any(Object)
       );
       expect(result).toEqual(mockNote);
+    });
+
+    it("should propagate the error reported by the servlet", async () => {
+      jest.spyOn(Metadata.client, "post").mockResolvedValue({
+        ok: false,
+        status: 403,
+        data: { error: "Insufficient permissions to access record: 200" },
+      } as any);
+
+      await expect(createNote({ tableId: "100", recordId: "200", content: "New note" })).rejects.toThrow(
+        "Insufficient permissions to access record: 200"
+      );
+    });
+
+    it("should fall back to the status code when the servlet sends no error", async () => {
+      jest.spyOn(Metadata.client, "post").mockResolvedValue({ ok: false, status: 400 } as any);
+
+      await expect(createNote({ tableId: "100", recordId: "200", content: "New note" })).rejects.toThrow(
+        "Failed to create note: 400"
+      );
     });
   });
 
