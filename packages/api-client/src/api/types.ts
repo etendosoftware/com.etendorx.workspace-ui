@@ -508,6 +508,10 @@ export interface Tab {
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
   auxiliaryInputs?: AuxiliaryInput[];
+  /** AD_Tab.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
+  /** AD_Tab column position — used to order tabs the same way Classic's Help view does. */
+  sequenceNumber?: number;
 }
 
 export interface WindowMetadata {
@@ -518,6 +522,8 @@ export interface WindowMetadata {
   tabs: Tab[];
   window$_identifier: string;
   windowType?: string;
+  /** AD_Window.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
 }
 
 export interface RecordPayload extends Record<string, string> {
