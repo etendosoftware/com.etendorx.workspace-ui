@@ -36,6 +36,7 @@ import CopilotPopupCustom from "./Copilot/CopilotPopup";
 import RadioGridCustom from "./RadioGrid";
 import AboutButtonComp from "./About/AboutButton";
 import AboutModalComp from "./About/AboutModal";
+import HelpButtonComp from "./Help/HelpButton";
 import LinkedItemsCustom from "./LinkedItems";
 import { RecordCounterBar, RecordCounter, SelectionCounter } from "./Table/RecordCounters";
 
@@ -60,6 +61,7 @@ const CopilotPopup = CopilotPopupCustom;
 const RadioGrid = RadioGridCustom;
 const AboutButton = AboutButtonComp;
 const AboutModal = AboutModalComp;
+const HelpButton = HelpButtonComp;
 const LinkedItems = LinkedItemsCustom;
 
 export {
@@ -84,6 +86,7 @@ export {
   RadioGrid,
   AboutButton,
   AboutModal,
+  HelpButton,
   LinkedItems,
   RecordCounterBar,
   RecordCounter,
