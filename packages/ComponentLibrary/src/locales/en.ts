@@ -47,6 +47,8 @@ const en = {
     records: "records",
     version: "Version: ",
     about: "About",
+    help: "Help",
+    helpFor: "Help for",
     clone: "Clone",
     cloneWithChildren: "Clone With Children",
     change: "Change",

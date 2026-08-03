@@ -46,6 +46,8 @@ const es = {
     records: "registros",
     version: "Versión: ",
     about: "Acerca de",
+    help: "Ayuda",
+    helpFor: "Ayuda de",
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
     change: "Cambiar",
