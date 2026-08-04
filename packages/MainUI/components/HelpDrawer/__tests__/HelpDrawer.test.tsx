@@ -34,6 +34,10 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => ({
   default: () => <svg data-testid="close-icon" />,
 }));
 
+beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
+});
+
 describe("HelpDrawer", () => {
   const mockOnClose = jest.fn();
 
@@ -109,5 +113,66 @@ describe("HelpDrawer", () => {
     fireEvent.click(screen.getByTestId("help-drawer-panel"));
 
     expect(mockOnClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("HelpDrawer tab index sidebar", () => {
+  const mockOnClose = jest.fn();
+
+  beforeEach(() => {
+    mockOnClose.mockClear();
+  });
+
+  it("renders one sidebar button per tab, in sequenceNumber order", () => {
+    const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    expect(screen.getByTestId("help-toc-item-b")).toHaveTextContent("Header");
+    expect(screen.getByTestId("help-toc-item-a")).toHaveTextContent("Lines");
+  });
+
+  it("marks the first tab (by sequenceNumber) as active by default", () => {
+    const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
+    expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
+  });
+
+  it("scrolls the matching section into view when a sidebar item is clicked", () => {
+    const tab = createMockTab({ id: "t1", name: "Header", fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    fireEvent.click(screen.getByTestId("help-toc-item-t1"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  });
+
+  it("updates the active tab as the content pane is scrolled", () => {
+    const tabA = createMockTab({ id: "a", name: "Header", sequenceNumber: 10, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Lines", sequenceNumber: 20, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    const content = screen.getByTestId("help-drawer-content");
+    const headerSection = screen.getByRole("heading", { name: "Header" }).closest("section") as HTMLElement;
+    const linesSection = screen.getByRole("heading", { name: "Lines" }).closest("section") as HTMLElement;
+
+    jest.spyOn(content, "getBoundingClientRect").mockReturnValue({ top: 0 } as unknown as DOMRect);
+    jest.spyOn(headerSection, "getBoundingClientRect").mockReturnValue({ top: -100 } as unknown as DOMRect);
+    jest.spyOn(linesSection, "getBoundingClientRect").mockReturnValue({ top: 10 } as unknown as DOMRect);
+
+    fireEvent.scroll(content);
+
+    expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
+    expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
   });
 });
