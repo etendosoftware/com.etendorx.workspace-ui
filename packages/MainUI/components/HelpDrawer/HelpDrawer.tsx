@@ -46,6 +46,14 @@ const PANEL_WIDTH = "42rem";
  * directly, since it has no parent-child relationship with the trigger button
  * (`HelpAccess`, which lives in `Navigation`).
  *
+ * Only the OUTER wrapper (the width-animated div) mounts unconditionally — its inner
+ * content (header, Close button, tab nav, sections) renders only while `isOpen`. This
+ * matters beyond avoiding wasted work: an interactive "Close" button sitting in the DOM
+ * at all times, even visually clipped to zero width, is still reachable by broad
+ * accessibility-tree queries (e.g. Playwright's `getByRole("button", { name: "Close" })`
+ * with no scoping) — it was mistakenly always rendered once, which caused an E2E test to
+ * hang clicking a clipped, unhittable button instead of the dialog's own Close button.
+ *
  * All rich text is sanitized with `sanitizeMessageHtml` — the locked-down allowlist
  * (no `<a>`, no images) used for admin-authored documentation prose, not
  * `RichTextSelector`'s permissive default DOMPurify call.
@@ -117,73 +125,77 @@ const HelpDrawer: React.FC = () => {
       className="h-full shrink-0 overflow-hidden transition-all duration-500 ease-in-out bg-white border-l border-gray-200 flex flex-col"
       style={{ width: isOpen ? PANEL_WIDTH : "0" }}
       data-testid="help-drawer-panel">
-      <div className="w-[42rem] h-full flex flex-col min-h-0">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold">
-            {t("common.helpFor")} {window?.name}
-          </h2>
-          <button type="button" onClick={close} aria-label={t("common.close")}>
-            <CloseIcon className="w-4 h-4" data-testid="CloseIcon__e7d68f" />
-          </button>
-        </div>
-        {windowHelp && (
-          <div className="p-4 border-b border-gray-200">
-            {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
-            <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(windowHelp) }} />
+      {isOpen && (
+        <div className="w-[42rem] h-full flex flex-col min-h-0">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold">
+              {t("common.helpFor")} {window?.name}
+            </h2>
+            <button type="button" onClick={close} aria-label={t("common.close")}>
+              <CloseIcon className="w-4 h-4" data-testid="CloseIcon__e7d68f" />
+            </button>
           </div>
-        )}
-        <div className="flex flex-1 min-h-0">
-          <nav className="w-48 shrink-0 overflow-y-auto border-r border-gray-200 p-2" aria-label={t("common.helpFor")}>
-            {sections.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => scrollToTab(tab.id)}
-                className={`block w-full text-left px-2 py-1 rounded text-sm ${
-                  activeTabId === tab.id ? "bg-gray-100 font-semibold" : ""
-                }`}
-                data-testid={`help-toc-item-${tab.id}`}
-                aria-current={activeTabId === tab.id ? "true" : undefined}>
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-          <div
-            ref={contentRef}
-            onScroll={handleContentScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-6"
-            data-testid="help-drawer-content">
-            {sections.map((tab) => (
-              <section
-                key={tab.id}
-                ref={(el) => {
-                  if (el) {
-                    sectionRefs.current.set(tab.id, el);
-                  } else {
-                    sectionRefs.current.delete(tab.id);
-                  }
-                }}>
-                <h3 className="font-semibold">{tab.name}</h3>
-                {tab.helpComment && (
-                  // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above
-                  <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(tab.helpComment) }} />
-                )}
-                {tab.fields.length > 0 && (
-                  <ul className="mt-2 space-y-2">
-                    {tab.fields.map((field) => (
-                      <li key={field.id}>
-                        <strong>{field.name}</strong>
-                        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(field.helpComment) }} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ))}
+          {windowHelp && (
+            <div className="p-4 border-b border-gray-200">
+              {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
+              <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(windowHelp) }} />
+            </div>
+          )}
+          <div className="flex flex-1 min-h-0">
+            <nav
+              className="w-48 shrink-0 overflow-y-auto border-r border-gray-200 p-2"
+              aria-label={t("common.helpFor")}>
+              {sections.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => scrollToTab(tab.id)}
+                  className={`block w-full text-left px-2 py-1 rounded text-sm ${
+                    activeTabId === tab.id ? "bg-gray-100 font-semibold" : ""
+                  }`}
+                  data-testid={`help-toc-item-${tab.id}`}
+                  aria-current={activeTabId === tab.id ? "true" : undefined}>
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+            <div
+              ref={contentRef}
+              onScroll={handleContentScroll}
+              className="flex-1 overflow-y-auto p-4 space-y-6"
+              data-testid="help-drawer-content">
+              {sections.map((tab) => (
+                <section
+                  key={tab.id}
+                  ref={(el) => {
+                    if (el) {
+                      sectionRefs.current.set(tab.id, el);
+                    } else {
+                      sectionRefs.current.delete(tab.id);
+                    }
+                  }}>
+                  <h3 className="font-semibold">{tab.name}</h3>
+                  {tab.helpComment && (
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(tab.helpComment) }} />
+                  )}
+                  {tab.fields.length > 0 && (
+                    <ul className="mt-2 space-y-2">
+                      {tab.fields.map((field) => (
+                        <li key={field.id}>
+                          <strong>{field.name}</strong>
+                          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
+                          <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(field.helpComment) }} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

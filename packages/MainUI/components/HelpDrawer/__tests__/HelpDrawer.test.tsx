@@ -54,6 +54,16 @@ describe("HelpDrawer", () => {
     expect(screen.getByTestId("help-drawer-panel")).toHaveStyle({ width: "0" });
   });
 
+  it("renders no interactive content (e.g. the Close button) when closed", () => {
+    // Regression test: an always-mounted Close button, even visually clipped to width 0,
+    // is still reachable by unscoped accessibility queries (getByRole("button", { name: "Close" }))
+    // and broke an E2E test that matched it instead of an unrelated dialog's own Close button.
+    setWindow({ ...createMockWindowMetadata("W1"), helpComment: "Some window help" });
+    render(<HelpDrawer />);
+    expect(screen.queryByRole("button", { name: "common.close" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Window W1/)).not.toBeInTheDocument();
+  });
+
   it("expands to the panel width when open", () => {
     setWindow(createMockWindowMetadata("W1"));
     useHelpPanelStore.setState({ isOpen: true });
