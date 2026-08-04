@@ -133,9 +133,7 @@ const HelpDrawer: React.FC = () => {
           </div>
         )}
         <div className="flex flex-1 min-h-0">
-          <nav
-            className="w-48 shrink-0 overflow-y-auto border-r border-gray-200 p-2"
-            aria-label={t("common.helpFor")}>
+          <nav className="w-48 shrink-0 overflow-y-auto border-r border-gray-200 p-2" aria-label={t("common.helpFor")}>
             {sections.map((tab) => (
               <button
                 key={tab.id}
