@@ -39,7 +39,7 @@ const HelpAccess: React.FC = () => {
     return null;
   }
 
-  return <HelpButton onClick={toggle} tooltip={t("common.help")} />;
+  return <HelpButton onClick={toggle} tooltip={t("common.help")} data-testid="HelpButton__ad3365" />;
 };
 
 export default HelpAccess;

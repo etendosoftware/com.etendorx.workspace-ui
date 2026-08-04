@@ -123,7 +123,7 @@ const HelpDrawer: React.FC = () => {
             {t("common.helpFor")} {window?.name}
           </h2>
           <button type="button" onClick={close} aria-label={t("common.close")}>
-            <CloseIcon className="w-4 h-4" />
+            <CloseIcon className="w-4 h-4" data-testid="CloseIcon__e7d68f" />
           </button>
         </div>
         {windowHelp && (
