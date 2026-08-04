@@ -17,16 +17,11 @@
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import HelpDrawer from "../HelpDrawer";
+import { useHelpPanelStore } from "@/stores/helpPanelStore";
 import { createMockWindowMetadata, createMockTab, createMockField } from "@/utils/tests/mockHelpers";
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-jest.mock("../../Modal", () => ({
-  __esModule: true,
-  default: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-testid="mock-modal">{children}</div> : null,
 }));
 
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => ({
@@ -34,26 +29,42 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => ({
   default: () => <svg data-testid="close-icon" />,
 }));
 
+const mockUseMetadataContext = jest.fn();
+jest.mock("@/contexts/metadata", () => ({
+  useMetadataContext: () => mockUseMetadataContext(),
+}));
+
 beforeAll(() => {
   Element.prototype.scrollIntoView = jest.fn();
 });
 
-describe("HelpDrawer", () => {
-  const mockOnClose = jest.fn();
+const setWindow = (window: ReturnType<typeof createMockWindowMetadata> | null, windowId = "W1") => {
+  mockUseMetadataContext.mockReturnValue({ window, windowId });
+};
 
+describe("HelpDrawer", () => {
   beforeEach(() => {
-    mockOnClose.mockClear();
+    useHelpPanelStore.setState({ isOpen: false });
+    mockUseMetadataContext.mockReset();
   });
 
-  it("renders nothing when closed", () => {
-    const window = createMockWindowMetadata("W1");
-    render(<HelpDrawer open={false} window={window} onClose={mockOnClose} />);
-    expect(screen.queryByTestId("mock-modal")).not.toBeInTheDocument();
+  it("collapses to width 0 when closed", () => {
+    setWindow(createMockWindowMetadata("W1"));
+    render(<HelpDrawer />);
+    expect(screen.getByTestId("help-drawer-panel")).toHaveStyle({ width: "0" });
+  });
+
+  it("expands to the panel width when open", () => {
+    setWindow(createMockWindowMetadata("W1"));
+    useHelpPanelStore.setState({ isOpen: true });
+    render(<HelpDrawer />);
+    expect(screen.getByTestId("help-drawer-panel")).toHaveStyle({ width: "42rem" });
   });
 
   it("renders the window title and sanitized window helpComment", () => {
-    const window = { ...createMockWindowMetadata("W1"), helpComment: "<p>Window help</p><script>alert(1)</script>" };
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    useHelpPanelStore.setState({ isOpen: true });
+    setWindow({ ...createMockWindowMetadata("W1"), helpComment: "<p>Window help</p><script>alert(1)</script>" });
+    render(<HelpDrawer />);
 
     expect(screen.getByText(/Window W1/)).toBeInTheDocument();
     expect(screen.getByText("Window help")).toBeInTheDocument();
@@ -61,6 +72,7 @@ describe("HelpDrawer", () => {
   });
 
   it("renders tabs ordered by sequenceNumber with their field help", () => {
+    useHelpPanelStore.setState({ isOpen: true });
     const field = createMockField({ id: "f1", name: "Document No.", helpComment: "Field help text" });
     const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, helpComment: "Lines help", fields: {} });
     const tabB = createMockTab({
@@ -70,9 +82,9 @@ describe("HelpDrawer", () => {
       helpComment: "Header help",
       fields: { f1: field },
     });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
 
     const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(headings).toEqual(["Header", "Lines"]);
@@ -81,6 +93,7 @@ describe("HelpDrawer", () => {
   });
 
   it("omits fields with no help content", () => {
+    useHelpPanelStore.setState({ isOpen: true });
     const withHelp = createMockField({ id: "f1", name: "Has Help", helpComment: "yes" });
     const withoutHelp = createMockField({
       id: "f2",
@@ -89,46 +102,68 @@ describe("HelpDrawer", () => {
       column: { helpComment: undefined },
     });
     const tab = createMockTab({ id: "t1", fields: { withHelp, withoutHelp } });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tab] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
 
     expect(screen.getByText("Has Help")).toBeInTheDocument();
     expect(screen.queryByText("No Help")).not.toBeInTheDocument();
   });
 
-  it("calls onClose when clicking the overlay", () => {
-    const window = createMockWindowMetadata("W1");
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+  it("closes when the close (X) button is clicked", () => {
+    useHelpPanelStore.setState({ isOpen: true });
+    setWindow(createMockWindowMetadata("W1"));
+    render(<HelpDrawer />);
 
-    fireEvent.click(screen.getByTestId("help-drawer-overlay"));
+    fireEvent.click(screen.getByLabelText("common.close"));
 
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
+    expect(useHelpPanelStore.getState().isOpen).toBe(false);
   });
 
-  it("does not call onClose when clicking inside the panel", () => {
-    const window = createMockWindowMetadata("W1");
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+  it("closes on Escape when open", () => {
+    useHelpPanelStore.setState({ isOpen: true });
+    setWindow(createMockWindowMetadata("W1"));
+    render(<HelpDrawer />);
 
-    fireEvent.click(screen.getByTestId("help-drawer-panel"));
+    fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(mockOnClose).not.toHaveBeenCalled();
+    expect(useHelpPanelStore.getState().isOpen).toBe(false);
+  });
+
+  it("does not react to Escape when already closed", () => {
+    setWindow(createMockWindowMetadata("W1"));
+    render(<HelpDrawer />);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(useHelpPanelStore.getState().isOpen).toBe(false);
+  });
+
+  it("closes when the active window changes while open", () => {
+    useHelpPanelStore.setState({ isOpen: true });
+    setWindow(createMockWindowMetadata("W1"), "w1");
+    const { rerender } = render(<HelpDrawer />);
+    expect(useHelpPanelStore.getState().isOpen).toBe(true);
+
+    setWindow(createMockWindowMetadata("W2"), "w2");
+    rerender(<HelpDrawer />);
+
+    expect(useHelpPanelStore.getState().isOpen).toBe(false);
   });
 });
 
 describe("HelpDrawer tab index sidebar", () => {
-  const mockOnClose = jest.fn();
-
   beforeEach(() => {
-    mockOnClose.mockClear();
+    useHelpPanelStore.setState({ isOpen: true });
+    mockUseMetadataContext.mockReset();
   });
 
   it("renders one sidebar button per tab, in sequenceNumber order", () => {
     const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
     const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
 
     expect(screen.getByTestId("help-toc-item-b")).toHaveTextContent("Header");
     expect(screen.getByTestId("help-toc-item-a")).toHaveTextContent("Lines");
@@ -137,9 +172,9 @@ describe("HelpDrawer tab index sidebar", () => {
   it("marks the first tab (by sequenceNumber) as active by default", () => {
     const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
     const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
 
     expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
     expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
@@ -147,9 +182,9 @@ describe("HelpDrawer tab index sidebar", () => {
 
   it("scrolls the matching section into view when a sidebar item is clicked", () => {
     const tab = createMockTab({ id: "t1", name: "Header", fields: {} });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tab] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
     fireEvent.click(screen.getByTestId("help-toc-item-t1"));
 
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
@@ -158,9 +193,9 @@ describe("HelpDrawer tab index sidebar", () => {
   it("updates the active tab as the content pane is scrolled", () => {
     const tabA = createMockTab({ id: "a", name: "Header", sequenceNumber: 10, fields: {} });
     const tabB = createMockTab({ id: "b", name: "Lines", sequenceNumber: 20, fields: {} });
-    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] });
 
-    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    render(<HelpDrawer />);
 
     const content = screen.getByTestId("help-drawer-content");
     const headerSection = screen.getByRole("heading", { name: "Header" }).closest("section") as HTMLElement;
