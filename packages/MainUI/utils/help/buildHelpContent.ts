@@ -50,7 +50,7 @@ export function shouldShowHelp(window: { helpComment?: string | null } | null | 
 function getFieldHelp(field: Field): string {
   const own = field.helpComment?.trim();
   if (own) return own;
-  return (field.column as Field["column"] | null | undefined)?.helpComment?.trim() ?? "";
+  return field.column?.helpComment?.trim() ?? "";
 }
 
 /**
