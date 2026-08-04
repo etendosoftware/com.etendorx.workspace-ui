@@ -17,6 +17,7 @@
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import HelpAccess from "../HelpAccess";
+import { useHelpPanelStore } from "@/stores/helpPanelStore";
 import { createMockWindowMetadata } from "@/utils/tests/mockHelpers";
 
 const mockUseMetadataContext = jest.fn();
@@ -32,19 +33,11 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/help-circle.svg", () =
   __esModule: true,
   default: () => <svg data-testid="help-icon" />,
 }));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => ({
-  __esModule: true,
-  default: () => <svg data-testid="close-icon" />,
-}));
-jest.mock("../../Modal", () => ({
-  __esModule: true,
-  default: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-testid="mock-modal">{children}</div> : null,
-}));
 
 describe("HelpAccess", () => {
   beforeEach(() => {
     mockUseMetadataContext.mockReset();
+    useHelpPanelStore.setState({ isOpen: false });
   });
 
   it("renders nothing when the active window has no helpComment", () => {
@@ -62,31 +55,17 @@ describe("HelpAccess", () => {
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("opens the drawer when the trigger is clicked", () => {
+  it("toggles the help panel store when the trigger is clicked", () => {
     mockUseMetadataContext.mockReturnValue({
       windowId: "w1",
       window: { ...createMockWindowMetadata("w1"), helpComment: "Some help" },
     });
     render(<HelpAccess />);
+
     fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByTestId("mock-modal")).toBeInTheDocument();
-  });
+    expect(useHelpPanelStore.getState().isOpen).toBe(true);
 
-  it("closes the drawer when the active window changes", () => {
-    mockUseMetadataContext.mockReturnValue({
-      windowId: "w1",
-      window: { ...createMockWindowMetadata("w1"), helpComment: "Some help" },
-    });
-    const { rerender } = render(<HelpAccess />);
     fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByTestId("mock-modal")).toBeInTheDocument();
-
-    mockUseMetadataContext.mockReturnValue({
-      windowId: "w2",
-      window: { ...createMockWindowMetadata("w2"), helpComment: "Other help" },
-    });
-    rerender(<HelpAccess />);
-
-    expect(screen.queryByTestId("mock-modal")).not.toBeInTheDocument();
+    expect(useHelpPanelStore.getState().isOpen).toBe(false);
   });
 });

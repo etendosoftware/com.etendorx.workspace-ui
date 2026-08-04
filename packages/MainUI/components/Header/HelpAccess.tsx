@@ -17,43 +17,29 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { useMetadataContext } from "@/contexts/metadata";
 import { useTranslation } from "@/hooks/useTranslation";
 import { HelpButton } from "@workspaceui/componentlibrary/src/components";
 import { shouldShowHelp } from "@/utils/help/buildHelpContent";
-import HelpDrawer from "../HelpDrawer/HelpDrawer";
+import { useHelpPanelStore } from "@/stores/helpPanelStore";
 
 /**
- * Orchestrates access to contextual Help for the active window: decides
- * whether the Help trigger should be mounted at all (`shouldShowHelp`),
- * owns the drawer's open/close state, and closes the drawer whenever the
- * active window changes while it's open — a stale window's help content
- * should never linger onscreen after the user navigates away from it.
+ * Trigger for contextual Help on the active window: decides whether the Help
+ * button should be mounted at all (`shouldShowHelp`) and toggles the shared
+ * `useHelpPanelStore`. The panel itself (`HelpDrawer`) renders elsewhere in
+ * the tree (`layout.tsx`) since it needs to sit as a layout sibling of the
+ * content column, not nested inside `Navigation`.
  */
 const HelpAccess: React.FC = () => {
   const { t } = useTranslation();
-  const { window, windowId } = useMetadataContext();
-  const [open, setOpen] = useState(false);
-  const previousWindowId = useRef(windowId);
-
-  useEffect(() => {
-    if (open && previousWindowId.current !== windowId) {
-      setOpen(false);
-    }
-    previousWindowId.current = windowId;
-  }, [windowId, open]);
+  const { window } = useMetadataContext();
+  const toggle = useHelpPanelStore((state) => state.toggle);
 
   if (!shouldShowHelp(window)) {
     return null;
   }
 
-  return (
-    <>
-      <HelpButton onClick={() => setOpen(true)} tooltip={t("common.help")} />
-      <HelpDrawer open={open} window={window} onClose={() => setOpen(false)} />
-    </>
-  );
+  return <HelpButton onClick={toggle} tooltip={t("common.help")} />;
 };
 
 export default HelpAccess;
