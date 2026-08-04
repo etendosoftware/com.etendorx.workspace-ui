@@ -805,3 +805,308 @@ its own `translate-x` transition instead of relying on `Modal`'s wrapper transfo
 **Also pending:** manual browser QA (plan Task 7, Step 3) — not done in this session (no
 live app instance driven end-to-end here), still worth a human pass before considering this
 fully done.
+
+---
+
+### Task 8: Tab index sidebar + active-section highlight in `HelpDrawer`
+
+**User feedback (2026-08-04):** Classic's help view has heavy cross-references between
+tabs/fields; without a way to jump around, the flat scrollable version from Task 4 is
+"pesado de leer". Widen the drawer and add a left-hand tab index (sidebar) that jumps to
+each tab's section and highlights whichever section is currently at the top of the content
+pane.
+
+**Files:**
+- Modify: `packages/MainUI/components/HelpDrawer/HelpDrawer.tsx` (full rewrite of the render, same props/exports)
+- Modify: `packages/MainUI/components/HelpDrawer/__tests__/HelpDrawer.test.tsx` (additions only — the 6 existing tests are unaffected, see rationale below)
+
+**Design decisions:**
+- Width: `max-w-md` (28rem/448px) → `max-w-2xl` (42rem/672px) — room for a ~12rem sidebar
+  plus a comfortable reading column, without ballooning to a near-fullscreen panel.
+- Layout: header (title/close) and window-level help stay full-width, non-scrolling, at the
+  top. Below them, a flex row: a fixed-width sidebar (tab names as buttons, independently
+  scrollable if there are many tabs) and a content pane (tab sections, independently
+  scrollable) — a standard two-pane docs layout.
+- **Scroll-spy mechanism: plain `onScroll` + `getBoundingClientRect`, NOT
+  `IntersectionObserver`.** Investigated `IntersectionObserver` first and rejected it: `Modal`
+  (reused for portal/Escape) mounts `children` asynchronously — `Modal`'s own `useEffect`
+  calls `setVisible(true)` in response to `open` becoming true, which triggers a *second*
+  render before the section DOM nodes actually exist. An observer set up in `HelpDrawer`'s
+  own effect (keyed on `[open, sections]`) would very plausibly run before that second render
+  commits, observing nothing. Working around that reliably needs `requestAnimationFrame`
+  deferral or ref-triggered lazy observer creation — real complexity to buy correctness for a
+  polish feature. A direct `onScroll` handler on the content pane has no such timing hazard
+  (it's wired via a JSX prop, evaluated fresh on every render, no imperative setup/teardown
+  to race against Modal's async mount) and is just as cheap given the tab count here is
+  always small (a handful of tabs per window, not a virtualized list) — no debounce needed.
+- Active tab resets to the first tab every time the drawer transitions from closed to open
+  (not on every content recompute) — because `Modal` fully unmounts the content 300ms after
+  closing, the content pane always remounts scrolled to the top on reopen, so the sidebar
+  highlight must match that, not remember a stale tab from a previous session.
+- No `IntersectionObserver`, no debounce/throttle utility, no separate "active section"
+  context or store — this is entirely local `HelpDrawer` state, consistent with the rest of
+  this component's scope.
+
+- [ ] **Step 1: Write the additional failing tests**
+
+The 6 existing tests in `HelpDrawer.test.tsx` are **not modified** — sidebar items are
+rendered as `<button>` elements (not headings), so `getAllByRole("heading", { level: 3 })`
+still resolves only to the content pane's tab headings, and no existing test queries a bare
+tab name via `getByText` (which would otherwise become ambiguous now that a tab's name
+appears twice: once as a sidebar button, once as a content heading). Add a new `describe`
+block with these tests, appended to the existing file (keep existing imports/mocks, add
+`Element.prototype.scrollIntoView = jest.fn();` once near the top since jsdom doesn't
+implement it):
+
+```tsx
+// Add near the top of the file, after the existing jest.mock(...) calls:
+beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
+});
+
+// Add as a new describe block, after the existing `describe("HelpDrawer", ...)`:
+describe("HelpDrawer tab index sidebar", () => {
+  const mockOnClose = jest.fn();
+
+  beforeEach(() => {
+    mockOnClose.mockClear();
+  });
+
+  it("renders one sidebar button per tab, in sequenceNumber order", () => {
+    const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    expect(screen.getByTestId("help-toc-item-b")).toHaveTextContent("Header");
+    expect(screen.getByTestId("help-toc-item-a")).toHaveTextContent("Lines");
+  });
+
+  it("marks the first tab (by sequenceNumber) as active by default", () => {
+    const tabA = createMockTab({ id: "a", name: "Lines", sequenceNumber: 20, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Header", sequenceNumber: 10, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
+    expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
+  });
+
+  it("scrolls the matching section into view when a sidebar item is clicked", () => {
+    const tab = createMockTab({ id: "t1", name: "Header", fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+    fireEvent.click(screen.getByTestId("help-toc-item-t1"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  });
+
+  it("updates the active tab as the content pane is scrolled", () => {
+    const tabA = createMockTab({ id: "a", name: "Header", sequenceNumber: 10, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Lines", sequenceNumber: 20, fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tabA, tabB] };
+
+    render(<HelpDrawer open={true} window={window} onClose={mockOnClose} />);
+
+    const content = screen.getByTestId("help-drawer-content");
+    const headerSection = screen.getByRole("heading", { name: "Header" }).closest("section") as HTMLElement;
+    const linesSection = screen.getByRole("heading", { name: "Lines" }).closest("section") as HTMLElement;
+
+    jest.spyOn(content, "getBoundingClientRect").mockReturnValue({ top: 0 } as unknown as DOMRect);
+    jest.spyOn(headerSection, "getBoundingClientRect").mockReturnValue({ top: -100 } as unknown as DOMRect);
+    jest.spyOn(linesSection, "getBoundingClientRect").mockReturnValue({ top: 10 } as unknown as DOMRect);
+
+    fireEvent.scroll(content);
+
+    expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
+    expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify the new ones fail (existing 6 still pass)**
+
+Run: `pnpm test:mainui -- HelpDrawer`
+Expected: the pre-existing 6 tests PASS unchanged; the 4 new tests FAIL (sidebar/testids don't exist yet).
+
+- [ ] **Step 3: Rewrite `HelpDrawer.tsx`**
+
+```tsx
+// packages/MainUI/components/HelpDrawer/HelpDrawer.tsx
+"use client";
+
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import Modal from "../Modal";
+import { sanitizeMessageHtml } from "@/utils/processes/definition/sanitizeHtml";
+import { buildHelpSections } from "@/utils/help/buildHelpContent";
+import { useTranslation } from "@/hooks/useTranslation";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import type { WindowMetadata } from "@workspaceui/api-client/src/api/types";
+
+export interface HelpDrawerProps {
+  open: boolean;
+  window: WindowMetadata | null | undefined;
+  onClose: () => void;
+}
+
+const ACTIVE_TAB_THRESHOLD_PX = 16;
+
+/**
+ * Right-anchored panel showing contextual Help for the active window: window-level
+ * help text, then a tab index (left) and, for each tab, its help text and field list
+ * (right, scrollable). Clicking a tab in the index scrolls its section into view; the
+ * index highlights whichever section is currently scrolled to the top of the content
+ * pane (plain onScroll + getBoundingClientRect — see Task 8 in the plan for why this
+ * was chosen over IntersectionObserver).
+ *
+ * Reuses `Modal` purely for its portal + Escape-close plumbing; the right-anchored
+ * panel look and click-outside-to-close behavior are this component's own (Modal's
+ * own usage elsewhere is a centered dialog).
+ *
+ * All rich text is sanitized with `sanitizeMessageHtml` — the locked-down allowlist
+ * (no `<a>`, no images) used for admin-authored documentation prose, not
+ * `RichTextSelector`'s permissive default DOMPurify call.
+ */
+const HelpDrawer: React.FC<HelpDrawerProps> = ({ open, window, onClose }) => {
+  const { t } = useTranslation();
+  const sections = window ? buildHelpSections(window) : [];
+  const windowHelp = window?.helpComment?.trim() ?? "";
+
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTabId(sections[0]?.id ?? null);
+    }
+    // sections' identity changes every render (buildHelpSections returns a new array);
+    // reset only when the drawer transitions to open, not on every content recompute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const scrollToTab = (tabId: string) => {
+    sectionRefs.current.get(tabId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleContentScroll = () => {
+    const containerTop = contentRef.current?.getBoundingClientRect().top ?? 0;
+    let current = sections[0]?.id ?? null;
+    for (const tab of sections) {
+      const el = sectionRefs.current.get(tab.id);
+      if (!el) continue;
+      const top = el.getBoundingClientRect().top - containerTop;
+      if (top <= ACTIVE_TAB_THRESHOLD_PX) {
+        current = tab.id;
+      } else {
+        break;
+      }
+    }
+    setActiveTabId(current);
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Modal already owns Escape-handling via a capture-phase document listener (Modal.tsx), so this overlay's click-only close doesn't need a redundant keyboard handler here. */}
+      <div
+        className="fixed inset-0 bg-black/20"
+        onClick={onClose}
+        role="presentation"
+        data-testid="help-drawer-overlay">
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops the overlay's onClose click from firing; not itself an actionable control */}
+        <div
+          className="absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-lg flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+          role="presentation"
+          data-testid="help-drawer-panel">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold">
+              {t("common.helpFor")} {window?.name}
+            </h2>
+            <button type="button" onClick={onClose} aria-label={t("common.close")}>
+              <CloseIcon className="w-4 h-4" />
+            </button>
+          </div>
+          {windowHelp && (
+            <div className="p-4 border-b border-gray-200">
+              {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
+              <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(windowHelp) }} />
+            </div>
+          )}
+          <div className="flex flex-1 min-h-0">
+            <nav
+              className="w-48 shrink-0 overflow-y-auto border-r border-gray-200 p-2"
+              aria-label={t("common.helpFor")}>
+              {sections.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => scrollToTab(tab.id)}
+                  className={`block w-full text-left px-2 py-1 rounded text-sm ${
+                    activeTabId === tab.id ? "bg-gray-100 font-semibold" : ""
+                  }`}
+                  data-testid={`help-toc-item-${tab.id}`}
+                  aria-current={activeTabId === tab.id ? "true" : undefined}>
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+            <div
+              ref={contentRef}
+              onScroll={handleContentScroll}
+              className="flex-1 overflow-y-auto p-4 space-y-6"
+              data-testid="help-drawer-content">
+              {sections.map((tab) => (
+                <section
+                  key={tab.id}
+                  ref={(el) => {
+                    if (el) {
+                      sectionRefs.current.set(tab.id, el);
+                    } else {
+                      sectionRefs.current.delete(tab.id);
+                    }
+                  }}>
+                  <h3 className="font-semibold">{tab.name}</h3>
+                  {tab.helpComment && (
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(tab.helpComment) }} />
+                  )}
+                  {tab.fields.length > 0 && (
+                    <ul className="mt-2 space-y-2">
+                      {tab.fields.map((field) => (
+                        <li key={field.id}>
+                          <strong>{field.name}</strong>
+                          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
+                          <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(field.helpComment) }} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+export default HelpDrawer;
+```
+
+- [ ] **Step 4: Run tests to verify all pass**
+
+Run: `pnpm test:mainui -- HelpDrawer`
+Expected: PASS — all 6 pre-existing tests + 4 new tests (10 total).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/MainUI/components/HelpDrawer
+git commit -m "Hotfix ETP-4620: add tab index sidebar to HelpDrawer"
+```
