@@ -29,6 +29,9 @@ const STATE_KEY = "sso_state";
 const redirectUri = () => (typeof window !== "undefined" ? window.location.origin : "");
 
 function plumbToken(token: string) {
+  // A stale role from a previous session/user would otherwise make
+  // verifySession() restore a foreign role onto this new SSO session.
+  localStorage.removeItem("currentRoleId");
   localStorage.setItem("token", token);
   Metadata.setToken(token);
   datasource.setToken(token);
