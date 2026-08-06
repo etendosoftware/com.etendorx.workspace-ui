@@ -41,7 +41,12 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
-import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
+import {
+  mapSummariesToBackend,
+  getSummaryCriteria,
+  getDefaultImplicitFilter,
+  resolveImplicitFilterToggle,
+} from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
@@ -189,9 +194,7 @@ export const useTableData = ({
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
-  const initialIsFilterApplied = useMemo(() => {
-    return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
-  }, [tab.hqlfilterclause, tab.sQLWhereClause]);
+  const initialIsFilterApplied = useMemo(() => getDefaultImplicitFilter(tab), [tab]);
 
   // Column filters
   const {
@@ -284,7 +287,7 @@ export const useTableData = ({
           entityName: tab.entityName,
           fetchFilterOptions,
           setFilterOptions,
-          isImplicitFilterApplied,
+          isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
         });
       }
 
@@ -295,7 +298,16 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity, isImplicitFilterApplied]
+    [
+      rawColumns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadFilterOptions,
+      tab.id,
+      treeEntity,
+      isImplicitFilterApplied,
+      initialIsFilterApplied,
+    ]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -328,7 +340,7 @@ export const useTableData = ({
         setFilterOptions,
         offset,
         pageSize,
-        isImplicitFilterApplied,
+        isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       });
     },
     [
@@ -340,6 +352,7 @@ export const useTableData = ({
       treeEntity,
       advancedColumnFilters,
       isImplicitFilterApplied,
+      initialIsFilterApplied,
     ]
   );
 
@@ -946,13 +959,27 @@ export const useTableData = ({
     [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
   );
 
+  // Funnel behavior (ETP-4381):
+  //  - Direct-link view (an "id" filter is pinning a single record): clear it to return to the
+  //    full, implicit-filtered list — same affordance as before.
+  //  - Otherwise: symmetric toggle of the implicit filter using the effective value
+  //    (state ?? metadata default), so it can be turned back ON, not only OFF. Keeping the
+  //    button as a real toggle gives the user a way to restore consistency from the UI.
   const handleToggleImplicitFilters = useCallback(() => {
-    if (!isImplicitFilterApplied) {
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const action = resolveImplicitFilterToggle({ hasIdFilter, isImplicitFilterApplied, initialIsFilterApplied });
+    if (action.type === "clearColumnFilters") {
       handleMRTColumnFiltersChange([]);
-      return;
+    } else {
+      setIsImplicitFilterApplied(action.value);
     }
-    setIsImplicitFilterApplied(false);
-  }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
+  }, [
+    tableColumnFilters,
+    isImplicitFilterApplied,
+    initialIsFilterApplied,
+    setIsImplicitFilterApplied,
+    handleMRTColumnFiltersChange,
+  ]);
 
   const hasInitializedDirectLink = useRef(false);
 
@@ -1074,12 +1101,17 @@ export const useTableData = ({
     prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
   }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
-  /** Sync implicit filter state with toolbar context */
+  /**
+   * Sync implicit filter state with toolbar context (drives the funnel's pressed/active visual).
+   * Uses the same effective value as the datasource (state ?? metadata default) so the button
+   * never disagrees with what is actually being filtered; `|| hasIdFilter` only adds the
+   * "restricted to a linked record" indicator and is NOT persisted to saved views (ETP-4381).
+   */
   useEffect(() => {
     const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
-    const isFiltered = (isImplicitFilterApplied ?? false) || hasIdFilter;
+    const isFiltered = (isImplicitFilterApplied ?? initialIsFilterApplied) || hasIdFilter;
     setToolbarFilterApplied(isFiltered);
-  }, [isImplicitFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
+  }, [isImplicitFilterApplied, initialIsFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {

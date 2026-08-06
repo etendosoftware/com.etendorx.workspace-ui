@@ -1,9 +1,50 @@
 import type { SxProps, Theme } from "@mui/material";
 import type { MRT_ColumnDef, MRT_Row, MRT_Column, MRT_ColumnFiltersState } from "material-react-table";
-import type { EntityData, Column, DatasourceOptions } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, Column, DatasourceOptions, Tab } from "@workspaceui/api-client/src/api/types";
+import { WindowType } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { isEmptyObject } from "../commons";
 import { formatClassicDate, isDateLike } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
+
+/**
+ * Single source of truth for a tab's default implicit-filter state, mirroring Classic's
+ * OBViewGridComponent.isHasFilterClause(): ON when the tab has an HQL filter clause, or when it
+ * is a root tab of a transactional ("T") window (which auto-applies a recent/unprocessed filter).
+ * Shared by the grid datasource, the toolbar button and saved-view capture so they never diverge
+ * (ETP-4381). The SQL/HQL *where* clause is intentionally not a trigger — Classic always applies
+ * it server-side regardless of the funnel, so it must not drive this default.
+ */
+export const getDefaultImplicitFilter = (tab: Tab): boolean => {
+  const hasFilterClause = (tab.hqlfilterclause?.length ?? 0) > 0;
+  const isTransactionalRootTab =
+    tab.tabLevel === 0 && Metadata.getCachedWindow(tab.window)?.windowType === WindowType.T;
+  return hasFilterClause || isTransactionalRootTab;
+};
+
+export type ImplicitFilterToggleAction = { type: "clearColumnFilters" } | { type: "setImplicit"; value: boolean };
+
+/**
+ * Decides what the funnel toolbar button does when clicked (ETP-4381):
+ *  - if an "id" filter is pinning a single record (direct-link view), clear column filters to
+ *    return to the full, implicit-filtered list;
+ *  - otherwise, symmetric toggle of the implicit filter using the effective value
+ *    (state ?? metadata default), so it can be turned back ON, not only OFF.
+ */
+export const resolveImplicitFilterToggle = ({
+  hasIdFilter,
+  isImplicitFilterApplied,
+  initialIsFilterApplied,
+}: {
+  hasIdFilter: boolean;
+  isImplicitFilterApplied: boolean | undefined;
+  initialIsFilterApplied: boolean;
+}): ImplicitFilterToggleAction => {
+  if (hasIdFilter) {
+    return { type: "clearColumnFilters" };
+  }
+  return { type: "setImplicit", value: !(isImplicitFilterApplied ?? initialIsFilterApplied) };
+};
 
 export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
   if (shouldUseTreeMode) {

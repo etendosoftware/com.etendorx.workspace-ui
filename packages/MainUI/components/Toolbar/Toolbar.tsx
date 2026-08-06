@@ -50,6 +50,7 @@ import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
+import { getDefaultImplicitFilter } from "@/utils/table/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -115,10 +116,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tableColumnOrder,
     activeLevels,
     activeTabsByLevel,
+    isImplicitFilterApplied: storeImplicitFilterApplied,
   } = useTableStatePersistenceTab({
     windowIdentifier,
     tabId: tab?.id ?? "",
   });
+
+  // Effective implicit-filter value (windowStore state ?? metadata default) and the metadata
+  // default itself — the SAME source of truth the datasource uses. Saved views must capture
+  // this, NOT the toolbar's `isImplicitFilterApplied` which is inflated by `hasIdFilter` and
+  // meant only for the button's visual state (ETP-4381).
+  const defaultImplicitFilterApplied = tab ? getDefaultImplicitFilter(tab) : true;
+  const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -566,7 +575,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
-          isImplicitFilterApplied={isImplicitFilterApplied}
+          isImplicitFilterApplied={effectiveImplicitFilterApplied}
+          defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}
           data-testid="SaveViewMenu__a2dd07"
         />

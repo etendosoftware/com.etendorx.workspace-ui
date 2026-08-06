@@ -25,16 +25,96 @@ import {
   getCellTitle,
   mapSummariesToBackend,
   getSummaryCriteria,
+  getDefaultImplicitFilter,
+  resolveImplicitFilterToggle,
 } from "../utils";
 import { isDateLike, formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { isEmptyObject } from "../../commons";
 
 jest.mock("@workspaceui/componentlibrary/src/utils/dateFormatter");
 jest.mock("@workspaceui/api-client/src/utils/search-utils");
+jest.mock("@workspaceui/api-client/src/api/metadata");
 jest.mock("../../commons");
 
+const mockGetCachedWindow = Metadata.getCachedWindow as jest.Mock;
+
 describe("table utils", () => {
+  describe("getDefaultImplicitFilter", () => {
+    const makeTab = (overrides: Partial<Tab>): Tab =>
+      ({ hqlfilterclause: "", tabLevel: 1, window: "W1", ...overrides }) as Tab;
+
+    beforeEach(() => {
+      mockGetCachedWindow.mockReset();
+      mockGetCachedWindow.mockReturnValue({});
+    });
+
+    it("is ON when the tab has an HQL filter clause", () => {
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: "e.active = 'Y'" }))).toBe(true);
+    });
+
+    it("is ON for a root tab of a transactional (T) window even with no clause", () => {
+      mockGetCachedWindow.mockReturnValue({ windowType: "T" });
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: "", tabLevel: 0 }))).toBe(true);
+    });
+
+    it("is OFF for a transactional window on a NON-root tab with no clause", () => {
+      mockGetCachedWindow.mockReturnValue({ windowType: "T" });
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: "", tabLevel: 1 }))).toBe(false);
+    });
+
+    it("is OFF for a non-transactional window with no clause (SQL where clause is not a trigger)", () => {
+      mockGetCachedWindow.mockReturnValue({ windowType: "M" });
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: "", tabLevel: 0 }))).toBe(false);
+    });
+
+    it("treats a missing (undefined) hqlfilterclause as no clause", () => {
+      mockGetCachedWindow.mockReturnValue({ windowType: "M" });
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: undefined, tabLevel: 0 }))).toBe(false);
+    });
+
+    it("is OFF when the window metadata is not cached (no windowType resolvable)", () => {
+      mockGetCachedWindow.mockReturnValue(undefined);
+      expect(getDefaultImplicitFilter(makeTab({ hqlfilterclause: "", tabLevel: 0 }))).toBe(false);
+    });
+  });
+
+  describe("resolveImplicitFilterToggle", () => {
+    it("clears column filters when an id filter is pinning a single record", () => {
+      expect(
+        resolveImplicitFilterToggle({ hasIdFilter: true, isImplicitFilterApplied: true, initialIsFilterApplied: true })
+      ).toEqual({ type: "clearColumnFilters" });
+    });
+
+    it("turns the implicit filter OFF when it is currently ON", () => {
+      expect(
+        resolveImplicitFilterToggle({ hasIdFilter: false, isImplicitFilterApplied: true, initialIsFilterApplied: true })
+      ).toEqual({ type: "setImplicit", value: false });
+    });
+
+    it("turns the implicit filter ON when it is currently OFF (symmetric toggle)", () => {
+      expect(
+        resolveImplicitFilterToggle({
+          hasIdFilter: false,
+          isImplicitFilterApplied: false,
+          initialIsFilterApplied: true,
+        })
+      ).toEqual({ type: "setImplicit", value: true });
+    });
+
+    it("falls back to the metadata default when state is undefined", () => {
+      expect(
+        resolveImplicitFilterToggle({
+          hasIdFilter: false,
+          isImplicitFilterApplied: undefined,
+          initialIsFilterApplied: true,
+        })
+      ).toEqual({ type: "setImplicit", value: false });
+    });
+  });
+
   describe("getDisplayColumnDefOptions", () => {
     it("should return options for tree mode", () => {
       const options = getDisplayColumnDefOptions({ shouldUseTreeMode: true });
@@ -80,6 +160,17 @@ describe("table utils", () => {
         row: { original: {} } as any,
       });
       expect(props).toEqual({ color: "red" });
+    });
+
+    it("falls back to an empty base style when sx has no tableBodyCell", () => {
+      const props = getMUITableBodyCellProps({
+        shouldUseTreeMode: true,
+        sx: {},
+        columns: [{ id: "actions" }, { id: "data-col" }] as any,
+        column: { id: "data-col" } as any,
+        row: { original: { __level: 1 } } as any,
+      });
+      expect(props).toEqual({ paddingLeft: "28px", position: "relative" });
     });
   });
 
@@ -167,6 +258,13 @@ describe("table utils", () => {
 
       expect(result.summaryRequest).toEqual({ COL_1: "sum", COL_2: "avg" });
       expect(result.columnMapping).toEqual({ COL_1: "col1", COL_2: "col2" });
+    });
+
+    it("falls back to the column id as backend name when columnName is missing", () => {
+      const result = mapSummariesToBackend({ col1: "sum" }, [{ id: "col1" }] as any);
+
+      expect(result.summaryRequest).toEqual({ col1: "sum" });
+      expect(result.columnMapping).toEqual({ col1: "col1" });
     });
   });
 
