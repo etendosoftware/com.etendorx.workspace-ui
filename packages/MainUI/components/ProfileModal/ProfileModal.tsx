@@ -34,6 +34,8 @@ import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useWindowStore } from "@/stores/windowStore";
+import { useSSO } from "@/hooks/useSSO";
+import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
 
@@ -64,6 +66,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { styles } = useStyle();
+  const { config: ssoConfig, startLink } = useSSO();
   const [currentSection, setCurrentSection] = useState<string>("profile");
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -481,6 +484,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {t("common.save")}
           </Button>
         </div>
+        {currentSection === "profile" && ssoConfig?.enabled && ssoConfig.authType === "Middleware" && (
+          <div className="flex flex-col items-center gap-3 border-t border-(--color-transparent-neutral-10) px-4 pt-4 pb-6">
+            <span className="font-inter font-medium text-sm text-(--color-transparent-neutral-70)">
+              {t("navigation.profile.linkWith")}
+            </span>
+            <ProviderIconButtons
+              providers={ssoConfig.providers}
+              onSelect={startLink}
+              data-testid="ProviderIconButtons__75987a"
+            />
+          </div>
+        )}
       </Menu>
     </div>
   );

@@ -191,6 +191,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
       Metadata.setToken("");
       datasource.setToken("");
       CopilotClient.setToken("");
+      // A stale role from a previous session/user would otherwise make
+      // verifySession() restore a foreign role onto this new session.
+      localStorage.removeItem("currentRoleId");
 
       const loginResponse = await doLogin(username, password);
 
