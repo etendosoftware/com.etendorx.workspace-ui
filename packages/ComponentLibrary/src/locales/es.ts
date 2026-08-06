@@ -49,6 +49,7 @@ const es = {
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
     change: "Cambiar",
+    logout: "Cerrar sesión",
   },
   forms: {
     sections: {
@@ -350,6 +351,7 @@ const es = {
   login: {
     title: "Iniciar sesión",
     subtitle: "Ingresa tu usuario y contraseña para continuar.",
+    loadingSession: "Cargando tu espacio de trabajo...",
     fields: {
       username: {
         label: "Usuario",
