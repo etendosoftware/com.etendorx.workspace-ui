@@ -16,10 +16,11 @@
  */
 
 import type React from "react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
-import { formatUTCTimeToLocal, formatLocalTimeToUTCPayload } from "@/utils/date/utils";
+import { getTimeFormatters } from "@/utils/date/utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 export const TimeCellEditor: React.FC<CellEditorProps> = ({
   value,
@@ -35,6 +36,10 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
   const [displayValue, setDisplayValue] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
 
+  // Absolute Time skips the UTC round-trip; detect it from the field reference.
+  const absolute = field?.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id;
+  const { toDisplay, toPayload } = useMemo(() => getTimeFormatters(absolute), [absolute]);
+
   // Initialize display value from prop value
   useEffect(() => {
     if (!value) {
@@ -42,9 +47,8 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
       return;
     }
 
-    const localTime = formatUTCTimeToLocal(String(value));
-    setDisplayValue(localTime);
-  }, [value]);
+    setDisplayValue(toDisplay(String(value)));
+  }, [value, toDisplay]);
 
   // Focus handling
   useEffect(() => {
@@ -63,8 +67,7 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
       return;
     }
 
-    const utcPayload = formatLocalTimeToUTCPayload(timeValue);
-    onChange(utcPayload);
+    onChange(toPayload(timeValue));
   };
 
   const handleBlur = (e: React.FocusEvent) => {
