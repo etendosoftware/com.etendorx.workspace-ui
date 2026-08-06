@@ -192,53 +192,33 @@ describe("utils/index", () => {
   });
 
   describe("buildFormPayload", () => {
+    // Every case only varies values/fields; default the boilerplate so each test
+    // states just what it's exercising.
+    const save = (values: Record<string, unknown>, fields?: Record<string, unknown>) =>
+      buildFormPayload({ values, mode: FormMode.NEW, csrfToken: "token", tab: fields ? tab({ fields }) : undefined });
+
     it("builds a plain payload when the tab has no fields", () => {
-      const payload = buildFormPayload({
-        values: { name: "Acme" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-      });
-      expect(payload.data.name).toBe("Acme");
+      expect(save({ name: "Acme" }).data.name).toBe("Acme");
     });
 
+    const businessPartnerFields = {
+      standard: field({ hqlName: "businessPartner", columnName: "c_bpartner_id" }),
+      extension: field({ hqlName: "etcrmCBpartner", columnName: "em_etcrm_c_bpartner_id" }),
+    };
+
     it("copies an extension field value onto its empty standard field", () => {
-      const fields = {
-        standard: field({ hqlName: "businessPartner", columnName: "c_bpartner_id" }),
-        extension: field({ hqlName: "etcrmCBpartner", columnName: "em_etcrm_c_bpartner_id" }),
-      };
-      const payload = buildFormPayload({
-        values: { businessPartner: "", etcrmCBpartner: "BP-1" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: tab({ fields }),
-      });
+      const payload = save({ businessPartner: "", etcrmCBpartner: "BP-1" }, businessPartnerFields);
       expect(payload.data.businessPartner).toBe("BP-1");
     });
 
     it("does not overwrite a standard field that already has a value", () => {
-      const fields = {
-        standard: field({ hqlName: "businessPartner", columnName: "c_bpartner_id" }),
-        extension: field({ hqlName: "etcrmCBpartner", columnName: "em_etcrm_c_bpartner_id" }),
-      };
-      const payload = buildFormPayload({
-        values: { businessPartner: "BP-existing", etcrmCBpartner: "BP-1" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: tab({ fields }),
-      });
+      const payload = save({ businessPartner: "BP-existing", etcrmCBpartner: "BP-1" }, businessPartnerFields);
       expect(payload.data.businessPartner).toBe("BP-existing");
     });
 
     it("ignores extension columns with no matching standard field", () => {
-      const fields = {
-        extension: field({ hqlName: "emOnly", columnName: "em_mod_orphan" }),
-      };
-      const payload = buildFormPayload({
-        values: { emOnly: "value" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: tab({ fields }),
-      });
+      const fields = { extension: field({ hqlName: "emOnly", columnName: "em_mod_orphan" }) };
+      const payload = save({ emOnly: "value" }, fields);
       expect(payload.data.emOnly).toBe("value");
     });
   });

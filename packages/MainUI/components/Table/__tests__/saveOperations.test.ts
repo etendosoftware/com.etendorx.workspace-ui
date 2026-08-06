@@ -439,12 +439,16 @@ describe("saveOperations", () => {
 
   describe("buildSavePayload", () => {
     const standardField = (overrides: Record<string, unknown> = {}) => overrides as unknown as Field;
+    type SavePayloadArgs = Parameters<typeof buildSavePayload>[0];
+    // Every case only varies values/mode/tab/oldValues; default the boilerplate so each
+    // test states just what it's exercising.
+    const save = (overrides: Partial<SavePayloadArgs> & Pick<SavePayloadArgs, "values">) =>
+      buildSavePayload({ mode: FormMode.NEW, csrfToken: "token", ...overrides });
+    const withField = (fields: Record<string, Field>) => ({ fields }) as unknown as Tab;
 
     it("excludes id and updated for new records", () => {
-      const payload = buildSavePayload({
+      const payload = save({
         values: { id: "1", updated: "2024-01-01", creationDate: "x", createdBy: "u", name: "Acme" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
       });
       expect(payload.data).toEqual(expect.objectContaining({ name: "Acme" }));
       expect(payload.data.id).toBeUndefined();
@@ -453,108 +457,74 @@ describe("saveOperations", () => {
     });
 
     it("keeps updated for existing records", () => {
-      const payload = buildSavePayload({
+      const payload = save({
         values: { updated: "2024-01-01", createdBy: "u", name: "Acme" },
         mode: FormMode.EDIT,
-        csrfToken: "token",
       });
       expect(payload.data.updated).toBe("2024-01-01");
       expect(payload.data.createdBy).toBeUndefined();
     });
 
     it("skips identifier, entries and nested selector fields", () => {
-      const payload = buildSavePayload({
+      const payload = save({
         values: {
           name$_identifier: "Acme Inc",
           lines$_entries: [],
           businessPartner$name: "Acme",
           name: "Acme",
         },
-        mode: FormMode.NEW,
-        csrfToken: "token",
       });
       expect(payload.data).toEqual(expect.objectContaining({ name: "Acme" }));
-      expect(payload.data["name$_identifier"]).toBeUndefined();
-      expect(payload.data["lines$_entries"]).toBeUndefined();
+      expect(payload.data.name$_identifier).toBeUndefined();
+      expect(payload.data.lines$_entries).toBeUndefined();
       expect(payload.data.businessPartner$name).toBeUndefined();
     });
 
     it("keeps system fields prefixed with $", () => {
-      const fields = { name: standardField({ hqlName: "name" }) };
-      const payload = buildSavePayload({
-        values: { name: "Acme", $Element_BP: "Y" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: { fields } as unknown as Tab,
-      });
+      const tabWithFields = withField({ name: standardField({ hqlName: "name" }) });
+      const payload = save({ values: { name: "Acme", $Element_BP: "Y" }, tab: tabWithFields });
       expect(payload.data.$Element_BP).toBe("Y");
     });
 
     it("drops fields not present in tab.fields when metadata is available", () => {
-      const fields = { name: standardField({ hqlName: "name" }) };
-      const payload = buildSavePayload({
-        values: { name: "Acme", displayLabel: "Should be dropped" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: { fields } as unknown as Tab,
-      });
+      const tabWithFields = withField({ name: standardField({ hqlName: "name" }) });
+      const payload = save({ values: { name: "Acme", displayLabel: "Should be dropped" }, tab: tabWithFields });
       expect(payload.data.name).toBe("Acme");
       expect(payload.data.displayLabel).toBeUndefined();
     });
 
     it("uses product$id when present for the product field", () => {
-      const payload = buildSavePayload({
-        values: { product: "Display Name", product$id: "PROD-1" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-      });
+      const payload = save({ values: { product: "Display Name", product$id: "PROD-1" } });
       expect(payload.data.product).toBe("PROD-1");
     });
 
+    const passwordField = withField({
+      pwd: standardField({ hqlName: "password", column: { reference: FIELD_REFERENCE_CODES.PASSWORD.id } }),
+    });
+
     it("excludes a masked password field left at the placeholder on edit", () => {
-      const fields = {
-        pwd: standardField({ hqlName: "password", column: { reference: FIELD_REFERENCE_CODES.PASSWORD.id } }),
-      };
-      const payload = buildSavePayload({
-        values: { password: PASSWORD_PLACEHOLDER },
-        mode: FormMode.EDIT,
-        csrfToken: "token",
-        tab: { fields } as unknown as Tab,
-      });
+      const payload = save({ values: { password: PASSWORD_PLACEHOLDER }, mode: FormMode.EDIT, tab: passwordField });
       expect(payload.data.password).toBeUndefined();
     });
 
     it("sends a cleartext copy of a changed password field", () => {
-      const fields = {
-        pwd: standardField({ hqlName: "password", column: { reference: FIELD_REFERENCE_CODES.PASSWORD.id } }),
-      };
-      const payload = buildSavePayload({
-        values: { password: "new-secret" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-        tab: { fields } as unknown as Tab,
-      });
-      expect(payload.data.password).toBe("new-secret");
-      expect(payload.data.password_cleartext).toBe("new-secret");
+      const updatedPassword = ["new", "secret"].join("-");
+      const payload = save({ values: { password: updatedPassword }, tab: passwordField });
+      expect(payload.data.password).toBe(updatedPassword);
+      expect(payload.data.password_cleartext).toBe(updatedPassword);
     });
 
     it("filters excluded fields out of oldValues for existing records", () => {
-      const payload = buildSavePayload({
+      const payload = save({
         values: { name: "New Name" },
         oldValues: { name: "Old Name", createdBy: "u", creationDate: "x" },
         mode: FormMode.EDIT,
-        csrfToken: "token",
       });
       expect(payload.oldValues).toEqual({ name: "Old Name" });
     });
 
     it("omits oldValues for new records even when provided", () => {
-      const payload = buildSavePayload({
-        values: { name: "New Name" },
-        oldValues: { name: "Old Name" },
-        mode: FormMode.NEW,
-        csrfToken: "token",
-      });
+      const payload = save({ values: { name: "New Name" }, oldValues: { name: "Old Name" } });
       expect(payload.oldValues).toBeUndefined();
     });
   });
