@@ -6,7 +6,7 @@ export function getEnvVar(key: string): string | undefined {
     return undefined;
   }
 }
-
+//test
 function isDebugEnabled(envKey: string, localStorageKey: string): boolean {
   const env = getEnvVar(`NEXT_PUBLIC_${envKey}`) ?? getEnvVar(envKey);
   if (typeof env === "string") {
