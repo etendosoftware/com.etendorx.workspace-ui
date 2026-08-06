@@ -17,15 +17,24 @@
 
 import {
   saveRecord,
+  saveRecordWithRetry,
   createNewRecord,
   updateExistingRecord,
   createSaveOperation,
   processSaveErrors,
   getGeneralErrorMessage,
+  isStaleObjectError,
+  buildSavePayload,
+  validateRecordBeforeSave,
 } from "../utils/saveOperations";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
+import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { EditingRowData, SaveOperation, ValidationError } from "../types/inlineEditing";
+
+const mockShouldRemoveIdFields = shouldRemoveIdFields as jest.Mock;
 
 // Mock the Metadata module
 jest.mock("@workspaceui/api-client/src/api/metadata");
@@ -245,6 +254,64 @@ describe("saveOperations", () => {
       });
     });
 
+    it("should parse validationErrors array responses", async () => {
+      const saveOperation: SaveOperation = {
+        rowId: "456",
+        isNew: false,
+        data: { id: "456", name: "" },
+        originalData: { id: "456", name: "Original Name" },
+      };
+
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        data: {
+          response: {
+            status: 1,
+            error: { validationErrors: [{ field: "name", message: "Name is required" }, {}] },
+          },
+        },
+      });
+
+      const result = await saveRecord({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          { field: "name", message: "Name is required", type: "server" },
+          { field: "_general", message: "Validation error", type: "server" },
+        ],
+      });
+    });
+
+    it("should parse constraintViolations array responses", async () => {
+      const saveOperation: SaveOperation = {
+        rowId: "456",
+        isNew: false,
+        data: { id: "456", name: "" },
+        originalData: { id: "456", name: "Original Name" },
+      };
+
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        data: {
+          response: {
+            status: 1,
+            error: { constraintViolations: [{ propertyPath: "name", message: "must not be blank" }, {}] },
+          },
+        },
+      });
+
+      const result = await saveRecord({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          { field: "name", message: "must not be blank", type: "server" },
+          { field: "_general", message: "Constraint violation", type: "server" },
+        ],
+      });
+    });
+
     it("should handle network errors", async () => {
       const saveOperation: SaveOperation = {
         rowId: "456",
@@ -349,6 +416,223 @@ describe("saveOperations", () => {
     it("should handle empty errors array", () => {
       const result = getGeneralErrorMessage([]);
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe("isStaleObjectError", () => {
+    it("returns false when the message is missing", () => {
+      expect(isStaleObjectError(undefined)).toBe(false);
+    });
+
+    it("detects the Classic OBJSON_StaleDate marker", () => {
+      expect(isStaleObjectError("Error: @OBJSON_StaleDate@ conflict")).toBe(true);
+    });
+
+    it("detects the APRM_StaleDate marker", () => {
+      expect(isStaleObjectError("APRM_StaleDate")).toBe(true);
+    });
+
+    it("returns false for unrelated messages", () => {
+      expect(isStaleObjectError("Something else went wrong")).toBe(false);
+    });
+  });
+
+  describe("buildSavePayload", () => {
+    const standardField = (overrides: Record<string, unknown> = {}) => overrides as unknown as Field;
+
+    it("excludes id and updated for new records", () => {
+      const payload = buildSavePayload({
+        values: { id: "1", updated: "2024-01-01", creationDate: "x", createdBy: "u", name: "Acme" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+      });
+      expect(payload.data).toEqual(expect.objectContaining({ name: "Acme" }));
+      expect(payload.data.id).toBeUndefined();
+      expect(payload.data.updated).toBeUndefined();
+      expect(payload.data.creationDate).toBeUndefined();
+    });
+
+    it("keeps updated for existing records", () => {
+      const payload = buildSavePayload({
+        values: { updated: "2024-01-01", createdBy: "u", name: "Acme" },
+        mode: FormMode.EDIT,
+        csrfToken: "token",
+      });
+      expect(payload.data.updated).toBe("2024-01-01");
+      expect(payload.data.createdBy).toBeUndefined();
+    });
+
+    it("skips identifier, entries and nested selector fields", () => {
+      const payload = buildSavePayload({
+        values: {
+          name$_identifier: "Acme Inc",
+          lines$_entries: [],
+          businessPartner$name: "Acme",
+          name: "Acme",
+        },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+      });
+      expect(payload.data).toEqual(expect.objectContaining({ name: "Acme" }));
+      expect(payload.data["name$_identifier"]).toBeUndefined();
+      expect(payload.data["lines$_entries"]).toBeUndefined();
+      expect(payload.data.businessPartner$name).toBeUndefined();
+    });
+
+    it("keeps system fields prefixed with $", () => {
+      const fields = { name: standardField({ hqlName: "name" }) };
+      const payload = buildSavePayload({
+        values: { name: "Acme", $Element_BP: "Y" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+        tab: { fields } as unknown as Tab,
+      });
+      expect(payload.data.$Element_BP).toBe("Y");
+    });
+
+    it("drops fields not present in tab.fields when metadata is available", () => {
+      const fields = { name: standardField({ hqlName: "name" }) };
+      const payload = buildSavePayload({
+        values: { name: "Acme", displayLabel: "Should be dropped" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+        tab: { fields } as unknown as Tab,
+      });
+      expect(payload.data.name).toBe("Acme");
+      expect(payload.data.displayLabel).toBeUndefined();
+    });
+
+    it("uses product$id when present for the product field", () => {
+      const payload = buildSavePayload({
+        values: { product: "Display Name", product$id: "PROD-1" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+      });
+      expect(payload.data.product).toBe("PROD-1");
+    });
+
+    it("excludes a masked password field left at the placeholder on edit", () => {
+      const fields = {
+        pwd: standardField({ hqlName: "password", column: { reference: FIELD_REFERENCE_CODES.PASSWORD.id } }),
+      };
+      const payload = buildSavePayload({
+        values: { password: PASSWORD_PLACEHOLDER },
+        mode: FormMode.EDIT,
+        csrfToken: "token",
+        tab: { fields } as unknown as Tab,
+      });
+      expect(payload.data.password).toBeUndefined();
+    });
+
+    it("sends a cleartext copy of a changed password field", () => {
+      const fields = {
+        pwd: standardField({ hqlName: "password", column: { reference: FIELD_REFERENCE_CODES.PASSWORD.id } }),
+      };
+      const payload = buildSavePayload({
+        values: { password: "new-secret" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+        tab: { fields } as unknown as Tab,
+      });
+      expect(payload.data.password).toBe("new-secret");
+      expect(payload.data.password_cleartext).toBe("new-secret");
+    });
+
+    it("filters excluded fields out of oldValues for existing records", () => {
+      const payload = buildSavePayload({
+        values: { name: "New Name" },
+        oldValues: { name: "Old Name", createdBy: "u", creationDate: "x" },
+        mode: FormMode.EDIT,
+        csrfToken: "token",
+      });
+      expect(payload.oldValues).toEqual({ name: "Old Name" });
+    });
+
+    it("omits oldValues for new records even when provided", () => {
+      const payload = buildSavePayload({
+        values: { name: "New Name" },
+        oldValues: { name: "Old Name" },
+        mode: FormMode.NEW,
+        csrfToken: "token",
+      });
+      expect(payload.oldValues).toBeUndefined();
+    });
+  });
+
+  describe("validateRecordBeforeSave", () => {
+    it("allows saving when there are no columns to validate", () => {
+      const result = validateRecordBeforeSave({ rowId: "1", isNew: true, data: { name: "Acme" } }, []);
+      expect(result).toEqual({ canSave: true, errors: [] });
+    });
+  });
+
+  describe("saveRecordWithRetry", () => {
+    afterEach(() => {
+      jest.useRealTimers();
+      mockShouldRemoveIdFields.mockReturnValue(false);
+    });
+
+    const saveOperation: SaveOperation = {
+      rowId: "456",
+      isNew: false,
+      data: { id: "456", name: "Updated Name" },
+      originalData: { id: "456", name: "Original Name" },
+    };
+
+    it("returns immediately on success without retrying", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: true,
+        data: { response: { status: 0, data: [{ id: "456", name: "Updated Name" }] } },
+      });
+
+      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(true);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not retry on a field-specific validation error", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        data: { response: { status: 1, error: { message: "Invalid", fieldErrors: { name: "Required" } } } },
+      });
+
+      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(false);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not retry on a stale-object conflict", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        data: { response: { status: 1, error: { message: "@OBJSON_StaleDate@" } } },
+      });
+
+      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(false);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
+    });
+
+    it("retries a general server error and succeeds on the second attempt", async () => {
+      jest.useFakeTimers();
+      mockMetadata.datasourceServletClient.request
+        .mockResolvedValueOnce({
+          ok: false,
+          data: { response: { status: 1, error: { message: "Temporary failure" } } },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          data: { response: { status: 0, data: [{ id: "456", name: "Updated Name" }] } },
+        });
+
+      const pending = saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+      await jest.runAllTimersAsync();
+      const result = await pending;
+
+      expect(result.success).toBe(true);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(2);
     });
   });
 
