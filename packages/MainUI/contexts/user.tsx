@@ -34,6 +34,7 @@ import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-cl
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";
+import SessionLoading from "@/components/SessionLoading";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
@@ -44,6 +45,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
+  // Drives the full-screen SessionLoading gate. Kept separate from
+  // isVerifyingSession, which guards verifySession against re-entrancy and
+  // therefore cannot be pre-set from login() without skipping the load.
+  const [isSessionLoading, setIsSessionLoading] = useState(false);
 
   // ── Subscribe to all store state so the context value stays reactive ──────
   // Each subscription is granular; UserProvider re-renders only when one of
@@ -193,6 +198,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
       Metadata.setToken(loginResponse.token);
       datasource.setToken(loginResponse.token);
       CopilotClient.setToken(loginResponse.token);
+      // Show the session loader from the very first render after the token is
+      // set, so the dashboard never flashes empty while getSession is in flight.
+      setIsSessionLoading(true);
       useUserStore.getState().setToken(loginResponse.token);
     } catch (e) {
       logger.warn("Login or session retrieval error:", e);
@@ -201,15 +209,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Optimistic logout: clear local state and every client token first so the
+    // user is fully logged out regardless of the backend outcome. The backend
+    // call is best-effort (the JWT is stateless and cannot be revoked), so its
+    // failure is swallowed and never surfaces as an unhandled rejection.
+    clearUserData();
+    Metadata.setToken("");
+    datasource.setToken("");
+    CopilotClient.setToken("");
+
     try {
-      clearUserData();
       await doLogout();
-      Metadata.setToken("");
-      datasource.setToken("");
-      CopilotClient.setToken("");
     } catch (error) {
       logger.warn("Logout error:", error);
-      throw error;
     }
   }, [clearUserData]);
 
@@ -221,6 +233,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       try {
         if (token) {
           setIsVerifyingSession(true);
+          setIsSessionLoading(true);
           let activeToken = token;
 
           const savedRoleId = localStorage.getItem("currentRoleId");
@@ -249,6 +262,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         console.error(error);
       } finally {
         setIsVerifyingSession(false);
+        setIsSessionLoading(false);
         setReady(true);
       }
     };
@@ -370,13 +384,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
     ]
   );
 
+  const renderContent = () => {
+    if (!token) {
+      return <LoginScreen data-testid="LoginScreen__2e05d2" />;
+    }
+    if (isSessionLoading) {
+      return <SessionLoading data-testid="SessionLoading__2e05d2" />;
+    }
+    return props.children;
+  };
+
   if (!ready) {
-    return null;
+    return <SessionLoading data-testid="SessionLoading__2e05d2" />;
   }
 
-  return (
-    <UserContext.Provider value={value}>
-      {token ? props.children : <LoginScreen data-testid="LoginScreen__2e05d2" />}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{renderContent()}</UserContext.Provider>;
 }

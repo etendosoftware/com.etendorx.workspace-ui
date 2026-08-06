@@ -50,6 +50,7 @@ const en = {
     clone: "Clone",
     cloneWithChildren: "Clone With Children",
     change: "Change",
+    logout: "Log out",
   },
   forms: {
     sections: {
@@ -346,6 +347,7 @@ const en = {
   login: {
     title: "Log In",
     subtitle: "Enter your username and password to continue.",
+    loadingSession: "Loading your workspace...",
     fields: {
       username: {
         label: "Username",
