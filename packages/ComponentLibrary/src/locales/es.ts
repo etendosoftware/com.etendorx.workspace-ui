@@ -387,6 +387,16 @@ const es = {
         description:
           "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
       },
+      passwordExpired: {
+        title: "Tu contraseña ha expirado",
+        description: "Inicia sesión nuevamente para establecer una nueva contraseña.",
+      },
+    },
+    passwordExpired: {
+      title: "Tu contraseña ha expirado",
+      description: "Establece una nueva contraseña para continuar.",
+      submit: "Cambiar contraseña",
+      logout: "Cerrar sesión",
     },
     sso: {
       divider: "O continuar con",

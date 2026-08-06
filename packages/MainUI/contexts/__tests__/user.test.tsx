@@ -20,6 +20,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import UserProvider, { UserContext } from "../user";
 import { useUserStore } from "@/stores/userStore";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
+import { changePassword as doChangePassword } from "@workspaceui/api-client/src/api/changePassword";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -79,9 +80,35 @@ jest.mock("@/screens/Login", () => {
   return { __esModule: true, default: MockLoginScreen };
 });
 
+// Stands in for the mandatory password-change screen, exposing the context action it submits and
+// surfacing the rejection the way the real screen does (caught and rendered, never re-thrown).
+jest.mock("@/screens/ForcePasswordChange", () => {
+  const ReactLib = require("react");
+  const MockForcePasswordChangeScreen = () => {
+    const { UserContext: Ctx } = require("../user");
+    const ctx = ReactLib.useContext(Ctx);
+    const [error, setError] = ReactLib.useState("");
+    const submit = async () => {
+      try {
+        await ctx.completeExpiredPasswordChange({ newPwd: NEW_PASSWORD, confirmPwd: NEW_PASSWORD });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    };
+    return ReactLib.createElement(
+      "button",
+      { "data-testid": "trigger-password-change", onClick: submit },
+      error || "change"
+    );
+  };
+  return { __esModule: true, default: MockForcePasswordChangeScreen };
+});
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-const makeSessionResponse = () => ({
+const NEW_PASSWORD = "Str0ng-P4ss!";
+
+const makeSessionResponse = (passwordExpired = false) => ({
   user: { id: "u1", name: "John", client$_identifier: "john@acme.com", image: "", defaultLanguage: "en_US" },
   attributes: {},
   currentClient: { id: "c1", name: "Acme" },
@@ -90,6 +117,7 @@ const makeSessionResponse = () => ({
   currentWarehouse: { id: "w1", name: "WH" },
   roles: [],
   languages: {},
+  passwordExpired,
 });
 
 /** A deferred promise whose resolution can be controlled from the test. */
@@ -123,7 +151,15 @@ describe("UserProvider auth UX", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    useUserStore.setState({ token: null, currentRole: undefined, prevRole: undefined, roles: [] });
+    useUserStore.setState({
+      token: null,
+      currentRole: undefined,
+      prevRole: undefined,
+      roles: [],
+      passwordExpired: false,
+      loginErrorText: "",
+      loginErrorDescription: "",
+    });
     (getPreferences as jest.Mock).mockResolvedValue({});
     (doLogin as jest.Mock).mockResolvedValue({ token: "jwt-token" });
   });
@@ -172,5 +208,87 @@ describe("UserProvider auth UX", () => {
     expect(datasource.setToken).toHaveBeenCalledWith("");
     expect(CopilotClient.setToken).toHaveBeenCalledWith("");
     expect(useUserStore.getState().token).toBeNull();
+  });
+});
+
+describe("UserProvider expired password gate", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    useUserStore.setState({
+      token: null,
+      currentRole: undefined,
+      prevRole: undefined,
+      roles: [],
+      passwordExpired: false,
+      loginErrorText: "",
+      loginErrorDescription: "",
+    });
+    (getPreferences as jest.Mock).mockResolvedValue({});
+    (doLogin as jest.Mock).mockResolvedValue({ token: "jwt-token" });
+  });
+
+  /** Logs in with a session that reports the password as expired. */
+  const loginWithExpiredPassword = async () => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(true));
+    renderProvider();
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    return screen.findByTestId("trigger-password-change");
+  };
+
+  it("replaces the app with the mandatory change screen when the password is expired", async () => {
+    await loginWithExpiredPassword();
+
+    expect(screen.queryByTestId("dashboard")).toBeNull();
+    expect(useUserStore.getState().passwordExpired).toBe(true);
+  });
+
+  it("grants access after the password is changed successfully", async () => {
+    const trigger = await loginWithExpiredPassword();
+
+    // The reload triggered by the change reports the password as valid again.
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId("dashboard")).toBeInTheDocument();
+    expect(doChangePassword).toHaveBeenCalledWith({
+      currentPwd: "pass",
+      newPwd: NEW_PASSWORD,
+      confirmPwd: NEW_PASSWORD,
+    });
+    expect(useUserStore.getState().passwordExpired).toBe(false);
+  });
+
+  it("keeps the change screen open when the change fails", async () => {
+    const trigger = await loginWithExpiredPassword();
+    (doChangePassword as jest.Mock).mockRejectedValue(new Error("CPPasswordNotStrongEnough"));
+
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId("trigger-password-change")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard")).toBeNull();
+    expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not log the user out on the 401 the backend returns while the password is expired", async () => {
+    await loginWithExpiredPassword();
+
+    const interceptor = (Metadata.registerInterceptor as jest.Mock).mock.calls[0][0];
+    const blockedResponse = { status: 401, url: "https://erp/sws/com.etendoerp.metadata.meta/window/123" };
+
+    expect(interceptor(blockedResponse)).toBe(blockedResponse);
+    expect(await screen.findByTestId("trigger-password-change")).toBeInTheDocument();
+    expect(useUserStore.getState().token).toBe("jwt-token");
+    expect(useUserStore.getState().loginErrorText).toBe("");
+  });
+
+  it("goes directly to the app when the password is valid", async () => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+    renderProvider();
+
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+
+    expect(await screen.findByTestId("dashboard")).toBeInTheDocument();
+    expect(screen.queryByTestId("trigger-password-change")).toBeNull();
   });
 });

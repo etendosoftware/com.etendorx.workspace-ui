@@ -38,6 +38,7 @@ import { useSSO } from "@/hooks/useSSO";
 import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
+import { submitPasswordChange } from "@/utils/password";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -314,32 +315,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleSave = useCallback(async () => {
     if (currentSection === "password") {
-      setPasswordError("");
-      if (!currentPwd || !newPwd || !confirmPwd) {
-        setPasswordError(t("navigation.profile.passwordRequired"));
+      const errorKey = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
+      setPasswordError(errorKey ? t(errorKey) : "");
+      if (errorKey) {
         return;
       }
-      if (newPwd !== confirmPwd) {
-        setPasswordError(t("navigation.profile.passwordMismatch"));
-        return;
-      }
-      try {
-        await onPasswordChange({ currentPwd, newPwd, confirmPwd });
-        setCurrentPwd("");
-        setNewPwd("");
-        setConfirmPwd("");
-        handleClose();
-      } catch (error) {
-        const code = error instanceof Error ? error.message : "";
-        const messageKey: Record<string, string> = {
-          UINAVBA_CurrentPwdIncorrect: t("navigation.profile.errorCurrentPwdIncorrect"),
-          CPDifferentPassword: t("navigation.profile.errorDifferentPassword"),
-          UINAVBA_IncorrectPwd: t("navigation.profile.errorIncorrectPwd"),
-          UINAVBA_UnequalPwd: t("navigation.profile.errorUnequalPwd"),
-          CPPasswordNotStrongEnough: t("navigation.profile.errorNotStrongEnough"),
-        };
-        setPasswordError(messageKey[code] ?? t("navigation.profile.errorGeneric"));
-      }
+      setCurrentPwd("");
+      setNewPwd("");
+      setConfirmPwd("");
+      handleClose();
       return;
     }
 

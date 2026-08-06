@@ -611,6 +611,12 @@ export interface SessionResponse {
   roles: RoleList;
   languages: Languages;
   attributes: { [key: string]: null | string };
+  /**
+   * True when the user must change their password before being granted access.
+   * Computed by the backend, either from the administrator flag on the user record
+   * or from the client's password validity window.
+   */
+  passwordExpired: boolean;
 }
 
 export type RoleList = {
