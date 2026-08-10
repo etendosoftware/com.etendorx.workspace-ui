@@ -77,6 +77,7 @@ import {
   getCurrentRowCanExpand,
   getCellTitle,
 } from "@/utils/table/utils";
+import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
@@ -307,7 +308,8 @@ interface ActionsColumnCellProps {
   handleEditRow: (row: MRT_Row<EntityData>) => void;
   handleSaveRow: (rowId: string) => void;
   handleCancelRow: (rowId: string) => void;
-  setRecordId: (id: string) => void;
+  /** Selects this row and opens its record in form view. */
+  onOpenForm: () => void;
   uIPattern?: UIPattern;
 }
 
@@ -321,7 +323,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
   handleEditRow,
   handleSaveRow,
   handleCancelRow,
-  setRecordId,
+  onOpenForm,
   uIPattern,
 }) => {
   const rowId = String(row.original.id);
@@ -340,10 +342,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
       onEdit={() => handleEditRow(row)}
       onSave={() => handleSaveRow(rowId)}
       onCancel={() => handleCancelRow(rowId)}
-      onOpenForm={() => {
-        // Navigate to form view - this will handle the URL update properly
-        setRecordId(String(row.original.id));
-      }}
+      onOpenForm={onOpenForm}
       data-testid="ActionsColumn__8ca888"
       uIPattern={uIPattern}
     />
@@ -2369,21 +2368,49 @@ const DynamicTable = ({
     []
   );
 
+  /**
+   * Selects the row in the grid and opens its record in form view.
+   *
+   * Shared by the row double click, the Enter shortcut and the actions column "open form" button so
+   * the three entry points always leave the same grid selection behind, which is what keeps the row
+   * highlighted when the user comes back from the form to the grid.
+   */
+  const openRecordInFormView = useCallback(
+    (record: EntityData, tableInstance: MRT_TableInstance<EntityData>) => {
+      openRecordInForm({
+        record,
+        tab,
+        graph,
+        windowIdentifier,
+        getSelectedRecord,
+        setRecordId,
+        selectRow: (recordId: string) => {
+          // Mirrors the single click path: flag the change as user driven so the auto scroll effect
+          // does not fight the current viewport, and replace (never merge) the previous selection so
+          // the highlighted row and the opened record can never diverge.
+          isManualSelection.current = true;
+          tableInstance.setRowSelection({ [recordId]: true });
+        },
+      });
+    },
+    [tab, graph, windowIdentifier, getSelectedRecord, setRecordId]
+  );
+
   // Stable Cell renderer for actions column - extracted to prevent component remounts
   const renderActionsColumnCell = useCallback(
-    ({ row }: { row: MRT_Row<EntityData> }) => (
+    ({ row, table }: { row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) => (
       <ActionsColumnCell
         row={row}
         editingRowUtils={editingRowUtils}
         handleEditRow={handleEditRow}
         handleSaveRow={handleSaveRow}
         handleCancelRow={handleCancelRow}
-        setRecordId={setRecordId}
+        onOpenForm={() => openRecordInFormView(row.original, table)}
         uIPattern={uIPattern}
         data-testid="ActionsColumnCell__8ca888"
       />
     ),
-    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId, uIPattern]
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, openRecordInFormView, uIPattern]
   );
 
   // Stable Cell renderer for data columns - reads column metadata from column object
@@ -2781,27 +2808,9 @@ const DynamicTable = ({
           }
           clickTimeoutsRef.current.clear();
 
-          const parent = graph.getParent(tab);
-
-          // For child tabs, prevent opening form if parent has no selection in URL
-          if (parent) {
-            const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
-            if (!parentSelectedInURL) {
-              return;
-            }
-          }
-
-          // Set graph selection for consistency
-          const parentSelection = parent ? graph.getSelected(parent) : undefined;
-          graph.setSelected(tab, row.original);
-          graph.setSelectedMultiple(tab, [row.original]);
-
-          if (parent && parentSelection) {
-            setTimeout(() => graph.setSelected(parent, parentSelection), 10);
-          }
-
-          // Navigate to form view - this will handle the URL update properly
-          setRecordId(record.id);
+          // Select the row and navigate to form view. Selecting is what keeps the record
+          // highlighted when the user comes back to the grid.
+          openRecordInFormView(row.original, table);
         },
 
         // File attachment drag & drop props
@@ -2874,10 +2883,8 @@ const DynamicTable = ({
       };
     },
     [
-      graph,
-      setRecordId,
+      openRecordInFormView,
       sx.rowSelected,
-      tab,
       editingRowUtils,
       getRowDropZoneProps,
       shouldUseTreeMode,
@@ -3267,22 +3274,9 @@ const DynamicTable = ({
       const record = effectiveRecords.find((r) => String(r.id) === recordId);
       if (!record) return;
 
-      const parent = graph.getParent(tab);
-      if (parent) {
-        const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
-        if (!parentSelectedInURL) return;
-      }
-
-      const parentSelection = parent ? graph.getSelected(parent) : undefined;
-      graph.setSelected(tab, record);
-      graph.setSelectedMultiple(tab, [record]);
-      if (parent && parentSelection) {
-        setTimeout(() => graph.setSelected(parent, parentSelection), 10);
-      }
-
-      setRecordId(record.id as string);
+      openRecordInFormView(record, tableRef.current);
     },
-    [effectiveRecords, tableContainerRef, graph, tab, windowIdentifier, getSelectedRecord, setRecordId]
+    [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
 
   const handleNewWithParentGuard = useCallback(() => {

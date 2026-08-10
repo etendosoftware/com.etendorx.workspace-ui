@@ -71,6 +71,13 @@ export const DEFAULT_TABLE_STATE: TableState = {
   isImplicitFilterApplied: undefined,
 };
 
+/**
+ * Stable empty array returned by selectors when a tab has no stored section
+ * preference. A fresh literal would break zustand's snapshot caching and cause
+ * an endless re-render loop.
+ */
+export const DEFAULT_EXPANDED_SECTIONS: string[] = [];
+
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   activeLevels: [0],
   activeTabsByLevel: new Map(),
@@ -133,6 +140,13 @@ export interface WindowStore {
   // ---- Form state --------------------------------------------------------
   setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel?: number) => void;
   clearTabFormState: (windowIdentifier: string, tabId: string) => void;
+  /** Persists the ids of the form sections the user has expanded in a tab. */
+  setTabExpandedSections: (
+    windowIdentifier: string,
+    tabId: string,
+    expandedSections: string[],
+    tabLevel?: number
+  ) => void;
 
   // ---- Split view (grid + form side by side) ------------------------------
   setTabSplitEnabled: (windowIdentifier: string, tabId: string, enabled: boolean, tabLevel?: number) => void;
@@ -457,6 +471,16 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setTabSplitTableWidth"
+        ),
+      // Replaces the whole list: collapsing a section must be able to remove ids.
+      setTabExpandedSections: (windowIdentifier, tabId, expandedSections, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].expandedSections = expandedSections;
+          },
+          false,
+          "window/setTabExpandedSections"
         ),
 
       // ---- Selection -------------------------------------------------
