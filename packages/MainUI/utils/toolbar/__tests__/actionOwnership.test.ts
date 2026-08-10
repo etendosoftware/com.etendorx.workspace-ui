@@ -12,6 +12,9 @@ const makeByOwner = (overrides: Partial<ToolbarActionsByOwner> = {}): ToolbarAct
   ...overrides,
 });
 
+/** Action names in a stable order, so two sets of keys can be compared. */
+const sortedActionNames = (actions: object): string[] => Object.keys(actions).sort((a, b) => a.localeCompare(b));
+
 describe("createEmptyActionsByOwner", () => {
   it("creates one empty bucket per owner", () => {
     expect(createEmptyActionsByOwner()).toEqual({
@@ -105,6 +108,6 @@ describe("resolveToolbarActions", () => {
 
   it("resolves every known action key", () => {
     const resolved = resolveToolbarActions(createEmptyActionsByOwner());
-    expect(Object.keys(resolved).sort()).toEqual(Object.keys(defaultActions).sort());
+    expect(sortedActionNames(resolved)).toEqual(sortedActionNames(defaultActions));
   });
 });
