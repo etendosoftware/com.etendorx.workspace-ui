@@ -25,6 +25,7 @@ import type { WindowContextState, WindowState, TableState, NavigationState } fro
 import type { TabFormState } from "@/utils/url/constants";
 import { TAB_MODES } from "@/utils/url/constants";
 import { getWindowIdFromIdentifier, createDefaultTabState } from "@/utils/window/utils";
+import { DEFAULT_SPLIT_STATE, clampSplitTableWidth } from "@/utils/window/splitView";
 
 // ---------------------------------------------------------------------------
 // Internal helper: ensures window + tab exist in the draft (immer mutates)
@@ -132,6 +133,10 @@ export interface WindowStore {
   // ---- Form state --------------------------------------------------------
   setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel?: number) => void;
   clearTabFormState: (windowIdentifier: string, tabId: string) => void;
+
+  // ---- Split view (grid + form side by side) ------------------------------
+  setTabSplitEnabled: (windowIdentifier: string, tabId: string, enabled: boolean, tabLevel?: number) => void;
+  setTabSplitTableWidth: (windowIdentifier: string, tabId: string, tableWidth: number, tabLevel?: number) => void;
 
   // ---- Selection ---------------------------------------------------------
   setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string, tabLevel?: number) => void;
@@ -426,6 +431,32 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/clearTabFormState"
+        ),
+
+      // ---- Split view -------------------------------------------------
+      // Neither setter is reachable from clearTabFormState / clearChildrenSelections:
+      // the split preference and its proportion must survive closing a form,
+      // navigating between records and parent-selection changes.
+      setTabSplitEnabled: (windowIdentifier, tabId, enabled, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            const tab = draft.windows[windowIdentifier].tabs[tabId];
+            tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), enabled };
+          },
+          false,
+          "window/setTabSplitEnabled"
+        ),
+
+      setTabSplitTableWidth: (windowIdentifier, tabId, tableWidth, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            const tab = draft.windows[windowIdentifier].tabs[tabId];
+            tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), tableWidth: clampSplitTableWidth(tableWidth) };
+          },
+          false,
+          "window/setTabSplitTableWidth"
         ),
 
       // ---- Selection -------------------------------------------------

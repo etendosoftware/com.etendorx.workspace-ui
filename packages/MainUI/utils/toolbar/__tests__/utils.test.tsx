@@ -161,7 +161,7 @@ describe("organizeButtonsBySection", () => {
       makeBtn(TOOLBAR_BUTTONS_ACTIONS.SAVE, "left"),
       makeBtn(TOOLBAR_BUTTONS_ACTIONS.REFRESH, "right"),
     ];
-    const result = organizeButtonsBySection(buttons, true);
+    const result = organizeButtonsBySection(buttons, { isFormView: true });
     expect(result.left).toHaveLength(2);
     expect(result.right).toHaveLength(1);
     expect(result.center).toHaveLength(0);
@@ -169,59 +169,61 @@ describe("organizeButtonsBySection", () => {
 
   it("excludes inactive buttons", () => {
     const inactive = { ...makeBtn(TOOLBAR_BUTTONS_ACTIONS.DELETE, "left"), active: false };
-    const result = organizeButtonsBySection([inactive], false);
+    const result = organizeButtonsBySection([inactive], { isFormView: false });
     expect(result.left).toHaveLength(0);
   });
 
   it("hides FIND button in form view", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], true);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], { isFormView: true });
     expect(result.left).toHaveLength(0);
   });
 
   it("shows FIND button in grid view", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], false);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], { isFormView: false });
     expect(result.left).toHaveLength(1);
   });
 
   it("hides SAVE button in grid view", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.SAVE, "left")], false);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.SAVE, "left")], { isFormView: false });
     expect(result.left).toHaveLength(0);
   });
 
   it("hides FILTER button in form view", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FILTER, "left")], true);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FILTER, "left")], { isFormView: true });
     expect(result.left).toHaveLength(0);
   });
 
   it("hides TOGGLE_TREE_VIEW when isTreeNodeView=false", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW, "right")], false, false);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW, "right")], {
+      isFormView: false,
+      isTreeNodeView: false,
+    });
     expect(result.right).toHaveLength(0);
   });
 
   it("shows TOGGLE_TREE_VIEW when isTreeNodeView=true", () => {
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW, "right")], false, true);
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW, "right")], {
+      isFormView: false,
+      isTreeNodeView: true,
+    });
     expect(result.right).toHaveLength(1);
   });
 
   it("hides COPILOT button when isCopilotInstalled=false", () => {
-    const result = organizeButtonsBySection(
-      [makeBtn(TOOLBAR_BUTTONS_ACTIONS.COPILOT, "right")],
-      false,
-      false,
-      undefined,
-      false
-    );
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.COPILOT, "right")], {
+      isFormView: false,
+      isTreeNodeView: false,
+      isCopilotInstalled: false,
+    });
     expect(result.right).toHaveLength(0);
   });
 
   it("shows COPILOT button when isCopilotInstalled=true", () => {
-    const result = organizeButtonsBySection(
-      [makeBtn(TOOLBAR_BUTTONS_ACTIONS.COPILOT, "right")],
-      false,
-      false,
-      undefined,
-      true
-    );
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.COPILOT, "right")], {
+      isFormView: false,
+      isTreeNodeView: false,
+      isCopilotInstalled: true,
+    });
     expect(result.right).toHaveLength(1);
   });
 
@@ -230,37 +232,35 @@ describe("organizeButtonsBySection", () => {
       makeBtn(TOOLBAR_BUTTONS_ACTIONS.DELETE, "left", 20),
       makeBtn(TOOLBAR_BUTTONS_ACTIONS.NEW, "left", 10),
     ];
-    const result = organizeButtonsBySection(buttons, true);
+    const result = organizeButtonsBySection(buttons, { isFormView: true });
     expect(result.left[0].action).toBe(TOOLBAR_BUTTONS_ACTIONS.NEW);
     expect(result.left[1].action).toBe(TOOLBAR_BUTTONS_ACTIONS.DELETE);
   });
 
   it("hides PRINT_RECORD when tab process identifier does not include Print", () => {
     const tab = { process$_identifier: "SomeOther" } as Tab;
-    const result = organizeButtonsBySection(
-      [makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")],
-      false,
-      false,
-      tab
-    );
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")], {
+      isFormView: false,
+      isTreeNodeView: false,
+      tab,
+    });
     expect(result.right).toHaveLength(0);
   });
 
   it("shows PRINT_RECORD when tab process identifier includes Print", () => {
     const tab = { process$_identifier: "Print Document" } as Tab;
-    const result = organizeButtonsBySection(
-      [makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")],
-      false,
-      false,
-      tab
-    );
+    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")], {
+      isFormView: false,
+      isTreeNodeView: false,
+      tab,
+    });
     expect(result.right).toHaveLength(1);
   });
 
   it("sorts by name when seqno is equal", () => {
     const a = { ...makeBtn(TOOLBAR_BUTTONS_ACTIONS.DELETE, "left", 10), name: "Zebra" };
     const b = { ...makeBtn(TOOLBAR_BUTTONS_ACTIONS.CANCEL, "left", 10), name: "Alpha" };
-    const result = organizeButtonsBySection([a, b], true);
+    const result = organizeButtonsBySection([a, b], { isFormView: true });
     expect(result.left[0].name).toBe("Alpha");
     expect(result.left[1].name).toBe("Zebra");
   });
@@ -268,8 +268,71 @@ describe("organizeButtonsBySection", () => {
   it("treats null seqno as max integer for sorting", () => {
     const a = makeBtn(TOOLBAR_BUTTONS_ACTIONS.DELETE, "left", undefined);
     const b = makeBtn(TOOLBAR_BUTTONS_ACTIONS.CANCEL, "left", 5);
-    const result = organizeButtonsBySection([a, b], true);
+    const result = organizeButtonsBySection([a, b], { isFormView: true });
     expect(result.left[0].action).toBe(TOOLBAR_BUTTONS_ACTIONS.CANCEL);
+  });
+
+  describe("split view", () => {
+    // In split view the grid shares the screen with the form, so the buttons that
+    // act on the grid must stay reachable even though isFormView is also true.
+    const GRID_ORIENTED_ACTIONS = [
+      TOOLBAR_BUTTONS_ACTIONS.FIND,
+      TOOLBAR_BUTTONS_ACTIONS.FILTER,
+      TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW,
+      TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS,
+    ];
+
+    it.each(GRID_ORIENTED_ACTIONS)("shows %s in split view", (action) => {
+      const result = organizeButtonsBySection([makeBtn(action, "left")], { isFormView: true, isSplitView: true });
+      expect(result.left).toHaveLength(1);
+    });
+
+    it.each([TOOLBAR_BUTTONS_ACTIONS.FIND, TOOLBAR_BUTTONS_ACTIONS.FILTER, TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW])(
+      "hides %s in the maximized form",
+      (action) => {
+        const result = organizeButtonsBySection([makeBtn(action, "left")], { isFormView: true, isSplitView: false });
+        expect(result.left).toHaveLength(0);
+      }
+    );
+
+    it("keeps COLUMN_FILTERS visible in every view", () => {
+      const button = makeBtn(TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS, "left");
+      expect(organizeButtonsBySection([button], { isFormView: true }).left).toHaveLength(1);
+      expect(organizeButtonsBySection([button], { isFormView: false }).left).toHaveLength(1);
+    });
+
+    it("keeps SAVE visible in split view", () => {
+      const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.SAVE, "left")], {
+        isFormView: true,
+        isSplitView: true,
+      });
+      expect(result.left).toHaveLength(1);
+    });
+
+    it("still hides FIND while browsing a tree node, even in split view", () => {
+      const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], {
+        isFormView: true,
+        isSplitView: true,
+        isTreeNodeView: true,
+      });
+      expect(result.left).toHaveLength(0);
+    });
+
+    it("shows SHOW_TABLE_AND_FORM on a standard tab", () => {
+      const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM, "right")], {
+        isFormView: false,
+        tab: { uIPattern: UIPattern.STANDARD } as Tab,
+      });
+      expect(result.right).toHaveLength(1);
+    });
+
+    it("hides SHOW_TABLE_AND_FORM on a single-record tab", () => {
+      const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM, "right")], {
+        isFormView: false,
+        tab: { uIPattern: UIPattern.EDIT_ONLY } as Tab,
+      });
+      expect(result.right).toHaveLength(0);
+    });
   });
 });
 
@@ -555,6 +618,62 @@ describe("createButtonByType - extended", () => {
       isFormView: false,
     });
     expect(result.iconText).toBe("New");
+  });
+
+  describe("SHOW_TABLE_AND_FORM", () => {
+    const makeSplitButton = () =>
+      makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM, name: "Show table and form" });
+
+    it("is pressed while split view is active", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeSplitButton(),
+        isFormView: true,
+        isSplitView: true,
+      });
+      expect(result.isPressed).toBe(true);
+    });
+
+    it("is not pressed in the maximized form", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeSplitButton(),
+        isFormView: true,
+        isSplitView: false,
+      });
+      expect(result.isPressed).toBeUndefined();
+    });
+
+    it("is enabled whenever a form is open", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeSplitButton(),
+        isFormView: true,
+        selectedRecordsLength: 0,
+      });
+      expect(result.disabled).toBe(false);
+    });
+
+    // From the grid it opens the selected record in split view, so it needs one.
+    it("is enabled from the grid when a record is selected", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeSplitButton(),
+        isFormView: false,
+        selectedRecordsLength: 1,
+      });
+      expect(result.disabled).toBe(false);
+    });
+
+    it("is disabled from the grid with no record selected", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeSplitButton(),
+        isFormView: false,
+        selectedRecordsLength: 0,
+      });
+      expect(result.disabled).toBe(true);
+    });
   });
 });
 

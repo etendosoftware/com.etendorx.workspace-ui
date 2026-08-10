@@ -32,6 +32,7 @@ import type {
   WindowRecoveryInfo,
 } from "@/utils/window/constants";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { DEFAULT_SPLIT_STATE } from "@/utils/window/splitView";
 
 /**
  * Generates a new tab form state for a specific record and mode.
@@ -102,6 +103,7 @@ export const createDefaultTabState = (tabLevel = 0): TabState => ({
     isImplicitFilterApplied: false,
   },
   form: {},
+  split: { ...DEFAULT_SPLIT_STATE },
   level: tabLevel,
 });
 

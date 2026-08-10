@@ -45,6 +45,7 @@ import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
@@ -638,6 +639,11 @@ interface DynamicTableProps {
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
   isVisible?: boolean;
+  /**
+   * True when the grid is the only pane on screen. It is visible but NOT
+   * primary in split view, where the form pane owns the user's attention.
+   */
+  isPrimaryView?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
@@ -723,6 +729,7 @@ const DynamicTable = ({
   onRecordSelection,
   isTreeMode = true,
   isVisible = true,
+  isPrimaryView = true,
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
@@ -788,7 +795,8 @@ const DynamicTable = ({
     registerUpdateRecord,
     registerAddRecord,
   } = useDatasourceContext();
-  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
+  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
+    useToolbarContext();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
 
@@ -3344,37 +3352,20 @@ const DynamicTable = ({
   // `visibility: hidden` after React commits the className change, and
   // `.focus()` is a silent no-op while any ancestor has visibility:hidden.
   // Neither a microtask nor a single rAF is late enough; setTimeout(100) is.
+  //
+  // Skipped when the grid is not the primary view: in split view the form pane
+  // is on screen next to the grid, and stealing DOM focus would pull the caret
+  // out of the field the user is editing on every restore from maximized form.
   const previousIsVisibleRef = useRef(isVisible);
   useEffect(() => {
     const prev = previousIsVisibleRef.current;
     previousIsVisibleRef.current = isVisible;
-    if (prev || !isVisible) return;
+    if (prev || !isVisible || !isPrimaryView) return;
     const timeoutId = setTimeout(() => {
       tableContainerRef.current?.focus({ preventScroll: true });
     }, 100);
     return () => clearTimeout(timeoutId);
-  }, [isVisible]);
-
-  // Register attachment action for toolbar to handle interactions from TableView
-  useEffect(() => {
-    if (registerAttachmentAction && isVisible) {
-      registerAttachmentAction(() => {
-        const currentSelection = tableRef.current.getState().rowSelection;
-        // Filter keys where value is true to ensure valid selection
-        const selectedIds = Object.keys(currentSelection).filter((key) => currentSelection[key]);
-
-        if (selectedIds.length === 1) {
-          const recordId = selectedIds[0];
-          setShouldOpenAttachmentModal(true);
-          setRecordId(recordId);
-        } else if (selectedIds.length === 0) {
-          showErrorModal(t("status.selectRecordError"));
-        } else {
-          showErrorModal(t("status.selectSingleRecordError"));
-        }
-      });
-    }
-  }, [registerAttachmentAction, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
+  }, [isVisible, isPrimaryView]);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
@@ -3719,16 +3710,20 @@ const DynamicTable = ({
     fetchMore,
   ]);
 
+  // The grid never registers `save`: the no-op default already covers grid-only
+  // mode, and registering one here used to clobber the form's real save.
   useEffect(() => {
-    if (isVisible) {
-      registerActions({
+    if (!isVisible) return;
+    registerActions(
+      {
         refresh: refetch,
         filter: toggleImplicitFilters,
-        save: async () => false,
         columnFilters: toggleColumnsDropdown,
-      });
-    }
-  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
+      },
+      TOOLBAR_ACTION_OWNERS.GRID
+    );
+    return () => unregisterActions(TOOLBAR_ACTION_OWNERS.GRID);
+  }, [refetch, registerActions, unregisterActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView

@@ -43,9 +43,25 @@ export interface NavigationState {
   initialized: boolean;
 }
 
+/**
+ * Split view (grid + form side by side) preference of a tab.
+ *
+ * Session-scoped on purpose: Classic does not persist this either (the
+ * boosted-ui module that provides the split has no personalization hooks), so
+ * it is deliberately kept out of saved views and out of the URL.
+ */
+export interface SplitViewState {
+  /** Keep the grid on screen while a form is open. */
+  enabled: boolean;
+  /** Grid pane width, as a percentage of the panes container. */
+  tableWidth: number;
+}
+
 export interface TabState {
   table: TableState;
   form: TabFormState;
+  /** Optional: tabs restored from URL recovery are built without it. */
+  split?: SplitViewState;
   level: number;
   selectedRecord?: string;
   initializedWithDirectLink?: boolean;

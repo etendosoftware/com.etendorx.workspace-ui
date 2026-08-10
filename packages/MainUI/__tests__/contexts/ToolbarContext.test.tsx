@@ -20,6 +20,7 @@ import { ToolbarProvider, useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarStore } from "@/stores/toolbarStore";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
@@ -100,7 +101,7 @@ describe("ToolbarContext - Save Wrapping", () => {
 
     // Register a save action
     act(() => {
-      contextValue.registerActions({ save: mockSave });
+      contextValue.registerActions({ save: mockSave }, TOOLBAR_ACTION_OWNERS.FORM);
     });
 
     // Execute the wrapped onSave
@@ -120,7 +121,7 @@ describe("ToolbarContext - Save Wrapping", () => {
     const mockSave = jest.fn().mockRejectedValue(saveError);
 
     act(() => {
-      contextValue.registerActions({ save: mockSave });
+      contextValue.registerActions({ save: mockSave }, TOOLBAR_ACTION_OWNERS.FORM);
     });
 
     await expect(
@@ -141,7 +142,7 @@ describe("ToolbarContext - Save Wrapping", () => {
     const mockSave = jest.fn().mockResolvedValue(true);
 
     act(() => {
-      contextValue.registerActions({ save: mockSave });
+      contextValue.registerActions({ save: mockSave }, TOOLBAR_ACTION_OWNERS.FORM);
     });
 
     await act(async () => {
@@ -183,7 +184,7 @@ describe("ToolbarContext - Save Wrapping", () => {
     const mockSave = jest.fn().mockResolvedValue(undefined);
 
     act(() => {
-      contextValue.registerActions({ save: mockSave });
+      contextValue.registerActions({ save: mockSave }, TOOLBAR_ACTION_OWNERS.FORM);
     });
 
     await act(async () => {

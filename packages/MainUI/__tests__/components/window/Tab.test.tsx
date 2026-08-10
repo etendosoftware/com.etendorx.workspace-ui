@@ -24,7 +24,7 @@ jest.mock("../../../contexts/tab");
 jest.mock("../../../hooks/useUserContext");
 
 import type React from "react";
-import { render } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "@workspaceui/componentlibrary/src/theme";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
@@ -33,6 +33,12 @@ import { Tab } from "@/components/window/Tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
+import DynamicTable from "@/components/Table";
+import { Toolbar } from "@/components/Toolbar/Toolbar";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
+import { FocusProvider } from "@/contexts/focus";
+import { useWindowStore } from "@/stores/windowStore";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
 // Mock other dependencies
 jest.mock("next/cache", () => ({
@@ -205,5 +211,271 @@ describe("Tab - Refresh Registration", () => {
     expect(typeof allRegisteredActions.new).toBe("function");
     expect(typeof allRegisteredActions.back).toBe("function");
     expect(typeof allRegisteredActions.treeView).toBe("function");
+  });
+});
+
+describe("Tab - Split view", () => {
+  const WINDOW_IDENTIFIER = "test-window_1";
+  const RECORD_ID = "record-1";
+
+  const splitTab: TabType = {
+    ...({} as TabType),
+    id: "split-tab",
+    tabLevel: 0,
+    name: "Split Tab",
+    window: "test-window",
+    entityName: "TestEntity",
+    title: "Split Tab",
+    uIPattern: "STD" as const,
+    parentColumns: [],
+    table: "test_table",
+    fields: {},
+    _identifier: "split-identifier",
+    records: {},
+    hqlfilterclause: "",
+    hqlwhereclause: "",
+    sQLWhereClause: "",
+    module: "test-module",
+  };
+
+  const mockRegisterActions = jest.fn();
+
+  const renderSplitTab = () =>
+    render(
+      <ThemeProvider theme={theme}>
+        <WindowProvider>
+          <CurrentWindowProvider windowIdentifier={WINDOW_IDENTIFIER} windowId="test-window">
+            <FocusProvider>
+              <DatasourceProvider>
+                <Tab tab={splitTab} collapsed={false} />
+              </DatasourceProvider>
+            </FocusProvider>
+          </CurrentWindowProvider>
+        </WindowProvider>
+      </ThemeProvider>
+    );
+
+  /** Latest props the mocked child component was rendered with. */
+  const lastPropsOf = (component: unknown) => {
+    const calls = (component as jest.Mock).mock.calls;
+    return calls[calls.length - 1]?.[0];
+  };
+
+  /** The `toggleSplitView` implementation the tab registered on the toolbar. */
+  const registeredToggle = (): (() => void) => {
+    const merged = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+    return merged.toggleSplitView;
+  };
+
+  const openForm = () => {
+    act(() => {
+      useWindowStore
+        .getState()
+        .setTabFormState(WINDOW_IDENTIFIER, splitTab.id, { recordId: RECORD_ID, mode: "form", formMode: "edit" });
+    });
+  };
+
+  const getSplit = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.split;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useWindowStore.getState().cleanState();
+
+    mockUseTabRefreshContext.mockReturnValue({
+      registerRefresh: jest.fn(),
+      unregisterRefresh: jest.fn(),
+      triggerParentRefreshes: jest.fn(),
+    });
+
+    mockUseToolbarContext.mockReturnValue({
+      registerActions: mockRegisterActions,
+      unregisterActions: jest.fn(),
+      onRefresh: jest.fn(),
+      onSave: jest.fn(),
+      onNew: jest.fn(),
+      onBack: jest.fn(),
+      onFilter: jest.fn(),
+      onToggleTreeView: jest.fn(),
+      onToggleSplitView: jest.fn(),
+      onColumnFilters: jest.fn(),
+      saveButtonState: {
+        isCalloutLoading: false,
+        hasValidationErrors: false,
+        isSaving: false,
+        validationErrors: [],
+      },
+      setSaveButtonState: jest.fn(),
+      shouldOpenAttachmentModal: false,
+      setShouldOpenAttachmentModal: jest.fn(),
+      isImplicitFilterApplied: false,
+      setIsImplicitFilterApplied: jest.fn(),
+      setIsAdvancedFilterApplied: jest.fn(),
+    });
+
+    require("@/hooks/useMetadataContext").useMetadataContext = jest.fn().mockReturnValue({
+      window: { id: "test-window" },
+    });
+
+    require("@/hooks/useSelected").useSelected = jest.fn().mockReturnValue({
+      graph: {
+        clearSelected: jest.fn(),
+        clearSelectedMultiple: jest.fn(),
+        getChildren: jest.fn(() => []),
+        getParent: jest.fn(() => null),
+        addListener: jest.fn().mockReturnThis(),
+        removeListener: jest.fn().mockReturnThis(),
+        getSelected: jest.fn(),
+        getSelectedMultiple: jest.fn(() => []),
+        setSelected: jest.fn(),
+        setSelectedMultiple: jest.fn(),
+      },
+    });
+
+    require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({ tab: splitTab, hasFormChanges: false });
+
+    require("@/hooks/useUserContext").useUserContext = jest.fn().mockReturnValue({
+      user: { id: "test-user", name: "Test User" },
+      isAuthenticated: true,
+    });
+  });
+
+  it("registers the split-view toggle under the tab owner", () => {
+    renderSplitTab();
+
+    expect(mockRegisterActions).toHaveBeenCalledWith(
+      expect.objectContaining({ toggleSplitView: expect.any(Function) }),
+      TOOLBAR_ACTION_OWNERS.TAB
+    );
+  });
+
+  it("starts in grid mode with the grid as the only pane", () => {
+    renderSplitTab();
+
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isVisible: true, isPrimaryView: true });
+    expect(lastPropsOf(Toolbar)).toMatchObject({ isFormView: false, isSplitView: false });
+  });
+
+  it("hides the grid in the maximized form", () => {
+    renderSplitTab();
+    openForm();
+
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isVisible: false, isPrimaryView: false });
+    expect(lastPropsOf(Toolbar)).toMatchObject({ isFormView: true, isSplitView: false });
+  });
+
+  it("shows both panes with a draggable divider once split is enabled", () => {
+    renderSplitTab();
+    openForm();
+
+    act(() => registeredToggle()());
+
+    expect(screen.getByRole("separator")).toBeInTheDocument();
+    // The grid is visible but no longer the primary view — the form pane is too.
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isVisible: true, isPrimaryView: false });
+    expect(lastPropsOf(Toolbar)).toMatchObject({ isFormView: true, isSplitView: true });
+  });
+
+  it("toggles back to the maximized form", () => {
+    renderSplitTab();
+    openForm();
+
+    act(() => registeredToggle()());
+    expect(getSplit()?.enabled).toBe(true);
+
+    act(() => registeredToggle()());
+    expect(getSplit()?.enabled).toBe(false);
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+  });
+
+  it("opens the selected record in split view when pressed from the grid", () => {
+    renderSplitTab();
+    act(() => {
+      useWindowStore.getState().setSelectedRecord(WINDOW_IDENTIFIER, splitTab.id, RECORD_ID);
+    });
+
+    act(() => registeredToggle()());
+
+    expect(getSplit()?.enabled).toBe(true);
+    expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
+      recordId: RECORD_ID,
+      mode: "form",
+    });
+  });
+
+  it("does nothing when pressed from the grid with no record selected", () => {
+    renderSplitTab();
+
+    act(() => registeredToggle()());
+
+    // Nothing was written at all: no split preference and no form opened.
+    expect(getSplit()?.enabled).toBeFalsy();
+    expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.form ?? {}).toEqual({});
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+  });
+
+  it("keeps the split preference when the form is closed", () => {
+    renderSplitTab();
+    openForm();
+    act(() => registeredToggle()());
+
+    act(() => {
+      useWindowStore.getState().clearTabFormState(WINDOW_IDENTIFIER, splitTab.id);
+    });
+
+    expect(getSplit()?.enabled).toBe(true);
+    // Grid only again, but the preference survives for the next record.
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+  });
+
+  describe("row selection in split view", () => {
+    const selectRow = (recordId: string) => {
+      act(() => lastPropsOf(DynamicTable).onRecordSelection(recordId));
+    };
+
+    it("loads the clicked record into the form", () => {
+      renderSplitTab();
+      openForm();
+      act(() => registeredToggle()());
+
+      selectRow("record-2");
+
+      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
+        recordId: "record-2",
+      });
+    });
+
+    it("does not change the form record when there are unsaved changes", () => {
+      require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({ tab: splitTab, hasFormChanges: true });
+      renderSplitTab();
+      openForm();
+      act(() => registeredToggle()());
+
+      selectRow("record-2");
+
+      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
+        recordId: RECORD_ID,
+      });
+    });
+
+    it("does not open the form on selection outside split view", () => {
+      renderSplitTab();
+
+      selectRow("record-2");
+
+      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toEqual({});
+    });
+  });
+
+  describe("ctrl+m shortcut", () => {
+    it("toggles the split view while the tab is focused", () => {
+      renderSplitTab();
+      openForm();
+
+      fireEvent.keyDown(document, { key: "m", ctrlKey: true });
+
+      expect(getSplit()?.enabled).toBe(true);
+    });
   });
 });

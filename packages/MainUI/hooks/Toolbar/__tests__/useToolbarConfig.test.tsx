@@ -68,6 +68,7 @@ describe("useToolbarConfig", () => {
   const mockSetTabFormState = jest.fn();
   const mockClearSelectedRecord = jest.fn();
   const mockOnRefresh = jest.fn();
+  const mockOnToggleSplitView = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -112,7 +113,10 @@ describe("useToolbarConfig", () => {
     });
     (useSearch as jest.Mock).mockReturnValue({ setSearchQuery: jest.fn() });
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
-    (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
+    (useToolbarContext as jest.Mock).mockReturnValue({
+      onRefresh: mockOnRefresh,
+      onToggleSplitView: mockOnToggleSplitView,
+    });
     (useDeleteRecord as jest.Mock).mockReturnValue({ deleteRecord: jest.fn(), loading: false });
     useUserStore.setState({ token: "mock-token" });
   });
@@ -120,6 +124,30 @@ describe("useToolbarConfig", () => {
   it("initializes correctly", () => {
     const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
     expect(result.current.actionModal.isOpen).toBe(false);
+  });
+
+  describe("SHOW_TABLE_AND_FORM", () => {
+    it("dispatches to the registered split-view toggle", () => {
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      act(() => {
+        result.current.handleAction("SHOW_TABLE_AND_FORM");
+      });
+
+      expect(mockOnToggleSplitView).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not fall through to the unknown-action warning", () => {
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      act(() => {
+        result.current.handleAction("SHOW_TABLE_AND_FORM");
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
   });
 
   describe("handleCopyRecord", () => {

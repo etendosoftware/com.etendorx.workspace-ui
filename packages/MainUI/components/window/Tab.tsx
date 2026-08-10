@@ -34,7 +34,27 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
+import {
+  DEFAULT_SPLIT_STATE,
+  SPLIT_MAX_TABLE_WIDTH,
+  SPLIT_MIN_TABLE_WIDTH,
+  SPLIT_TABLE_WIDTH_CSS_VAR,
+  TAB_VIEW_MODES,
+  getFocusBorderColor,
+  getFormPaneClassName,
+  getGridPaneClassName,
+  getGridPaneStyle,
+  getPanesContainerClassName,
+  getPanesContainerStyle,
+  getTabViewMode,
+  isGridPaneExclusive,
+  isGridPaneVisible,
+  isSplitViewAvailable,
+} from "@/utils/window/splitView";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -151,6 +171,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     if (!parentTabId || !windowIdentifier) return undefined;
     return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
   });
+  const splitState = useWindowStore((s) => {
+    if (!windowIdentifier) return DEFAULT_SPLIT_STATE;
+    return s.windows[windowIdentifier]?.tabs[tab.id]?.split ?? DEFAULT_SPLIT_STATE;
+  });
+  const setTabSplitEnabled = useWindowStore((s) => s.setTabSplitEnabled);
+  const setTabSplitTableWidth = useWindowStore((s) => s.setTabSplitTableWidth);
   const { unregisterRefresh } = useTabRefreshContext();
   const token = useUserStore((s) => s.token);
   const selectedRecords = useSelectedRecords(tab);
@@ -228,6 +254,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
+  // Split view: grid and form on screen at once. `toggle` drives the tree
+  // side-by-side layout, which split takes precedence over.
+  const panesRef = useRef<HTMLDivElement>(null);
+  const isSplitEnabled = splitState.enabled && isSplitViewAvailable(tab);
+  const isTreeSideBySide = toggle && shouldShowForm;
+  const viewMode = getTabViewMode({ shouldShowForm, isSplitEnabled, isTreeSideBySide });
+  const isSplitView = viewMode === TAB_VIEW_MODES.SPLIT;
+
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
       const newValue = typeof value === "function" ? value(currentRecordId) : value;
@@ -281,6 +315,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       if (windowIdentifier) {
         if (recordId) {
           setSelectedRecord(windowIdentifier, tab.id, recordId);
+          // In split view a single click loads the record into the form (as in
+          // Classic), which also keeps the grid, the ERP session and the form
+          // pointing at the same record. Never discard pending edits.
+          if (isSplitView && !hasFormChanges) {
+            handleSetRecordId(recordId);
+          }
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
@@ -307,7 +347,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         }
       }
     },
-    [windowIdentifier, tab, setSelectedRecord, clearSelectedRecord, clearChildrenSelections, graph]
+    [
+      windowIdentifier,
+      tab,
+      setSelectedRecord,
+      clearSelectedRecord,
+      clearChildrenSelections,
+      graph,
+      isSplitView,
+      hasFormChanges,
+      handleSetRecordId,
+    ]
   );
 
   const handleNew = useCallback(() => {
@@ -365,6 +415,50 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       setToggle((prev) => !prev);
     }
   }, [windowIdentifier]);
+
+  /**
+   * With a form open, toggles between the split view and the maximized form.
+   * From the grid, opens the selected record directly in split view (Classic's
+   * `showGridAndForm` does the same via `grid.recordDoubleClick`).
+   */
+  const handleToggleSplitView = useCallback(() => {
+    if (!windowIdentifier || !isSplitViewAvailable(tab)) return;
+
+    if (shouldShowForm) {
+      setTabSplitEnabled(windowIdentifier, tab.id, !splitState.enabled, tab.tabLevel);
+      return;
+    }
+
+    if (!selectedRecordId) return;
+    setTabSplitEnabled(windowIdentifier, tab.id, true, tab.tabLevel);
+    handleSetRecordId(selectedRecordId);
+  }, [
+    windowIdentifier,
+    tab,
+    shouldShowForm,
+    splitState.enabled,
+    selectedRecordId,
+    setTabSplitEnabled,
+    handleSetRecordId,
+  ]);
+
+  useKeyboardShortcuts({ "ctrl+m": { handler: handleToggleSplitView, allowInInputs: true } }, isFocused);
+
+  /**
+   * Live drag writes the CSS variable directly: a React state update per
+   * mousemove would re-render the whole table at pointer frequency.
+   */
+  const handleSplitDrag = useCallback((tableWidth: number) => {
+    panesRef.current?.style.setProperty(SPLIT_TABLE_WIDTH_CSS_VAR, `${tableWidth}%`);
+  }, []);
+
+  const handleSplitDragEnd = useCallback(
+    (tableWidth: number) => {
+      if (!windowIdentifier) return;
+      setTabSplitTableWidth(windowIdentifier, tab.id, tableWidth, tab.tabLevel);
+    },
+    [windowIdentifier, tab.id, tab.tabLevel, setTabSplitTableWidth]
+  );
 
   const handlePrintRecord = useCallback(async () => {
     try {
@@ -1116,17 +1210,19 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       new: handleNew,
       back: handleBack,
       treeView: handleTreeView,
+      toggleSplitView: handleToggleSplitView,
       exportCSV: handleExportCSV,
       advancedFilters: handleAdvancedFilters,
       printRecord: handlePrintRecord,
     };
 
-    registerActions(actions);
+    registerActions(actions, TOOLBAR_ACTION_OWNERS.TAB);
   }, [
     registerActions,
     handleNew,
     handleBack,
     handleTreeView,
+    handleToggleSplitView,
     handleExportCSV,
     handleAdvancedFilters,
     handlePrintRecord,
@@ -1218,17 +1314,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     handleSetRecordId(parentSelectedRecordId);
   }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
-  const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
-  const isTreeSideBySide = toggle && shouldShowForm;
-
-  let tableWrapperClassName: string;
-  if (isTreeSideBySide) {
-    tableWrapperClassName = "w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl";
-  } else if (!shouldShowForm) {
-    tableWrapperClassName = `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`;
-  } else {
-    tableWrapperClassName = "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
-  }
+  const focusBorderColor = getFocusBorderColor(isFocused);
 
   return (
     <div
@@ -1239,16 +1325,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         windowId={windowIdentifier || tab.window}
         tabId={tab.id}
         isFormView={shouldShowForm}
+        isSplitView={isSplitView}
         data-testid="Toolbar__5893c8"
       />
-      <div className={`flex flex-1 min-h-0 ${isTreeSideBySide ? "flex-row gap-2" : "relative flex-col"}`}>
-        <div className={tableWrapperClassName}>
+      <div
+        ref={panesRef}
+        className={getPanesContainerClassName(viewMode)}
+        style={getPanesContainerStyle(splitState.tableWidth)}>
+        <div className={getGridPaneClassName(viewMode, focusBorderColor)} style={getGridPaneStyle(viewMode)}>
           <AttachmentProvider data-testid="AttachmentProvider__5893c8">
             <DynamicTable
               isTreeMode={toggle}
               setRecordId={handleSetRecordId}
               onRecordSelection={handleRecordSelection}
-              isVisible={isTreeSideBySide || !shouldShowForm}
+              isVisible={isGridPaneVisible(viewMode)}
+              isPrimaryView={isGridPaneExclusive(viewMode)}
               areFiltersDisabled={advancedFilters.length > 0}
               uIPattern={tab.uIPattern}
               isFocused={isFocused}
@@ -1257,9 +1348,22 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             />
           </AttachmentProvider>
         </div>
+        {isSplitView && (
+          <ResizeHandle
+            variant="divider"
+            direction="horizontal"
+            containerRef={panesRef}
+            initialWidth={splitState.tableWidth}
+            minWidth={SPLIT_MIN_TABLE_WIDTH}
+            maxWidth={SPLIT_MAX_TABLE_WIDTH}
+            maxOffsetRem={0}
+            onWidthChange={handleSplitDrag}
+            onWidthChangeEnd={handleSplitDragEnd}
+            data-testid="SplitViewDivider__5893c8"
+          />
+        )}
         {shouldShowForm && (
-          <div
-            className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
+          <div className={getFormPaneClassName(isFocused)}>
             <FormView
               key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
               mode={formMode}

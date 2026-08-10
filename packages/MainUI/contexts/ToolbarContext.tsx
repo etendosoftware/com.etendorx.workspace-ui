@@ -17,13 +17,18 @@
 
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { globalCalloutManager } from "@/services/callouts";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarStore, defaultActions, defaultSaveButtonState } from "@/stores/toolbarStore";
 import type { ToolbarActions } from "@/stores/toolbarStore";
+import {
+  type ToolbarActionOwner,
+  createEmptyActionsByOwner,
+  resolveToolbarActions,
+} from "@/utils/toolbar/actionOwnership";
 
 /**
  * Options for save operations.
@@ -77,8 +82,9 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     };
   }, [tabId]);
 
-  // Read raw save from store — re-creates wrappedSave whenever the registered impl changes
-  const rawSave = useToolbarStore((s) => s.byTabId[tabId]?.registeredActions.save ?? defaultActions.save);
+  // Read raw save from store — re-creates wrappedSave whenever the registered impl changes.
+  // Only the form pane ever registers a real save; anything else keeps the no-op default.
+  const rawSave = useToolbarStore((s) => s.byTabId[tabId]?.actionsByOwner.form.save ?? defaultActions.save);
 
   // wrappedOnSave adds parent-tab refresh logic on top of whatever save impl is registered
   const wrappedOnSave = useCallback(
@@ -140,21 +146,32 @@ export const useToolbarContext = () => {
 
   const state = useToolbarStore(useShallow((s) => s.byTabId[tabId] ?? null));
 
+  const actions = useMemo(
+    () => resolveToolbarActions(state?.actionsByOwner ?? createEmptyActionsByOwner()),
+    [state?.actionsByOwner]
+  );
+
   return {
     onSave: state?.wrappedSave ?? defaultActions.save,
-    onRefresh: state?.registeredActions.refresh ?? defaultActions.refresh,
-    onNew: state?.registeredActions.new ?? defaultActions.new,
-    onBack: state?.registeredActions.back ?? defaultActions.back,
-    onFilter: state?.registeredActions.filter ?? defaultActions.filter,
-    onExportCSV: state?.registeredActions.exportCSV ?? defaultActions.exportCSV,
-    onToggleTreeView: state?.registeredActions.treeView ?? defaultActions.treeView,
-    onAdvancedFilters: state?.registeredActions.advancedFilters ?? defaultActions.advancedFilters,
-    onColumnFilters: state?.registeredActions.columnFilters ?? defaultActions.columnFilters,
-    onPrintDocument: state?.registeredActions.printDocument ?? defaultActions.printDocument,
-    onPrintRecord: state?.registeredActions.printRecord ?? defaultActions.printRecord,
+    onRefresh: actions.refresh,
+    onNew: actions.new,
+    onBack: actions.back,
+    onFilter: actions.filter,
+    onExportCSV: actions.exportCSV,
+    onToggleTreeView: actions.treeView,
+    onToggleSplitView: actions.toggleSplitView,
+    onAdvancedFilters: actions.advancedFilters,
+    onColumnFilters: actions.columnFilters,
+    onPrintDocument: actions.printDocument,
+    onPrintRecord: actions.printRecord,
 
     registerActions: useCallback(
-      (actions: Partial<ToolbarActions>) => useToolbarStore.getState().registerRawActions(tabId, actions),
+      (newActions: Partial<ToolbarActions>, owner: ToolbarActionOwner) =>
+        useToolbarStore.getState().registerRawActions(tabId, newActions, owner),
+      [tabId]
+    ),
+    unregisterActions: useCallback(
+      (owner: ToolbarActionOwner) => useToolbarStore.getState().clearOwnerActions(tabId, owner),
       [tabId]
     ),
 
