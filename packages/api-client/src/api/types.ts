@@ -609,6 +609,12 @@ export interface SessionResponse {
   currentClient: CurrentClient;
   currentWarehouse?: CurrentWarehouse;
   roles: RoleList;
+  /**
+   * Language code the backend actually answers in (e.g. `en_US`), resolved by the ERP context from
+   * the user, the client and finally the system. The user's own default language is optional, so
+   * this is the only reliable source for the language of the session.
+   */
+  currentLanguage: string;
   languages: Languages;
   attributes: { [key: string]: null | string };
   /**

@@ -57,8 +57,17 @@ jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
 jest.mock("@workspaceui/api-client/src/api/copilot/client", () => ({
   CopilotClient: { setToken: jest.fn(), registerInterceptor: jest.fn(() => jest.fn()) },
 }));
+/** Language configured on the user record. */
+const USER_LANGUAGE = "en_US";
+/** Language the backend resolved for the session, used when the user has none of their own. */
+const SESSION_LANGUAGE = "es_ES";
+
+// The stored language is mutable so the tests can start from a session that has none yet, which is
+// when updateSessionInfo has to pick one.
+let mockLanguage: string | null = USER_LANGUAGE;
+const mockSetLanguage = jest.fn();
 jest.mock("@/contexts/language", () => ({
-  useLanguage: () => ({ language: "en_US", setLanguage: jest.fn() }),
+  useLanguage: () => ({ language: mockLanguage, setLanguage: mockSetLanguage }),
 }));
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -121,14 +130,15 @@ const erpResponse = (status: number, url: string, errorCode?: string) => ({
   headers: { get: (name: string) => (name === ERP_ERROR_CODE_HEADER ? (errorCode ?? null) : null) },
 });
 
-const makeSessionResponse = (passwordExpired = false) => ({
-  user: { id: "u1", name: "John", client$_identifier: "john@acme.com", image: "", defaultLanguage: "en_US" },
+const makeSessionResponse = (passwordExpired = false, userLanguage: string | null = USER_LANGUAGE) => ({
+  user: { id: "u1", name: "John", client$_identifier: "john@acme.com", image: "", defaultLanguage: userLanguage },
   attributes: {},
   currentClient: { id: "c1", name: "Acme" },
   currentOrganization: { id: "o1", name: "Org" },
   currentRole: { id: "r1", name: "Admin" },
   currentWarehouse: { id: "w1", name: "WH" },
   roles: [],
+  currentLanguage: SESSION_LANGUAGE,
   languages: {},
   passwordExpired,
 });
@@ -164,6 +174,7 @@ describe("UserProvider auth UX", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockLanguage = USER_LANGUAGE;
     useUserStore.setState({
       token: null,
       currentRole: undefined,
@@ -228,6 +239,7 @@ describe("UserProvider expired password gate", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockLanguage = USER_LANGUAGE;
     useUserStore.setState({
       token: null,
       currentRole: undefined,
@@ -350,5 +362,54 @@ describe("UserProvider expired password gate", () => {
 
     expect(await screen.findByTestId("dashboard")).toBeInTheDocument();
     expect(screen.queryByTestId("trigger-password-change")).toBeNull();
+  });
+});
+
+// The language drives the backend message dictionary (see useBackendLabels): without one it is
+// never fetched and every ERP message code stays unresolved.
+describe("UserProvider session language", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    mockLanguage = null;
+    useUserStore.setState({
+      token: null,
+      currentRole: undefined,
+      prevRole: undefined,
+      roles: [],
+      passwordExpired: false,
+      loginErrorText: "",
+      loginErrorDescription: "",
+    });
+    (getPreferences as jest.Mock).mockResolvedValue({});
+    (doLogin as jest.Mock).mockResolvedValue({ token: "jwt-token" });
+  });
+
+  /** Logs in with a session whose user has the given default language, null meaning none. */
+  const loginWithUserLanguage = async (userLanguage: string | null) => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false, userLanguage));
+    renderProvider();
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    await screen.findByTestId("dashboard");
+  };
+
+  it("adopts the language configured on the user record", async () => {
+    await loginWithUserLanguage(USER_LANGUAGE);
+
+    expect(mockSetLanguage).toHaveBeenCalledWith(USER_LANGUAGE);
+  });
+
+  it("falls back to the session language when the user has none of their own", async () => {
+    await loginWithUserLanguage(null);
+
+    expect(mockSetLanguage).toHaveBeenCalledWith(SESSION_LANGUAGE);
+  });
+
+  it("keeps the language already chosen instead of overriding it", async () => {
+    mockLanguage = USER_LANGUAGE;
+
+    await loginWithUserLanguage(null);
+
+    expect(mockSetLanguage).not.toHaveBeenCalled();
   });
 });

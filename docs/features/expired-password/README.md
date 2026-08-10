@@ -46,7 +46,7 @@ sequenceDiagram
 | File | Role |
 |---|---|
 | `utils/PasswordExpirationUtils.java` | The expiration rule, in one place |
-| `builders/SessionBuilder.java` | Adds `passwordExpired` to the `/meta/session` payload |
+| `builders/SessionBuilder.java` | Adds `passwordExpired` and `currentLanguage` to the `/meta/session` payload |
 | `http/BaseWebService.java` | Guard: every HTTP verb goes through `dispatch`, which rejects the request with `401` while the password is expired |
 | `utils/Constants.java` | `PASSWORD_EXPIRED_ALLOWED_PATHS` and `PASSWORD_EXPIRED_ERROR` |
 
@@ -78,6 +78,7 @@ The change-password request is **not** affected: it targets the Classic kernel d
 | `stores/userStore.ts` | `passwordExpired` flag, reset on logout |
 | `utils/password.ts` | Validation, error resolution and submission, shared with the profile modal |
 | `utils/session/erpErrorCode.ts` | Reads the error code the ERP proxy forwards as a header |
+| `contexts/language.tsx` | Loads the `AD_MESSAGE` dictionary the error messages are resolved against |
 
 ### Only new + confirmation
 
@@ -103,8 +104,21 @@ AD_MESSAGE → I18NComponent.getLabels() → GET /meta/labels → Metadata.getLa
 ```
 
 `resolvePasswordErrorMessage` in `utils/password.ts` applies that resolution first and falls back to
-the local translations only for codes the catalog does not define. `/labels` is in the guard
-allowlist, so this works while the password is expired.
+the local translations only for codes the catalog does not define (of the ones this handler emits,
+only `UINAVBA_IncorrectPwd` has no `AD_MESSAGE` row). `/labels` is in the guard allowlist, so this
+works while the password is expired.
+
+That chain has a prerequisite that is easy to lose: **the dictionary is only fetched once a language
+is known** (`useBackendLabels`), and `AD_USER.DEFAULT_AD_LANGUAGE` is optional. A user without one
+used to leave `labels` empty, so every ERP code silently degraded to the generic message — and so did
+`OB.I18N.getLabel` in migrated process scripts. The session payload therefore also carries
+`currentLanguage`, the language the ERP context resolved (user → client → system, never null), and
+`updateSessionInfo` falls back to it. Two related details:
+
+- `SessionBuilder#getLanguageCode` is the backend side of that contract.
+- `LanguageProvider` declares the `Metadata.setLanguage` effect **before** calling
+  `useBackendLabels`. Effects run in declaration order and `setLanguage` wipes the metadata cache, so
+  the reverse order caches the dictionary under the previous language key and drops it immediately.
 
 ### Expired mid-session
 
@@ -138,8 +152,9 @@ without any Java code doing it explicitly.
 - Java (run manually): `PasswordExpirationUtilsTest`, `BaseWebServiceGuardTest` and the new cases in
   `SessionBuilderTest`.
 - Client: `utils/__tests__/password.test.ts`,
-  `screens/ForcePasswordChange/__tests__/index.test.tsx` and the
-  *expired password gate* suite in `contexts/__tests__/user.test.tsx`.
+  `screens/ForcePasswordChange/__tests__/index.test.tsx`,
+  `contexts/__tests__/language.test.tsx`, and the *expired password gate* and *session language*
+  suites in `contexts/__tests__/user.test.tsx`.
 
 ### Manual check
 
@@ -149,7 +164,8 @@ without any Java code doing it explicitly.
    tab, `/meta/session` returns `passwordExpired: true` and any `/meta/window/...` or
    `/api/datasource` request returns `401`.
 3. Submit a weak password, one already used, or the same one as before: the message shown is the ERP
-   text for that `messageCode` and the screen stays open.
+   text for that `messageCode` and the screen stays open. Use a test user **without** a default
+   language, which is the case that used to show the generic message instead.
 4. Submit a valid, different password: a success toast appears, the app loads on the home page
    without logging in again, and in the database `Isexpiredpassword = 'N'` with a refreshed
    `lastpasswordupdate`.

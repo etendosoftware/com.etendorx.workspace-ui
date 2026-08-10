@@ -113,9 +113,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.setItem("currentRole", JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem("currentRoleId", sessionResponse.currentRole.id);
 
-      const defaultLanguage = sessionResponse.user.defaultLanguage as Language;
-      if (!language && defaultLanguage) {
-        setLanguage(defaultLanguage);
+      // The user's default language is optional, so fall back to the one the backend resolved for
+      // the session. Without a language the backend message dictionary is never fetched
+      // (see useBackendLabels), leaving every ERP message code unresolved.
+      const sessionLanguage = (sessionResponse.user.defaultLanguage ?? sessionResponse.currentLanguage) as Language;
+      if (!language && sessionLanguage) {
+        setLanguage(sessionLanguage);
       }
 
       useUserStore.getState().setLanguages(Object.values(sessionResponse.languages) as LanguageOption[]);
