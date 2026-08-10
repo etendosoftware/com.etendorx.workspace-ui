@@ -35,10 +35,16 @@ jest.mock("@/hooks/useUserContext", () => ({
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
+jest.mock("@/contexts/language", () => ({
+  // Mimics the backend message catalog: known codes resolve, unknown ones echo back.
+  useLanguage: () => ({ getLabel: (code: string) => mockErpCatalog[code as keyof typeof mockErpCatalog] ?? code }),
+}));
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const NEW_PASSWORD = "Str0ng-P4ss!";
+const ALREADY_USED_CODE = "ETAS_PasswordAlreadyUsed";
+const mockErpCatalog = { [ALREADY_USED_CODE]: "Password has been used already. Try another" };
 const TEST_IDS = {
   newPassword: "ForcePasswordChange__newPassword",
   confirmPassword: "ForcePasswordChange__confirmPassword",
@@ -95,7 +101,19 @@ describe("ForcePasswordChangeScreen", () => {
     expect(completeExpiredPasswordChange).not.toHaveBeenCalled();
   });
 
-  it("keeps the flow open and shows the mapped error when the ERP rejects the password", async () => {
+  it("keeps the flow open and shows the ERP message when it rejects the password", async () => {
+    completeExpiredPasswordChange.mockRejectedValue(new Error(ALREADY_USED_CODE));
+
+    render(<ForcePasswordChangeScreen />);
+
+    submitPasswords(NEW_PASSWORD, NEW_PASSWORD);
+
+    expect(await screen.findByTestId(TEST_IDS.error)).toHaveTextContent(mockErpCatalog[ALREADY_USED_CODE]);
+    expect(screen.getByTestId(TEST_IDS.newPassword)).toBeInTheDocument();
+    expect(screen.getByTestId(TEST_IDS.submit)).not.toBeDisabled();
+  });
+
+  it("falls back to the local translation for a code the ERP catalog does not define", async () => {
     completeExpiredPasswordChange.mockRejectedValue(new Error("CPPasswordNotStrongEnough"));
 
     render(<ForcePasswordChangeScreen />);
@@ -103,8 +121,6 @@ describe("ForcePasswordChangeScreen", () => {
     submitPasswords(NEW_PASSWORD, NEW_PASSWORD);
 
     expect(await screen.findByTestId(TEST_IDS.error)).toHaveTextContent("navigation.profile.errorNotStrongEnough");
-    expect(screen.getByTestId(TEST_IDS.newPassword)).toBeInTheDocument();
-    expect(screen.getByTestId(TEST_IDS.submit)).not.toBeDisabled();
   });
 
   it("shows a generic error for an unknown failure", async () => {
@@ -127,6 +143,10 @@ describe("ForcePasswordChangeScreen", () => {
 
   it("sends the user back to the login screen when the login password is no longer in memory", async () => {
     hasPendingLoginPassword.mockReturnValue(false);
+    // logout() wipes the store, so the message must survive it: it is written afterwards.
+    logout.mockImplementation(async () => {
+      useUserStore.setState({ loginErrorText: "", loginErrorDescription: "" });
+    });
 
     render(<ForcePasswordChangeScreen />);
 

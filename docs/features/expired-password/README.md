@@ -74,9 +74,10 @@ The change-password request is **not** affected: it targets the Classic kernel d
 | File | Role |
 |---|---|
 | `screens/ForcePasswordChange/index.tsx` | Full-screen mandatory change, sibling of `screens/Login` |
-| `contexts/user.tsx` | Holds the login password in memory, exposes `completeExpiredPasswordChange` and `hasPendingLoginPassword`, gates `renderContent`, and skips the auto-logout interceptor while the flag is set |
+| `contexts/user.tsx` | Holds the login password in memory, exposes `completeExpiredPasswordChange` and `hasPendingLoginPassword`, gates `renderContent`, and handles the expired-password rejection in the interceptor |
 | `stores/userStore.ts` | `passwordExpired` flag, reset on logout |
-| `utils/password.ts` | Validation, ERP-code → i18n mapping and submission, shared with the profile modal |
+| `utils/password.ts` | Validation, error resolution and submission, shared with the profile modal |
+| `utils/session/erpErrorCode.ts` | Reads the error code the ERP proxy forwards as a header |
 
 ### Only new + confirmation
 
@@ -86,7 +87,42 @@ never `localStorage`) and sending it as `currentPwd` to the existing ERP handler
 
 A page reload drops that value. In that case the screen logs the user out and shows
 `login.errors.passwordExpired` on the login card, which is also how Classic behaves — it keeps no
-session either.
+session either. Note that `logout()` clears the store synchronously, so those messages must always be
+written **after** calling it.
+
+### Error messages come from the ERP catalog
+
+The change-password handler reports failures as `AD_MESSAGE` search keys
+(`{"result":"error","fields":[{"messageCode":"ETAS_PasswordAlreadyUsed"}]}`), and any module can add
+new ones through a `UserInfoWidgetHook`. Classic renders them with
+`OB.I18N.getLabel(field.messageCode)`; the new UI resolves them through the same dictionary:
+
+```
+AD_MESSAGE → I18NComponent.getLabels() → GET /meta/labels → Metadata.getLabels()
+  → useBackendLabels() → useLanguage().getLabel(code)
+```
+
+`resolvePasswordErrorMessage` in `utils/password.ts` applies that resolution first and falls back to
+the local translations only for codes the catalog does not define. `/labels` is in the guard
+allowlist, so this works while the password is expired.
+
+### Expired mid-session
+
+When the password expires while a session is open, the change cannot be applied from the app (the ERP
+handler needs the current password, which is no longer held), so the user is logged out with a clear
+reason instead of the generic session-failure message. The metadata module returns the stable code
+`PasswordExpired`, the ERP proxy forwards it as the `X-Etendo-Error-Code` header
+(`route.helpers.ts#buildErpErrorCodeHeaders`), and the interceptor reads it. It has to be a header:
+interceptors run **before** the response body is parsed (`client.ts`), so reading the body there
+would break the parsing that follows.
+
+### After a successful change
+
+The session payload is excluded from the Next.js Data Cache (`isMutationRoute` in the ERP proxy):
+its cache key is derived from the bearer token, which a password change does not rotate, so a cached
+entry would keep reporting the pre-change state and the gate would never open. On success the user
+gets a toast and is sent to the home page. `<Toaster/>` is mounted outside `UserProvider` in
+`app/layout.tsx` precisely because the gate replaces that provider's subtree.
 
 ### Reused, not duplicated
 
@@ -112,9 +148,12 @@ without any Java code doing it explicitly.
 2. Log in with that user: the mandatory change screen must replace the application. In the Network
    tab, `/meta/session` returns `passwordExpired: true` and any `/meta/window/...` or
    `/api/datasource` request returns `401`.
-3. Submit a weak password, or the same one as before: the translated error appears and the screen
-   stays open.
-4. Submit a valid, different password: the application loads without logging in again, and in the
-   database `Isexpiredpassword = 'N'` with a refreshed `lastpasswordupdate`.
+3. Submit a weak password, one already used, or the same one as before: the message shown is the ERP
+   text for that `messageCode` and the screen stays open.
+4. Submit a valid, different password: a success toast appears, the app loads on the home page
+   without logging in again, and in the database `Isexpiredpassword = 'N'` with a refreshed
+   `lastpasswordupdate`.
 5. Log in with a user whose password is valid: no intermediate screen.
 6. Reload the page mid-flow: back to the login screen with the explanatory message.
+7. With a session already open, tick *Password expired* and trigger any request: the user lands on
+   the login screen with the expired-password message, not the generic system-error one.

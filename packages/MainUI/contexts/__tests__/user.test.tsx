@@ -26,6 +26,10 @@ import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
+import { toast } from "sonner";
+import { DEFAULT_PASSWORD_EXPIRED_ERROR, ERP_ERROR_CODE_HEADER } from "@/utils/session/constants";
+
+const mockRouterPush = jest.fn();
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
 
@@ -63,6 +67,8 @@ jest.mock("@/utils/propertyStore", () => ({
   savePreferences: jest.fn(),
   clearPreferences: jest.fn(),
 }));
+jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }));
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 
 // The login screen is the only thing rendered while logged out, so it doubles
 // as the entry point to trigger login() from within the provider tree.
@@ -107,6 +113,13 @@ jest.mock("@/screens/ForcePasswordChange", () => {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const NEW_PASSWORD = "Str0ng-P4ss!";
+
+/** Response-like object exposing only what the interceptor reads. */
+const erpResponse = (status: number, url: string, errorCode?: string) => ({
+  status,
+  url,
+  headers: { get: (name: string) => (name === ERP_ERROR_CODE_HEADER ? (errorCode ?? null) : null) },
+});
 
 const makeSessionResponse = (passwordExpired = false) => ({
   user: { id: "u1", name: "John", client$_identifier: "john@acme.com", image: "", defaultLanguage: "en_US" },
@@ -259,6 +272,26 @@ describe("UserProvider expired password gate", () => {
     expect(useUserStore.getState().passwordExpired).toBe(false);
   });
 
+  it("confirms the change and lands on the home page", async () => {
+    const trigger = await loginWithExpiredPassword();
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+
+    fireEvent.click(trigger);
+
+    await screen.findByTestId("dashboard");
+    expect(toast.success).toHaveBeenCalledWith("navigation.profile.passwordChangedSuccess");
+    expect(mockRouterPush).toHaveBeenCalledWith("/");
+  });
+
+  it("opens the gate even if the refreshed session still reported the password as expired", async () => {
+    const trigger = await loginWithExpiredPassword();
+
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId("dashboard")).toBeInTheDocument();
+    expect(useUserStore.getState().passwordExpired).toBe(false);
+  });
+
   it("keeps the change screen open when the change fails", async () => {
     const trigger = await loginWithExpiredPassword();
     (doChangePassword as jest.Mock).mockRejectedValue(new Error("CPPasswordNotStrongEnough"));
@@ -274,12 +307,39 @@ describe("UserProvider expired password gate", () => {
     await loginWithExpiredPassword();
 
     const interceptor = (Metadata.registerInterceptor as jest.Mock).mock.calls[0][0];
-    const blockedResponse = { status: 401, url: "https://erp/sws/com.etendoerp.metadata.meta/window/123" };
+    const blocked = erpResponse(401, "https://erp/sws/com.etendoerp.metadata.meta/window/123");
 
-    expect(interceptor(blockedResponse)).toBe(blockedResponse);
+    expect(interceptor(blocked)).toBe(blocked);
     expect(await screen.findByTestId("trigger-password-change")).toBeInTheDocument();
     expect(useUserStore.getState().token).toBe("jwt-token");
     expect(useUserStore.getState().loginErrorText).toBe("");
+  });
+
+  it("logs out with the expired-password reason when the password expires mid-session", async () => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+    renderProvider();
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    await screen.findByTestId("dashboard");
+
+    const interceptor = (Metadata.registerInterceptor as jest.Mock).mock.calls[0][0];
+    interceptor(erpResponse(401, "https://erp/meta/session", DEFAULT_PASSWORD_EXPIRED_ERROR));
+
+    expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+    expect(useUserStore.getState().loginErrorText).toBe("login.errors.passwordExpired.title");
+    expect(useUserStore.getState().loginErrorDescription).toBe("login.errors.passwordExpired.description");
+  });
+
+  it("still uses the generic message for a 401 without the expired-password code", async () => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse(false));
+    renderProvider();
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    await screen.findByTestId("dashboard");
+
+    const interceptor = (Metadata.registerInterceptor as jest.Mock).mock.calls[0][0];
+    interceptor(erpResponse(401, "https://erp/meta/session"));
+
+    expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+    expect(useUserStore.getState().loginErrorText).toBe("login.errors.defaultLogout.title");
   });
 
   it("goes directly to the app when the password is valid", async () => {

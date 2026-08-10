@@ -25,7 +25,8 @@ import LockIcon from "../../../ComponentLibrary/src/assets/icons/lock.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useUserStore } from "@/stores/userStore";
-import { submitNewPassword } from "@/utils/password";
+import { useLanguage } from "@/contexts/language";
+import { resolvePasswordErrorMessage, submitNewPassword } from "@/utils/password";
 import { logger } from "@/utils/logger";
 
 const BRAND_TITLE = "Etendo";
@@ -39,6 +40,7 @@ const BRAND_TITLE = "Etendo";
 export default function ForcePasswordChangeScreen() {
   const { completeExpiredPasswordChange, hasPendingLoginPassword, logout } = useUserContext();
   const { t } = useTranslation();
+  const { getLabel } = useLanguage();
   const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
   const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
 
@@ -53,9 +55,10 @@ export default function ForcePasswordChangeScreen() {
     if (hasPendingLoginPassword()) {
       return;
     }
+    // logout() clears the store synchronously, so the message must be written afterwards.
+    logout().catch(logger.warn);
     setLoginErrorText(t("login.errors.passwordExpired.title"));
     setLoginErrorDescription(t("login.errors.passwordExpired.description"));
-    logout().catch(logger.warn);
   }, [hasPendingLoginPassword, logout, setLoginErrorDescription, setLoginErrorText, t]);
 
   const handleSubmit = useCallback(
@@ -64,12 +67,12 @@ export default function ForcePasswordChangeScreen() {
       setErrorMessage("");
       setIsLoading(true);
 
-      const errorKey = await submitNewPassword({ newPwd, confirmPwd }, completeExpiredPasswordChange);
+      const error = await submitNewPassword({ newPwd, confirmPwd }, completeExpiredPasswordChange);
 
-      setErrorMessage(errorKey ? t(errorKey) : "");
+      setErrorMessage(resolvePasswordErrorMessage(error, { getLabel, t }));
       setIsLoading(false);
     },
-    [completeExpiredPasswordChange, confirmPwd, newPwd, t]
+    [completeExpiredPasswordChange, confirmPwd, getLabel, newPwd, t]
   );
 
   return (

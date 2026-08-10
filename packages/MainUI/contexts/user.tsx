@@ -39,6 +39,8 @@ import SessionLoading from "@/components/SessionLoading";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
+import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
+import { toast } from "sonner";
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -209,8 +211,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
       await doChangePassword({ currentPwd: pendingPasswordRef.current, ...params });
       pendingPasswordRef.current = "";
       await updateSessionInfo(await getSession());
+      // The ERP confirmed the change and its trigger cleared the expired flag in the same update, so
+      // the gate must open even if the refreshed session were served from a stale layer.
+      useUserStore.getState().setPasswordExpired(false);
+      toast.success(t("navigation.profile.passwordChangedSuccess"));
+      router.push("/");
     },
-    [updateSessionInfo]
+    [router, t, updateSessionInfo]
   );
 
   const login = useCallback(async (username: string, password: string) => {
@@ -311,6 +318,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
       // While the password is expired the backend rejects the whole data plane with 401 on purpose.
       // Treating those as session failures would log the user out and prevent the mandatory change.
       if (useUserStore.getState().passwordExpired) {
+        return response;
+      }
+
+      // The password expired while the session was open. The change cannot be applied from here (the
+      // ERP handler needs the current password, which is not held), so log out with a clear reason
+      // instead of the generic session-failure message. Checked before the ignorable-URL list so it
+      // wins over it: every endpoint is rejected in this state, ignorable ones included.
+      if (isPasswordExpiredResponse(response)) {
+        // logout() clears the store synchronously, so the message must be written afterwards.
+        logout();
+        useUserStore.getState().setLoginErrorText(t("login.errors.passwordExpired.title"));
+        useUserStore.getState().setLoginErrorDescription(t("login.errors.passwordExpired.description"));
         return response;
       }
 

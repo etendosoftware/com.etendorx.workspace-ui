@@ -38,7 +38,7 @@ import { useSSO } from "@/hooks/useSSO";
 import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
-import { submitPasswordChange } from "@/utils/password";
+import { resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -73,7 +73,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const { language: initialLanguage, getFlag } = useLanguage();
+  const { language: initialLanguage, getFlag, getLabel } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const cleanWindowState = useWindowStore((s) => s.cleanState);
@@ -315,9 +315,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleSave = useCallback(async () => {
     if (currentSection === "password") {
-      const errorKey = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
-      setPasswordError(errorKey ? t(errorKey) : "");
-      if (errorKey) {
+      const error = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
+      setPasswordError(resolvePasswordErrorMessage(error, { getLabel, t }));
+      if (error) {
         return;
       }
       setCurrentPwd("");
@@ -358,6 +358,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     newPwd,
     confirmPwd,
     onPasswordChange,
+    getLabel,
     t,
     handleClose,
     getProfileUpdates,

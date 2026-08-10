@@ -22,7 +22,11 @@
 
 import type { TranslationKeys } from "@workspaceui/componentlibrary/src/locales/types";
 
-/** Message codes returned by the ERP change-password action handler, mapped to translation keys. */
+/**
+ * Local translations for ERP message codes, used only as a fallback: the ERP message catalog
+ * (`AD_MESSAGE`, served by `/meta/labels`) is the primary source, matching what Classic does with
+ * `OB.I18N.getLabel(field.messageCode)`. Codes without an `AD_MESSAGE` entry still render here.
+ */
 export const PASSWORD_ERROR_TRANSLATION_KEYS: Record<string, TranslationKeys> = {
   UINAVBA_CurrentPwdIncorrect: "navigation.profile.errorCurrentPwdIncorrect",
   CPDifferentPassword: "navigation.profile.errorDifferentPassword",
@@ -44,29 +48,76 @@ interface PasswordChangeFields extends NewPasswordFields {
   currentPwd: string;
 }
 
+/** A rule broken client-side, before the request is sent. */
+interface ValidationError {
+  type: "validation";
+  translationKey: TranslationKeys;
+}
+
+/** A message code reported by the ERP change-password handler. */
+interface ErpError {
+  type: "erp";
+  messageCode: string;
+}
+
+export type PasswordChangeError = ValidationError | ErpError;
+
+/** Resolvers needed to turn an error into user-facing text. */
+export interface PasswordErrorResolvers {
+  /** Resolves an ERP message code against the backend catalog; returns the code when unknown. */
+  getLabel: (code: string) => string;
+  /** Resolves a local translation key. */
+  t: (key: TranslationKeys) => string;
+}
+
 /**
- * Resolves the translation key for an ERP message code, falling back to a generic message for
- * unknown codes and transport failures.
+ * Turns a message code reported by the ERP into user-facing text, preferring the backend message
+ * catalog and falling back to the local translations for codes it does not define.
  *
- * @param code the message code thrown by the change-password request
- * @returns the translation key to render
+ * @param messageCode the code reported by the ERP
+ * @param resolvers the backend catalog and local translation resolvers
+ * @returns the text to display
  */
-export function getPasswordErrorTranslationKey(code: string): TranslationKeys {
-  return PASSWORD_ERROR_TRANSLATION_KEYS[code] ?? GENERIC_ERROR_KEY;
+function resolveErpMessage(messageCode: string, { getLabel, t }: PasswordErrorResolvers): string {
+  const label = getLabel(messageCode);
+  if (label && label !== messageCode) {
+    return label;
+  }
+  return t(PASSWORD_ERROR_TRANSLATION_KEYS[messageCode] ?? GENERIC_ERROR_KEY);
+}
+
+/**
+ * Turns a password change error into the message to display.
+ *
+ * @param error the error to render, or null when there is none
+ * @param resolvers the backend catalog and local translation resolvers
+ * @returns the text to display, or an empty string when there is no error
+ */
+export function resolvePasswordErrorMessage(
+  error: PasswordChangeError | null,
+  resolvers: PasswordErrorResolvers
+): string {
+  if (!error) {
+    return "";
+  }
+  if (error.type === "validation") {
+    return resolvers.t(error.translationKey);
+  }
+  return resolveErpMessage(error.messageCode, resolvers);
 }
 
 /**
  * Validates the new/confirm pair before hitting the backend.
  *
  * @param fields the new password and its confirmation
- * @returns the translation key of the first violated rule, or null when the pair is valid
+ * @returns the first violated rule, or null when the pair is valid
  */
-export function validateNewPassword({ newPwd, confirmPwd }: NewPasswordFields): TranslationKeys | null {
+export function validateNewPassword({ newPwd, confirmPwd }: NewPasswordFields): ValidationError | null {
   if (!newPwd || !confirmPwd) {
-    return REQUIRED_FIELDS_KEY;
+    return { type: "validation", translationKey: REQUIRED_FIELDS_KEY };
   }
   if (newPwd !== confirmPwd) {
-    return MISMATCH_KEY;
+    return { type: "validation", translationKey: MISMATCH_KEY };
   }
   return null;
 }
@@ -75,31 +126,31 @@ export function validateNewPassword({ newPwd, confirmPwd }: NewPasswordFields): 
  * Validates the three fields of the optional password change.
  *
  * @param fields the current password plus the new password and its confirmation
- * @returns the translation key of the first violated rule, or null when all fields are valid
+ * @returns the first violated rule, or null when all fields are valid
  */
 export function validatePasswordChange({
   currentPwd,
   newPwd,
   confirmPwd,
-}: PasswordChangeFields): TranslationKeys | null {
+}: PasswordChangeFields): ValidationError | null {
   if (!currentPwd) {
-    return REQUIRED_FIELDS_KEY;
+    return { type: "validation", translationKey: REQUIRED_FIELDS_KEY };
   }
   return validateNewPassword({ newPwd, confirmPwd });
 }
 
 /**
- * Runs a change request, translating a rejection into the translation key to display.
+ * Runs a change request, turning a rejection into the ERP message code it reported.
  *
  * @param submit the request to run
- * @returns null when the change succeeded, or the translation key of the reported error
+ * @returns null when the change succeeded, or the reported error
  */
-async function runSubmit(submit: () => Promise<void>): Promise<TranslationKeys | null> {
+async function runSubmit(submit: () => Promise<void>): Promise<PasswordChangeError | null> {
   try {
     await submit();
     return null;
   } catch (error) {
-    return getPasswordErrorTranslationKey(error instanceof Error ? error.message : "");
+    return { type: "erp", messageCode: error instanceof Error ? error.message : "" };
   }
 }
 
@@ -109,15 +160,15 @@ async function runSubmit(submit: () => Promise<void>): Promise<TranslationKeys |
  *
  * @param fields the new password and its confirmation
  * @param submit the request that applies the change
- * @returns null when the change succeeded, or the translation key of the error to display
+ * @returns null when the change succeeded, or the error to display
  */
 export async function submitNewPassword(
   fields: NewPasswordFields,
   submit: (fields: NewPasswordFields) => Promise<void>
-): Promise<TranslationKeys | null> {
-  const validationKey = validateNewPassword(fields);
-  if (validationKey) {
-    return validationKey;
+): Promise<PasswordChangeError | null> {
+  const validationError = validateNewPassword(fields);
+  if (validationError) {
+    return validationError;
   }
   return runSubmit(() => submit(fields));
 }
@@ -128,15 +179,15 @@ export async function submitNewPassword(
  *
  * @param fields the current password plus the new password and its confirmation
  * @param submit the request that applies the change
- * @returns null when the change succeeded, or the translation key of the error to display
+ * @returns null when the change succeeded, or the error to display
  */
 export async function submitPasswordChange(
   fields: PasswordChangeFields,
   submit: (fields: PasswordChangeFields) => Promise<void>
-): Promise<TranslationKeys | null> {
-  const validationKey = validatePasswordChange(fields);
-  if (validationKey) {
-    return validationKey;
+): Promise<PasswordChangeError | null> {
+  const validationError = validatePasswordChange(fields);
+  if (validationError) {
+    return validationError;
   }
   return runSubmit(() => submit(fields));
 }
