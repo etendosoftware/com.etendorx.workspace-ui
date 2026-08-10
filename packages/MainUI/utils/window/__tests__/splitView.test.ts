@@ -17,6 +17,7 @@ import {
   isGridPaneExclusive,
   isGridPaneVisible,
   isSplitViewAvailable,
+  resolveSplitViewFormRecord,
 } from "../splitView";
 
 const FOCUS_BORDER = "border-l-transparent";
@@ -156,5 +157,44 @@ describe("DEFAULT_SPLIT_STATE", () => {
 
   it("is frozen so the shared fallback cannot be mutated by a consumer", () => {
     expect(Object.isFrozen(DEFAULT_SPLIT_STATE)).toBe(true);
+  });
+});
+
+describe("resolveSplitViewFormRecord", () => {
+  const CURRENT_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+
+  const resolve = (overrides: Partial<Parameters<typeof resolveSplitViewFormRecord>[0]> = {}) =>
+    resolveSplitViewFormRecord({
+      isSplitView: true,
+      selectedRecordId: CLICKED_RECORD,
+      currentRecordId: CURRENT_RECORD,
+      hasFormChanges: false,
+      isNewRecord: false,
+      ...overrides,
+    });
+
+  it("follows the grid selection in split view", () => {
+    expect(resolve()).toBe(CLICKED_RECORD);
+  });
+
+  it("stays put outside split view", () => {
+    expect(resolve({ isSplitView: false })).toBeUndefined();
+  });
+
+  it("stays put when nothing is selected", () => {
+    expect(resolve({ selectedRecordId: undefined })).toBeUndefined();
+  });
+
+  it("stays put when the form already shows that record", () => {
+    expect(resolve({ selectedRecordId: CURRENT_RECORD })).toBeUndefined();
+  });
+
+  it("never discards unsaved changes", () => {
+    expect(resolve({ hasFormChanges: true })).toBeUndefined();
+  });
+
+  it("never discards a record being created", () => {
+    expect(resolve({ isNewRecord: true })).toBeUndefined();
   });
 });

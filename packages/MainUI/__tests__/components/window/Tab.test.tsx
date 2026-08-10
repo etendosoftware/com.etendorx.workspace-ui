@@ -261,11 +261,14 @@ describe("Tab - Split view", () => {
     return calls[calls.length - 1]?.[0];
   };
 
-  /** The `toggleSplitView` implementation the tab registered on the toolbar. */
-  const registeredToggle = (): (() => void) => {
+  /** The `showTableAndForm` implementation the tab registered on the toolbar. */
+  const registeredShowTableAndForm = (): (() => void) => {
     const merged = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
-    return merged.toggleSplitView;
+    return merged.showTableAndForm;
   };
+
+  /** Presses the toolbar button (or its `ctrl+m` shortcut, which shares the handler). */
+  const pressShowTableAndForm = () => act(() => registeredShowTableAndForm()());
 
   const openForm = () => {
     act(() => {
@@ -296,7 +299,7 @@ describe("Tab - Split view", () => {
       onBack: jest.fn(),
       onFilter: jest.fn(),
       onToggleTreeView: jest.fn(),
-      onToggleSplitView: jest.fn(),
+      onShowTableAndForm: jest.fn(),
       onColumnFilters: jest.fn(),
       saveButtonState: {
         isCalloutLoading: false,
@@ -339,11 +342,11 @@ describe("Tab - Split view", () => {
     });
   });
 
-  it("registers the split-view toggle under the tab owner", () => {
+  it("registers the split-view action under the tab owner", () => {
     renderSplitTab();
 
     expect(mockRegisterActions).toHaveBeenCalledWith(
-      expect.objectContaining({ toggleSplitView: expect.any(Function) }),
+      expect.objectContaining({ showTableAndForm: expect.any(Function) }),
       TOOLBAR_ACTION_OWNERS.TAB
     );
   });
@@ -369,7 +372,7 @@ describe("Tab - Split view", () => {
     renderSplitTab();
     openForm();
 
-    act(() => registeredToggle()());
+    pressShowTableAndForm();
 
     expect(screen.getByRole("separator")).toBeInTheDocument();
     // The grid is visible but no longer the primary view — the form pane is too.
@@ -377,16 +380,19 @@ describe("Tab - Split view", () => {
     expect(lastPropsOf(Toolbar)).toMatchObject({ isFormView: true, isSplitView: true });
   });
 
-  it("toggles back to the maximized form", () => {
+  // Classic's `showGridAndForm` only ever reveals a hidden pane, so pressing the
+  // button again with both panes on screen must leave the split untouched.
+  it("does nothing when pressed with the split already open", () => {
     renderSplitTab();
     openForm();
 
-    act(() => registeredToggle()());
+    pressShowTableAndForm();
     expect(getSplit()?.enabled).toBe(true);
 
-    act(() => registeredToggle()());
-    expect(getSplit()?.enabled).toBe(false);
-    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+    pressShowTableAndForm();
+    expect(getSplit()?.enabled).toBe(true);
+    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isVisible: true, isPrimaryView: false });
   });
 
   it("opens the selected record in split view when pressed from the grid", () => {
@@ -395,7 +401,7 @@ describe("Tab - Split view", () => {
       useWindowStore.getState().setSelectedRecord(WINDOW_IDENTIFIER, splitTab.id, RECORD_ID);
     });
 
-    act(() => registeredToggle()());
+    pressShowTableAndForm();
 
     expect(getSplit()?.enabled).toBe(true);
     expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
@@ -407,7 +413,7 @@ describe("Tab - Split view", () => {
   it("does nothing when pressed from the grid with no record selected", () => {
     renderSplitTab();
 
-    act(() => registeredToggle()());
+    pressShowTableAndForm();
 
     // Nothing was written at all: no split preference and no form opened.
     expect(getSplit()?.enabled).toBeFalsy();
@@ -415,56 +421,94 @@ describe("Tab - Split view", () => {
     expect(screen.queryByRole("separator")).not.toBeInTheDocument();
   });
 
-  it("keeps the split preference when the form is closed", () => {
+  // Closing the form leaves the grid alone, and the next double click must open a
+  // maximized form — so the split is switched off while its proportion survives.
+  it("switches the split off when the form is closed, keeping the proportion", () => {
     renderSplitTab();
     openForm();
-    act(() => registeredToggle()());
+    pressShowTableAndForm();
+    act(() => {
+      useWindowStore.getState().setTabSplitTableWidth(WINDOW_IDENTIFIER, splitTab.id, 65);
+    });
 
     act(() => {
       useWindowStore.getState().clearTabFormState(WINDOW_IDENTIFIER, splitTab.id);
     });
 
-    expect(getSplit()?.enabled).toBe(true);
-    // Grid only again, but the preference survives for the next record.
+    expect(getSplit()).toEqual({ enabled: false, tableWidth: 65 });
     expect(screen.queryByRole("separator")).not.toBeInTheDocument();
   });
 
+  it("reopens a record maximized after the split was closed", () => {
+    renderSplitTab();
+    openForm();
+    pressShowTableAndForm();
+    act(() => {
+      useWindowStore.getState().clearTabFormState(WINDOW_IDENTIFIER, splitTab.id);
+    });
+
+    // A double click on a row reopens the form the way it did before split view.
+    openForm();
+
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isVisible: false, isPrimaryView: false });
+    expect(lastPropsOf(Toolbar)).toMatchObject({ isFormView: true, isSplitView: false });
+  });
+
+  it("updates the form in place on a double click while the split is open", () => {
+    renderSplitTab();
+    openForm();
+    pressShowTableAndForm();
+
+    act(() => {
+      useWindowStore
+        .getState()
+        .setTabFormState(WINDOW_IDENTIFIER, splitTab.id, { recordId: "record-2", mode: "form", formMode: "edit" });
+    });
+
+    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(lastPropsOf(Toolbar)).toMatchObject({ isSplitView: true });
+  });
+
   describe("row selection in split view", () => {
+    const OTHER_RECORD_ID = "record-2";
+
+    /** Selects a row the way the grid does: by writing the selection to the store. */
     const selectRow = (recordId: string) => {
-      act(() => lastPropsOf(DynamicTable).onRecordSelection(recordId));
+      act(() => {
+        useWindowStore.getState().setSelectedRecord(WINDOW_IDENTIFIER, splitTab.id, recordId);
+      });
     };
 
-    it("loads the clicked record into the form", () => {
+    const getForm = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.form ?? {};
+
+    it("loads the selected record into the form on a single click", () => {
       renderSplitTab();
       openForm();
-      act(() => registeredToggle()());
+      pressShowTableAndForm();
 
-      selectRow("record-2");
+      selectRow(OTHER_RECORD_ID);
 
-      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
-        recordId: "record-2",
-      });
+      expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
     });
 
     it("does not change the form record when there are unsaved changes", () => {
       require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({ tab: splitTab, hasFormChanges: true });
       renderSplitTab();
       openForm();
-      act(() => registeredToggle()());
+      pressShowTableAndForm();
 
-      selectRow("record-2");
+      selectRow(OTHER_RECORD_ID);
 
-      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toMatchObject({
-        recordId: RECORD_ID,
-      });
+      expect(getForm()).toMatchObject({ recordId: RECORD_ID });
     });
 
     it("does not open the form on selection outside split view", () => {
       renderSplitTab();
 
-      selectRow("record-2");
+      selectRow(OTHER_RECORD_ID);
 
-      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].tabs[splitTab.id].form).toEqual({});
+      expect(getForm()).toEqual({});
     });
   });
 

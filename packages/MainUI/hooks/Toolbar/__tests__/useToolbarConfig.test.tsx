@@ -68,7 +68,7 @@ describe("useToolbarConfig", () => {
   const mockSetTabFormState = jest.fn();
   const mockClearSelectedRecord = jest.fn();
   const mockOnRefresh = jest.fn();
-  const mockOnToggleSplitView = jest.fn();
+  const mockOnShowTableAndForm = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -115,7 +115,7 @@ describe("useToolbarConfig", () => {
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
     (useToolbarContext as jest.Mock).mockReturnValue({
       onRefresh: mockOnRefresh,
-      onToggleSplitView: mockOnToggleSplitView,
+      onShowTableAndForm: mockOnShowTableAndForm,
     });
     (useDeleteRecord as jest.Mock).mockReturnValue({ deleteRecord: jest.fn(), loading: false });
     useUserStore.setState({ token: "mock-token" });
@@ -134,7 +134,7 @@ describe("useToolbarConfig", () => {
         result.current.handleAction("SHOW_TABLE_AND_FORM");
       });
 
-      expect(mockOnToggleSplitView).toHaveBeenCalledTimes(1);
+      expect(mockOnShowTableAndForm).toHaveBeenCalledTimes(1);
     });
 
     it("does not fall through to the unknown-action warning", () => {

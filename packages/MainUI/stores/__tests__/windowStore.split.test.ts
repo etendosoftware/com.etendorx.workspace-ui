@@ -90,34 +90,47 @@ describe("windowStore — split view state", () => {
     });
   });
 
-  describe("session persistence", () => {
-    it("survives clearTabFormState (closing the form with Escape / Cancel)", () => {
+  // The split cannot outlive its form: leaving it enabled would turn the next
+  // double click on a row into a split instead of the maximized form. The
+  // proportion is kept so that reopening the split restores the chosen width.
+  describe("closing the form", () => {
+    it("switches the split off but keeps the proportion (Escape / Cancel)", () => {
       seedSplitTabInFormView(WINDOW_A, TAB_PARENT);
       useWindowStore.getState().clearTabFormState(WINDOW_A, TAB_PARENT);
 
       expect(getTab(WINDOW_A, TAB_PARENT)?.form).toEqual({});
-      expect(getSplit(WINDOW_A, TAB_PARENT)).toEqual({ enabled: true, tableWidth: 65 });
+      expect(getSplit(WINDOW_A, TAB_PARENT)).toEqual({ enabled: false, tableWidth: 65 });
     });
 
-    it("survives clearChildrenSelections (parent selection change)", () => {
+    it("switches the split off on clearChildrenSelections (parent selection change)", () => {
       seedSplitTabInFormView(WINDOW_A, TAB_CHILD, 30);
       useWindowStore.getState().clearChildrenSelections(WINDOW_A, [TAB_CHILD], true);
 
       expect(getTab(WINDOW_A, TAB_CHILD)?.form).toEqual({});
-      expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: true, tableWidth: 30 });
+      expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: false, tableWidth: 30 });
     });
 
-    it("survives setSelectedRecordAndClearChildren", () => {
+    it("only touches the children on setSelectedRecordAndClearChildren", () => {
       seedSplitTabInFormView(WINDOW_A, TAB_PARENT, 70);
       seedSplitTabInFormView(WINDOW_A, TAB_CHILD, 35);
       useWindowStore.getState().setSelectedRecordAndClearChildren(WINDOW_A, TAB_PARENT, "other_record", [TAB_CHILD]);
 
+      // The parent keeps its own form, so its split stays on screen.
       expect(getSplit(WINDOW_A, TAB_PARENT)).toEqual({ enabled: true, tableWidth: 70 });
       expect(getTab(WINDOW_A, TAB_CHILD)?.form).toEqual({});
-      expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: true, tableWidth: 35 });
+      expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: false, tableWidth: 35 });
     });
 
-    it("is dropped together with the window (session scope)", () => {
+    it("leaves a child in form view untouched while the parent record does not change", () => {
+      seedSplitTabInFormView(WINDOW_A, TAB_CHILD, 45);
+      useWindowStore.getState().clearChildrenSelections(WINDOW_A, [TAB_CHILD], false);
+
+      expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: true, tableWidth: 45 });
+    });
+  });
+
+  describe("session scope", () => {
+    it("is dropped together with the window", () => {
       seedSplitTabInFormView(WINDOW_A, TAB_PARENT);
       useWindowStore.getState().cleanupWindow(WINDOW_A);
 

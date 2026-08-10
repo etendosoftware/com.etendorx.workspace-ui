@@ -77,17 +77,17 @@ describe("resolveToolbarActions", () => {
   it("keeps each owner's exclusive actions", () => {
     const formSave = jest.fn(async () => true);
     const gridColumnFilters = jest.fn();
-    const tabToggleSplitView = jest.fn();
+    const tabShowTableAndForm = jest.fn();
     const resolved = resolveToolbarActions(
       makeByOwner({
         [TOOLBAR_ACTION_OWNERS.FORM]: { save: formSave },
         [TOOLBAR_ACTION_OWNERS.GRID]: { columnFilters: gridColumnFilters },
-        [TOOLBAR_ACTION_OWNERS.TAB]: { toggleSplitView: tabToggleSplitView },
+        [TOOLBAR_ACTION_OWNERS.TAB]: { showTableAndForm: tabShowTableAndForm },
       })
     );
     expect(resolved.save).toBe(formSave);
     expect(resolved.columnFilters).toBe(gridColumnFilters);
-    expect(resolved.toggleSplitView).toBe(tabToggleSplitView);
+    expect(resolved.showTableAndForm).toBe(tabShowTableAndForm);
   });
 
   it("restores the tab's back handler once the form bucket is released", () => {

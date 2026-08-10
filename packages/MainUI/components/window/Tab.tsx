@@ -50,6 +50,7 @@ import {
   isGridPaneExclusive,
   isGridPaneVisible,
   isSplitViewAvailable,
+  resolveSplitViewFormRecord,
 } from "@/utils/window/splitView";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -315,12 +316,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       if (windowIdentifier) {
         if (recordId) {
           setSelectedRecord(windowIdentifier, tab.id, recordId);
-          // In split view a single click loads the record into the form (as in
-          // Classic), which also keeps the grid, the ERP session and the form
-          // pointing at the same record. Never discard pending edits.
-          if (isSplitView && !hasFormChanges) {
-            handleSetRecordId(recordId);
-          }
         } else {
           clearSelectedRecord(windowIdentifier, tab.id);
 
@@ -347,18 +342,26 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         }
       }
     },
-    [
-      windowIdentifier,
-      tab,
-      setSelectedRecord,
-      clearSelectedRecord,
-      clearChildrenSelections,
-      graph,
-      isSplitView,
-      hasFormChanges,
-      handleSetRecordId,
-    ]
+    [windowIdentifier, tab, setSelectedRecord, clearSelectedRecord, clearChildrenSelections, graph]
   );
+
+  /**
+   * In split view the form pane follows the grid selection, so a single click on
+   * a row is enough to load that record — the same as Classic. The grid writes
+   * its selection to the store, so reacting to the stored value covers row
+   * clicks, keyboard navigation and programmatic selection alike.
+   */
+  useEffect(() => {
+    const recordToLoad = resolveSplitViewFormRecord({
+      isSplitView,
+      selectedRecordId,
+      currentRecordId,
+      hasFormChanges,
+      isNewRecord: currentFormMode === FORM_MODES.NEW,
+    });
+    if (!recordToLoad) return;
+    handleSetRecordId(recordToLoad);
+  }, [isSplitView, selectedRecordId, currentRecordId, hasFormChanges, currentFormMode, handleSetRecordId]);
 
   const handleNew = useCallback(() => {
     if (windowIdentifier) {
@@ -417,32 +420,27 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowIdentifier]);
 
   /**
-   * With a form open, toggles between the split view and the maximized form.
-   * From the grid, opens the selected record directly in split view (Classic's
-   * `showGridAndForm` does the same via `grid.recordDoubleClick`).
+   * Brings both panes on screen, never the other way round: Classic's
+   * `showGridAndForm` only ever shows what is hidden, so pressing the button
+   * again with the split already open is a no-op there too.
+   *
+   * From the grid it also opens the selected record, the way Classic follows up
+   * with `grid.recordDoubleClick`.
    */
-  const handleToggleSplitView = useCallback(() => {
+  const handleShowTableAndForm = useCallback(() => {
     if (!windowIdentifier || !isSplitViewAvailable(tab)) return;
+    if (isSplitView) return;
+    // Without a form open the split needs a record to show in the form pane.
+    if (!shouldShowForm && !selectedRecordId) return;
 
-    if (shouldShowForm) {
-      setTabSplitEnabled(windowIdentifier, tab.id, !splitState.enabled, tab.tabLevel);
-      return;
-    }
-
-    if (!selectedRecordId) return;
     setTabSplitEnabled(windowIdentifier, tab.id, true, tab.tabLevel);
-    handleSetRecordId(selectedRecordId);
-  }, [
-    windowIdentifier,
-    tab,
-    shouldShowForm,
-    splitState.enabled,
-    selectedRecordId,
-    setTabSplitEnabled,
-    handleSetRecordId,
-  ]);
 
-  useKeyboardShortcuts({ "ctrl+m": { handler: handleToggleSplitView, allowInInputs: true } }, isFocused);
+    if (!shouldShowForm && selectedRecordId) {
+      handleSetRecordId(selectedRecordId);
+    }
+  }, [windowIdentifier, tab, isSplitView, shouldShowForm, selectedRecordId, setTabSplitEnabled, handleSetRecordId]);
+
+  useKeyboardShortcuts({ "ctrl+m": { handler: handleShowTableAndForm, allowInInputs: true } }, isFocused);
 
   /**
    * Live drag writes the CSS variable directly: a React state update per
@@ -1210,7 +1208,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       new: handleNew,
       back: handleBack,
       treeView: handleTreeView,
-      toggleSplitView: handleToggleSplitView,
+      showTableAndForm: handleShowTableAndForm,
       exportCSV: handleExportCSV,
       advancedFilters: handleAdvancedFilters,
       printRecord: handlePrintRecord,
@@ -1222,7 +1220,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     handleNew,
     handleBack,
     handleTreeView,
-    handleToggleSplitView,
+    handleShowTableAndForm,
     handleExportCSV,
     handleAdvancedFilters,
     handlePrintRecord,

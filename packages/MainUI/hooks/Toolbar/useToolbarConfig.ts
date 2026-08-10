@@ -75,7 +75,7 @@ export const useToolbarConfig = ({
     onFilter,
     onColumnFilters,
     onToggleTreeView,
-    onToggleSplitView,
+    onShowTableAndForm,
     attachmentAction,
     onExportCSV,
     onPrintRecord,
@@ -402,7 +402,7 @@ export const useToolbarConfig = ({
         onToggleTreeView?.();
       },
       SHOW_TABLE_AND_FORM: () => {
-        onToggleSplitView?.();
+        onShowTableAndForm?.();
       },
       ATTACHMENT: () => {
         if (attachmentAction) {
@@ -498,7 +498,7 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
-      onToggleSplitView,
+      onShowTableAndForm,
       handleDeleteRecord,
       attachmentAction,
       onExportCSV,

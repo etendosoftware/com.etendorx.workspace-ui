@@ -159,7 +159,7 @@ export const useToolbarContext = () => {
     onFilter: actions.filter,
     onExportCSV: actions.exportCSV,
     onToggleTreeView: actions.treeView,
-    onToggleSplitView: actions.toggleSplitView,
+    onShowTableAndForm: actions.showTableAndForm,
     onAdvancedFilters: actions.advancedFilters,
     onColumnFilters: actions.columnFilters,
     onPrintDocument: actions.printDocument,

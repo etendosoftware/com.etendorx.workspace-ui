@@ -165,6 +165,40 @@ export const getFocusBorderColor = (isFocused: boolean): string => {
   return "border-l-transparent";
 };
 
+/**
+ * Record the form pane must switch to so that it keeps following the grid
+ * selection, or `undefined` when it must stay where it is.
+ *
+ * In split view Classic turns a single row click into a record load
+ * (`boostedui.js` reroutes `rowClick` to `rowDoubleClick` while the form is
+ * showing), so selecting a row — by click or by keyboard — is enough to load it.
+ * Pending edits and a new record still being filled in are never discarded.
+ */
+export const resolveSplitViewFormRecord = ({
+  isSplitView,
+  selectedRecordId,
+  currentRecordId,
+  hasFormChanges,
+  isNewRecord,
+}: {
+  isSplitView: boolean;
+  selectedRecordId: string | undefined;
+  currentRecordId: string;
+  hasFormChanges: boolean;
+  isNewRecord: boolean;
+}): string | undefined => {
+  if (!isSplitView || !selectedRecordId) {
+    return undefined;
+  }
+  if (selectedRecordId === currentRecordId) {
+    return undefined;
+  }
+  if (hasFormChanges || isNewRecord) {
+    return undefined;
+  }
+  return selectedRecordId;
+};
+
 /** Inline style that seeds the grid-width CSS variable on the panes container. */
 export const getPanesContainerStyle = (tableWidth: number): CSSProperties => {
   return { [SPLIT_TABLE_WIDTH_CSS_VAR]: `${tableWidth}%` } as CSSProperties;
