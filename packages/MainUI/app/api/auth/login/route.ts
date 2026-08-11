@@ -100,6 +100,33 @@ async function fetchLoginFallback(body: any): Promise<Response> {
   });
 }
 
+async function tryFallbackLogin(body: any, userToken: string | null): Promise<any | null> {
+  // Initial username/password login has no prior token to fall back with;
+  // an in-session role switch does - route to whichever fallback can actually authenticate.
+  const fallbackResponse =
+    body?.username && body?.password
+      ? await fetchLoginFallback(body)
+      : await fetchChangeProfileFallback(body, userToken);
+
+  if (!fallbackResponse.ok) {
+    return null;
+  }
+
+  const fallbackData = await fallbackResponse.json().catch(() => null);
+  return fallbackData?.token ? fallbackData : null;
+}
+
+async function handleErpErrorResponse(data: any, body: any, userToken: string | null): Promise<NextResponse> {
+  if (data.message === ORG_HAS_NO_WAREHOUSES_ERROR) {
+    const fallbackData = await tryFallbackLogin(body, userToken);
+    if (fallbackData) {
+      return NextResponse.json(fallbackData, { status: 200 });
+    }
+  }
+
+  return NextResponse.json({ message: data.message || "Login failed" }, { status: 401 });
+}
+
 function extractJSessionId(erpResponse: Response): string | null {
   // getSetCookie() is the correct Node.js 18+ API for multiple Set-Cookie headers
   const cookies = (erpResponse.headers as any).getSetCookie?.() as string[] | undefined;
@@ -159,22 +186,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (data.status === "error") {
-      if (data.message === ORG_HAS_NO_WAREHOUSES_ERROR) {
-        // Initial username/password login has no prior token to fall back with;
-        // an in-session role switch does - route to whichever fallback can actually authenticate.
-        const fallbackResponse =
-          body?.username && body?.password
-            ? await fetchLoginFallback(body)
-            : await fetchChangeProfileFallback(body, userToken);
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json().catch(() => null);
-          if (fallbackData?.token) {
-            return NextResponse.json(fallbackData, { status: 200 });
-          }
-        }
-      }
-      const message = data.message || "Login failed";
-      return NextResponse.json({ message }, { status: 401 });
+      return await handleErpErrorResponse(data, body, userToken);
     }
 
     storeCookieForToken(erpResponse, data);
