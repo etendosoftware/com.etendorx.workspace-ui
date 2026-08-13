@@ -1535,14 +1535,17 @@ function ProcessDefinitionModalContent({
     }
 
     const isWarning = result.messageType === "warning";
-    const msgTitle = t("process.warning");
+    // Anything reaching this branch is not a successful keepOpen result (handled above)
+    // and not a fully-successful close (handled by isFinalSuccess) — so non-warning here
+    // means the process actually failed.
+    const msgTitle = isWarning ? t("process.warning") : t("process.processError");
     const rawMsg =
       result.error ||
       (typeof result.data === "string" ? result.data : result.data?.msgText || result.data?.message) ||
       t("errors.internalServerError.title");
     const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
     const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
-    const borderColor = "border-(--color-warning-main)";
+    const borderColor = isWarning ? "border-(--color-warning-main)" : "border-(--color-error-main)";
 
     return (
       <div className={`p-3 rounded mb-4 border-l-4 bg-gray-50 ${borderColor}`}>
