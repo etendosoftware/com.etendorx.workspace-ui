@@ -100,17 +100,30 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
 /**
+ * Normalizes a `responseActions` field to an array. Most Etendo Classic
+ * handlers (`ResponseActionsBuilder.java`) emit an array, but single-action
+ * handlers (e.g. `ScalewayApiUtils.mensajeError`/`mensajeExito` in
+ * com.smf.schedule.servers) emit a single `{ actionKey: payload }` object —
+ * wrap it so callers don't have to special-case the shape.
+ */
+const toResponseActionsArray = (value: unknown): unknown[] => {
+  if (Array.isArray(value)) return value;
+  if (isPlainObject(value)) return [value];
+  return [];
+};
+
+/**
  * Reads the `responseActions` array from any of the three nested paths used
  * by Etendo Classic handlers. Returns an empty array when the field is
- * absent or not an array — callers should not have to unwrap further.
+ * absent or not an array/object — callers should not have to unwrap further.
  */
 export const readResponseActions = (data: unknown): unknown[] => {
   if (!isPlainObject(data)) return [];
-  if (Array.isArray(data.responseActions)) return data.responseActions;
+  if (data.responseActions !== undefined) return toResponseActionsArray(data.responseActions);
   const response = isPlainObject(data.response) ? data.response : undefined;
-  if (response && Array.isArray(response.responseActions)) return response.responseActions;
+  if (response?.responseActions !== undefined) return toResponseActionsArray(response.responseActions);
   const nested = response && isPlainObject(response.data) ? response.data : undefined;
-  if (nested && Array.isArray(nested.responseActions)) return nested.responseActions;
+  if (nested?.responseActions !== undefined) return toResponseActionsArray(nested.responseActions);
   return [];
 };
 
