@@ -296,6 +296,24 @@ select:-webkit-autofill:focus {
   display: none;
 }
 
+.flyout-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-transparent-neutral-10) transparent;
+}
+.flyout-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.flyout-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.flyout-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-transparent-neutral-10);
+  border-radius: 10px;
+}
+.flyout-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-transparent-neutral-50);
+}
+
 .cursor-not-allowed-child {
   @apply cursor-not-allowed;
 
