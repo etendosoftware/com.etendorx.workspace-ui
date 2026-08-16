@@ -49,6 +49,7 @@ const en = {
     about: "About",
     help: "Help",
     helpFor: "Help for",
+    backToTop: "Go to the top",
     clone: "Clone",
     cloneWithChildren: "Clone With Children",
     change: "Change",

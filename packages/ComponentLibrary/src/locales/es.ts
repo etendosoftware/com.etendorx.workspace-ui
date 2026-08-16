@@ -48,6 +48,7 @@ const es = {
     about: "Acerca de",
     help: "Ayuda",
     helpFor: "Ayuda de",
+    backToTop: "Ir arriba",
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
     change: "Cambiar",

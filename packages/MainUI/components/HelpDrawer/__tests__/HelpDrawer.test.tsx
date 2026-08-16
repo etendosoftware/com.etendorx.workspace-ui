@@ -36,6 +36,7 @@ jest.mock("@/contexts/metadata", () => ({
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = jest.fn();
+  Element.prototype.scrollTo = jest.fn();
 });
 
 const setWindow = (window: ReturnType<typeof createMockWindowMetadata> | null, windowId = "W1") => {
@@ -198,6 +199,27 @@ describe("HelpDrawer tab index sidebar", () => {
     fireEvent.click(screen.getByTestId("help-toc-item-t1"));
 
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  });
+
+  it("scrolls the matching field into view when its quick-jump link is clicked", () => {
+    const field = createMockField({ id: "f1", name: "Document No.", helpComment: "Field help text" });
+    const tab = createMockTab({ id: "t1", name: "Header", fields: { f1: field } });
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tab] });
+
+    render(<HelpDrawer />);
+    fireEvent.click(screen.getByTestId("help-field-link-f1"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  });
+
+  it("scrolls the content pane to the top when a section's back-to-top button is clicked", () => {
+    const tab = createMockTab({ id: "t1", name: "Header", fields: {} });
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tab] });
+
+    render(<HelpDrawer />);
+    fireEvent.click(screen.getByTestId("help-back-to-top-t1"));
+
+    expect(Element.prototype.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
   });
 
   it("updates the active tab as the content pane is scrolled", () => {

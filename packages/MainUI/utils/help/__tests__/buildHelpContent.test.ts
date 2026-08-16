@@ -97,4 +97,30 @@ describe("buildHelpSections", () => {
 
     expect(sections[0].helpComment).toBe("");
   });
+
+  it("omits inactive tabs, matching Classic's Help view", () => {
+    const activeTab = createMockTab({ id: "active", name: "Header", sequenceNumber: 10, active: true, fields: {} });
+    const inactiveTab = createMockTab({
+      id: "inactive",
+      name: "Discounts and Promotions",
+      sequenceNumber: 20,
+      active: false,
+      fields: {},
+    });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [activeTab, inactiveTab] };
+
+    const sections = buildHelpSections(window);
+
+    expect(sections.map((s) => s.id)).toEqual(["active"]);
+  });
+
+  it("omits inactive fields regardless of help content", () => {
+    const inactiveField = createMockField({ id: "f1", helpComment: "help", active: false });
+    const tab = createMockTab({ id: "t1", fields: { inactiveField } });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+
+    const sections = buildHelpSections(window);
+
+    expect(sections[0].fields).toEqual([]);
+  });
 });

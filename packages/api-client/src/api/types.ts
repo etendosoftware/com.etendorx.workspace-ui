@@ -282,6 +282,8 @@ export interface Field {
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
   isActive: boolean;
+  /** AD_Field.ISACTIVE, as sent on the wire (isActive above is not actually populated by the backend). */
+  active?: boolean;
   gridDisplayLogic: string;
   /**
    * Indicates if this field contains the parent record ID in a hierarchical tab structure.
@@ -512,6 +514,8 @@ export interface Tab {
   helpComment?: string | null;
   /** AD_Tab column position — used to order tabs the same way Classic's Help view does. */
   sequenceNumber?: number;
+  /** AD_Tab.ISACTIVE — inactive tabs are excluded from Classic's Help view. */
+  active?: boolean;
 }
 
 export interface WindowMetadata {

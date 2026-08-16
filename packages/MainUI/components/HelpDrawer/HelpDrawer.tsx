@@ -25,6 +25,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useMetadataContext } from "@/contexts/metadata";
 import { useHelpPanelStore } from "@/stores/helpPanelStore";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import ChevronUpIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg";
 
 const ACTIVE_TAB_THRESHOLD_PX = 16;
 const PANEL_WIDTH = "42rem";
@@ -69,6 +70,7 @@ const HelpDrawer: React.FC = () => {
 
   const contentRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const fieldRefs = useRef<Map<string, HTMLElement>>(new Map());
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const previousWindowId = useRef(windowId);
 
@@ -102,6 +104,14 @@ const HelpDrawer: React.FC = () => {
 
   const scrollToTab = (tabId: string) => {
     sectionRefs.current.get(tabId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToField = (fieldId: string) => {
+    fieldRefs.current.get(fieldId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToTop = () => {
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleContentScroll = () => {
@@ -174,15 +184,46 @@ const HelpDrawer: React.FC = () => {
                       sectionRefs.current.delete(tab.id);
                     }
                   }}>
-                  <h3 className="font-semibold">{tab.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{tab.name}</h3>
+                    <button
+                      type="button"
+                      onClick={scrollToTop}
+                      aria-label={t("common.backToTop")}
+                      data-testid={`help-back-to-top-${tab.id}`}>
+                      <ChevronUpIcon className="w-4 h-4" data-testid={`ChevronUpIcon__${tab.id}`} />
+                    </button>
+                  </div>
                   {tab.helpComment && (
                     // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above
                     <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(tab.helpComment) }} />
                   )}
                   {tab.fields.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-sm">
+                      {tab.fields.map((field) => (
+                        <button
+                          key={field.id}
+                          type="button"
+                          onClick={() => scrollToField(field.id)}
+                          className="text-blue-700 hover:underline"
+                          data-testid={`help-field-link-${field.id}`}>
+                          [{field.name}]
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {tab.fields.length > 0 && (
                     <ul className="mt-2 space-y-2">
                       {tab.fields.map((field) => (
-                        <li key={field.id}>
+                        <li
+                          key={field.id}
+                          ref={(el) => {
+                            if (el) {
+                              fieldRefs.current.set(field.id, el);
+                            } else {
+                              fieldRefs.current.delete(field.id);
+                            }
+                          }}>
                           <strong>{field.name}</strong>
                           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitizeMessageHtml above */}
                           <div dangerouslySetInnerHTML={{ __html: sanitizeMessageHtml(field.helpComment) }} />

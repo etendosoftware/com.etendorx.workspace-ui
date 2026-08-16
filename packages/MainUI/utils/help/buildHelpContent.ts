@@ -55,16 +55,19 @@ function getFieldHelp(field: Field): string {
 
 /**
  * Builds the ordered, filtered list of help sections (one per tab) for a
- * window's Help view: tabs ordered by sequenceNumber, fields within each tab
- * ordered by sequenceNumber, audit fields omitted, and fields with no help
- * text (own or column fallback) omitted.
+ * window's Help view: inactive tabs omitted (Classic's Help view excludes
+ * them the same way), tabs ordered by sequenceNumber, fields within each tab
+ * ordered by sequenceNumber, audit and inactive fields omitted, and fields
+ * with no help text (own or column fallback) omitted.
  */
 export function buildHelpSections(window: WindowMetadata): HelpTabSection[] {
-  const orderedTabs = [...window.tabs].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+  const orderedTabs = [...window.tabs]
+    .filter((tab) => tab.active !== false)
+    .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
 
   return orderedTabs.map((tab: Tab) => {
     const fields = Object.values(tab.fields)
-      .filter((field) => !field.isAuditField)
+      .filter((field) => !field.isAuditField && field.active !== false)
       .map((field) => ({ field, help: getFieldHelp(field) }))
       .filter(({ help }) => help.length > 0)
       .sort((a, b) => a.field.sequenceNumber - b.field.sequenceNumber)
