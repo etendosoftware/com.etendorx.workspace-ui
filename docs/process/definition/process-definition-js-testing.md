@@ -635,16 +635,16 @@ change needed.
 | 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
-| 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | qa pending ⁵ |
+| 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
 | 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | **blocked** ⁶ |
 | 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | **blocked** ⁷ |
 | 55 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | AR-4 | `OB.OBWPACK.Process.createHeader` | *idem* | **blocked** ⁷ |
 | 56 | 40317268E74C445FA85DB97249AFFE37 | Validate Picking List | AR-4 | `OB.OBWPL.Process.validate` | `…/pickinglist/js/OBWPL_Process.js` | **blocked** ⁷ |
-| 57 | 44821BBF79D64516844F388CB2E0F36E | Assign and Group Picking List | AR-4 | `OB.OBWPL.Process.assign` | *idem* | qa-pending ⁸ |
-| 58 | C107C380836042A9AF4E107521C947AA | Re Assign Picking List | AR-4 | `OB.OBWPL.Process.reassign` | *idem* | qa-pending ⁸ |
-| 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | qa pending ⁹ |
-| 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | qa pending ⁹ |
-| 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | qa pending ⁹ |
+| 57 | 44821BBF79D64516844F388CB2E0F36E | Assign and Group Picking List | AR-4 | `OB.OBWPL.Process.assign` | *idem* | migrated ⁸ |
+| 58 | C107C380836042A9AF4E107521C947AA | Re Assign Picking List | AR-4 | `OB.OBWPL.Process.reassign` | *idem* | migrated ⁸ |
+| 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | migrated ⁹ |
+| 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | migrated ⁹ |
+| 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | migrated ⁹ |
 | 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | qa pending ¹⁰ |
 | 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | qa pending ¹⁰ |
 
