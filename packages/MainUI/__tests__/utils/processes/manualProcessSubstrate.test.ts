@@ -33,6 +33,7 @@ import {
 import {
   buildOpenUrlFallbackAction,
   openExternalWindow,
+  isOpenUrlIntent,
   parseOpenUrlPayload,
   resolveErpHostedUrl,
   type WindowOpener,
@@ -169,6 +170,28 @@ describe("parseOpenUrlPayload", () => {
     expect(parseOpenUrlPayload({ type: "openUrl", url: "/web/x/", erpHosted: true })?.erpHosted).toBe(true);
     expect(parseOpenUrlPayload({ type: "openUrl", url: "/web/x/", erpHosted: "Y" })?.erpHosted).toBeUndefined();
     expect(parseOpenUrlPayload({ type: "openUrl", url: "https://example.test" })?.erpHosted).toBeUndefined();
+  });
+});
+
+describe("isOpenUrlIntent", () => {
+  it("recognizes the hand-off even when it carries no usable url", () => {
+    // The whole point: `parseOpenUrlPayload` rejects these, and the caller still
+    // has to know a hand-off was requested so it does not report success.
+    expect(isOpenUrlIntent({ type: "openUrl" })).toBe(true);
+    expect(isOpenUrlIntent({ type: "openUrl", url: undefined, closeModal: true })).toBe(true);
+    expect(isOpenUrlIntent({ type: "openUrl", url: "" })).toBe(true);
+  });
+
+  it("still recognizes a usable hand-off", () => {
+    expect(isOpenUrlIntent({ type: "openUrl", url: "https://bank.example/consent" })).toBe(true);
+  });
+
+  it("ignores anything that is not an open-url request", () => {
+    expect(isOpenUrlIntent({ type: "closeModal" })).toBe(false);
+    expect(isOpenUrlIntent({ message: { severity: "error", text: "boom" } })).toBe(false);
+    expect(isOpenUrlIntent(null)).toBe(false);
+    expect(isOpenUrlIntent("openUrl")).toBe(false);
+    expect(isOpenUrlIntent([{ type: "openUrl" }])).toBe(false);
   });
 });
 

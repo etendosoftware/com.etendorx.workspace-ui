@@ -94,6 +94,19 @@ export const parseOpenUrlPayload = (value: unknown, requireTypeDiscriminator = t
 };
 
 /**
+ * True iff the value declares an open-url hand-off, **whether or not it is
+ * usable**. {@link parseOpenUrlPayload} rejects a payload with no `url` — rightly,
+ * there is nothing to open — but the caller still has to tell the two cases apart:
+ * a script that asked for a hand-off and could not be served did not succeed, and
+ * reporting the generic "process completed successfully" would leave the user
+ * believing a link opened when none did.
+ *
+ * The usual cause is a handler that answered with a business error the script
+ * never inspected, so the URL field came back `undefined`.
+ */
+export const isOpenUrlIntent = (value: unknown): boolean => isPlainObject(value) && value.type === OPEN_URL_RESULT_TYPE;
+
+/**
  * Resolves the URL to actually open, expanding an {@link OpenUrlPayload.erpHosted}
  * path into a full Etendo Classic URL. Any other payload is returned untouched, so
  * external hand-offs are never rewritten.

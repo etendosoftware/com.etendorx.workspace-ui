@@ -329,6 +329,7 @@ const en = {
       "This process has logic thas has not been migrated yet. Please contact support.",
     popupBlocked: "Your browser blocked the window this process tried to open.",
     openLink: "Open link",
+    openUrlMissingUrl: "The process asked to open a link but returned no URL.",
   },
   processModal: {
     gridToolbar: {

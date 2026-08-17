@@ -45,9 +45,22 @@ export interface ProcessContextCredentials {
 
 /**
  * Generic response wrapper returned by all process context helpers.
+ *
+ * The parsed body is exposed **twice**: nested under `data` (the documented,
+ * authoritative form) and spread onto the wrapper itself. Migrated Classic
+ * scripts read the body directly — `OB.RemoteCallManager.call` handed it to
+ * their callback as `data`, so they were written as `result.message`,
+ * `result.consentUrl`, … — while the new-UI form is `result.data.message`.
+ * Honouring both is what keeps a handler's error message from being silently
+ * lost when a script inspects the response at the classic nesting level.
+ *
+ * `data` is written last, so it always resolves to the whole body even when the
+ * body carries a `data` field of its own (reachable as `result.data.data`).
  */
 export interface ProcessContextResponse<T = unknown> {
   data: T;
+  /** The spread body. Keys are unknown ahead of time — scripts are untyped. */
+  [key: string]: unknown;
 }
 
 /**
@@ -88,6 +101,12 @@ export interface ProcessScriptContext {
   /**
    * Call an Etendo Action Handler class.
    *
+   * The parsed body is readable both as `result.data.<field>` and as
+   * `result.<field>` (the classic spelling — see {@link ProcessContextResponse}).
+   * A business error arrives as a normal response (HTTP 200 with
+   * `message.severity === 'error'`), exactly like classic: inspect it, and return
+   * `{ message }` to surface it in the modal with the server's own title.
+   *
    * @example
    * await callAction('org.openbravo.warehouse.pickinglist.AssignActionHandler', { action: 'getemployees' })
    */
@@ -98,7 +117,8 @@ export interface ProcessScriptContext {
   ) => Promise<ProcessContextResponse<T>>;
 
   /**
-   * Query an Etendo datasource endpoint.
+   * Query an Etendo datasource endpoint. The body is readable at both nesting
+   * levels (`result.data.response` / `result.response`).
    *
    * @example
    * await callDatasource('OBWPL_PickingList', { queryParams: { _where: "status='pending'" } })
@@ -111,7 +131,8 @@ export interface ProcessScriptContext {
 
   /**
    * Call an arbitrary ERP servlet URL.
-   * Use this for endpoints not covered by callAction / callDatasource.
+   * Use this for endpoints not covered by callAction / callDatasource. The body
+   * is readable at both nesting levels, as with the two helpers above.
    *
    * @example
    * await callServlet('/org.openbravo.service.json.JsonToXmlConverter', { key: 'value' })
@@ -166,6 +187,23 @@ export interface ProcessScriptContext {
 }
 
 /**
+ * Wraps a parsed response body into the {@link ProcessContextResponse} shape.
+ *
+ * Plain-object bodies are exposed nested **and** spread, so a migrated script
+ * reads them at either level (see {@link ProcessContextResponse}). Anything else
+ * — an array, a string, `null` — is only nested: spreading it would either flatten
+ * indices onto the wrapper or silently produce nothing.
+ *
+ * Pure and exported so the contract can be asserted without a `fetch` mock.
+ */
+export const buildContextResponse = <T>(data: T): ProcessContextResponse<T> => {
+  const isPlainObject = !!data && typeof data === "object" && !Array.isArray(data);
+  // `data` is written after the spread: it stays authoritative even for a body
+  // that carries a `data` field of its own.
+  return isPlainObject ? { ...(data as object), data } : { data };
+};
+
+/**
  * Builds the injectable process script context with authenticated HTTP helpers.
  *
  * Designed to be passed as `context` to `executeStringFunction`, allowing
@@ -191,7 +229,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
       throw new Error(errorText);
     }
     const data = (await response.json()) as T;
-    return { data };
+    return buildContextResponse(data);
   };
 
   const buildQuery = (base: string, extra?: Record<string, string>): string => {

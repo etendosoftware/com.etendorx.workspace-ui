@@ -58,7 +58,7 @@ import {
   dispatchBuiltinAction,
   dispatchProcessReturnActions,
 } from "@/utils/processes/definition/actionDispatcherStore";
-import { parseOpenUrlPayload } from "@/utils/processes/definition/openUrl";
+import { isOpenUrlIntent, parseOpenUrlPayload } from "@/utils/processes/definition/openUrl";
 import {
   createFormHandle,
   createViewProxy,
@@ -955,6 +955,15 @@ export function useProcessExecution({
           const openUrlPayload = parseOpenUrlPayload(result);
           if (openUrlPayload) {
             dispatchBuiltinAction(RESPONSE_ACTION_KEYS.OPEN_URL, openUrlPayload);
+            return;
+          }
+
+          // The script asked for a hand-off but supplied no URL — typically because
+          // the handler answered with an error the script did not inspect. Falling
+          // through would reach the generic success default below and tell the user
+          // the process worked while nothing opened at all.
+          if (isOpenUrlIntent(result)) {
+            setResult({ success: false, error: t("process.openUrlMissingUrl") });
             return;
           }
 

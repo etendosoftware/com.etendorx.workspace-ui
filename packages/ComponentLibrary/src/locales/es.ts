@@ -333,6 +333,7 @@ const es = {
       "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
     popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
     openLink: "Abrir enlace",
+    openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {
     gridToolbar: {

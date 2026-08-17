@@ -526,6 +526,19 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   where the pending guard would always refuse it. The two paths are now separate. Without this a
   `directExecute` + `openUrl` process handed off its URL and then left an un-dismissable spinner behind,
   because in direct-execute mode there is no chrome to close by hand either.
+- **An HTTP helper's response is readable at both nesting levels.** `callAction`, `callDatasource` and
+  `callServlet` return the parsed body nested under `data` **and** spread onto the wrapper, so
+  `result.data.message` (the documented form) and `result.message` (the classic form —
+  `OB.RemoteCallManager.call` handed the body to its callback as `data`, which is how ported scripts were
+  written) resolve to the same value. `data` is written last, so it stays authoritative even for a body
+  carrying its own `data` field, and every existing reader — `result.data.<field>`, `return await
+  callAction(…)`, the `OB.RemoteCallManager` adapter — keeps behaving identically. This closes a silent
+  failure mode: a script reading the wrong level found `undefined`, its error guard never fired, and the
+  process reported success while the handler had actually refused. No script change is required.
+- **A hand-off that cannot be served is never reported as success.** An `onProcess` returning
+  `{ type: "openUrl" }` with no usable `url` — typically because the handler answered with an error the
+  script did not inspect — now surfaces an error in the modal instead of falling through to the generic
+  "Process completed successfully". A well-formed hand-off is unaffected.
 - **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
   numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
   is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a

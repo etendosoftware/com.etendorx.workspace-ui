@@ -5,6 +5,7 @@ import {
   applyMergedParam,
   buildFilterCriteriaEntry,
   applyGridSelection,
+  buildContextResponse,
   buildProcessScriptContext,
   injectDynamicParameters,
   applyStaticParameterValues,
@@ -176,6 +177,37 @@ describe("Process Definition Utils", () => {
     });
   });
 
+  describe("buildContextResponse", () => {
+    it("exposes an object body both nested and spread", () => {
+      const body = { message: { severity: "error", text: "No API Key available for the user." } };
+
+      const response = buildContextResponse(body);
+
+      // The documented form the new UI was written against…
+      expect(response.data).toBe(body);
+      // …and the classic form migrated scripts read (what OB.RemoteCallManager
+      // handed their callback). Reading either must find the handler's error.
+      expect(response.message).toBe(body.message);
+    });
+
+    it("keeps `data` authoritative when the body carries a `data` field of its own", () => {
+      const body = { data: { rows: [1, 2] }, status: 0 };
+
+      const response = buildContextResponse(body);
+
+      expect(response.data).toBe(body);
+      // The body's own `data` stays reachable one level deeper — nothing is lost.
+      expect((response.data as typeof body).data).toEqual({ rows: [1, 2] });
+      expect(response.status).toBe(0);
+    });
+
+    it("only nests a body that cannot be spread meaningfully", () => {
+      expect(buildContextResponse([1, 2])).toEqual({ data: [1, 2] });
+      expect(buildContextResponse("plain text")).toEqual({ data: "plain text" });
+      expect(buildContextResponse(null)).toEqual({ data: null });
+    });
+  });
+
   describe("buildProcessScriptContext", () => {
     const credentials = {
       token: "test-token",
@@ -222,7 +254,10 @@ describe("Process Definition Utils", () => {
           }),
         })
       );
-      expect(result).toEqual({ data: { result: "ok" } });
+      // Nested (the documented form) and spread (the classic form migrated
+      // scripts were written against) — both must resolve to the same body.
+      expect(result.data).toEqual({ result: "ok" });
+      expect(result.result).toBe("ok");
     });
 
     it("callAction should append queryParams to URL", async () => {
@@ -293,7 +328,8 @@ describe("Process Definition Utils", () => {
         expect.stringContaining("/api/datasource/MyEntity"),
         expect.objectContaining({ method: "POST" })
       );
-      expect(result).toEqual({ data: { rows: [] } });
+      expect(result.data).toEqual({ rows: [] });
+      expect(result.rows).toEqual([]);
     });
 
     it("callDatasource should append queryParams", async () => {
@@ -352,7 +388,8 @@ describe("Process Definition Utils", () => {
       const result = await ctx.callServlet("/my/servlet", { key: "val" });
 
       expect(global.fetch).toHaveBeenCalledWith("/my/servlet", expect.objectContaining({ method: "POST" }));
-      expect(result).toEqual({ data: { done: true } });
+      expect(result.data).toEqual({ done: true });
+      expect(result.done).toBe(true);
     });
 
     it("callServlet with GET should not include body", async () => {

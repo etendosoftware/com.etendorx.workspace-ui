@@ -349,6 +349,22 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       expect(await findByText("process.popupBlocked")).toBeInTheDocument();
       expect(await findByText("process.openLink")).toBeInTheDocument();
     });
+
+    // The failure this whole change is about: the handler answered with a business
+    // error, the script never inspected it, so the URL came back undefined. The
+    // hand-off cannot be served — and reporting success would be a lie.
+    test("reports an error instead of success when the hand-off carries no url", async () => {
+      window.open = jest.fn(() => null) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: undefined, closeModal: true });
+
+      const { findByText } = renderModal(openUrlButton);
+
+      expect(await findByText("process.openUrlMissingUrl")).toBeInTheDocument();
+      // The success path closes the modal; this one must leave it open and readable.
+      expect(mockClose).not.toHaveBeenCalled();
+    });
   });
 
   // Classic headed the message bar with the handler's own title
@@ -375,6 +391,23 @@ describe("ProcessDefinitionModal Execution Flows", () => {
 
       expect(await container.findByText("Recalculation failed")).toBeInTheDocument();
       expect(await container.findByText("Inconsistent inheritance")).toBeInTheDocument();
+    });
+
+    // A migrated script that hands the handler's own `message` back untouched —
+    // the raw Etendo spelling, not the script-facing msgType/msgTitle/msgText.
+    // This is how PSD2 Get Consents surfaces "No API Key available for the user."
+    test("renders the handler's raw message shape as an error, title included", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { severity: "error", title: "ERROR", text: "No API Key available for the user." },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("ERROR")).toBeInTheDocument();
+      expect(await container.findByText("No API Key available for the user.")).toBeInTheDocument();
+      // An error keeps the dialog open so the message stays readable.
+      expect(mockClose).not.toHaveBeenCalled();
     });
 
     test("falls back to the generic heading when the response carries no title", async () => {
