@@ -795,6 +795,11 @@ export function useProcessExecution({
           tabId: tab?.id || tabId || "",
           entityName: tab?.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
+          // Parity with the onLoad hookData: Manual handlers ported from Classic
+          // read fields off the launching grid's selection, not just its ids
+          // (e.g. `selection[0].organization` for the SII senders), which
+          // `params.button.contextView.viewGrid.getSelectedRecords()` gave them.
+          selectedRecords,
           // Mirrors classic SmartClient view.onRefreshFunction so migrated
           // scripts can refresh the modal grid/form after async actions. The
           // parent's refresh after a nested process closes is wired through the

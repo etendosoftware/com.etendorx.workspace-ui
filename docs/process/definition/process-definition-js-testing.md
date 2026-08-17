@@ -246,8 +246,16 @@ the classic single-file module, expressed declaratively in metadata.
 | Largest files | `ob-aprm-addPayment.js` (1,935 lines), `OBWPACK_PackingComponent.js` (1,033), `OBWPL_ValidateComponent.js` (714) |
 | Difficulty distribution (by lines) | **8 easy** (<100) · **25 medium** (100–500) · **4 hard** (>500) |
 
-`uipattern` distribution: `OBUIAPP_PickAndExecute` 116 · `A` 89 · `M` 24 ·
-`OBUIAPP_Report` 11 · `ETRX_RxAction` 1.
+`uipattern` distribution (re-counted 2026-08-10 against `etendodev`, active rows only):
+`OBUIAPP_PickAndExecute` 115 · `A` 96 · **`M` 26** · `OBUIAPP_Report` 11 · `ETRX_RxAction` 1.
+
+> The **26 `M` (Manual)** processes are a **separate scope** from the 37 rows in §6 and are
+> inventoried in **§6bis**. They are not discovered by signals 1–3: a Manual process has no hook
+> columns and no parameters, and its entry point is the mandatory **Handler** field
+> (`obuiapp_process.classname`), which for this pattern holds a **client-side JS namespace**
+> (`OB.AEATSII.send`), not a Java class. Two of them (`A832A5DA…` Open Close Periods, `B7B1D4F5…`
+> Manage PickingList Action) already appear in §6 via signal 3 because their files carry a hardcoded
+> `processId`.
 
 > **Completeness note:** signal 1 has near-perfect precision; signals 2 and 3 extend coverage to
 > non-columnar bindings. Processes whose logic lives in minified `dist.js` bundles of recent
@@ -574,6 +582,108 @@ Distribution: **8 easy · 25 medium · 4 hard.**
 - **Sizes** are the raw `.js` source (lines · KB). The per-process column repeats shared files, so it
   overcounts; the "Total legacy JS" in §5 (~7,600 lines · ~250 KB) sums **distinct** files once.
   `ob-onchange-functions.js` is counted whole though only its aging functions are in scope.
+
+---
+
+## 6bis. Manual processes (`uipattern = 'M'`) — a separate scope (26)
+
+A **Manual** Defined Process has **no parameter dialog** and a mandatory **Handler** field
+(`obuiapp_process.classname`) holding a **classic client-side JS namespace path**
+(`OB.AEATSII.send`, `OB.OpenClose.openClose`) rather than a Java `ActionHandler`. In Etendo Classic the
+button click invokes that function directly: `openProcess` (`ob-standard-window.js`) runs the handler and
+returns **before** `buildProcess`, so the parameter window is never created. None of these are discovered
+by signals 1–3, which is why they were absent from §6.
+
+Consequently any `OBUIAPP_Parameter` row a Manual process carries is **dead metadata**. 25 of the 26 have
+none; `SIIInvoiceSender` has one (`Warning`, reference 14, default value = the confirmation text), which
+the new UI rendered as a form field until `initialProcessParameters` started dropping dictionary
+parameters for this pattern. Never migrate them — raise the text through `confirm()` / `warn()`, or build
+a form at action time with `openDynamicForm`.
+
+Migration model, archetypes and the supported mechanisms (`directExecute`, `openUrl`, `closeModal`,
+`openDynamicForm` with `LIST` fields) are documented in the `new-ui-js-migration-guide` skill,
+**Section 9.2**. One report per process lives in `client/agents/reports/<process-id>.md`.
+
+### Archetypes
+
+| Code | Shape | Count |
+|---|---|---|
+| **AR-1** | selection → `isc.confirm` → `RemoteCallManager` → message bar → grid refresh | 10 |
+| **AR-2** | open an external URL / OAuth popup | 4 |
+| **AR-3** | bespoke `isc.OBPopup` with a dynamically populated combo | 2 |
+| **AR-4** | already carried `em_etmeta_*` code before this pass (audited, not re-migrated) | 10 |
+
+### Inventory
+
+`status`: **migrated** = code produced/confirmed, manual QA pending · **blocked** = a mechanism the
+platform does not support (no code emitted) · **qa-pending** = existing code audited as correct, no
+change needed.
+
+| # | id | name | AR | Handler (`classname`) | `.js` file | status |
+|---|---|---|---|---|---|---|
+| 38 | 2ECF46DAAEEB486EAF79D3594D50DE5F | SII Invoice Sender | AR-1 | `OB.AEATSII.send` | `…/org.openbravo.module.sii/js/ModDefinicionProceso.js` | migrated |
+| 39 | EA02D79CA1DE4B46909EA6EF64A66B53 | SII Payment Sender | AR-1 | `OB.AEATSII.sendPayment` | *idem* | migrated |
+| 40 | BAAECFDF9FF144E8A610E9F1EF3E5FBE | SII Invoice Modification | AR-1 | `OB.AEATSII.modify` | *idem* | migrated |
+| 41 | 92C02F9A367140C085D1EE3BD27C4E96 | SII duplicated invoice correction | AR-1 | `OB.AEATSII.correction` | *idem* | migrated |
+| 42 | BE564945CB2D4892AC0EE51204C5DB7D | SII Unsubscribe Invoice | AR-1 | `OB.AEATSII.unsubscribe` | *idem* | migrated |
+| 43 | 73B931766AFE4D50A9FD25CB4547D197 | SII Cash Receipt Sender | AR-1 | `OB.AEATSII.sendCashReceipt` | *idem* | migrated |
+| 44 | 9FF06EA1E74845B8B74FBC36AAE40F94 | SII Cash Receipt Modification | AR-1 | `OB.AEATSII.modifyCashReceipt` | *idem* | migrated |
+| 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | migrated |
+| 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | migrated |
+| 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
+| 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated ¹ |
+| 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
+| 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
+| 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
+| 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
+| 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | **blocked** ⁶ |
+| 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | **blocked** ⁷ |
+| 55 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | AR-4 | `OB.OBWPACK.Process.createHeader` | *idem* | **blocked** ⁷ |
+| 56 | 40317268E74C445FA85DB97249AFFE37 | Validate Picking List | AR-4 | `OB.OBWPL.Process.validate` | `…/pickinglist/js/OBWPL_Process.js` | **blocked** ⁷ |
+| 57 | 44821BBF79D64516844F388CB2E0F36E | Assign and Group Picking List | AR-4 | `OB.OBWPL.Process.assign` | *idem* | qa-pending ⁸ |
+| 58 | C107C380836042A9AF4E107521C947AA | Re Assign Picking List | AR-4 | `OB.OBWPL.Process.reassign` | *idem* | qa-pending ⁸ |
+| 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | migrated ⁹ |
+| 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | migrated ⁹ |
+| 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | migrated ⁹ |
+| 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | migrated ¹⁰ |
+| 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | migrated ¹⁰ |
+
+**Notes:**
+
+- ¹ Migrated, but the **URL base needs QA confirmation**: Classic builds a path on the Classic host,
+  while the new UI proxies ERP resources under `/api/erp/`. See the report's advisory 1.
+- ² **Blocked on one missing value: `OB.User.id`.** The user id is half of the OAuth `state` payload
+  that binds the returned token to a user; there is no user-identity accessor in the `OB` shim, in
+  `view.getContextInfo()` or in `view.hookData`. Everything else in this process is supported —
+  exposing the session user id turns it into a five-line `onProcess`.
+- ³ Blocked on three counts: a **raw-DOM provider/scope grid** (`document.createElement` × 12 appended
+  to `document.body`), a **two-phase popup** (`window.open('')` during the click, navigated after an
+  `await`), and the same missing `OB.User.id`. A degraded version using an `openDynamicForm` `LIST` is
+  specified in the report and awaits a product decision.
+- ⁴ Blocked deepest: the script **retains a child window**, writes HTML into it, and waits for a
+  `postMessage` handshake. No retained-window handle, cross-document write, or listener outliving
+  `onProcess` exists. The report recommends moving the handshake server-side as the cheaper fix.
+- ⁵ **Supersedes a 2026-06-16 `blocked` verdict.** That verdict was correct then: the process needs a
+  select whose options are fetched at open time, and `openDynamicForm` only rendered `TEXT`/`CHECK`.
+  `LIST` fields now exist, so the classic `_id_17` combo maps 1:1.
+- ⁶ Blocked because each "combo" is a **tree-reference selector** backed by a `CharacteristicValue`
+  datasource with substring matching and a selector grid — `LIST` is a plain `<select>`. A degraded
+  version is specified in the report, gated on two questions about `valueMap` completeness and size.
+- ⁷ **`em_etmeta_onload` returns a `warehouseProcess` schema but `em_etmeta_custom_component` is `NULL`.**
+  Verified across all 26: **no process in `etendodev` has that flag set to `'Y'`**, so the gate in
+  `customComponentUtils.ts:35-38` never opens and these render an **empty dialog**. The fix is a
+  metadata (DB) change, not code.
+- ⁸ `onLoad` returns `_dynamicParameters` — a supported contract that synthesizes real parameters and
+  renders the standard form. **Works as-is; do not add `directExecute`** (it would remove the dialog the
+  user must fill in).
+- ⁹ `onProcess` only, no `onLoad`, and zero parameters → an **empty dialog plus an Execute click**. Fixed
+  by adding the one-line `em_etmeta_onload = () => ({ type: "directExecute" })`.
+- ¹⁰ **The sharpest finding of the review.** Both were authored against `{ type: "directExecute" }` and
+  `{ type: "openUrl" }` — documented in `docs/features/process-execution/ad-fields-onload-onprocess.md`
+  but **never implemented** (`git log --all -S"directExecute" -- packages/` → 0 commits). They were inert
+  in production. Both mechanisms were implemented as part of this work; the stored code is correct and
+  unchanged. Their popups will normally be blocked (direct-execute fires from an effect, and they await
+  a server call first), so the platform's "Open link" fallback banner is the **expected** path for them.
 
 ---
 
@@ -1004,3 +1114,70 @@ instead of `view.parentWindow.view.viewGrid` / `view.processOwnerView.tabId`; `A
 `getValueMap()` returns a `ListOption[]` array so `currentValues[action]` → `currentValues.find(...)`).
 Status `blocked → migrated` (pending manual QA). These capabilities also unblock the rest of the
 `processRecords` family (Process Orders/Shipment/Invoices), each migrated on its own row.
+
+---
+
+### 2026-08-10 — New scope: the 26 Manual (`uipattern = 'M'`) processes (§6bis)
+
+Manual processes were absent from this inventory because signals 1–3 cannot find them: they have no hook
+columns and no parameters, and their entry point is the mandatory **Handler** field
+(`obuiapp_process.classname`), which for this pattern holds a **client-side JS namespace**
+(`OB.AEATSII.send`) rather than a Java `ActionHandler`. §6bis inventories all 26 with a per-process
+report in `client/agents/reports/`.
+
+**The starting state was worse than "not migrated": the new UI had no code path for `uipattern = 'M'` at
+all.** Verified on `hotfix/ETP-4643` before any change:
+
+- the `UIPattern` enum had no `M` member, and nothing in the client branched on it;
+- `{ type: "directExecute" }` and `{ type: "openUrl" }` were **documented but never implemented**
+  (`git log --all -S"directExecute" -- packages/` → 0 commits);
+- `handleExecute` posted the Handler's JS namespace to the kernel as `_action`, so an unmigrated Manual
+  process returned a **server error** on Execute rather than doing nothing;
+- **no** process in `etendodev` had `em_etmeta_custom_component = 'Y'`, so every schema-returning
+  `onLoad` was inert.
+
+Consequently the 10 processes that already carried `em_etmeta_*` code were **inert or broken**, most
+sharply the two PSD2 ones, authored against the unimplemented contract.
+
+**Substrate implemented in this pass** (`packages/MainUI`, `packages/api-client`, with Jest coverage in
+`__tests__/utils/processes/manualProcessSubstrate.test.ts`):
+
+- `UIPattern.MANUAL` / `UIPattern.ACTION` + the pure `isManualProcess()` guard, so a Manual Handler is
+  never posted to the kernel as a Java action;
+- **`directExecute`** — `onLoad` returns `{ type: "directExecute" }`; the modal renders only a loading
+  overlay and fires `onProcess` once (Classic's "the click *is* the action");
+- **`openUrl`** — as an `onProcess` return *and* as a `responseActions` entry, with a mandatory
+  popup-blocker fallback: a warning banner with an **"Open link"** action, keeping the modal open so the
+  URL stays reachable;
+- **`closeModal`** — the equivalent of `params.button.closeProcessPopup()`, needed so a declined
+  `confirm` reports nothing instead of a blank failure banner;
+- **`LIST` fields in `openDynamicForm`** — the classic `_id_17` combo, which is what unblocked
+  Open Close Periods.
+
+Migration model, the four archetypes and the popup-blocker rules are documented in the
+`new-ui-js-migration-guide` skill, **Section 9.2**.
+
+**Outcome:** 16 migrated (code produced, manual QA pending) · 2 qa-pending (audited, correct as-is) ·
+6 blocked. All 37 emitted JS bodies pass the Phase-6 compile-check
+(`node client/agents/compile-check-manual-reports.cjs`).
+
+The blockers cluster into three platform gaps, each stated with what would resolve it in the relevant
+report: **no session-user accessor** (`OB.User.id`), **no retained-window / cross-window message
+primitive**, and **no datasource-backed field type in `openDynamicForm`**. A fourth item is not a code
+gap at all: three warehouse processes need `em_etmeta_custom_component = 'Y'` set in the database.
+
+### 2026-08-17 — first Manual QA run: two substrate defects fixed, no metadata re-paste
+
+QA on `SIIInvoiceSender` (the first Manual process exercised end to end) surfaced two independent
+substrate defects, both now fixed in `packages/MainUI`:
+
+1. **`view.hookData` did not exist.** `createViewProxy` spread the hook data onto the root while the
+   migration guide and all 11 emitted Manual bodies read the nested `view.hookData.*`; on top of that,
+   `onProcess` exposed `recordIds` only, never the full `selectedRecords` that ported handlers read
+   (the SII senders send `selection[0].organization` as `orgid`). Fixed by attaching `hookData` nested
+   **as well as** spread, and by adding `selectedRecords` to the onProcess hook data.
+2. **Dictionary parameters were rendered for Manual processes.** New `initialProcessParameters` helper
+   drops them at the seed, mirroring Classic's `openProcess` branch.
+
+Both fixes are additive and gated on the pattern; the JS already stored in the database is correct and
+was **not** re-pasted.

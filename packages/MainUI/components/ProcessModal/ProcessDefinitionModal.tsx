@@ -153,6 +153,7 @@ import {
   shouldFireDirectExecute,
   shouldRenderDirectExecuteOverlay,
 } from "@/utils/processes/definition/directExecute";
+import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -392,7 +393,7 @@ function ProcessDefinitionModalContent({
     token: token ?? "",
   });
 
-  const [parameters, setParameters] = useState(button.processDefinition.parameters);
+  const [parameters, setParameters] = useState(initialProcessParameters(button.processDefinition));
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const isFinalSuccess = result?.success === true && !result?.keepOpen;
   const [isPending, startTransition] = useTransition();
@@ -1061,7 +1062,7 @@ function ProcessDefinitionModalContent({
     if (isPending) return;
     setResult(null);
     setLoading(true);
-    setParameters(processDefinition.parameters);
+    setParameters(initialProcessParameters(processDefinition));
     setShouldTriggerSuccess(false);
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose]);
@@ -1304,7 +1305,7 @@ function ProcessDefinitionModalContent({
   useEffect(() => {
     if (open) {
       setResult(null);
-      setParameters(button.processDefinition.parameters);
+      setParameters(initialProcessParameters(button.processDefinition));
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
     } else {

@@ -479,6 +479,20 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   internal selection-sync stays idempotent — it never pushes a stale pre-write value back over the cell.
   Without this, a distributed `amount = 2.07` was overwritten back to `0` on load. No script change is
   required.
+- **`view.hookData` is always present, and its fields are also spread on the root.** Every hook's `view`
+  carries the hook's plain data fields (`selectedRecords`, `recordIds`, `tabId`, …) both nested under
+  `view.hookData` — the documented form — and flat on `view` itself, so `view.hookData.recordIds` and
+  `view.recordIds` are the same value. A hook that supplies no data still gets `view.hookData === {}`, so
+  reading through it yields `undefined` rather than throwing. `onProcess` exposes the **full**
+  `selectedRecords`, not just `recordIds`: handlers ported from Classic read fields off the launching
+  grid's selection (the SII senders send `selection[0].organization` as `orgid`), which
+  `params.button.contextView.viewGrid.getSelectedRecords()` gave them.
+- **A Manual (`uiPattern = 'M'`) process never renders its dictionary parameters.** Classic's
+  `openProcess` runs the handler and returns *before* `buildProcess`, so a Manual process has no parameter
+  window at all; any `OBUIAPP_Parameter` rows it carries are dead metadata. The substrate drops them at the
+  seed (`initialProcessParameters`), so they cannot render as fields nor block the Execute button through
+  the mandatory checks. Parameters injected at runtime by `onLoad` (`_dynamicParameters`) and forms opened
+  with `openDynamicForm` are unaffected.
 - **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
   numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
   is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a

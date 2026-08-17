@@ -217,6 +217,40 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     });
   });
 
+  // Classic's openProcess returns before buildProcess when uiPattern is 'M', so a
+  // Manual process never gets a parameter window. Its OBUIAPP_Parameter rows are
+  // dead metadata (e.g. the SII senders' "Warning" row, whose default value is the
+  // confirmation text the migrated script raises through confirm()).
+  describe("Manual process parameters", () => {
+    const warningParameter = {
+      name: "Warning",
+      dBColumnName: "warning",
+      reference: "14",
+      defaultValue: "This action is not reversible",
+    };
+
+    const manualButton = (uIPattern?: string) => ({
+      name: "Send to SII",
+      processDefinition: {
+        id: "TEST_MANUAL_ID",
+        name: "SII Invoice Sender",
+        javaClassName: "OB.AEATSII.send",
+        uIPattern,
+        parameters: { warning: warningParameter },
+      },
+    });
+
+    test("does not render the dictionary parameters of a Manual process", () => {
+      const { queryAllByTestId } = renderModal(manualButton("M"));
+      expect(queryAllByTestId("param-selector")).toHaveLength(0);
+    });
+
+    test("still renders the same parameters for a non-Manual process", () => {
+      const { queryAllByTestId } = renderModal(manualButton(undefined));
+      expect(queryAllByTestId("param-selector")).toHaveLength(1);
+    });
+  });
+
   describe("onLoad seed timing", () => {
     const ON_LOAD_CODE = "view.theForm.getItem('payment_method').hide();";
     const onLoadButton = {

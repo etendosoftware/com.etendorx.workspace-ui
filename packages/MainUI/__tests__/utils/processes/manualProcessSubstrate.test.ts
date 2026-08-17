@@ -36,9 +36,36 @@ import {
   parseOpenUrlPayload,
   type WindowOpener,
 } from "@/utils/processes/definition/openUrl";
+import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
 import { isManualProcess, isPickAndExecute } from "@/utils/processes/definition/pickAndExecute";
 
 const asProcess = (partial: Partial<ProcessDefinition>): ProcessDefinition => partial as ProcessDefinition;
+
+describe("initialProcessParameters", () => {
+  // Every SII sender ships a "Warning" parameter whose default value is the
+  // confirmation text. Classic never renders it: uiPattern 'M' returns from
+  // openProcess before buildProcess, so the parameter window is never created.
+  const warningParameter = { name: "Warning", dBColumnName: "warning" };
+
+  it("drops the dictionary parameters of a Manual process", () => {
+    const manual = asProcess({ uIPattern: "M", parameters: { warning: warningParameter } as never });
+    expect(initialProcessParameters(manual)).toEqual({});
+  });
+
+  it("keeps the parameters of every other ui pattern", () => {
+    const parameters = { warning: warningParameter } as never;
+    expect(initialProcessParameters(asProcess({ uIPattern: "STD", parameters }))).toBe(parameters);
+    expect(initialProcessParameters(asProcess({ uIPattern: "OBUIAPP_PickAndExecute", parameters }))).toBe(parameters);
+    // A definition with no explicit pattern is not Manual, so nothing is dropped.
+    expect(initialProcessParameters(asProcess({ parameters }))).toBe(parameters);
+  });
+
+  it("returns an empty map for a missing definition or missing parameters", () => {
+    expect(initialProcessParameters(null)).toEqual({});
+    expect(initialProcessParameters(undefined)).toEqual({});
+    expect(initialProcessParameters(asProcess({ uIPattern: "STD" }))).toEqual({});
+  });
+});
 
 describe("isManualProcess", () => {
   it("is true only for uiPattern 'M'", () => {
