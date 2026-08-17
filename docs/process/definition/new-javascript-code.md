@@ -493,6 +493,17 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   seed (`initialProcessParameters`), so they cannot render as fields nor block the Execute button through
   the mandatory checks. Parameters injected at runtime by `onLoad` (`_dynamicParameters`) and forms opened
   with `openDynamicForm` are unaffected.
+- **A returned `message` reaches the user with its own severity, title and text.** Classic showed all
+  three (`view.view.messageBar.setMessage(TYPE_<severity>, title, text)`), so a hook returning
+  `{ message: { msgType, msgTitle, msgText } }` — the shape produced by mapping a handler response — gets
+  `msgType` routing the outcome (`success`/`warning` → toast, anything else → the in-modal banner),
+  `msgTitle` as the heading and `msgText` as the body. The raw handler spelling
+  (`{ message: { severity, title, text } }`) is read too, so a script may hand the response back
+  untouched, and the field is looked up at the three usual nesting levels (root, `response`,
+  `response.data`). When the response carries **no** message — or one with a severity but no words — the
+  generic "Process completed successfully" / "Process Error" wording stands, exactly as before. A message
+  with text but no severity is treated as success, so a silent action never turns into a false error. No
+  script change is required.
 - **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
   numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
   is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a

@@ -49,9 +49,11 @@ import {
   dispatchResponseActions,
   findFirstMessage,
   findFirstOpenDirectTab,
+  type ProcessActionMessage,
   readDispatchableResponseActions,
   RESPONSE_ACTION_KEYS,
 } from "../utils/responseActionDispatcher";
+import { readReturnedMessage } from "../utils/processReturnMessage";
 import {
   dispatchBuiltinAction,
   dispatchProcessReturnActions,
@@ -448,12 +450,17 @@ export function useProcessExecution({
     (params: {
       isSuccess: boolean;
       message: string;
+      /**
+       * The server's own message title (Classic's second `setMessage` argument).
+       * Callers that have none omit it and keep the generic heading below.
+       */
+      title?: string;
       linkTabId?: string;
       linkRecordId?: string;
     }) => {
       const { isSuccess, message, linkTabId, linkRecordId } = params;
       const toastFn = isSuccess ? toast.success : toast.warning;
-      const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
+      const title = params.title || (isSuccess ? t("process.completedSuccessfully") : t("process.warning"));
 
       const parsed =
         typeof message === "string"
@@ -752,9 +759,18 @@ export function useProcessExecution({
   );
 
   const extractResponseMessage = useCallback(
-    (result: any) => {
+    (result: any): ProcessActionMessage => {
       const message = findFirstMessage(dispatchResponseActions(result));
       if (message) return message.payload;
+      // The standalone `{ message: { severity, title, text } }` an Etendo handler
+      // answers with — and the shape a migrated onProcess returns as
+      // `{ msgType, msgTitle, msgText }` (migration guide, archetype AR-1).
+      // Classic renders all three in the message bar, so the server's own title
+      // and text must win over the generic texts below. A message without a
+      // severity keeps the success default this function already applied to any
+      // unrecognized response, so no currently-successful process turns into an error.
+      const returnedMessage = readReturnedMessage(result);
+      if (returnedMessage) return { msgType: "success", ...returnedMessage };
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }
@@ -854,7 +870,7 @@ export function useProcessExecution({
         const responseMessage = extractResponseMessage(result);
 
         if (responseMessage.msgType === "error") {
-          messageBar.setMessage("error", null, responseMessage.msgText);
+          messageBar.setMessage("error", responseMessage.msgTitle ?? null, responseMessage.msgText ?? "");
           setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
           return false;
         }
@@ -961,6 +977,9 @@ export function useProcessExecution({
             showProcessToast({
               isSuccess,
               message,
+              // Classic titled the message bar with the server's own title; the
+              // generic heading only applies when the response carries none.
+              title: responseMessage.msgTitle,
               linkTabId: (result as any)?.linkTabId,
               linkRecordId: (result as any)?.linkRecordId,
             });

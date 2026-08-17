@@ -159,7 +159,7 @@ import {
   groupProcessParametersByFieldGroup,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
-import { buildSuccessBannerMessage } from "./utils/responseBanner";
+import { buildSuccessBannerMessage, readBannerTitle } from "./utils/responseBanner";
 import { isMandatoryParameterMissing } from "./utils/isMandatoryParameterMissing";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 
@@ -1562,7 +1562,7 @@ function ProcessDefinitionModalContent({
       if (!parsed) return null;
       return (
         <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
-          <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
+          <h4 className="font-bold text-sm">{readBannerTitle(result.data) ?? t("process.completedSuccessfully")}</h4>
           <div className="border-(--color-active-40) rounded p-2">
             <ToastContent message={parsed.msgText} isHtml={parsed.isHtml} data-testid="ToastContent__761503" />
           </div>
@@ -1574,7 +1574,9 @@ function ProcessDefinitionModalContent({
     // Anything reaching this branch is not a successful keepOpen result (handled above)
     // and not a fully-successful close (handled by isFinalSuccess) — so non-warning here
     // means the process actually failed.
-    const msgTitle = isWarning ? t("process.warning") : t("process.processError");
+    // Classic titled the message bar with the server's own title; the generic
+    // headings stand in only when the response carries none.
+    const msgTitle = readBannerTitle(result.data) ?? (isWarning ? t("process.warning") : t("process.processError"));
     const rawMsg =
       result.error ||
       (typeof result.data === "string" ? result.data : result.data?.msgText || result.data?.message) ||

@@ -297,4 +297,42 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       });
     });
   });
+
+  // Classic headed the message bar with the handler's own title
+  // (`setMessage(TYPE_ERROR, data.message.title, data.message.text)`), so the
+  // in-modal banner must use it whenever the response carries one.
+  describe("error banner heading", () => {
+    const errorButton = {
+      name: "Recalculate Permissions",
+      processDefinition: {
+        id: "TEST_BANNER_ID",
+        name: "Recalculate Role Permissions",
+        parameters: {},
+        etmetaOnprocess: "async () => ({})",
+      },
+    };
+
+    test("uses the server title when the response carries one", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { msgType: "error", msgTitle: "Recalculation failed", msgText: "Inconsistent inheritance" },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("Recalculation failed")).toBeInTheDocument();
+      expect(await container.findByText("Inconsistent inheritance")).toBeInTheDocument();
+    });
+
+    test("falls back to the generic heading when the response carries no title", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { msgType: "error", msgText: "Inconsistent inheritance" },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("process.processError")).toBeInTheDocument();
+    });
+  });
 });
