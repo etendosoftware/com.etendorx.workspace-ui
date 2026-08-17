@@ -34,6 +34,7 @@ import {
   buildOpenUrlFallbackAction,
   openExternalWindow,
   parseOpenUrlPayload,
+  resolveErpHostedUrl,
   type WindowOpener,
 } from "@/utils/processes/definition/openUrl";
 import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
@@ -115,6 +116,13 @@ describe("directExecute", () => {
     expect(shouldRenderDirectExecuteOverlay({ requested: true, hasResult: true })).toBe(false);
     expect(shouldRenderDirectExecuteOverlay({ requested: false, hasResult: false })).toBe(false);
   });
+
+  // The overlay has no message bar, so a script message — or the platform's own
+  // "popup blocked / Open link" banner — would be stuck behind a spinner.
+  it("yields the chrome as soon as the message bar holds a message", () => {
+    expect(shouldRenderDirectExecuteOverlay({ requested: true, hasResult: false, hasMessage: true })).toBe(false);
+    expect(shouldRenderDirectExecuteOverlay({ requested: true, hasResult: false, hasMessage: false })).toBe(true);
+  });
 });
 
 describe("parseOpenUrlPayload", () => {
@@ -155,6 +163,57 @@ describe("parseOpenUrlPayload", () => {
   it("drops non-boolean flags instead of coercing them", () => {
     const parsed = parseOpenUrlPayload({ type: "openUrl", url: "https://example.test", closeModal: "Y" });
     expect(parsed?.closeModal).toBeUndefined();
+  });
+
+  it("carries the erpHosted flag through, and only as a boolean", () => {
+    expect(parseOpenUrlPayload({ type: "openUrl", url: "/web/x/", erpHosted: true })?.erpHosted).toBe(true);
+    expect(parseOpenUrlPayload({ type: "openUrl", url: "/web/x/", erpHosted: "Y" })?.erpHosted).toBeUndefined();
+    expect(parseOpenUrlPayload({ type: "openUrl", url: "https://example.test" })?.erpHosted).toBeUndefined();
+  });
+});
+
+// Classic scripts build ERP URLs as
+// `OB.Utilities.getLocationUrlWithoutFragment() + <erp path>` because the classic
+// UI is served from the ERP host. The new UI is a separate app, so the host is
+// resolved at dispatch time.
+describe("resolveErpHostedUrl", () => {
+  const CLASSIC_HOST = "http://localhost:8080/etendo";
+
+  it("leaves an ordinary hand-off untouched, so external URLs are never rewritten", () => {
+    const external = { url: "https://bank.example/consent" };
+    expect(resolveErpHostedUrl(external, { classicHost: CLASSIC_HOST, token: "jwt" })).toBe(
+      "https://bank.example/consent"
+    );
+  });
+
+  it("routes an erpHosted path through the legacy redirect, which primes a Classic session", () => {
+    const resolved = resolveErpHostedUrl(
+      { url: "/web/com.etendoerp.openapi/?tag=Bulk Task", erpHosted: true },
+      { classicHost: CLASSIC_HOST, token: "jwt" }
+    );
+
+    // The servlet rejects absolute locations: it gets the context-path-relative form.
+    expect(resolved).toBe(
+      `${CLASSIC_HOST}/meta/legacy/redirect?location=${encodeURIComponent("/etendo/web/com.etendoerp.openapi/?tag=Bulk Task")}&token=jwt`
+    );
+  });
+
+  it("falls back to the plain Classic URL when there is no token", () => {
+    expect(
+      resolveErpHostedUrl({ url: "/web/com.etendoerp.openapi/", erpHosted: true }, { classicHost: CLASSIC_HOST })
+    ).toBe("http://localhost:8080/etendo/web/com.etendoerp.openapi/");
+  });
+
+  it("keeps the path as-is when the runtime config has not loaded, rather than opening a broken URL", () => {
+    const payload = { url: "/web/com.etendoerp.openapi/", erpHosted: true };
+    expect(resolveErpHostedUrl(payload, { classicHost: "", token: "jwt" })).toBe("/web/com.etendoerp.openapi/");
+    expect(resolveErpHostedUrl(payload, {})).toBe("/web/com.etendoerp.openapi/");
+  });
+
+  it("normalizes a trailing slash on the host and a missing one on the path", () => {
+    expect(resolveErpHostedUrl({ url: "web/x/", erpHosted: true }, { classicHost: `${CLASSIC_HOST}/` })).toBe(
+      "http://localhost:8080/etendo/web/x/"
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import type React from "react";
 // Keep imports for things used in the test body
 import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton, mockFormData } from "../testUtils";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // Mock executeStringFunction
 const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
@@ -295,6 +296,58 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       await waitFor(() => {
         expect(mockFormData.clearErrors).toHaveBeenCalled();
       });
+    });
+  });
+
+  // An openUrl hand-off produces no result, so in direct-execute mode the bare
+  // overlay would stay up forever. When the popup is blocked, the "Open link"
+  // banner is the only remaining way to reach the URL and must be visible.
+  describe("direct-execute overlay and the message bar", () => {
+    const openUrlButton = {
+      name: "Open Swagger",
+      processDefinition: {
+        id: "TEST_OPENURL_ID",
+        name: "Open Swagger",
+        parameters: {},
+        etmetaOnload: "() => ({ type: 'directExecute' })",
+        etmetaOnprocess: "async () => ({ type: 'openUrl', url: 'https://example.test' })",
+      },
+    };
+
+    const originalOpen = window.open;
+
+    afterEach(() => {
+      window.open = originalOpen;
+      messageBar.hide();
+    });
+
+    test("closes on the script's request even though the execution transition is still pending", async () => {
+      const openedWindow = {} as Window;
+      window.open = jest.fn(() => openedWindow) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: "https://example.test", closeModal: true });
+
+      renderModal(openUrlButton);
+
+      // `closeModal` dispatches from inside the transition, so a close routed
+      // through the user-facing pending guard would never fire and the overlay
+      // would hang forever with no chrome to dismiss it.
+      await waitFor(() => expect(mockClose).toHaveBeenCalled());
+    });
+
+    test("gives the chrome back so the popup-blocked banner is reachable", async () => {
+      window.open = jest.fn(() => null) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: "https://example.test" });
+
+      const { findByTestId, findByText } = renderModal(openUrlButton);
+
+      // The message bar only exists in the chrome, never in the bare overlay.
+      expect(await findByTestId("ProcessMessageBar__container")).toBeInTheDocument();
+      expect(await findByText("process.popupBlocked")).toBeInTheDocument();
+      expect(await findByText("process.openLink")).toBeInTheDocument();
     });
   });
 

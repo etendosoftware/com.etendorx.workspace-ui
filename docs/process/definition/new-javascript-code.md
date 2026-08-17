@@ -504,6 +504,28 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   generic "Process completed successfully" / "Process Error" wording stands, exactly as before. A message
   with text but no severity is treated as success, so a silent action never turns into a false error. No
   script change is required.
+- **An `openUrl` marked `erpHosted` lands on the Classic host with a live session.** Classic scripts build
+  ERP URLs as `OB.Utilities.getLocationUrlWithoutFragment() + "web/<module>/…"`, which works there only
+  because the classic UI is itself served from the ERP. A migrated hook instead returns the ERP-relative
+  path with `erpHosted: true` (`{ type: "openUrl", url: "/web/com.etendoerp.openapi/?tag=X",
+  erpHosted: true }`) and the substrate resolves the host, routing the tab through `/meta/legacy/redirect`
+  so it arrives on the real Classic path **and** carries a Classic session cookie. Both matter: an ERP page
+  that derives its own context path from `window.location` computes it correctly, and its authenticated
+  requests succeed. Payloads without the flag — every external hand-off (OAuth consent, document pickers) —
+  are opened exactly as before, never rewritten. Building the URL against the new UI's `/api/erp/` proxy
+  does **not** work: that proxy requires a `Bearer` header a new tab cannot send.
+- **The direct-execute overlay yields to a message.** A `directExecute` process shows only a bare loading
+  overlay, which has no message bar. As soon as a message exists — one a script raised, or the platform's
+  own "popup blocked / Open link" banner — the full chrome renders so the message is visible and
+  actionable. Without this, an `openUrl` whose popup was blocked left the user on a spinner that never
+  resolved, with the only remaining way to reach the URL hidden behind it.
+- **A script's `closeModal` always closes the dialog.** The modal refuses a **user-initiated** close (the
+  X, the footer buttons, the backdrop) while a process is running, so a stray click cannot abandon an
+  execution mid-flight. A close requested by the script itself — `openUrl`'s `closeModal: true` — is not
+  that: it is the process reporting it is done, and it dispatches from *inside* the execution transition,
+  where the pending guard would always refuse it. The two paths are now separate. Without this a
+  `directExecute` + `openUrl` process handed off its URL and then left an un-dismissable spinner behind,
+  because in direct-execute mode there is no chrome to close by hand either.
 - **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
   numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
   is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a

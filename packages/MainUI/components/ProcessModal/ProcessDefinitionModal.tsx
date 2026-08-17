@@ -28,7 +28,7 @@
  * - Response message display and success/error states
  *
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { type FieldValues, FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -146,7 +146,7 @@ import {
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
-import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
 import { pushProcess } from "@/utils/processes/definition/processStack";
 import {
   isDirectExecuteResult,
@@ -404,6 +404,13 @@ function ProcessDefinitionModalContent({
   // skips its chrome and auto-fires onProcess once. See ./utils/../directExecute.
   const [directExecuteRequested, setDirectExecuteRequested] = useState(false);
   const directExecuteFiredRef = useRef(false);
+  // The bare direct-execute overlay does not host ProcessMessageBar, so the modal
+  // has to know when a message exists to give the chrome (and the bar) back.
+  const hasMessageBarMessage = useSyncExternalStore(
+    subscribeMessageBar,
+    () => getMessageBarState() !== null,
+    () => false
+  );
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
@@ -1058,14 +1065,24 @@ function ProcessDefinitionModalContent({
 
   const { hasInvalidSelection } = useGridRowValidation({ grids: peGrids });
 
-  const handleClose = useCallback(() => {
-    if (isPending) return;
+  /**
+   * Dismisses the dialog and resets it for the next open. Unconditional: the
+   * pending guard below belongs to the *user-initiated* close only.
+   */
+  const performClose = useCallback(() => {
     setResult(null);
     setLoading(true);
     setParameters(initialProcessParameters(processDefinition));
     setShouldTriggerSuccess(false);
     onClose();
-  }, [button.processDefinition.parameters, isPending, onClose]);
+  }, [button.processDefinition.parameters, onClose]);
+
+  // User-initiated close (X, footer buttons, backdrop): refused while the process
+  // is running, so a click cannot abandon an execution mid-flight.
+  const handleClose = useCallback(() => {
+    if (isPending) return;
+    performClose();
+  }, [isPending, performClose]);
 
   // -------------------------------------------------------------------------
   // Payload builders
@@ -1152,7 +1169,12 @@ function ProcessDefinitionModalContent({
     }, [refetchDatasource, tab?.id]),
     refreshModalGrid: useCallback(() => setGridRefreshKey((prev) => prev + 1), [setGridRefreshKey]),
     navigateToTab: handleNavigateToTab,
-    closeModal: handleClose,
+    // A script asking to close (openUrl's `closeModal`) is not a user abandoning a
+    // running process: it is the process reporting it is done. It dispatches from
+    // inside the execution transition, so `handleClose`'s pending guard would
+    // always refuse it — leaving a direct-execute modal stuck on its overlay with
+    // no chrome to dismiss.
+    closeModal: performClose,
     token: token ?? "",
   });
 
@@ -1831,7 +1853,13 @@ function ProcessDefinitionModalContent({
 
     // Direct-execute: no dialog at all while onProcess runs. Once a result lands
     // the standard chrome renders below so an error stays readable and closable.
-    if (shouldRenderDirectExecuteOverlay({ requested: directExecuteRequested, hasResult: !!result })) {
+    if (
+      shouldRenderDirectExecuteOverlay({
+        requested: directExecuteRequested,
+        hasResult: !!result,
+        hasMessage: hasMessageBarMessage,
+      })
+    ) {
       return renderBareOverlay();
     }
 

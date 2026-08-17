@@ -34,7 +34,12 @@ import {
   clearActionDispatchContext,
   setActionDispatchContext,
 } from "@/utils/processes/definition/actionDispatcherStore";
-import { buildOpenUrlFallbackAction, openExternalWindow } from "@/utils/processes/definition/openUrl";
+import {
+  buildOpenUrlFallbackAction,
+  openExternalWindow,
+  resolveErpHostedUrl,
+} from "@/utils/processes/definition/openUrl";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { logger } from "@/utils/logger";
 
 /** Live modal handles the action handlers delegate to. */
@@ -85,6 +90,8 @@ export function useActionDispatchContext({
   token,
 }: UseActionDispatchContextParams): void {
   const { t } = useTranslation();
+  const { config } = useRuntimeConfig();
+  const classicHost = config?.etendoClassicHost ?? "";
 
   const ctx = useMemo<ActionDispatchContext>(
     () => ({
@@ -116,13 +123,17 @@ export function useActionDispatchContext({
         );
       },
       openUrl: (payload) => {
+        // An `erpHosted` payload carries an ERP path, not a ready URL: expand it
+        // against the Classic host here, where the runtime config and the token
+        // live. Every other payload passes through untouched.
+        const resolved = { ...payload, url: resolveErpHostedUrl(payload, { classicHost, token }) };
         // The window is opened after an await, so the browser may treat it as a
         // non-gesture popup and block it. Offer a direct click instead of
         // silently losing the hand-off.
-        const opened = openExternalWindow(payload);
+        const opened = openExternalWindow(resolved);
         if (!opened) {
           messageBar.setMessage("warning", null, t("process.popupBlocked"), [
-            buildOpenUrlFallbackAction(payload, t("process.openLink")),
+            buildOpenUrlFallbackAction(resolved, t("process.openLink")),
           ]);
         }
         if (payload.refreshRecord) refreshParentGrid();
@@ -131,7 +142,7 @@ export function useActionDispatchContext({
         if (payload.closeModal && opened) closeModal();
       },
     }),
-    [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t]
+    [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t, classicHost]
   );
 
   useEffect(() => {

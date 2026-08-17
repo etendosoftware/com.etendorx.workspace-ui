@@ -631,7 +631,7 @@ change needed.
 | 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | qa pending |
 | 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | qa pending |
 | 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
-| 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | qa pending ¹ |
+| 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated |
 | 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |

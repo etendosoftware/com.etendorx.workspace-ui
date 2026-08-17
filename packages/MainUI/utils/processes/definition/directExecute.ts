@@ -77,7 +77,17 @@ export const shouldFireDirectExecute = (params: {
  * standard chrome.
  *
  * Once execution produces a result the chrome comes back, so an error stays
- * readable and the user can close the dialog.
+ * readable and the user can close the dialog. A message-bar message does the
+ * same: the bare overlay does not host `ProcessMessageBar`, so a script message —
+ * or the platform's own "popup blocked / Open link" banner, the only remaining
+ * way to reach an `openUrl` hand-off — would otherwise be invisible behind a
+ * spinner that never resolves.
+ *
+ * @param params.hasMessage - Whether the in-modal message bar currently holds a
+ *   message. Optional: callers that cannot observe it keep the previous behaviour.
  */
-export const shouldRenderDirectExecuteOverlay = (params: { requested: boolean; hasResult: boolean }): boolean =>
-  params.requested && !params.hasResult;
+export const shouldRenderDirectExecuteOverlay = (params: {
+  requested: boolean;
+  hasResult: boolean;
+  hasMessage?: boolean;
+}): boolean => params.requested && !params.hasResult && !params.hasMessage;

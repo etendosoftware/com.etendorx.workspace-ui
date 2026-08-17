@@ -34,6 +34,8 @@
  * browser window.
  */
 
+import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
+import { extractContextPath } from "@/utils/url/utils";
 import type { MessageBarAction } from "./scriptProxies";
 
 /** The `type` discriminator an `onProcess` returns to request an external window. */
@@ -42,6 +44,17 @@ export const OPEN_URL_RESULT_TYPE = "openUrl";
 export interface OpenUrlPayload {
   /** Absolute or app-relative URL to open. */
   url: string;
+  /**
+   * Marks `url` as a path on the Etendo Classic host (e.g.
+   * `/web/com.etendoerp.openapi/?tag=Foo`) rather than a ready-to-open URL.
+   *
+   * Classic scripts build these with
+   * `OB.Utilities.getLocationUrlWithoutFragment() + <erp path>`, which works there
+   * because the classic UI *is* served from the ERP host. The new UI is a separate
+   * app, so the host is resolved at dispatch time by {@link resolveErpHostedUrl}.
+   * External hand-offs (OAuth consent screens, Google Picker) must NOT set this.
+   */
+  erpHosted?: boolean;
   /** Close the process modal after opening. */
   closeModal?: boolean;
   /** Refresh the launching tab's grid/record after opening. */
@@ -73,10 +86,48 @@ export const parseOpenUrlPayload = (value: unknown, requireTypeDiscriminator = t
   if (!url) return null;
   return {
     url,
+    erpHosted: readOptionalBoolean(value.erpHosted),
     closeModal: readOptionalBoolean(value.closeModal),
     refreshRecord: readOptionalBoolean(value.refreshRecord),
     windowFeatures: readOptionalString(value.windowFeatures),
   };
+};
+
+/**
+ * Resolves the URL to actually open, expanding an {@link OpenUrlPayload.erpHosted}
+ * path into a full Etendo Classic URL. Any other payload is returned untouched, so
+ * external hand-offs are never rewritten.
+ *
+ * With a token the URL goes through the `/meta/legacy/redirect` endpoint, which
+ * validates the JWT, primes a Classic session and then redirects the browser to
+ * `location`. Both halves matter: the ERP page lands on its real Classic path (so
+ * anything deriving a context path from `window.location` — like the Swagger UI —
+ * computes it correctly), and it carries a session cookie, so its own authenticated
+ * requests succeed. Without a token the plain Classic URL is the best available
+ * answer: the page still loads, only its authenticated calls may fail.
+ *
+ * @param payload - The parsed open-url request.
+ * @param params.classicHost - Etendo Classic base URL (`config.etendoClassicHost`),
+ *   e.g. `http://localhost:8080/etendo`. Empty when the runtime config has not
+ *   loaded yet, in which case the path is left alone rather than opening a broken URL.
+ * @param params.token - JWT of the current session, when available.
+ */
+export const resolveErpHostedUrl = (
+  payload: OpenUrlPayload,
+  params: { classicHost?: string | null; token?: string | null }
+): string => {
+  const { classicHost, token } = params;
+  if (!payload.erpHosted || !classicHost) return payload.url;
+
+  const base = classicHost.endsWith("/") ? classicHost.slice(0, -1) : classicHost;
+  const path = payload.url.startsWith("/") ? payload.url : `/${payload.url}`;
+
+  if (!token) return `${base}${path}`;
+
+  // The servlet rejects absolute locations, so it receives the context-path-relative
+  // form (`/etendo/web/...`) that the browser will land on after the redirect.
+  const location = `${extractContextPath(base)}${path}`;
+  return `${base}${API_IFRAME_FORWARD_PATH}/redirect?location=${encodeURIComponent(location)}&token=${token}`;
 };
 
 /** Injectable `window.open`, so the blocked branch is reachable from tests. */
