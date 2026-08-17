@@ -36,6 +36,9 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 /** Maps a dynamic field's server input type to the form-reference code that routes the selector. */
 function referenceForInputType(inputType: DynamicFormField["inputType"]): string {
   if (inputType === "CHECK") return FIELD_REFERENCE_CODES.BOOLEAN.id;
+  // Classic `_id_17`: the single-select combo migrated Manual processes populate
+  // at open time from a server round-trip.
+  if (inputType === "LIST") return FIELD_REFERENCE_CODES.LIST_17.id;
   return FIELD_REFERENCE_CODES.STRING.id;
 }
 
@@ -47,15 +50,24 @@ function toParameter(field: DynamicFormField): ProcessParameter {
     dBColumnName: field.name,
     reference: referenceForInputType(field.inputType),
     mandatory: false,
-    refList: [],
+    // ListSelector reads `id` alongside `value`/`label`; scripts only supply the
+    // latter two, so the option value doubles as the id.
+    refList: (field.refList ?? []).map((option) => ({ id: option.value, value: option.value, label: option.label })),
   } as unknown as ProcessParameter;
+}
+
+/** Default form value of one dynamic field, per input type. */
+function defaultValueForField(field: DynamicFormField): unknown {
+  if (field.inputType === "CHECK") return field.defaultCheck === "Y";
+  if (field.inputType === "LIST") return field.defaultValue ?? "";
+  return field.defaultText ?? "";
 }
 
 /** Seeds the react-hook-form defaults from each field's declared default value. */
 function buildDefaultValues(fields: DynamicFormField[]): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   for (const field of fields) {
-    defaults[field.name] = field.inputType === "CHECK" ? field.defaultCheck === "Y" : (field.defaultText ?? "");
+    defaults[field.name] = defaultValueForField(field);
   }
   return defaults;
 }

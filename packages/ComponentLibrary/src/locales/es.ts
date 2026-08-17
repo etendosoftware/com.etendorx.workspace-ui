@@ -329,6 +329,10 @@ const es = {
     },
     pickAndExecuteNotImplemented:
       "El proceso tiene UI Pattern igual a 'Pick and Execute' y no está implementado. Contactarse con soporte.",
+    manualProcessNotMigrated:
+      "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
+    popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
+    openLink: "Abrir enlace",
   },
   processModal: {
     gridToolbar: {

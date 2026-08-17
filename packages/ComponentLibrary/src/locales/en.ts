@@ -325,6 +325,10 @@ const en = {
     },
     pickAndExecuteNotImplemented:
       "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
+    manualProcessNotMigrated:
+      "This process has logic thas has not been migrated yet. Please contact support.",
+    popupBlocked: "Your browser blocked the window this process tried to open.",
+    openLink: "Open link",
   },
   processModal: {
     gridToolbar: {

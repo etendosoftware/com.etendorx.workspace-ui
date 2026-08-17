@@ -32,7 +32,13 @@ jest.mock("@/hooks/useTranslation", () => ({
 // value collection, which is what this suite verifies.
 jest.mock("../selectors/ProcessParameterSelector", () => ({
   __esModule: true,
-  default: ({ parameter }: { parameter: { name: string } }) => <div data-testid={`field-${parameter.name}`} />,
+  default: ({ parameter }: { parameter: { name: string; reference: string; refList: unknown[] } }) => (
+    <div
+      data-testid={`field-${parameter.name}`}
+      data-reference={parameter.reference}
+      data-reflist={JSON.stringify(parameter.refList)}
+    />
+  ),
 }));
 
 const FIELDS: DynamicFormField[] = [
@@ -83,5 +89,74 @@ describe("ParameterDialogHost", () => {
     await user.click(screen.getByText("common.cancel"));
 
     expect(resolved).toBeNull();
+  });
+});
+
+describe("ParameterDialogHost — LIST fields", () => {
+  // Manual processes (uiPattern "M") build their combo at open time from a server
+  // round-trip; classic did it with an isc.DynamicForm item of type `_id_17`.
+  const LIST_FIELDS: DynamicFormField[] = [
+    {
+      id: "p1",
+      name: "Action",
+      inputType: "LIST",
+      defaultValue: "C",
+      refList: [
+        { value: "O", label: "Open Period" },
+        { value: "C", label: "Close Period" },
+      ],
+    },
+  ];
+
+  it("routes a LIST field to the list reference and forwards its options", async () => {
+    render(<ParameterDialogHost />);
+
+    act(() => {
+      openParameterDialog({ title: "Pick", fields: LIST_FIELDS });
+    });
+
+    const field = await screen.findByTestId("field-Action");
+    // "17" is the classic List reference the ListSelector renders.
+    expect(field).toHaveAttribute("data-reference", "17");
+    expect(JSON.parse(field.getAttribute("data-reflist") ?? "[]")).toEqual([
+      { id: "O", value: "O", label: "Open Period" },
+      { id: "C", value: "C", label: "Close Period" },
+    ]);
+  });
+
+  it("seeds the form with defaultValue and resolves the chosen option", async () => {
+    const user = userEvent.setup();
+    render(<ParameterDialogHost />);
+
+    let resolved: CollectedValue[] | null | undefined;
+    act(() => {
+      openParameterDialog({ title: "Pick", fields: LIST_FIELDS }).then((v) => {
+        resolved = v;
+      });
+    });
+
+    await screen.findByTestId("field-Action");
+    await user.click(screen.getByText("common.confirm"));
+
+    expect(resolved).toEqual([{ id: "p1", name: "Action", inputType: "LIST", value: "C" }]);
+  });
+
+  it("falls back to an empty selection when no defaultValue is declared", async () => {
+    const user = userEvent.setup();
+    render(<ParameterDialogHost />);
+
+    let resolved: CollectedValue[] | null | undefined;
+    act(() => {
+      openParameterDialog({
+        fields: [{ name: "Action", inputType: "LIST", refList: [{ value: "O", label: "Open Period" }] }],
+      }).then((v) => {
+        resolved = v;
+      });
+    });
+
+    await screen.findByTestId("field-Action");
+    await user.click(screen.getByText("common.confirm"));
+
+    expect(resolved).toEqual([{ id: undefined, name: "Action", inputType: "LIST", value: "" }]);
   });
 });

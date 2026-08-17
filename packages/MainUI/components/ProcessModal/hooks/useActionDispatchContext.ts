@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   type ActionDispatchContext,
   buildReportActionUrl,
@@ -33,6 +34,7 @@ import {
   clearActionDispatchContext,
   setActionDispatchContext,
 } from "@/utils/processes/definition/actionDispatcherStore";
+import { buildOpenUrlFallbackAction, openExternalWindow } from "@/utils/processes/definition/openUrl";
 import { logger } from "@/utils/logger";
 
 /** Live modal handles the action handlers delegate to. */
@@ -48,6 +50,8 @@ export interface UseActionDispatchContextParams {
   refreshModalGrid: () => void;
   /** Navigates to a tab/record (classic `openDirectTab`). */
   navigateToTab: (tabId: string, recordId: string) => void;
+  /** Closes the process modal (used by `openUrl` with `closeModal: true`). */
+  closeModal: () => void;
   /** Auth token used to fetch report files. */
   token: string;
 }
@@ -77,8 +81,11 @@ export function useActionDispatchContext({
   refreshParentGrid,
   refreshModalGrid,
   navigateToTab,
+  closeModal,
   token,
 }: UseActionDispatchContextParams): void {
+  const { t } = useTranslation();
+
   const ctx = useMemo<ActionDispatchContext>(
     () => ({
       showMessageInProcessView: (payload) => {
@@ -108,8 +115,23 @@ export function useActionDispatchContext({
           payload.fileName ?? "report"
         );
       },
+      openUrl: (payload) => {
+        // The window is opened after an await, so the browser may treat it as a
+        // non-gesture popup and block it. Offer a direct click instead of
+        // silently losing the hand-off.
+        const opened = openExternalWindow(payload);
+        if (!opened) {
+          messageBar.setMessage("warning", null, t("process.popupBlocked"), [
+            buildOpenUrlFallbackAction(payload, t("process.openLink")),
+          ]);
+        }
+        if (payload.refreshRecord) refreshParentGrid();
+        // Keep the modal open when blocked: closing it would unmount the banner
+        // that carries the only remaining way to reach the URL.
+        if (payload.closeModal && opened) closeModal();
+      },
     }),
-    [refreshParentGrid, refreshModalGrid, navigateToTab, token]
+    [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t]
   );
 
   useEffect(() => {

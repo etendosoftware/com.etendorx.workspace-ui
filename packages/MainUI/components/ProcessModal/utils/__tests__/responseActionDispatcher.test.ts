@@ -21,6 +21,7 @@ import {
   buildReportActionUrl,
   dispatchResponseAction,
   dispatchResponseActions,
+  dispatchSingle,
   findFirstMessage,
   findFirstOpenDirectTab,
   readDispatchableResponseActions,
@@ -38,6 +39,7 @@ const makeCtxMock = (): jest.Mocked<ActionDispatchContext> => ({
   say: jest.fn(),
   browseReport: jest.fn(),
   downloadReport: jest.fn(),
+  openUrl: jest.fn(),
 });
 
 describe("readResponseActions", () => {
@@ -308,5 +310,39 @@ describe("readDispatchableResponseActions", () => {
   it("returns [] when there are no response actions", () => {
     expect(readDispatchableResponseActions({})).toEqual([]);
     expect(readDispatchableResponseActions(null)).toEqual([]);
+  });
+});
+
+describe("openUrl action", () => {
+  it("parses an openUrl entry without requiring a type discriminator", () => {
+    const action = dispatchSingle({
+      openUrl: { url: "https://bank.example/consent", closeModal: true, windowFeatures: "width=800" },
+    });
+    expect(action).toEqual({
+      kind: "openUrl",
+      payload: {
+        url: "https://bank.example/consent",
+        closeModal: true,
+        refreshRecord: undefined,
+        windowFeatures: "width=800",
+      },
+    });
+  });
+
+  it("drops an openUrl entry with no usable url instead of opening a blank window", () => {
+    expect(dispatchSingle({ openUrl: {} })).toBeNull();
+    expect(dispatchSingle({ openUrl: { url: 42 } })).toBeNull();
+  });
+
+  it("routes the openUrl kind to its context handler", () => {
+    const ctx = makeCtxMock();
+    const action: DispatchedAction = { kind: "openUrl", payload: { url: "https://example.test" } };
+    dispatchResponseAction(action, ctx);
+    expect(ctx.openUrl).toHaveBeenCalledWith({ url: "https://example.test" });
+  });
+
+  it("is dispatchable (not consumed by the legacy success flow)", () => {
+    const data = { responseActions: [{ openUrl: { url: "https://example.test" } }] };
+    expect(readDispatchableResponseActions(data)).toEqual(data.responseActions);
   });
 });

@@ -32,19 +32,36 @@
 
 import { logger } from "@/utils/logger";
 
-/** Server-vocabulary input type of a dynamic field (the classic popup emits these two). */
-export type DynamicFormInputType = "TEXT" | "CHECK";
+/**
+ * Server-vocabulary input type of a dynamic field.
+ *
+ * `TEXT` / `CHECK` are what the classic `EAPM_Popup` payload emits. `LIST` is the
+ * new-UI equivalent of the classic `type: '_id_17'` combo that Manual processes
+ * build by hand inside an `isc.OBPopup` (e.g. the Open Close Periods "Action"
+ * picker), whose options are fetched at open time rather than declared in the AD.
+ */
+export type DynamicFormInputType = "TEXT" | "CHECK" | "LIST";
+
+/** One option of a `LIST` field. */
+export interface DynamicFormOption {
+  value: string;
+  label: string;
+}
 
 /** One field descriptor carried by the backend `actionData.processParameters`. */
 export interface DynamicFormField {
   /** Form key and label of the field. */
   name: string;
-  /** Input type: `TEXT` → text input, `CHECK` → checkbox. */
+  /** Input type: `TEXT` → text input, `CHECK` → checkbox, `LIST` → single-select combo. */
   inputType: DynamicFormInputType;
   /** Default text value for a `TEXT` field. */
   defaultText?: string;
   /** Default checked state for a `CHECK` field (`"Y"`/`"N"`). */
   defaultCheck?: string;
+  /** Options of a `LIST` field. Ignored for the other input types. */
+  refList?: DynamicFormOption[];
+  /** Preselected option value of a `LIST` field. */
+  defaultValue?: string;
   /** Optional parameter id, echoed back on each collected value. */
   id?: string;
 }

@@ -149,6 +149,11 @@ import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/pro
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 import { pushProcess } from "@/utils/processes/definition/processStack";
 import {
+  isDirectExecuteResult,
+  shouldFireDirectExecute,
+  shouldRenderDirectExecuteOverlay,
+} from "@/utils/processes/definition/directExecute";
+import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
   type ProcessParameterGroup,
@@ -393,6 +398,11 @@ function ProcessDefinitionModalContent({
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
+
+  // Direct-execute mode: onLoad returned { type: "directExecute" }, so the modal
+  // skips its chrome and auto-fires onProcess once. See ./utils/../directExecute.
+  const [directExecuteRequested, setDirectExecuteRequested] = useState(false);
+  const directExecuteFiredRef = useRef(false);
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
@@ -1141,6 +1151,7 @@ function ProcessDefinitionModalContent({
     }, [refetchDatasource, tab?.id]),
     refreshModalGrid: useCallback(() => setGridRefreshKey((prev) => prev + 1), [setGridRefreshKey]),
     navigateToTab: handleNavigateToTab,
+    closeModal: handleClose,
     token: token ?? "",
   });
 
@@ -1184,6 +1195,14 @@ function ProcessDefinitionModalContent({
         });
         setLoading(false);
         return true; // stop early
+      }
+
+      // Direct-execute mode short-circuits the parameter flow: there is nothing
+      // to seed or render, only onProcess to fire. Stop early so the loading
+      // overlay stays up until the execution resolves.
+      if (isDirectExecuteResult(result)) {
+        setDirectExecuteRequested(true);
+        return true;
       }
 
       if (result._gridSelection && typeof result._gridSelection === "object") {
@@ -1291,6 +1310,10 @@ function ProcessDefinitionModalContent({
     } else {
       // Allow onLoad to run again the next time the modal opens.
       onLoadIdentityRef.current = null;
+      // Same for direct-execute: re-arm both the request and its one-shot guard
+      // so reopening the process runs it again instead of showing a dead overlay.
+      setDirectExecuteRequested(false);
+      directExecuteFiredRef.current = false;
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -1417,6 +1440,18 @@ function ProcessDefinitionModalContent({
     callerFieldProp,
     initializationLoading,
   ]);
+
+  // Direct-execute: onLoad asked to run onProcess without showing a dialog.
+  // Fires exactly once per open session; the ref (not state) guards it so the
+  // re-render caused by handleExecute cannot schedule a second run.
+  useEffect(() => {
+    if (
+      !shouldFireDirectExecute({ requested: directExecuteRequested, open, alreadyFired: directExecuteFiredRef.current })
+    )
+      return;
+    directExecuteFiredRef.current = true;
+    handleExecute();
+  }, [directExecuteRequested, open, handleExecute]);
 
   // -------------------------------------------------------------------------
   // Auto-select logic
@@ -1770,16 +1805,28 @@ function ProcessDefinitionModalContent({
   const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
   const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
 
+  /**
+   * Chrome-less spinner shown while the modal has nothing for the user to do:
+   * the custom component is still loading, or direct-execute is running.
+   */
+  const renderBareOverlay = () => (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
+        <span className="animate-spin text-2xl">⟳</span>
+        <span className="text-sm text-gray-600">{button.name}</span>
+      </div>
+    </div>
+  );
+
   const renderModalContent = () => {
     if (warehousePluginLoading && isCustomComponent) {
-      return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
-            <span className="animate-spin text-2xl">⟳</span>
-            <span className="text-sm text-gray-600">{button.name}</span>
-          </div>
-        </div>
-      );
+      return renderBareOverlay();
+    }
+
+    // Direct-execute: no dialog at all while onProcess runs. Once a result lands
+    // the standard chrome renders below so an error stays readable and closable.
+    if (shouldRenderDirectExecuteOverlay({ requested: directExecuteRequested, hasResult: !!result })) {
+      return renderBareOverlay();
     }
 
     if (warehouseSchema) {

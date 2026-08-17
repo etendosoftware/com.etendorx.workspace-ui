@@ -50,8 +50,13 @@ import {
   findFirstMessage,
   findFirstOpenDirectTab,
   readDispatchableResponseActions,
+  RESPONSE_ACTION_KEYS,
 } from "../utils/responseActionDispatcher";
-import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
+import {
+  dispatchBuiltinAction,
+  dispatchProcessReturnActions,
+} from "@/utils/processes/definition/actionDispatcherStore";
+import { parseOpenUrlPayload } from "@/utils/processes/definition/openUrl";
 import {
   createFormHandle,
   createViewProxy,
@@ -63,6 +68,8 @@ import {
 } from "@/utils/processes/definition/scriptProxies";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { isManualProcess } from "@/utils/processes/definition/pickAndExecute";
+import { isCloseModalResult } from "@/utils/processes/definition/directExecute";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -875,6 +882,14 @@ export function useProcessExecution({
       }
 
       if (!etmetaOnprocess && javaClassName) {
+        // A Manual process's Handler is a classic client-side JS namespace
+        // (OB.AEATSII.send, …), not a Java ActionHandler, so posting it to the
+        // kernel as `_action` always fails. Report the missing migration in the
+        // in-modal banner instead of surfacing a raw server error.
+        if (isManualProcess(button.processDefinition)) {
+          messageBar.setMessage("error", null, t("process.manualProcessNotMigrated"));
+          return;
+        }
         await handleDirectJavaProcessExecute(actionValue);
         return;
       }
@@ -902,6 +917,21 @@ export function useProcessExecution({
           // success-close runs and possibly unmounts the modal. The message and
           // openDirectTab kinds are intentionally left to the flow below.
           dispatchProcessReturnActions(result);
+
+          // An `openUrl` return is a hand-off, not a process outcome: it carries
+          // no message, so letting it fall through would render it as a failure.
+          const openUrlPayload = parseOpenUrlPayload(result);
+          if (openUrlPayload) {
+            dispatchBuiltinAction(RESPONSE_ACTION_KEYS.OPEN_URL, openUrlPayload);
+            return;
+          }
+
+          // Classic `closeProcessPopup()`: the script decided nothing happened
+          // (typically a declined confirm), so dismiss instead of reporting.
+          if (isCloseModalResult(result)) {
+            onClose();
+            return;
+          }
 
           const responseMessage = extractResponseMessage(result);
 
@@ -951,6 +981,7 @@ export function useProcessExecution({
       t,
       extractResponseMessage,
       showProcessToast,
+      onClose,
     ]
   );
 
