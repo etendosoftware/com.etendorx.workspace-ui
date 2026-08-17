@@ -570,7 +570,13 @@ export function useProcessExecution({
           getActionExecuteJSON(scriptContext)?.(dispatchableActions);
         }
 
-        if (shouldRetryAfterProcess(resultData)) {
+        // retryExecution keeps the popup open for the user to fix and re-run (errors/warnings).
+        // An explicit success message (`showMsgInProcessView` with msgType=success) always
+        // follows the normal toast+close flow below, even if the handler also set
+        // retryExecution=true (e.g. to let Classic offer "create another"). A "silent" response
+        // (no message at all — messageType defaults to "success" with no `data`) still retries.
+        const isExplicitSuccessMessage = parsedResult.messageType === "success" && Boolean(parsedResult.data);
+        if (shouldRetryAfterProcess(resultData) && !isExplicitSuccessMessage) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
           const hasRefreshGridAction = dispatchResponseActions(resultData).some((a) => a.kind === "refreshGrid");
@@ -622,13 +628,18 @@ export function useProcessExecution({
         // Classic's OBPickAndExecuteActionHandler reads grid data from _params.grid.
         const normalizedValues = normalizeGridValues(mergedValues);
 
+        const mergedParams = { ...normalizedValues, ...buttonParams };
+
         const payload: Record<string, unknown> = {
           recordIds: getRecordIds(),
-          // Classic SmartClient sends "newVersion" as the Done button value for Pick & Execute
-          _buttonValue: actionValue || "newVersion",
-          ...(skipParamsLevel
-            ? { ...normalizedValues, ...buttonParams }
-            : { _params: { ...normalizedValues, ...buttonParams } }),
+          // Classic SmartClient sends "DONE" as the default button value for Pick & Execute
+          _buttonValue: actionValue || "DONE",
+          // skipParamsLevel opts a process out of Classic's standard `_params` wrapper because
+          // its handler reads flat top-level fields instead — but some handlers in that same
+          // group (e.g. DeleteServerButton) still read from `_params`, so send both shapes
+          // rather than requiring each handler's exact convention to be known upfront.
+          ...(skipParamsLevel ? mergedParams : {}),
+          _params: mergedParams,
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),

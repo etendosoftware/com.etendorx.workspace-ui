@@ -64,8 +64,11 @@ describe("readResponseActions", () => {
     expect(readResponseActions({ response: { data: {} } })).toEqual([]);
   });
 
-  it("returns an empty array when responseActions is not an array", () => {
-    expect(readResponseActions({ responseActions: { showMsgInView: {} } })).toEqual([]);
+  it("wraps a single-object responseActions (e.g. ScalewayApiUtils.mensajeError/mensajeExito) into a one-element array", () => {
+    expect(readResponseActions({ responseActions: { showMsgInView: {} } })).toEqual([{ showMsgInView: {} }]);
+  });
+
+  it("returns an empty array when responseActions is neither an array nor an object", () => {
     expect(readResponseActions({ responseActions: "oops" })).toEqual([]);
   });
 
