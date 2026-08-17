@@ -622,31 +622,31 @@ change needed.
 | # | id | name | AR | Handler (`classname`) | `.js` file | status |
 |---|---|---|---|---|---|---|
 | 38 | 2ECF46DAAEEB486EAF79D3594D50DE5F | SII Invoice Sender | AR-1 | `OB.AEATSII.send` | `…/org.openbravo.module.sii/js/ModDefinicionProceso.js` | migrated |
-| 39 | EA02D79CA1DE4B46909EA6EF64A66B53 | SII Payment Sender | AR-1 | `OB.AEATSII.sendPayment` | *idem* | migrated |
+| 39 | EA02D79CA1DE4B46909EA6EF64A66B53 | SII Payment Sender | AR-1 | `OB.AEATSII.sendPayment` | *idem* | qa pending |
 | 40 | BAAECFDF9FF144E8A610E9F1EF3E5FBE | SII Invoice Modification | AR-1 | `OB.AEATSII.modify` | *idem* | migrated |
-| 41 | 92C02F9A367140C085D1EE3BD27C4E96 | SII duplicated invoice correction | AR-1 | `OB.AEATSII.correction` | *idem* | migrated |
-| 42 | BE564945CB2D4892AC0EE51204C5DB7D | SII Unsubscribe Invoice | AR-1 | `OB.AEATSII.unsubscribe` | *idem* | migrated |
-| 43 | 73B931766AFE4D50A9FD25CB4547D197 | SII Cash Receipt Sender | AR-1 | `OB.AEATSII.sendCashReceipt` | *idem* | migrated |
-| 44 | 9FF06EA1E74845B8B74FBC36AAE40F94 | SII Cash Receipt Modification | AR-1 | `OB.AEATSII.modifyCashReceipt` | *idem* | migrated |
-| 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | migrated |
-| 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | migrated |
-| 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
-| 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated ¹ |
+| 41 | 92C02F9A367140C085D1EE3BD27C4E96 | SII duplicated invoice correction | AR-1 | `OB.AEATSII.correction` | *idem* | qa pending |
+| 42 | BE564945CB2D4892AC0EE51204C5DB7D | SII Unsubscribe Invoice | AR-1 | `OB.AEATSII.unsubscribe` | *idem* | qa pending |
+| 43 | 73B931766AFE4D50A9FD25CB4547D197 | SII Cash Receipt Sender | AR-1 | `OB.AEATSII.sendCashReceipt` | *idem* | qa pending |
+| 44 | 9FF06EA1E74845B8B74FBC36AAE40F94 | SII Cash Receipt Modification | AR-1 | `OB.AEATSII.modifyCashReceipt` | *idem* | qa pending |
+| 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | qa pending |
+| 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | qa pending |
+| 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | qa pending |
+| 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | qa pending ¹ |
 | 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
-| 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
+| 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | qa pending ⁵ |
 | 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | **blocked** ⁶ |
 | 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | **blocked** ⁷ |
 | 55 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | AR-4 | `OB.OBWPACK.Process.createHeader` | *idem* | **blocked** ⁷ |
 | 56 | 40317268E74C445FA85DB97249AFFE37 | Validate Picking List | AR-4 | `OB.OBWPL.Process.validate` | `…/pickinglist/js/OBWPL_Process.js` | **blocked** ⁷ |
 | 57 | 44821BBF79D64516844F388CB2E0F36E | Assign and Group Picking List | AR-4 | `OB.OBWPL.Process.assign` | *idem* | qa-pending ⁸ |
 | 58 | C107C380836042A9AF4E107521C947AA | Re Assign Picking List | AR-4 | `OB.OBWPL.Process.reassign` | *idem* | qa-pending ⁸ |
-| 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | migrated ⁹ |
-| 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | migrated ⁹ |
-| 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | migrated ⁹ |
-| 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | migrated ¹⁰ |
-| 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | migrated ¹⁰ |
+| 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | qa pending ⁹ |
+| 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | qa pending ⁹ |
+| 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | qa pending ⁹ |
+| 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | qa pending ¹⁰ |
+| 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | qa pending ¹⁰ |
 
 **Notes:**
 
