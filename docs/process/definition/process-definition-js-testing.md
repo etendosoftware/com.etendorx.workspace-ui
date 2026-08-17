@@ -645,8 +645,8 @@ change needed.
 | 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | migrated ⁹ |
 | 60 | 6DA8E27C96D04E329A7A54007AF2DB55 | Close Picking List | AR-4 | `OB.OBWPL.Process.close` | *idem* | migrated ⁹ |
 | 61 | A4008FA053C34DF0ACB814F04948E205 | Process Picking List | AR-4 | `OB.OBWPL.Process.process` | *idem* | migrated ⁹ |
-| 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | qa pending ¹⁰ |
-| 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | qa pending ¹⁰ |
+| 62 | C580B3B60DA5484387493A74CEB00D13 | PSD2 Get Consents | AR-4 | `OB.PSD2.Consent.getConsent` | `…/psd2.bank.integration/js/components/Consent.js` | migrated ¹⁰ |
+| 63 | F3ABCD40BD0047AF9E76071CF7D3FF04 | PSD2 Get Reconnection | AR-4 | `OB.PSD2.Reconnect.getReconnect` | `…/psd2.bank.integration/js/components/Reconnect.js` | migrated ¹⁰ |
 
 **Notes:**
 
