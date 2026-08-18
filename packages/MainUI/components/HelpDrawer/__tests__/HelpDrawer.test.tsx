@@ -150,6 +150,15 @@ describe("HelpDrawer", () => {
     expect(useHelpPanelStore.getState().isOpen).toBe(false);
   });
 
+  it("renders an empty sidebar and no window help when there is no active window yet", () => {
+    useHelpPanelStore.setState({ isOpen: true });
+    setWindow(null);
+    render(<HelpDrawer />);
+
+    expect(screen.getByLabelText("common.helpFor")).toBeEmptyDOMElement();
+    expect(screen.getByTestId("help-drawer-content")).toBeEmptyDOMElement();
+  });
+
   it("closes when the active window changes while open", () => {
     useHelpPanelStore.setState({ isOpen: true });
     setWindow(createMockWindowMetadata("W1"), "w1");
@@ -241,5 +250,30 @@ describe("HelpDrawer tab index sidebar", () => {
 
     expect(screen.getByTestId("help-toc-item-a")).not.toHaveAttribute("aria-current");
     expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
+  });
+
+  it("stops scanning once a section below the active threshold is reached", () => {
+    const tabA = createMockTab({ id: "a", name: "Header", sequenceNumber: 10, fields: {} });
+    const tabB = createMockTab({ id: "b", name: "Lines", sequenceNumber: 20, fields: {} });
+    const tabC = createMockTab({ id: "c", name: "Tax", sequenceNumber: 30, fields: {} });
+    setWindow({ ...createMockWindowMetadata("W1"), tabs: [tabA, tabB, tabC] });
+
+    render(<HelpDrawer />);
+
+    const content = screen.getByTestId("help-drawer-content");
+    const headerSection = screen.getByRole("heading", { name: "Header" }).closest("section") as HTMLElement;
+    const linesSection = screen.getByRole("heading", { name: "Lines" }).closest("section") as HTMLElement;
+    const taxSection = screen.getByRole("heading", { name: "Tax" }).closest("section") as HTMLElement;
+
+    jest.spyOn(content, "getBoundingClientRect").mockReturnValue({ top: 0 } as unknown as DOMRect);
+    jest.spyOn(headerSection, "getBoundingClientRect").mockReturnValue({ top: -100 } as unknown as DOMRect);
+    jest.spyOn(linesSection, "getBoundingClientRect").mockReturnValue({ top: 10 } as unknown as DOMRect);
+    // Below the ACTIVE_TAB_THRESHOLD_PX (16): scanning must stop here, not mark Tax active.
+    jest.spyOn(taxSection, "getBoundingClientRect").mockReturnValue({ top: 200 } as unknown as DOMRect);
+
+    fireEvent.scroll(content);
+
+    expect(screen.getByTestId("help-toc-item-b")).toHaveAttribute("aria-current", "true");
+    expect(screen.getByTestId("help-toc-item-c")).not.toHaveAttribute("aria-current");
   });
 });

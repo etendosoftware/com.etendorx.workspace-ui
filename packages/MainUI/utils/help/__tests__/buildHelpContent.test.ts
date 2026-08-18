@@ -79,6 +79,16 @@ describe("buildHelpSections", () => {
     expect(sections[0].fields).toEqual([{ id: "f1", name: field.name, helpComment: "column help text" }]);
   });
 
+  it("omits fields whose helpComment is undefined (not just empty) with no column fallback", () => {
+    const field = createMockField({ id: "f1", helpComment: undefined as unknown as string, column: undefined });
+    const tab = createMockTab({ id: "t1", fields: { field } });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+
+    const sections = buildHelpSections(window);
+
+    expect(sections[0].fields).toEqual([]);
+  });
+
   it("omits audit synthetic fields regardless of help content", () => {
     const auditField = createMockField({ id: "f1", helpComment: "audit help", isAuditField: true });
     const tab = createMockTab({ id: "t1", fields: { auditField } });
