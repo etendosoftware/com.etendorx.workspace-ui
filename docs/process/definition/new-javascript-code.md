@@ -892,6 +892,7 @@ React-free `OB` per modal:
 | `OB.MessageBar` | severity constants (Section 8.2). |
 | `OB.RemoteCallManager` | `call(...)` callback↔Promise adapter (Section 8.7). |
 | `OB.Datasource` | `create(config)` datasource façade (Section 8.8). |
+| `OB.User` | Session user identity: `id` (= `AD_User_ID`), `name`, `userName` — mapped 1:1 from classic `OB.User`. Sourced from the already-loaded session user; empty strings when none is injected. Only `id` is read by any migrated process script today (`ETRX_GetToken.js`), so no other classic `OB.User.*` field (`clientId`, `roleId`, `csrfToken`, …) is exposed — add on measured need, not speculatively. |
 | `OB.TestRegistry` | `register(...)` no-op. |
 | `OB.<Module>.<Process>` | module-namespace writes are tolerated, so a module body can self-register `OB.APRM.AddPayment = {…}`. |
 

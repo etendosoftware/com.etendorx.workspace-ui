@@ -41,6 +41,8 @@ export interface ProcessContextCredentials {
   getLabel?: (key: string) => string;
   /** Current UI language code, for `OB.Format.*` locale-derived defaults. */
   language?: string | null;
+  /** Session user identity (id/name/username), for `OB.User`. */
+  user?: { id?: string; name?: string; username?: string };
 }
 
 /**
@@ -215,7 +217,7 @@ export const buildContextResponse = <T>(data: T): ProcessContextResponse<T> => {
  * await executeStringFunction(onLoad, { Metadata, ...ctx }, processDefinition, args);
  */
 export function buildProcessScriptContext(credentials: ProcessContextCredentials): ProcessScriptContext {
-  const { token, getCsrfToken, getLabel, language } = credentials;
+  const { token, getCsrfToken, getLabel, language, user } = credentials;
 
   const authHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json;charset=UTF-8",
@@ -294,7 +296,7 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   const remoteCall = (handler: string, params: Record<string, unknown>) => callAction(handler, params);
   const fetchDatasource = (entity: string, payload: Record<string, unknown>) =>
     datasource.get(entity, payload) as Promise<{ data: unknown }>;
-  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource });
+  const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource, user });
 
   return {
     callAction,

@@ -632,7 +632,7 @@ change needed.
 | 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | migrated |
 | 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
 | 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated |
-| 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
+| 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | qa pending ² |
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
 | 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
@@ -652,10 +652,11 @@ change needed.
 
 - ¹ Migrated, but the **URL base needs QA confirmation**: Classic builds a path on the Classic host,
   while the new UI proxies ERP resources under `/api/erp/`. See the report's advisory 1.
-- ² **Blocked on one missing value: `OB.User.id`.** The user id is half of the OAuth `state` payload
-  that binds the returned token to a user; there is no user-identity accessor in the `OB` shim, in
-  `view.getContextInfo()` or in `view.hookData`. Everything else in this process is supported —
-  exposing the session user id turns it into a five-line `onProcess`.
+- ² **Unblocked 2026-08-18.** Was blocked on one missing value, `OB.User.id` — half of the OAuth `state`
+  payload that binds the returned token to a user, with no user-identity accessor anywhere in the
+  migration surface. Fixed by adding `OB.User = { id, name, userName }` to the shim (substrate,
+  additive), sourced from the already-loaded session user. Code generated; **manual QA pending**. See
+  the report's `## Updates`.
 - ³ Blocked on three counts: a **raw-DOM provider/scope grid** (`document.createElement` × 12 appended
   to `document.body`), a **two-phase popup** (`window.open('')` during the click, navigated after an
   `await`), and the same missing `OB.User.id`. A degraded version using an `openDynamicForm` `LIST` is
@@ -1181,3 +1182,20 @@ substrate defects, both now fixed in `packages/MainUI`:
 
 Both fixes are additive and gated on the pattern; the JS already stored in the database is correct and
 was **not** re-pasted.
+
+### 2026-08-18 — first of the three §6bis blocker clusters closed: `OB.User` added to the shim
+
+The **no session-user accessor** cluster flagged in the 2026-08-10 entry (`OB.User.id`) is closed. Added
+`OB.User = { id, name, userName }` to the shared `OB` shim (`packages/MainUI/utils/ob/obShim.ts`),
+sourced from the already-loaded session user (`useUserStore((s) => s.user)`, threaded through
+`buildProcessScriptContext`). Additive: a new key on `OB`, nothing existing changed shape. `id` is
+`AD_User_ID`, matching classic `OB.User.id` exactly.
+
+Scope kept to `id`/`name`/`userName` deliberately — a full-ERP grep of Defined-Process scripts found only
+`.id` read outside `OB.User`'s own classic definition file, and only by the two Get Token processes.
+`clientId`/`organizationId`/`roleId`/`csrfToken` etc. were left out as unmeasured, speculative surface.
+
+**`DDADF2E25EEF444A80208E681EFF24CD` (Get Token, §6bis #49) is unblocked**, `blocked → migrated`
+(pending manual QA) — see the report's `## Updates`. `3B85498FECA646F19AD0E5D416C36776`
+(GetMiddlewareToken, #50) shares the same `OB.User.id` read but stays `blocked` on its two other,
+independent defects (raw-DOM grid, two-phase popup).

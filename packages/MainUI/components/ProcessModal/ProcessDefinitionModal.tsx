@@ -312,6 +312,7 @@ function ProcessDefinitionModalContent({
   const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const session = useUserStore((s) => s.session);
+  const user = useUserStore((s) => s.user);
   const token = useUserStore((s) => s.token);
   const getCsrfToken = useUserStore((s) => s.getCsrfToken);
   const router = useRouter();
@@ -325,8 +326,8 @@ function ProcessDefinitionModalContent({
   // Build the reusable process script context (auth-aware HTTP helpers)
   // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
   const processScriptContext = useMemo(
-    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language }),
-    [token, getCsrfToken, getLabel, language]
+    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language, user }),
+    [token, getCsrfToken, getLabel, language, user]
   );
 
   // Shared module scope: when em_etmeta_payscript_logic holds a JS module body

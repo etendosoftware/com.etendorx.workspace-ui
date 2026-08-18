@@ -54,6 +54,8 @@ export interface OBShimDeps {
    * any React / fetch layer. Resolves with the parsed response body as `data`.
    */
   fetchDatasource?: (entity: string, payload: Record<string, unknown>) => Promise<{ data: unknown }>;
+  /** Session user identity (id/name/username), for `OB.User`. */
+  user?: { id?: string; name?: string; username?: string };
 }
 
 export interface OBI18N {
@@ -115,6 +117,13 @@ export interface OBConstants {
   FIELDSEPARATOR: string;
   /** Suffix of the display column holding an FK's identifier (`"_identifier"`). */
   IDENTIFIER: string;
+}
+
+/** Classic `OB.User` identity, mapped 1:1 from the session user (`OB.User.id` is `AD_User_ID`). */
+export interface OBUser {
+  id: string;
+  name: string;
+  userName: string;
 }
 
 export interface OBTestRegistry {
@@ -200,5 +209,7 @@ export interface OBShim {
   TestRegistry: OBTestRegistry;
   RemoteCallManager: OBRemoteCallManager;
   Datasource: OBDatasource;
+  /** Classic `OB.User.*` session identity (Section 8.6). */
+  User: OBUser;
   [namespace: string]: unknown;
 }

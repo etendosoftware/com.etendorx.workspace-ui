@@ -235,6 +235,14 @@ describe("Process Definition Utils", () => {
       expect(typeof ctx.OB.I18N.getLabel).toBe("function");
     });
 
+    it("should expose OB.User from the injected user credential", () => {
+      const ctx = buildProcessScriptContext({
+        ...credentials,
+        user: { id: "100", name: "Admin Admin", username: "admin" },
+      });
+      expect(ctx.OB.User).toEqual({ id: "100", name: "Admin Admin", userName: "admin" });
+    });
+
     it("callAction should POST to kernel endpoint with auth headers", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
