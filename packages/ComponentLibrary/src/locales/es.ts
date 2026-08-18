@@ -52,6 +52,7 @@ const es = {
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
     change: "Cambiar",
+    logout: "Cerrar sesión",
   },
   forms: {
     sections: {
@@ -305,6 +306,10 @@ const es = {
       errorNotStrongEnough:
         "La contraseña no es suficientemente segura. Use mayúsculas, minúsculas, números y caracteres especiales",
       errorGeneric: "Error al cambiar la contraseña",
+      linkWith: "Vincular usuario con:",
+      linking: "Vinculando tu cuenta…",
+      linkSuccess: "Cuenta vinculada correctamente",
+      linkError: "No se pudo vincular la cuenta",
       configSaveError: "No se pudo guardar la configuración del perfil",
     },
   },
@@ -353,6 +358,7 @@ const es = {
   login: {
     title: "Iniciar sesión",
     subtitle: "Ingresa tu usuario y contraseña para continuar.",
+    loadingSession: "Cargando tu espacio de trabajo...",
     fields: {
       username: {
         label: "Usuario",
@@ -383,6 +389,24 @@ const es = {
         title: "Error del sistema - Sesión cerrada",
         description:
           "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+      },
+    },
+    sso: {
+      divider: "O continuar con",
+      buttons: {
+        auth0: "Continuar con SSO",
+        continueWith: "Continuar con",
+      },
+      errors: {
+        notLinked: {
+          title: "Cuenta no vinculada",
+          description:
+            "Tu cuenta SSO no está vinculada a un usuario de Etendo. Iniciá sesión con usuario y contraseña primero y vinculá tu cuenta desde el menú de configuración.",
+        },
+        failed: {
+          title: "Error al iniciar sesión",
+          description: "No pudimos iniciar sesión con ese proveedor. Por favor, intentá de nuevo.",
+        },
       },
     },
     or: "O",

@@ -2,6 +2,11 @@ import "../testUtils/useProcessExecution.mocks";
 import { renderHook } from "@testing-library/react";
 import { useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
+// `constants` is mocked with an empty PROCESS_DEFINITION_DATA (see useProcessExecution.mocks.ts);
+// mutate it directly to exercise the skipParamsLevel branch without depending on real process IDs.
+const { PROCESS_DEFINITION_DATA: mockedProcessDefinitionData } = jest.requireMock(
+  "@/utils/processes/definition/constants"
+);
 
 // ---------------------------------------------------------------------------
 // Tests — parseProcessResponse
@@ -29,6 +34,23 @@ describe("useProcessExecution — parseProcessResponse", () => {
       },
     });
     expect(res.messageType).toBe("success");
+  });
+
+  it("parses an error msgType from an object (non-array) responseActions (e.g. com.smf.schedule.servers handlers)", () => {
+    const { result } = renderHook(() => useProcessExecution(makeParams()));
+    const res = result.current.parseProcessResponse({
+      success: true,
+      data: {
+        responseActions: {
+          showMsgInProcessView: { severity: "error", msgType: "error", msgTitle: "Error", msgText: "Boom" },
+        },
+        retryExecution: true,
+        refreshParent: true,
+      },
+    });
+    expect(res.success).toBe(false);
+    expect(res.messageType).toBe("error");
+    expect(res.data).toBe("Boom");
   });
 
   it("parses smartclientSay message", () => {
@@ -189,7 +211,7 @@ describe("useProcessExecution — handleWindowReferenceExecute", () => {
     expect(body._buttonValue).toBe("CUSTOM_ACTION");
   });
 
-  it("uses newVersion as default _buttonValue when actionValue is not provided", async () => {
+  it("uses DONE as default _buttonValue when actionValue is not provided", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({}),
@@ -207,7 +229,60 @@ describe("useProcessExecution — handleWindowReferenceExecute", () => {
 
     await result.current.handleWindowReferenceExecute();
     const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
-    expect(body._buttonValue).toBe("newVersion");
+    expect(body._buttonValue).toBe("DONE");
+  });
+
+  it("sends params both flat and nested under _params for skipParamsLevel processes", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({}),
+    }) as any;
+
+    mockedProcessDefinitionData["SKIP-PARAMS-PROC"] = { skipParamsLevel: true };
+
+    const { result } = renderHook(() =>
+      useProcessExecution(
+        makeParams({
+          processId: "SKIP-PARAMS-PROC",
+          getMergedProcessValues: jest.fn(() => ({ confirm_server_name: "test-server" })),
+          startTransition: (fn: () => Promise<void>) => {
+            fn();
+          },
+        })
+      )
+    );
+
+    await result.current.handleWindowReferenceExecute();
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    // Handlers that read flat top-level fields (e.g. SyncServerButton) and handlers that
+    // read from _params (e.g. DeleteServerButton) both find the value they expect.
+    expect(body.confirm_server_name).toBe("test-server");
+    expect(body._params).toEqual({ confirm_server_name: "test-server" });
+
+    mockedProcessDefinitionData["SKIP-PARAMS-PROC"] = undefined;
+  });
+
+  it("nests params only under _params when skipParamsLevel is not set", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({}),
+    }) as any;
+
+    const { result } = renderHook(() =>
+      useProcessExecution(
+        makeParams({
+          getMergedProcessValues: jest.fn(() => ({ someField: "value" })),
+          startTransition: (fn: () => Promise<void>) => {
+            fn();
+          },
+        })
+      )
+    );
+
+    await result.current.handleWindowReferenceExecute();
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.someField).toBeUndefined();
+    expect(body._params).toEqual({ someField: "value" });
   });
 });
 

@@ -126,7 +126,7 @@ import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
-import { formatUTCTimeToLocal } from "@/utils/date/utils";
+import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -422,7 +422,9 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
     );
   }
 
-  // Format Time values from UTC to Local for display in the grid
+  // Format Time values for read-only display in the grid: regular Time is converted
+  // from UTC to local, Absolute Time is shown as-is (no timezone shift), and both are
+  // rendered in 12-hour "AM/PM" format to match the form inputs.
   const fieldMapping = columnFieldMappings.get(col.name);
   const field = fieldMapping?.field;
 
@@ -432,8 +434,10 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
   if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
-    const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
-    return <div className="table-cell-content">{localTimeValue}</div>;
+    const absolute = field?.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id;
+    const { toDisplay } = getTimeFormatters(absolute);
+    const displayValue = formatTimeTo12Hour(toDisplay(renderedCellValue));
+    return <div className="table-cell-content">{displayValue}</div>;
   }
 
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
