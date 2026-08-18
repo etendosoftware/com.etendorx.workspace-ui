@@ -628,8 +628,8 @@ change needed.
 | 42 | BE564945CB2D4892AC0EE51204C5DB7D | SII Unsubscribe Invoice | AR-1 | `OB.AEATSII.unsubscribe` | *idem* | migrated |
 | 43 | 73B931766AFE4D50A9FD25CB4547D197 | SII Cash Receipt Sender | AR-1 | `OB.AEATSII.sendCashReceipt` | *idem* | migrated |
 | 44 | 9FF06EA1E74845B8B74FBC36AAE40F94 | SII Cash Receipt Modification | AR-1 | `OB.AEATSII.modifyCashReceipt` | *idem* | migrated |
-| 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | qa pending |
-| 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | qa pending |
+| 45 | CAC397FDDF754A1A8FEE22FDDE8FE2FF | Picking List Movement Line Complete | AR-1 | `OB.OBWPL.MovementLine.complete` | `…/pickinglist/js/obwpl-movementline.js` | migrated |
+| 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | migrated |
 | 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
 | 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated |
 | 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | **blocked** ² |
