@@ -481,6 +481,13 @@ export interface Tab {
   sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
+  /**
+   * The tab's link-to-parent property, as resolved by the backend with the same function the
+   * classic UI uses (`ApplicationUtils.getParentProperty`). An **empty string is a real answer**:
+   * the tab has no link column to its parent and must be filtered by its `hqlwhereclause` alone.
+   * Absent when the metadata backend predates this key — see `resolveParentFieldName`.
+   */
+  parentProperty?: string;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;

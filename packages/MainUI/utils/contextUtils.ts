@@ -102,3 +102,47 @@ export const buildEtendoContext = (tab: Tab, graph: Graph<Tab>): EtendoContext =
   // Merge: Parent context is base, Current context overrides/adds to it
   return { ...parentContext, ...currentContext };
 };
+
+/**
+ * The properties every parent record contributes to a child tab's datasource request, in the
+ * order the server needs them. Classic sends the parent's whole session-property set
+ * (`getContextInfo(true, false)`, ob-view-grid.js:2736); these three are the ones the server
+ * actually reads back when substituting a child tab's `hqlwhereclause`.
+ */
+const PARENT_SESSION_PROPERTIES = ["id", "client", "organization"] as const;
+
+/**
+ * Builds the `@EntityName.property@` context params for a child tab's **parent** record.
+ *
+ * `AdvancedQueryBuilder.substituteContextParameters` resolves the variables of a child tab's
+ * `hqlwhereclause` by walking the ancestor tabs and reading these exact request params:
+ * `@AD_Org_ID@` is answered with `@<parentEntity>.organization@`, `@AD_Client_ID@` with
+ * `@<parentEntity>.client@`, and `@<parenttable>_id@` with `@<parentEntity>.id@`. Omitting them
+ * leaves the variable unresolved, and an empty organization makes `AD_ISORGINCLUDED` return -1,
+ * which silently drops every row.
+ *
+ * This complements `buildEtendoContext` (which derives the same keys from the tab's field
+ * metadata); it is additive — it only ever contributes keys, never removes any.
+ *
+ * @param parentTab - The parent tab, whose `entityName` names the context keys.
+ * @param parentRecord - The record selected in the parent tab, if any.
+ * @returns A record of context variables; empty when there is no parent entity or no record.
+ */
+export const buildParentSessionContext = (
+  parentTab: Tab | null | undefined,
+  parentRecord: Record<string, unknown> | null | undefined
+): EtendoContext => {
+  const context: EtendoContext = {};
+  if (!parentTab?.entityName || !parentRecord) {
+    return context;
+  }
+
+  for (const property of PARENT_SESSION_PROPERTIES) {
+    const value = parentRecord[property];
+    if (value !== undefined && value !== null && value !== "") {
+      context[`@${parentTab.entityName}.${property}@`] = value;
+    }
+  }
+
+  return context;
+};

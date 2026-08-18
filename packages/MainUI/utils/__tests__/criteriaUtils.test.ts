@@ -1,4 +1,4 @@
-import { buildBaseCriteria } from "../criteriaUtils";
+import { buildBaseCriteria, resolveParentFieldName } from "../criteriaUtils";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 
 describe("criteriaUtils", () => {
@@ -103,6 +103,50 @@ describe("criteriaUtils", () => {
       expect(result).toHaveLength(1);
       expect(result[0].fieldName).toBe("invoice");
       expect(result[0].value).toBe("123");
+    });
+
+    it("should return _dummy when the backend reports no link column to the parent", () => {
+      // Sii Monitor › Issued Invoices: C_Invoice has an isparent column (businessPartner) that
+      // does not point at aeatsii_config, so ApplicationUtils.getParentProperty answers "".
+      const tabWithoutLink = { ...childTab, parentColumns: ["businessPartner"], parentProperty: "" };
+      const result = buildBaseCriteria({
+        tab: tabWithoutLink,
+        parentTab,
+        parentId: "EEA0890DCD7F4BFDB27D5D3AF4032FC9",
+      });
+
+      expect(result[0].fieldName).toBe("_dummy");
+      expect(result[0].operator).toBe("equals");
+    });
+
+    it("should use the backend parentProperty over the parentColumns heuristic", () => {
+      const tabWithLink = { ...childTab, parentColumns: ["someOtherColumn"], parentProperty: "invoice" };
+      const result = buildBaseCriteria({
+        tab: tabWithLink,
+        parentTab,
+        parentId: "123",
+      });
+
+      expect(result[0]).toEqual({ fieldName: "invoice", value: "123", operator: "equals" });
+    });
+  });
+
+  describe("resolveParentFieldName", () => {
+    const parentTab: any = { entityName: "ParentEntity", id: "parent-tab-id" };
+
+    it("prefers the backend-resolved parentProperty", () => {
+      const tab: any = { parentColumns: ["businessPartner"], parentProperty: "invoice", fields: {} };
+      expect(resolveParentFieldName(tab, parentTab)).toBe("invoice");
+    });
+
+    it("maps an empty parentProperty to 'id' so the caller falls back to _dummy", () => {
+      const tab: any = { parentColumns: ["businessPartner"], parentProperty: "", fields: {} };
+      expect(resolveParentFieldName(tab, parentTab)).toBe("id");
+    });
+
+    it("keeps the parentColumns heuristic when the backend does not send parentProperty", () => {
+      const tab: any = { parentColumns: ["parent_id"], fields: {} };
+      expect(resolveParentFieldName(tab, parentTab)).toBe("parent_id");
     });
   });
 });
