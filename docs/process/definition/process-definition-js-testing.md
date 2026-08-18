@@ -624,7 +624,7 @@ change needed.
 | 38 | 2ECF46DAAEEB486EAF79D3594D50DE5F | SII Invoice Sender | AR-1 | `OB.AEATSII.send` | `…/org.openbravo.module.sii/js/ModDefinicionProceso.js` | migrated |
 | 39 | EA02D79CA1DE4B46909EA6EF64A66B53 | SII Payment Sender | AR-1 | `OB.AEATSII.sendPayment` | *idem* | qa pending |
 | 40 | BAAECFDF9FF144E8A610E9F1EF3E5FBE | SII Invoice Modification | AR-1 | `OB.AEATSII.modify` | *idem* | migrated |
-| 41 | 92C02F9A367140C085D1EE3BD27C4E96 | SII duplicated invoice correction | AR-1 | `OB.AEATSII.correction` | *idem* | qa pending |
+| 41 | 92C02F9A367140C085D1EE3BD27C4E96 | SII duplicated invoice correction | AR-1 | `OB.AEATSII.correction` | *idem* | migrated |
 | 42 | BE564945CB2D4892AC0EE51204C5DB7D | SII Unsubscribe Invoice | AR-1 | `OB.AEATSII.unsubscribe` | *idem* | qa pending |
 | 43 | 73B931766AFE4D50A9FD25CB4547D197 | SII Cash Receipt Sender | AR-1 | `OB.AEATSII.sendCashReceipt` | *idem* | qa pending |
 | 44 | 9FF06EA1E74845B8B74FBC36AAE40F94 | SII Cash Receipt Modification | AR-1 | `OB.AEATSII.modifyCashReceipt` | *idem* | qa pending |

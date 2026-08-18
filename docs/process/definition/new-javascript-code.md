@@ -501,9 +501,26 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   (`{ message: { severity, title, text } }`) is read too, so a script may hand the response back
   untouched, and the field is looked up at the three usual nesting levels (root, `response`,
   `response.data`). When the response carries **no** message — or one with a severity but no words — the
-  generic "Process completed successfully" / "Process Error" wording stands, exactly as before. A message
-  with text but no severity is treated as success, so a silent action never turns into a false error. No
-  script change is required.
+  generic "Process completed successfully" / "Process Error" wording stands, exactly as before. No script
+  change is required.
+  - **An untyped handler message defaults to `error`, an untyped string message to `success`.**
+    `resolveDefaultMsgType` fills the gap only when the message brings no `msgType` / `severity` of its
+    own; a severity that *is* present always wins. The split follows what actually produces each shape:
+    Etendo's framework always types its answer (`BaseProcessActionHandler` and `ResponseActionsBuilder`
+    both `put("severity", …)`), so an **object-shaped** message that arrives untyped comes from the legacy
+    module idiom that writes `severity` only on the success path — the whole SII family answers its
+    validation and failure paths with `{ message: { title: <translated "Error" label>, text } }`, and
+    Classic paints exactly those red (`OB.AEATSII.execute` ends its branch in `else → TYPE_ERROR`). A bare
+    **string** message (`{ message: "…" }`) is not a handler answer but a script saying something, and
+    keeps the success default, so a silent action never turns into a false error.
+  - **The migrated script should still map the severity itself.** The default above is a safety net, not a
+    substitute for the port: whenever the Classic source ends its severity branch in a plain `else`, port
+    that `else` —
+    `const toMessageType = (s) => (s === "success" || s === "warning" ? s : "error")`. That keeps the
+    behaviour readable at the process level and independent of a platform default, and it is the only way
+    to reproduce a Classic branch that maps some *other* value (e.g. an `info` treated as a warning).
+    Recognising the error by its title is never an option: that title is the translated `AD_MESSAGE`
+    `Error` label, so any such rule dies with the first language change.
 - **An `openUrl` marked `erpHosted` lands on the Classic host with a live session.** Classic scripts build
   ERP URLs as `OB.Utilities.getLocationUrlWithoutFragment() + "web/<module>/…"`, which works there only
   because the classic UI is itself served from the ERP. A migrated hook instead returns the ERP-relative

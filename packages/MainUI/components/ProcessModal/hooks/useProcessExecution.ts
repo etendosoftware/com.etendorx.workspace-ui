@@ -53,7 +53,7 @@ import {
   readDispatchableResponseActions,
   RESPONSE_ACTION_KEYS,
 } from "../utils/responseActionDispatcher";
-import { readReturnedMessage } from "../utils/processReturnMessage";
+import { readReturnedMessage, resolveDefaultMsgType } from "../utils/processReturnMessage";
 import {
   dispatchBuiltinAction,
   dispatchProcessReturnActions,
@@ -766,11 +766,14 @@ export function useProcessExecution({
       // answers with — and the shape a migrated onProcess returns as
       // `{ msgType, msgTitle, msgText }` (migration guide, archetype AR-1).
       // Classic renders all three in the message bar, so the server's own title
-      // and text must win over the generic texts below. A message without a
-      // severity keeps the success default this function already applied to any
-      // unrecognized response, so no currently-successful process turns into an error.
+      // and text must win over the generic texts below. When the message carries no
+      // severity of its own, `resolveDefaultMsgType` decides: a handler-shaped message
+      // defaults to `error` (Etendo's framework always types its answer, so an untyped
+      // one comes from the legacy module idiom that only sets `severity` on success),
+      // while a bare string message keeps the success default. Anything else here is
+      // still success, so no currently-successful process turns into an error.
       const returnedMessage = readReturnedMessage(result);
-      if (returnedMessage) return { msgType: "success", ...returnedMessage };
+      if (returnedMessage) return { msgType: resolveDefaultMsgType(result), ...returnedMessage };
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }

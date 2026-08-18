@@ -1,4 +1,4 @@
-import { readReturnedMessage } from "../processReturnMessage";
+import { readReturnedMessage, resolveDefaultMsgType } from "../processReturnMessage";
 
 describe("readReturnedMessage", () => {
   describe("script-facing spelling (msgType/msgTitle/msgText)", () => {
@@ -100,6 +100,42 @@ describe("readReturnedMessage", () => {
       expect(readReturnedMessage(undefined)).toBeNull();
       expect(readReturnedMessage(null)).toBeNull();
       expect(readReturnedMessage("plain string")).toBeNull();
+    });
+  });
+});
+
+describe("resolveDefaultMsgType", () => {
+  it("defaults a handler-shaped message with no severity to error", () => {
+    // The shape the SII handlers answer their validation and failure paths with:
+    // the translated "Error" label as title, the reason as text, and no severity.
+    // Classic paints it red (OB.AEATSII.execute ends in `else -> TYPE_ERROR`).
+    expect(resolveDefaultMsgType({ message: { title: "Error:", text: "cashReceipt is null" } })).toBe("error");
+  });
+
+  it("applies the same default at the nested levels a handler answers from", () => {
+    expect(resolveDefaultMsgType({ response: { message: { title: "Error:", text: "Boom" } } })).toBe("error");
+    expect(resolveDefaultMsgType({ response: { data: { message: { title: "Error:", text: "Boom" } } } })).toBe("error");
+  });
+
+  it("keeps the success default for a bare string message", () => {
+    // Not a handler answer — a script saying something.
+    expect(resolveDefaultMsgType({ message: "Everything went fine" })).toBe("success");
+  });
+
+  it("keeps the success default when there is no message at all", () => {
+    expect(resolveDefaultMsgType({ responseActions: [{ refreshGrid: {} }] })).toBe("success");
+    expect(resolveDefaultMsgType(undefined)).toBe("success");
+    expect(resolveDefaultMsgType(null)).toBe("success");
+  });
+
+  it("is only a default — a message that carries its own severity is unaffected", () => {
+    // The caller spreads the read message on top, so the severity always wins.
+    const result = { message: { severity: "success", title: "Done", text: "All good" } };
+
+    expect({ msgType: resolveDefaultMsgType(result), ...readReturnedMessage(result) }).toEqual({
+      msgType: "success",
+      msgTitle: "Done",
+      msgText: "All good",
     });
   });
 });

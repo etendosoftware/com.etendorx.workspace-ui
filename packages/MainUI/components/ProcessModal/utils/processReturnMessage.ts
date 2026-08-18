@@ -85,3 +85,27 @@ export const readReturnedMessage = (data: unknown): ProcessActionMessage | null 
     ...(msgText ? { msgText } : {}),
   };
 };
+
+/**
+ * The severity to assume for a returned message that carries none of its own.
+ *
+ * Etendo's own framework always types its answer — `BaseProcessActionHandler` and
+ * `ResponseActionsBuilder` both `put("severity", …)` — so an **object-shaped** `message`
+ * that arrives untyped comes from the legacy module idiom, where `severity` is written
+ * only on the success path. The SII handlers are the documented case: their validation
+ * and failure answers are `{ title: <translated "Error" label>, text }` and nothing else,
+ * and Classic paints exactly those red (`OB.AEATSII.execute` ends its branch in
+ * `else → TYPE_ERROR`). Assuming success there would swallow a server error *and* close
+ * the modal on top of it, so an untyped handler message defaults to `error`.
+ *
+ * A bare string message (`{ message: "…" }`) is not a handler answer but a script saying
+ * something, and keeps the success default.
+ *
+ * The severity a message *does* carry always wins over this default; this only fills the
+ * gap. Callers must spread the read message after it.
+ *
+ * @param data the same process return value passed to {@link readReturnedMessage}
+ * @returns `"error"` for an untyped handler-shaped message, `"success"` otherwise
+ */
+export const resolveDefaultMsgType = (data: unknown): "success" | "error" =>
+  isPlainObject(readRawMessage(data)) ? "error" : "success";
