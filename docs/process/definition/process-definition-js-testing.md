@@ -617,7 +617,8 @@ Migration model, archetypes and the supported mechanisms (`directExecute`, `open
 
 `status`: **migrated** = code produced/confirmed, manual QA pending · **blocked** = a mechanism the
 platform does not support (no code emitted) · **qa-pending** = existing code audited as correct, no
-change needed.
+change needed · **wont-migrate** = deliberately out of scope; the process is not used and/or does not
+work in Classic either, so no migration is planned (no code emitted, and none will be).
 
 | # | id | name | AR | Handler (`classname`) | `.js` file | status |
 |---|---|---|---|---|---|---|
@@ -632,9 +633,9 @@ change needed.
 | 46 | 3724E106FE4544F2B4402A1D1AE4E1AC | Picking List Movement Line Reject | AR-1 | `OB.OBWPL.MovementLine.reject` | *idem* | migrated |
 | 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
 | 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated |
-| 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | qa pending ² |
+| 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | migrated ² |
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
-| 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
+| 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **wont-migrate** ⁴ |
 | 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
 | 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | migrated ⁶ |
 | 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | migrated ⁷ |
@@ -657,13 +658,33 @@ change needed.
   migration surface. Fixed by adding `OB.User = { id, name, userName }` to the shim (substrate,
   additive), sourced from the already-loaded session user. Code generated; **manual QA pending**. See
   the report's `## Updates`.
-- ³ Blocked on three counts: a **raw-DOM provider/scope grid** (`document.createElement` × 12 appended
-  to `document.body`), a **two-phase popup** (`window.open('')` during the click, navigated after an
-  `await`), and the same missing `OB.User.id`. A degraded version using an `openDynamicForm` `LIST` is
-  specified in the report and awaits a product decision.
-- ⁴ Blocked deepest: the script **retains a child window**, writes HTML into it, and waits for a
-  `postMessage` handshake. No retained-window handle, cross-document write, or listener outliving
-  `onProcess` exists. The report recommends moving the handshake server-side as the cheaper fix.
+- ³ **Still `blocked` (no code emitted), but the migration path is now decided — updated 2026-08-19.**
+  Originally blocked on three counts; current state of each: (1) the **raw-DOM provider/scope grid**
+  (`document.createElement` × 12 appended to `document.body`) — the team saw the real modal and decided
+  to migrate it through the **custom-component path** (`em_etmeta_custom_component = 'Y'` + a new React
+  component fed by an `onLoad` schema), *not* by rebuilding it from `openDynamicForm` metadata;
+  implementation is a later phase, and the flag must stay `NULL` until the component exists or the
+  schema is silently dropped into an empty dialog. (2) The **two-phase popup** (`window.open('')` during
+  the click, navigated after an `await`) — still missing; this is the retained-window primitive also
+  described by note ⁴, and it should be scoped once for both. (3) `OB.User.id` — **resolved 2026-08-18**
+  (note ²); this line previously said otherwise. A **fourth blocker** was found during QA: the
+  middleware's `/available-providers` endpoint serves **no CORS headers**, so no browser — Classic or
+  new UI — can read it; it must be proxied through the ERP. The degraded `openDynamicForm` `LIST`
+  version remains specified in the report as a documented fallback, but was **considered and rejected**.
+- ⁴ **`wont-migrate` as of 2026-08-19 — out of scope by decision, not by blocker.** It was the deepest
+  `blocked` case (the script **retains a child window**, writes HTML into it, and waits for a
+  `postMessage` handshake — no retained-window handle, cross-document write, or listener outliving
+  `onProcess` exists). What changed is the cost/benefit, not the analysis: the process is **not used in
+  the system**, and a Classic baseline run showed **it does not perform its nominal function there
+  either**. `approveGoogleDoc` calls `openGooglePickerPopup()` with no arguments, so
+  `processEndpointName` is `undefined`, the post-processing `fetch` at `google-picker.js:195-223` is
+  unreachable, and every successful pick only writes a success message to the message bar — no document
+  is ever approved. Building three platform primitives to reproduce that is not worth it. **Its unblock
+  requirement 1 (a retained-window / deferred-navigation primitive) is still shared with
+  `3B85498FECA646F19AD0E5D416C36776`**, which remains in scope, so the report is kept as the reference
+  for that primitive's second use case. Corroborating detail: the launching button
+  (`ETRX_Token_Info.Approve_Google_Doc`) has `isdisplayed = 'N'`, so the process has no visible entry
+  point in the standard UI at all.
 - ⁵ **Supersedes a 2026-06-16 `blocked` verdict.** That verdict was correct then: the process needs a
   select whose options are fetched at open time, and `openDynamicForm` only rendered `TEXT`/`CHECK`.
   `LIST` fields now exist, so the classic `_id_17` combo maps 1:1.
