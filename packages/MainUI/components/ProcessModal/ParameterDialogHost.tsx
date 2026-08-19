@@ -72,6 +72,21 @@ function buildDefaultValues(fields: DynamicFormField[]): Record<string, unknown>
   return defaults;
 }
 
+/**
+ * Builds the label overrides for the fields that declare one, keyed by the form
+ * key the selector reads (`parameter.name`). Reuses `ProcessParameterSelector`'s
+ * existing `labelOverrides` channel, so a field can keep a safe form key while
+ * showing arbitrary text. Returns `undefined` when no field declares a label, so
+ * dialogs that never set one behave exactly as before.
+ */
+function buildLabelOverrides(fields: DynamicFormField[]): Record<string, string> | undefined {
+  const overrides: Record<string, string> = {};
+  for (const field of fields) {
+    if (field.label) overrides[field.name] = field.label;
+  }
+  return Object.keys(overrides).length > 0 ? overrides : undefined;
+}
+
 /** Collects the form values into the `CollectedValue[]` echoed back to the script. */
 function collectValues(fields: DynamicFormField[], values: Record<string, unknown>): CollectedValue[] {
   return fields.map((field) => ({
@@ -89,6 +104,7 @@ function ParameterDialogForm({ request }: { request: ParameterDialogRequest }) {
   const defaultValues = useMemo(() => buildDefaultValues(fields), [fields]);
   const form = useForm({ defaultValues });
   const parameters = useMemo(() => fields.map(toParameter), [fields]);
+  const labelOverrides = useMemo(() => buildLabelOverrides(fields), [fields]);
   const values = form.watch();
 
   const onOk = () => resolveParameterDialog(request.id, collectValues(fields, form.getValues()));
@@ -117,6 +133,7 @@ function ParameterDialogForm({ request }: { request: ParameterDialogRequest }) {
                 key={parameter.name}
                 parameter={parameter}
                 values={values}
+                labelOverrides={labelOverrides}
                 data-testid={`ParameterDialogHost__${parameter.name}`}
               />
             ))}

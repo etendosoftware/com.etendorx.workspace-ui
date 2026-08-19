@@ -32,11 +32,19 @@ jest.mock("@/hooks/useTranslation", () => ({
 // value collection, which is what this suite verifies.
 jest.mock("../selectors/ProcessParameterSelector", () => ({
   __esModule: true,
-  default: ({ parameter }: { parameter: { name: string; reference: string; refList: unknown[] } }) => (
+  default: ({
+    parameter,
+    labelOverrides,
+  }: {
+    parameter: { name: string; reference: string; refList: unknown[] };
+    labelOverrides?: Record<string, string>;
+  }) => (
     <div
       data-testid={`field-${parameter.name}`}
       data-reference={parameter.reference}
       data-reflist={JSON.stringify(parameter.refList)}
+      // Mirrors the real selector's resolution (`labelOverrides?.[name] ?? name`).
+      data-label={labelOverrides?.[parameter.name] ?? parameter.name}
     />
   ),
 }));
@@ -158,5 +166,48 @@ describe("ParameterDialogHost — LIST fields", () => {
     await user.click(screen.getByText("common.confirm"));
 
     expect(resolved).toEqual([{ id: undefined, name: "Action", inputType: "LIST", value: "" }]);
+  });
+
+  it("shows the raw name when a field declares no label", async () => {
+    render(<ParameterDialogHost />);
+
+    act(() => {
+      openParameterDialog({ fields: [{ id: "p1", name: "Reference", inputType: "TEXT" }] });
+    });
+
+    expect(await screen.findByTestId("field-Reference")).toHaveAttribute("data-label", "Reference");
+  });
+
+  it("renders a declared label while keeping the form key, and collects by that key", async () => {
+    const user = userEvent.setup();
+    render(<ParameterDialogHost />);
+
+    // A script building fields from server data uses a safe key (an id) so React
+    // Hook Form cannot read the name as a nested path, and carries the display
+    // text — dots and slashes included — in `label`.
+    const CHARACTERISTIC_ID = "DE3258F5927D4B4F9A9B1E22DE299016";
+    let resolved: CollectedValue[] | null | undefined;
+    act(() => {
+      openParameterDialog({
+        fields: [
+          {
+            id: CHARACTERISTIC_ID,
+            name: CHARACTERISTIC_ID,
+            label: "Talla U.S.",
+            inputType: "LIST",
+            refList: [{ value: "v1", label: "M" }],
+            defaultValue: "v1",
+          },
+        ],
+      }).then((v) => {
+        resolved = v;
+      });
+    });
+
+    expect(await screen.findByTestId(`field-${CHARACTERISTIC_ID}`)).toHaveAttribute("data-label", "Talla U.S.");
+
+    await user.click(screen.getByText("common.confirm"));
+
+    expect(resolved).toEqual([{ id: CHARACTERISTIC_ID, name: CHARACTERISTIC_ID, inputType: "LIST", value: "v1" }]);
   });
 });
