@@ -636,10 +636,10 @@ change needed.
 | 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **blocked** ⁴ |
 | 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
-| 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | **blocked** ⁶ |
-| 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | **blocked** ⁷ |
-| 55 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | AR-4 | `OB.OBWPACK.Process.createHeader` | *idem* | **blocked** ⁷ |
-| 56 | 40317268E74C445FA85DB97249AFFE37 | Validate Picking List | AR-4 | `OB.OBWPL.Process.validate` | `…/pickinglist/js/OBWPL_Process.js` | **blocked** ⁷ |
+| 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | migrated ⁶ |
+| 54 | C4043A216BD7429BB4D77469E7886BAA | Create Packing | AR-4 | `OB.OBWPACK.Process.create` | `…/warehouse.packing/js/OBWPACK_Process.js` | migrated ⁷ |
+| 55 | F3B77135F9D94C8FA1EFA270691265FB | Create Packing Header | AR-4 | `OB.OBWPACK.Process.createHeader` | *idem* | migrated ⁷ |
+| 56 | 40317268E74C445FA85DB97249AFFE37 | Validate Picking List | AR-4 | `OB.OBWPL.Process.validate` | `…/pickinglist/js/OBWPL_Process.js` | migrated ⁷ |
 | 57 | 44821BBF79D64516844F388CB2E0F36E | Assign and Group Picking List | AR-4 | `OB.OBWPL.Process.assign` | *idem* | migrated ⁸ |
 | 58 | C107C380836042A9AF4E107521C947AA | Re Assign Picking List | AR-4 | `OB.OBWPL.Process.reassign` | *idem* | migrated ⁸ |
 | 59 | B6F5DE7C02A64E3DB6E770AF56E299E2 | Cancel Picking List | AR-4 | `OB.OBWPL.Process.cancel` | *idem* | migrated ⁹ |
