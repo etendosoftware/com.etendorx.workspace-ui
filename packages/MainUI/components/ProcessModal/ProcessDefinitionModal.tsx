@@ -33,7 +33,6 @@ import { type FieldValues, FormProvider, useForm, useFormState, type UseFormRetu
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
@@ -82,7 +81,6 @@ import {
   isPickAndExecute,
   PICK_AND_EXECUTE_UI_PATTERN,
   OBUIAPP_REPORT_UI_PATTERN,
-  REPORT_FORMAT_I18N_KEYS,
   getReportActions,
   type ReportOutputFormat,
   // Components
@@ -138,7 +136,6 @@ import {
 } from "@/utils/processes/definition/scriptProxies";
 import {
   makeFooterButtonHandle,
-  runFooterButtonAction,
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
@@ -163,6 +160,7 @@ import {
 import { buildSuccessBannerMessage, readBannerTitle } from "./utils/responseBanner";
 import { isMandatoryParameterMissing } from "./utils/isMandatoryParameterMissing";
 import { CollapsibleSection } from "./components/CollapsibleSection";
+import { ProcessModalFooter } from "./components/ProcessModalFooter";
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -1927,110 +1925,23 @@ function ProcessDefinitionModalContent({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 justify-end mx-3 my-3">
-              {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && (
-                <>
-                  {!scriptButtonState.cancelHidden && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      disabled={isPending}
-                      className="w-49"
-                      data-testid="CancelButton__761503">
-                      {t("common.cancel")}
-                    </Button>
-                  )}
-                  <Button
-                    variant="filled"
-                    size="large"
-                    onClick={handleReportProcessExecuteGuarded}
-                    disabled={Boolean(isActionButtonDisabled)}
-                    startIcon={getActionButtonContent().icon}
-                    className="w-49"
-                    data-testid="ExecuteReportButton__761503">
-                    {getActionButtonContent().text}
-                  </Button>
-                </>
-              )}
-
-              {isOBUIAPPReport && (!result || !isFinalSuccess) && (
-                <>
-                  {!scriptButtonState.cancelHidden && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      disabled={isPending}
-                      className="w-49"
-                      data-testid="CancelButton__761503">
-                      {t("common.cancel")}
-                    </Button>
-                  )}
-                  {reportActions.map((format) => (
-                    <Button
-                      key={format}
-                      variant="filled"
-                      size="large"
-                      onClick={() => handleExecute(format)}
-                      disabled={Boolean(isActionButtonDisabled)}
-                      className="w-49"
-                      data-testid={`ReportExportButton_${format}__761503`}>
-                      {getLabel(REPORT_FORMAT_I18N_KEYS[format])}
-                    </Button>
-                  ))}
-                </>
-              )}
-
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                !isOBUIAPPReport &&
-                (!result || !isFinalSuccess) &&
-                !isPending &&
-                !scriptButtonState.cancelHidden && (
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={handleClose}
-                    className="w-49"
-                    data-testid="CloseButton__761503">
-                    {t("common.close")}
-                  </Button>
-                )}
-
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                !isOBUIAPPReport &&
-                ((!result || !isFinalSuccess) && availableButtons.length > 0
-                  ? availableButtons
-                      .filter((btn) => !scriptButtonState.hiddenValues[btn.value])
-                      .map((btn) => (
-                        <Button
-                          key={btn.value}
-                          variant="filled"
-                          size="large"
-                          onClick={() =>
-                            runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)
-                          }
-                          disabled={
-                            Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
-                          }
-                          className="w-49"
-                          data-testid={`ExecuteButton_${btn.value}__761503`}>
-                          {btn.label}
-                        </Button>
-                      ))
-                  : (!result || !isFinalSuccess) && (
-                      <Button
-                        variant="filled"
-                        size="large"
-                        onClick={() => handleExecute()}
-                        disabled={Boolean(isActionButtonDisabled)}
-                        startIcon={getActionButtonContent().icon}
-                        className="w-49"
-                        data-testid="ExecuteButton__761503">
-                        {getActionButtonContent().text}
-                      </Button>
-                    ))}
-            </div>
+            <ProcessModalFooter
+              isReportAndProcess={type === PROCESS_TYPES.REPORT_AND_PROCESS}
+              isOBUIAPPReport={isOBUIAPPReport}
+              reportActions={reportActions}
+              showActions={!result || !isFinalSuccess}
+              isPending={isPending}
+              scriptButtonState={scriptButtonState}
+              availableButtons={availableButtons}
+              isActionButtonDisabled={Boolean(isActionButtonDisabled)}
+              getActionButtonContent={getActionButtonContent}
+              onClose={handleClose}
+              onExecute={handleExecute}
+              onReportProcessExecute={handleReportProcessExecuteGuarded}
+              t={t}
+              getLabel={getLabel}
+              data-testid="ProcessModalFooter__761503"
+            />
           </div>
         </div>
       </FormProvider>

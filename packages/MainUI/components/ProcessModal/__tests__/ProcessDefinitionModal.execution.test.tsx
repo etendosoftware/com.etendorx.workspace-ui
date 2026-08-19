@@ -247,7 +247,7 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     });
 
     test("still renders the same parameters for a non-Manual process", () => {
-      const { queryAllByTestId } = renderModal(manualButton(undefined));
+      const { queryAllByTestId } = renderModal(manualButton());
       expect(queryAllByTestId("param-selector")).toHaveLength(1);
     });
   });

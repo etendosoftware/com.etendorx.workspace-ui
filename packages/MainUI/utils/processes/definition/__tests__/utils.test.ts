@@ -197,7 +197,7 @@ describe("Process Definition Utils", () => {
 
       expect(response.data).toBe(body);
       // The body's own `data` stays reachable one level deeper — nothing is lost.
-      expect((response.data as typeof body).data).toEqual({ rows: [1, 2] });
+      expect(response.data.data).toEqual({ rows: [1, 2] });
       expect(response.status).toBe(0);
     });
 
