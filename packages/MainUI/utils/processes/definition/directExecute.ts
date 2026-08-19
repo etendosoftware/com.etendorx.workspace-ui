@@ -47,9 +47,7 @@ export const CLOSE_MODAL_RESULT_TYPE = "closeModal";
  * chrome to dismiss.
  */
 export const isCloseModalResult = (result: unknown): boolean =>
-  typeof result === "object" &&
-  result !== null &&
-  (result as { type?: unknown }).type === CLOSE_MODAL_RESULT_TYPE;
+  typeof result === "object" && result !== null && (result as { type?: unknown }).type === CLOSE_MODAL_RESULT_TYPE;
 
 /**
  * True iff an `onLoad` return value requests direct-execute mode.

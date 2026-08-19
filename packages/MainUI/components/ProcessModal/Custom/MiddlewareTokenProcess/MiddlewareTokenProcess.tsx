@@ -136,7 +136,7 @@ export const MiddlewareTokenProcess: React.FC<CustomProcessComponentProps> = ({ 
                   aria-label={choice.label}
                   onClick={() => handleScopeClick(choice)}
                   className="flex h-12 w-12 items-center justify-center rounded-lg bg-(--color-baseline-90) transition-colors hover:bg-(--color-baseline-80) focus:outline-none focus:ring-2 focus:ring-(--color-etendo-main)">
-                  <ScopeIcon className="h-6 w-6 fill-white" />
+                  <ScopeIcon className="h-6 w-6 fill-white" data-testid="ScopeIcon__ee2412" />
                 </button>
                 <span className="mt-1 text-center text-xs text-(--color-baseline-60)">{choice.label}</span>
               </div>
@@ -158,7 +158,7 @@ export const MiddlewareTokenProcess: React.FC<CustomProcessComponentProps> = ({ 
             title={t("processModal.middlewareToken.close")}
             aria-label={t("processModal.middlewareToken.close")}
             className="rounded-full p-1 hover:bg-(--color-baseline-10)">
-            <CloseIcon className="h-5 w-5" />
+            <CloseIcon className="h-5 w-5" data-testid="CloseIcon__ee2412" />
           </button>
         </div>
 
