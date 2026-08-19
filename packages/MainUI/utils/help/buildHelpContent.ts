@@ -32,11 +32,15 @@ export interface HelpTabSection {
 
 /**
  * Determines whether the Help access should be shown for a given window.
- * Help is only offered when the window itself has non-blank help text
- * (AD_Window.HELP); windows without it have nothing to show.
+ * Classic shows Help whenever there is help text anywhere in the window —
+ * the window's own blurb (AD_Window.HELP), a tab's, or a field's — not just
+ * when the window-level blurb is set. A window like "Toolbar" has no
+ * AD_Window.HELP but every field does, and Classic still shows its Help page.
  */
-export function shouldShowHelp(window: { helpComment?: string | null } | null | undefined): boolean {
-  return Boolean(window?.helpComment?.trim());
+export function shouldShowHelp(window: WindowMetadata | null | undefined): boolean {
+  if (!window) return false;
+  if (window.helpComment?.trim()) return true;
+  return buildHelpSections(window).some((section) => section.helpComment || section.fields.length > 0);
 }
 
 /**

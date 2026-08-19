@@ -19,15 +19,30 @@ import { buildHelpSections, shouldShowHelp } from "../buildHelpContent";
 import { createMockWindowMetadata, createMockTab, createMockField } from "@/utils/tests/mockHelpers";
 
 describe("shouldShowHelp", () => {
-  it("returns true for non-empty helpComment", () => {
-    expect(shouldShowHelp({ helpComment: "Some help" })).toBe(true);
+  it("returns true for non-empty window-level helpComment", () => {
+    const window = { ...createMockWindowMetadata("W1"), helpComment: "Some help", tabs: [] };
+    expect(shouldShowHelp(window)).toBe(true);
   });
 
-  it("returns false for null/undefined/empty/whitespace helpComment", () => {
-    expect(shouldShowHelp({ helpComment: null })).toBe(false);
-    expect(shouldShowHelp({ helpComment: undefined })).toBe(false);
-    expect(shouldShowHelp({ helpComment: "" })).toBe(false);
-    expect(shouldShowHelp({ helpComment: "   " })).toBe(false);
+  it("returns false when window, tab, and field helpComment are all blank", () => {
+    const tab = createMockTab({ id: "t1", helpComment: null, fields: {} });
+    for (const helpComment of [null, undefined, "", "   "] as const) {
+      const window = { ...createMockWindowMetadata("W1"), helpComment, tabs: [tab] };
+      expect(shouldShowHelp(window)).toBe(false);
+    }
+  });
+
+  it("returns true when window-level help is blank but a tab has help text (e.g. Toolbar)", () => {
+    const tab = createMockTab({ id: "t1", helpComment: "Tab-level help", fields: {} });
+    const window = { ...createMockWindowMetadata("W1"), helpComment: null, tabs: [tab] };
+    expect(shouldShowHelp(window)).toBe(true);
+  });
+
+  it("returns true when window- and tab-level help are blank but a field has help text (e.g. Toolbar)", () => {
+    const field = createMockField({ id: "f1", helpComment: "Field-level help" });
+    const tab = createMockTab({ id: "t1", helpComment: null, fields: { f1: field } });
+    const window = { ...createMockWindowMetadata("W1"), helpComment: null, tabs: [tab] };
+    expect(shouldShowHelp(window)).toBe(true);
   });
 
   it("returns false for a null/undefined window", () => {

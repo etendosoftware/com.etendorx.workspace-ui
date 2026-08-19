@@ -40,8 +40,11 @@ describe("HelpAccess", () => {
     useHelpPanelStore.setState({ isOpen: false });
   });
 
-  it("renders nothing when the active window has no helpComment", () => {
-    mockUseMetadataContext.mockReturnValue({ windowId: "w1", window: createMockWindowMetadata("w1") });
+  it("renders nothing when the active window has no help content anywhere", () => {
+    mockUseMetadataContext.mockReturnValue({
+      windowId: "w1",
+      window: { ...createMockWindowMetadata("w1"), helpComment: null, tabs: [] },
+    });
     render(<HelpAccess />);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
@@ -50,6 +53,15 @@ describe("HelpAccess", () => {
     mockUseMetadataContext.mockReturnValue({
       windowId: "w1",
       window: { ...createMockWindowMetadata("w1"), helpComment: "Some help" },
+    });
+    render(<HelpAccess />);
+    expect(screen.getByRole("button")).toBeInTheDocument();
+  });
+
+  it("renders the trigger when window-level help is blank but a field has help text (e.g. Toolbar)", () => {
+    mockUseMetadataContext.mockReturnValue({
+      windowId: "w1",
+      window: { ...createMockWindowMetadata("w1"), helpComment: null },
     });
     render(<HelpAccess />);
     expect(screen.getByRole("button")).toBeInTheDocument();
