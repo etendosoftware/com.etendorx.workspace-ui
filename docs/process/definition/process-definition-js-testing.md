@@ -634,7 +634,7 @@ work in Classic either, so no migration is planned (no code emitted, and none wi
 | 47 | F1EC1AB61DCD4858BAD3A52BE60006F9 | Recalculate Role Permissions | AR-1 | `OB.RoleInheritance.recalculatePermissions` | `web/js/recalculatePermissionsProcess.js` | migrated |
 | 48 | EC673C215BAD4B13875323085B07F95D | Open Swagger | AR-2 | `OB.ETAPI.swagger.openSwagger` | `…/com.etendoerp.openapi/js/etapi-swagger.js` | migrated |
 | 49 | DDADF2E25EEF444A80208E681EFF24CD | Get Token | AR-2 | `OB.ETRX.oAuthToken.getToken` | `…/etendorx/js/oAuthToken/ETRX_GetToken.js` | migrated ² |
-| 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **blocked** ³ |
+| 50 | 3B85498FECA646F19AD0E5D416C36776 | GetMiddlewareToken | AR-2 | `OB.ETRX.middlewareToken.getMiddlewareToken` | `…/etendorx/js/oAuthToken/ETRX_GetMiddlewareToken.js` | **migrated** ³ |
 | 51 | F355D9A73F554AF5860A532D92C167EC | ApproveGoogleDoc | AR-2 | `OB.ETRX.approveGoogleDoc` | `…/etendorx/js/approveGoogleDoc-picker.js` → `google-picker.js` | **wont-migrate** ⁴ |
 | 52 | A832A5DA28FB4BB391BDE883E928DFC5 | Open Close Periods | AR-3 | `OB.OpenClose.openClose` | `web/js/periodControlStatus.js` | migrated ⁵ |
 | 53 | 7DC2C8DC186B4C1DB18E147911950861 | UpdateInvariants | AR-3 | `OB.ProductCharacteristics.updateInvariants` | `web/js/productCharacteristicsProcess.js` | migrated ⁶ |
@@ -658,19 +658,23 @@ work in Classic either, so no migration is planned (no code emitted, and none wi
   migration surface. Fixed by adding `OB.User = { id, name, userName }` to the shim (substrate,
   additive), sourced from the already-loaded session user. Code generated; **manual QA pending**. See
   the report's `## Updates`.
-- ³ **Still `blocked` (no code emitted), but the migration path is now decided — updated 2026-08-19.**
-  Originally blocked on three counts; current state of each: (1) the **raw-DOM provider/scope grid**
-  (`document.createElement` × 12 appended to `document.body`) — the team saw the real modal and decided
-  to migrate it through the **custom-component path** (`em_etmeta_custom_component = 'Y'` + a new React
-  component fed by an `onLoad` schema), *not* by rebuilding it from `openDynamicForm` metadata;
-  implementation is a later phase, and the flag must stay `NULL` until the component exists or the
-  schema is silently dropped into an empty dialog. (2) The **two-phase popup** (`window.open('')` during
-  the click, navigated after an `await`) — still missing; this is the retained-window primitive also
-  described by note ⁴, and it should be scoped once for both. (3) `OB.User.id` — **resolved 2026-08-18**
-  (note ²); this line previously said otherwise. A **fourth blocker** was found during QA: the
-  middleware's `/available-providers` endpoint serves **no CORS headers**, so no browser — Classic or
-  new UI — can read it; it must be proxied through the ERP. The degraded `openDynamicForm` `LIST`
-  version remains specified in the report as a documented fallback, but was **considered and rejected**.
+- ³ **`migrated` as of 2026-08-19 (QA pending); was the last remaining `blocked` process.** All four
+  blockers are closed. (1) The **raw-DOM provider/scope grid** is now the React component
+  `MiddlewareTokenProcess`, reached through `em_etmeta_custom_component = 'Y'` plus an `onLoad` that
+  returns a `middlewareTokenProcess` schema. The custom-component channel was **generalized** to get
+  there: `Custom/registry.ts` maps a schema `type` to its component, and both the guard in
+  `useWarehousePlugin` and the branch in `ProcessDefinitionModal` now consult it instead of hard-coding
+  `warehouseProcess`. Registering a type is the whole cost of a third component. (2) The **two-phase
+  popup** was **never actually a missing primitive** — that constraint only binds scripts returning
+  `{ type: "openUrl" }`, whose window opens after the `await`. A component owns its own `onClick`, and
+  since the account id now arrives with the schema there is no `await` inside the click at all; the
+  popup opens once at its final URL. This also **removes the shared requirement** note ⁴ refers to.
+  (3) `OB.User.id` — resolved 2026-08-18 (note ²). (4) The **CORS** wall on the middleware's
+  `/available-providers` is bypassed by `com.etendoerp.metadata.SSOProviderListActionHandler`, which
+  performs the GET server-side, resolves the endpoint **from the provider record** rather than from the
+  request (so it cannot be aimed at an arbitrary host), and returns `accountId` in the same round trip.
+  The degraded `openDynamicForm` `LIST` version stays in the report as a documented fallback, but was
+  **considered and rejected**.
 - ⁴ **`wont-migrate` as of 2026-08-19 — out of scope by decision, not by blocker.** It was the deepest
   `blocked` case (the script **retains a child window**, writes HTML into it, and waits for a
   `postMessage` handshake — no retained-window handle, cross-document write, or listener outliving
@@ -679,10 +683,11 @@ work in Classic either, so no migration is planned (no code emitted, and none wi
   either**. `approveGoogleDoc` calls `openGooglePickerPopup()` with no arguments, so
   `processEndpointName` is `undefined`, the post-processing `fetch` at `google-picker.js:195-223` is
   unreachable, and every successful pick only writes a success message to the message bar — no document
-  is ever approved. Building three platform primitives to reproduce that is not worth it. **Its unblock
-  requirement 1 (a retained-window / deferred-navigation primitive) is still shared with
-  `3B85498FECA646F19AD0E5D416C36776`**, which remains in scope, so the report is kept as the reference
-  for that primitive's second use case. Corroborating detail: the launching button
+  is ever approved. Building three platform primitives to reproduce that is not worth it. Its unblock
+  requirement 1 (a retained-window / deferred-navigation primitive) was previously described as shared
+  with `3B85498FECA646F19AD0E5D416C36776`; **that is no longer true** — the custom-component path
+  removed the need for it there (note ³), so this requirement now has exactly one hypothetical
+  consumer, which is not being built. Corroborating detail: the launching button
   (`ETRX_Token_Info.Approve_Google_Doc`) has `isdisplayed = 'N'`, so the process has no visible entry
   point in the standard UI at all.
 - ⁵ **Supersedes a 2026-06-16 `blocked` verdict.** That verdict was correct then: the process needs a
@@ -1218,5 +1223,5 @@ Scope kept to `id`/`name`/`userName` deliberately — a full-ERP grep of Defined
 
 **`DDADF2E25EEF444A80208E681EFF24CD` (Get Token, §6bis #49) is unblocked**, `blocked → migrated`
 (pending manual QA) — see the report's `## Updates`. `3B85498FECA646F19AD0E5D416C36776`
-(GetMiddlewareToken, #50) shares the same `OB.User.id` read but stays `blocked` on its two other,
-independent defects (raw-DOM grid, two-phase popup).
+(GetMiddlewareToken, #50) shares the same `OB.User.id` read; it stayed `blocked` on its other defects
+at the time, and was migrated on 2026-08-19 through the custom-component path (note ³).

@@ -46,6 +46,7 @@ import {
   useProcessCallouts,
   useWarehousePlugin,
   usesCustomComponent,
+  getCustomComponent,
   // Next.js
   useRouter,
   useSearchParams,
@@ -1864,9 +1865,12 @@ function ProcessDefinitionModalContent({
       return renderBareOverlay();
     }
 
-    if (warehouseSchema) {
+    // Custom-component processes render the component registered for their schema type. The lookup
+    // replaces what used to be a direct branch on the single warehouse component.
+    const CustomComponent = getCustomComponent(warehouseSchema?.type);
+    if (warehouseSchema && CustomComponent) {
       return (
-        <GenericWarehouseProcess
+        <CustomComponent
           schema={warehouseSchema}
           payscriptPlugin={warehousePayscriptPlugin}
           onProcessCode={warehouseOnProcess}
