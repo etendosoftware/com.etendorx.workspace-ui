@@ -104,6 +104,16 @@ describe("buildHelpSections", () => {
     expect(sections[0].fields).toEqual([]);
   });
 
+  it("omits fields not displayed on the form, regardless of help content (e.g. hidden key columns)", () => {
+    const hiddenField = createMockField({ id: "f1", helpComment: "id help", displayed: false });
+    const tab = createMockTab({ id: "t1", fields: { hiddenField } });
+    const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
+
+    const sections = buildHelpSections(window);
+
+    expect(sections[0].fields).toEqual([]);
+  });
+
   it("omits audit synthetic fields regardless of help content", () => {
     const auditField = createMockField({ id: "f1", helpComment: "audit help", isAuditField: true });
     const tab = createMockTab({ id: "t1", fields: { auditField } });
