@@ -16,13 +16,16 @@
 
 /**
  * @fileoverview useWarehousePlugin — evaluates the onLoad string function and retrieves
- * the registered Payscript onScan hook for a given warehouse process.
+ * the registered Payscript onScan hook for a custom-component process.
+ *
+ * Despite the name it serves every custom-component process, not only the warehouse ones: the schema
+ * it accepts is any type registered in ../registry. The name is kept to avoid churn across call sites.
  *
  * Flow:
  *  1. onLoad (from processDefinition AD field) is evaluated via executeStringFunction
- *     → returns WarehouseProcessSchema with structure + initial data.
- *     If the field is empty the hook returns loading=false with no schema,
- *     and the modal falls through to its normal render.
+ *     → returns a CustomProcessSchema with structure + initial data.
+ *     If the field is empty, or the returned `type` has no component registered, the hook
+ *     returns loading=false with no schema and the modal falls through to its normal render.
  *  2. The EM_Etmeta_Payscript field is registered in PAYSCRIPT_RULES_REGISTRY
  *     by ProcessDefinitionModal before this hook runs.
  *  3. This hook also exposes the effective onProcess code for the caller to execute.
@@ -36,15 +39,18 @@ import { logger } from "@/utils/logger";
 import { createCallAction, createFetchDatasource } from "./warehouseApiHelpers";
 import { createOBShim } from "@/utils/ob/obShim";
 import { useLanguage } from "@/contexts/language";
-import type { WarehouseProcessSchema, WarehousePayScriptPlugin } from "./types";
+import { isRegisteredCustomSchema } from "../registry";
+import type { CustomProcessSchema } from "../types";
+import type { WarehousePayScriptPlugin } from "./types";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface UseWarehousePluginResult {
-  /** Schema returned by onLoad evaluation — null while loading or on error */
-  schema: WarehouseProcessSchema | null;
+  /** Schema returned by onLoad evaluation — null while loading, on error, or when no component
+   *  in the registry can render the returned `type`. */
+  schema: CustomProcessSchema | null;
   /** onScan hook from the Payscript registry — null if not registered */
   payscriptPlugin: WarehousePayScriptPlugin | null;
   /** Effective onProcess code string (from backend or local fallback) */
@@ -82,7 +88,7 @@ export function useWarehousePlugin({
   selectedRecords,
   token,
 }: UseWarehousePluginOptions): UseWarehousePluginResult {
-  const [schema, setSchema] = useState<WarehouseProcessSchema | null>(null);
+  const [schema, setSchema] = useState<CustomProcessSchema | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { getLabel, language } = useLanguage();
@@ -125,13 +131,14 @@ export function useWarehousePlugin({
           selectedRecords,
         });
 
-        if (!result || result.type !== "warehouseProcess") {
-          // Not a warehouse process — return silently so the modal falls through to its normal render
+        if (!isRegisteredCustomSchema(result?.type)) {
+          // No component can render this schema — return silently so the modal falls through to its
+          // normal render, exactly as before the registry existed.
           setLoading(false);
           return;
         }
 
-        setSchema(result as WarehouseProcessSchema);
+        setSchema(result as CustomProcessSchema);
       } catch (e) {
         logger.error("[useWarehousePlugin] onLoad evaluation failed", e);
         setError(e instanceof Error ? e.message : "Failed to evaluate onLoad");

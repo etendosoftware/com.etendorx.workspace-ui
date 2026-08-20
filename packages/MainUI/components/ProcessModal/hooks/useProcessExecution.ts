@@ -49,9 +49,16 @@ import {
   dispatchResponseActions,
   findFirstMessage,
   findFirstOpenDirectTab,
+  type ProcessActionMessage,
   readDispatchableResponseActions,
+  RESPONSE_ACTION_KEYS,
 } from "../utils/responseActionDispatcher";
-import { dispatchProcessReturnActions } from "@/utils/processes/definition/actionDispatcherStore";
+import { readReturnedMessage, resolveDefaultMsgType } from "../utils/processReturnMessage";
+import {
+  dispatchBuiltinAction,
+  dispatchProcessReturnActions,
+} from "@/utils/processes/definition/actionDispatcherStore";
+import { isOpenUrlIntent, parseOpenUrlPayload } from "@/utils/processes/definition/openUrl";
 import {
   createFormHandle,
   createViewProxy,
@@ -63,6 +70,8 @@ import {
 } from "@/utils/processes/definition/scriptProxies";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { isManualProcess } from "@/utils/processes/definition/pickAndExecute";
+import { isCloseModalResult } from "@/utils/processes/definition/directExecute";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -441,12 +450,17 @@ export function useProcessExecution({
     (params: {
       isSuccess: boolean;
       message: string;
+      /**
+       * The server's own message title (Classic's second `setMessage` argument).
+       * Callers that have none omit it and keep the generic heading below.
+       */
+      title?: string;
       linkTabId?: string;
       linkRecordId?: string;
     }) => {
       const { isSuccess, message, linkTabId, linkRecordId } = params;
       const toastFn = isSuccess ? toast.success : toast.warning;
-      const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
+      const title = params.title || (isSuccess ? t("process.completedSuccessfully") : t("process.warning"));
 
       const parsed =
         typeof message === "string"
@@ -745,9 +759,21 @@ export function useProcessExecution({
   );
 
   const extractResponseMessage = useCallback(
-    (result: any) => {
+    (result: any): ProcessActionMessage => {
       const message = findFirstMessage(dispatchResponseActions(result));
       if (message) return message.payload;
+      // The standalone `{ message: { severity, title, text } }` an Etendo handler
+      // answers with — and the shape a migrated onProcess returns as
+      // `{ msgType, msgTitle, msgText }` (migration guide, archetype AR-1).
+      // Classic renders all three in the message bar, so the server's own title
+      // and text must win over the generic texts below. When the message carries no
+      // severity of its own, `resolveDefaultMsgType` decides: a handler-shaped message
+      // defaults to `error` (Etendo's framework always types its answer, so an untyped
+      // one comes from the legacy module idiom that only sets `severity` on success),
+      // while a bare string message keeps the success default. Anything else here is
+      // still success, so no currently-successful process turns into an error.
+      const returnedMessage = readReturnedMessage(result);
+      if (returnedMessage) return { msgType: resolveDefaultMsgType(result), ...returnedMessage };
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
       }
@@ -788,6 +814,11 @@ export function useProcessExecution({
           tabId: tab?.id || tabId || "",
           entityName: tab?.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
+          // Parity with the onLoad hookData: Manual handlers ported from Classic
+          // read fields off the launching grid's selection, not just its ids
+          // (e.g. `selection[0].organization` for the SII senders), which
+          // `params.button.contextView.viewGrid.getSelectedRecords()` gave them.
+          selectedRecords,
           // Mirrors classic SmartClient view.onRefreshFunction so migrated
           // scripts can refresh the modal grid/form after async actions. The
           // parent's refresh after a nested process closes is wired through the
@@ -842,7 +873,7 @@ export function useProcessExecution({
         const responseMessage = extractResponseMessage(result);
 
         if (responseMessage.msgType === "error") {
-          messageBar.setMessage("error", null, responseMessage.msgText);
+          messageBar.setMessage("error", responseMessage.msgTitle ?? null, responseMessage.msgText ?? "");
           setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
           return false;
         }
@@ -886,6 +917,14 @@ export function useProcessExecution({
       }
 
       if (!etmetaOnprocess && javaClassName) {
+        // A Manual process's Handler is a classic client-side JS namespace
+        // (OB.AEATSII.send, …), not a Java ActionHandler, so posting it to the
+        // kernel as `_action` always fails. Report the missing migration in the
+        // in-modal banner instead of surfacing a raw server error.
+        if (isManualProcess(button.processDefinition)) {
+          messageBar.setMessage("error", null, t("process.manualProcessNotMigrated"));
+          return;
+        }
         await handleDirectJavaProcessExecute(actionValue);
         return;
       }
@@ -914,6 +953,30 @@ export function useProcessExecution({
           // openDirectTab kinds are intentionally left to the flow below.
           dispatchProcessReturnActions(result);
 
+          // An `openUrl` return is a hand-off, not a process outcome: it carries
+          // no message, so letting it fall through would render it as a failure.
+          const openUrlPayload = parseOpenUrlPayload(result);
+          if (openUrlPayload) {
+            dispatchBuiltinAction(RESPONSE_ACTION_KEYS.OPEN_URL, openUrlPayload);
+            return;
+          }
+
+          // The script asked for a hand-off but supplied no URL — typically because
+          // the handler answered with an error the script did not inspect. Falling
+          // through would reach the generic success default below and tell the user
+          // the process worked while nothing opened at all.
+          if (isOpenUrlIntent(result)) {
+            setResult({ success: false, error: t("process.openUrlMissingUrl") });
+            return;
+          }
+
+          // Classic `closeProcessPopup()`: the script decided nothing happened
+          // (typically a declined confirm), so dismiss instead of reporting.
+          if (isCloseModalResult(result)) {
+            onClose();
+            return;
+          }
+
           const responseMessage = extractResponseMessage(result);
 
           const msgType = responseMessage.msgType;
@@ -926,6 +989,9 @@ export function useProcessExecution({
             showProcessToast({
               isSuccess,
               message,
+              // Classic titled the message bar with the server's own title; the
+              // generic heading only applies when the response carries none.
+              title: responseMessage.msgTitle,
               linkTabId: (result as any)?.linkTabId,
               linkRecordId: (result as any)?.linkRecordId,
             });
@@ -962,6 +1028,7 @@ export function useProcessExecution({
       t,
       extractResponseMessage,
       showProcessToast,
+      onClose,
     ]
   );
 

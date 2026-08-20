@@ -335,6 +335,10 @@ const en = {
     },
     pickAndExecuteNotImplemented:
       "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
+    manualProcessNotMigrated: "This process has logic thas has not been migrated yet. Please contact support.",
+    popupBlocked: "Your browser blocked the window this process tried to open.",
+    openLink: "Open link",
+    openUrlMissingUrl: "The process asked to open a link but returned no URL.",
   },
   processModal: {
     gridToolbar: {
@@ -352,6 +356,22 @@ const en = {
       openLegacyReport: {
         popupBlockedTitle: "The browser blocked the report popup.",
         openManually: "Open report",
+      },
+    },
+    middlewareToken: {
+      title: "Select a provider",
+      selectScope: "Select the scope",
+      cancel: "Cancel",
+      close: "Close",
+      errorTitle: "Providers could not be loaded",
+      noProviders: "The middleware did not return any provider.",
+      errors: {
+        noRecordSelected: "Select an OAuth Provider record before running this process.",
+        noProviderId: "No OAuth Provider record was supplied.",
+        providerNotFound: "The OAuth Provider record was not found.",
+        noEndpoint: "The OAuth Provider record has no Authorization Endpoint configured.",
+        unreadableResponse: "The middleware returned an unreadable provider list.",
+        unreachable: "The middleware could not be reached. Contact the system administrator.",
       },
     },
   },

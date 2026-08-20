@@ -441,6 +441,15 @@ export enum UIPattern {
   EDIT_AND_DELETE_ONLY = "ED",
   STANDARD = "STD",
   PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
+  /**
+   * Process-only pattern. A Manual process has no `OBUIAPP_Parameter` rows: its
+   * whole behaviour lives in the mandatory Handler field (`OBUIAPP_Process.Classname`),
+   * which for this pattern holds a **client-side JS namespace** (e.g.
+   * `OB.AEATSII.send`), not a Java `ActionHandler`. See `isManualProcess`.
+   */
+  MANUAL = "M",
+  /** Process-only pattern: a background/action process defined in the dictionary. */
+  ACTION = "A",
 }
 
 export interface AuxiliaryInput {
@@ -472,6 +481,13 @@ export interface Tab {
   sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
+  /**
+   * The tab's link-to-parent property, as resolved by the backend with the same function the
+   * classic UI uses (`ApplicationUtils.getParentProperty`). An **empty string is a real answer**:
+   * the tab has no link column to its parent and must be filtered by its `hqlwhereclause` alone.
+   * Absent when the metadata backend predates this key — see `resolveParentFieldName`.
+   */
+  parentProperty?: string;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;

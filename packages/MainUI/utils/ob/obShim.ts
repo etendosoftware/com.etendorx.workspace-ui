@@ -25,7 +25,7 @@ import { createI18N } from "./i18n";
 import { JSToOBMasked } from "./number";
 import { createRemoteCallManager } from "./remoteCallManager";
 import { createStyles } from "./styles";
-import type { OBPropertyStore, OBShim, OBShimDeps } from "./types";
+import type { OBPropertyStore, OBShim, OBShimDeps, OBUser } from "./types";
 import { generateRandomString } from "./utilities";
 
 /** SmartClient compound-field separator backing `OB.Constants.FIELDSEPARATOR`. */
@@ -51,6 +51,16 @@ function createPropertyStore(): OBPropertyStore {
       setStoredPreference(key, value);
     },
   };
+}
+
+/**
+ * Builds the `OB.User` namespace: the session user's identity, mapped 1:1 from
+ * the classic `OB.User` fields migrated scripts actually read (`id` is
+ * `AD_User_ID`). Defaults to empty strings so the shim has a well-shaped
+ * `User` even when no user is injected, matching the other namespaces.
+ */
+function createUser(user?: OBShimDeps["user"]): OBUser {
+  return { id: user?.id ?? "", name: user?.name ?? "", userName: user?.username ?? "" };
 }
 
 /**
@@ -91,5 +101,6 @@ export function createOBShim(deps: OBShimDeps = {}): OBShim {
     },
     RemoteCallManager: createRemoteCallManager({ remoteCall: deps.remoteCall }),
     Datasource: createDatasourceManager({ fetchDatasource: deps.fetchDatasource }),
+    User: createUser(deps.user),
   };
 }
