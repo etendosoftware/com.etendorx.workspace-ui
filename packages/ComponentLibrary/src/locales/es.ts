@@ -400,7 +400,7 @@ const es = {
       defaultLogout: {
         title: "Error del sistema - Sesión cerrada",
         description:
-          "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+          "Tu sesión se ha cerrado debido a un error del sistema. Vuelve a iniciar sesión para continuar. Si el problema persiste, ponte en contacto con el administrador del sistema para obtener ayuda.",
       },
     },
     sso: {
