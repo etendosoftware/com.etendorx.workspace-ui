@@ -37,7 +37,7 @@ import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
-import { sortFieldsByGridOrder } from "@/utils/table/utils";
+import { isGridRenderableColumn, sortFieldsByGridOrder } from "@/utils/table/utils";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -193,9 +193,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     // Grid columns follow AD_Field.Grid_Seqno (falling back to seqNo), like Etendo Classic.
     // The form keeps its own seqNo ordering through `useFormFields` (ETP-4635).
     const fieldsAsArray = sortFieldsByGridOrder(Object.values(tab.fields));
-    let originalColumns = parseColumns(fieldsAsArray).filter(
-      (col: Column) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
-    );
+    // Image and button references never become grid columns, like Etendo Classic (ETP-4635).
+    let originalColumns = parseColumns(fieldsAsArray).filter(isGridRenderableColumn);
 
     // Mark boolean columns automatically
     originalColumns = originalColumns.map((col) => {

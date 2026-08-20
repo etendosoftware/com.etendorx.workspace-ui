@@ -288,31 +288,71 @@ describe("useColumns integration with custom JS", () => {
     });
   });
 
+  /**
+   * Builds a tab from a name -> overrides map, so each case reads as the field configuration it
+   * is really testing. The key becomes the field's name, hqlName and (indexed) id.
+   */
+  const buildTab = (fieldOverrides: Record<string, Partial<Field>>): Tab => ({
+    ...mockTab,
+    fields: Object.fromEntries(
+      Object.entries(fieldOverrides).map(([name, overrides], index) => [
+        name,
+        { ...mockTab.fields.normalField, name, hqlName: name, id: `f${index}`, ...overrides },
+      ])
+    ) as Tab["fields"],
+  });
+
+  const columnNames = (columns: Array<{ name: string }>): string[] => columns.map((col) => col.name);
+
   // ETP-4635: the data grid must follow AD_Field.Grid_Seqno (exposed as `gridPosition`),
   // falling back to the form sequence number, like Etendo Classic does.
   describe("grid column order", () => {
-    const buildOrderedTab = (first: Partial<Field>, second: Partial<Field>): Tab => ({
-      ...mockTab,
-      fields: {
-        first: { ...mockTab.fields.normalField, name: "first", hqlName: "first", id: "f1", ...first },
-        second: { ...mockTab.fields.normalField, name: "second", hqlName: "second", id: "f2", ...second },
-      },
-    });
-
     it("orders columns by gridPosition instead of the incoming field order", () => {
-      const tab = buildOrderedTab({ sequenceNumber: 10, gridPosition: 30 }, { sequenceNumber: 20, gridPosition: 10 });
+      const tab = buildTab({
+        first: { sequenceNumber: 10, gridPosition: 30 },
+        second: { sequenceNumber: 20, gridPosition: 10 },
+      });
 
       const { result } = renderHook(() => useColumns(tab));
 
-      expect(result.current.map((col) => col.name)).toEqual(["second", "first"]);
+      expect(columnNames(result.current)).toEqual(["second", "first"]);
     });
 
     it("keeps the sequenceNumber order when no field defines a gridPosition", () => {
-      const tab = buildOrderedTab({ sequenceNumber: 10 }, { sequenceNumber: 20 });
+      const tab = buildTab({ first: { sequenceNumber: 10 }, second: { sequenceNumber: 20 } });
 
       const { result } = renderHook(() => useColumns(tab));
 
-      expect(result.current.map((col) => col.name)).toEqual(["first", "second"]);
+      expect(columnNames(result.current)).toEqual(["first", "second"]);
+    });
+  });
+
+  // ETP-4635: Classic drops UI buttons from the field list that feeds the grid
+  // (OBViewFieldHandler + ApplicationUtils.isUIButton); they only reach the toolbar.
+  describe("button columns", () => {
+    const BUTTON_REFERENCE_ID = "28";
+
+    const buildTabWithButton = (): Tab =>
+      buildTab({
+        first: { sequenceNumber: 10 },
+        generatePickingList: {
+          sequenceNumber: 15,
+          showInGridView: true,
+          column: { reference: BUTTON_REFERENCE_ID } as unknown as Field["column"],
+        },
+        last: { sequenceNumber: 20 },
+      });
+
+    it("does not build a column for a button field even when it is flagged for the grid", () => {
+      const { result } = renderHook(() => useColumns(buildTabWithButton()));
+
+      expect(columnNames(result.current)).not.toContain("generatePickingList");
+    });
+
+    it("keeps the surrounding columns and their order untouched", () => {
+      const { result } = renderHook(() => useColumns(buildTabWithButton()));
+
+      expect(columnNames(result.current)).toEqual(["first", "last"]);
     });
   });
 });

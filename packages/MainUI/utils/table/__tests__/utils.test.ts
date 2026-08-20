@@ -28,7 +28,9 @@ import {
   getDefaultImplicitFilter,
   resolveImplicitFilterToggle,
   sortFieldsByGridOrder,
+  isGridRenderableColumn,
 } from "../utils";
+import { FIELD_REFERENCE_CODES } from "../../form/constants";
 import { createMockField } from "../../tests/mockHelpers";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { isDateLike, formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
@@ -369,6 +371,41 @@ describe("table utils", () => {
 
     it("returns an empty array when there are no fields", () => {
       expect(sortFieldsByGridOrder([])).toEqual([]);
+    });
+  });
+
+  describe("isGridRenderableColumn", () => {
+    /** Builds the only thing the predicate reads: the column's reference id. */
+    const withReference = (reference?: string) => ({ column: reference ? { reference } : {} });
+
+    it("excludes button references, like Classic's ApplicationUtils.isUIButton", () => {
+      expect(isGridRenderableColumn(withReference(FIELD_REFERENCE_CODES.BUTTON.id))).toBe(false);
+    });
+
+    it("excludes image references, preserving the previous behaviour", () => {
+      expect(isGridRenderableColumn(withReference(FIELD_REFERENCE_CODES.IMAGE.id))).toBe(false);
+    });
+
+    it("keeps a regular data reference", () => {
+      expect(isGridRenderableColumn(withReference(FIELD_REFERENCE_CODES.STRING.id))).toBe(true);
+    });
+
+    // Regression guard: `formOfPayment` is a List (17) field carrying a legacy processAction and
+    // is a legitimate, visible grid column. Filtering on the process instead of the reference
+    // would wrongly drop it.
+    it("keeps a non-button field that carries a legacy process action", () => {
+      const formOfPayment = {
+        ...withReference(FIELD_REFERENCE_CODES.LIST_17.id),
+        processAction: { id: "legacy-process-placeholder" },
+      };
+
+      expect(isGridRenderableColumn(formOfPayment)).toBe(true);
+    });
+
+    it("keeps columns with incomplete metadata instead of dropping them", () => {
+      expect(isGridRenderableColumn(withReference())).toBe(true);
+      expect(isGridRenderableColumn({})).toBe(true);
+      expect(isGridRenderableColumn({ column: null })).toBe(true);
     });
   });
 });
