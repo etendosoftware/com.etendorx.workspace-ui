@@ -50,14 +50,20 @@ export function extractServerErrorMessage(response: Record<string, unknown> | un
   return "Unknown server error";
 }
 
+export interface OnErrorOptions {
+  onReload?: () => void | Promise<void>;
+}
+
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData, options: SaveOptions) => void | Promise<void>;
-  onError: (data: string) => void;
+  onError: (data: string, options?: OnErrorOptions) => void;
   initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData>;
+  /** Called to refresh the record when the user chooses to reload after a stale-object conflict. */
+  onStaleObjectReload?: () => void | Promise<void>;
 }
 
 export const useFormAction = ({
@@ -68,6 +74,7 @@ export const useFormAction = ({
   onError,
   initialState,
   submit,
+  onStaleObjectReload,
 }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
@@ -116,14 +123,18 @@ export const useFormAction = ({
           method: "POST",
           body: normalizeDates(body) as Record<string, unknown>,
         };
-        const { ok, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
+        const { ok, status, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
           lastSaveSucceeded.current = true;
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
-          const errorMsg = extractServerErrorMessage(data?.response);
+          // com.etendoerp.metadata's ForwarderServlet returns a distinct, flat 409 body for
+          // version conflicts ({error, code: "STALE_OBJECT", cid}), instead of the generic
+          // nested shape used for every other save error.
+          const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
+          const errorMsg = isStructuredConflict ? (data.error as string) : extractServerErrorMessage(data?.response);
           throw new Error(errorMsg);
         }
       } catch (err) {
@@ -142,7 +153,7 @@ export const useFormAction = ({
           return;
         }
         if (isStaleObjectError(errorMessage)) {
-          onError?.(t("status.staleObjectError"));
+          onError?.(t("status.staleObjectError"), onStaleObjectReload ? { onReload: onStaleObjectReload } : undefined);
           return;
         }
         onError?.(String(err));
@@ -160,6 +171,7 @@ export const useFormAction = ({
       t,
       setLoginErrorText,
       setLoginErrorDescription,
+      onStaleObjectReload,
     ]
   );
 

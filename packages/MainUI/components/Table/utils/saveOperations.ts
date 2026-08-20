@@ -38,6 +38,25 @@ export function isStaleObjectError(errorMessage: string | undefined): boolean {
 }
 
 /**
+ * Builds the message/options pair for showErrorModal given a save error, so callers show a
+ * specific, actionable conflict notice (with a reload action) for stale-object errors instead
+ * of the generic error message, without needing to know the detection rule themselves.
+ */
+export function getStaleObjectErrorNotification(
+  errorMessage: string,
+  t: (key: string) => string,
+  onReload: () => void
+): { message: string; options?: { onReload: () => void; reloadLabel: string } } {
+  if (!isStaleObjectError(errorMessage)) {
+    return { message: errorMessage };
+  }
+  return {
+    message: t("status.staleObjectError"),
+    options: { onReload, reloadLabel: t("status.staleObjectReloadAction") },
+  };
+}
+
+/**
  * Builds the payload for saving a record via the datasource servlet
  * @param values The record data to save
  * @param oldValues The original record data (for updates)
@@ -428,9 +447,18 @@ function prepareSaveData(
 }
 
 /**
- * Handles the response from the save operation
+ * Handles the response from the save operation.
+ *
+ * On a version conflict, com.etendoerp.metadata's ForwarderServlet returns a distinct,
+ * flat HTTP 409 body ({@code {error, code: "STALE_OBJECT", cid}}) instead of the generic
+ * nested shape used for every other save outcome. That marker is normalized here into the
+ * same "_general" error shape used by every other error, so downstream consumers
+ * (isStaleObjectError, shouldAbortRetry, Table/index.tsx) don't need to know about the
+ * two response shapes.
  */
-function handleSaveResponse(data: any, saveOperation: SaveOperation): SaveResult {
+function handleSaveResponse(response: { status?: number; data?: any }, saveOperation: SaveOperation): SaveResult {
+  const { data, status } = response;
+
   if (data?.response?.status === 0) {
     const savedRecord = data.response.data[0] as EntityData;
     return {
@@ -439,8 +467,13 @@ function handleSaveResponse(data: any, saveOperation: SaveOperation): SaveResult
     };
   }
 
-  const errorMessage = data?.response?.error?.message || "Unknown server error";
-  const validationErrors = parseServerValidationErrors(data?.response?.error);
+  const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
+  const errorMessage = isStructuredConflict
+    ? (data.error as string)
+    : data?.response?.error?.message || "Unknown server error";
+  const validationErrors = isStructuredConflict
+    ? [{ field: "_general", message: errorMessage, type: "server" as const }]
+    : parseServerValidationErrors(data?.response?.error);
 
   logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
     rowId: saveOperation.rowId,
@@ -520,11 +553,11 @@ export async function saveRecord({
       body: normalizeDates(body) as Record<string, unknown>,
     };
 
-    const { data } = await Metadata.datasourceServletClient.request(url, options);
+    const { data, status } = await Metadata.datasourceServletClient.request(url, options);
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
-    return handleSaveResponse(data, saveOperation);
+    return handleSaveResponse({ data, status }, saveOperation);
   } catch (error) {
     return handleSaveError(saveOperation, error);
   }

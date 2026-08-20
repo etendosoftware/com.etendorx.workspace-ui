@@ -24,6 +24,7 @@ import {
   processSaveErrors,
   getGeneralErrorMessage,
   isStaleObjectError,
+  getStaleObjectErrorNotification,
   buildSavePayload,
   validateRecordBeforeSave,
 } from "../utils/saveOperations";
@@ -312,6 +313,50 @@ describe("saveOperations", () => {
       });
     });
 
+    it("should normalize a structured 409 stale-object conflict into a general error", async () => {
+      const saveOperation: SaveOperation = {
+        rowId: "456",
+        isNew: false,
+        data: { id: "456", name: "Updated Name" },
+        originalData: { id: "456", name: "Original Name" },
+      };
+
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        status: 409,
+        data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
+      });
+
+      const result = await saveRecord({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result).toEqual({
+        success: false,
+        errors: [{ field: "_general", message: "@OBJSON_StaleDate@", type: "server" }],
+      });
+      expect(isStaleObjectError(getGeneralErrorMessage(result.errors!))).toBe(true);
+    });
+
+    it("should not treat a plain 200 validation error as a conflict even with an unrelated status", async () => {
+      const saveOperation: SaveOperation = {
+        rowId: "456",
+        isNew: false,
+        data: { id: "456", name: "" },
+        originalData: { id: "456", name: "Original Name" },
+      };
+
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        status: 200,
+        data: { response: { status: 1, error: { message: "Some field is required" } } },
+      });
+
+      const result = await saveRecord({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(false);
+      expect(getGeneralErrorMessage(result.errors!)).toBe("Some field is required");
+      expect(isStaleObjectError(getGeneralErrorMessage(result.errors!))).toBe(false);
+    });
+
     it("should handle network errors", async () => {
       const saveOperation: SaveOperation = {
         rowId: "456",
@@ -434,6 +479,29 @@ describe("saveOperations", () => {
 
     it("returns false for unrelated messages", () => {
       expect(isStaleObjectError("Something else went wrong")).toBe(false);
+    });
+  });
+
+  describe("getStaleObjectErrorNotification", () => {
+    const t = (key: string) => key;
+
+    it("returns the conflict message and a reload action for a stale-object error", () => {
+      const onReload = jest.fn();
+
+      const result = getStaleObjectErrorNotification("Error: @OBJSON_StaleDate@ conflict", t, onReload);
+
+      expect(result.message).toBe("status.staleObjectError");
+      expect(result.options?.reloadLabel).toBe("status.staleObjectReloadAction");
+      expect(result.options?.onReload).toBe(onReload);
+    });
+
+    it("returns the original message with no options for a non-conflict error", () => {
+      const onReload = jest.fn();
+
+      const result = getStaleObjectErrorNotification("Some field is required", t, onReload);
+
+      expect(result.message).toBe("Some field is required");
+      expect(result.options).toBeUndefined();
     });
   });
 
@@ -573,10 +641,23 @@ describe("saveOperations", () => {
       expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
     });
 
-    it("does not retry on a stale-object conflict", async () => {
+    it("does not retry on a stale-object conflict (legacy nested shape)", async () => {
       mockMetadata.datasourceServletClient.request.mockResolvedValue({
         ok: false,
         data: { response: { status: 1, error: { message: "@OBJSON_StaleDate@" } } },
+      });
+
+      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(false);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not retry on a stale-object conflict (structured 409 shape)", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: false,
+        status: 409,
+        data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
       });
 
       const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
