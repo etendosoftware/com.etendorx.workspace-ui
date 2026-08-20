@@ -121,7 +121,7 @@ export function useSessionKeepAlive({ token, onRefreshed, onExpired }: UseSessio
       }
 
       if (action === "refresh") {
-        void runRefresh();
+        runRefresh();
       }
     };
 

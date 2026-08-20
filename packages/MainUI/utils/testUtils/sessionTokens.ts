@@ -17,9 +17,14 @@
 
 /** Shared JWT builders for the session keep-alive tests. */
 
-/** Encodes a string as unpadded base64url, the way a JWT segment is encoded. */
+/**
+ * Encodes a string as unpadded base64url, the way a JWT segment is encoded.
+ *
+ * Node's own `base64url` encoding already substitutes `-`/`_` and drops the padding, so no
+ * post-processing — and therefore no regex — is needed.
+ */
 export function encodeBase64Url(value: string): string {
-  return Buffer.from(value, "utf-8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return Buffer.from(value, "utf-8").toString("base64url");
 }
 
 /**

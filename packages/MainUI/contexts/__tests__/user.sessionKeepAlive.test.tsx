@@ -36,8 +36,12 @@ interface KeepAliveParams {
   onExpired: () => void;
 }
 
-/** Stand-in that reproduces the only behavior the provider relies on: report expiry on mount. */
-function keepAliveStub({ token, onExpired }: KeepAliveParams) {
+/**
+ * Stand-in that reproduces the only behavior the provider relies on: report expiry on mount.
+ *
+ * Named as a hook because it is one: it runs inside the provider's render and calls `useEffect`.
+ */
+function useKeepAliveStub({ token, onExpired }: KeepAliveParams) {
   useEffect(() => {
     if (isTokenExpired(token)) onExpired();
   }, [token, onExpired]);
@@ -137,7 +141,7 @@ describe("UserProvider session keep-alive", () => {
     useUserStore.setState({ token: null, currentRole: undefined, prevRole: undefined, roles: [] });
     (getPreferences as jest.Mock).mockResolvedValue({});
     (getSession as jest.Mock).mockResolvedValue(makeSessionResponse());
-    (useSessionKeepAlive as jest.Mock).mockImplementation(keepAliveStub);
+    (useSessionKeepAlive as jest.Mock).mockImplementation(useKeepAliveStub);
   });
 
   describe("a silent renewal is transparent", () => {
