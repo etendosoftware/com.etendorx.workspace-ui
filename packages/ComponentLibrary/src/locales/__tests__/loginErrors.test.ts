@@ -43,6 +43,16 @@ function leafKeys(value: unknown, prefix = ""): string[] {
   return Object.entries(value).flatMap(([key, nested]) => leafKeys(nested, prefix ? `${prefix}.${key}` : key));
 }
 
+/**
+ * Orders key paths alphabetically so two locales compare regardless of declaration order.
+ *
+ * The bare `sort()` default orders by UTF-16 code unit, which would misplace any future accented
+ * key; `localeCompare` orders the way a reader expects.
+ */
+function byKeyPath(a: string, b: string): number {
+  return a.localeCompare(b);
+}
+
 describe("locales/login.errors", () => {
   describe.each(LOCALES)("%s", (_name, locale) => {
     it.each(LOGOUT_MESSAGE_KEYS)("carries a title and a description for %s", (errorKey) => {
@@ -57,7 +67,7 @@ describe("locales/login.errors", () => {
 
   // A message that exists in only one locale silently falls back to the raw key for the other.
   it("exposes the same error keys in every locale", () => {
-    expect(leafKeys(es.login.errors).sort()).toEqual(leafKeys(en.login.errors).sort());
+    expect(leafKeys(es.login.errors).sort(byKeyPath)).toEqual(leafKeys(en.login.errors).sort(byKeyPath));
   });
 
   it("distinguishes an inactivity timeout from a system error", () => {
