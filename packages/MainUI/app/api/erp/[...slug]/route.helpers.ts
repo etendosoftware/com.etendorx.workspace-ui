@@ -3,6 +3,32 @@
  * Extracted to separate file for testability
  */
 
+import { DEFAULT_PASSWORD_EXPIRED_ERROR, ERP_ERROR_CODE_HEADER } from "@/utils/session/constants";
+
+/**
+ * Extracts the stable error code the metadata module reports in its JSON error body, so the client
+ * interceptor can react to a specific rejection instead of treating every 401 as a session failure.
+ *
+ * @param errorText - Raw error body returned by the ERP
+ * @returns Headers carrying the error code, or an empty object when the body carries no known code
+ */
+export function buildErpErrorCodeHeaders(errorText: string | undefined): Record<string, string> {
+  if (!errorText?.includes(DEFAULT_PASSWORD_EXPIRED_ERROR)) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(errorText);
+    if (parsed?.error === DEFAULT_PASSWORD_EXPIRED_ERROR) {
+      return { [ERP_ERROR_CODE_HEADER]: DEFAULT_PASSWORD_EXPIRED_ERROR };
+    }
+  } catch {
+    // Not a JSON body — there is no code to forward.
+  }
+
+  return {};
+}
+
 /**
  * Detect charset from Content-Type header
  * @param contentType - Content-Type header value

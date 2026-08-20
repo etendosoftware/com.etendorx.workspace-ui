@@ -411,6 +411,16 @@ const en = {
         description:
           "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
       },
+      passwordExpired: {
+        title: "Your password has expired",
+        description: "Please log in again to set a new password.",
+      },
+    },
+    passwordExpired: {
+      title: "Your password has expired",
+      description: "Set a new password to continue.",
+      submit: "Change password",
+      logout: "Log out",
     },
     sso: {
       divider: "Or continue with",

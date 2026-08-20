@@ -72,6 +72,12 @@ export interface UserStore {
   setSession: (sessionOrUpdater: ISession | ((prev: ISession) => ISession)) => void;
   isSessionSyncLoading: boolean;
   setSessionSyncLoading: (loading: boolean) => void;
+  /**
+   * True when the backend reports the password as expired. While true the app is replaced by the
+   * mandatory password-change screen and the metadata endpoints reject every data request.
+   */
+  passwordExpired: boolean;
+  setPasswordExpired: (expired: boolean) => void;
 
   // UI / error states
   loginErrorText: string;
@@ -172,6 +178,9 @@ export const useUserStore = create<UserStore>()(
       isSessionSyncLoading: false,
       setSessionSyncLoading: (isSessionSyncLoading) => set({ isSessionSyncLoading }, false, "setSessionSyncLoading"),
 
+      passwordExpired: false,
+      setPasswordExpired: (passwordExpired) => set({ passwordExpired }, false, "setPasswordExpired"),
+
       // ── UI ────────────────────────────────────────────────────────────────
       loginErrorText: "",
       setLoginErrorText: (loginErrorText) => set({ loginErrorText }, false, "setLoginErrorText"),
@@ -216,6 +225,7 @@ export const useUserStore = create<UserStore>()(
             session: {},
             loginErrorText: "",
             loginErrorDescription: "",
+            passwordExpired: false,
           },
           false,
           "clearUserDataState"

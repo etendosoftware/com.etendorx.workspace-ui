@@ -24,7 +24,11 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
  * language so that label keys (e.g. the ones used by migrated process scripts
  * through `OB.I18N.getLabel`) can be resolved on the client.
  *
- * Fetching only runs once both a language and an auth token are available.
+ * Fetching only runs once both a language and an auth token are available. The language is always
+ * available on an authenticated session: `updateSessionInfo` derives it from the user's default
+ * language or, when the user has none, from the language the backend resolved for the session
+ * (`SessionResponse.currentLanguage`). Losing that fallback would silently leave this dictionary
+ * empty and every backend message code unresolved.
  * `Metadata.getLabels` is cached per language (the language is aligned by the
  * provider via `Metadata.setLanguage`), so revisits do not trigger redundant
  * requests. On failure the dictionary is left untouched, degrading to the

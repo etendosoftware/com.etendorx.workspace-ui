@@ -632,8 +632,20 @@ export interface SessionResponse {
   currentClient: CurrentClient;
   currentWarehouse?: CurrentWarehouse;
   roles: RoleList;
+  /**
+   * Language code the backend actually answers in (e.g. `en_US`), resolved by the ERP context from
+   * the user, the client and finally the system. The user's own default language is optional, so
+   * this is the only reliable source for the language of the session.
+   */
+  currentLanguage: string;
   languages: Languages;
   attributes: { [key: string]: null | string };
+  /**
+   * True when the user must change their password before being granted access.
+   * Computed by the backend, either from the administrator flag on the user record
+   * or from the client's password validity window.
+   */
+  passwordExpired: boolean;
 }
 
 export type RoleList = {
