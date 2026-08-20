@@ -88,6 +88,12 @@ export interface WindowStore {
   recoveryError: string | null;
   /** Triggers URL-based recovery to re-run. Set by WindowProvider. */
   triggerRecovery: () => void;
+  /**
+   * How many windows were discarded because the current role has no access to them. Greater than
+   * zero with no window left open means the page renders the full-screen Access Denied view.
+   */
+  accessDeniedWindowCount: number;
+  setAccessDeniedWindowCount: (count: number) => void;
 
   // ---- Dirty tracking -----------------------------------------------------
   /** Tracks which windows have unsaved changes, keyed by source (e.g. "form:tabId", "table:tabId") */
@@ -168,7 +174,17 @@ export const useWindowStore = create<WindowStore>()(
       isRecoveryLoading: false,
       recoveryError: null,
       triggerRecovery: () => {},
+      accessDeniedWindowCount: 0,
       dirtyWindows: {},
+
+      setAccessDeniedWindowCount: (count) =>
+        set(
+          (draft) => {
+            draft.accessDeniedWindowCount = count;
+          },
+          false,
+          "window/setAccessDeniedWindowCount"
+        ),
 
       // ---- Table state setters ----------------------------------------
       setTableFilters: (windowIdentifier, tabId, filters, tabLevel = 0) =>
@@ -291,6 +307,10 @@ export const useWindowStore = create<WindowStore>()(
       setWindowActive: ({ windowIdentifier, windowData }) =>
         set(
           (draft) => {
+            // Opening a window makes any pending Access Denied view obsolete; without this it
+            // would come back instead of the dashboard once this window is closed.
+            draft.accessDeniedWindowCount = 0;
+
             // Deactivate all windows
             for (const winId of Object.keys(draft.windows)) {
               if (draft.windows[winId]) {
@@ -384,6 +404,8 @@ export const useWindowStore = create<WindowStore>()(
           (draft) => {
             draft.windows = {};
             draft.dirtyWindows = {};
+            // Role change / logout: the previous role's denials no longer apply.
+            draft.accessDeniedWindowCount = 0;
           },
           false,
           "window/cleanState"

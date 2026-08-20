@@ -518,6 +518,13 @@ export interface WindowMetadata {
   tabs: Tab[];
   window$_identifier: string;
   windowType?: string;
+  /**
+   * `true` when the current role has an active AD_Window_Access record for this window, `false`
+   * when the ERP served it through its implicit read-only fallback. Optional because older
+   * backends (and metadata cached before the flag existed) omit it — `undefined` means "unknown",
+   * never "denied".
+   */
+  isWindowAccessible?: boolean;
 }
 
 export interface RecordPayload extends Record<string, string> {

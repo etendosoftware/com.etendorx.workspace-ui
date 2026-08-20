@@ -192,6 +192,16 @@ const en = {
       title: "Recovery Failed",
       description: "Unable to restore window state from URL",
     },
+    accessDenied: {
+      title: "Access Denied",
+      description: "Your role does not have access to this window. Contact your system administrator if you need it.",
+      tableDescription: "Your role does not have permission to view this data.",
+      discarded: {
+        title: "Some windows were not opened",
+        descriptionOne: "One window was discarded because your role does not have access to it.",
+        descriptionMany: "windows were discarded because your role does not have access to them.",
+      },
+    },
   },
   modal: {
     secondaryButtonLabel: "Back",
