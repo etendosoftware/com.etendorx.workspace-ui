@@ -32,11 +32,10 @@ import {
 } from "../utils";
 import { FIELD_REFERENCE_CODES } from "../../form/constants";
 import { createMockField } from "../../tests/mockHelpers";
-import type { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { isDateLike, formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { isEmptyObject } from "../../commons";
 
 jest.mock("@workspaceui/componentlibrary/src/utils/dateFormatter");
