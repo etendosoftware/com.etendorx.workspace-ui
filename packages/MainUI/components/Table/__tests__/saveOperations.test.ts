@@ -629,41 +629,40 @@ describe("saveOperations", () => {
       expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * Mocks a single failed response and asserts {@link saveRecordWithRetry} gave up after
+     * exactly one attempt -- the shared assertion behind every "does not retry on ..." case
+     * below, which only differ in the error shape that must abort the retry loop.
+     */
+    async function expectNoRetryOnError(mockResponse: { ok: boolean; status?: number; data: unknown }) {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue(mockResponse);
+
+      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
+
+      expect(result.success).toBe(false);
+      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
+    }
+
     it("does not retry on a field-specific validation error", async () => {
-      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+      await expectNoRetryOnError({
         ok: false,
         data: { response: { status: 1, error: { message: "Invalid", fieldErrors: { name: "Required" } } } },
       });
-
-      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-
-      expect(result.success).toBe(false);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
     });
 
     it("does not retry on a stale-object conflict (legacy nested shape)", async () => {
-      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+      await expectNoRetryOnError({
         ok: false,
         data: { response: { status: 1, error: { message: "@OBJSON_StaleDate@" } } },
       });
-
-      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-
-      expect(result.success).toBe(false);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
     });
 
     it("does not retry on a stale-object conflict (structured 409 shape)", async () => {
-      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+      await expectNoRetryOnError({
         ok: false,
         status: 409,
         data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
       });
-
-      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-
-      expect(result.success).toBe(false);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
     });
 
     it("retries a general server error and succeeds on the second attempt", async () => {

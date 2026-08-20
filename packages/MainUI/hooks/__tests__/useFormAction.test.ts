@@ -54,12 +54,13 @@ describe("useFormAction execute", () => {
     jest.clearAllMocks();
   });
 
-  it("calls onError with a reload action on a structured 409 stale-object conflict", async () => {
-    mockMetadata.datasourceServletClient.request.mockResolvedValue({
-      ok: false,
-      status: 409,
-      data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
-    } as any);
+  /**
+   * Mocks the datasource response, renders {@link useFormAction} with fresh callback mocks,
+   * and triggers a save -- the shared arrange/act steps behind every test below, which only
+   * differ in the mocked response and their assertions.
+   */
+  async function saveAndGetCallbacks(mockResponse: { ok: boolean; status: number; data: unknown }) {
+    mockMetadata.datasourceServletClient.request.mockResolvedValue(mockResponse as any);
 
     const onError = jest.fn();
     const onSuccess = jest.fn();
@@ -80,61 +81,35 @@ describe("useFormAction execute", () => {
       await result.current.save({});
     });
 
+    return { onError, onSuccess, onStaleObjectReload };
+  }
+
+  it("calls onError with a reload action on a structured 409 stale-object conflict", async () => {
+    const { onError, onSuccess, onStaleObjectReload } = await saveAndGetCallbacks({
+      ok: false,
+      status: 409,
+      data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
+    });
+
     expect(onError).toHaveBeenCalledWith("status.staleObjectError", { onReload: onStaleObjectReload });
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it("calls onError with a reload action on a legacy nested stale-object conflict", async () => {
-    mockMetadata.datasourceServletClient.request.mockResolvedValue({
+    const { onError, onStaleObjectReload } = await saveAndGetCallbacks({
       ok: false,
       status: 200,
       data: { response: { status: -4, error: { message: "@OBJSON_StaleDate@" } } },
-    } as any);
-
-    const onError = jest.fn();
-    const onStaleObjectReload = jest.fn();
-
-    const { result } = renderHook(() =>
-      useFormAction({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        onSuccess: jest.fn(),
-        onError,
-        submit: fakeSubmit({ id: "1" }) as any,
-        onStaleObjectReload,
-      })
-    );
-
-    await act(async () => {
-      await result.current.save({});
     });
 
     expect(onError).toHaveBeenCalledWith("status.staleObjectError", { onReload: onStaleObjectReload });
   });
 
   it("calls onError with just the message for a non-conflict error (regression check)", async () => {
-    mockMetadata.datasourceServletClient.request.mockResolvedValue({
+    const { onError } = await saveAndGetCallbacks({
       ok: false,
       status: 200,
       data: { response: { status: -4, error: { message: "Some field is required" } } },
-    } as any);
-
-    const onError = jest.fn();
-    const onStaleObjectReload = jest.fn();
-
-    const { result } = renderHook(() =>
-      useFormAction({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        onSuccess: jest.fn(),
-        onError,
-        submit: fakeSubmit({ id: "1" }) as any,
-        onStaleObjectReload,
-      })
-    );
-
-    await act(async () => {
-      await result.current.save({});
     });
 
     // Non-conflict errors fall through to the pre-existing `onError(String(err))` call
@@ -147,27 +122,10 @@ describe("useFormAction execute", () => {
   });
 
   it("never calls onError on a successful save (regression check)", async () => {
-    mockMetadata.datasourceServletClient.request.mockResolvedValue({
+    const { onError, onSuccess } = await saveAndGetCallbacks({
       ok: true,
       status: 200,
       data: { response: { status: 0, data: [{ id: "1" }] } },
-    } as any);
-
-    const onError = jest.fn();
-    const onSuccess = jest.fn();
-
-    const { result } = renderHook(() =>
-      useFormAction({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        onSuccess,
-        onError,
-        submit: fakeSubmit({ id: "1" }) as any,
-      })
-    );
-
-    await act(async () => {
-      await result.current.save({});
     });
 
     expect(onError).not.toHaveBeenCalled();
