@@ -103,7 +103,7 @@ describe("HelpDrawer", () => {
     expect(screen.getByText("Field help text")).toBeInTheDocument();
   });
 
-  it("omits fields with no help content", () => {
+  it("lists fields with no help content too, matching Classic (name shown, body left blank)", () => {
     useHelpPanelStore.setState({ isOpen: true });
     const withHelp = createMockField({ id: "f1", name: "Has Help", helpComment: "yes" });
     const withoutHelp = createMockField({
@@ -118,7 +118,7 @@ describe("HelpDrawer", () => {
     render(<HelpDrawer />);
 
     expect(screen.getByText("Has Help")).toBeInTheDocument();
-    expect(screen.queryByText("No Help")).not.toBeInTheDocument();
+    expect(screen.getByText("No Help")).toBeInTheDocument();
   });
 
   it("closes when the close (X) button is clicked", () => {

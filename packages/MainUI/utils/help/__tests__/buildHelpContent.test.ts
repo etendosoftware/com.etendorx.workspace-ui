@@ -45,6 +45,14 @@ describe("shouldShowHelp", () => {
     expect(shouldShowHelp(window)).toBe(true);
   });
 
+  it("returns true when a tab has a displayed field even with no help text anywhere", () => {
+    // Classic still lists the field's name (with a blank body), so the Help view isn't empty.
+    const field = createMockField({ id: "f1", helpComment: "", column: { helpComment: undefined } });
+    const tab = createMockTab({ id: "t1", helpComment: null, fields: { f1: field } });
+    const window = { ...createMockWindowMetadata("W1"), helpComment: null, tabs: [tab] };
+    expect(shouldShowHelp(window)).toBe(true);
+  });
+
   it("returns false for a null/undefined window", () => {
     expect(shouldShowHelp(null)).toBe(false);
     expect(shouldShowHelp(undefined)).toBe(false);
@@ -73,7 +81,9 @@ describe("buildHelpSections", () => {
     expect(sections[0].fields.map((f) => f.id)).toEqual(["f10", "f20"]);
   });
 
-  it("omits fields with no helpComment and no column fallback", () => {
+  it("lists fields with no helpComment and no column fallback, with an empty helpComment", () => {
+    // Classic lists every displayed field's name even when nothing is written under it
+    // (e.g. "Payment Method" on Sales Order) — omitting them would lose real fields.
     const withHelp = createMockField({ id: "f1", helpComment: "has help", column: { helpComment: undefined } });
     const withoutHelp = createMockField({ id: "f2", helpComment: "", column: { helpComment: undefined } });
     const tab = createMockTab({ id: "t1", fields: { withHelp, withoutHelp } });
@@ -81,7 +91,10 @@ describe("buildHelpSections", () => {
 
     const sections = buildHelpSections(window);
 
-    expect(sections[0].fields.map((f) => f.id)).toEqual(["f1"]);
+    expect(sections[0].fields).toEqual([
+      { id: "f1", name: withHelp.name, helpComment: "has help" },
+      { id: "f2", name: withoutHelp.name, helpComment: "" },
+    ]);
   });
 
   it("falls back to column.helpComment when field.helpComment is empty", () => {
@@ -94,14 +107,14 @@ describe("buildHelpSections", () => {
     expect(sections[0].fields).toEqual([{ id: "f1", name: field.name, helpComment: "column help text" }]);
   });
 
-  it("omits fields whose helpComment is undefined (not just empty) with no column fallback", () => {
+  it("lists a field with an empty helpComment when helpComment is undefined and there's no column", () => {
     const field = createMockField({ id: "f1", helpComment: undefined as unknown as string, column: undefined });
     const tab = createMockTab({ id: "t1", fields: { field } });
     const window = { ...createMockWindowMetadata("W1"), tabs: [tab] };
 
     const sections = buildHelpSections(window);
 
-    expect(sections[0].fields).toEqual([]);
+    expect(sections[0].fields).toEqual([{ id: "f1", name: field.name, helpComment: "" }]);
   });
 
   it("omits fields not displayed on the form, regardless of help content (e.g. hidden key columns)", () => {
