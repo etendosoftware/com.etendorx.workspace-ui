@@ -15,10 +15,23 @@
  *************************************************************************
  */
 
+import type { ReactNode } from "react";
+
 export interface ErrorDisplayProps {
   title: string;
   description?: string;
   showRetry?: boolean;
   onRetry?: () => void;
   showHomeButton?: boolean;
+}
+
+export interface AccessDeniedDisplayProps {
+  /** Overrides the default window-level wording (e.g. with the table-level one). */
+  description?: string;
+  children?: ReactNode;
+}
+
+export interface AccessDeniedScreenProps {
+  /** Dismisses the screen and lands the user on the dashboard. */
+  onGoHome: () => void;
 }

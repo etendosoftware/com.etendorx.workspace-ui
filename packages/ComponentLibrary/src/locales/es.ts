@@ -192,6 +192,16 @@ const es = {
       title: "Error de Recuperación",
       description: "No se pudo restaurar el estado de la ventana desde la URL",
     },
+    accessDenied: {
+      title: "Acceso denegado",
+      description: "Tu rol no tiene acceso a esta ventana. Contacta al administrador del sistema si necesitas acceso.",
+      tableDescription: "Tu rol no tiene permisos para ver estos datos.",
+      discarded: {
+        title: "Algunas ventanas no se abrieron",
+        descriptionOne: "Se descartó una ventana porque tu rol no tiene acceso.",
+        descriptionMany: "ventanas descartadas porque tu rol no tiene acceso.",
+      },
+    },
   },
   modal: {
     secondaryButtonLabel: "Atrás",
