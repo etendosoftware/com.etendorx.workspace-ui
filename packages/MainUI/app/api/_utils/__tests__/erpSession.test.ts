@@ -23,6 +23,7 @@ import {
   getErpCsrfToken,
   clearErpSessionCookie,
 } from "../sessionStore";
+import { buildErpResponse as buildResponse } from "@/utils/testUtils/erpResponses";
 
 jest.mock("../sessionStore", () => ({
   setErpSessionCookie: jest.fn(),
@@ -37,27 +38,6 @@ const NEW_TOKEN = "new-jwt";
 const OLD_COOKIE = "JSESSIONID=OLD123";
 const OLD_CSRF = "csrf-old";
 const NEW_CSRF = "csrf-new";
-
-interface ResponseOptions {
-  setCookie?: string[];
-  singleSetCookie?: string;
-  csrf?: string;
-}
-
-/** Builds a minimal ERP-like response carrying the given headers. */
-function buildResponse({ setCookie, singleSetCookie, csrf }: ResponseOptions = {}): Response {
-  return {
-    headers: {
-      get: (name: string) => {
-        const lowered = name.toLowerCase();
-        if (lowered === "x-csrf-token") return csrf ?? null;
-        if (lowered === "set-cookie") return singleSetCookie ?? null;
-        return null;
-      },
-      getSetCookie: () => setCookie,
-    },
-  } as unknown as Response;
-}
 
 /** Makes the store report an existing entry for the previous token. */
 function stubStoredSession({ cookie, csrf }: { cookie?: string | null; csrf?: string | null }) {
@@ -83,6 +63,21 @@ describe("_utils/erpSession", () => {
       const response = buildResponse({ singleSetCookie: "OTHER=1, JSESSIONID=XYZ; Path=/" });
 
       expect(extractJSessionId(response)).toBe("XYZ");
+    });
+
+    // getSetCookie is called optionally on purpose: on a runtime that does not implement it the
+    // concatenated header is the only source, and reading it must not throw.
+    it("falls back to the concatenated header on a runtime without getSetCookie", () => {
+      const response = buildResponse({
+        withoutGetSetCookie: true,
+        singleSetCookie: "JSESSIONID=FALLBACK; Path=/; HttpOnly",
+      });
+
+      expect(extractJSessionId(response)).toBe("FALLBACK");
+    });
+
+    it("returns null on a runtime without getSetCookie when no cookie is sent at all", () => {
+      expect(extractJSessionId(buildResponse({ withoutGetSetCookie: true }))).toBeNull();
     });
 
     it("returns null when the response carries no JSESSIONID", () => {
@@ -199,6 +194,26 @@ describe("_utils/erpSession", () => {
       handOffErpSession(buildResponse(), OLD_TOKEN, OLD_TOKEN);
 
       expect(clearErpSessionCookie).not.toHaveBeenCalled();
+    });
+
+    // There is nothing to clear when the handoff has no predecessor, and clearing the empty key
+    // would evict whatever the store holds under it.
+    it("stores the new session without clearing anything when there is no previous token", () => {
+      handOffErpSession(buildResponse({ setCookie: ["JSESSIONID=NEW1"], csrf: NEW_CSRF }), NEW_TOKEN, "");
+
+      expect(setErpSessionCookie).toHaveBeenCalledWith(NEW_TOKEN, {
+        cookieHeader: "JSESSIONID=NEW1",
+        csrfToken: NEW_CSRF,
+      });
+      expect(clearErpSessionCookie).not.toHaveBeenCalled();
+    });
+
+    it("stores nothing when neither the response nor the store has anything to hand over", () => {
+      handOffErpSession(buildResponse(), NEW_TOKEN, OLD_TOKEN);
+
+      expect(setErpSessionCookie).not.toHaveBeenCalled();
+      expect(setErpCsrfToken).not.toHaveBeenCalled();
+      expect(clearErpSessionCookie).toHaveBeenCalledWith(OLD_TOKEN);
     });
   });
 });

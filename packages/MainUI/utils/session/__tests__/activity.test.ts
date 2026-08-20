@@ -71,6 +71,31 @@ describe("session/activity", () => {
     expect(onActivity).not.toHaveBeenCalled();
   });
 
+  // UserProvider is a client component, but Next still renders it on the server first, where there
+  // is no window to listen on. Touching one there would break the whole render.
+  describe("on the server", () => {
+    beforeEach(() => {
+      // jsdom exposes window as a getter on the global, so it can only be taken away by stubbing
+      // the getter itself. The outer restoreAllMocks puts it back.
+      jest.spyOn(globalThis as unknown as { window: Window | undefined }, "window", "get").mockReturnValue(undefined);
+    });
+
+    it("subscribes to nothing instead of throwing", () => {
+      expect(() => subscribeToUserActivity(jest.fn())).not.toThrow();
+      expect(addSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns an unsubscribe function that is safe to call", () => {
+      const onActivity = jest.fn();
+
+      const unsubscribe = subscribeToUserActivity(onActivity);
+
+      expect(unsubscribe()).toBeUndefined();
+      expect(onActivity).not.toHaveBeenCalled();
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+  });
+
   // Network traffic must never count as activity, otherwise background polling would keep an
   // abandoned session alive forever.
   it("does not treat non-input events as user activity", () => {

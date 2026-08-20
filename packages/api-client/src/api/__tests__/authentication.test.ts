@@ -131,5 +131,21 @@ describe("api/authentication", () => {
 
       await expect(refreshToken()).rejects.toThrow("Token refresh returned no token");
     });
+
+    // A 200 with no body at all must fail the same way, not throw on reading token off undefined.
+    it("throws error when the response carries no data at all", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({ ok: true });
+
+      await expect(refreshToken()).rejects.toThrow("Token refresh returned no token");
+    });
+
+    it("throws error when the token is an empty string", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: true,
+        data: { token: "" },
+      });
+
+      await expect(refreshToken()).rejects.toThrow("Token refresh returned no token");
+    });
   });
 });
