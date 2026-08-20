@@ -27,7 +27,10 @@ import {
   getSummaryCriteria,
   getDefaultImplicitFilter,
   resolveImplicitFilterToggle,
+  sortFieldsByGridOrder,
 } from "../utils";
+import { createMockField } from "../../tests/mockHelpers";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { isDateLike, formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -288,6 +291,84 @@ describe("table utils", () => {
 
       const criteria = getSummaryCriteria(query as any, [], []);
       expect(criteria).toEqual([{ field: "f1", value: "v1" }]);
+    });
+  });
+
+  describe("sortFieldsByGridOrder", () => {
+    /**
+     * Builds a field carrying only the properties that drive the grid ordering, so each case
+     * reads as the (id, seqNo, gridPosition) triplet it is really testing.
+     */
+    const makeField = (id: string, sequenceNumber: number | null, gridPosition?: number | null): Field =>
+      createMockField({ id, name: id, sequenceNumber, gridPosition } as Partial<Field>);
+
+    const orderOf = (fields: Field[]): string[] => sortFieldsByGridOrder(fields).map((field) => field.id);
+
+    it("orders by gridPosition when it differs from the form sequence number", () => {
+      const fields = [makeField("a", 10, 30), makeField("b", 20, 20), makeField("c", 30, 10)];
+
+      expect(orderOf(fields)).toEqual(["c", "b", "a"]);
+    });
+
+    it("falls back to sequenceNumber when gridPosition is undefined", () => {
+      const fields = [makeField("a", 30), makeField("b", 10), makeField("c", 20)];
+
+      expect(orderOf(fields)).toEqual(["b", "c", "a"]);
+    });
+
+    it("falls back to sequenceNumber when gridPosition is null", () => {
+      const fields = [makeField("a", 30, null), makeField("b", 10, null)];
+
+      expect(orderOf(fields)).toEqual(["b", "a"]);
+    });
+
+    it("mixes gridPosition and sequenceNumber in the same numeric space, like Classic", () => {
+      // "b" has no gridPosition, so its seqNo 15 places it between gridPosition 10 and 20.
+      const fields = [makeField("a", 100, 10), makeField("b", 15), makeField("c", 100, 20)];
+
+      expect(orderOf(fields)).toEqual(["a", "b", "c"]);
+    });
+
+    it("treats gridPosition 0 as a valid first position, not as unset", () => {
+      const fields = [makeField("a", 10), makeField("b", 999, 0)];
+
+      expect(orderOf(fields)).toEqual(["b", "a"]);
+    });
+
+    it("sends fields with neither gridPosition nor sequenceNumber last", () => {
+      const fields = [makeField("a", null), makeField("b", 20), makeField("c", 10)];
+
+      expect(orderOf(fields)).toEqual(["c", "b", "a"]);
+    });
+
+    it("breaks gridPosition ties by sequenceNumber", () => {
+      const fields = [makeField("a", 20, 10), makeField("b", 5, 10)];
+
+      expect(orderOf(fields)).toEqual(["b", "a"]);
+    });
+
+    it("breaks full ties by id so the order is deterministic", () => {
+      const fields = [makeField("z", 10, 10), makeField("a", 10, 10)];
+
+      expect(orderOf(fields)).toEqual(["a", "z"]);
+    });
+
+    it("keeps audit fields last, since the adapter gives them a high gridPosition", () => {
+      const fields = [makeField("createdBy", 1, 9001), makeField("documentNo", 500)];
+
+      expect(orderOf(fields)).toEqual(["documentNo", "createdBy"]);
+    });
+
+    it("does not mutate the received array", () => {
+      const fields = [makeField("a", 30), makeField("b", 10)];
+
+      sortFieldsByGridOrder(fields);
+
+      expect(fields.map((field) => field.id)).toEqual(["a", "b"]);
+    });
+
+    it("returns an empty array when there are no fields", () => {
+      expect(sortFieldsByGridOrder([])).toEqual([]);
     });
   });
 });

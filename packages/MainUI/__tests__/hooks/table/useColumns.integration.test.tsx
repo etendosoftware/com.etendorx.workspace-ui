@@ -287,4 +287,32 @@ describe("useColumns integration with custom JS", () => {
       expect(screen.queryByText("Hola mundo")).not.toBeInTheDocument();
     });
   });
+
+  // ETP-4635: the data grid must follow AD_Field.Grid_Seqno (exposed as `gridPosition`),
+  // falling back to the form sequence number, like Etendo Classic does.
+  describe("grid column order", () => {
+    const buildOrderedTab = (first: Partial<Field>, second: Partial<Field>): Tab => ({
+      ...mockTab,
+      fields: {
+        first: { ...mockTab.fields.normalField, name: "first", hqlName: "first", id: "f1", ...first },
+        second: { ...mockTab.fields.normalField, name: "second", hqlName: "second", id: "f2", ...second },
+      },
+    });
+
+    it("orders columns by gridPosition instead of the incoming field order", () => {
+      const tab = buildOrderedTab({ sequenceNumber: 10, gridPosition: 30 }, { sequenceNumber: 20, gridPosition: 10 });
+
+      const { result } = renderHook(() => useColumns(tab));
+
+      expect(result.current.map((col) => col.name)).toEqual(["second", "first"]);
+    });
+
+    it("keeps the sequenceNumber order when no field defines a gridPosition", () => {
+      const tab = buildOrderedTab({ sequenceNumber: 10 }, { sequenceNumber: 20 });
+
+      const { result } = renderHook(() => useColumns(tab));
+
+      expect(result.current.map((col) => col.name)).toEqual(["first", "second"]);
+    });
+  });
 });
