@@ -392,6 +392,11 @@ const es = {
         description:
           "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
       },
+      sessionExpired: {
+        title: "Sesión expirada por inactividad",
+        description:
+          "Tu sesión se cerró tras un período de inactividad. Por favor, inicia sesión nuevamente para continuar.",
+      },
       defaultLogout: {
         title: "Error del sistema - Sesión cerrada",
         description:

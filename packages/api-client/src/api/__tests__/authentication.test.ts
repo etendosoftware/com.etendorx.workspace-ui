@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { login, logout } from "../authentication";
+import { login, logout, refreshToken } from "../authentication";
 import { Metadata } from "../metadata";
 
 jest.mock("../metadata", () => ({
@@ -94,6 +94,42 @@ describe("api/authentication", () => {
       });
 
       await expect(logout()).rejects.toThrow("HTTP error! status: 500");
+    });
+  });
+
+  describe("refreshToken", () => {
+    it("renews the session and returns the new token", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: true,
+        data: { token: "renewed-token" },
+      });
+
+      const result = await refreshToken();
+
+      expect(Metadata.loginClient.request).toHaveBeenCalledWith("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(result).toEqual({ token: "renewed-token" });
+    });
+
+    it("throws error when the refresh response is not ok", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+
+      await expect(refreshToken()).rejects.toThrow("Token refresh failed! status: 401");
+    });
+
+    it("throws error when no token is present in data", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: true,
+        data: {},
+      });
+
+      await expect(refreshToken()).rejects.toThrow("Token refresh returned no token");
     });
   });
 });
