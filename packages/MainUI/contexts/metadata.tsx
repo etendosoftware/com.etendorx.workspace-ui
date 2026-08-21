@@ -24,18 +24,39 @@ import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataStore } from "./metadataStore";
+import { isWindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
+import { buildAccessDeniedToastTexts, reportWindowsAccessDenied } from "@/utils/accessDenied";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export const MetadataSynchronizer = () => {
   const windowsObj = useWindowStore((s) => s.windows);
   const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
   const cleanupWindow = useWindowStore((s) => s.cleanupWindow);
   const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
+    /**
+     * Closes a window the current role cannot open and tells the user why. Covers the windows
+     * opened outside URL recovery (menu entry, linked item, internal link).
+     */
+    const handleAccessDenied = (windowIdentifier: string) => {
+      cleanupWindow(windowIdentifier);
+      reportWindowsAccessDenied({
+        deniedCount: 1,
+        // Read after the cleanup, since zustand applies it synchronously.
+        remainingWindowCount: Object.keys(useWindowStore.getState().windows).length,
+        texts: buildAccessDeniedToastTexts(t),
+        showAccessDeniedScreen: useWindowStore.getState().setAccessDeniedWindowCount,
+      });
+    };
+
     for (const win of windows) {
       if (win.windowId && !windowsData[win.windowId] && !isWindowLoading(win.windowId)) {
         loadWindowData(win.windowId).catch((error) => {
-          if (error.message?.toLowerCase().includes("not found")) {
+          if (isWindowAccessDeniedError(error)) {
+            handleAccessDenied(win.windowIdentifier);
+          } else if (error.message?.toLowerCase().includes("not found")) {
             cleanupWindow(win.windowIdentifier);
           } else {
             console.error(error);
@@ -43,7 +64,7 @@ export const MetadataSynchronizer = () => {
         });
       }
     }
-  }, [windows, windowsData, isWindowLoading, loadWindowData, cleanupWindow]);
+  }, [windows, windowsData, isWindowLoading, loadWindowData, cleanupWindow, t]);
 
   return null;
 };

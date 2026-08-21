@@ -49,7 +49,7 @@ import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
-import { ErrorDisplay } from "../ErrorDisplay";
+import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
@@ -3772,15 +3772,7 @@ const DynamicTable = ({
   }, [pendingSelectionId, table, loading, isUploading]);
 
   if (error) {
-    return (
-      <ErrorDisplay
-        title={t("errors.tableError.title")}
-        description={error?.message}
-        showRetry
-        onRetry={refetch}
-        data-testid="ErrorDisplay__8ca888"
-      />
-    );
+    return <TableErrorDisplay error={error} onRetry={refetch} data-testid="TableErrorDisplay__8ca888" />;
   }
 
   if (parentTab && !parentRecord) {

@@ -30,6 +30,7 @@ export { useSelected } from "@/hooks/useSelected";
 export { useTranslation } from "@/hooks/useTranslation";
 export { useProcessCallouts } from "./callouts/useProcessCallouts";
 export { useWarehousePlugin, usesCustomComponent } from "./Custom/GenericWarehouseProcess";
+export { getCustomComponent, isRegisteredCustomSchema } from "./Custom/registry";
 
 // --- Next.js navigation ---
 export { useRouter, useSearchParams } from "next/navigation";

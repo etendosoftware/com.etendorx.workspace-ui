@@ -41,6 +41,19 @@ export const readBannerRawMessage = (data: unknown): unknown => {
 };
 
 /**
+ * Reads the server-supplied heading for the in-modal banner (`msgTitle`), the
+ * equivalent of Classic's second `messageBar.setMessage` argument. Returns
+ * `undefined` for every shape that carries no title — a plain string, an object
+ * without `msgTitle`, `null`/`undefined` — so the caller keeps its generic
+ * heading ("Process Error", "Process completed successfully", …).
+ */
+export const readBannerTitle = (data: unknown): string | undefined => {
+  if (!data || typeof data !== "object") return undefined;
+  const { msgTitle } = data as { msgTitle?: unknown };
+  return typeof msgTitle === "string" && msgTitle.length > 0 ? msgTitle : undefined;
+};
+
+/**
  * Returns the parsed `{msgText, isHtml}` payload for the success banner that
  * appears when the modal stays open after a retry-style response. Returns
  * `null` when the banner must be skipped (no server-side message).

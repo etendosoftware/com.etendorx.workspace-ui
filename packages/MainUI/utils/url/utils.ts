@@ -280,7 +280,7 @@ const encodeEtendoBookmark = (serialized: string): string => {
  * @param baseUrl - The base URL to extract context from
  * @returns The context path with leading slash
  */
-const extractContextPath = (baseUrl: string): string => {
+export const extractContextPath = (baseUrl: string): string => {
   // Remove trailing slash if present
   const cleanUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
   // Find the last slash and extract everything after it

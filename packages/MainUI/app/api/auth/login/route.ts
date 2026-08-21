@@ -52,6 +52,81 @@ async function fetchErpLogin(
   });
 }
 
+// Raised by SecureWebServicesUtils.pickFallbackWarehouse when the selected organization has no
+// warehouses at all. Classic tolerates that (the session's warehouse is simply left empty), but
+// /sws/login does not. com.etendoerp.metadata's /meta/change-profile replicates Classic's
+// tolerance, so it's used here purely as a fallback for this one error - every other role/org
+// change keeps going through /sws/login, which also syncs the classic JSESSIONID that legacy
+// features (attachments, notes, printing) rely on and the fallback endpoint does not.
+const ORG_HAS_NO_WAREHOUSES_ERROR = "SMFSWS_OrgHasNoRole";
+
+async function fetchChangeProfileFallback(body: any, userToken?: string | null): Promise<Response> {
+  const changeProfileUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/sws/com.etendoerp.metadata.meta/change-profile");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (userToken) {
+    headers.Authorization = `Bearer ${userToken}`;
+  }
+
+  return fetch(changeProfileUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  }).catch((fetchError) => {
+    console.error("Fetch error - change-profile fallback not accessible:", fetchError);
+    throw new Error("Etendo API is not accessible");
+  });
+}
+
+// Same OrgHasNoWarehouses failure as above, but for the initial (username/password) login rather
+// than a role switch on an already-authenticated session: there is no prior JWT to attach as a
+// Bearer token here, so /meta/change-profile (which requires one) can't help. /meta/login
+// authenticates independently via core's PasswordHash, so it works without any existing session.
+async function fetchLoginFallback(body: any): Promise<Response> {
+  const loginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/sws/com.etendoerp.metadata.meta/login");
+
+  return fetch(loginUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  }).catch((fetchError) => {
+    console.error("Fetch error - login fallback not accessible:", fetchError);
+    throw new Error("Etendo API is not accessible");
+  });
+}
+
+async function tryFallbackLogin(body: any, userToken: string | null): Promise<any | null> {
+  // Initial username/password login has no prior token to fall back with;
+  // an in-session role switch does - route to whichever fallback can actually authenticate.
+  const fallbackResponse =
+    body?.username && body?.password
+      ? await fetchLoginFallback(body)
+      : await fetchChangeProfileFallback(body, userToken);
+
+  if (!fallbackResponse.ok) {
+    return null;
+  }
+
+  const fallbackData = await fallbackResponse.json().catch(() => null);
+  return fallbackData?.token ? fallbackData : null;
+}
+
+async function handleErpErrorResponse(data: any, body: any, userToken: string | null): Promise<NextResponse> {
+  if (data.message === ORG_HAS_NO_WAREHOUSES_ERROR) {
+    const fallbackData = await tryFallbackLogin(body, userToken);
+    if (fallbackData) {
+      return NextResponse.json(fallbackData, { status: 200 });
+    }
+  }
+
+  return NextResponse.json({ message: data.message || "Login failed" }, { status: 401 });
+}
+
 function extractJSessionId(erpResponse: Response): string | null {
   // getSetCookie() is the correct Node.js 18+ API for multiple Set-Cookie headers
   const cookies = (erpResponse.headers as any).getSetCookie?.() as string[] | undefined;
@@ -111,8 +186,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (data.status === "error") {
-      const message = data.message || "Login failed";
-      return NextResponse.json({ message }, { status: 401 });
+      return await handleErpErrorResponse(data, body, userToken);
     }
 
     storeCookieForToken(erpResponse, data);

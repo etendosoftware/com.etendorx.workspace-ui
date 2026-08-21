@@ -479,6 +479,83 @@ Beyond the seeding guard (§6.6), the substrate keeps the *open* of a process di
   internal selection-sync stays idempotent — it never pushes a stale pre-write value back over the cell.
   Without this, a distributed `amount = 2.07` was overwritten back to `0` on load. No script change is
   required.
+- **`view.hookData` is always present, and its fields are also spread on the root.** Every hook's `view`
+  carries the hook's plain data fields (`selectedRecords`, `recordIds`, `tabId`, …) both nested under
+  `view.hookData` — the documented form — and flat on `view` itself, so `view.hookData.recordIds` and
+  `view.recordIds` are the same value. A hook that supplies no data still gets `view.hookData === {}`, so
+  reading through it yields `undefined` rather than throwing. `onProcess` exposes the **full**
+  `selectedRecords`, not just `recordIds`: handlers ported from Classic read fields off the launching
+  grid's selection (the SII senders send `selection[0].organization` as `orgid`), which
+  `params.button.contextView.viewGrid.getSelectedRecords()` gave them.
+- **A Manual (`uiPattern = 'M'`) process never renders its dictionary parameters.** Classic's
+  `openProcess` runs the handler and returns *before* `buildProcess`, so a Manual process has no parameter
+  window at all; any `OBUIAPP_Parameter` rows it carries are dead metadata. The substrate drops them at the
+  seed (`initialProcessParameters`), so they cannot render as fields nor block the Execute button through
+  the mandatory checks. Parameters injected at runtime by `onLoad` (`_dynamicParameters`) and forms opened
+  with `openDynamicForm` are unaffected.
+- **A returned `message` reaches the user with its own severity, title and text.** Classic showed all
+  three (`view.view.messageBar.setMessage(TYPE_<severity>, title, text)`), so a hook returning
+  `{ message: { msgType, msgTitle, msgText } }` — the shape produced by mapping a handler response — gets
+  `msgType` routing the outcome (`success`/`warning` → toast, anything else → the in-modal banner),
+  `msgTitle` as the heading and `msgText` as the body. The raw handler spelling
+  (`{ message: { severity, title, text } }`) is read too, so a script may hand the response back
+  untouched, and the field is looked up at the three usual nesting levels (root, `response`,
+  `response.data`). When the response carries **no** message — or one with a severity but no words — the
+  generic "Process completed successfully" / "Process Error" wording stands, exactly as before. No script
+  change is required.
+  - **An untyped handler message defaults to `error`, an untyped string message to `success`.**
+    `resolveDefaultMsgType` fills the gap only when the message brings no `msgType` / `severity` of its
+    own; a severity that *is* present always wins. The split follows what actually produces each shape:
+    Etendo's framework always types its answer (`BaseProcessActionHandler` and `ResponseActionsBuilder`
+    both `put("severity", …)`), so an **object-shaped** message that arrives untyped comes from the legacy
+    module idiom that writes `severity` only on the success path — the whole SII family answers its
+    validation and failure paths with `{ message: { title: <translated "Error" label>, text } }`, and
+    Classic paints exactly those red (`OB.AEATSII.execute` ends its branch in `else → TYPE_ERROR`). A bare
+    **string** message (`{ message: "…" }`) is not a handler answer but a script saying something, and
+    keeps the success default, so a silent action never turns into a false error.
+  - **The migrated script should still map the severity itself.** The default above is a safety net, not a
+    substitute for the port: whenever the Classic source ends its severity branch in a plain `else`, port
+    that `else` —
+    `const toMessageType = (s) => (s === "success" || s === "warning" ? s : "error")`. That keeps the
+    behaviour readable at the process level and independent of a platform default, and it is the only way
+    to reproduce a Classic branch that maps some *other* value (e.g. an `info` treated as a warning).
+    Recognising the error by its title is never an option: that title is the translated `AD_MESSAGE`
+    `Error` label, so any such rule dies with the first language change.
+- **An `openUrl` marked `erpHosted` lands on the Classic host with a live session.** Classic scripts build
+  ERP URLs as `OB.Utilities.getLocationUrlWithoutFragment() + "web/<module>/…"`, which works there only
+  because the classic UI is itself served from the ERP. A migrated hook instead returns the ERP-relative
+  path with `erpHosted: true` (`{ type: "openUrl", url: "/web/com.etendoerp.openapi/?tag=X",
+  erpHosted: true }`) and the substrate resolves the host, routing the tab through `/meta/legacy/redirect`
+  so it arrives on the real Classic path **and** carries a Classic session cookie. Both matter: an ERP page
+  that derives its own context path from `window.location` computes it correctly, and its authenticated
+  requests succeed. Payloads without the flag — every external hand-off (OAuth consent, document pickers) —
+  are opened exactly as before, never rewritten. Building the URL against the new UI's `/api/erp/` proxy
+  does **not** work: that proxy requires a `Bearer` header a new tab cannot send.
+- **The direct-execute overlay yields to a message.** A `directExecute` process shows only a bare loading
+  overlay, which has no message bar. As soon as a message exists — one a script raised, or the platform's
+  own "popup blocked / Open link" banner — the full chrome renders so the message is visible and
+  actionable. Without this, an `openUrl` whose popup was blocked left the user on a spinner that never
+  resolved, with the only remaining way to reach the URL hidden behind it.
+- **A script's `closeModal` always closes the dialog.** The modal refuses a **user-initiated** close (the
+  X, the footer buttons, the backdrop) while a process is running, so a stray click cannot abandon an
+  execution mid-flight. A close requested by the script itself — `openUrl`'s `closeModal: true` — is not
+  that: it is the process reporting it is done, and it dispatches from *inside* the execution transition,
+  where the pending guard would always refuse it. The two paths are now separate. Without this a
+  `directExecute` + `openUrl` process handed off its URL and then left an un-dismissable spinner behind,
+  because in direct-execute mode there is no chrome to close by hand either.
+- **An HTTP helper's response is readable at both nesting levels.** `callAction`, `callDatasource` and
+  `callServlet` return the parsed body nested under `data` **and** spread onto the wrapper, so
+  `result.data.message` (the documented form) and `result.message` (the classic form —
+  `OB.RemoteCallManager.call` handed the body to its callback as `data`, which is how ported scripts were
+  written) resolve to the same value. `data` is written last, so it stays authoritative even for a body
+  carrying its own `data` field, and every existing reader — `result.data.<field>`, `return await
+  callAction(…)`, the `OB.RemoteCallManager` adapter — keeps behaving identically. This closes a silent
+  failure mode: a script reading the wrong level found `undefined`, its error guard never fired, and the
+  process reported success while the handler had actually refused. No script change is required.
+- **A hand-off that cannot be served is never reported as success.** An `onProcess` returning
+  `{ type: "openUrl" }` with no usable `url` — typically because the handler answered with an error the
+  script did not inspect — now surfaces an error in the modal instead of falling through to the generic
+  "Process completed successfully". A well-formed hand-off is unaffected.
 - **Caveat — don't `focusInItem` a numeric parameter that is seeded programmatically on open.** The shared
   numeric input (`NumericSelector`) re-syncs its *displayed* value from the form value only while the field
   is **not** focused, and on blur it commits its displayed string back to the form. So if `onLoad` focuses a
@@ -815,6 +892,7 @@ React-free `OB` per modal:
 | `OB.MessageBar` | severity constants (Section 8.2). |
 | `OB.RemoteCallManager` | `call(...)` callback↔Promise adapter (Section 8.7). |
 | `OB.Datasource` | `create(config)` datasource façade (Section 8.8). |
+| `OB.User` | Session user identity: `id` (= `AD_User_ID`), `name`, `userName` — mapped 1:1 from classic `OB.User`. Sourced from the already-loaded session user; empty strings when none is injected. Only `id` is read by any migrated process script today (`ETRX_GetToken.js`), so no other classic `OB.User.*` field (`clientId`, `roleId`, `csrfToken`, …) is exposed — add on measured need, not speculatively. |
 | `OB.TestRegistry` | `register(...)` no-op. |
 | `OB.<Module>.<Process>` | module-namespace writes are tolerated, so a module body can self-register `OB.APRM.AddPayment = {…}`. |
 

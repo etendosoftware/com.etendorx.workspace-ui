@@ -4,7 +4,13 @@ import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { setErpSessionCookie, getErpCsrfToken } from "../../_utils/sessionStore";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
-import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
+import {
+  detectCharset,
+  isBinaryContentType,
+  createHtmlResponse,
+  rewriteHtmlResourceUrls,
+  buildErpErrorCodeHeaders,
+} from "./route.helpers";
 
 type RequestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
@@ -136,6 +142,10 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes("meta/dashboard/") ||
     slug.includes("meta/widget/") ||
     slug.includes("meta/favorites") ||
+    // The session payload reflects mutations that do not change the token (and therefore not the
+    // cache key), such as a password change clearing the expired flag. Caching it would keep serving
+    // the pre-mutation state indefinitely — the cache has no revalidation window.
+    slug.includes("meta/session") ||
     method !== "GET"
   );
 }
@@ -650,7 +660,7 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
         status: erpError.status,
         statusText: erpError.statusText,
       },
-      { status: erpError.status }
+      { status: erpError.status, headers: buildErpErrorCodeHeaders(erpError.errorText ?? erpError.message) }
     );
   }
 

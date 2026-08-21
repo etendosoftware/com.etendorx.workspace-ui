@@ -126,7 +126,7 @@ describe("ERP slug route coverage", () => {
           error: expect.stringContaining("ERP request failed"),
           details: "Backend crashed",
         }),
-        { status: 500 }
+        expect.objectContaining({ status: 500 })
       );
     });
 
@@ -369,9 +369,10 @@ describe("ERP slug route coverage", () => {
 
       // The status should default to 404 because slugContainsCopilot is true inside `getCachedErpData`.
       expect(response.status).toBe(404);
-      expect(NextResponse.json).toHaveBeenCalledWith(expect.objectContaining({ details: "Not Installed" }), {
-        status: 404,
-      });
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ details: "Not Installed" }),
+        expect.objectContaining({ status: 404 })
+      );
     });
   });
 

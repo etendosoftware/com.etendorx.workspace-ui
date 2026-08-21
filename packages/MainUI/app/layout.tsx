@@ -95,12 +95,14 @@ export default async function RootLayout({
                           <FavoritesProvider data-testid="FavoritesProvider__ba7569">
                             <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
                             <Layout data-testid="Layout__ba7569">{children}</Layout>
-                            <Toaster data-testid="Toaster__ba7569" />
                           </FavoritesProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>
                     </DatasourceProvider>
                   </UserProvider>
+                  {/* Outside UserProvider: it replaces its subtree with the login and the mandatory
+                      password-change screens, which also need to raise toasts. */}
+                  <Toaster data-testid="Toaster__ba7569" />
                 </LanguageProvider>
               </PreferencesProvider>
             </ThemeProvider>

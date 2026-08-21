@@ -388,6 +388,38 @@ describe("scriptProxies", () => {
       expect(withGrid.viewGrid).toBe(grid);
     });
 
+    it("exposes hookData both nested and spread on the root", () => {
+      const { handle } = makeFormHandle();
+      const selectedRecords = [row("inv-1", { organization: "ORG-1" })];
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        hookData: { selectedRecords, recordIds: ["inv-1"] },
+      });
+
+      // The form the migration guide documents...
+      expect(view.hookData.selectedRecords).toBe(selectedRecords);
+      expect(view.hookData.recordIds).toEqual(["inv-1"]);
+      // ...and the flat form earlier migrations were written against.
+      expect(view.selectedRecords).toBe(selectedRecords);
+      expect(view.recordIds).toEqual(["inv-1"]);
+    });
+
+    it("defaults hookData to an empty object when the hook supplies none", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, { messageBar });
+      // Never undefined: `view.hookData.x` reads as undefined instead of throwing.
+      expect(view.hookData).toEqual({});
+    });
+
+    it("keeps the canonical hookData accessor when the data carries a stray hookData key", () => {
+      const { handle } = makeFormHandle();
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        hookData: { hookData: "stray", recordIds: ["r-1"] },
+      });
+      expect(view.hookData.recordIds).toEqual(["r-1"]);
+    });
+
     it("throws from action methods when no viewController is given", () => {
       const { handle } = makeFormHandle();
       const view = createViewProxy(handle, PARAMETERS, { messageBar });

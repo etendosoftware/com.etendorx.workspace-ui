@@ -106,6 +106,20 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     expect(keepOpenCall).toBeUndefined();
   });
 
+  it("closes and toasts instead of keeping open when retryExecution=true but the message is success", async () => {
+    mockFetchJson({ retryExecution: true, refreshParent: true, ...SUCCESS_RESPONSE });
+    const setResult = jest.fn();
+    const onClose = jest.fn();
+
+    await runProcess({ setResult, onClose });
+
+    const keepOpenCall = setResult.mock.calls.find(
+      ([arg]) => arg && typeof arg === "object" && "keepOpen" in arg && arg.keepOpen === true
+    );
+    expect(keepOpenCall).toBeUndefined();
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("reads retryExecution nested under response.data", async () => {
     mockFetchJson({ response: { data: { retryExecution: true } } });
     const setGridRefreshKey = jest.fn();

@@ -7,8 +7,12 @@ import { parseUrlState, getWindowName } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
 import { syncReconstructedHierarchyToSession } from "@/utils/recovery/reconstructedSessionSync";
-import { createRecoveryWindowState, getWindowIdFromIdentifier } from "@/utils/window/utils";
+import { createRecoveryWindowState, getWindowIdFromIdentifier, markLastWindowAsActive } from "@/utils/window/utils";
 import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
+import { isWindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
+import { buildAccessDeniedToastTexts, reportWindowsAccessDenied } from "@/utils/accessDenied";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { WindowState } from "@/utils/window/constants";
 
 /**
@@ -55,6 +59,7 @@ import type { WindowState } from "@/utils/window/constants";
 export const useGlobalUrlStateRecovery = () => {
   const searchParams = useSearchParams();
   const { loadWindowData } = useMetadataStore();
+  const { t } = useTranslation();
 
   const [recoveredWindows, setRecoveredWindows] = useState<WindowState[]>([]);
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(true);
@@ -84,6 +89,9 @@ export const useGlobalUrlStateRecovery = () => {
       if (!isMounted.current) return;
       setIsRecoveryLoading(true);
       setRecoveryError(null);
+      useWindowStore.getState().setAccessDeniedWindowCount(0);
+      // Windows the current role is not allowed to open; they are dropped instead of recovered.
+      const deniedIdentifiers: string[] = [];
       try {
         // Extract all window identifiers from URL (wi_0, wi_1, wi_2, ...)
         const recoveryDataList = parseWindowRecoveryData(searchParams);
@@ -96,7 +104,7 @@ export const useGlobalUrlStateRecovery = () => {
 
         // Parallel recovery of all windows for better performance
         // Each window recovery is independent and can run concurrently
-        const windowPromises = recoveryDataList.map(async (info, index) => {
+        const windowPromises = recoveryDataList.map(async (info, index): Promise<WindowState | null> => {
           const windowId = getWindowIdFromIdentifier(info.windowIdentifier);
 
           try {
@@ -150,6 +158,13 @@ export const useGlobalUrlStateRecovery = () => {
             }
             return windowState;
           } catch (error) {
+            // The role cannot open this window: drop it instead of opening a useless tab. Reported
+            // afterwards, once it is known whether any other window survived.
+            if (isWindowAccessDeniedError(error)) {
+              deniedIdentifiers.push(info.windowIdentifier);
+              return null;
+            }
+
             console.warn(
               `[Recovery] Failed to recover window ${info.windowIdentifier}, falling back to minimal state.`,
               error
@@ -166,12 +181,22 @@ export const useGlobalUrlStateRecovery = () => {
         });
 
         // Wait for all windows to complete recovery
-        const windows = await Promise.all(windowPromises);
+        const results = await Promise.all(windowPromises);
+        // isActive was assigned per URL index, so it has to be recomputed over the survivors:
+        // otherwise, if the discarded window was the last one, none would end up active.
+        const windows = markLastWindowAsActive(results.filter((state): state is WindowState => state !== null));
 
         if (isMounted.current) {
           setRecoveredWindows(windows);
           setIsRecoveryLoading(false);
         }
+
+        reportWindowsAccessDenied({
+          deniedCount: deniedIdentifiers.length,
+          remainingWindowCount: windows.length,
+          texts: buildAccessDeniedToastTexts(t),
+          showAccessDeniedScreen: useWindowStore.getState().setAccessDeniedWindowCount,
+        });
       } catch (error) {
         console.error("Global recovery failed", error);
         if (isMounted.current) {
@@ -182,7 +207,7 @@ export const useGlobalUrlStateRecovery = () => {
     };
 
     recoverAllWindows();
-  }, [searchParams, loadWindowData]);
+  }, [searchParams, loadWindowData, t]);
 
   /**
    * Triggers recovery to run again by resetting the hasRun guard.

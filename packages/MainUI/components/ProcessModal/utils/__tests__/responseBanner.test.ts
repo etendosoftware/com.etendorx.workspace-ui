@@ -1,4 +1,26 @@
-import { buildSuccessBannerMessage, readBannerRawMessage } from "../responseBanner";
+import { buildSuccessBannerMessage, readBannerRawMessage, readBannerTitle } from "../responseBanner";
+
+describe("readBannerTitle", () => {
+  it("returns the server-supplied `msgTitle`", () => {
+    expect(readBannerTitle({ msgTitle: "Recalculation failed", msgText: "Boom" })).toBe("Recalculation failed");
+  });
+
+  it("returns undefined when the response carries no title (generic heading stands)", () => {
+    expect(readBannerTitle({ msgText: "Boom" })).toBeUndefined();
+    expect(readBannerTitle({ msgTitle: "" })).toBeUndefined();
+    expect(readBannerTitle({})).toBeUndefined();
+  });
+
+  it("returns undefined for the shapes other execution paths produce", () => {
+    expect(readBannerTitle("a plain string result")).toBeUndefined();
+    expect(readBannerTitle(undefined)).toBeUndefined();
+    expect(readBannerTitle(null)).toBeUndefined();
+  });
+
+  it("ignores a non-string `msgTitle`", () => {
+    expect(readBannerTitle({ msgTitle: 42 })).toBeUndefined();
+  });
+});
 
 describe("readBannerRawMessage", () => {
   it("returns the string when `data` is a plain string", () => {
