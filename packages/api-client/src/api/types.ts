@@ -282,6 +282,8 @@ export interface Field {
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
   isActive: boolean;
+  /** AD_Field.ISACTIVE, as sent on the wire (isActive above is not actually populated by the backend). */
+  active?: boolean;
   gridDisplayLogic: string;
   /**
    * Indicates if this field contains the parent record ID in a hierarchical tab structure.
@@ -524,6 +526,12 @@ export interface Tab {
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
   auxiliaryInputs?: AuxiliaryInput[];
+  /** AD_Tab.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
+  /** AD_Tab column position — used to order tabs the same way Classic's Help view does. */
+  sequenceNumber?: number;
+  /** AD_Tab.ISACTIVE — inactive tabs are excluded from Classic's Help view. */
+  active?: boolean;
 }
 
 export interface WindowMetadata {
@@ -534,6 +542,8 @@ export interface WindowMetadata {
   tabs: Tab[];
   window$_identifier: string;
   windowType?: string;
+  /** AD_Window.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
   /**
    * `true` when the current role has an active AD_Window_Access record for this window, `false`
    * when the ERP served it through its implicit read-only fallback. Optional because older

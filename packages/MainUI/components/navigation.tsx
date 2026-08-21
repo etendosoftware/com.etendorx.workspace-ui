@@ -35,6 +35,7 @@ import { useCopilot } from "@/hooks/useCopilot";
 import { buildContextString } from "@/utils/contextUtils";
 import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
+import HelpAccess from "./Header/HelpAccess";
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -218,6 +219,7 @@ const Navigation: React.FC = () => {
           />
         )}
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
+        <HelpAccess data-testid="HelpAccess__120cc9" />
         <ProfileModal
           icon={<PersonIcon className="w-5 h-5" data-testid="PersonIcon__120cc9" />}
           sections={sections}
