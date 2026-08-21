@@ -4,12 +4,16 @@ export const ToastContent = ({
   linkTabId,
   linkRecordId,
   onNavigate,
+  onReload,
+  reloadLabel,
 }: {
   message: string;
   isHtml?: boolean;
   linkTabId?: string;
   linkRecordId?: string;
   onNavigate?: (tabId: string, recordId: string) => void;
+  onReload?: () => void | Promise<void>;
+  reloadLabel?: string;
 }) => {
   if (!message) return null;
 
@@ -42,6 +46,14 @@ export const ToastContent = ({
           onClick={() => onNavigate(linkTabId, linkRecordId)}
           className="text-sm font-bold underline hover:opacity-80 transition-opacity self-start">
           View Details
+        </button>
+      )}
+      {onReload && (
+        <button
+          type="button"
+          onClick={() => onReload()}
+          className="text-sm font-bold underline hover:opacity-80 transition-opacity self-start">
+          {reloadLabel || "Reload"}
         </button>
       )}
     </div>

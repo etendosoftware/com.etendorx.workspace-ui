@@ -28,6 +28,7 @@ import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/
 import { isStaleObjectError } from "@/components/Table/utils/saveOperations";
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
+import type { TranslateFunction } from "@/hooks/types";
 
 /**
  * Extracts a human-readable error message from the datasource servlet response.
@@ -50,14 +51,111 @@ export function extractServerErrorMessage(response: Record<string, unknown> | un
   return "Unknown server error";
 }
 
+export interface OnErrorOptions {
+  onReload?: () => void | Promise<void>;
+}
+
+/**
+ * Builds the showErrorModal options for an onError callback given an optional reload action,
+ * so callers show the reload-aware conflict notice without duplicating the label lookup.
+ */
+export function buildReloadModalOptions(
+  onReload: (() => void | Promise<void>) | undefined,
+  t: TranslateFunction
+): { onReload: () => void | Promise<void>; reloadLabel: string } | undefined {
+  return onReload ? { onReload, reloadLabel: t("status.staleObjectReloadAction") } : undefined;
+}
+
+/**
+ * Strips {@code id}/{@code id$_identifier} from {@code values} (and {@code initialState}, if
+ * present) when {@code shouldRemove} is true -- new records must not send an id back to the
+ * datasource servlet. Mirrors the datasource servlet's own field set exactly, including always
+ * spreading {@code initialState} into a plain object even when it's undefined.
+ */
+function stripIdFieldsIfNeeded(
+  values: EntityData,
+  initialState: EntityData | undefined,
+  shouldRemove: boolean
+): { processedValues: EntityData; processedInitialState: EntityData } {
+  let processedValues = { ...values };
+  let processedInitialState = { ...initialState };
+
+  if (shouldRemove) {
+    const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
+    processedValues = valuesWithoutId as EntityData;
+
+    if (processedInitialState) {
+      const { id: initialId, id$_identifier: initialIdIdentifier, ...initialWithoutId } = processedInitialState;
+      processedInitialState = initialWithoutId as EntityData;
+    }
+  }
+
+  return { processedValues, processedInitialState };
+}
+
+/**
+ * Resolves the error message from a failed save response.
+ *
+ * com.etendoerp.metadata's ForwarderServlet returns a distinct, flat 409 body for version
+ * conflicts ({@code {error, code: "STALE_OBJECT", cid}}), instead of the generic nested shape
+ * used for every other save error.
+ */
+function resolveSaveErrorMessage(status: number, data: Record<string, unknown> | undefined): string {
+  const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
+  return isStructuredConflict
+    ? (data?.error as string)
+    : extractServerErrorMessage(data?.response as Record<string, unknown> | undefined);
+}
+
+interface SaveErrorHandlers {
+  logout: () => void;
+  setLoginErrorText: (text: string) => void;
+  setLoginErrorDescription: (description: string) => void;
+  onError?: (data: string, options?: OnErrorOptions) => void;
+  onStaleObjectReload?: () => void | Promise<void>;
+  t: TranslateFunction;
+}
+
+/**
+ * Routes a failed save to the right handler: a CSRF/session error logs the user out, a
+ * stale-object conflict surfaces the specific reload-aware notice, and everything else falls
+ * back to the generic {@code onError}.
+ */
+function handleSaveError(err: unknown, handlers: SaveErrorHandlers): void {
+  const errorMessage = err instanceof Error ? err.message : String(err);
+
+  if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
+    handlers.logout();
+    handlers.setLoginErrorText(handlers.t("login.errors.csrfToken.title"));
+    handlers.setLoginErrorDescription(handlers.t("login.errors.csrfToken.description"));
+    return;
+  }
+  if (errorMessage === DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR) {
+    handlers.logout();
+    handlers.setLoginErrorText(handlers.t("login.errors.noAccessTableNoView.title"));
+    handlers.setLoginErrorDescription(handlers.t("login.errors.noAccessTableNoView.description"));
+    return;
+  }
+  if (isStaleObjectError(errorMessage)) {
+    handlers.onError?.(
+      handlers.t("status.staleObjectError"),
+      handlers.onStaleObjectReload ? { onReload: handlers.onStaleObjectReload } : undefined
+    );
+    return;
+  }
+  handlers.onError?.(String(err));
+}
+
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData, options: SaveOptions) => void | Promise<void>;
-  onError: (data: string) => void;
+  onError: (data: string, options?: OnErrorOptions) => void;
   initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData>;
+  /** Called to refresh the record when the user chooses to reload after a stale-object conflict. */
+  onStaleObjectReload?: () => void | Promise<void>;
 }
 
 export const useFormAction = ({
@@ -68,6 +166,7 @@ export const useFormAction = ({
   onError,
   initialState,
   submit,
+  onStaleObjectReload,
 }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
@@ -86,21 +185,8 @@ export const useFormAction = ({
         setLoading(true);
 
         const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
-
         const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
-
-        let processedValues = { ...values };
-        let processedInitialState = { ...initialState };
-
-        if (shouldRemoveId) {
-          const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
-          processedValues = valuesWithoutId as EntityData;
-
-          if (processedInitialState) {
-            const { id: initialId, id$_identifier: initialIdIdentifier, ...initialWithoutId } = processedInitialState;
-            processedInitialState = initialWithoutId as EntityData;
-          }
-        }
+        const { processedValues, processedInitialState } = stripIdFieldsIfNeeded(values, initialState, shouldRemoveId);
 
         const body = buildFormPayload({
           values: processedValues,
@@ -116,36 +202,25 @@ export const useFormAction = ({
           method: "POST",
           body: normalizeDates(body) as Record<string, unknown>,
         };
-        const { ok, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
+        const { ok, status, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
           lastSaveSucceeded.current = true;
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
-          const errorMsg = extractServerErrorMessage(data?.response);
-          throw new Error(errorMsg);
+          throw new Error(resolveSaveErrorMessage(status, data));
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
         setLoading(false);
-        if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
-          logout();
-          setLoginErrorText(t("login.errors.csrfToken.title"));
-          setLoginErrorDescription(t("login.errors.csrfToken.description"));
-          return;
-        }
-        if (errorMessage === DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR) {
-          logout();
-          setLoginErrorText(t("login.errors.noAccessTableNoView.title"));
-          setLoginErrorDescription(t("login.errors.noAccessTableNoView.description"));
-          return;
-        }
-        if (isStaleObjectError(errorMessage)) {
-          onError?.(t("status.staleObjectError"));
-          return;
-        }
-        onError?.(String(err));
+        handleSaveError(err, {
+          logout,
+          setLoginErrorText,
+          setLoginErrorDescription,
+          onError,
+          onStaleObjectReload,
+          t,
+        });
       }
     },
     [
@@ -160,6 +235,7 @@ export const useFormAction = ({
       t,
       setLoginErrorText,
       setLoginErrorDescription,
+      onStaleObjectReload,
     ]
   );
 

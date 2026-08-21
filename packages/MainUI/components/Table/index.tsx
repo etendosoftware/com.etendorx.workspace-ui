@@ -128,6 +128,7 @@ import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
+import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -787,6 +788,7 @@ const DynamicTable = ({
     registerFetchMore,
     registerUpdateRecord,
     registerAddRecord,
+    refetchDatasource,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
   const windowIdentifier = useCurrentWindowIdentifier();
@@ -2021,7 +2023,7 @@ const DynamicTable = ({
 
       if (generalError) {
         logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-        showErrorModal(generalError);
+        notifyStaleObjectAwareError(showErrorModal, generalError, t, () => refetchDatasource(tab.id));
       }
 
       editingRowUtils.setRowSaving(rowId, false);
@@ -2031,7 +2033,7 @@ const DynamicTable = ({
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
       }
     },
-    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate]
+    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate, t, refetchDatasource, tab.id]
   );
 
   /**
@@ -2050,7 +2052,7 @@ const DynamicTable = ({
         _general: errorMessage,
       });
 
-      showErrorModal(errorMessage);
+      notifyStaleObjectAwareError(showErrorModal, errorMessage, t, () => refetchDatasource(tab.id));
 
       if (screenReaderAnnouncer) {
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
@@ -2063,6 +2065,9 @@ const DynamicTable = ({
       optimisticRecords,
       displayRecords,
       rollbackOptimisticUpdate,
+      t,
+      refetchDatasource,
+      tab.id,
     ]
   );
 

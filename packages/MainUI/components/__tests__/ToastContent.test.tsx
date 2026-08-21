@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import { ToastContent } from "../ToastContent";
 
 describe("ToastContent", () => {
@@ -26,5 +26,26 @@ describe("ToastContent", () => {
   it("does not render html tags when not passing html", () => {
     const { getByText } = render(<ToastContent message="Hello World" />);
     expect(getByText("Hello World")).toBeInTheDocument();
+  });
+
+  it("renders a reload button and fires onReload when clicked", () => {
+    const onReload = jest.fn();
+    const { getByText } = render(<ToastContent message="Conflict" onReload={onReload} reloadLabel="Reload" />);
+
+    const button = getByText("Reload");
+    expect(button).toBeInTheDocument();
+
+    fireEvent.click(button);
+    expect(onReload).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the default 'Reload' label when reloadLabel is not provided", () => {
+    const { getByText } = render(<ToastContent message="Conflict" onReload={jest.fn()} />);
+    expect(getByText("Reload")).toBeInTheDocument();
+  });
+
+  it("does not render a reload button when onReload is not provided", () => {
+    const { queryByText } = render(<ToastContent message="Hello World" />);
+    expect(queryByText("Reload")).not.toBeInTheDocument();
   });
 });

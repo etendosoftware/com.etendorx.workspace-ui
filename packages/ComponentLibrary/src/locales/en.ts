@@ -139,6 +139,7 @@ const en = {
     noRecords: "Please create a new record",
     copyError: "Copy failed! Please try again or contact support.",
     staleObjectError: "The record has been modified by another user or process. Please refresh and try again.",
+    staleObjectReloadAction: "Reload",
   },
   errors: {
     tableError: {
