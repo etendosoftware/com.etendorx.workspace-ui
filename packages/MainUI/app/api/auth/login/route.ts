@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
-import { setErpSessionCookie, setErpCsrfToken, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
+import { storeErpSession } from "../../_utils/erpSession";
 import { joinUrl } from "../../_utils/url";
 import { handleLoginError } from "../../_utils/sessionErrors";
 
@@ -127,44 +128,6 @@ async function handleErpErrorResponse(data: any, body: any, userToken: string | 
   return NextResponse.json({ message: data.message || "Login failed" }, { status: 401 });
 }
 
-function extractJSessionId(erpResponse: Response): string | null {
-  // getSetCookie() is the correct Node.js 18+ API for multiple Set-Cookie headers
-  const cookies = (erpResponse.headers as any).getSetCookie?.() as string[] | undefined;
-  if (cookies) {
-    for (const cookie of cookies) {
-      const match = cookie.match(/JSESSIONID=([^;]+)/);
-      if (match) return match[1];
-    }
-  }
-
-  // Fallback: headers.get concatenates Set-Cookie values with ", "
-  const single = erpResponse.headers.get("set-cookie");
-  if (single) {
-    const match = single.match(/JSESSIONID=([^;]+)/);
-    if (match) return match[1];
-  }
-
-  return null;
-}
-
-function storeCookieForToken(erpResponse: Response, data: any): void {
-  try {
-    const jsession = extractJSessionId(erpResponse);
-    const csrfToken = erpResponse.headers.get("X-CSRF-Token") || erpResponse.headers.get("x-csrf-token") || null;
-    if (!jsession) {
-      // No JSESSIONID in response — store only CSRF token, don't poison the store with "JSESSIONID=null"
-      if (csrfToken) {
-        setErpCsrfToken(data.token, csrfToken);
-      }
-      return;
-    }
-    setErpSessionCookie(data.token, { cookieHeader: `JSESSIONID=${jsession}`, csrfToken });
-  } catch (e) {
-    console.error("Error storing session cookie:", e);
-    throw new Error("Failed to store session cookie");
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     validateEnvironment();
@@ -189,7 +152,7 @@ export async function POST(request: NextRequest) {
       return await handleErpErrorResponse(data, body, userToken);
     }
 
-    storeCookieForToken(erpResponse, data);
+    storeErpSession(erpResponse, data.token);
 
     if (!erpResponse.ok) {
       return NextResponse.json({ error: data.error || "Login failed" }, { status: erpResponse.status });

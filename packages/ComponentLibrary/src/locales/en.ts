@@ -406,6 +406,10 @@ const en = {
         title: "No Access to Table",
         description: "You have been automatically logged out for security reasons. Please log in again to continue.",
       },
+      sessionExpired: {
+        title: "Session expired due to inactivity",
+        description: "Your session was closed after a period of inactivity. Please log in again to continue.",
+      },
       defaultLogout: {
         title: "System Error - Session Closed",
         description:
