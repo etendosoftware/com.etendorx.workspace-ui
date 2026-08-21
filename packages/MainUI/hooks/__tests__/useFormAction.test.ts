@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { extractServerErrorMessage, useFormAction } from "../useFormAction";
+import { buildReloadModalOptions, extractServerErrorMessage, useFormAction } from "../useFormAction";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
@@ -176,5 +176,21 @@ describe("extractServerErrorMessage", () => {
   it("returns fallback when errors object is empty", () => {
     const response = { status: -4, errors: {} };
     expect(extractServerErrorMessage(response)).toBe("Unknown server error");
+  });
+});
+
+describe("buildReloadModalOptions", () => {
+  const t = (key: string) => key;
+
+  it("returns the reload action and label when a reload callback is given", () => {
+    const onReload = jest.fn();
+
+    const result = buildReloadModalOptions(onReload, t);
+
+    expect(result).toEqual({ onReload, reloadLabel: "status.staleObjectReloadAction" });
+  });
+
+  it("returns undefined when no reload callback is given", () => {
+    expect(buildReloadModalOptions(undefined, t)).toBeUndefined();
   });
 });

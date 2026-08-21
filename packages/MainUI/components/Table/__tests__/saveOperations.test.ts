@@ -25,6 +25,7 @@ import {
   getGeneralErrorMessage,
   isStaleObjectError,
   getStaleObjectErrorNotification,
+  notifyStaleObjectAwareError,
   buildSavePayload,
   validateRecordBeforeSave,
 } from "../utils/saveOperations";
@@ -502,6 +503,31 @@ describe("saveOperations", () => {
 
       expect(result.message).toBe("Some field is required");
       expect(result.options).toBeUndefined();
+    });
+  });
+
+  describe("notifyStaleObjectAwareError", () => {
+    const t = (key: string) => key;
+
+    it("shows the reload-aware conflict notice for a stale-object error", () => {
+      const showErrorModal = jest.fn();
+      const onReload = jest.fn();
+
+      notifyStaleObjectAwareError(showErrorModal, "Error: @OBJSON_StaleDate@ conflict", t, onReload);
+
+      expect(showErrorModal).toHaveBeenCalledWith("status.staleObjectError", {
+        onReload,
+        reloadLabel: "status.staleObjectReloadAction",
+      });
+    });
+
+    it("shows the plain message with no options for a non-conflict error", () => {
+      const showErrorModal = jest.fn();
+      const onReload = jest.fn();
+
+      notifyStaleObjectAwareError(showErrorModal, "Some field is required", t, onReload);
+
+      expect(showErrorModal).toHaveBeenCalledWith("Some field is required", undefined);
     });
   });
 

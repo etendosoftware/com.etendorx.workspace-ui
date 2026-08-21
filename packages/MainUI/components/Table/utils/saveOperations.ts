@@ -26,6 +26,7 @@ import { logger } from "@/utils/logger";
 import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from "../types/inlineEditing";
 import { getMergedRowData } from "./editingRowUtils";
 import { validateRowForSave } from "./validationUtils";
+import type { TranslateFunction } from "@/hooks/types";
 
 /**
  * Detects stale-object (optimistic lock) errors returned by Etendo Classic.
@@ -44,7 +45,7 @@ export function isStaleObjectError(errorMessage: string | undefined): boolean {
  */
 export function getStaleObjectErrorNotification(
   errorMessage: string,
-  t: (key: string) => string,
+  t: TranslateFunction,
   onReload: () => void
 ): { message: string; options?: { onReload: () => void; reloadLabel: string } } {
   if (!isStaleObjectError(errorMessage)) {
@@ -54,6 +55,20 @@ export function getStaleObjectErrorNotification(
     message: t("status.staleObjectError"),
     options: { onReload, reloadLabel: t("status.staleObjectReloadAction") },
   };
+}
+
+/**
+ * Resolves and shows the stale-object-aware error notification in one call, so call sites
+ * don't need to destructure {@code getStaleObjectErrorNotification}'s result themselves.
+ */
+export function notifyStaleObjectAwareError(
+  showErrorModal: (message: string, options?: { onReload: () => void; reloadLabel: string }) => void,
+  errorMessage: string,
+  t: TranslateFunction,
+  onReload: () => void
+): void {
+  const { message, options } = getStaleObjectErrorNotification(errorMessage, t, onReload);
+  showErrorModal(message, options);
 }
 
 /**

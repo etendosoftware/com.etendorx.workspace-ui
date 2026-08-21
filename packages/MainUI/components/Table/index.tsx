@@ -128,7 +128,7 @@ import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
-import { getStaleObjectErrorNotification } from "./utils/saveOperations";
+import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -2023,8 +2023,7 @@ const DynamicTable = ({
 
       if (generalError) {
         logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-        const { message, options } = getStaleObjectErrorNotification(generalError, t, () => refetchDatasource(tab.id));
-        showErrorModal(message, options);
+        notifyStaleObjectAwareError(showErrorModal, generalError, t, () => refetchDatasource(tab.id));
       }
 
       editingRowUtils.setRowSaving(rowId, false);
@@ -2053,8 +2052,7 @@ const DynamicTable = ({
         _general: errorMessage,
       });
 
-      const { message, options } = getStaleObjectErrorNotification(errorMessage, t, () => refetchDatasource(tab.id));
-      showErrorModal(message, options);
+      notifyStaleObjectAwareError(showErrorModal, errorMessage, t, () => refetchDatasource(tab.id));
 
       if (screenReaderAnnouncer) {
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);

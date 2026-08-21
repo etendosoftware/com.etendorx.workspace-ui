@@ -40,7 +40,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
-import { useFormAction, type OnErrorOptions } from "@/hooks/useFormAction";
+import { useFormAction, buildReloadModalOptions, type OnErrorOptions } from "@/hooks/useFormAction";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import type { FormViewProps } from "./types";
@@ -992,10 +992,7 @@ export function FormView({
    */
   const onError = useCallback(
     (data: string, options?: OnErrorOptions) => {
-      showErrorModal(
-        data,
-        options?.onReload ? { onReload: options.onReload, reloadLabel: t("status.staleObjectReloadAction") } : undefined
-      );
+      showErrorModal(data, buildReloadModalOptions(options?.onReload, t));
     },
     [showErrorModal, t]
   );

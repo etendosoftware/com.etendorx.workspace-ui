@@ -28,6 +28,7 @@ import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/
 import { isStaleObjectError } from "@/components/Table/utils/saveOperations";
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
+import type { TranslateFunction } from "@/hooks/types";
 
 /**
  * Extracts a human-readable error message from the datasource servlet response.
@@ -52,6 +53,17 @@ export function extractServerErrorMessage(response: Record<string, unknown> | un
 
 export interface OnErrorOptions {
   onReload?: () => void | Promise<void>;
+}
+
+/**
+ * Builds the showErrorModal options for an onError callback given an optional reload action,
+ * so callers show the reload-aware conflict notice without duplicating the label lookup.
+ */
+export function buildReloadModalOptions(
+  onReload: (() => void | Promise<void>) | undefined,
+  t: TranslateFunction
+): { onReload: () => void | Promise<void>; reloadLabel: string } | undefined {
+  return onReload ? { onReload, reloadLabel: t("status.staleObjectReloadAction") } : undefined;
 }
 
 /**
@@ -101,7 +113,7 @@ interface SaveErrorHandlers {
   setLoginErrorDescription: (description: string) => void;
   onError?: (data: string, options?: OnErrorOptions) => void;
   onStaleObjectReload?: () => void | Promise<void>;
-  t: (key: string) => string;
+  t: TranslateFunction;
 }
 
 /**
