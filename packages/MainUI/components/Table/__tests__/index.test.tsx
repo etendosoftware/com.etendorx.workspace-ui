@@ -67,6 +67,7 @@ jest.mock("@/contexts/datasourceContext", () => ({
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => ({
     registerActions: jest.fn(),
+    unregisterActions: jest.fn(),
     registerAttachmentAction: jest.fn(),
     setShouldOpenAttachmentModal: jest.fn(),
   }),

@@ -29,6 +29,7 @@ import { useFormInitializationContext } from "@/contexts/FormInitializationConte
 import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
 interface FormActionsProps {
   tab: Tab;
@@ -59,7 +60,7 @@ export function FormActions({
   const windowIdentifier = useCurrentWindowIdentifier();
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
-  const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
+  const { registerActions, unregisterActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
 
   useEffect(() => {
@@ -250,8 +251,11 @@ export function FormActions({
       new: handleNew,
     };
 
-    registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew]);
+    registerActions(actions, TOOLBAR_ACTION_OWNERS.FORM);
+    // Releasing the bucket on unmount is what makes CANCEL fall back to the
+    // tab's own handler once the form pane is gone.
+    return () => unregisterActions(TOOLBAR_ACTION_OWNERS.FORM);
+  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew]);
 
   return null;
 }

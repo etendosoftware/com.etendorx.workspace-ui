@@ -45,6 +45,7 @@ import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
@@ -76,6 +77,7 @@ import {
   getCurrentRowCanExpand,
   getCellTitle,
 } from "@/utils/table/utils";
+import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
@@ -117,6 +119,7 @@ import {
   useMemoryManager,
 } from "./utils/performanceOptimizations";
 import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/accessibilityUtils";
+import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
@@ -306,7 +309,8 @@ interface ActionsColumnCellProps {
   handleEditRow: (row: MRT_Row<EntityData>) => void;
   handleSaveRow: (rowId: string) => void;
   handleCancelRow: (rowId: string) => void;
-  setRecordId: (id: string) => void;
+  /** Selects this row and opens its record in form view. */
+  onOpenForm: () => void;
   uIPattern?: UIPattern;
 }
 
@@ -320,7 +324,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
   handleEditRow,
   handleSaveRow,
   handleCancelRow,
-  setRecordId,
+  onOpenForm,
   uIPattern,
 }) => {
   const rowId = String(row.original.id);
@@ -339,10 +343,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
       onEdit={() => handleEditRow(row)}
       onSave={() => handleSaveRow(rowId)}
       onCancel={() => handleCancelRow(rowId)}
-      onOpenForm={() => {
-        // Navigate to form view - this will handle the URL update properly
-        setRecordId(String(row.original.id));
-      }}
+      onOpenForm={onOpenForm}
       data-testid="ActionsColumn__8ca888"
       uIPattern={uIPattern}
     />
@@ -638,6 +639,11 @@ interface DynamicTableProps {
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
   isVisible?: boolean;
+  /**
+   * True when the grid is the only pane on screen. It is visible but NOT
+   * primary in split view, where the form pane owns the user's attention.
+   */
+  isPrimaryView?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
@@ -723,6 +729,7 @@ const DynamicTable = ({
   onRecordSelection,
   isTreeMode = true,
   isVisible = true,
+  isPrimaryView = true,
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
@@ -788,7 +795,8 @@ const DynamicTable = ({
     registerUpdateRecord,
     registerAddRecord,
   } = useDatasourceContext();
-  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
+  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
+    useToolbarContext();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
 
@@ -2361,21 +2369,49 @@ const DynamicTable = ({
     []
   );
 
+  /**
+   * Selects the row in the grid and opens its record in form view.
+   *
+   * Shared by the row double click, the Enter shortcut and the actions column "open form" button so
+   * the three entry points always leave the same grid selection behind, which is what keeps the row
+   * highlighted when the user comes back from the form to the grid.
+   */
+  const openRecordInFormView = useCallback(
+    (record: EntityData, tableInstance: MRT_TableInstance<EntityData>) => {
+      openRecordInForm({
+        record,
+        tab,
+        graph,
+        windowIdentifier,
+        getSelectedRecord,
+        setRecordId,
+        selectRow: (recordId: string) => {
+          // Mirrors the single click path: flag the change as user driven so the auto scroll effect
+          // does not fight the current viewport, and replace (never merge) the previous selection so
+          // the highlighted row and the opened record can never diverge.
+          isManualSelection.current = true;
+          tableInstance.setRowSelection({ [recordId]: true });
+        },
+      });
+    },
+    [tab, graph, windowIdentifier, getSelectedRecord, setRecordId]
+  );
+
   // Stable Cell renderer for actions column - extracted to prevent component remounts
   const renderActionsColumnCell = useCallback(
-    ({ row }: { row: MRT_Row<EntityData> }) => (
+    ({ row, table }: { row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) => (
       <ActionsColumnCell
         row={row}
         editingRowUtils={editingRowUtils}
         handleEditRow={handleEditRow}
         handleSaveRow={handleSaveRow}
         handleCancelRow={handleCancelRow}
-        setRecordId={setRecordId}
+        onOpenForm={() => openRecordInFormView(row.original, table)}
         uIPattern={uIPattern}
         data-testid="ActionsColumnCell__8ca888"
       />
     ),
-    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId, uIPattern]
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, openRecordInFormView, uIPattern]
   );
 
   // Stable Cell renderer for data columns - reads column metadata from column object
@@ -2773,27 +2809,9 @@ const DynamicTable = ({
           }
           clickTimeoutsRef.current.clear();
 
-          const parent = graph.getParent(tab);
-
-          // For child tabs, prevent opening form if parent has no selection in URL
-          if (parent) {
-            const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
-            if (!parentSelectedInURL) {
-              return;
-            }
-          }
-
-          // Set graph selection for consistency
-          const parentSelection = parent ? graph.getSelected(parent) : undefined;
-          graph.setSelected(tab, row.original);
-          graph.setSelectedMultiple(tab, [row.original]);
-
-          if (parent && parentSelection) {
-            setTimeout(() => graph.setSelected(parent, parentSelection), 10);
-          }
-
-          // Navigate to form view - this will handle the URL update properly
-          setRecordId(record.id);
+          // Select the row and navigate to form view. Selecting is what keeps the record
+          // highlighted when the user comes back to the grid.
+          openRecordInFormView(row.original, table);
         },
 
         // File attachment drag & drop props
@@ -2866,10 +2884,8 @@ const DynamicTable = ({
       };
     },
     [
-      graph,
-      setRecordId,
+      openRecordInFormView,
       sx.rowSelected,
-      tab,
       editingRowUtils,
       getRowDropZoneProps,
       shouldUseTreeMode,
@@ -2952,6 +2968,9 @@ const DynamicTable = ({
     () => ({
       ref: tableContainerRef,
       tabIndex: -1,
+      // Marks this container as where the grid pane hands the DOM focus over:
+      // row arrows and Enter only fire while the focus lives inside it.
+      [GRID_FOCUS_TARGET_ATTRIBUTE]: "",
       sx: { flex: 1, maxHeight: "100%", outline: "none" },
       onScroll: fetchMoreOnBottomReached,
     }),
@@ -3259,22 +3278,9 @@ const DynamicTable = ({
       const record = effectiveRecords.find((r) => String(r.id) === recordId);
       if (!record) return;
 
-      const parent = graph.getParent(tab);
-      if (parent) {
-        const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
-        if (!parentSelectedInURL) return;
-      }
-
-      const parentSelection = parent ? graph.getSelected(parent) : undefined;
-      graph.setSelected(tab, record);
-      graph.setSelectedMultiple(tab, [record]);
-      if (parent && parentSelection) {
-        setTimeout(() => graph.setSelected(parent, parentSelection), 10);
-      }
-
-      setRecordId(record.id as string);
+      openRecordInFormView(record, tableRef.current);
     },
-    [effectiveRecords, tableContainerRef, graph, tab, windowIdentifier, getSelectedRecord, setRecordId]
+    [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
 
   const handleNewWithParentGuard = useCallback(() => {
@@ -3344,37 +3350,20 @@ const DynamicTable = ({
   // `visibility: hidden` after React commits the className change, and
   // `.focus()` is a silent no-op while any ancestor has visibility:hidden.
   // Neither a microtask nor a single rAF is late enough; setTimeout(100) is.
+  //
+  // Skipped when the grid is not the primary view: in split view the form pane
+  // is on screen next to the grid, and stealing DOM focus would pull the caret
+  // out of the field the user is editing on every restore from maximized form.
   const previousIsVisibleRef = useRef(isVisible);
   useEffect(() => {
     const prev = previousIsVisibleRef.current;
     previousIsVisibleRef.current = isVisible;
-    if (prev || !isVisible) return;
+    if (prev || !isVisible || !isPrimaryView) return;
     const timeoutId = setTimeout(() => {
       tableContainerRef.current?.focus({ preventScroll: true });
     }, 100);
     return () => clearTimeout(timeoutId);
-  }, [isVisible]);
-
-  // Register attachment action for toolbar to handle interactions from TableView
-  useEffect(() => {
-    if (registerAttachmentAction && isVisible) {
-      registerAttachmentAction(() => {
-        const currentSelection = tableRef.current.getState().rowSelection;
-        // Filter keys where value is true to ensure valid selection
-        const selectedIds = Object.keys(currentSelection).filter((key) => currentSelection[key]);
-
-        if (selectedIds.length === 1) {
-          const recordId = selectedIds[0];
-          setShouldOpenAttachmentModal(true);
-          setRecordId(recordId);
-        } else if (selectedIds.length === 0) {
-          showErrorModal(t("status.selectRecordError"));
-        } else {
-          showErrorModal(t("status.selectSingleRecordError"));
-        }
-      });
-    }
-  }, [registerAttachmentAction, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
+  }, [isVisible, isPrimaryView]);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
@@ -3719,16 +3708,20 @@ const DynamicTable = ({
     fetchMore,
   ]);
 
+  // The grid never registers `save`: the no-op default already covers grid-only
+  // mode, and registering one here used to clobber the form's real save.
   useEffect(() => {
-    if (isVisible) {
-      registerActions({
+    if (!isVisible) return;
+    registerActions(
+      {
         refresh: refetch,
         filter: toggleImplicitFilters,
-        save: async () => false,
         columnFilters: toggleColumnsDropdown,
-      });
-    }
-  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
+      },
+      TOOLBAR_ACTION_OWNERS.GRID
+    );
+    return () => unregisterActions(TOOLBAR_ACTION_OWNERS.GRID);
+  }, [refetch, registerActions, unregisterActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView

@@ -60,6 +60,8 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW]:
     "toolbar-button-save-view h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0",
+  [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]:
+    "toolbar-button-show-table-and-form border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)]",
 } as const;
 
 export const DefaultIcon = () => (
@@ -101,23 +103,35 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (
-  button: ToolbarButtonMetadata,
-  isFormView: boolean,
-  isTreeNodeView?: boolean,
-  tab?: Tab,
-  isCopilotInstalled?: boolean
-) => {
+/**
+ * View-dependent inputs of the button visibility rules.
+ *
+ * `isSplitView` means grid and form share the screen, so grid-oriented buttons
+ * must stay available even though `isFormView` is also true.
+ */
+export interface ToolbarButtonContext {
+  isFormView: boolean;
+  isSplitView?: boolean;
+  isTreeNodeView?: boolean;
+  tab?: Tab;
+  isCopilotInstalled?: boolean;
+}
+
+const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContext) => {
   if (!button.active) return false;
 
-  const isFindButtonInFormView = (isFormView || isTreeNodeView) && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
+  const { isFormView, isSplitView, isTreeNodeView, tab, isCopilotInstalled } = ctx;
+  // Single source of truth for the three grid-oriented visibility rules.
+  const isGridOnScreen = !isFormView || Boolean(isSplitView);
+
+  const isFindButtonHidden = (!isGridOnScreen || isTreeNodeView) && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
-  const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
+  const isFilterButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
   const isPrintButtonInTransactionWindow =
     button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
-  const isSaveViewButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
+  const isSaveViewButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
 
   const uIPattern = tab?.uIPattern;
   const isNewForSrOrEd =
@@ -129,32 +143,31 @@ const isVisibleButton = (
       button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE ||
       button.action === TOOLBAR_BUTTONS_ACTIONS.DELETE ||
       button.action === TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD);
+  // Single-record tabs always show their form; a split view has nothing to add.
+  const isSplitToggleForSr =
+    button.action === TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM && uIPattern === UIPattern.EDIT_ONLY;
 
   return (
-    !isFindButtonInFormView &&
+    !isFindButtonHidden &&
     !isSaveButtonInNonFormView &&
-    !isFilterButtonInFormView &&
+    !isFilterButtonHidden &&
     !isToggleTreeView &&
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
-    !isSaveViewButtonInFormView &&
+    !isSaveViewButtonHidden &&
     !isNewForSrOrEd &&
-    !isWriteActionForRo
+    !isWriteActionForRo &&
+    !isSplitToggleForSr
   );
 };
 
 export const organizeButtonsBySection = (
   buttons: ToolbarButtonMetadata[],
-  isFormView: boolean,
-  isTreeNodeView?: boolean,
-  tab?: Tab,
-  isCopilotInstalled?: boolean
+  ctx: ToolbarButtonContext
 ): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) =>
-    isVisibleButton(button, isFormView, isTreeNodeView, tab, isCopilotInstalled)
-  );
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, ctx));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -184,6 +197,7 @@ export const createButtonByType = ({
   tab,
   selectedRecordsLength,
   isAdvancedFilterApplied,
+  isSplitView,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -199,6 +213,7 @@ export const createButtonByType = ({
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  isSplitView?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -283,6 +298,9 @@ export const createButtonByType = ({
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      // With a form open it toggles split ⇄ maximized form; from the grid it
+      // needs a selected record to open in split view.
+      [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]: () => buildDisableConfig(!isFormView && !hasSelectedRecord),
     };
 
     const handler = actionHandlers[button.action];
@@ -323,6 +341,9 @@ export const createButtonByType = ({
       return { isPressed: true };
     }
     if (button.action === TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS && isAdvancedFilterApplied) {
+      return { isPressed: true };
+    }
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM && isSplitView) {
       return { isPressed: true };
     }
     return {};
@@ -373,6 +394,7 @@ interface ButtonConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  isSplitView?: boolean;
 }
 
 /**
@@ -399,6 +421,7 @@ const createSectionButtons = (
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
+      isSplitView: config.isSplitView,
     });
 
     // Apply button-specific styles if available
@@ -445,6 +468,7 @@ interface ToolbarSectionsConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  isSplitView?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -464,16 +488,24 @@ export const getToolbarSections = ({
   tab,
   selectedRecordsLength,
   isAdvancedFilterApplied = false,
+  isSplitView = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
 } => {
-  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView, tab, isCopilotInstalled);
+  const organizedButtons = organizeButtonsBySection(buttons, {
+    isFormView,
+    isSplitView,
+    isTreeNodeView,
+    tab,
+    isCopilotInstalled,
+  });
 
   // Shared configuration object to avoid parameter repetition
   const buttonConfig: ButtonConfig = {
     isFormView,
+    isSplitView,
     hasFormChanges,
     hasParentRecordSelected,
     saveButtonState,

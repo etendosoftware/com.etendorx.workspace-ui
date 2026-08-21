@@ -1,22 +1,66 @@
-import { URL_PREFIXS } from "@/utils/url/constants";
-import type { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
+import { NEW_RECORD_ID, TAB_MODES, URL_PREFIXS } from "@/utils/url/constants";
+import type { TabState, WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
+
+/** Tab entry that is drilled into form view, so its selected record is guaranteed to be present. */
+type FormViewTabEntry = [tabId: string, tabState: TabState & { selectedRecord: string }];
+
+/**
+ * Tells whether a tab entry is currently drilled into form view on a persisted record.
+ *
+ * That is the only tab state the URL can represent: on reload the recovery pipeline reopens
+ * `ti_N`/`ri_N` in form view, so encoding a tab that merely has a grid row selected would restore a
+ * form the user never opened. A record still being created (`NEW_RECORD_ID`) is excluded too, since
+ * its `selectedRecord` is the row that was selected before the form was opened.
+ *
+ * @param entry - `[tabId, tabState]` entry to evaluate
+ * @returns True when the tab must contribute its tab and record identifiers to the URL
+ */
+const isFormViewTabEntry = (entry: [string, TabState]): entry is FormViewTabEntry => {
+  const [, tabState] = entry;
+
+  if (tabState.form?.mode !== TAB_MODES.FORM) {
+    return false;
+  }
+  if (tabState.form?.recordId === NEW_RECORD_ID) {
+    return false;
+  }
+  return !!tabState.selectedRecord;
+};
+
+/**
+ * Finds the deepest tab of a window that is in form view.
+ *
+ * @param window - Window whose tabs are inspected
+ * @returns The entry to encode, undefined when the window shows only grids
+ */
+const findDeepestFormViewTab = (window: WindowState): FormViewTabEntry | undefined => {
+  const formViewTabs = Object.entries(window.tabs).filter(isFormViewTabEntry);
+
+  if (formViewTabs.length === 0) {
+    return undefined;
+  }
+
+  return formViewTabs.reduce((deepest, current) => (current[1].level > deepest[1].level ? current : deepest));
+};
 
 /**
  * Builds URL parameters for multiple windows based on their current state.
- * Generates URL parameters with indexed format for each window, including the deepest tab
- * that has both a selected record and tab identifier.
+ * Generates URL parameters with indexed format for each window, including the deepest tab that is
+ * in form view. Windows showing only grids contribute their window identifier alone, so leaving a
+ * form view (Cancel, close, Escape) drops the tab and record identifiers from the URL and a reload
+ * no longer reopens the last record.
  *
  * @param windows - Array of WindowState objects to encode into URL parameters
  * @returns URL parameter string with indexed window, tab, and record identifiers
  *
  * @example
- * // With 2 windows: first has no records, second has deepest tab at level 1
+ * // With 2 windows: first has no records, second has its level 1 tab in form view
  * const windows = [
  *   { windowIdentifier: "143", tabs: {} },
  *   { windowIdentifier: "144", tabs: {
- *     "tab1": { level: 0, selectedRecord: "rec1" },
- *     "tab2": { level: 1, selectedRecord: "rec2" }
+ *     "tab1": { level: 0, selectedRecord: "rec1", form: {} },
+ *     "tab2": { level: 1, selectedRecord: "rec2", form: { mode: "form", recordId: "rec2" } }
  *   }}
  * ];
  * const params = buildWindowsUrlParams(windows);
@@ -29,26 +73,14 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
     // Always add window identifier
     params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${index}`, window.windowIdentifier);
 
-    // Find the tab with highest level that has a selection — a grid-selected
-    // (TABLE mode) row counts too, not just a tab drilled into FORM mode, so the
-    // deepest breadcrumb entry isn't silently dropped from the URL on refresh.
-    const tabEntries = Object.entries(window.tabs);
-    const tabsWithRecordsForms = tabEntries.filter(([_, tabState]) => tabState.selectedRecord);
+    const deepestFormViewTab = findDeepestFormViewTab(window);
 
-    if (tabsWithRecordsForms.length > 0) {
-      // Find the tab with the highest level (deepest)
-      const deepestTab = tabsWithRecordsForms.reduce((prev, current) => {
-        const [_prevTabId, prevTabState] = prev;
-        const [_currentTabId, currentTabState] = current;
-
-        return currentTabState.level > prevTabState.level ? current : prev;
-      });
-
-      const [deepestTabId, deepestTabState] = deepestTab;
+    if (deepestFormViewTab) {
+      const [tabId, tabState] = deepestFormViewTab;
 
       // Add tab and record to URL
-      params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`, deepestTabId);
-      params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`, deepestTabState.selectedRecord || "");
+      params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`, tabId);
+      params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`, tabState.selectedRecord);
     }
   });
 
