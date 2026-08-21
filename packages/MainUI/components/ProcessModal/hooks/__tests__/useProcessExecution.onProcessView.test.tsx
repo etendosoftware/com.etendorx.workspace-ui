@@ -61,6 +61,36 @@ describe("useProcessExecution — onProcess second argument is the canonical vie
     expect((view.getContextInfo as () => Record<string, unknown>)()).toEqual({ docStatus: "DR", DocAction: "CO" });
   });
 
+  it("exposes the full selected records, nested and flat (regression: Manual handlers read record fields)", async () => {
+    // Manual handlers ported from Classic read fields off the launching grid's
+    // selection, not just its ids — the SII senders send `selection[0].organization`
+    // as `orgid`. onProcess used to expose recordIds only, and the migrated bodies
+    // read `view.hookData.selectedRecords`, which resolved to undefined twice over.
+    const selectedRecords = [
+      { id: "inv-1", organization: "ORG-1" },
+      { id: "inv-2", organization: "ORG-1" },
+    ];
+    const params = makeParams({
+      etmetaOnprocess: "async (process, view) => view",
+      tab: { id: "TAB-001", window: "WIN-001", entityName: "C_Invoice" },
+      selectedRecords,
+      viewController: makeViewController(),
+      form: { getValues: jest.fn(() => ({})), setValue: jest.fn() },
+    });
+
+    const { result } = renderHook(() => useProcessExecution(params as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    const view = executeStringFunction.mock.calls[0][3] as Record<string, unknown>;
+    const hookData = view.hookData as Record<string, unknown>;
+
+    expect(hookData.selectedRecords).toEqual(selectedRecords);
+    expect(hookData.recordIds).toEqual(["inv-1", "inv-2"]);
+    // The same fields stay reachable flat, for scripts written against that form.
+    expect(view.selectedRecords).toEqual(selectedRecords);
+  });
+
   it("threads the fieldController into the view so onProcess items are live (regression: item.isVisible)", async () => {
     // Before the fix, useProcessExecution received no fieldController, so view.theForm
     // built deferred items with no isVisible() — making a guarded `field.isVisible &&

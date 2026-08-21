@@ -77,7 +77,7 @@ async (processDefinition, { selectedRecords, tabId, tableId }) => {
 |---|---|
 | `undefined` / `null` | No-op — modal renders normally with its AD parameters |
 | `{ type: "directExecute" }` | Skip modal UI, auto-fire `onProcess` immediately (loading overlay only) |
-| `{ type: "warehouseProcess", schema, ... }` | Render `GenericWarehouseProcess` component (complex schema-driven UI) |
+| `{ type: "<registered type>", ... }` | Render the custom component registered for that schema type — see [Custom-component processes](./custom-component-processes.md). Requires `em_etmeta_custom_component = 'Y'`. Currently `warehouseProcess` and `middlewareTokenProcess` |
 | `{ parameterName: ["val1", "val2"] }` | Filter the `refList` of the named parameter to those values |
 | `{ _gridSelection: { gridKey: ["id1", "id2"] } }` | Pre-select rows in a `WindowReference` grid |
 | `{ autoSelectConfig: { table, logic } }` | Declarative row auto-selection in a `WindowReference` grid |
@@ -378,10 +378,12 @@ Thrown errors are caught by `handleExecute` and displayed in the modal as an err
 | `packages/MainUI/utils/functions.ts` | `executeStringFunction` — core evaluation engine |
 | `packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx` | Where `onLoad` and `onProcess` are called |
 | `packages/MainUI/components/ProcessModal/Custom/GenericWarehouseProcess/warehouseApiHelpers.ts` | `createCallAction` / `createFetchDatasource` factories |
-| `packages/MainUI/components/ProcessModal/Custom/GenericWarehouseProcess/useWarehousePlugin.ts` | `warehouseProcess` schema evaluation from `onLoad` |
+| `packages/MainUI/components/ProcessModal/Custom/GenericWarehouseProcess/useWarehousePlugin.ts` | Custom-component schema evaluation from `onLoad` |
+| `packages/MainUI/components/ProcessModal/Custom/registry.ts` | Schema `type` → component registry |
 
 ## See Also
 
+- [Custom-component processes](./custom-component-processes.md)
 - [Process Definition Modal](./process-definition-modal.md)
 - [Process Execution Architecture](../../architecture/process-execution-architecture.md)
 - [Manual Processes (legacy iframe)](../../manual-processes.md)

@@ -28,12 +28,11 @@
  * - Response message display and success/error states
  *
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { type FieldValues, FormProvider, useForm, useFormState, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
@@ -46,6 +45,7 @@ import {
   useProcessCallouts,
   useWarehousePlugin,
   usesCustomComponent,
+  getCustomComponent,
   // Next.js
   useRouter,
   useSearchParams,
@@ -81,7 +81,6 @@ import {
   isPickAndExecute,
   PICK_AND_EXECUTE_UI_PATTERN,
   OBUIAPP_REPORT_UI_PATTERN,
-  REPORT_FORMAT_I18N_KEYS,
   getReportActions,
   type ReportOutputFormat,
   // Components
@@ -137,7 +136,6 @@ import {
 } from "@/utils/processes/definition/scriptProxies";
 import {
   makeFooterButtonHandle,
-  runFooterButtonAction,
   withCancelHidden,
   withCloseHidden,
   withOkForceEnabled,
@@ -146,16 +144,23 @@ import {
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
-import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
 import { pushProcess } from "@/utils/processes/definition/processStack";
+import {
+  isDirectExecuteResult,
+  shouldFireDirectExecute,
+  shouldRenderDirectExecuteOverlay,
+} from "@/utils/processes/definition/directExecute";
+import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
-import { buildSuccessBannerMessage } from "./utils/responseBanner";
+import { buildSuccessBannerMessage, readBannerTitle } from "./utils/responseBanner";
 import { isMandatoryParameterMissing } from "./utils/isMandatoryParameterMissing";
 import { CollapsibleSection } from "./components/CollapsibleSection";
+import { ProcessModalFooter } from "./components/ProcessModalFooter";
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -306,6 +311,7 @@ function ProcessDefinitionModalContent({
   const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const session = useUserStore((s) => s.session);
+  const user = useUserStore((s) => s.user);
   const token = useUserStore((s) => s.token);
   const getCsrfToken = useUserStore((s) => s.getCsrfToken);
   const router = useRouter();
@@ -319,8 +325,8 @@ function ProcessDefinitionModalContent({
   // Build the reusable process script context (auth-aware HTTP helpers)
   // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
   const processScriptContext = useMemo(
-    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language }),
-    [token, getCsrfToken, getLabel, language]
+    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language, user }),
+    [token, getCsrfToken, getLabel, language, user]
   );
 
   // Shared module scope: when em_etmeta_payscript_logic holds a JS module body
@@ -387,12 +393,24 @@ function ProcessDefinitionModalContent({
     token: token ?? "",
   });
 
-  const [parameters, setParameters] = useState(button.processDefinition.parameters);
+  const [parameters, setParameters] = useState(initialProcessParameters(button.processDefinition));
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const isFinalSuccess = result?.success === true && !result?.keepOpen;
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
+
+  // Direct-execute mode: onLoad returned { type: "directExecute" }, so the modal
+  // skips its chrome and auto-fires onProcess once. See ./utils/../directExecute.
+  const [directExecuteRequested, setDirectExecuteRequested] = useState(false);
+  const directExecuteFiredRef = useRef(false);
+  // The bare direct-execute overlay does not host ProcessMessageBar, so the modal
+  // has to know when a message exists to give the chrome (and the bar) back.
+  const hasMessageBarMessage = useSyncExternalStore(
+    subscribeMessageBar,
+    () => getMessageBarState() !== null,
+    () => false
+  );
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
@@ -1047,14 +1065,24 @@ function ProcessDefinitionModalContent({
 
   const { hasInvalidSelection } = useGridRowValidation({ grids: peGrids });
 
-  const handleClose = useCallback(() => {
-    if (isPending) return;
+  /**
+   * Dismisses the dialog and resets it for the next open. Unconditional: the
+   * pending guard below belongs to the *user-initiated* close only.
+   */
+  const performClose = useCallback(() => {
     setResult(null);
     setLoading(true);
-    setParameters(processDefinition.parameters);
+    setParameters(initialProcessParameters(processDefinition));
     setShouldTriggerSuccess(false);
     onClose();
-  }, [button.processDefinition.parameters, isPending, onClose]);
+  }, [button.processDefinition.parameters, onClose]);
+
+  // User-initiated close (X, footer buttons, backdrop): refused while the process
+  // is running, so a click cannot abandon an execution mid-flight.
+  const handleClose = useCallback(() => {
+    if (isPending) return;
+    performClose();
+  }, [isPending, performClose]);
 
   // -------------------------------------------------------------------------
   // Payload builders
@@ -1141,6 +1169,12 @@ function ProcessDefinitionModalContent({
     }, [refetchDatasource, tab?.id]),
     refreshModalGrid: useCallback(() => setGridRefreshKey((prev) => prev + 1), [setGridRefreshKey]),
     navigateToTab: handleNavigateToTab,
+    // A script asking to close (openUrl's `closeModal`) is not a user abandoning a
+    // running process: it is the process reporting it is done. It dispatches from
+    // inside the execution transition, so `handleClose`'s pending guard would
+    // always refuse it — leaving a direct-execute modal stuck on its overlay with
+    // no chrome to dismiss.
+    closeModal: performClose,
     token: token ?? "",
   });
 
@@ -1184,6 +1218,14 @@ function ProcessDefinitionModalContent({
         });
         setLoading(false);
         return true; // stop early
+      }
+
+      // Direct-execute mode short-circuits the parameter flow: there is nothing
+      // to seed or render, only onProcess to fire. Stop early so the loading
+      // overlay stays up until the execution resolves.
+      if (isDirectExecuteResult(result)) {
+        setDirectExecuteRequested(true);
+        return true;
       }
 
       if (result._gridSelection && typeof result._gridSelection === "object") {
@@ -1285,12 +1327,16 @@ function ProcessDefinitionModalContent({
   useEffect(() => {
     if (open) {
       setResult(null);
-      setParameters(button.processDefinition.parameters);
+      setParameters(initialProcessParameters(button.processDefinition));
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
     } else {
       // Allow onLoad to run again the next time the modal opens.
       onLoadIdentityRef.current = null;
+      // Same for direct-execute: re-arm both the request and its one-shot guard
+      // so reopening the process runs it again instead of showing a dead overlay.
+      setDirectExecuteRequested(false);
+      directExecuteFiredRef.current = false;
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -1418,6 +1464,18 @@ function ProcessDefinitionModalContent({
     initializationLoading,
   ]);
 
+  // Direct-execute: onLoad asked to run onProcess without showing a dialog.
+  // Fires exactly once per open session; the ref (not state) guards it so the
+  // re-render caused by handleExecute cannot schedule a second run.
+  useEffect(() => {
+    if (
+      !shouldFireDirectExecute({ requested: directExecuteRequested, open, alreadyFired: directExecuteFiredRef.current })
+    )
+      return;
+    directExecuteFiredRef.current = true;
+    handleExecute();
+  }, [directExecuteRequested, open, handleExecute]);
+
   // -------------------------------------------------------------------------
   // Auto-select logic
   // -------------------------------------------------------------------------
@@ -1526,7 +1584,7 @@ function ProcessDefinitionModalContent({
       if (!parsed) return null;
       return (
         <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-success-main)">
-          <h4 className="font-bold text-sm">{t("process.completedSuccessfully")}</h4>
+          <h4 className="font-bold text-sm">{readBannerTitle(result.data) ?? t("process.completedSuccessfully")}</h4>
           <div className="border-(--color-active-40) rounded p-2">
             <ToastContent message={parsed.msgText} isHtml={parsed.isHtml} data-testid="ToastContent__761503" />
           </div>
@@ -1538,7 +1596,9 @@ function ProcessDefinitionModalContent({
     // Anything reaching this branch is not a successful keepOpen result (handled above)
     // and not a fully-successful close (handled by isFinalSuccess) — so non-warning here
     // means the process actually failed.
-    const msgTitle = isWarning ? t("process.warning") : t("process.processError");
+    // Classic titled the message bar with the server's own title; the generic
+    // headings stand in only when the response carries none.
+    const msgTitle = readBannerTitle(result.data) ?? (isWarning ? t("process.warning") : t("process.processError"));
     const rawMsg =
       result.error ||
       (typeof result.data === "string" ? result.data : result.data?.msgText || result.data?.message) ||
@@ -1773,21 +1833,42 @@ function ProcessDefinitionModalContent({
   const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
   const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
 
+  /**
+   * Chrome-less spinner shown while the modal has nothing for the user to do:
+   * the custom component is still loading, or direct-execute is running.
+   */
+  const renderBareOverlay = () => (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
+        <span className="animate-spin text-2xl">⟳</span>
+        <span className="text-sm text-gray-600">{button.name}</span>
+      </div>
+    </div>
+  );
+
   const renderModalContent = () => {
     if (warehousePluginLoading && isCustomComponent) {
-      return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
-            <span className="animate-spin text-2xl">⟳</span>
-            <span className="text-sm text-gray-600">{button.name}</span>
-          </div>
-        </div>
-      );
+      return renderBareOverlay();
     }
 
-    if (warehouseSchema) {
+    // Direct-execute: no dialog at all while onProcess runs. Once a result lands
+    // the standard chrome renders below so an error stays readable and closable.
+    if (
+      shouldRenderDirectExecuteOverlay({
+        requested: directExecuteRequested,
+        hasResult: !!result,
+        hasMessage: hasMessageBarMessage,
+      })
+    ) {
+      return renderBareOverlay();
+    }
+
+    // Custom-component processes render the component registered for their schema type. The lookup
+    // replaces what used to be a direct branch on the single warehouse component.
+    const CustomComponent = getCustomComponent(warehouseSchema?.type);
+    if (warehouseSchema && CustomComponent) {
       return (
-        <GenericWarehouseProcess
+        <CustomComponent
           schema={warehouseSchema}
           payscriptPlugin={warehousePayscriptPlugin}
           onProcessCode={warehouseOnProcess}
@@ -1844,110 +1925,23 @@ function ProcessDefinitionModalContent({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 justify-end mx-3 my-3">
-              {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !isFinalSuccess) && (
-                <>
-                  {!scriptButtonState.cancelHidden && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      disabled={isPending}
-                      className="w-49"
-                      data-testid="CancelButton__761503">
-                      {t("common.cancel")}
-                    </Button>
-                  )}
-                  <Button
-                    variant="filled"
-                    size="large"
-                    onClick={handleReportProcessExecuteGuarded}
-                    disabled={Boolean(isActionButtonDisabled)}
-                    startIcon={getActionButtonContent().icon}
-                    className="w-49"
-                    data-testid="ExecuteReportButton__761503">
-                    {getActionButtonContent().text}
-                  </Button>
-                </>
-              )}
-
-              {isOBUIAPPReport && (!result || !isFinalSuccess) && (
-                <>
-                  {!scriptButtonState.cancelHidden && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      disabled={isPending}
-                      className="w-49"
-                      data-testid="CancelButton__761503">
-                      {t("common.cancel")}
-                    </Button>
-                  )}
-                  {reportActions.map((format) => (
-                    <Button
-                      key={format}
-                      variant="filled"
-                      size="large"
-                      onClick={() => handleExecute(format)}
-                      disabled={Boolean(isActionButtonDisabled)}
-                      className="w-49"
-                      data-testid={`ReportExportButton_${format}__761503`}>
-                      {getLabel(REPORT_FORMAT_I18N_KEYS[format])}
-                    </Button>
-                  ))}
-                </>
-              )}
-
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                !isOBUIAPPReport &&
-                (!result || !isFinalSuccess) &&
-                !isPending &&
-                !scriptButtonState.cancelHidden && (
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={handleClose}
-                    className="w-49"
-                    data-testid="CloseButton__761503">
-                    {t("common.close")}
-                  </Button>
-                )}
-
-              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                !isOBUIAPPReport &&
-                ((!result || !isFinalSuccess) && availableButtons.length > 0
-                  ? availableButtons
-                      .filter((btn) => !scriptButtonState.hiddenValues[btn.value])
-                      .map((btn) => (
-                        <Button
-                          key={btn.value}
-                          variant="filled"
-                          size="large"
-                          onClick={() =>
-                            runFooterButtonAction(scriptButtonState.actionValues, btn.value, handleExecute)
-                          }
-                          disabled={
-                            Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])
-                          }
-                          className="w-49"
-                          data-testid={`ExecuteButton_${btn.value}__761503`}>
-                          {btn.label}
-                        </Button>
-                      ))
-                  : (!result || !isFinalSuccess) && (
-                      <Button
-                        variant="filled"
-                        size="large"
-                        onClick={() => handleExecute()}
-                        disabled={Boolean(isActionButtonDisabled)}
-                        startIcon={getActionButtonContent().icon}
-                        className="w-49"
-                        data-testid="ExecuteButton__761503">
-                        {getActionButtonContent().text}
-                      </Button>
-                    ))}
-            </div>
+            <ProcessModalFooter
+              isReportAndProcess={type === PROCESS_TYPES.REPORT_AND_PROCESS}
+              isOBUIAPPReport={isOBUIAPPReport}
+              reportActions={reportActions}
+              showActions={!result || !isFinalSuccess}
+              isPending={isPending}
+              scriptButtonState={scriptButtonState}
+              availableButtons={availableButtons}
+              isActionButtonDisabled={Boolean(isActionButtonDisabled)}
+              getActionButtonContent={getActionButtonContent}
+              onClose={handleClose}
+              onExecute={handleExecute}
+              onReportProcessExecute={handleReportProcessExecuteGuarded}
+              t={t}
+              getLabel={getLabel}
+              data-testid="ProcessModalFooter__761503"
+            />
           </div>
         </div>
       </FormProvider>

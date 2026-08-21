@@ -339,6 +339,10 @@ const es = {
     },
     pickAndExecuteNotImplemented:
       "El proceso tiene UI Pattern igual a 'Pick and Execute' y no está implementado. Contactarse con soporte.",
+    manualProcessNotMigrated: "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
+    popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
+    openLink: "Abrir enlace",
+    openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {
     gridToolbar: {
@@ -356,6 +360,22 @@ const es = {
       openLegacyReport: {
         popupBlockedTitle: "El navegador bloqueó la ventana del reporte.",
         openManually: "Abrir reporte",
+      },
+    },
+    middlewareToken: {
+      title: "Selecciona un proveedor",
+      selectScope: "Selecciona el alcance",
+      cancel: "Cancelar",
+      close: "Cerrar",
+      errorTitle: "No se pudieron cargar los proveedores",
+      noProviders: "El middleware no devolvió ningún proveedor.",
+      errors: {
+        noRecordSelected: "Selecciona un registro de Proveedor oAuth antes de ejecutar este proceso.",
+        noProviderId: "No se indicó ningún registro de Proveedor oAuth.",
+        providerNotFound: "No se encontró el registro de Proveedor oAuth.",
+        noEndpoint: "El registro de Proveedor oAuth no tiene configurado el Authorization Endpoint.",
+        unreadableResponse: "El middleware devolvió una lista de proveedores ilegible.",
+        unreachable: "No se pudo contactar al middleware. Contacta al administrador del sistema.",
       },
     },
   },
@@ -402,6 +422,16 @@ const es = {
         description:
           "Tu sesión se ha cerrado debido a un error del sistema. Vuelve a iniciar sesión para continuar. Si el problema persiste, ponte en contacto con el administrador del sistema para obtener ayuda.",
       },
+      passwordExpired: {
+        title: "Tu contraseña ha expirado",
+        description: "Inicia sesión nuevamente para establecer una nueva contraseña.",
+      },
+    },
+    passwordExpired: {
+      title: "Tu contraseña ha expirado",
+      description: "Establece una nueva contraseña para continuar.",
+      submit: "Cambiar contraseña",
+      logout: "Cerrar sesión",
     },
     sso: {
       divider: "O continuar con",

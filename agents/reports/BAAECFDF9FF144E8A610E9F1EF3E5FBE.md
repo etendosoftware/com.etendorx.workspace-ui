@@ -1,0 +1,206 @@
+# Migration report — SII Invoice Modification
+
+## Inputs
+
+- **Classic file:** `/home/luciano/projects/etendo/erp/build/etendo/modules/org.openbravo.module.sii/web/org.openbravo.module.sii/js/ModDefinicionProceso.js`
+- **Handler:** `OB.AEATSII.modify` (defined at line 129; shared helper `OB.AEATSII.execute` at line 14)
+- **Process id:** `BAAECFDF9FF144E8A610E9F1EF3E5FBE`
+- **Search key:** `SIIInvoiceModification`
+- **uipattern:** `M` (Manual) · **Multi Record:** Y
+- **Launching button column:** `C_Invoice.EM_Aeatsii_Modif`
+- **Date:** 2026-08-10
+
+## status: migrated
+
+Manual archetype **AR-1** (confirm → action handler → message + grid refresh). Fully supported after
+the Manual substrate landed; see `new-ui-js-migration-guide` Section 9.2.
+
+> Seven SII processes are structural clones inside `ModDefinicionProceso.js`, differing only in the
+> Java action handler and the confirmation label. Per the Babel contract each gets its own
+> self-contained report and its own copy of the shared helper — `em_etmeta_payscript_logic` is
+> per-process, so there is no cross-process sharing mechanism.
+
+---
+
+## Process wiring (verified in etendodev)
+
+- `obuiapp_process`: `uipattern = 'M'`, `classname = 'OB.AEATSII.modify'`, `ismultirecord = 'Y'`.
+- **Zero `obuiapp_parameter` rows** — no dialog, as with every Manual process.
+- All `em_etmeta_*` columns empty before this migration; `em_etmeta_custom_component` is `NULL`.
+- Launched from the button column `C_Invoice.EM_Aeatsii_Modif`.
+
+## Coverage report
+
+| Classic API / mechanism | Where | Classification | New-UI equivalent |
+|---|---|---|---|
+| `params.button.contextView.viewGrid.getSelectedRecords()` | :132 | supported | `view.hookData.selectedRecords` |
+| `selection[i].id` → `ids`, `selection[0].organization` → `orgid` | :132 | supported | identical, read off `view.hookData.selectedRecords` |
+| `isc.confirm(msg, { isModal, showModalMask, title }, cb)` | :129 | supported | `await confirm(text, { title })` — always modal, resolves to a boolean (Section 8.1) |
+| `OB.I18N.getLabel('AEATSII_WARNING_SEND')` / `'AEATSII_TITLE_SEND'` | :129 | supported | identical on the `OB` shim (Section 8.6) |
+| `OB.RemoteCallManager.call(actionHandler, { ids, orgid }, {}, cb)` | :41 | supported | `await callAction("org.openbravo.module.sii.process.MultiInvoiceSIIModification", { ids, orgid })` (Section 8.7) |
+| `isc.showPrompt(...)` / `isc.clearPrompt()` loading prompt | :50, :16 | supported (no-op) | the modal owns its own pending state; the classic prompt has no counterpart and needs none |
+| `view.view.messageBar.setMessage(isc.OBMessageBar.TYPE_*, title, text)` | :19-35 | supported | `return { message: { msgType, msgTitle, msgText } }`, with `msgType` from `toMessageType(severity)` — the classic three-way branch is reproduced, including its `else` → error (see advisory 1) |
+| `view.view.viewGrid.refreshGrid(null, params.ids)` | :38 | supported | `return { responseActions: [{ refreshGrid: {} }] }` |
+| the click *is* the action (no parameter dialog) | — | supported | `em_etmeta_onload` → `{ type: "directExecute" }` (Section 9.2.1) |
+| declined confirm → nothing runs, nothing shown | :83-87 | supported | `return { type: "closeModal" }` (Section 9.2.3) |
+
+**No entry is best-effort or unsupported**, so the feasibility gate does not fire.
+
+---
+
+## Generated code per field
+
+### `em_etmeta_onload` — `obuiapp_process`
+
+```js
+() => ({ type: "directExecute" })
+```
+
+### `em_etmeta_onprocess` — `obuiapp_process`
+
+```js
+async (process, view) => {
+  const records = view.hookData.selectedRecords ?? [];
+  if (records.length === 0) {
+    return { error: { msgText: OB.I18N.getLabel("OBUIAPP_NoSelectedRecords"), msgType: "error" } };
+  }
+  return await runSiiAction(records);
+}
+```
+
+### `em_etmeta_payscript_logic` — `obuiapp_process`
+
+```js
+// @module-scope
+// Shared helper mirroring the classic OB.AEATSII.execute (ModDefinicionProceso.js:14):
+// one remote call, the server's own severity/title/text in the banner, then a grid
+// refresh. Cloned per process because payscript module scope is per-process.
+const ACTION_HANDLER = "org.openbravo.module.sii.process.MultiInvoiceSIIModification";
+const WARNING_LABEL = "AEATSII_WARNING_SEND";
+const TITLE_LABEL = "AEATSII_TITLE_SEND";
+
+// Classic's severity branch is `success` -> TYPE_SUCCESS, `warning` -> TYPE_WARNING and an
+// unconditional `else` -> TYPE_ERROR (ModDefinicionProceso.js:18-36). That else is a real
+// default, not a dead branch: the SII handlers answer their validation and failure paths with
+// `{ message: { title, text } }` and no `severity` at all, and classic paints those red.
+// Forwarding the raw severity would leave `msgType` undefined, which the platform reads as
+// a success toast.
+const toMessageType = (severity) => (severity === "success" || severity === "warning" ? severity : "error");
+
+const runSiiAction = async (records) => {
+  const confirmed = await confirm(OB.I18N.getLabel(WARNING_LABEL), {
+    title: OB.I18N.getLabel(TITLE_LABEL),
+  });
+  // Classic closes the popup and runs nothing when the user declines.
+  if (!confirmed) return { type: "closeModal" };
+
+  const response = await callAction(ACTION_HANDLER, {
+    ids: records.map((record) => record.id),
+    orgid: records[0].organization,
+  });
+
+  const message = response?.data?.message ?? {};
+  return {
+    message: {
+      msgType: toMessageType(message.severity),
+      msgTitle: message.title,
+      msgText: message.text,
+    },
+    responseActions: [{ refreshGrid: {} }],
+  };
+};
+
+return { runSiiAction };
+```
+
+### Remaining columns
+
+LEAVE EMPTY — `em_etmeta_on_refresh`.
+LEAVE EMPTY — `em_etmeta_custom_component` (keep `N`; this is not a custom-component process).
+No `obuiapp_parameter` rows exist, so there is no `em_etmeta_on_parameter_change` /
+`em_etmeta_on_grid_load` to fill.
+
+---
+
+## Advisories (non-blocking)
+
+1. **Severity branch reproduced, not collapsed.** Classic branches on `data.message.severity` to pick
+   `TYPE_SUCCESS` / `TYPE_WARNING` and falls through to `TYPE_ERROR` in an unconditional `else`, passing
+   the same title/text in every branch. The first draft of this report treated that `else` as dead code
+   (playbook Section 10.3) and forwarded `message.severity` verbatim; that was wrong — the handler omits
+   `severity` on its failure paths, so the `else` is exactly the branch that fires there. `toMessageType`
+   reproduces it. See the Updates section.
+2. **Loading prompt dropped.** `isc.showPrompt` / `isc.clearPrompt` framed the remote call; the process
+   modal already shows its own pending state, so reproducing them would double the indicator.
+3. **Empty-selection guard added.** Classic reads `selection[0].organization` without checking the
+   length and would throw on an empty selection. The migrated code returns an error message instead.
+   This is a deliberate, non-regressive deviation.
+4. **`refreshGrid` is not row-scoped.** Classic passes `params.ids` to `refreshGrid`; the new-UI action
+   refreshes the launching tab's grid as a whole. Same observable outcome, slightly broader refetch.
+
+## Manual-test checklist
+
+1. Open the window backing `C_Invoice.EM_Aeatsii_Modif` and select **one** invoice. Press **SII Invoice Modification**.
+   → No empty dialog appears; the confirmation from `AEATSII_WARNING_SEND` shows immediately, titled with
+   `AEATSII_TITLE_SEND`.
+2. Press **Cancel** on the confirmation. → The dialog closes, **no** banner and **no** error appear, and
+   nothing is sent (verify no new SII log entry).
+3. Repeat and press **OK**. → A banner shows the server's message with the server's severity, and the
+   grid refreshes so the changed status is visible without a manual reload.
+4. Select **several** invoices and run it again. → All selected ids are sent in a single call
+   (one server round-trip, not one per record).
+5. Force a server error (e.g. a invoice in an invalid state). → The banner shows the error with
+   error severity, and the modal stays open.
+6. Run it with **no** selection. → An error message appears instead of a crash.
+
+## Updates
+
+### 2026-08-18 — a severity-less handler error rendered as success (JS fix, re-paste needed)
+
+Observed on **SII Unsubscribe Invoice** (`BE564945CB2D4892AC0EE51204C5DB7D`), and reachable from all
+seven SII processes because they share the same classic helper. The handler answered
+
+```json
+{ "message": { "title": "Error:", "text": "Cannot invoke \"…AEATSIICashReceipt.setEstado(String)\" because \"cashReceipt\" is null" } }
+```
+
+— an error carrying **no `severity` key** — and the new UI showed it as a green success toast and closed
+the modal, where classic paints it red in the message bar.
+
+**Root cause: the migrated JS, not the substrate.** `OB.AEATSII.execute`
+(`ModDefinicionProceso.js:18-36`) is `success` → `TYPE_SUCCESS`, `warning` → `TYPE_WARNING`, **`else` →
+`TYPE_ERROR`**, and that `else` is reached routinely: the SII handlers build their validation and failure
+answer as `{ title: OBMessageUtils.messageBD("Error"), text: … }` and set `severity` only on the success
+path (verified in `module.sii-3.2.1.jar`, `MultiUnsubscribeInvoice.execute`). With `severity` absent the
+mapped `msgType` came back `undefined`, and the platform's default for a message with no type is
+`success` (`extractResponseMessage`, `useProcessExecution.ts`).
+
+Fix: the `toMessageType` helper in the module scope above — `success` / `warning` pass through,
+**anything else is an error** — applied identically to the seven SII processes.
+
+**Fixed in both layers.**
+
+1. *Script — this report.* `toMessageType` ports the Classic `else`, so the migrated body decides the
+   severity in the same place `OB.AEATSII.execute` decides it.
+   **Re-paste `em_etmeta_payscript_logic`**; the other columns are unchanged.
+2. *Substrate — safety net.* `resolveDefaultMsgType` (`processReturnMessage.ts`) now defaults an
+   **object-shaped** message with no severity to `error` instead of `success`, for every process, migrated
+   or not. Measured before changing it: Etendo's framework always types its answer —
+   `BaseProcessActionHandler` and `ResponseActionsBuilder` both `put("severity", …)` — so an untyped bare
+   `message` comes from the legacy module idiom that writes `severity` only on the success path. The eight
+   migrated processes that hand a raw response back (the picking-list family, Set New Currency, Validate
+   Costing Rule) answer through core handlers and are unaffected. A bare **string** message keeps the
+   `success` default, so a script that merely says something does not turn into a false error.
+
+The net does not make the port optional: only the script can reproduce a Classic branch that maps some
+*other* value, and reading the severity where Classic read it keeps the process legible on its own.
+
+*Sniffing the title* (`title === "Error"` → error) was considered and rejected: that title is
+`AD_MESSAGE.value = 'Error'`, a translated label (`Error:` in en_US, `Error: ` in es_ES, different in any
+other language pack), so the rule breaks as soon as the user's language changes.
+
+## References used
+
+- `new-ui-js-migration-guide` Sections 8.1, 8.6, 8.7, 9.2 (Manual processes, archetype AR-1), 10.2, 10.3.
+- Classic source `/home/luciano/projects/etendo/erp/build/etendo/modules/org.openbravo.module.sii/web/org.openbravo.module.sii/js/ModDefinicionProceso.js`.
+- Sibling SII reports (same archetype, same helper).

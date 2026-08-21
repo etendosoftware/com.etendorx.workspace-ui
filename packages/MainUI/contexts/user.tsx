@@ -34,12 +34,15 @@ import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-cl
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";
+import ForcePasswordChangeScreen from "@/screens/ForcePasswordChange";
 import SessionLoading from "@/components/SessionLoading";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { isTokenExpired } from "@/utils/session/token";
 import { useUserStore } from "@/stores/userStore";
+import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
+import { toast } from "sonner";
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -76,6 +79,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
   const loginErrorText = useUserStore((s) => s.loginErrorText);
   const loginErrorDescription = useUserStore((s) => s.loginErrorDescription);
+  const passwordExpired = useUserStore((s) => s.passwordExpired);
+
+  // The password typed at login, needed as `currentPwd` by the ERP change-password handler when the
+  // mandatory change is forced. Kept in memory only — it is never persisted anywhere.
+  const pendingPasswordRef = useRef<string>("");
 
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -106,14 +114,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
       updateProfile(currentProfileInfo);
       useUserStore.getState().setUser(sessionResponse.user);
+      useUserStore.getState().setPasswordExpired(Boolean(sessionResponse.passwordExpired));
 
       localStorage.setItem("currentInfo", JSON.stringify(currentProfileInfo));
       localStorage.setItem("currentRole", JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem("currentRoleId", sessionResponse.currentRole.id);
 
-      const defaultLanguage = sessionResponse.user.defaultLanguage as Language;
-      if (!language && defaultLanguage) {
-        setLanguage(defaultLanguage);
+      // The user's default language is optional, so fall back to the one the backend resolved for
+      // the session. Without a language the backend message dictionary is never fetched
+      // (see useBackendLabels), leaving every ERP message code unresolved.
+      const sessionLanguage = (sessionResponse.user.defaultLanguage ?? sessionResponse.currentLanguage) as Language;
+      if (!language && sessionLanguage) {
+        setLanguage(sessionLanguage);
       }
 
       useUserStore.getState().setLanguages(Object.values(sessionResponse.languages) as LanguageOption[]);
@@ -193,6 +205,31 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
+  /**
+   * Tells whether the password typed at login is still held in memory. A page reload drops it, and
+   * without it the mandatory change cannot be submitted.
+   */
+  const hasPendingLoginPassword = useCallback(() => pendingPasswordRef.current !== "", []);
+
+  /**
+   * Completes the mandatory password change forced when the password has expired. Reuses the same
+   * ERP handler as the optional change from the profile modal, sending the password typed at login
+   * as `currentPwd`, and reloads the session so the expiration flag is re-read from the backend.
+   */
+  const completeExpiredPasswordChange = useCallback(
+    async (params: { newPwd: string; confirmPwd: string }) => {
+      await doChangePassword({ currentPwd: pendingPasswordRef.current, ...params });
+      pendingPasswordRef.current = "";
+      await updateSessionInfo(await getSession());
+      // The ERP confirmed the change and its trigger cleared the expired flag in the same update, so
+      // the gate must open even if the refreshed session were served from a stale layer.
+      useUserStore.getState().setPasswordExpired(false);
+      toast.success(t("navigation.profile.passwordChangedSuccess"));
+      router.push("/");
+    },
+    [router, t, updateSessionInfo]
+  );
+
   const login = useCallback(async (username: string, password: string) => {
     try {
       Metadata.setToken("");
@@ -203,6 +240,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.removeItem("currentRoleId");
 
       const loginResponse = await doLogin(username, password);
+      // Retained only for the forced password-change flow (see completeExpiredPasswordChange).
+      pendingPasswordRef.current = password;
 
       localStorage.setItem("token", loginResponse.token);
       Metadata.setToken(loginResponse.token);
@@ -224,6 +263,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     // call is best-effort (the JWT is stateless and cannot be revoked), so its
     // failure is swallowed and never surfaces as an unhandled rejection.
     clearUserData();
+    pendingPasswordRef.current = "";
     Metadata.setToken("");
     datasource.setToken("");
     CopilotClient.setToken("");
@@ -345,6 +385,24 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
+      // While the password is expired the backend rejects the whole data plane with 401 on purpose.
+      // Treating those as session failures would log the user out and prevent the mandatory change.
+      if (useUserStore.getState().passwordExpired) {
+        return response;
+      }
+
+      // The password expired while the session was open. The change cannot be applied from here (the
+      // ERP handler needs the current password, which is not held), so log out with a clear reason
+      // instead of the generic session-failure message. Checked before the ignorable-URL list so it
+      // wins over it: every endpoint is rejected in this state, ignorable ones included.
+      if (isPasswordExpiredResponse(response)) {
+        // logout() clears the store synchronously, so the message must be written afterwards.
+        logout();
+        useUserStore.getState().setLoginErrorText(t("login.errors.passwordExpired.title"));
+        useUserStore.getState().setLoginErrorDescription(t("login.errors.passwordExpired.description"));
+        return response;
+      }
+
       const isIgnorableError =
         (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) &&
         (response.url.includes("meta/window") ||
@@ -415,11 +473,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isCopilotInstalled,
       loginErrorText,
       loginErrorDescription,
+      passwordExpired,
       // Actions (hook-dependent — live in UserProvider)
       login,
       logout,
       changeProfile,
       changePassword,
+      completeExpiredPasswordChange,
+      hasPendingLoginPassword,
       clearUserData,
       setDefaultConfiguration,
       // Store setters (stable references — satisfy consumers that call setters)
@@ -447,10 +508,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isCopilotInstalled,
       loginErrorText,
       loginErrorDescription,
+      passwordExpired,
       login,
       logout,
       changeProfile,
       changePassword,
+      completeExpiredPasswordChange,
+      hasPendingLoginPassword,
       clearUserData,
       setDefaultConfiguration,
     ]
@@ -462,6 +526,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
     if (isSessionLoading) {
       return <SessionLoading data-testid="SessionLoading__2e05d2" />;
+    }
+    if (passwordExpired) {
+      return <ForcePasswordChangeScreen data-testid="ForcePasswordChangeScreen__2e05d2" />;
     }
     return props.children;
   };
