@@ -119,6 +119,7 @@ import {
   useMemoryManager,
 } from "./utils/performanceOptimizations";
 import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/accessibilityUtils";
+import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
@@ -2967,6 +2968,9 @@ const DynamicTable = ({
     () => ({
       ref: tableContainerRef,
       tabIndex: -1,
+      // Marks this container as where the grid pane hands the DOM focus over:
+      // row arrows and Enter only fire while the focus lives inside it.
+      [GRID_FOCUS_TARGET_ATTRIBUTE]: "",
       sx: { flex: 1, maxHeight: "100%", outline: "none" },
       onScroll: fetchMoreOnBottomReached,
     }),

@@ -39,19 +39,25 @@ import {
   SPLIT_MAX_TABLE_WIDTH,
   SPLIT_MIN_TABLE_WIDTH,
   SPLIT_TABLE_WIDTH_CSS_VAR,
+  SPLIT_PANES,
+  SPLIT_PANE_TEST_IDS,
   TAB_VIEW_MODES,
   getFocusBorderColor,
   getFormPaneClassName,
   getGridPaneClassName,
   getGridPaneStyle,
+  getPaneTabIndex,
   getPanesContainerClassName,
   getPanesContainerStyle,
   getTabViewMode,
+  isDualPaneMode,
   isGridPaneExclusive,
   isGridPaneVisible,
+  isPaneFocused,
   isSplitViewAvailable,
   resolveSplitViewFormRecord,
 } from "@/utils/window/splitView";
+import { useSplitPaneFocus } from "@/hooks/useSplitPaneFocus";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
@@ -262,6 +268,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const isTreeSideBySide = toggle && shouldShowForm;
   const viewMode = getTabViewMode({ shouldShowForm, isSplitEnabled, isTreeSideBySide });
   const isSplitView = viewMode === TAB_VIEW_MODES.SPLIT;
+
+  // With both panes on screen the keyboard belongs to one of them, so the focus
+  // indicator narrows down from the tab to the pane holding the DOM focus.
+  const { focusedPane, gridPaneRef, formPaneRef, handleGridPaneFocus, handleFormPaneFocus } = useSplitPaneFocus({
+    isDualPane: isDualPaneMode(viewMode),
+    shouldShowForm,
+    isTabFocused: isFocused,
+  });
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
@@ -1312,7 +1326,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     handleSetRecordId(parentSelectedRecordId);
   }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
-  const focusBorderColor = getFocusBorderColor(isFocused);
+  const paneFocusInput = { mode: viewMode, isTabFocused: isFocused, focusedPane };
+  const isGridPaneFocused = isPaneFocused({ ...paneFocusInput, pane: SPLIT_PANES.GRID });
+  const isFormPaneFocused = isPaneFocused({ ...paneFocusInput, pane: SPLIT_PANES.FORM });
+  const paneTabIndex = getPaneTabIndex(viewMode);
 
   return (
     <div
@@ -1330,7 +1347,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         ref={panesRef}
         className={getPanesContainerClassName(viewMode)}
         style={getPanesContainerStyle(splitState.tableWidth)}>
-        <div className={getGridPaneClassName(viewMode, focusBorderColor)} style={getGridPaneStyle(viewMode)}>
+        <div
+          ref={gridPaneRef}
+          tabIndex={paneTabIndex}
+          onFocus={handleGridPaneFocus}
+          className={getGridPaneClassName(viewMode, getFocusBorderColor(isGridPaneFocused))}
+          style={getGridPaneStyle(viewMode)}
+          data-testid={SPLIT_PANE_TEST_IDS.GRID}>
           <AttachmentProvider data-testid="AttachmentProvider__5893c8">
             <DynamicTable
               isTreeMode={toggle}
@@ -1361,7 +1384,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           />
         )}
         {shouldShowForm && (
-          <div className={getFormPaneClassName(isFocused)}>
+          <div
+            ref={formPaneRef}
+            tabIndex={paneTabIndex}
+            onFocus={handleFormPaneFocus}
+            className={getFormPaneClassName(isFormPaneFocused)}
+            data-testid={SPLIT_PANE_TEST_IDS.FORM}>
             <FormView
               key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
               mode={formMode}

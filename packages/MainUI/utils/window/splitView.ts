@@ -34,6 +34,26 @@ export const TAB_VIEW_MODES = {
 
 export type TabViewMode = (typeof TAB_VIEW_MODES)[keyof typeof TAB_VIEW_MODES];
 
+/** The two panes that can hold the keyboard focus while both are on screen. */
+export const SPLIT_PANES = {
+  GRID: "grid",
+  FORM: "form",
+} as const;
+
+export type SplitPane = (typeof SPLIT_PANES)[keyof typeof SPLIT_PANES];
+
+export const SPLIT_PANE_TEST_IDS = {
+  GRID: "split-grid-pane",
+  FORM: "split-form-pane",
+} as const;
+
+/**
+ * Marks the element a pane hands the DOM focus to. The grid puts it on the
+ * scrollable table container, whose keyboard shortcuts (row arrows, Enter) only
+ * fire while the focus lives inside it.
+ */
+export const GRID_FOCUS_TARGET_ATTRIBUTE = "data-grid-focus-target";
+
 /** Grid pane width, as a percentage of the panes container, when split view opens. */
 export const SPLIT_DEFAULT_TABLE_WIDTH = 50;
 export const SPLIT_MIN_TABLE_WIDTH = 20;
@@ -119,6 +139,75 @@ export const isGridPaneExclusive = (mode: TabViewMode): boolean => {
   return mode === TAB_VIEW_MODES.GRID;
 };
 
+/**
+ * True when grid and form share the screen, so the keyboard focus belongs to one
+ * pane rather than to the tab as a whole.
+ */
+export const isDualPaneMode = (mode: TabViewMode): boolean => {
+  return mode === TAB_VIEW_MODES.SPLIT || mode === TAB_VIEW_MODES.TREE_SIDE_BY_SIDE;
+};
+
+/** The pane the focus moves to when the user asks for the next one. */
+export const getOtherSplitPane = (pane: SplitPane): SplitPane => {
+  if (pane === SPLIT_PANES.GRID) {
+    return SPLIT_PANES.FORM;
+  }
+  return SPLIT_PANES.GRID;
+};
+
+/**
+ * Whether a pane must paint the focus indicator.
+ *
+ * With a single pane on screen the indicator belongs to the tab, so it follows
+ * `isTabFocused` exactly as it did before split view existed. Only when both
+ * panes are visible does it narrow down to the pane holding the DOM focus.
+ */
+export const isPaneFocused = ({
+  mode,
+  pane,
+  isTabFocused,
+  focusedPane,
+}: {
+  mode: TabViewMode;
+  pane: SplitPane;
+  isTabFocused: boolean;
+  focusedPane: SplitPane;
+}): boolean => {
+  if (!isTabFocused) {
+    return false;
+  }
+  if (!isDualPaneMode(mode)) {
+    return true;
+  }
+  return pane === focusedPane;
+};
+
+/**
+ * `tabIndex` for a pane container. Panes only become focus targets while they
+ * share the screen: that is what lets a click anywhere in a pane — and the
+ * programmatic focus move — land on the pane itself.
+ */
+export const getPaneTabIndex = (mode: TabViewMode): number | undefined => {
+  if (isDualPaneMode(mode)) {
+    return -1;
+  }
+  return undefined;
+};
+
+/**
+ * Element that receives the DOM focus when a pane takes over the keyboard: the
+ * marked descendant when the pane declares one, the pane container otherwise.
+ * Focusing the container is enough for sequential navigation, since the browser
+ * continues from there into the pane's first focusable descendant.
+ */
+export const resolvePaneFocusTarget = (paneElement: HTMLElement): HTMLElement => {
+  const marked = paneElement.querySelector<HTMLElement>(`[${GRID_FOCUS_TARGET_ATTRIBUTE}]`);
+  if (marked) {
+    return marked;
+  }
+  return paneElement;
+};
+
 export const getPanesContainerClassName = (mode: TabViewMode): string => {
   if (mode === TAB_VIEW_MODES.SPLIT) {
     return "flex flex-1 min-h-0 flex-row";
@@ -129,15 +218,23 @@ export const getPanesContainerClassName = (mode: TabViewMode): string => {
   return "flex flex-1 min-h-0 relative flex-col";
 };
 
+/**
+ * Classes every pane that paints the focus indicator shares. The border is
+ * always laid out — transparent when unfocused — so that moving the focus
+ * between panes never shifts the divider. `outline-none` keeps the browser's own
+ * ring off the pane container: the left border is the indicator.
+ */
+const PANE_FOCUS_BORDER_CLASSES = "outline-none transition-[border-left-color] duration-200 border-l-4";
+
 export const getGridPaneClassName = (mode: TabViewMode, focusBorderColor: string): string => {
   if (mode === TAB_VIEW_MODES.SPLIT) {
-    return "h-full min-h-0 overflow-hidden rounded-l-3xl shrink-0";
+    return `h-full min-h-0 overflow-hidden rounded-l-3xl shrink-0 ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.TREE_SIDE_BY_SIDE) {
-    return "w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl";
+    return `w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.GRID) {
-    return `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`;
+    return `flex-1 h-full min-h-0 rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   return "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
 };
@@ -155,7 +252,7 @@ export const getGridPaneStyle = (mode: TabViewMode): CSSProperties | undefined =
 
 export const getFormPaneClassName = (isFocused: boolean): string => {
   const borderColor = getFocusBorderColor(isFocused);
-  return `flex-1 h-full min-h-0 min-w-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${borderColor}`;
+  return `flex-1 h-full min-h-0 min-w-0 relative z-10 ${PANE_FOCUS_BORDER_CLASSES} ${borderColor}`;
 };
 
 export const getFocusBorderColor = (isFocused: boolean): string => {

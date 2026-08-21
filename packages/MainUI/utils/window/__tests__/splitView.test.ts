@@ -1,26 +1,36 @@
 import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
 import {
   DEFAULT_SPLIT_STATE,
+  GRID_FOCUS_TARGET_ATTRIBUTE,
   SPLIT_DEFAULT_TABLE_WIDTH,
   SPLIT_MAX_TABLE_WIDTH,
   SPLIT_MIN_TABLE_WIDTH,
+  SPLIT_PANES,
   SPLIT_TABLE_WIDTH_CSS_VAR,
   TAB_VIEW_MODES,
+  type TabViewMode,
   clampSplitTableWidth,
   getFocusBorderColor,
   getFormPaneClassName,
   getGridPaneClassName,
   getGridPaneStyle,
+  getOtherSplitPane,
+  getPaneTabIndex,
   getPanesContainerClassName,
   getPanesContainerStyle,
   getTabViewMode,
+  isDualPaneMode,
   isGridPaneExclusive,
   isGridPaneVisible,
+  isPaneFocused,
   isSplitViewAvailable,
   resolveSplitViewFormRecord,
+  resolvePaneFocusTarget,
 } from "../splitView";
 
 const FOCUS_BORDER = "border-l-transparent";
+const DUAL_PANE_MODES: TabViewMode[] = [TAB_VIEW_MODES.SPLIT, TAB_VIEW_MODES.TREE_SIDE_BY_SIDE];
+const SINGLE_PANE_MODES: TabViewMode[] = [TAB_VIEW_MODES.GRID, TAB_VIEW_MODES.FORM];
 
 const makeTab = (uIPattern: UIPattern): Pick<Tab, "uIPattern"> => ({ uIPattern });
 
@@ -101,6 +111,85 @@ describe("pane visibility helpers", () => {
     expect(isGridPaneExclusive(TAB_VIEW_MODES.TREE_SIDE_BY_SIDE)).toBe(false);
     expect(isGridPaneExclusive(TAB_VIEW_MODES.FORM)).toBe(false);
   });
+
+  it.each(DUAL_PANE_MODES)("treats %s as a two-pane layout", (mode) => {
+    expect(isDualPaneMode(mode)).toBe(true);
+  });
+
+  it.each(SINGLE_PANE_MODES)("treats %s as a single-pane layout", (mode) => {
+    expect(isDualPaneMode(mode)).toBe(false);
+  });
+});
+
+describe("getOtherSplitPane", () => {
+  it("moves from the grid to the form and back", () => {
+    expect(getOtherSplitPane(SPLIT_PANES.GRID)).toBe(SPLIT_PANES.FORM);
+    expect(getOtherSplitPane(SPLIT_PANES.FORM)).toBe(SPLIT_PANES.GRID);
+  });
+});
+
+describe("isPaneFocused", () => {
+  const ALL_MODES: TabViewMode[] = [...DUAL_PANE_MODES, ...SINGLE_PANE_MODES];
+
+  it.each(ALL_MODES)("never marks a pane of an unfocused tab (%s)", (mode) => {
+    for (const pane of [SPLIT_PANES.GRID, SPLIT_PANES.FORM]) {
+      expect(isPaneFocused({ mode, pane, isTabFocused: false, focusedPane: pane })).toBe(false);
+    }
+  });
+
+  it.each(SINGLE_PANE_MODES)("keeps the indicator on the tab with a single pane on screen (%s)", (mode) => {
+    // Only one pane is rendered, so the pre-split behaviour has to be preserved
+    // whatever the tracked pane happens to be.
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.GRID, isTabFocused: true, focusedPane: SPLIT_PANES.FORM })).toBe(
+      true
+    );
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.FORM, isTabFocused: true, focusedPane: SPLIT_PANES.GRID })).toBe(
+      true
+    );
+  });
+
+  it.each(DUAL_PANE_MODES)("marks only the pane holding the focus (%s)", (mode) => {
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.FORM, isTabFocused: true, focusedPane: SPLIT_PANES.FORM })).toBe(
+      true
+    );
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.GRID, isTabFocused: true, focusedPane: SPLIT_PANES.FORM })).toBe(
+      false
+    );
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.GRID, isTabFocused: true, focusedPane: SPLIT_PANES.GRID })).toBe(
+      true
+    );
+    expect(isPaneFocused({ mode, pane: SPLIT_PANES.FORM, isTabFocused: true, focusedPane: SPLIT_PANES.GRID })).toBe(
+      false
+    );
+  });
+});
+
+describe("getPaneTabIndex", () => {
+  it.each(DUAL_PANE_MODES)("makes the panes focusable in %s", (mode) => {
+    expect(getPaneTabIndex(mode)).toBe(-1);
+  });
+
+  it.each(SINGLE_PANE_MODES)("leaves tabIndex out in %s", (mode) => {
+    expect(getPaneTabIndex(mode)).toBeUndefined();
+  });
+});
+
+describe("resolvePaneFocusTarget", () => {
+  it("prefers the marked descendant", () => {
+    const pane = document.createElement("div");
+    const target = document.createElement("div");
+    target.setAttribute(GRID_FOCUS_TARGET_ATTRIBUTE, "");
+    pane.appendChild(target);
+
+    expect(resolvePaneFocusTarget(pane)).toBe(target);
+  });
+
+  it("falls back to the pane itself when nothing is marked", () => {
+    const pane = document.createElement("div");
+    pane.appendChild(document.createElement("input"));
+
+    expect(resolvePaneFocusTarget(pane)).toBe(pane);
+  });
 });
 
 describe("class name helpers", () => {
@@ -122,12 +211,25 @@ describe("class name helpers", () => {
     expect(getGridPaneClassName(TAB_VIEW_MODES.SPLIT, FOCUS_BORDER)).not.toContain("w-[35%]");
   });
 
-  it("applies the focus border only when the grid owns the whole pane area", () => {
-    expect(getGridPaneClassName(TAB_VIEW_MODES.GRID, FOCUS_BORDER)).toContain(FOCUS_BORDER);
+  it.each([TAB_VIEW_MODES.GRID, ...DUAL_PANE_MODES])(
+    "applies the focus border on the visible grid pane (%s)",
+    (mode) => {
+      expect(getGridPaneClassName(mode, FOCUS_BORDER)).toContain(FOCUS_BORDER);
+      // Always laid out, so moving the focus between panes never shifts the divider.
+      expect(getGridPaneClassName(mode, FOCUS_BORDER)).toContain("border-l-4");
+    }
+  );
+
+  it.each([TAB_VIEW_MODES.GRID, ...DUAL_PANE_MODES])("keeps the browser ring off the grid pane (%s)", (mode) => {
+    expect(getGridPaneClassName(mode, FOCUS_BORDER)).toContain("outline-none");
   });
 
   it("lets the form pane shrink below its content width", () => {
     expect(getFormPaneClassName(false)).toContain("min-w-0");
+  });
+
+  it("keeps the browser ring off the form pane", () => {
+    expect(getFormPaneClassName(false)).toContain("outline-none");
   });
 
   it("marks the focused pane with the secondary border colour", () => {

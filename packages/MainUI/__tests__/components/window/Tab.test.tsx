@@ -39,6 +39,7 @@ import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import { FocusProvider } from "@/contexts/focus";
 import { useWindowStore } from "@/stores/windowStore";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import { SPLIT_PANE_TEST_IDS, getFocusBorderColor } from "@/utils/window/splitView";
 
 // Mock other dependencies
 jest.mock("next/cache", () => ({
@@ -520,6 +521,96 @@ describe("Tab - Split view", () => {
       fireEvent.keyDown(document, { key: "m", ctrlKey: true });
 
       expect(getSplit()?.enabled).toBe(true);
+    });
+  });
+
+  // With both panes on screen the keyboard belongs to one of them, so the focus
+  // indicator narrows down from the tab to that pane, and the DOM focus has to
+  // start out in the form — otherwise Tab would walk the grid, which precedes it.
+  describe("pane focus in split view", () => {
+    const gridPane = () => screen.getByTestId(SPLIT_PANE_TEST_IDS.GRID);
+    const formPane = () => screen.getByTestId(SPLIT_PANE_TEST_IDS.FORM);
+
+    const openSplit = () => {
+      openForm();
+      pressShowTableAndForm();
+    };
+
+    it("hands the DOM focus to the form pane when the split opens", () => {
+      renderSplitTab();
+
+      openSplit();
+
+      expect(document.activeElement).toBe(formPane());
+    });
+
+    it("marks the form pane and leaves the grid pane transparent", () => {
+      renderSplitTab();
+
+      openSplit();
+
+      expect(formPane().className).toContain(getFocusBorderColor(true));
+      expect(gridPane().className).toContain(getFocusBorderColor(false));
+    });
+
+    it("moves the indicator to the grid pane when it takes the focus", () => {
+      renderSplitTab();
+      openSplit();
+
+      act(() => gridPane().focus());
+
+      expect(gridPane().className).toContain(getFocusBorderColor(true));
+      expect(formPane().className).toContain(getFocusBorderColor(false));
+    });
+
+    it("keeps the indicator on the tab while a single pane is on screen", () => {
+      renderSplitTab();
+
+      // Grid only: the pre-split behaviour, where the indicator tracks the tab.
+      expect(gridPane().className).toContain(getFocusBorderColor(true));
+
+      openForm();
+
+      expect(formPane().className).toContain(getFocusBorderColor(true));
+    });
+
+    it("makes the panes focus targets only while both are on screen", () => {
+      renderSplitTab();
+      expect(gridPane()).not.toHaveAttribute("tabindex");
+
+      openSplit();
+
+      expect(gridPane()).toHaveAttribute("tabindex", "-1");
+      expect(formPane()).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("does not steal the focus for a tab that does not own it", () => {
+      // Only level-0 tabs acquire the focus region on mount, so a child tab
+      // renders unfocused while its toolbar action stays callable.
+      const childTab: TabType = { ...splitTab, id: "child-tab", tabLevel: 1 };
+      render(
+        <ThemeProvider theme={theme}>
+          <WindowProvider>
+            <CurrentWindowProvider windowIdentifier={WINDOW_IDENTIFIER} windowId="test-window">
+              <FocusProvider>
+                <DatasourceProvider>
+                  <Tab tab={childTab} collapsed={false} />
+                </DatasourceProvider>
+              </FocusProvider>
+            </CurrentWindowProvider>
+          </WindowProvider>
+        </ThemeProvider>
+      );
+
+      act(() => {
+        useWindowStore
+          .getState()
+          .setTabFormState(WINDOW_IDENTIFIER, childTab.id, { recordId: RECORD_ID, mode: "form", formMode: "edit" });
+      });
+      pressShowTableAndForm();
+
+      expect(document.activeElement).toBe(document.body);
+      expect(screen.getByTestId(SPLIT_PANE_TEST_IDS.FORM).className).toContain(getFocusBorderColor(false));
     });
   });
 });

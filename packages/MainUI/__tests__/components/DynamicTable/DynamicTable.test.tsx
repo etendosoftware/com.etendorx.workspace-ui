@@ -1,5 +1,6 @@
 import { screen, fireEvent, act } from "@testing-library/react";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
@@ -943,6 +944,17 @@ describe("DynamicTable", () => {
 
       // Table should have proper ARIA labels and roles
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
+    });
+
+    // In split view the grid pane hands the DOM focus to this container, which is
+    // where the row arrows and Enter are scoped. Without the marker they stay dead.
+    it("marks the scroll container as the grid pane focus target", () => {
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      expect(tableOptions?.muiTableContainerProps).toMatchObject({
+        [GRID_FOCUS_TARGET_ATTRIBUTE]: "",
+        tabIndex: -1,
+      });
     });
   });
 
