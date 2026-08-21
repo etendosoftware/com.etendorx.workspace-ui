@@ -28,7 +28,13 @@
 import type React from "react";
 import { act, screen } from "@testing-library/react";
 import { renderWithTheme as render } from "../../../../test-utils/test-theme-provider";
-import { FormMode, UIPattern, type Tab, type WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import {
+  FormMode,
+  UIPattern,
+  type EntityData,
+  type Tab,
+  type WindowMetadata,
+} from "@workspaceui/api-client/src/api/types";
 import FormView from "../index";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 
@@ -376,5 +382,42 @@ describe("FormView", () => {
 
     expect(mockClearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
     expect(mockDatasourceGet).toHaveBeenCalled();
+  });
+
+  it("onSuccess in EDIT mode refetches, shows the success modal and updates the row in place", async () => {
+    renderFormView();
+
+    const lastCallArgs = mockUseFormAction.mock.calls[mockUseFormAction.mock.calls.length - 1][0] as {
+      onSuccess: (data: EntityData, options: { showModal?: boolean; skipFormStateUpdate?: boolean }) => Promise<void>;
+    };
+
+    await act(async () => {
+      await lastCallArgs.onSuccess({ id: "123" } as EntityData, { showModal: true });
+    });
+
+    expect(mockClearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
+    expect(mockGraph.setSelected).toHaveBeenCalled();
+    expect(mockFormInitRefetch).toHaveBeenCalled();
+    expect(mockShowSuccessModal).toHaveBeenCalledWith("Saved");
+    expect(mockResetFormChanges).toHaveBeenCalled();
+    expect(mockUpdateRecordInDatasource).toHaveBeenCalled();
+  });
+
+  it("onSuccess in NEW mode transitions to EDIT and adds the record to the datasource", async () => {
+    const { setRecordId } = renderFormView({ mode: FormMode.NEW, recordId: NEW_RECORD_ID });
+
+    const lastCallArgs = mockUseFormAction.mock.calls[mockUseFormAction.mock.calls.length - 1][0] as {
+      onSuccess: (data: EntityData, options: { showModal?: boolean; skipFormStateUpdate?: boolean }) => Promise<void>;
+    };
+
+    mockDatasourceGet.mockResolvedValueOnce({ data: { response: { data: [{ id: "456" }] } } });
+
+    await act(async () => {
+      await lastCallArgs.onSuccess({ id: "456" } as EntityData, {});
+    });
+
+    expect(setRecordId).toHaveBeenCalledWith("456");
+    expect(mockAddRecordToDatasource).toHaveBeenCalled();
+    expect(mockGraph.setSelectedMultiple).toHaveBeenCalled();
   });
 });
