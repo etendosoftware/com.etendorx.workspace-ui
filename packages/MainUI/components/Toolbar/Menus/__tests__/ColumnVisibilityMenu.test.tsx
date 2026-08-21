@@ -137,6 +137,29 @@ describe("ColumnVisibilityMenu", () => {
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
   });
 
+  // ETP-4635: the metadata adapter now injects audit fields hidden from the grid
+  // (showInGridView=false, displayed=false), mirroring Classic. They must stay listed here so the
+  // user can still enable them; `isAuditField` is the flag that keeps them in.
+  it("should include audit fields that are hidden from the grid by default", () => {
+    mockTable.getAllLeafColumns.mockReturnValue([
+      {
+        id: "creationDate",
+        columnDef: { isAuditField: true, displayed: false, showInGridView: false, header: "Creation Date" },
+        getIsVisible: () => false,
+      },
+      {
+        id: "col1",
+        columnDef: { header: "Visible Column" },
+        getIsVisible: () => true,
+      },
+    ]);
+
+    render(<ColumnVisibilityMenu anchorEl={document.createElement("div")} onClose={jest.fn()} table={mockTable} />);
+
+    expect(screen.getByTestId("item-creationDate")).toBeInTheDocument();
+    expect(screen.getByTestId("item-col1")).toBeInTheDocument();
+  });
+
   it("should render no items when tableColumnVisibility is empty", () => {
     (useTableStatePersistenceTab as jest.Mock).mockReturnValue({
       tableColumnVisibility: {},
