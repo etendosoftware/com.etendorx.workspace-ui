@@ -23,6 +23,8 @@
  * to test exhaustively and keeps the hook free of nested type guards.
  */
 
+import { type OpenUrlPayload, parseOpenUrlPayload } from "@/utils/processes/definition/openUrl";
+
 export const RESPONSE_ACTION_KEYS = {
   SHOW_MSG_IN_PROCESS_VIEW: "showMsgInProcessView",
   SHOW_MSG_IN_VIEW: "showMsgInView",
@@ -33,6 +35,7 @@ export const RESPONSE_ACTION_KEYS = {
   SMARTCLIENT_SAY: "smartclientSay",
   BROWSE_REPORT: "OBUIAPP_browseReport",
   DOWNLOAD_REPORT: "OBUIAPP_downloadReport",
+  OPEN_URL: "openUrl",
 } as const;
 
 /** Render mode a report action requests from the kernel report handler. */
@@ -94,7 +97,8 @@ export type DispatchedAction =
   | { kind: "setSelectorValueFromRecord"; payload: SetSelectorValuePayload }
   | { kind: "smartclientSay"; payload: SmartClientSayPayload }
   | { kind: "browseReport"; payload: ReportActionPayload }
-  | { kind: "downloadReport"; payload: ReportActionPayload };
+  | { kind: "downloadReport"; payload: ReportActionPayload }
+  | { kind: "openUrl"; payload: OpenUrlPayload };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
@@ -186,6 +190,13 @@ export const dispatchSingle = (raw: unknown): DispatchedAction | null => {
       return { kind: "browseReport", payload: payload as ReportActionPayload };
     case RESPONSE_ACTION_KEYS.DOWNLOAD_REPORT:
       return { kind: "downloadReport", payload: payload as ReportActionPayload };
+    case RESPONSE_ACTION_KEYS.OPEN_URL: {
+      // The key already identifies the action, so no `type` discriminator is
+      // required here (unlike the onProcess-return shape). A payload without a
+      // usable `url` is dropped rather than opening a blank window.
+      const openUrl = parseOpenUrlPayload(payload, false);
+      return openUrl ? { kind: "openUrl", payload: openUrl } : null;
+    }
     default:
       return null;
   }
@@ -261,6 +272,8 @@ export interface ActionDispatchContext {
   browseReport: (payload: ReportActionPayload) => void;
   /** Download a generated report file (classic `OBUIAPP_downloadReport`). */
   downloadReport: (payload: ReportActionPayload) => void;
+  /** Hand off to an external URL in a new window (classic bare `window.open`). */
+  openUrl: (payload: OpenUrlPayload) => void;
 }
 
 /**
@@ -294,6 +307,9 @@ export const dispatchResponseAction = (action: DispatchedAction, ctx: ActionDisp
       return;
     case "downloadReport":
       ctx.downloadReport(action.payload);
+      return;
+    case "openUrl":
+      ctx.openUrl(action.payload);
       return;
   }
 };

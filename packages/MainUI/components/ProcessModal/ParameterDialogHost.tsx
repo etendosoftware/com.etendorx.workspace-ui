@@ -36,6 +36,9 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 /** Maps a dynamic field's server input type to the form-reference code that routes the selector. */
 function referenceForInputType(inputType: DynamicFormField["inputType"]): string {
   if (inputType === "CHECK") return FIELD_REFERENCE_CODES.BOOLEAN.id;
+  // Classic `_id_17`: the single-select combo migrated Manual processes populate
+  // at open time from a server round-trip.
+  if (inputType === "LIST") return FIELD_REFERENCE_CODES.LIST_17.id;
   return FIELD_REFERENCE_CODES.STRING.id;
 }
 
@@ -47,17 +50,41 @@ function toParameter(field: DynamicFormField): ProcessParameter {
     dBColumnName: field.name,
     reference: referenceForInputType(field.inputType),
     mandatory: false,
-    refList: [],
+    // ListSelector reads `id` alongside `value`/`label`; scripts only supply the
+    // latter two, so the option value doubles as the id.
+    refList: (field.refList ?? []).map((option) => ({ id: option.value, value: option.value, label: option.label })),
   } as unknown as ProcessParameter;
+}
+
+/** Default form value of one dynamic field, per input type. */
+function defaultValueForField(field: DynamicFormField): unknown {
+  if (field.inputType === "CHECK") return field.defaultCheck === "Y";
+  if (field.inputType === "LIST") return field.defaultValue ?? "";
+  return field.defaultText ?? "";
 }
 
 /** Seeds the react-hook-form defaults from each field's declared default value. */
 function buildDefaultValues(fields: DynamicFormField[]): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   for (const field of fields) {
-    defaults[field.name] = field.inputType === "CHECK" ? field.defaultCheck === "Y" : (field.defaultText ?? "");
+    defaults[field.name] = defaultValueForField(field);
   }
   return defaults;
+}
+
+/**
+ * Builds the label overrides for the fields that declare one, keyed by the form
+ * key the selector reads (`parameter.name`). Reuses `ProcessParameterSelector`'s
+ * existing `labelOverrides` channel, so a field can keep a safe form key while
+ * showing arbitrary text. Returns `undefined` when no field declares a label, so
+ * dialogs that never set one behave exactly as before.
+ */
+function buildLabelOverrides(fields: DynamicFormField[]): Record<string, string> | undefined {
+  const overrides: Record<string, string> = {};
+  for (const field of fields) {
+    if (field.label) overrides[field.name] = field.label;
+  }
+  return Object.keys(overrides).length > 0 ? overrides : undefined;
 }
 
 /** Collects the form values into the `CollectedValue[]` echoed back to the script. */
@@ -77,6 +104,7 @@ function ParameterDialogForm({ request }: { request: ParameterDialogRequest }) {
   const defaultValues = useMemo(() => buildDefaultValues(fields), [fields]);
   const form = useForm({ defaultValues });
   const parameters = useMemo(() => fields.map(toParameter), [fields]);
+  const labelOverrides = useMemo(() => buildLabelOverrides(fields), [fields]);
   const values = form.watch();
 
   const onOk = () => resolveParameterDialog(request.id, collectValues(fields, form.getValues()));
@@ -105,6 +133,7 @@ function ParameterDialogForm({ request }: { request: ParameterDialogRequest }) {
                 key={parameter.name}
                 parameter={parameter}
                 values={values}
+                labelOverrides={labelOverrides}
                 data-testid={`ParameterDialogHost__${parameter.name}`}
               />
             ))}

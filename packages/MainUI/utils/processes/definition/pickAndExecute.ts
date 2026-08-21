@@ -20,6 +20,8 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 export const PICK_AND_EXECUTE_UI_PATTERN = "OBUIAPP_PickAndExecute";
 
+export const MANUAL_UI_PATTERN = "M";
+
 const WINDOW_REFERENCE_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
 
 const hasWindowReferenceParameter = (process: ProcessDefinition): boolean => {
@@ -40,6 +42,19 @@ export const isPickAndExecute = (process: ProcessDefinition | null | undefined):
   if (process.uIPattern === PICK_AND_EXECUTE_UI_PATTERN) return true;
   return hasWindowReferenceParameter(process);
 };
+
+/**
+ * True iff the process is a Manual (`uiPattern = "M"`) Defined Process.
+ *
+ * A Manual process has no parameters; all of its behaviour lives in the
+ * mandatory Handler field, which the metadata converter surfaces as
+ * `javaClassName` but which for this pattern holds a **classic client-side JS
+ * namespace** (`OB.AEATSII.send`, `OB.OpenClose.openClose`) rather than a Java
+ * `ActionHandler`. Posting it to the kernel as `_action` therefore always fails,
+ * which is why the direct-Java execution shortcut must exclude these.
+ */
+export const isManualProcess = (process: ProcessDefinition | null | undefined): boolean =>
+  process?.uIPattern === MANUAL_UI_PATTERN;
 
 /**
  * Normalizes the legacy `boolean | "Y" | "N"` shape emitted by the converter.

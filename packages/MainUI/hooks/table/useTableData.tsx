@@ -48,7 +48,7 @@ import {
   resolveImplicitFilterToggle,
 } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
-import { buildEtendoContext } from "@/utils/contextUtils";
+import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
@@ -517,6 +517,11 @@ export const useTableData = ({
     options.operator = "and";
 
     if (parentTab?.entityName && parentId) {
+      // Classic sends the parent record's session properties along with every child fetch
+      // (ob-view-grid.js:2736). The server answers @AD_Org_ID@ / @AD_Client_ID@ inside a child
+      // tab's hqlwhereclause by reading exactly these params, so a missing organization leaves
+      // the variable empty and AD_ISORGINCLUDED drops every row.
+      Object.assign(options, buildParentSessionContext(parentTab, parentRecord ?? graph.getSelected(parentTab)));
       // Keep existing format for backward compat (e.g. Process Request datasource)
       options[`@${parentTab.entityName}.id@`] = parentId;
       // OB Classic context variable format for hqlwhereclause substitution
@@ -548,6 +553,7 @@ export const useTableData = ({
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
+    parentRecord,
     language,
     tableColumnSorting,
     advancedCriteria,

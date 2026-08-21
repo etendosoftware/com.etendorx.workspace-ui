@@ -41,6 +41,7 @@ import {
   isWindowReady,
   getKeyFieldName,
   isSrOneToOneExtension,
+  markLastWindowAsActive,
 } from "../utils";
 import { TAB_MODES, FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import type { WindowContextState, WindowRecoveryInfo, WindowState } from "@/utils/window/constants";
@@ -983,5 +984,32 @@ describe("isSrOneToOneExtension", () => {
     } as unknown as Tab;
 
     expect(isSrOneToOneExtension(tab)).toBe(true);
+  });
+});
+
+describe("markLastWindowAsActive", () => {
+  const buildWindow = (windowIdentifier: string, isActive: boolean): WindowState =>
+    ({ windowIdentifier, isActive }) as WindowState;
+
+  it("returns an empty list untouched", () => {
+    expect(markLastWindowAsActive([])).toEqual([]);
+  });
+
+  it("activates the only window", () => {
+    const result = markLastWindowAsActive([buildWindow("w1", false)]);
+
+    expect(result.map((w) => w.isActive)).toEqual([true]);
+  });
+
+  it("activates the last window and deactivates the previous ones", () => {
+    const result = markLastWindowAsActive([buildWindow("w1", true), buildWindow("w2", true), buildWindow("w3", false)]);
+
+    expect(result.map((w) => w.isActive)).toEqual([false, false, true]);
+  });
+
+  it("preserves the original order and the rest of the state", () => {
+    const result = markLastWindowAsActive([buildWindow("w1", false), buildWindow("w2", false)]);
+
+    expect(result.map((w) => w.windowIdentifier)).toEqual(["w1", "w2"]);
   });
 });

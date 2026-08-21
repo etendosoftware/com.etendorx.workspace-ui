@@ -17,7 +17,14 @@
 
 import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
-import { API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_ERP_PROXY, API_DATASOURCE_PROXY } from "./constants";
+import {
+  API_DEFAULT_CACHE_DURATION,
+  API_KERNEL_SERVLET,
+  API_ERP_PROXY,
+  API_DATASOURCE_PROXY,
+  HTTP_CODES,
+} from "./constants";
+import { WINDOW_NOT_FOUND_ERROR_MESSAGE, WindowAccessDeniedError } from "./errors";
 import { LocationClient } from "./location";
 import { joinUrl } from "./utils";
 import type * as Etendo from "./types";
@@ -148,9 +155,18 @@ export class Metadata {
     if (existing) return existing as Promise<Etendo.WindowMetadata>;
 
     const promise = (async () => {
-      const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
+      const { data, ok, status } = await Metadata.client.post(`meta/window/${windowId}`);
       if (!ok) {
-        throw new Error("Window not found");
+        if (status === HTTP_CODES.UNAUTHORIZED) {
+          throw new WindowAccessDeniedError(windowId, status);
+        }
+        throw new Error(WINDOW_NOT_FOUND_ERROR_MESSAGE);
+      }
+      // The ERP answers 200 with full read-only metadata when the role has no AD_Window_Access but
+      // another role does. Strict `=== false` on purpose: an older backend (or a cache entry
+      // written before the flag existed) leaves it undefined, which must NOT read as denied.
+      if (data?.isWindowAccessible === false) {
+        throw new WindowAccessDeniedError(windowId, status);
       }
       Metadata.cache.set(Metadata.getWindowCacheKey(windowId), data);
       for (const tab of data.tabs) {

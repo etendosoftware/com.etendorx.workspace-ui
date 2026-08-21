@@ -63,6 +63,16 @@ export interface IUserContext {
   // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   changePassword: (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => Promise<void>;
+  /**
+   * Applies the mandatory password change forced when the password has expired, reusing the password
+   * typed at login as the current one, and reloads the session so the expiration flag is refreshed.
+   */
+  completeExpiredPasswordChange: (params: { newPwd: string; confirmPwd: string }) => Promise<void>;
+  /**
+   * True while the password typed at login is still available in memory, which the mandatory change
+   * needs as the current password. Returns false after a page reload.
+   */
+  hasPendingLoginPassword: () => boolean;
   token: string | null;
   roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;
@@ -95,6 +105,8 @@ export interface IUserContext {
   setLoginErrorDescription: (description: string) => void;
   /** Returns the current CSRF token from the session */
   getCsrfToken: () => string;
+  /** True while the user must change an expired password before entering the app */
+  passwordExpired: boolean;
 }
 
 export interface IMetadataContext {

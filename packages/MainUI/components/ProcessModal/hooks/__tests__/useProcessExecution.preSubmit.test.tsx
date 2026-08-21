@@ -70,6 +70,19 @@ describe("useProcessExecution — Pick&Execute pre-submit validation", () => {
     expect(global.fetch).not.toHaveBeenCalled(); // handleWindowReferenceExecute never ran
   });
 
+  it("aborts and titles the bar when the error arrives as a `message` object", async () => {
+    executeStringFunction.mockResolvedValue({
+      message: { msgType: "error", msgTitle: "Cannot pay", msgText: "Credit exceeds pending" },
+    });
+    const { result } = renderHook(() => useProcessExecution(makePEParams()));
+
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(setMessage).toHaveBeenCalledWith("error", "Cannot pay", "Credit exceeds pending");
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it("proceeds with the submit when onProcess returns no error", async () => {
     executeStringFunction.mockResolvedValue(undefined);
     const { result } = renderHook(() => useProcessExecution(makePEParams()));
