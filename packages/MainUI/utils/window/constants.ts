@@ -49,6 +49,13 @@ export interface TabState {
   level: number;
   selectedRecord?: string;
   initializedWithDirectLink?: boolean;
+  /**
+   * Ids of the form sections the user currently has expanded. Kept per tab so the
+   * preference survives FormView unmounting (grid → form → grid → form).
+   * - undefined: no preference yet, the fieldGroupCollapsed metadata seeds it.
+   * - []: a real preference (the user collapsed everything), never re-seeded.
+   */
+  expandedSections?: string[];
 }
 
 export interface WindowState {
