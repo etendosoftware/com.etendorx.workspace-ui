@@ -44,9 +44,10 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
         parentValues: parentRecord || undefined,
         parentFields: parentTab?.fields,
         context: session,
+        windowId: tab.window,
       });
 
-      return toClassicBoolean(compiledExpr(smartContext, smartContext));
+      return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       logger.error("Unexpected error", error);

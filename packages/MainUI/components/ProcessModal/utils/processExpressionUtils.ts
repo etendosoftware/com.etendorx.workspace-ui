@@ -10,6 +10,8 @@ export interface CreateProcessExpressionContextOptions {
   recordValues?: Record<string, unknown> | null;
   parentFields?: Record<string, Field>;
   session?: Record<string, unknown>;
+  /** AD window id, so window-scoped preferences resolve as in classic OB.PropertyStore.get. */
+  windowId?: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export interface CreateProcessExpressionContextOptions {
  * 3. sets up the context with session and record values
  */
 export const createProcessExpressionContext = (options: CreateProcessExpressionContextOptions) => {
-  const { values, parameters, recordValues, parentFields, session } = options;
+  const { values, parameters, recordValues, parentFields, session, windowId } = options;
 
   // 1. Map all parameters to fields structure for smart mapping (dBColumnName -> hqlName)
   const paramFields = parameters
@@ -54,6 +56,7 @@ export const createProcessExpressionContext = (options: CreateProcessExpressionC
     parentValues: recordValues || {},
     parentFields: parentFields,
     context: { ...(session || {}), ...(recordValues || {}) },
+    windowId,
   });
 };
 
@@ -65,6 +68,8 @@ export interface IsParameterDisplayedOptions {
   values?: Record<string, unknown>;
   /** Prebuilt context from {@link createProcessExpressionContext} for expression evaluation. */
   evaluationContext: ReturnType<typeof createProcessExpressionContext>;
+  /** AD window id, so window-scoped preferences resolve as in classic OB.PropertyStore.get. */
+  windowId?: string;
 }
 
 /**
@@ -88,6 +93,7 @@ export const isParameterDisplayed = ({
   logicFields,
   values,
   evaluationContext,
+  windowId,
 }: IsParameterDisplayedOptions): boolean => {
   // 1. Process defaults / script override takes precedence.
   const displayOverride = logicFields?.[`${parameter.name}.display`];
@@ -112,7 +118,7 @@ export const isParameterDisplayed = ({
 
   try {
     const compiledExpr = compileExpression(parameter.displayLogic);
-    return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext));
+    return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext, windowId));
   } catch (error) {
     logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
     return true; // Default to visible on error.

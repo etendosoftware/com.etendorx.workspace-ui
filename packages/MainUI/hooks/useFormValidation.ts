@@ -99,8 +99,9 @@ export const useFormValidation = (tab: Tab) => {
           values: currentValues,
           fields: tab?.fields,
           context: session,
+          windowId: tab?.window,
         });
-        return compiledExpression(ctx, ctx);
+        return compiledExpression(ctx, ctx, tab?.window);
       } catch (error) {
         logger.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
         return field.displayed; // Default to displayed on error

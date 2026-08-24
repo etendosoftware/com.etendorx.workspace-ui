@@ -16,7 +16,7 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { getStoredPreferences } from "./propertyStore";
+import { resolvePreference } from "./propertyStore";
 
 interface SmartContextOptions {
   values?: Record<string, unknown>; // Primary values (current record, form values)
@@ -29,6 +29,11 @@ interface SmartContextOptions {
   auxiliaryInputs?: Record<string, string>; // Tab-scoped evaluated auxiliary inputs
   normalizeValues?: boolean;
   defaultValue?: unknown;
+  /**
+   * AD window id, used to resolve window-scoped preferences the way classic
+   * `OB.PropertyStore.get(key, windowId)` does. When omitted, only global preference keys resolve.
+   */
+  windowId?: string;
 }
 
 /**
@@ -50,6 +55,7 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     auxiliaryInputs,
     normalizeValues = true,
     defaultValue,
+    windowId,
   } = options;
 
   // Helper to normalize values (true -> 'Y', false -> 'N')
@@ -159,15 +165,12 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return looseMatchFound ? looseMatchValue : undefined;
   };
 
+  // Window-scoped key first, then the global one — the classic OB.PropertyStore.get resolution.
+  // The exact/case-insensitive lookup lives in resolvePreference, shared with the OB shims.
   const getFromPrefs = (key: string) => {
-    const prefs = getStoredPreferences();
-    if (prefs[key] !== undefined) return normalize(prefs[key]);
-
-    const lowerKey = key.toLowerCase();
-    for (const [k, v] of Object.entries(prefs)) {
-      if (k.toLowerCase() === lowerKey) return normalize(v);
-    }
-    return undefined;
+    const value = resolvePreference(key, windowId);
+    if (value === undefined) return undefined;
+    return normalize(value);
   };
 
   // Check if a cleared foreign key should return empty string.

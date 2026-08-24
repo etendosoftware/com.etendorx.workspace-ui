@@ -56,6 +56,12 @@ export interface OBShimDeps {
   fetchDatasource?: (entity: string, payload: Record<string, unknown>) => Promise<{ data: unknown }>;
   /** Session user identity (id/name/username), for `OB.User`. */
   user?: { id?: string; name?: string; username?: string };
+  /**
+   * AD window id the shim is scoped to. Used as the default `windowId` for
+   * `PropertyStore.get`, so a script that reads a preference without passing one
+   * still resolves the window-scoped entry, as classic does through the view.
+   */
+  windowId?: string;
 }
 
 export interface OBI18N {
@@ -103,7 +109,12 @@ export interface OBUtilities {
 }
 
 export interface OBPropertyStore {
-  get: (key: string) => string | undefined;
+  /**
+   * Reads a preference, matching classic `OB.PropertyStore.get(propertyName, windowId)`:
+   * the window-scoped key wins over the global one. When `windowId` is omitted, the shim's
+   * own window id is used, and failing that only the global key resolves.
+   */
+  get: (key: string, windowId?: string) => string | undefined;
   set: (key: string, value: unknown) => void;
 }
 
