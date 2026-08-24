@@ -26,6 +26,7 @@ import { logger } from "@/utils/logger";
 import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from "../types/inlineEditing";
 import { getMergedRowData } from "./editingRowUtils";
 import { validateRowForSave } from "./validationUtils";
+import type { TranslateFunction } from "@/hooks/types";
 
 /**
  * Detects stale-object (optimistic lock) errors returned by Etendo Classic.
@@ -35,6 +36,39 @@ import { validateRowForSave } from "./validationUtils";
 export function isStaleObjectError(errorMessage: string | undefined): boolean {
   if (!errorMessage) return false;
   return errorMessage.includes("OBJSON_StaleDate") || errorMessage.includes("APRM_StaleDate");
+}
+
+/**
+ * Builds the message/options pair for showErrorModal given a save error, so callers show a
+ * specific, actionable conflict notice (with a reload action) for stale-object errors instead
+ * of the generic error message, without needing to know the detection rule themselves.
+ */
+export function getStaleObjectErrorNotification(
+  errorMessage: string,
+  t: TranslateFunction,
+  onReload: () => void
+): { message: string; options?: { onReload: () => void; reloadLabel: string } } {
+  if (!isStaleObjectError(errorMessage)) {
+    return { message: errorMessage };
+  }
+  return {
+    message: t("status.staleObjectError"),
+    options: { onReload, reloadLabel: t("status.staleObjectReloadAction") },
+  };
+}
+
+/**
+ * Resolves and shows the stale-object-aware error notification in one call, so call sites
+ * don't need to destructure {@code getStaleObjectErrorNotification}'s result themselves.
+ */
+export function notifyStaleObjectAwareError(
+  showErrorModal: (message: string, options?: { onReload: () => void; reloadLabel: string }) => void,
+  errorMessage: string,
+  t: TranslateFunction,
+  onReload: () => void
+): void {
+  const { message, options } = getStaleObjectErrorNotification(errorMessage, t, onReload);
+  showErrorModal(message, options);
 }
 
 /**
@@ -428,9 +462,18 @@ function prepareSaveData(
 }
 
 /**
- * Handles the response from the save operation
+ * Handles the response from the save operation.
+ *
+ * On a version conflict, com.etendoerp.metadata's ForwarderServlet returns a distinct,
+ * flat HTTP 409 body ({@code {error, code: "STALE_OBJECT", cid}}) instead of the generic
+ * nested shape used for every other save outcome. That marker is normalized here into the
+ * same "_general" error shape used by every other error, so downstream consumers
+ * (isStaleObjectError, shouldAbortRetry, Table/index.tsx) don't need to know about the
+ * two response shapes.
  */
-function handleSaveResponse(data: any, saveOperation: SaveOperation): SaveResult {
+function handleSaveResponse(response: { status?: number; data?: any }, saveOperation: SaveOperation): SaveResult {
+  const { data, status } = response;
+
   if (data?.response?.status === 0) {
     const savedRecord = data.response.data[0] as EntityData;
     return {
@@ -439,8 +482,13 @@ function handleSaveResponse(data: any, saveOperation: SaveOperation): SaveResult
     };
   }
 
-  const errorMessage = data?.response?.error?.message || "Unknown server error";
-  const validationErrors = parseServerValidationErrors(data?.response?.error);
+  const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
+  const errorMessage = isStructuredConflict
+    ? (data.error as string)
+    : data?.response?.error?.message || "Unknown server error";
+  const validationErrors = isStructuredConflict
+    ? [{ field: "_general", message: errorMessage, type: "server" as const }]
+    : parseServerValidationErrors(data?.response?.error);
 
   logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
     rowId: saveOperation.rowId,
@@ -520,11 +568,11 @@ export async function saveRecord({
       body: normalizeDates(body) as Record<string, unknown>,
     };
 
-    const { data } = await Metadata.datasourceServletClient.request(url, options);
+    const { data, status } = await Metadata.datasourceServletClient.request(url, options);
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
-    return handleSaveResponse(data, saveOperation);
+    return handleSaveResponse({ data, status }, saveOperation);
   } catch (error) {
     return handleSaveError(saveOperation, error);
   }

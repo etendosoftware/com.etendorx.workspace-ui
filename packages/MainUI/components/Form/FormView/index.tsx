@@ -40,7 +40,8 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
-import { useFormAction } from "@/hooks/useFormAction";
+import { useFormAction, buildReloadModalOptions, type OnErrorOptions } from "@/hooks/useFormAction";
+import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import type { FormViewProps } from "./types";
 import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
@@ -166,6 +167,7 @@ export function FormView({
     tabLevel: tab.tabLevel ?? 0,
   });
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
+  const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
@@ -986,10 +988,10 @@ export function FormView({
    * @param data - Error message string from server or validation
    */
   const onError = useCallback(
-    (data: string) => {
-      showErrorModal(data);
+    (data: string, options?: OnErrorOptions) => {
+      showErrorModal(data, buildReloadModalOptions(options?.onReload, t));
     },
-    [showErrorModal]
+    [showErrorModal, t]
   );
 
   const { save, loading } = useFormAction({
@@ -1000,6 +1002,7 @@ export function FormView({
     onError,
     initialState,
     submit: form.handleSubmit,
+    onStaleObjectReload: refreshRecordAndSession,
   });
 
   /**

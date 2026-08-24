@@ -142,6 +142,7 @@ const es = {
     copyError: "¡Copiado erróneo! Inténtelo nuevamente o contáctese con soporte.",
     staleObjectError:
       "El registro ha sido modificado por otro usuario o proceso. Por favor, actualice e intente nuevamente.",
+    staleObjectReloadAction: "Actualizar",
   },
   errors: {
     tableError: {
