@@ -25,6 +25,7 @@ import {
   isPaneFocused,
   isSplitViewAvailable,
   resolveSplitViewFormRecord,
+  shouldPromptSplitViewChange,
   resolvePaneFocusTarget,
 } from "../splitView";
 
@@ -298,5 +299,39 @@ describe("resolveSplitViewFormRecord", () => {
 
   it("never discards a record being created", () => {
     expect(resolve({ isNewRecord: true })).toBeUndefined();
+  });
+});
+
+describe("shouldPromptSplitViewChange", () => {
+  const CURRENT_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+
+  const shouldPrompt = (overrides: Record<string, unknown> = {}) =>
+    shouldPromptSplitViewChange({
+      isSplitView: true,
+      selectedRecordId: CLICKED_RECORD,
+      currentRecordId: CURRENT_RECORD,
+      isDirty: true,
+      ...overrides,
+    });
+
+  it("asks before leaving a record with unsaved changes", () => {
+    expect(shouldPrompt()).toBe(true);
+  });
+
+  it("does not ask when the form is clean", () => {
+    expect(shouldPrompt({ isDirty: false })).toBe(false);
+  });
+
+  it("does not ask outside split view", () => {
+    expect(shouldPrompt({ isSplitView: false })).toBe(false);
+  });
+
+  it("does not ask when nothing is selected", () => {
+    expect(shouldPrompt({ selectedRecordId: undefined })).toBe(false);
+  });
+
+  it("does not ask when the form already shows the selected record", () => {
+    expect(shouldPrompt({ selectedRecordId: CURRENT_RECORD })).toBe(false);
   });
 });

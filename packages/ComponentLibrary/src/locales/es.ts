@@ -54,6 +54,15 @@ const es = {
     change: "Cambiar",
     logout: "Cerrar sesión",
   },
+  unsavedChanges: {
+    windowsTitle: "Cambios sin guardar",
+    windowsDescription: "Estas ventanas tienen cambios que todavía no fueron guardados.",
+    gridEditingLabel: "Filas en edición",
+    discardAllAndContinue: "Descartar todo y continuar",
+    discard: "Descartar",
+    transitionMessage: "Este registro tiene cambios sin guardar. ¿Qué desea hacer?",
+    saveFailed: "No se pudieron guardar los cambios en",
+  },
   forms: {
     sections: {
       main: "Sección Principal",

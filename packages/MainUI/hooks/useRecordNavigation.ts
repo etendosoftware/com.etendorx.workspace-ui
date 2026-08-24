@@ -17,10 +17,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import type { FormState } from "react-hook-form";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
-import type { SaveOptions } from "@/contexts/ToolbarContext";
+import type { GuardedTransition } from "@/contexts/UnsavedChangesTabGuard";
+
+/** How long to wait for a fetched page before jumping to the record that follows. */
+const FETCH_MORE_SETTLE_MS = 500;
 
 export interface NavigationState {
   canNavigateNext: boolean;
@@ -33,8 +35,12 @@ interface UseRecordNavigationOptions {
   currentRecordId: string | undefined;
   records: EntityData[];
   onNavigate: (recordId: string) => void;
-  formState: FormState<EntityData>;
-  handleSave: (options: SaveOptions) => Promise<boolean>;
+  /**
+   * Asks the user to save, discard or cancel when the form has unsaved changes, and only
+   * then runs the navigation. Replaces the previous silent autosave, which also navigated
+   * when the save had failed.
+   */
+  guardTransition: (transition: GuardedTransition) => void;
   showErrorModal: (message: string) => void;
   hasMoreRecords?: boolean;
   fetchMore?: () => void;
@@ -44,8 +50,7 @@ export function useRecordNavigation({
   currentRecordId,
   records,
   onNavigate,
-  formState,
-  handleSave,
+  guardTransition,
   showErrorModal,
   hasMoreRecords = false,
   fetchMore,
@@ -84,34 +89,50 @@ export function useRecordNavigation({
     };
   }, [currentRecordId, records, hasMoreRecords]);
 
-  /**
-   * Performs autosave before navigation if there are unsaved changes
-   * Returns true if navigation should proceed, false otherwise
-   */
-  const performAutosaveIfNeeded = useCallback(async (): Promise<boolean> => {
-    if (!formState.isDirty) {
-      return true; // No changes, proceed with navigation
-    }
+  /** Loads one more page and then moves onto the first record it brought in. */
+  const navigateAfterFetchMore = useCallback(
+    (currentIndex: number) => {
+      if (!fetchMore) {
+        return;
+      }
+      fetchMore();
+      setTimeout(() => {
+        if (records.length > currentIndex + 1) {
+          onNavigate(String(records[currentIndex + 1].id));
+        }
+      }, FETCH_MORE_SETTLE_MS);
+    },
+    [fetchMore, records, onNavigate]
+  );
 
-    try {
-      // Autosave with modal showing "Saved" message
-      // skipFormStateUpdate: false to allow normal form state updates during navigation
-      await handleSave({ showModal: true });
-      return true; // Save successful, proceed with navigation
-    } catch (error) {
-      logger.error("Error during autosave before navigation:", error);
-      showErrorModal(
-        typeof error === "string" ? error : "Failed to save changes. Please fix the errors before navigating."
-      );
-      return false; // Save failed, block navigation
-    }
-  }, [formState.isDirty, handleSave, showErrorModal]);
+  const navigateToNextRecord = useCallback(
+    (currentIndex: number) => {
+      if (currentIndex === records.length - 1 && hasMoreRecords) {
+        navigateAfterFetchMore(currentIndex);
+        return;
+      }
+      if (currentIndex < records.length - 1) {
+        onNavigate(String(records[currentIndex + 1].id));
+      }
+    },
+    [records, hasMoreRecords, navigateAfterFetchMore, onNavigate]
+  );
+
+  const navigateToPreviousRecord = useCallback(
+    (currentIndex: number) => {
+      if (currentIndex > 0) {
+        onNavigate(String(records[currentIndex - 1].id));
+      }
+    },
+    [records, onNavigate]
+  );
 
   /**
-   * Core navigation logic shared between next and previous
+   * Core navigation logic shared between next and previous. Runs only after the
+   * unsaved-changes guard let it through.
    */
   const performNavigation = useCallback(
-    async (direction: "next" | "previous", errorMessage: string) => {
+    (direction: "next" | "previous", errorMessage: string) => {
       if (isNavigating) {
         return;
       }
@@ -119,42 +140,12 @@ export function useRecordNavigation({
       setIsNavigating(true);
 
       try {
-        // Check if we need to autosave
-        const canProceed = await performAutosaveIfNeeded();
-        if (!canProceed) {
-          return; // Navigation blocked due to save error
-        }
-
         const { currentIndex } = navigationState;
-
         if (direction === "next") {
-          // If we're at the last record and there are more records to load
-          if (currentIndex === records.length - 1 && hasMoreRecords) {
-            if (fetchMore) {
-              fetchMore();
-              // Wait a bit for records to load
-              setTimeout(() => {
-                if (records.length > currentIndex + 1) {
-                  const nextRecord = records[currentIndex + 1];
-                  onNavigate(String(nextRecord.id));
-                }
-              }, 500);
-            }
-            return;
-          }
-
-          // Navigate to next record in current list
-          if (currentIndex < records.length - 1) {
-            const nextRecord = records[currentIndex + 1];
-            onNavigate(String(nextRecord.id));
-          }
-        } else {
-          // Navigate to previous record
-          if (currentIndex > 0) {
-            const previousRecord = records[currentIndex - 1];
-            onNavigate(String(previousRecord.id));
-          }
+          navigateToNextRecord(currentIndex);
+          return;
         }
+        navigateToPreviousRecord(currentIndex);
       } catch (error) {
         logger.error(`Error during ${direction} navigation:`, error);
         showErrorModal(errorMessage);
@@ -162,39 +153,28 @@ export function useRecordNavigation({
         setIsNavigating(false);
       }
     },
-    [
-      isNavigating,
-      navigationState,
-      performAutosaveIfNeeded,
-      records,
-      hasMoreRecords,
-      fetchMore,
-      onNavigate,
-      showErrorModal,
-    ]
+    [isNavigating, navigationState, navigateToNextRecord, navigateToPreviousRecord, showErrorModal]
   );
 
   /**
-   * Navigates to the next record in the list
-   * Automatically saves changes before navigation if needed
+   * Navigates to the next record in the list, asking what to do with unsaved changes first
    */
-  const navigateToNext = useCallback(async () => {
+  const navigateToNext = useCallback(() => {
     if (!navigationState.canNavigateNext) {
       return;
     }
-    await performNavigation("next", "An error occurred while navigating to the next record.");
-  }, [navigationState.canNavigateNext, performNavigation]);
+    guardTransition(() => performNavigation("next", "An error occurred while navigating to the next record."));
+  }, [navigationState.canNavigateNext, guardTransition, performNavigation]);
 
   /**
-   * Navigates to the previous record in the list
-   * Automatically saves changes before navigation if needed
+   * Navigates to the previous record in the list, asking what to do with unsaved changes first
    */
-  const navigateToPrevious = useCallback(async () => {
+  const navigateToPrevious = useCallback(() => {
     if (!navigationState.canNavigatePrevious) {
       return;
     }
-    await performNavigation("previous", "An error occurred while navigating to the previous record.");
-  }, [navigationState.canNavigatePrevious, performNavigation]);
+    guardTransition(() => performNavigation("previous", "An error occurred while navigating to the previous record."));
+  }, [navigationState.canNavigatePrevious, guardTransition, performNavigation]);
 
   return {
     navigationState,

@@ -296,6 +296,33 @@ export const resolveSplitViewFormRecord = ({
   return selectedRecordId;
 };
 
+/**
+ * Whether the split-view form pane is being asked to leave a record it still has
+ * unsaved edits on, which is what `resolveSplitViewFormRecord` refuses to do silently.
+ *
+ * Kept separate from that resolver so the caller can tell "nothing to do" apart from
+ * "needs the user to decide".
+ */
+export const shouldPromptSplitViewChange = ({
+  isSplitView,
+  selectedRecordId,
+  currentRecordId,
+  isDirty,
+}: {
+  isSplitView: boolean;
+  selectedRecordId: string | undefined;
+  currentRecordId: string;
+  isDirty: boolean;
+}): boolean => {
+  if (!isSplitView || !selectedRecordId) {
+    return false;
+  }
+  if (selectedRecordId === currentRecordId) {
+    return false;
+  }
+  return isDirty;
+};
+
 /** Inline style that seeds the grid-width CSS variable on the panes container. */
 export const getPanesContainerStyle = (tableWidth: number): CSSProperties => {
   return { [SPLIT_TABLE_WIDTH_CSS_VAR]: `${tableWidth}%` } as CSSProperties;

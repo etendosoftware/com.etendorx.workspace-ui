@@ -55,6 +55,15 @@ const en = {
     change: "Change",
     logout: "Log out",
   },
+  unsavedChanges: {
+    windowsTitle: "Unsaved changes",
+    windowsDescription: "These windows have changes that have not been saved yet.",
+    gridEditingLabel: "Grid rows being edited",
+    discardAllAndContinue: "Discard all and continue",
+    discard: "Discard",
+    transitionMessage: "This record has unsaved changes. What do you want to do?",
+    saveFailed: "The changes could not be saved in",
+  },
   forms: {
     sections: {
       main: "Main Section",

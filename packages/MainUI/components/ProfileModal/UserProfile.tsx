@@ -26,15 +26,23 @@ import IconButton from "@workspaceui/componentlibrary/src/components/IconButton"
 import type { UserProfileProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useGlobalUnsavedChangesGuard } from "@/hooks/useGlobalUnsavedChangesGuard";
 
 const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
   const { styles } = useStyle();
   const { logout } = useUserContext();
   const { t } = useTranslation();
+  const { guard } = useGlobalUnsavedChangesGuard();
 
-  const handleSignOff = useCallback(async () => {
-    await logout();
-  }, [logout]);
+  /**
+   * Manual sign-off only. The automatic logout paths (401 interceptor, keep-alive
+   * expiry, expired password) call `logout()` directly and stay unguarded on purpose.
+   */
+  const handleSignOff = useCallback(() => {
+    guard(() => {
+      void logout();
+    });
+  }, [guard, logout]);
 
   return (
     <div className="flex flex-col items-center justify-center h-[9.5rem]">

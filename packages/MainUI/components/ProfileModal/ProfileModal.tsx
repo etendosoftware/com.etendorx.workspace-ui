@@ -34,6 +34,8 @@ import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useWindowStore } from "@/stores/windowStore";
+import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
+import { useGlobalUnsavedChangesGuard } from "@/hooks/useGlobalUnsavedChangesGuard";
 import { useSSO } from "@/hooks/useSSO";
 import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
@@ -41,6 +43,12 @@ import { computeProfileUpdates } from "./profileUpdates";
 import { resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
+
+/** Panels the modal can show. */
+const PROFILE_SECTIONS = {
+  PROFILE: "profile",
+  PASSWORD: "password",
+} as const;
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
@@ -68,7 +76,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const theme = useTheme();
   const { styles } = useStyle();
   const { config: ssoConfig, startLink } = useSSO();
-  const [currentSection, setCurrentSection] = useState<string>("profile");
+  const [currentSection, setCurrentSection] = useState<string>(PROFILE_SECTIONS.PROFILE);
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -77,6 +85,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const cleanWindowState = useWindowStore((s) => s.cleanState);
+  const setBypassUnloadWarning = useUnsavedChangesStore((s) => s.setBypassUnloadWarning);
+  const { guard } = useGlobalUnsavedChangesGuard();
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
@@ -208,7 +218,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleToggle = useCallback(
     (section: string) => {
-      if (currentSection === "password" && section !== "password") {
+      if (currentSection === PROFILE_SECTIONS.PASSWORD && section !== PROFILE_SECTIONS.PASSWORD) {
         setCurrentPwd("");
         setNewPwd("");
         setConfirmPwd("");
@@ -232,7 +242,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
-    setCurrentSection("profile");
+    setCurrentSection(PROFILE_SECTIONS.PROFILE);
     setCurrentPwd("");
     setNewPwd("");
     setConfirmPwd("");
@@ -313,20 +323,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     ]
   );
 
-  const handleSave = useCallback(async () => {
-    if (currentSection === "password") {
-      const error = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
-      setPasswordError(resolvePasswordErrorMessage(error, { getLabel, t }));
-      if (error) {
-        return;
-      }
-      setCurrentPwd("");
-      setNewPwd("");
-      setConfirmPwd("");
-      handleClose();
+  const submitPasswordSection = useCallback(async () => {
+    const error = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
+    setPasswordError(resolvePasswordErrorMessage(error, { getLabel, t }));
+    if (error) {
       return;
     }
+    setCurrentPwd("");
+    setNewPwd("");
+    setConfirmPwd("");
+    handleClose();
+  }, [currentPwd, newPwd, confirmPwd, onPasswordChange, getLabel, t, handleClose]);
 
+  /**
+   * Applies the role / organization / warehouse / language selection.
+   *
+   * Closes every open window, so it only runs once the unsaved-changes guard has let it
+   * through.
+   */
+  const applyProfileConfiguration = useCallback(async () => {
     try {
       const params = getProfileUpdates();
 
@@ -342,7 +357,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       handleClose();
 
       if (languageChanged) {
-        // Force a hard reload to ensure all metadata and cached resources are refreshed with the new language
+        // Force a hard reload to ensure all metadata and cached resources are refreshed with the new language.
+        // The user already answered the unsaved-changes modal, so the native unload dialog
+        // must not ask a second time.
+        setBypassUnloadWarning(true);
         onLanguageChange(selectedLanguage?.value as Language);
         window.location.reload();
       }
@@ -353,12 +371,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       toast.error(t("navigation.profile.configSaveError"));
     }
   }, [
-    currentSection,
-    currentPwd,
-    newPwd,
-    confirmPwd,
-    onPasswordChange,
-    getLabel,
     t,
     handleClose,
     getProfileUpdates,
@@ -367,12 +379,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     language,
     saveConfigurationDefaults,
     cleanWindowState,
+    setBypassUnloadWarning,
     onLanguageChange,
     logger,
   ]);
 
+  const handleSave = useCallback(async () => {
+    if (currentSection === PROFILE_SECTIONS.PASSWORD) {
+      await submitPasswordSection();
+      return;
+    }
+    guard(() => {
+      void applyProfileConfiguration();
+    });
+  }, [currentSection, submitPasswordSection, guard, applyProfileConfiguration]);
+
   const isSaveDisabled = useMemo(() => {
-    if (currentSection === "password") {
+    if (currentSection === PROFILE_SECTIONS.PASSWORD) {
       return !currentPwd || !newPwd || !confirmPwd;
     }
 
@@ -469,7 +492,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {t("common.save")}
           </Button>
         </div>
-        {currentSection === "profile" && ssoConfig?.enabled && ssoConfig.authType === "Middleware" && (
+        {currentSection === PROFILE_SECTIONS.PROFILE && ssoConfig?.enabled && ssoConfig.authType === "Middleware" && (
           <div className="flex flex-col items-center gap-3 border-t border-(--color-transparent-neutral-10) px-4 pt-4 pb-6">
             <span className="font-inter font-medium text-sm text-(--color-transparent-neutral-70)">
               {t("navigation.profile.linkWith")}

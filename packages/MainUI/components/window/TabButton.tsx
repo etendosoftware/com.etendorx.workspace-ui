@@ -20,6 +20,9 @@
 import { useCallback, useMemo } from "react";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import type { TabSwitchProps } from "@/components/window/types";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useWindowStore } from "@/stores/windowStore";
+import { formatDirtyTitle, isTabDirty } from "@/utils/window/dirtyState";
 
 export const TabButton = ({
   tab,
@@ -32,8 +35,11 @@ export const TabButton = ({
   canClose = true,
 }: TabSwitchProps) => {
   const { window } = useMetadataContext();
+  // Outside a Window subtree the identifier defaults to "", which is never dirty.
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
 
-  const title = useMemo(() => {
+  const baseTitle = useMemo(() => {
     if (isWindow) {
       return tab.title || tab.name;
     }
@@ -44,6 +50,14 @@ export const TabButton = ({
 
     return tab.name;
   }, [tab.tabLevel, tab.name, tab.title, window?.name, isWindow]);
+
+  /** Marks the tab whose form or grid holds unsaved changes, like Classic's `* ` prefix. */
+  const title = useMemo(() => {
+    if (!baseTitle) {
+      return baseTitle;
+    }
+    return formatDirtyTitle(baseTitle, isTabDirty(dirtyWindows, windowIdentifier, tab.id));
+  }, [baseTitle, dirtyWindows, windowIdentifier, tab.id]);
 
   const handleClick = useCallback(() => {
     onClick(tab);

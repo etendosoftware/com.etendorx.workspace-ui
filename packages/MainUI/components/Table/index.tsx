@@ -97,7 +97,7 @@ import type {
   SaveResult,
   ValidationError,
 } from "./types/inlineEditing";
-import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
+import { createEditingRowStateUtils, getMergedRowData, hasRowsWithUnsavedChanges } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
@@ -120,6 +120,7 @@ import {
 } from "./utils/performanceOptimizations";
 import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/accessibilityUtils";
 import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
@@ -1003,18 +1004,21 @@ const DynamicTable = ({
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
 
-  // Report table dirty state to windowStore for tab-close confirmation
-  const hasEditingRows = Object.keys(editingRows).length > 0;
+  // Report table dirty state to windowStore — read by every unsaved-changes guard.
+  // Keyed on real edits, not on merely having a row open for editing: opening the editor
+  // and touching nothing must not make the whole window look unsaved.
+  const hasDirtyRows = useMemo(() => hasRowsWithUnsavedChanges(editingRows), [editingRows]);
   useEffect(() => {
+    const sourceKey = buildDirtySourceKey(DIRTY_SOURCE_KINDS.TABLE, tab.id);
     if (windowIdentifier) {
-      setWindowDirtySource(windowIdentifier, `table:${tab.id}`, hasEditingRows);
+      setWindowDirtySource(windowIdentifier, sourceKey, hasDirtyRows);
     }
     return () => {
       if (windowIdentifier) {
-        setWindowDirtySource(windowIdentifier, `table:${tab.id}`, false);
+        setWindowDirtySource(windowIdentifier, sourceKey, false);
       }
     };
-  }, [hasEditingRows, windowIdentifier, tab.id, setWindowDirtySource]);
+  }, [hasDirtyRows, windowIdentifier, tab.id, setWindowDirtySource]);
 
   // Focus management for inline editing - stored in a ref so that changing the focus target
   // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all
@@ -3708,6 +3712,16 @@ const DynamicTable = ({
     fetchMore,
   ]);
 
+  /**
+   * Re-highlights a row after the user backed out of a selection change, e.g. cancelling
+   * the split-view unsaved-changes prompt. Writing MRT's selection is what the store→grid
+   * sync effects cannot do on their own, and it feeds the store back through
+   * useTableSelection.
+   */
+  const handleRestoreSelection = useCallback((recordId: string) => {
+    tableRef.current.setRowSelection({ [recordId]: true });
+  }, []);
+
   // The grid never registers `save`: the no-op default already covers grid-only
   // mode, and registering one here used to clobber the form's real save.
   useEffect(() => {
@@ -3717,11 +3731,20 @@ const DynamicTable = ({
         refresh: refetch,
         filter: toggleImplicitFilters,
         columnFilters: toggleColumnsDropdown,
+        restoreSelection: handleRestoreSelection,
       },
       TOOLBAR_ACTION_OWNERS.GRID
     );
     return () => unregisterActions(TOOLBAR_ACTION_OWNERS.GRID);
-  }, [refetch, registerActions, unregisterActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
+  }, [
+    refetch,
+    registerActions,
+    unregisterActions,
+    toggleImplicitFilters,
+    toggleColumnsDropdown,
+    handleRestoreSelection,
+    isVisible,
+  ]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView

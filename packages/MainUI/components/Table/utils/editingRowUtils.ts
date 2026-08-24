@@ -261,3 +261,16 @@ export function insertNewRowAtTop(currentRecords: EntityData[], newRowData: Enti
 export function removeNewRowFromRecords(currentRecords: EntityData[], rowId: string): EntityData[] {
   return currentRecords.filter((record) => String(record.id) !== rowId);
 }
+
+/**
+ * Whether any row currently open for editing actually holds changes.
+ *
+ * Used to report the grid's dirty state to the window store: merely having the editor
+ * open must not make the whole window look unsaved.
+ *
+ * @param editingRows The current editing-rows state
+ * @returns True when at least one row has unsaved changes
+ */
+export function hasRowsWithUnsavedChanges(editingRows: EditingRowsState): boolean {
+  return Object.values(editingRows).some((editingRow) => editingRow.hasUnsavedChanges);
+}

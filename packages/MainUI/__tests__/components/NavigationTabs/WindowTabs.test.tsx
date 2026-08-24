@@ -33,8 +33,8 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg", (
 
 jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   __esModule: true,
-  default: ({ title, isActive, onActivate, onClose, canClose, "data-testid": testId }: any) => (
-    <div data-testid={testId} data-active={isActive} data-can-close={canClose}>
+  default: ({ title, isActive, isDirty, onActivate, onClose, canClose, "data-testid": testId }: any) => (
+    <div data-testid={testId} data-active={isActive} data-can-close={canClose} data-dirty={String(!!isDirty)}>
       <span onClick={onActivate}>{title}</span>
       <button onClick={onClose} data-testid="CloseButton">
         Close
@@ -427,6 +427,41 @@ describe("WindowTabs", () => {
     render(<WindowTabs />);
 
     expect(screen.getByText("Invoice")).toBeInTheDocument();
+  });
+
+  it("marks the tab of a dirty window and leaves a clean one unmarked", () => {
+    useWindowStore.setState({
+      windows: {
+        w1: {
+          windowIdentifier: "w1",
+          title: "Window 1",
+          isActive: true,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w1",
+          initialized: true,
+        },
+        w2: {
+          windowIdentifier: "w2",
+          title: "Window 2",
+          isActive: false,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w2",
+          initialized: true,
+        },
+      },
+      dirtyWindows: { w1: { "form:tab1": true } },
+      cleanupWindow: mockCleanupWindow,
+      setWindowActive: mockSetWindowActive,
+      setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    render(<WindowTabs />);
+
+    const tabs = screen.getAllByTestId("WindowTab__c8117d");
+    expect(tabs[0]).toHaveAttribute("data-dirty", "true");
+    expect(tabs[1]).toHaveAttribute("data-dirty", "false");
   });
 
   it("shows confirmation modal when closing a dirty window", () => {

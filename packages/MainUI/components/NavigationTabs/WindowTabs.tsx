@@ -29,19 +29,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowStore } from "@/stores/windowStore";
 import type { WindowState } from "@/utils/window/constants";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
-import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+import { isWindowDirty } from "@/utils/window/dirtyState";
+import { getTitleForWindow } from "@/utils/window/windowTitle";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
-
-const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, any>) => {
-  const windowTitle = window.title;
-  if (windowTitle) return windowTitle;
-  const windowId = getWindowIdFromIdentifier(window.windowIdentifier);
-  const metadata = windowsMetadata[windowId];
-  if (metadata?.name) {
-    return metadata.name;
-  }
-  return "Untitled Window";
-};
 
 export default function WindowTabs() {
   const { t } = useTranslation();
@@ -86,8 +76,7 @@ export default function WindowTabs() {
 
   const handleCloseWindow = useCallback(
     (window: WindowState) => {
-      const isDirty = Object.values(dirtyWindows[window.windowIdentifier] ?? {}).some(Boolean);
-      if (isDirty) {
+      if (isWindowDirty(dirtyWindows, window.windowIdentifier)) {
         setPendingCloseWindow(window);
         return;
       }
@@ -168,6 +157,7 @@ export default function WindowTabs() {
               <WindowTab
                 title={title}
                 isActive={isActive}
+                isDirty={isWindowDirty(dirtyWindows, window.windowIdentifier)}
                 onActivate={() => {
                   handleSelectWindow(window.windowIdentifier);
                 }}
