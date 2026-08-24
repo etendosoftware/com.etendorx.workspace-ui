@@ -55,13 +55,23 @@ const es = {
     logout: "Cerrar sesión",
   },
   unsavedChanges: {
+    promptTitle: "Cambios sin guardar",
     windowsTitle: "Cambios sin guardar",
     windowsDescription: "Estas ventanas tienen cambios que todavía no fueron guardados.",
+    allResolved: "No queda nada por guardar ni descartar. Puede continuar.",
     gridEditingLabel: "Filas en edición",
     discardAllAndContinue: "Descartar todo y continuar",
+    saveAllAndContinue: "Guardar todo y continuar",
+    continue: "Continuar",
     discard: "Descartar",
+    saveChanges: "Guardar cambios",
+    discardChanges: "Descartar cambios",
+    closeWindowTitle: "Cerrar ventana",
+    closeWindow: "Cerrar ventana",
     transitionMessage: "Este registro tiene cambios sin guardar. ¿Qué desea hacer?",
     saveFailed: "No se pudieron guardar los cambios en",
+    rowSaveFailed: "No se pudieron guardar los cambios. Abra la ventana para revisar los errores.",
+    openWindow: "Abrir ventana",
   },
   forms: {
     sections: {

@@ -22,7 +22,7 @@ import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 export const UNTITLED_WINDOW_TITLE = "Untitled Window";
 
 /** Minimal shape needed from the metadata store — only the window name is read. */
-type WindowsMetadata = Record<string, { name?: string } | undefined>;
+export type WindowsMetadata = Record<string, { name?: string } | undefined>;
 
 /**
  * Resolves the label of an open window.

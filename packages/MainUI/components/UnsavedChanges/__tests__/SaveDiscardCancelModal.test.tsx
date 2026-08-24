@@ -85,4 +85,20 @@ describe("SaveDiscardCancelModal", () => {
 
     expect(screen.getByTestId(SAVE_BUTTON)).toBeDisabled();
   });
+
+  it("labels the choices for a record by default", () => {
+    renderModal();
+
+    expect(screen.getByTestId(SAVE_BUTTON)).toHaveTextContent("unsavedChanges.saveChanges");
+    expect(screen.getByTestId(DISCARD_BUTTON)).toHaveTextContent("unsavedChanges.discardChanges");
+  });
+
+  // The window-close prompt reuses this modal with wording of its own.
+  it("takes over the title and the labels when the caller provides them", () => {
+    renderModal({ title: "Close window", saveLabel: "Save and close", discardLabel: "Close window" });
+
+    expect(screen.getByTestId(SAVE_BUTTON)).toHaveTextContent("Save and close");
+    expect(screen.getByTestId(DISCARD_BUTTON)).toHaveTextContent("Close window");
+    expect(screen.getByText("Close window", { selector: "p,span,h6" })).toBeInTheDocument();
+  });
 });

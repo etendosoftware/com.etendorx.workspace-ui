@@ -55,6 +55,7 @@ import {
   isGridPaneVisible,
   isPaneFocused,
   isSplitViewAvailable,
+  resolveGuardedSplitTarget,
   resolveSplitViewFormRecord,
   shouldPromptSplitViewChange,
 } from "@/utils/window/splitView";
@@ -366,13 +367,26 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     [windowIdentifier, tab, setSelectedRecord, clearSelectedRecord, clearChildrenSelections, graph]
   );
 
-  /** Loads whatever the grid has selected right now, not what it had when the guard opened. */
-  const loadSelectedRecordInForm = useCallback(() => {
-    if (!windowIdentifier) return;
-    const latestSelection = getSelectedRecord(windowIdentifier, tab.id);
-    if (!latestSelection) return;
-    handleSetRecordId(latestSelection);
-  }, [windowIdentifier, tab.id, getSelectedRecord, handleSetRecordId]);
+  /**
+   * Loads the record the user asked for once the guard has been answered.
+   *
+   * Saving re-selects the saved record in the grid, so the stored selection is only
+   * followed while it points somewhere else than the record the form is showing; the
+   * selection is then re-pointed at the target so grid and form never disagree.
+   */
+  const loadGuardedSplitRecord = useCallback(
+    (promptedSelection: string) => {
+      if (!windowIdentifier) return;
+      const target = resolveGuardedSplitTarget({
+        latestSelection: getSelectedRecord(windowIdentifier, tab.id),
+        promptedSelection,
+        formRecordId: getTabFormState(windowIdentifier, tab.id)?.recordId,
+      });
+      setSelectedRecord(windowIdentifier, tab.id, target);
+      handleSetRecordId(target);
+    },
+    [windowIdentifier, tab.id, getSelectedRecord, getTabFormState, setSelectedRecord, handleSetRecordId]
+  );
 
   /** Puts the grid highlight back on the record the form is still showing. */
   const restoreGridSelectionToForm = useCallback(() => {
@@ -410,12 +424,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       currentRecordId,
       isDirty: isCurrentTabDirty,
     });
-    if (!needsPrompt) return;
+    if (!needsPrompt || !selectedRecordId) return;
     // Holding an arrow key in the grid must not stack one prompt per row.
     if (promptedSplitRecordRef.current === selectedRecordId) return;
 
     promptedSplitRecordRef.current = selectedRecordId;
-    guardTransition(loadSelectedRecordInForm, restoreGridSelectionToForm);
+    const promptedSelection = selectedRecordId;
+    guardTransition(() => loadGuardedSplitRecord(promptedSelection), restoreGridSelectionToForm);
   }, [
     isSplitView,
     selectedRecordId,
@@ -425,7 +440,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     isCurrentTabDirty,
     handleSetRecordId,
     guardTransition,
-    loadSelectedRecordInForm,
+    loadGuardedSplitRecord,
     restoreGridSelectionToForm,
   ]);
 

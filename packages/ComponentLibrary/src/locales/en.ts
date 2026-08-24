@@ -56,13 +56,23 @@ const en = {
     logout: "Log out",
   },
   unsavedChanges: {
+    promptTitle: "Unsaved changes",
     windowsTitle: "Unsaved changes",
     windowsDescription: "These windows have changes that have not been saved yet.",
+    allResolved: "Nothing is left to save or discard. You can continue.",
     gridEditingLabel: "Grid rows being edited",
     discardAllAndContinue: "Discard all and continue",
+    saveAllAndContinue: "Save all and continue",
+    continue: "Continue",
     discard: "Discard",
+    saveChanges: "Save changes",
+    discardChanges: "Discard changes",
+    closeWindowTitle: "Close window",
+    closeWindow: "Close window",
     transitionMessage: "This record has unsaved changes. What do you want to do?",
     saveFailed: "The changes could not be saved in",
+    rowSaveFailed: "The changes could not be saved. Open the window to review the errors.",
+    openWindow: "Open window",
   },
   forms: {
     sections: {

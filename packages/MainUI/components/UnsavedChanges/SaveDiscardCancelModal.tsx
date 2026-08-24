@@ -19,8 +19,9 @@
 
 import { Box, Button, Typography } from "@mui/material";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
-import { useStyles } from "@workspaceui/componentlibrary/src/components/BasicModal/styles";
+import AlertIcon from "@workspaceui/componentlibrary/src/assets/icons/alert-triangle.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { UNSAVED_CHANGES_PROMPT_WIDTH, useUnsavedChangesStyles } from "@/components/UnsavedChanges/styles";
 
 export interface SaveDiscardCancelModalProps {
   open: boolean;
@@ -29,6 +30,12 @@ export interface SaveDiscardCancelModalProps {
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
+  /** Heading override for callers whose decision is not about a single record. */
+  title?: string;
+  /** Label override, e.g. "Save changes" vs "Save and close". */
+  saveLabel?: string;
+  /** Label override, e.g. "Discard changes" vs "Close window". */
+  discardLabel?: string;
 }
 
 type OpenModalProps = Omit<SaveDiscardCancelModalProps, "open">;
@@ -37,20 +44,29 @@ type OpenModalProps = Omit<SaveDiscardCancelModalProps, "open">;
  * Split from the exported component so the MUI theme hooks only run while the prompt is
  * on screen. Every tab mounts the guard, and most of them never open it.
  */
-function OpenSaveDiscardCancelModal({ message, isSaving, onSave, onDiscard, onCancel }: OpenModalProps) {
+function OpenSaveDiscardCancelModal({
+  message,
+  isSaving,
+  onSave,
+  onDiscard,
+  onCancel,
+  title,
+  saveLabel,
+  discardLabel,
+}: OpenModalProps) {
   const { t } = useTranslation();
-  const { sx } = useStyles();
+  const { sx } = useUnsavedChangesStyles();
 
   const footer = (
     <>
-      <Button sx={sx.cancelButton} onClick={onCancel} data-testid="SaveDiscardCancelModal__cancel">
+      <Button sx={sx.secondaryButton} onClick={onCancel} data-testid="SaveDiscardCancelModal__cancel">
         {t("common.cancel")}
       </Button>
-      <Button sx={sx.cancelButton} onClick={onDiscard} data-testid="SaveDiscardCancelModal__discard">
-        {t("unsavedChanges.discard")}
+      <Button sx={sx.discardButton} onClick={onDiscard} data-testid="SaveDiscardCancelModal__discard">
+        {discardLabel ?? t("unsavedChanges.discardChanges")}
       </Button>
-      <Button sx={sx.saveButton} onClick={onSave} disabled={isSaving} data-testid="SaveDiscardCancelModal__save">
-        {t("common.save")}
+      <Button sx={sx.primaryButton} onClick={onSave} disabled={isSaving} data-testid="SaveDiscardCancelModal__save">
+        {saveLabel ?? t("unsavedChanges.saveChanges")}
       </Button>
     </>
   );
@@ -58,13 +74,16 @@ function OpenSaveDiscardCancelModal({ message, isSaving, onSave, onDiscard, onCa
   return (
     <Modal
       open
-      showHeader={false}
+      showHeader
+      HeaderIcon={AlertIcon}
+      tittleHeader={title ?? t("unsavedChanges.promptTitle")}
+      width={UNSAVED_CHANGES_PROMPT_WIDTH}
       onCancel={onCancel}
       onClose={onCancel}
       buttons={footer}
       data-testid="SaveDiscardCancelModal__modal">
-      <Box className="px-2 py-4" data-testid="SaveDiscardCancelModal__body">
-        <Typography className="text-sm" data-testid="SaveDiscardCancelModal__message">
+      <Box sx={sx.body} data-testid="SaveDiscardCancelModal__body">
+        <Typography sx={sx.description} data-testid="SaveDiscardCancelModal__message">
           {message}
         </Typography>
       </Box>
@@ -73,7 +92,7 @@ function OpenSaveDiscardCancelModal({ message, isSaving, onSave, onDiscard, onCa
 }
 
 /**
- * Three-way prompt for an in-window transition that would drop unsaved changes.
+ * Three-way prompt for a transition that would drop unsaved changes.
  *
  * `ConfirmModal` only renders two buttons and hardcodes a trash icon on its primary
  * action, so the base `Modal` is used with a custom `buttons` footer instead.

@@ -553,6 +553,48 @@ describe("Tab - Split view", () => {
       expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
     });
 
+    /** Selection the grid ends up with after a successful save: the record just saved. */
+    const simulateSaveReselection = () => selectRow(RECORD_ID);
+
+    it("loads the clicked record even when saving re-selected the previous one", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      simulateSaveReselection();
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
+    });
+
+    it("leaves the grid selection on the record it loads", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      simulateSaveReselection();
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.selectedRecord).toBe(
+        OTHER_RECORD_ID
+      );
+    });
+
+    it("follows a newer row selected while the prompt was open", () => {
+      const THIRD_RECORD_ID = "record-3";
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      selectRow(THIRD_RECORD_ID);
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(getForm()).toMatchObject({ recordId: THIRD_RECORD_ID });
+    });
+
     it("puts the grid selection back on the form record when the prompt is cancelled", () => {
       openSplitWithPendingChanges();
       selectRow(OTHER_RECORD_ID);

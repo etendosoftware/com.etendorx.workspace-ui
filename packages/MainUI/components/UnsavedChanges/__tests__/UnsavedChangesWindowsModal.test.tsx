@@ -77,6 +77,16 @@ describe("UnsavedChangesWindowsModal", () => {
     });
   };
 
+  /** Drops a window's dirty flags, the way a successful save or a discard does. */
+  const resolveWindow = (windowIdentifier: string) => {
+    act(() => {
+      const { dirtyWindows } = useWindowStore.getState();
+      const next = { ...dirtyWindows };
+      delete next[windowIdentifier];
+      useWindowStore.setState({ dirtyWindows: next });
+    });
+  };
+
   const openRequest = () => {
     act(() => {
       useUnsavedChangesStore.getState().openRequest({ onProceed, onCancel });
@@ -94,6 +104,7 @@ describe("UnsavedChangesWindowsModal", () => {
     jest.clearAllMocks();
     mockSaveWindow.mockResolvedValue(true);
     useUnsavedChangesStore.setState({ request: null, bypassUnloadWarning: false });
+    useWindowStore.setState({ cleanupWindow: jest.fn(), setWindowActive: jest.fn() });
     seedStore({ [ORDER_WINDOW]: { [formKey(HEADER_TAB)]: true } });
   });
 
@@ -136,25 +147,60 @@ describe("UnsavedChangesWindowsModal", () => {
 
     await waitFor(() => expect(mockSaveWindow).toHaveBeenCalledWith(ORDER_WINDOW));
     expect(mockToastError).not.toHaveBeenCalled();
+    expect(screen.queryByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).not.toBeInTheDocument();
   });
 
-  it("reports a failed save and keeps the exit blocked", async () => {
+  // A window that is off screen cannot show its own error, so the row has to say it.
+  it("reports a failed save on the row itself and keeps the exit blocked", async () => {
     mockSaveWindow.mockResolvedValue(false);
     renderModal();
     openRequest();
 
     fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__save-${ORDER_WINDOW}`));
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).toBeInTheDocument()
+    );
+    expect(mockToastError).not.toHaveBeenCalled();
     expect(onProceed).not.toHaveBeenCalled();
   });
 
-  it("closes the window when Discard is pressed and then lets the exit through", async () => {
-    const cleanupWindow = jest.fn(() => {
-      act(() => {
-        useWindowStore.setState({ dirtyWindows: {} });
-      });
-    });
+  it("takes the user to the window that failed and cancels the exit", async () => {
+    const setWindowActive = jest.fn();
+    useWindowStore.setState({ setWindowActive });
+    mockSaveWindow.mockResolvedValue(false);
+    renderModal();
+    openRequest();
+    fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__save-${ORDER_WINDOW}`));
+    await waitFor(() =>
+      expect(screen.getByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__open-${ORDER_WINDOW}`));
+
+    expect(setWindowActive).toHaveBeenCalledWith({ windowIdentifier: ORDER_WINDOW });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onProceed).not.toHaveBeenCalled();
+  });
+
+  it("clears a previous failure once the save succeeds", async () => {
+    mockSaveWindow.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    renderModal();
+    openRequest();
+    fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__save-${ORDER_WINDOW}`));
+    await waitFor(() =>
+      expect(screen.getByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__save-${ORDER_WINDOW}`));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).not.toBeInTheDocument()
+    );
+  });
+
+  it("closes the window when Discard is pressed", () => {
+    const cleanupWindow = jest.fn();
     useWindowStore.setState({ cleanupWindow });
     renderModal();
     openRequest();
@@ -162,7 +208,35 @@ describe("UnsavedChangesWindowsModal", () => {
     fireEvent.click(screen.getByTestId(`UnsavedChangesWindowsModal__discard-${ORDER_WINDOW}`));
 
     expect(cleanupWindow).toHaveBeenCalledWith(ORDER_WINDOW);
-    await waitFor(() => expect(onProceed).toHaveBeenCalledTimes(1));
+  });
+
+  // Resolving the last window must not fire the held-back action behind the user's back.
+  it("waits for an explicit Continue once every window is resolved", async () => {
+    renderModal();
+    openRequest();
+
+    resolveWindow(ORDER_WINDOW);
+
+    await waitFor(() => expect(screen.getByTestId("UnsavedChangesWindowsModal__continue")).toBeInTheDocument());
+    expect(screen.queryByTestId("UnsavedChangesWindowsModal__rows")).not.toBeInTheDocument();
+    expect(onProceed).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("UnsavedChangesWindowsModal__continue"));
+
+    expect(onProceed).toHaveBeenCalledTimes(1);
+    expect(useUnsavedChangesStore.getState().request).toBeNull();
+  });
+
+  it("keeps Cancel available once every window is resolved", async () => {
+    renderModal();
+    openRequest();
+    resolveWindow(ORDER_WINDOW);
+    await waitFor(() => expect(screen.getByTestId("UnsavedChangesWindowsModal__continue")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId("UnsavedChangesWindowsModal__cancel"));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onProceed).not.toHaveBeenCalled();
   });
 
   it("discards every window and continues in one click", async () => {
@@ -181,6 +255,47 @@ describe("UnsavedChangesWindowsModal", () => {
     expect(cleanupWindow).toHaveBeenCalledWith(PARTNER_WINDOW);
     await waitFor(() => expect(onProceed).toHaveBeenCalledTimes(1));
     expect(useUnsavedChangesStore.getState().request).toBeNull();
+  });
+
+  it("saves every window and continues in one click", async () => {
+    seedStore({
+      [ORDER_WINDOW]: { [formKey(HEADER_TAB)]: true },
+      [PARTNER_WINDOW]: { [formKey(HEADER_TAB)]: true },
+    });
+    mockSaveWindow.mockImplementation(async (windowIdentifier: string) => {
+      resolveWindow(windowIdentifier);
+      return true;
+    });
+    renderModal();
+    openRequest();
+
+    fireEvent.click(screen.getByTestId("UnsavedChangesWindowsModal__saveAll"));
+
+    await waitFor(() => expect(onProceed).toHaveBeenCalledTimes(1));
+    expect(mockSaveWindow).toHaveBeenCalledWith(ORDER_WINDOW);
+    expect(mockSaveWindow).toHaveBeenCalledWith(PARTNER_WINDOW);
+  });
+
+  it("does not continue when one of the bulk saves fails", async () => {
+    mockSaveWindow.mockResolvedValue(false);
+    renderModal();
+    openRequest();
+
+    fireEvent.click(screen.getByTestId("UnsavedChangesWindowsModal__saveAll"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId(`UnsavedChangesWindowsModal__error-${ORDER_WINDOW}`)).toBeInTheDocument()
+    );
+    expect(onProceed).not.toHaveBeenCalled();
+  });
+
+  // Inline grid rows cannot be saved from here, so a bulk save can never resolve them.
+  it("disables the bulk save when no window has a form", () => {
+    seedStore({ [ORDER_WINDOW]: { [tableKey(LINES_TAB)]: true } });
+    renderModal();
+    openRequest();
+
+    expect(screen.getByTestId("UnsavedChangesWindowsModal__saveAll")).toBeDisabled();
   });
 
   it("keeps the session when Cancel is pressed", async () => {
