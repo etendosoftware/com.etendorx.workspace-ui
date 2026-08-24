@@ -87,6 +87,11 @@ jest.mock("@/contexts/tab", () => ({
   }),
 }));
 
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: () => "win-1_123456789",
+  useCurrentWindowId: () => "window-meta-1",
+}));
+
 const mockRegisterFormViewRefetch = jest.fn();
 const mockRegisterAttachmentAction = jest.fn();
 const mockSetShouldOpenAttachmentModal = jest.fn();
