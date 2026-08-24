@@ -1334,11 +1334,7 @@ export function applyRecordValues(
  * 1. Check field-level static flags (readOnly, isReadOnly)
  * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
  */
-export function evaluateFieldReadOnlyLogic(
-  field: any,
-  context: Record<string, unknown>,
-  windowId?: string
-): boolean {
+export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>, windowId?: string): boolean {
   // Static flags
   if (field.readOnly === true || field.isReadOnly === true) return true;
 
