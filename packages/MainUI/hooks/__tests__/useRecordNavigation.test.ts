@@ -33,7 +33,7 @@ describe("useRecordNavigation", () => {
 
   /** Guard for a clean form: the transition runs straight away. */
   const passThroughGuard = jest.fn((transition: GuardedTransition) => {
-    void transition();
+    transition();
   });
 
   /** Guard for a dirty form: it captures the transition and waits for the user. */

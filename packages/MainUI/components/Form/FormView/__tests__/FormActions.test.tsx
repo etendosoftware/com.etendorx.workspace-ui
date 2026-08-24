@@ -72,7 +72,7 @@ const mockUseToolbarContext = jest.fn();
 const heldTransitions: Array<() => void | Promise<void>> = [];
 /** Default behaviour: nothing unsaved, so the transition runs immediately. */
 const mockGuardTransition = jest.fn((transition: () => void | Promise<void>) => {
-  void transition();
+  transition();
 });
 /** Switches the guard to "asking the user": the transition is held back. */
 const holdGuardTransition = () => {
@@ -171,7 +171,7 @@ describe("FormActions", () => {
     jest.clearAllMocks();
     heldTransitions.length = 0;
     mockGuardTransition.mockImplementation((transition: () => void | Promise<void>) => {
-      void transition();
+      transition();
     });
     setupSearchParams("WIN1");
     // Default toolbar context — not busy, no errors

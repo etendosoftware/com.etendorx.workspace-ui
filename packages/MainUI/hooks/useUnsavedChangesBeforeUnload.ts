@@ -47,10 +47,10 @@ export function useUnsavedChangesBeforeUnload() {
     }
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Cancelling the event is what raises the dialog. The deprecated `returnValue`
+      // is deliberately left untouched: its only purpose was legacy browsers, and
+      // there it had to be a non-empty string to have any effect at all.
       event.preventDefault();
-      // Legacy browsers need a non-empty returnValue to raise the dialog. The string
-      // itself is never displayed — every modern browser shows its own wording.
-      event.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);

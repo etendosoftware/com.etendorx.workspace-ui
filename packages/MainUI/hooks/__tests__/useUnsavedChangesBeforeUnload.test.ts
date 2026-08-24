@@ -99,10 +99,9 @@ describe("useUnsavedChangesBeforeUnload", () => {
     renderHook(() => useUnsavedChangesBeforeUnload());
 
     const [, handler] = registeredHandlers()[0];
-    const event = { preventDefault: jest.fn(), returnValue: undefined } as unknown as BeforeUnloadEvent;
-    (handler as (e: BeforeUnloadEvent) => void)(event);
+    const event = new Event(BEFORE_UNLOAD, { cancelable: true });
+    (handler as (e: Event) => void)(event);
 
-    expect(event.preventDefault).toHaveBeenCalled();
-    expect(event.returnValue).toBe("");
+    expect(event.defaultPrevented).toBe(true);
   });
 });

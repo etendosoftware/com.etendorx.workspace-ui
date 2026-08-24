@@ -390,7 +390,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return;
     }
     guard(() => {
-      void applyProfileConfiguration();
+      applyProfileConfiguration();
     });
   }, [currentSection, submitPasswordSection, guard, applyProfileConfiguration]);
 

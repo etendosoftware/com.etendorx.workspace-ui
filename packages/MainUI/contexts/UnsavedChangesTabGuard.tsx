@@ -47,7 +47,7 @@ interface UnsavedChangesTabGuardI {
 
 const UnsavedChangesTabGuardContext = createContext<UnsavedChangesTabGuardI>({
   guardTransition: (transition) => {
-    void transition();
+    transition();
   },
 });
 
@@ -76,7 +76,7 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
   const guardTransition = useCallback(
     (transition: GuardedTransition, onCancel?: () => void) => {
       if (!isDirty) {
-        void transition();
+        transition();
         return;
       }
       setPending({ run: transition, onCancel });
@@ -87,7 +87,7 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
   const runPending = useCallback(() => {
     const transition = pending?.run;
     setPending(null);
-    void transition?.();
+    transition?.();
   }, [pending]);
 
   const handleSave = useCallback(async () => {

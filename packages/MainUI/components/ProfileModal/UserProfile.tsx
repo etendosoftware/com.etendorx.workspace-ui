@@ -40,7 +40,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
    */
   const handleSignOff = useCallback(() => {
     guard(() => {
-      void logout();
+      logout();
     });
   }, [guard, logout]);
 
