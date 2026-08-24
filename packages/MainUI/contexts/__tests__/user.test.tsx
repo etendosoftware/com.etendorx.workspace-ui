@@ -39,6 +39,7 @@ jest.unmock("@/contexts/user");
 jest.mock("@workspaceui/api-client/src/api/authentication", () => ({
   login: jest.fn(),
   logout: jest.fn(),
+  refreshToken: jest.fn(),
 }));
 jest.mock("@workspaceui/api-client/src/api/getSession", () => ({ getSession: jest.fn() }));
 jest.mock("@workspaceui/api-client/src/api/getPreferences", () => ({ getPreferences: jest.fn() }));

@@ -38,6 +38,8 @@ import ForcePasswordChangeScreen from "@/screens/ForcePasswordChange";
 import SessionLoading from "@/components/SessionLoading";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
+import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
+import { isTokenExpired } from "@/utils/session/token";
 import { useUserStore } from "@/stores/userStore";
 import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
 import { toast } from "sonner";
@@ -52,6 +54,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
   // isVerifyingSession, which guards verifySession against re-entrancy and
   // therefore cannot be pre-set from login() without skipping the load.
   const [isSessionLoading, setIsSessionLoading] = useState(false);
+  // Records the token verifySession last ran for, so a silent keep-alive renewal can swap the token
+  // without re-triggering the full session verification (which would replace the whole app with the
+  // SessionLoading screen and lose any in-progress work). Starts as undefined, a value no token can
+  // equal, so login, boot and role switches are unaffected.
+  const lastVerifiedTokenRef = useRef<string | null | undefined>(undefined);
 
   // ── Subscribe to all store state so the context value stays reactive ──────
   // Each subscription is granular; UserProvider re-renders only when one of
@@ -268,11 +275,71 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [clearUserData]);
 
+  /**
+   * Adopts a token issued by the keep-alive renewal.
+   *
+   * Same sequence as changeProfile, minus getSession()/updateSessionInfo(): the user, role,
+   * organization and warehouse are unchanged by construction, so skipping them is exactly what
+   * makes the renewal transparent. Marking the ref first keeps verifySession from re-running and
+   * unmounting the app behind the SessionLoading screen.
+   */
+  const applySilentToken = useCallback((newToken: string) => {
+    lastVerifiedTokenRef.current = newToken;
+    useUserStore.getState().setToken(newToken);
+    Metadata.setToken(newToken);
+    datasource.setToken(newToken);
+    CopilotClient.setToken(newToken);
+  }, []);
+
+  /**
+   * Writes the message the login screen shows after an involuntary logout.
+   *
+   * Must be called right after logout(), never before: clearUserData() resets these very fields and
+   * runs synchronously before logout's first await.
+   */
+  const applyLogoutMessage = useCallback(
+    (expired: boolean) => {
+      const store = useUserStore.getState();
+
+      if (expired) {
+        store.setLoginErrorText(t("login.errors.sessionExpired.title"));
+        store.setLoginErrorDescription(t("login.errors.sessionExpired.description"));
+        return;
+      }
+
+      store.setLoginErrorText(t("login.errors.defaultLogout.title"));
+      store.setLoginErrorDescription(t("login.errors.defaultLogout.description"));
+    },
+    [t]
+  );
+
+  /** Closes the session once the token expired without being renewed, and tells the user why. */
+  const handleSessionExpired = useCallback(() => {
+    logout();
+    applyLogoutMessage(true);
+  }, [logout, applyLogoutMessage]);
+
+  useSessionKeepAlive({ token, onRefreshed: applySilentToken, onExpired: handleSessionExpired });
+
   // ── Effects ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const verifySession = async () => {
+      // The token was swapped by a silent keep-alive renewal: same user, role, organization and
+      // warehouse, so there is nothing to re-verify.
+      if (lastVerifiedTokenRef.current === token) return;
       if (isVerifyingSession) return;
+
+      lastVerifiedTokenRef.current = token;
+
+      // An expired token cannot authenticate anything. Verifying with it would only mount the app
+      // and fire a burst of doomed requests whose 401s surface as a generic system error, so the
+      // session is left closed here — useSessionKeepAlive already reported the expiry.
+      if (isTokenExpired(token)) {
+        setReady(true);
+        return;
+      }
+
       try {
         if (token) {
           setIsVerifyingSession(true);
@@ -352,9 +419,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
         (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&
         !isIgnorableError
       ) {
+        // Read before logout(), which nulls the token: an expired one means the eviction was a
+        // session timeout, not a system error, and deserves the message that says so.
+        const expired = isTokenExpired(useUserStore.getState().token);
         logout();
-        useUserStore.getState().setLoginErrorText(t("login.errors.defaultLogout.title"));
-        useUserStore.getState().setLoginErrorDescription(t("login.errors.defaultLogout.description"));
+        applyLogoutMessage(expired);
       }
 
       return response;
@@ -371,7 +440,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterCopilotInterceptor();
       };
     }
-  }, [logout, t, token]);
+  }, [logout, applyLogoutMessage, token]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {
