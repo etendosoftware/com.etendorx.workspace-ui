@@ -66,7 +66,7 @@ import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSplitView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -335,7 +335,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       if (isFormView && formViewRefetch) {
         await formViewRefetch();
-      } else {
+      }
+      // In split view the grid stays on screen next to the form, so it must be
+      // refreshed too; in form-only mode the form refetch above is enough.
+      if (!isFormView || isSplitView) {
         await refetchDatasource(tab.id);
       }
 
@@ -358,6 +361,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     refetchDatasource,
     tab,
     isFormView,
+    isSplitView,
     formViewRefetch,
     windowIdentifier,
     processChildTabsInFormView,
@@ -501,6 +505,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       buttons: buttons as ToolbarButtonMetadata[],
       onAction: handleActionWithTooltip,
       isFormView: isFormView,
+      isSplitView: isSplitView,
       isTreeNodeView: isTreeNodeView,
       hasFormChanges: hasFormChanges,
       hasParentRecordSelected: hasParentRecordSelected,
@@ -538,6 +543,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isTreeNodeView,
     isFormView,
+    isSplitView,
     selectedRecord?.id,
     selectedRecords,
     processButtons.length,
@@ -566,7 +572,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   return (
     <>
       <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
-      {!isFormView && tab?.id && (
+      {(!isFormView || isSplitView) && tab?.id && (
         <SaveViewMenu
           anchorEl={saveViewAnchorEl}
           onClose={handleSaveViewMenuClose}
@@ -603,7 +609,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ProcessMenu__a2dd07"
         />
       )}
-      {searchOpen && !isFormView && (
+      {searchOpen && (!isFormView || isSplitView) && (
         <SearchPortal
           isOpen={searchOpen}
           searchValue={searchValue}

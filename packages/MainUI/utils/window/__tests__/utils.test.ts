@@ -44,6 +44,7 @@ import {
   markLastWindowAsActive,
 } from "../utils";
 import { TAB_MODES, FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
+import { DEFAULT_SPLIT_STATE } from "@/utils/window/splitView";
 import type { WindowContextState, WindowRecoveryInfo, WindowState } from "@/utils/window/constants";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
@@ -193,6 +194,7 @@ describe("createDefaultTabState", () => {
         isImplicitFilterApplied: false,
       },
       form: {},
+      split: { ...DEFAULT_SPLIT_STATE },
       level: 0,
     });
   });
@@ -209,6 +211,7 @@ describe("createDefaultTabState", () => {
         isImplicitFilterApplied: false,
       },
       form: {},
+      split: { ...DEFAULT_SPLIT_STATE },
       level: 2,
     });
   });

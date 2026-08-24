@@ -43,6 +43,8 @@ export interface ToolbarProps {
   tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
+  /** Grid and form are on screen at once, so grid-oriented buttons stay usable. */
+  isSplitView?: boolean;
 }
 export interface ProcessResponse {
   success: boolean;

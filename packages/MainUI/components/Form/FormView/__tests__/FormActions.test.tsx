@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from "@testing-library/react";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -60,6 +61,7 @@ const createFormActionsProps = (tab: Tab, overrides = {}) => ({
 const mockMarkFormAsChanged = jest.fn();
 const mockResetFormChanges = jest.fn();
 const mockRegisterActions = jest.fn();
+const mockUnregisterActions = jest.fn();
 const mockSetSaveButtonState = jest.fn();
 const mockClearTabFormState = jest.fn();
 const mockReset = jest.fn();
@@ -153,6 +155,7 @@ describe("FormActions", () => {
     // biome-ignore lint/suspicious/noExplicitAny: jest require
     (require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock).mockReturnValue({
       registerActions: mockRegisterActions,
+      unregisterActions: mockUnregisterActions,
       setSaveButtonState: mockSetSaveButtonState,
       saveButtonState: {
         isSaving: false,
@@ -175,14 +178,19 @@ describe("FormActions", () => {
     });
   });
 
-  it("renders and registers actions", () => {
+  it("renders and registers actions under the form owner", () => {
     renderFormActions(props);
-    expect(mockRegisterActions).toHaveBeenCalledWith({
-      save: expect.any(Function),
-      refresh: expect.any(Function),
-      back: expect.any(Function),
-      new: expect.any(Function),
-    });
+    // The owner is what keeps the grid from clobbering save when both panes are
+    // on screen at once (split view).
+    expect(mockRegisterActions).toHaveBeenCalledWith(
+      {
+        save: expect.any(Function),
+        refresh: expect.any(Function),
+        back: expect.any(Function),
+        new: expect.any(Function),
+      },
+      TOOLBAR_ACTION_OWNERS.FORM
+    );
   });
 
   it("calls validation when callouts are done", () => {
@@ -243,6 +251,7 @@ describe("FormActions", () => {
     const setupCtx = () => {
       toolbarCtx().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: prevState,
       });
@@ -313,6 +322,7 @@ describe("FormActions", () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
       });
@@ -328,6 +338,7 @@ describe("FormActions", () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
       });
@@ -384,6 +395,7 @@ describe("FormActions", () => {
     it("Escape is a no-op when isSaving is true", async () => {
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
       });
@@ -400,6 +412,7 @@ describe("FormActions", () => {
     it("Escape is a no-op when isCalloutLoading is true", async () => {
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
       });
@@ -494,6 +507,19 @@ describe("FormActions", () => {
       rerender(<FormActions {...props} />);
 
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("action ownership", () => {
+    // Without this cleanup, the toolbar's CANCEL kept pointing at the unmounted
+    // form's handler instead of falling back to the tab's own navigation.
+    it("releases the form owner bucket on unmount", () => {
+      const { unmount } = renderFormActions(props);
+      expect(mockUnregisterActions).not.toHaveBeenCalled();
+
+      unmount();
+
+      expect(mockUnregisterActions).toHaveBeenCalledWith(TOOLBAR_ACTION_OWNERS.FORM);
     });
   });
 });
