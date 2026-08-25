@@ -65,6 +65,11 @@ export interface FormViewProps {
   uIPattern?: UIPattern;
   isFocused?: boolean;
   onFocusAcquire?: () => void;
+  /**
+   * The form owns the keyboard, so it may place the initial focus on its first
+   * editable field. False while the grid pane holds the focus in split view.
+   */
+  canAutoFocus?: boolean;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition["value"];

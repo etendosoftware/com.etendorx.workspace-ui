@@ -18,6 +18,7 @@
 import type { CSSProperties } from "react";
 import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
 import type { SplitViewState } from "@/utils/window/constants";
+import { FORM_FIELDS_ROOT_ATTRIBUTE, findFirstFocusableFieldControl } from "@/utils/form/focus";
 
 /**
  * The four ways a tab can lay out its grid and form panes.
@@ -196,14 +197,20 @@ export const getPaneTabIndex = (mode: TabViewMode): number | undefined => {
 
 /**
  * Element that receives the DOM focus when a pane takes over the keyboard: the
- * marked descendant when the pane declares one, the pane container otherwise.
- * Focusing the container is enough for sequential navigation, since the browser
- * continues from there into the pane's first focusable descendant.
+ * marked descendant when the pane declares one (the grid), then the first
+ * editable field when the pane holds a form, and the pane container as a last
+ * resort. Focusing the container is enough for sequential navigation, since the
+ * browser continues from there into the pane's first focusable descendant.
  */
 export const resolvePaneFocusTarget = (paneElement: HTMLElement): HTMLElement => {
   const marked = paneElement.querySelector<HTMLElement>(`[${GRID_FOCUS_TARGET_ATTRIBUTE}]`);
   if (marked) {
     return marked;
+  }
+  const fieldsRoot = paneElement.querySelector<HTMLElement>(`[${FORM_FIELDS_ROOT_ATTRIBUTE}]`);
+  const firstField = findFirstFocusableFieldControl(fieldsRoot);
+  if (firstField) {
+    return firstField;
   }
   return paneElement;
 };

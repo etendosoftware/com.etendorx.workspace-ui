@@ -16,6 +16,8 @@
  */
 
 const React = require("react");
-module.exports = function MockIconButton({ children, className }) {
-  return React.createElement("div", { className, "data-testid": "icon-button" }, children);
+// tabIndex is forwarded because callers use it to keep auxiliary buttons out of
+// the form's tab sequence, and tests assert on it.
+module.exports = function MockIconButton({ children, className, tabIndex }) {
+  return React.createElement("div", { className, tabIndex, "data-testid": "icon-button" }, children);
 };

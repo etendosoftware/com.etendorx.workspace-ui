@@ -15,6 +15,8 @@
  *************************************************************************
  */
 
+import { NOT_TABBABLE } from "@/utils/form/focus";
+
 interface LabelProps {
   htmlFor: string;
   name: string;
@@ -30,7 +32,11 @@ export default function Label({ htmlFor, name, onClick, onKeyDown, link }: Label
       className={`overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] ${link ? "text-(--color-dynamic-main) cursor-pointer" : "text-gray-700"}`}
       onClick={(e) => onClick?.(e)}
       onKeyDown={(e) => onKeyDown?.(e)}
-      {...(link ? { role: "button", tabIndex: 0, "aria-label": "Navigate to referenced window" } : {})}>
+      {...(link
+        ? // Out of the tab sequence, as in Classic: a field is a single tab stop and its
+          // label never takes the keyboard. The click still navigates.
+          { role: "button", tabIndex: NOT_TABBABLE, "aria-label": "Navigate to referenced window" }
+        : {})}>
       {name}
     </label>
   );

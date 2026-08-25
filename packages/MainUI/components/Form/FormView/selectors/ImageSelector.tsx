@@ -12,6 +12,7 @@ import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import ImagePreviewModal from "./ImagePreviewModal";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 interface ImageSelectorProps {
   field: Field;
@@ -370,7 +371,8 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
       <button
         type="button"
         className="p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
-        onClick={() => imageUrl && setShowPreviewModal(true)}>
+        onClick={() => imageUrl && setShowPreviewModal(true)}
+        tabIndex={NOT_TABBABLE}>
         <img
           src={imageUrl || ""}
           alt={field.name || t("image.selector.altText")}
@@ -394,6 +396,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             onClick={handleOpenFilePicker}
             className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-[var(--color-etendo-main)] hover:text-white hover:border-transparent transition-colors"
             title={t("image.preview.replaceImage")}
+            tabIndex={NOT_TABBABLE}
             data-testid={`ImageSelector__editBtn__${field.id}`}>
             <svg
               aria-hidden="true"
@@ -420,6 +423,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             onClick={handleDelete}
             className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-red-600 hover:text-white hover:border-transparent transition-colors"
             title={t("image.selector.removeImage")}
+            tabIndex={NOT_TABBABLE}
             data-testid={`ImageSelector__deleteBtn__${field.id}`}>
             <svg
               aria-hidden="true"
