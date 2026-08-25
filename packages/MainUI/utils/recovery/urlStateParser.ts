@@ -48,6 +48,16 @@ export const parseUrlState = async (
       throw new Error(`Tab ${recoveryTabId} not found in window metadata`);
     }
 
+    // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+    console.debug("[DEBUG-LINKEDITEMS] parseUrlState", {
+      recoveryTabId,
+      recoveryRecordId,
+      computedWindowId: data.windowId,
+      computedTabTitle: data.tabTitle,
+      computedKeyParameter: data.keyParameter,
+      resolvedTargetTab: { id: targetTab.id, name: targetTab.name, tabLevel: targetTab.tabLevel },
+    });
+
     return {
       windowIdentifier: recoveryInfo.windowIdentifier,
       tabId: recoveryTabId,

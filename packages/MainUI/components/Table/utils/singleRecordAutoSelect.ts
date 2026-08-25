@@ -22,6 +22,12 @@ export interface SingleRecordAutoSelectInputs {
   loading: boolean;
   /** True in grid mode. In form view the grid selection must not drive the URL. */
   isVisible: boolean;
+  /**
+   * True when the tab's level is not expanded, so `Tab` renders the whole tab inside a `hidden`
+   * container. A collapsed child tab still reports `isVisible` (that flag only separates grid pane
+   * from form pane *inside* a tab), so it has to be rejected on its own.
+   */
+  isTabCollapsed: boolean;
   /** The tab's loaded records. */
   records: EntityData[];
   /** True when the page is full, i.e. the result set may hold more than what is loaded. */
@@ -52,6 +58,10 @@ export type SingleRecordAutoSelectDecision = { select: false } | { select: true;
  *
  * Guards, in the order classic's `else if` chain resolves them:
  * - a load still in flight, a hidden grid, or an inline edit in progress is not a decision point;
+ * - a collapsed tab is not on screen at all, so it must not select either. Classic reaches
+ *   `dataArrived` only for a grid the user is looking at, whereas this UI keeps every visited tab
+ *   mounted behind a `hidden` container and lets its datasource keep loading, so selecting there
+ *   would write a `selectedRecord` for a tab the user never opened;
  * - `hasMoreRecords` stands in for classic's `data.getLength()`, which counts the whole result set:
  *   the datasource always sends `_noCount: "true"`, so no server count is available and a full page
  *   means the single loaded record may not be the only match;
@@ -71,6 +81,7 @@ export function getSingleRecordAutoSelectDecision(
 ): SingleRecordAutoSelectDecision {
   if (inputs.loading) return { select: false };
   if (!inputs.isVisible) return { select: false };
+  if (inputs.isTabCollapsed) return { select: false };
   if (inputs.hasMoreRecords) return { select: false };
   if (inputs.records.length !== 1) return { select: false };
   if (inputs.srAutoOpens) return { select: false };

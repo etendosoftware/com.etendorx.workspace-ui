@@ -652,6 +652,12 @@ interface DynamicTableProps {
    * primary in split view, where the form pane owns the user's attention.
    */
   isPrimaryView?: boolean;
+  /**
+   * True when the whole tab is collapsed, i.e. its level is not expanded and `Tab` renders it
+   * inside a `hidden` container. Distinct from `isVisible`, which only tells grid pane from form
+   * pane *within* this tab and therefore stays true for a tab the user cannot see at all.
+   */
+  isTabCollapsed?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
@@ -738,6 +744,7 @@ const DynamicTable = ({
   isTreeMode = true,
   isVisible = true,
   isPrimaryView = true,
+  isTabCollapsed = false,
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
@@ -3804,6 +3811,7 @@ const DynamicTable = ({
     const decision = getSingleRecordAutoSelectDecision({
       loading,
       isVisible: isVisible ?? true,
+      isTabCollapsed,
       records,
       hasMoreRecords,
       storedSelectedId: getSelectedRecord(windowIdentifier, tab.id),
@@ -3818,6 +3826,17 @@ const DynamicTable = ({
       return;
     }
 
+    // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+    console.debug("[DEBUG-LINKEDITEMS] Rule A auto-select firing", {
+      windowIdentifier,
+      tabId: tab.id,
+      tabName: tab.name,
+      tabLevel: tab.tabLevel,
+      isVisible: isVisible ?? true,
+      isTabCollapsed,
+      recordId: decision.recordId,
+    });
+
     autoSelectedSingleRecordRef.current = decision.recordId;
     table.setRowSelection({ [decision.recordId]: true });
   }, [
@@ -3825,6 +3844,7 @@ const DynamicTable = ({
     tab,
     loading,
     isVisible,
+    isTabCollapsed,
     records,
     hasMoreRecords,
     displayRecords,

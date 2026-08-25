@@ -8,6 +8,7 @@ const makeRecord = (id: string | number): EntityData => ({ id }) as unknown as E
 const baseInputs: SingleRecordAutoSelectInputs = {
   loading: false,
   isVisible: true,
+  isTabCollapsed: false,
   records: [makeRecord(RECORD_ID)],
   hasMoreRecords: false,
   srAutoOpens: false,
@@ -26,6 +27,10 @@ describe("getSingleRecordAutoSelectDecision", () => {
 
     it("the grid is not visible (form view)", () => {
       expect(decide({ isVisible: false })).toEqual({ select: false });
+    });
+
+    it("the whole tab is collapsed, even though its grid pane reports visible", () => {
+      expect(decide({ isTabCollapsed: true, isVisible: true })).toEqual({ select: false });
     });
 
     it("the page is full, so the result set may hold more matches", () => {
