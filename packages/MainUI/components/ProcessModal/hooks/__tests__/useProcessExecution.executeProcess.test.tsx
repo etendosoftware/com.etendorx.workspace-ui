@@ -154,3 +154,99 @@ describe("useProcessExecution — view.executeProcess (actionHandlerCall reprodu
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Classic showed the handler's own message with its title and its text
+ * (`view.view.messageBar.setMessage(TYPE_<severity>, title, text)`). The migrated
+ * AR-1 archetype returns that message as `{ message: { msgType, msgTitle, msgText } }`,
+ * so the toast must carry the server's words, not the generic ones.
+ */
+describe("useProcessExecution — the server message drives the toast", () => {
+  const toastTitle = (mock: jest.Mock) => mock.mock.calls[0][0];
+  const toastDescription = (mock: jest.Mock) => mock.mock.calls[0][1].description.props.message;
+
+  beforeEach(() => {
+    executeStringFunction.mockReset();
+    toastSuccess.mockClear();
+    toastWarning.mockClear();
+  });
+
+  it("titles the toast with msgTitle and describes it with msgText", async () => {
+    executeStringFunction.mockResolvedValue({
+      message: {
+        msgType: "success",
+        msgTitle: "Permissions recalculated correctly for role System Administrator",
+        msgText: "No new records added into the role accesses",
+      },
+      responseActions: [{ refreshGrid: {} }],
+    });
+
+    const { result } = renderHook(() => useProcessExecution(makeOnProcessParams() as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
+    expect(toastTitle(toastSuccess)).toBe("Permissions recalculated correctly for role System Administrator");
+    expect(toastDescription(toastSuccess)).toBe("No new records added into the role accesses");
+  });
+
+  it("reads the raw handler spelling when the script hands the response back untouched", async () => {
+    executeStringFunction.mockResolvedValue({
+      message: { severity: "success", title: "Recalculated", text: "Nothing to add" },
+    });
+
+    const { result } = renderHook(() => useProcessExecution(makeOnProcessParams() as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(toastTitle(toastSuccess)).toBe("Recalculated");
+    expect(toastDescription(toastSuccess)).toBe("Nothing to add");
+  });
+
+  it("routes a warning severity to the warning toast with the server title", async () => {
+    executeStringFunction.mockResolvedValue({
+      message: { msgType: "warning", msgTitle: "Partially done", msgText: "2 of 3 roles updated" },
+    });
+
+    const { result } = renderHook(() => useProcessExecution(makeOnProcessParams() as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastTitle(toastWarning)).toBe("Partially done");
+    expect(toastDescription(toastWarning)).toBe("2 of 3 roles updated");
+  });
+
+  it("keeps the default texts when the response carries no message", async () => {
+    executeStringFunction.mockResolvedValue({ responseActions: [{ refreshGrid: {} }] });
+
+    const { result } = renderHook(() => useProcessExecution(makeOnProcessParams() as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(toastTitle(toastSuccess)).toBe("process.completedSuccessfully");
+    expect(toastDescription(toastSuccess)).toBe("process.completedSuccessfully");
+  });
+
+  it("surfaces an error message in the modal instead of a toast", async () => {
+    const setResult = jest.fn();
+    executeStringFunction.mockResolvedValue({
+      message: { msgType: "error", msgTitle: "Recalculation failed", msgText: "Inconsistent inheritance" },
+    });
+
+    const { result } = renderHook(() => useProcessExecution(makeOnProcessParams({ setResult }) as never));
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastWarning).not.toHaveBeenCalled();
+    // `data` carries the title so the in-modal banner can head with it.
+    expect(setResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: "Inconsistent inheritance",
+        data: expect.objectContaining({ msgTitle: "Recalculation failed" }),
+      })
+    );
+  });
+});

@@ -37,6 +37,9 @@ import { reconstructState } from "@/utils/recovery/stateReconstructor";
 import type { WindowMetadata } from "@workspaceui/api-client/src/api/types";
 import type { WindowRecoveryInfo } from "@/utils/window/constants";
 import { createMockTab, createMockWindowMetadata } from "@/utils/tests/mockHelpers";
+import { toast } from "sonner";
+import { WindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
+import { useWindowStore } from "@/stores/windowStore";
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -47,6 +50,8 @@ jest.mock("@/utils/url/utils");
 jest.mock("@/utils/recovery/urlStateParser");
 jest.mock("@/utils/recovery/hierarchyCalculator");
 jest.mock("@/utils/recovery/stateReconstructor");
+jest.mock("@/utils/recovery/reconstructedSessionSync");
+jest.mock("sonner", () => ({ toast: { warning: jest.fn() } }));
 
 const mockUseSearchParams = useSearchParams as jest.Mock;
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;
@@ -656,6 +661,99 @@ describe("useGlobalUrlStateRecovery", () => {
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(result.current.recoveredWindows[0].windowId).toBe("143");
       expect(result.current.recoveredWindows[0].windowIdentifier).toBe("143_123456789");
+    });
+  });
+
+  describe("Inaccessible windows", () => {
+    const ACCESSIBLE_IDENTIFIER = "143_111";
+    const DENIED_IDENTIFIER = "102_222";
+
+    /**
+     * Wires a recovery over the given identifiers, resolving metadata for every one of them except
+     * the denied ones, which reject with the typed access error.
+     */
+    const setupRecoveryWithDenials = (identifiers: string[], deniedIdentifiers: string[]) => {
+      mockUseSearchParams.mockReturnValue(
+        createMockSearchParams(Object.fromEntries(identifiers.map((id, index) => [`wi_${index}`, id])))
+      );
+      mockParseWindowRecoveryData.mockReturnValue(identifiers.map((id) => createMockRecoveryInfo(id)));
+      mockGetWindowName.mockReturnValue("Sales Order");
+      mockLoadWindowData.mockImplementation((windowId: string) => {
+        const isDenied = deniedIdentifiers.some((id) => id.startsWith(`${windowId}_`));
+        if (isDenied) {
+          return Promise.reject(new WindowAccessDeniedError(windowId, 401));
+        }
+        return Promise.resolve(createMockWindowMetadata(windowId));
+      });
+    };
+
+    beforeEach(() => {
+      useWindowStore.getState().setAccessDeniedWindowCount(0);
+    });
+
+    it("drops the inaccessible window and warns when another one survived", async () => {
+      setupRecoveryWithDenials([ACCESSIBLE_IDENTIFIER, DENIED_IDENTIFIER], [DENIED_IDENTIFIER]);
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows).toHaveLength(1);
+      expect(result.current.recoveredWindows[0].windowIdentifier).toBe(ACCESSIBLE_IDENTIFIER);
+      expect(toast.warning).toHaveBeenCalledTimes(1);
+      expect(useWindowStore.getState().accessDeniedWindowCount).toBe(0);
+    });
+
+    it("activates the surviving window even when the denied one was last in the URL", async () => {
+      setupRecoveryWithDenials([ACCESSIBLE_IDENTIFIER, DENIED_IDENTIFIER], [DENIED_IDENTIFIER]);
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows[0].isActive).toBe(true);
+    });
+
+    it("requests the full-screen view and no toast when every window is inaccessible", async () => {
+      setupRecoveryWithDenials([DENIED_IDENTIFIER], [DENIED_IDENTIFIER]);
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows).toEqual([]);
+      expect(result.current.recoveryError).toBeNull();
+      expect(useWindowStore.getState().accessDeniedWindowCount).toBe(1);
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+
+    it("skips the state reconstruction of a denied window that carried tab and record params", async () => {
+      const recoveryInfo = createMockRecoveryInfo(DENIED_IDENTIFIER, {
+        hasRecoveryData: true,
+        tabId: "107",
+        recordId: "2615",
+      });
+      mockUseSearchParams.mockReturnValue(
+        createMockSearchParams({ wi_0: DENIED_IDENTIFIER, ti_0: "107", ri_0: "2615" })
+      );
+      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
+      mockLoadWindowData.mockRejectedValue(new WindowAccessDeniedError("102", 401));
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows).toEqual([]);
+      expect(mockParseUrlState).not.toHaveBeenCalled();
+      expect(mockCalculateHierarchy).not.toHaveBeenCalled();
+      expect(mockReconstructState).not.toHaveBeenCalled();
+    });
+
+    it("keeps the minimal-state fallback for non-access failures", async () => {
+      setupSimpleRecovery("143", ACCESSIBLE_IDENTIFIER);
+      mockLoadWindowData.mockRejectedValue(new Error("Window not found"));
+      const consoleSpy = mockConsole("warn");
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows).toHaveLength(1);
+      expect(result.current.recoveredWindows[0].title).toBe("");
+      expect(toast.warning).not.toHaveBeenCalled();
+      expect(useWindowStore.getState().accessDeniedWindowCount).toBe(0);
+
+      consoleSpy.mockRestore();
     });
   });
 });

@@ -34,13 +34,23 @@ export interface CriteriaItem {
  * Resolves the field name in `tab` that references `parentTab`.
  * Shared by `buildBaseCriteria` and `useTableData`'s parent field resolution.
  *
- * Resolution order:
+ * The backend answers this question directly through `tab.parentProperty`, computed with
+ * `ApplicationUtils.getParentProperty` — the same function the classic UI uses — so it is
+ * preferred whenever present. An empty string is a real answer ("no link column to the parent"),
+ * not a missing value, and is mapped to "id" so `buildBaseCriteria` falls back to `_dummy`
+ * exactly as classic's OBViewGrid does for those tabs.
+ *
+ * The heuristic below stays as the fallback for metadata backends that predate that key:
  *  1. parentColumns whose field directly references the parent entity (referencedEntity / targetEntity)
  *  2. parentColumns whose name contains the parent entity name (substring match)
  *  3. Any field in tab.fields whose name exactly matches the parent entity name
  *  4. First entry in parentColumns, or "id" as final fallback
  */
 export const resolveParentFieldName = (tab: Tab, parentTab: Tab): string => {
+  if (typeof tab.parentProperty === "string") {
+    return tab.parentProperty || "id";
+  }
+
   if (!tab.parentColumns || tab.parentColumns.length === 0) {
     return "id";
   }

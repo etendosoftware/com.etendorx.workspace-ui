@@ -18,3 +18,11 @@
 export const CALLOUTS_ENABLED = true;
 export const HEALTH_CHECK_MAX_ATTEMPTS = 5;
 export const HEALTH_CHECK_RETRY_DELAY_MS = 2000;
+
+/**
+ * How often the session keep-alive re-evaluates the token. This tick performs no network request:
+ * it only compares timestamps already held in memory.
+ */
+export const SESSION_CHECK_INTERVAL_MS = 15000;
+/** How long before expiration the token is renewed, provided the user has been active. */
+export const SESSION_REFRESH_LEAD_MS = 60000;

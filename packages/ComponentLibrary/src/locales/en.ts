@@ -47,9 +47,13 @@ const en = {
     records: "records",
     version: "Version: ",
     about: "About",
+    help: "Help",
+    helpFor: "Help for",
+    backToTop: "Go to the top",
     clone: "Clone",
     cloneWithChildren: "Clone With Children",
     change: "Change",
+    logout: "Log out",
   },
   forms: {
     sections: {
@@ -138,6 +142,7 @@ const en = {
     noRecords: "Please create a new record",
     copyError: "Copy failed! Please try again or contact support.",
     staleObjectError: "The record has been modified by another user or process. Please refresh and try again.",
+    staleObjectReloadAction: "Reload",
   },
   errors: {
     tableError: {
@@ -190,6 +195,16 @@ const en = {
     recoveryFailed: {
       title: "Recovery Failed",
       description: "Unable to restore window state from URL",
+    },
+    accessDenied: {
+      title: "Access Denied",
+      description: "Your role does not have access to this window. Contact your system administrator if you need it.",
+      tableDescription: "Your role does not have permission to view this data.",
+      discarded: {
+        title: "Some windows were not opened",
+        descriptionOne: "One window was discarded because your role does not have access to it.",
+        descriptionMany: "windows were discarded because your role does not have access to them.",
+      },
     },
   },
   modal: {
@@ -297,6 +312,10 @@ const en = {
       errorUnequalPwd: "Passwords do not match",
       errorNotStrongEnough: "Password is not strong enough. Use uppercase, lowercase, numbers and special characters",
       errorGeneric: "Failed to change password",
+      linkWith: "Link user with:",
+      linking: "Linking your account…",
+      linkSuccess: "Account linked successfully",
+      linkError: "Failed to link account",
       configSaveError: "Failed to save profile configuration",
     },
   },
@@ -320,6 +339,10 @@ const en = {
     },
     pickAndExecuteNotImplemented:
       "This process has UI Pattern 'Pick and Execute' and is not implemented yet. Please contact support.",
+    manualProcessNotMigrated: "This process has logic thas has not been migrated yet. Please contact support.",
+    popupBlocked: "Your browser blocked the window this process tried to open.",
+    openLink: "Open link",
+    openUrlMissingUrl: "The process asked to open a link but returned no URL.",
   },
   processModal: {
     gridToolbar: {
@@ -339,6 +362,22 @@ const en = {
         openManually: "Open report",
       },
     },
+    middlewareToken: {
+      title: "Select a provider",
+      selectScope: "Select the scope",
+      cancel: "Cancel",
+      close: "Close",
+      errorTitle: "Providers could not be loaded",
+      noProviders: "The middleware did not return any provider.",
+      errors: {
+        noRecordSelected: "Select an OAuth Provider record before running this process.",
+        noProviderId: "No OAuth Provider record was supplied.",
+        providerNotFound: "The OAuth Provider record was not found.",
+        noEndpoint: "The OAuth Provider record has no Authorization Endpoint configured.",
+        unreadableResponse: "The middleware returned an unreadable provider list.",
+        unreachable: "The middleware could not be reached. Contact the system administrator.",
+      },
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
@@ -346,6 +385,7 @@ const en = {
   login: {
     title: "Log In",
     subtitle: "Enter your username and password to continue.",
+    loadingSession: "Loading your workspace...",
     fields: {
       username: {
         label: "Username",
@@ -370,10 +410,42 @@ const en = {
         title: "No Access to Table",
         description: "You have been automatically logged out for security reasons. Please log in again to continue.",
       },
+      sessionExpired: {
+        title: "Session expired due to inactivity",
+        description: "Your session was closed after a period of inactivity. Please log in again to continue.",
+      },
       defaultLogout: {
         title: "System Error - Session Closed",
         description:
           "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+      },
+      passwordExpired: {
+        title: "Your password has expired",
+        description: "Please log in again to set a new password.",
+      },
+    },
+    passwordExpired: {
+      title: "Your password has expired",
+      description: "Set a new password to continue.",
+      submit: "Change password",
+      logout: "Log out",
+    },
+    sso: {
+      divider: "Or continue with",
+      buttons: {
+        auth0: "Continue with SSO",
+        continueWith: "Continue with",
+      },
+      errors: {
+        notLinked: {
+          title: "Account not linked",
+          description:
+            "Your SSO account is not linked to an Etendo user. Sign in with username and password first, then link your account from the settings menu.",
+        },
+        failed: {
+          title: "Sign-in failed",
+          description: "We couldn't sign you in with that provider. Please try again.",
+        },
       },
     },
     or: "OR",

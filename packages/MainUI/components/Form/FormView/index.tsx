@@ -40,7 +40,8 @@ import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
-import { useFormAction } from "@/hooks/useFormAction";
+import { useFormAction, buildReloadModalOptions, type OnErrorOptions } from "@/hooks/useFormAction";
+import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import type { FormViewProps } from "./types";
 import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
@@ -55,6 +56,9 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useWindowStore } from "@/stores/windowStore";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
+import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
@@ -126,20 +130,6 @@ export function FormView({
 }: FormViewProps) {
   const theme = useTheme();
 
-  const computeInitialExpandedSections = useCallback(
-    (currentGroups: ReturnType<typeof useFormFields>["groups"]): string[] => {
-      return currentGroups
-        .filter(([id, group]) => id === "_main" || group.fieldGroupCollapsed === false)
-        .map(([id]) => String(id ?? "_main"));
-    },
-    []
-  );
-
-  const [expandedSections, setExpandedSections] = useState<string[]>(() =>
-    computeInitialExpandedSections(
-      [] // groups not yet computed; will be corrected by the tab.id useEffect below
-    )
-  );
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
@@ -163,18 +153,21 @@ export function FormView({
   const justSavedInEditRef = useRef(false);
 
   const { graph } = useSelected();
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
-  const windowIdentifier = activeWindow?.windowIdentifier;
+  // Scoped to the window subtree that owns this form, not to whichever window is
+  // globally active: a background window must never write into the active one.
+  const windowIdentifier = useCurrentWindowIdentifier();
   const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
   const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
   const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
   }, []);
+  const { expandedSections, setExpandedSections, initializeExpandedSections } = useFormSectionsPersistenceTab({
+    windowIdentifier,
+    tabId: tab.id,
+    tabLevel: tab.tabLevel ?? 0,
+  });
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
+  const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
@@ -486,16 +479,15 @@ export function FormView({
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
 
-  // Reset expanded sections whenever the tab changes so each tab opens with the
-  // correct collapsed/expanded state driven by fieldGroupCollapsed metadata.
-  // We track the previous tab.id so we only reset on a genuine tab navigation,
-  // not on every groups/availableFormData change within the same tab.
-  const lastTabIdForSectionsRef = useRef<string | null>(null);
+  // Seed the collapsed/expanded state from the fieldGroupCollapsed metadata only the
+  // first time this tab's form is opened. Every later opening reuses the preference
+  // persisted per tab, so a section the user collapsed (or expanded) keeps that state
+  // after leaving and re-entering the form. Skipped while groups is still empty so an
+  // incomplete metadata snapshot is never persisted as a preference.
   useEffect(() => {
-    if (lastTabIdForSectionsRef.current === tab.id) return;
-    lastTabIdForSectionsRef.current = tab.id;
-    setExpandedSections(computeInitialExpandedSections(groups));
-  }, [tab.id, computeInitialExpandedSections, groups]);
+    if (!windowIdentifier || groups.length === 0) return;
+    initializeExpandedSections(() => computeInitialExpandedSections(groups));
+  }, [windowIdentifier, groups, initializeExpandedSections]);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
@@ -610,6 +602,19 @@ export function FormView({
     },
     [stableReset]
   );
+
+  /**
+   * Discards pending edits by re-applying the last-loaded record data locally
+   * (no server round-trip). Reuses the full-initialization path so the form's
+   * values AND react-hook-form's defaultValues are both reset to the cached
+   * `availableFormData` — which includes the reference-field identifiers and
+   * option entries. This restores the human-readable labels (not raw ids) and
+   * leaves the form non-dirty, so a subsequent Cancel click navigates to the grid.
+   */
+  const discardChanges = useCallback(() => {
+    if (!availableFormData) return;
+    applyFullInitialization(processFormData(availableFormData, tab.fields));
+  }, [availableFormData, tab.fields, applyFullInitialization]);
 
   const hasDataChanged = useCallback((formData: any) => {
     // Prevent resetting if the data hasn't actually changed.
@@ -785,15 +790,18 @@ export function FormView({
    *
    * @param newTabId - ID of the tab being switched to
    */
-  const handleTabChange = useCallback((newTabId: string) => {
-    setSelectedTab(newTabId);
-    setExpandedSections((prev) => {
-      if (!prev.includes(newTabId)) {
-        return [...prev, newTabId];
-      }
-      return prev;
-    });
-  }, []);
+  const handleTabChange = useCallback(
+    (newTabId: string) => {
+      setSelectedTab(newTabId);
+      setExpandedSections((prev) => {
+        if (!prev.includes(newTabId)) {
+          return [...prev, newTabId];
+        }
+        return prev;
+      });
+    },
+    [setExpandedSections]
+  );
 
   /**
    * Creates a ref callback function for form sections.
@@ -805,7 +813,7 @@ export function FormView({
    */
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
-      const id = String(sectionId || "_main");
+      const id = String(sectionId || MAIN_SECTION_ID);
       sectionRefs.current[id] = el;
     },
     []
@@ -819,20 +827,24 @@ export function FormView({
    * @param sectionId - ID of the section being toggled (null becomes "_main")
    * @param isExpanded - Whether the section is being expanded (true) or collapsed (false)
    */
-  const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
-    const id = String(sectionId || "_main");
+  const handleAccordionChange = useCallback(
+    (sectionId: string | null, isExpanded: boolean) => {
+      const id = String(sectionId || MAIN_SECTION_ID);
 
-    setExpandedSections((prev) => {
+      setExpandedSections((prev) => {
+        const withoutSection = prev.filter((existingId) => existingId !== id);
+        if (isExpanded) {
+          return [...withoutSection, id];
+        }
+        return withoutSection;
+      });
+
       if (isExpanded) {
-        return [...prev, id];
+        setSelectedTab(id);
       }
-      return prev.filter((existingId) => existingId !== id);
-    });
-
-    if (isExpanded) {
-      setSelectedTab(id);
-    }
-  }, []);
+    },
+    [setExpandedSections]
+  );
 
   /**
    * Checks if a form section is currently expanded.
@@ -976,10 +988,10 @@ export function FormView({
    * @param data - Error message string from server or validation
    */
   const onError = useCallback(
-    (data: string) => {
-      showErrorModal(data);
+    (data: string, options?: OnErrorOptions) => {
+      showErrorModal(data, buildReloadModalOptions(options?.onReload, t));
     },
-    [showErrorModal]
+    [showErrorModal, t]
   );
 
   const { save, loading } = useFormAction({
@@ -990,6 +1002,7 @@ export function FormView({
     onError,
     initialState,
     submit: form.handleSubmit,
+    onStaleObjectReload: refreshRecordAndSession,
   });
 
   /**
@@ -1139,6 +1152,7 @@ export function FormView({
       recordId,
       setRecordId,
       expandedSections,
+      setExpandedSections,
       selectedTab,
       isFormInitializing,
       handleSectionRef,
@@ -1198,6 +1212,7 @@ export function FormView({
               onNew={handleNewRecord}
               refetch={refreshRecordAndSession}
               onSave={handleSave}
+              discardChanges={discardChanges}
               showErrorModal={showErrorModal}
               mode={currentMode}
               isFocused={isFocused}

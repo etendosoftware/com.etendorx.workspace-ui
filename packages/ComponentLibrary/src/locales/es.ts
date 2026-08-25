@@ -46,9 +46,13 @@ const es = {
     records: "registros",
     version: "Versión: ",
     about: "Acerca de",
+    help: "Ayuda",
+    helpFor: "Ayuda de",
+    backToTop: "Ir arriba",
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
     change: "Cambiar",
+    logout: "Cerrar sesión",
   },
   forms: {
     sections: {
@@ -138,6 +142,7 @@ const es = {
     copyError: "¡Copiado erróneo! Inténtelo nuevamente o contáctese con soporte.",
     staleObjectError:
       "El registro ha sido modificado por otro usuario o proceso. Por favor, actualice e intente nuevamente.",
+    staleObjectReloadAction: "Actualizar",
   },
   errors: {
     tableError: {
@@ -190,6 +195,16 @@ const es = {
     recoveryFailed: {
       title: "Error de Recuperación",
       description: "No se pudo restaurar el estado de la ventana desde la URL",
+    },
+    accessDenied: {
+      title: "Acceso denegado",
+      description: "Tu rol no tiene acceso a esta ventana. Contacta al administrador del sistema si necesitas acceso.",
+      tableDescription: "Tu rol no tiene permisos para ver estos datos.",
+      discarded: {
+        title: "Algunas ventanas no se abrieron",
+        descriptionOne: "Se descartó una ventana porque tu rol no tiene acceso.",
+        descriptionMany: "ventanas descartadas porque tu rol no tiene acceso.",
+      },
     },
   },
   modal: {
@@ -302,6 +317,10 @@ const es = {
       errorNotStrongEnough:
         "La contraseña no es suficientemente segura. Use mayúsculas, minúsculas, números y caracteres especiales",
       errorGeneric: "Error al cambiar la contraseña",
+      linkWith: "Vincular usuario con:",
+      linking: "Vinculando tu cuenta…",
+      linkSuccess: "Cuenta vinculada correctamente",
+      linkError: "No se pudo vincular la cuenta",
       configSaveError: "No se pudo guardar la configuración del perfil",
     },
   },
@@ -324,6 +343,10 @@ const es = {
     },
     pickAndExecuteNotImplemented:
       "El proceso tiene UI Pattern igual a 'Pick and Execute' y no está implementado. Contactarse con soporte.",
+    manualProcessNotMigrated: "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
+    popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
+    openLink: "Abrir enlace",
+    openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {
     gridToolbar: {
@@ -343,6 +366,22 @@ const es = {
         openManually: "Abrir reporte",
       },
     },
+    middlewareToken: {
+      title: "Selecciona un proveedor",
+      selectScope: "Selecciona el alcance",
+      cancel: "Cancelar",
+      close: "Cerrar",
+      errorTitle: "No se pudieron cargar los proveedores",
+      noProviders: "El middleware no devolvió ningún proveedor.",
+      errors: {
+        noRecordSelected: "Selecciona un registro de Proveedor oAuth antes de ejecutar este proceso.",
+        noProviderId: "No se indicó ningún registro de Proveedor oAuth.",
+        providerNotFound: "No se encontró el registro de Proveedor oAuth.",
+        noEndpoint: "El registro de Proveedor oAuth no tiene configurado el Authorization Endpoint.",
+        unreadableResponse: "El middleware devolvió una lista de proveedores ilegible.",
+        unreachable: "No se pudo contactar al middleware. Contacta al administrador del sistema.",
+      },
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
@@ -350,6 +389,7 @@ const es = {
   login: {
     title: "Iniciar sesión",
     subtitle: "Ingresa tu usuario y contraseña para continuar.",
+    loadingSession: "Cargando tu espacio de trabajo...",
     fields: {
       username: {
         label: "Usuario",
@@ -376,10 +416,43 @@ const es = {
         description:
           "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
       },
+      sessionExpired: {
+        title: "Sesión expirada por inactividad",
+        description:
+          "Tu sesión se cerró tras un período de inactividad. Por favor, inicia sesión nuevamente para continuar.",
+      },
       defaultLogout: {
         title: "Error del sistema - Sesión cerrada",
         description:
-          "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+          "Tu sesión se ha cerrado debido a un error del sistema. Vuelve a iniciar sesión para continuar. Si el problema persiste, ponte en contacto con el administrador del sistema para obtener ayuda.",
+      },
+      passwordExpired: {
+        title: "Tu contraseña ha expirado",
+        description: "Inicia sesión nuevamente para establecer una nueva contraseña.",
+      },
+    },
+    passwordExpired: {
+      title: "Tu contraseña ha expirado",
+      description: "Establece una nueva contraseña para continuar.",
+      submit: "Cambiar contraseña",
+      logout: "Cerrar sesión",
+    },
+    sso: {
+      divider: "O continuar con",
+      buttons: {
+        auth0: "Continuar con SSO",
+        continueWith: "Continuar con",
+      },
+      errors: {
+        notLinked: {
+          title: "Cuenta no vinculada",
+          description:
+            "Tu cuenta SSO no está vinculada a un usuario de Etendo. Iniciá sesión con usuario y contraseña primero y vinculá tu cuenta desde el menú de configuración.",
+        },
+        failed: {
+          title: "Error al iniciar sesión",
+          description: "No pudimos iniciar sesión con ese proveedor. Por favor, intentá de nuevo.",
+        },
       },
     },
     or: "O",

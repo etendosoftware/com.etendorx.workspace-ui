@@ -15,34 +15,40 @@
  *************************************************************************
  */
 
-import { renderHook } from "@testing-library/react";
+import type React from "react";
+import { render, renderHook, screen } from "@testing-library/react";
 import { useColumns } from "@/hooks/table/useColumns";
 import type { Tab, Field, GridProps } from "@workspaceui/api-client/src/api/types";
 
-// Mock the dependencies
-jest.mock("@/utils/tableColumns", () => ({
-  parseColumns: jest.fn((fields) =>
-    fields.map((field: Field) => {
-      const column: any = {
-        id: field.name,
-        header: field.name,
-        accessorFn: (row: Record<string, unknown>) => row[field.name],
-        columnName: field.name,
-        name: field.name,
-        _identifier: field.name,
-        fieldId: field.id,
-        column: field.column || {},
-      };
+// Mock the dependencies. Keep the real `renderTextCell` so the text-reference
+// Cell renders exactly like production (truncation + tooltip).
+jest.mock("@/utils/tableColumns", () => {
+  const actual = jest.requireActual("@/utils/tableColumns");
+  return {
+    renderTextCell: actual.renderTextCell,
+    parseColumns: jest.fn((fields) =>
+      fields.map((field: Field) => {
+        const column: any = {
+          id: field.name,
+          header: field.name,
+          accessorFn: (row: Record<string, unknown>) => row[field.name],
+          columnName: field.name,
+          name: field.name,
+          _identifier: field.name,
+          fieldId: field.id,
+          column: field.column || {},
+        };
 
-      if (field.etmetaCustomjs) {
-        // Simular la creación de Cell a partir de custom JS
-        column.Cell = new Function("record", `return (${field.etmetaCustomjs})(record)`);
-      }
+        if (field.etmetaCustomjs) {
+          // Simular la creación de Cell a partir de custom JS
+          column.Cell = new Function("record", `return (${field.etmetaCustomjs})(record)`);
+        }
 
-      return column;
-    })
-  ),
-}));
+        return column;
+      })
+    ),
+  };
+});
 
 jest.mock("@workspaceui/api-client/src/utils/metadata", () => ({
   isEntityReference: jest.fn(() => false),
@@ -231,5 +237,122 @@ describe("useColumns integration with custom JS", () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].name).toBe("normalField");
+  });
+
+  // Regression: text/memo/rich-text columns (reference 14/34/richtext) rendered empty
+  // because their Cell read only from `cell.getValue()`. In production the Cell is invoked
+  // as `originalCell({ renderedCellValue, row, table })` (Table/index.tsx DataColumnCell),
+  // i.e. WITHOUT `cell`, so the value must come from `renderedCellValue`.
+  describe("text reference columns", () => {
+    const TEXT_LONG_REFERENCE_ID = "14";
+
+    const buildTextTab = (): Tab => ({
+      ...mockTab,
+      fields: {
+        title: {
+          ...mockTab.fields.normalField,
+          name: "title",
+          hqlName: "title",
+          inputName: "title",
+          columnName: "title",
+          id: "text-1",
+          column: { reference: TEXT_LONG_REFERENCE_ID } as unknown as Field["column"],
+        },
+      },
+    });
+
+    // Invokes a column Cell the same way DataColumnCell does: no `cell`, only `renderedCellValue`.
+    const renderCellWithoutCell = (cell: (props: unknown) => React.ReactNode, renderedCellValue: unknown) => {
+      const cellNode = cell({ renderedCellValue, row: { original: {} }, table: {} });
+      return render(<div>{cellNode}</div>);
+    };
+
+    it("renders the value from renderedCellValue when cell is not provided", () => {
+      const { result } = renderHook(() => useColumns(buildTextTab()));
+      const column = result.current.find((col) => col.name === "title");
+
+      expect(column?.Cell).toBeDefined();
+      renderCellWithoutCell(column?.Cell as (props: unknown) => React.ReactNode, "Hola mundo");
+
+      expect(screen.getByText("Hola mundo")).toBeInTheDocument();
+    });
+
+    it("renders empty for a null/empty text value", () => {
+      const { result } = renderHook(() => useColumns(buildTextTab()));
+      const column = result.current.find((col) => col.name === "title");
+
+      const { container } = renderCellWithoutCell(column?.Cell as (props: unknown) => React.ReactNode, "");
+
+      expect(container).toHaveTextContent("");
+      expect(screen.queryByText("Hola mundo")).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Builds a tab from a name -> overrides map, so each case reads as the field configuration it
+   * is really testing. The key becomes the field's name, hqlName and (indexed) id.
+   */
+  const buildTab = (fieldOverrides: Record<string, Partial<Field>>): Tab => ({
+    ...mockTab,
+    fields: Object.fromEntries(
+      Object.entries(fieldOverrides).map(([name, overrides], index) => [
+        name,
+        { ...mockTab.fields.normalField, name, hqlName: name, id: `f${index}`, ...overrides },
+      ])
+    ) as Tab["fields"],
+  });
+
+  const columnNames = (columns: Array<{ name: string }>): string[] => columns.map((col) => col.name);
+
+  // ETP-4635: the data grid must follow AD_Field.Grid_Seqno (exposed as `gridPosition`),
+  // falling back to the form sequence number, like Etendo Classic does.
+  describe("grid column order", () => {
+    it("orders columns by gridPosition instead of the incoming field order", () => {
+      const tab = buildTab({
+        first: { sequenceNumber: 10, gridPosition: 30 },
+        second: { sequenceNumber: 20, gridPosition: 10 },
+      });
+
+      const { result } = renderHook(() => useColumns(tab));
+
+      expect(columnNames(result.current)).toEqual(["second", "first"]);
+    });
+
+    it("keeps the sequenceNumber order when no field defines a gridPosition", () => {
+      const tab = buildTab({ first: { sequenceNumber: 10 }, second: { sequenceNumber: 20 } });
+
+      const { result } = renderHook(() => useColumns(tab));
+
+      expect(columnNames(result.current)).toEqual(["first", "second"]);
+    });
+  });
+
+  // ETP-4635: Classic drops UI buttons from the field list that feeds the grid
+  // (OBViewFieldHandler + ApplicationUtils.isUIButton); they only reach the toolbar.
+  describe("button columns", () => {
+    const BUTTON_REFERENCE_ID = "28";
+
+    const buildTabWithButton = (): Tab =>
+      buildTab({
+        first: { sequenceNumber: 10 },
+        generatePickingList: {
+          sequenceNumber: 15,
+          showInGridView: true,
+          column: { reference: BUTTON_REFERENCE_ID } as unknown as Field["column"],
+        },
+        last: { sequenceNumber: 20 },
+      });
+
+    it("does not build a column for a button field even when it is flagged for the grid", () => {
+      const { result } = renderHook(() => useColumns(buildTabWithButton()));
+
+      expect(columnNames(result.current)).not.toContain("generatePickingList");
+    });
+
+    it("keeps the surrounding columns and their order untouched", () => {
+      const { result } = renderHook(() => useColumns(buildTabWithButton()));
+
+      expect(columnNames(result.current)).toEqual(["first", "last"]);
+    });
   });
 });

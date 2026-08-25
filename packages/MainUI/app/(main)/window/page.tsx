@@ -16,17 +16,20 @@
  */
 // @data-testid-ignore
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useWindowStore } from "@/stores/windowStore";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
+import { AccessDeniedScreen } from "@/components/AccessDeniedDisplay";
 
 export default function Page() {
   const windowsObj = useWindowStore((s) => s.windows);
   const isRecoveryLoading = useWindowStore((s) => s.isRecoveryLoading);
+  const accessDeniedWindowCount = useWindowStore((s) => s.accessDeniedWindowCount);
+  const setAccessDeniedWindowCount = useWindowStore((s) => s.setAccessDeniedWindowCount);
   const windows = useMemo(() => Object.values(windowsObj), [windowsObj]);
   const activeWindow = useMemo(() => windows.find((w) => w.isActive) ?? null, [windows]);
   const isHomeRoute = !activeWindow;
@@ -51,9 +54,17 @@ export default function Page() {
 
   const shouldShowTabs = windows.length > 0;
   const shouldShowWindow = activeWindow && !isHomeRoute;
+  // Only when nothing else survived: with other windows open the discards are reported via toast.
+  const shouldShowAccessDenied = accessDeniedWindowCount > 0 && windows.length === 0;
+
+  const handleGoHome = useCallback(() => setAccessDeniedWindowCount(0), [setAccessDeniedWindowCount]);
 
   if (isRecoveryLoading && !activeWindow) {
     return <Loading data-testid="Loading__Recovery" />;
+  }
+
+  if (shouldShowAccessDenied) {
+    return <AccessDeniedScreen onGoHome={handleGoHome} />;
   }
 
   return (

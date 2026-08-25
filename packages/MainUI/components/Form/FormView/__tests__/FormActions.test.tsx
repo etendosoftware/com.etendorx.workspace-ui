@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from "@testing-library/react";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -51,6 +52,7 @@ const createFormActionsProps = (tab: Tab, overrides = {}) => ({
   onNew: jest.fn(),
   refetch: jest.fn(),
   onSave: jest.fn(),
+  discardChanges: jest.fn(),
   showErrorModal: jest.fn(),
   mode: "EDIT" as const,
   ...overrides,
@@ -59,8 +61,10 @@ const createFormActionsProps = (tab: Tab, overrides = {}) => ({
 const mockMarkFormAsChanged = jest.fn();
 const mockResetFormChanges = jest.fn();
 const mockRegisterActions = jest.fn();
+const mockUnregisterActions = jest.fn();
 const mockSetSaveButtonState = jest.fn();
 const mockClearTabFormState = jest.fn();
+const mockReset = jest.fn();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockUseToolbarContext = jest.fn();
 
@@ -151,6 +155,7 @@ describe("FormActions", () => {
     // biome-ignore lint/suspicious/noExplicitAny: jest require
     (require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock).mockReturnValue({
       registerActions: mockRegisterActions,
+      unregisterActions: mockUnregisterActions,
       setSaveButtonState: mockSetSaveButtonState,
       saveButtonState: {
         isSaving: false,
@@ -162,6 +167,7 @@ describe("FormActions", () => {
     // Default mock implementations
     (useFormContext as jest.Mock).mockReturnValue({
       formState: { isDirty: false },
+      reset: mockReset,
     });
     (useFormValidation as jest.Mock).mockReturnValue({
       validateRequiredFields: jest.fn(() => ({
@@ -172,14 +178,19 @@ describe("FormActions", () => {
     });
   });
 
-  it("renders and registers actions", () => {
+  it("renders and registers actions under the form owner", () => {
     renderFormActions(props);
-    expect(mockRegisterActions).toHaveBeenCalledWith({
-      save: expect.any(Function),
-      refresh: expect.any(Function),
-      back: expect.any(Function),
-      new: expect.any(Function),
-    });
+    // The owner is what keeps the grid from clobbering save when both panes are
+    // on screen at once (split view).
+    expect(mockRegisterActions).toHaveBeenCalledWith(
+      {
+        save: expect.any(Function),
+        refresh: expect.any(Function),
+        back: expect.any(Function),
+        new: expect.any(Function),
+      },
+      TOOLBAR_ACTION_OWNERS.FORM
+    );
   });
 
   it("calls validation when callouts are done", () => {
@@ -240,6 +251,7 @@ describe("FormActions", () => {
     const setupCtx = () => {
       toolbarCtx().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: prevState,
       });
@@ -310,6 +322,7 @@ describe("FormActions", () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
       });
@@ -325,6 +338,7 @@ describe("FormActions", () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
       });
@@ -381,6 +395,7 @@ describe("FormActions", () => {
     it("Escape is a no-op when isSaving is true", async () => {
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
       });
@@ -397,6 +412,7 @@ describe("FormActions", () => {
     it("Escape is a no-op when isCalloutLoading is true", async () => {
       toolbarContextMock().mockReturnValue({
         registerActions: mockRegisterActions,
+        unregisterActions: mockUnregisterActions,
         setSaveButtonState: mockSetSaveButtonState,
         saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
       });
@@ -437,5 +453,73 @@ describe("FormActions", () => {
 
     expect(mockRefetch).toHaveBeenCalled();
     expect(mockResetFormChanges).toHaveBeenCalled();
+  });
+
+  describe("cancel (back) action", () => {
+    it("discards changes and stays in Form View when the form is dirty", () => {
+      (useFormContext as jest.Mock).mockReturnValue({
+        formState: { isDirty: true },
+        reset: mockReset,
+      });
+      const discardChanges = jest.fn();
+      renderFormActions({ ...props, discardChanges });
+
+      const registeredActions = mockRegisterActions.mock.calls[0][0];
+      registeredActions.back();
+
+      // Re-applies the last-loaded record data (restoring identifiers)...
+      expect(discardChanges).toHaveBeenCalledTimes(1);
+      // ...and does NOT navigate away (stays in Form View).
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
+
+    it("navigates to Grid View when the form is clean", () => {
+      (useFormContext as jest.Mock).mockReturnValue({
+        formState: { isDirty: false },
+        reset: mockReset,
+      });
+      const discardChanges = jest.fn();
+      renderFormActions({ ...props, discardChanges });
+
+      const registeredActions = mockRegisterActions.mock.calls[0][0];
+      registeredActions.back();
+
+      // Clean form -> navigate back to the grid...
+      expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
+      // ...and does NOT re-initialize the form.
+      expect(discardChanges).not.toHaveBeenCalled();
+    });
+
+    it("does not re-register actions when the form context object identity changes on re-render", () => {
+      // react-hook-form's FormProvider builds its context value from spread props,
+      // so useFormContext() returns a NEW object every render while `reset` stays
+      // referentially stable. The back handler must depend on the stable `reset`,
+      // not the whole context object, or the action-registration effect re-fires
+      // every render -> infinite update loop ("Maximum update depth exceeded").
+      (useFormContext as jest.Mock).mockImplementation(() => ({
+        formState: { isDirty: false },
+        reset: mockReset,
+      }));
+
+      const { rerender } = renderFormActions(props);
+      expect(mockRegisterActions).toHaveBeenCalledTimes(1);
+
+      rerender(<FormActions {...props} />);
+
+      expect(mockRegisterActions).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("action ownership", () => {
+    // Without this cleanup, the toolbar's CANCEL kept pointing at the unmounted
+    // form's handler instead of falling back to the tab's own navigation.
+    it("releases the form owner bucket on unmount", () => {
+      const { unmount } = renderFormActions(props);
+      expect(mockUnregisterActions).not.toHaveBeenCalled();
+
+      unmount();
+
+      expect(mockUnregisterActions).toHaveBeenCalledWith(TOOLBAR_ACTION_OWNERS.FORM);
+    });
   });
 });

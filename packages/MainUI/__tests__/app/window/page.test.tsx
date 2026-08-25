@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Page from "@/app/(main)/window/page";
 import { useWindowStore } from "@/stores/windowStore";
 
@@ -32,14 +32,25 @@ jest.mock("@/components/loading", () => ({
   default: ({ "data-testid": testId }: any) => <div data-testid={testId}>Loading</div>,
 }));
 
+jest.mock("@/components/AccessDeniedDisplay", () => ({
+  AccessDeniedScreen: ({ onGoHome }: any) => (
+    <button type="button" data-testid="AccessDeniedScreen" onClick={onGoHome}>
+      AccessDenied
+    </button>
+  ),
+}));
+
+const setAccessDeniedWindowCount = jest.fn();
+
 /** Helper to set up useWindowStore mock with the given windows and recovery state */
 function mockWindowStore(opts: {
   windows?: Record<string, any>;
   isRecoveryLoading?: boolean;
+  accessDeniedWindowCount?: number;
 }) {
-  const { windows = {}, isRecoveryLoading = false } = opts;
+  const { windows = {}, isRecoveryLoading = false, accessDeniedWindowCount = 0 } = opts;
   (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (s: any) => any) => {
-    const state = { windows, isRecoveryLoading };
+    const state = { windows, isRecoveryLoading, accessDeniedWindowCount, setAccessDeniedWindowCount };
     return selector(state);
   });
 }
@@ -113,5 +124,55 @@ describe("Window Page", () => {
     render(<Page />);
 
     expect(screen.queryByText("WindowTabs")).not.toBeInTheDocument();
+  });
+
+  describe("Access Denied screen", () => {
+    it("replaces the dashboard when every requested window was discarded", () => {
+      mockWindowStore({ windows: {}, accessDeniedWindowCount: 1 });
+
+      render(<Page />);
+
+      expect(screen.getByTestId("AccessDeniedScreen")).toBeInTheDocument();
+      expect(screen.queryByText("Home")).not.toBeInTheDocument();
+    });
+
+    it("is not rendered when some windows survived", () => {
+      mockWindowStore({
+        windows: { "123": { windowIdentifier: "123", isActive: true } },
+        accessDeniedWindowCount: 1,
+      });
+
+      render(<Page />);
+
+      expect(screen.queryByTestId("AccessDeniedScreen")).not.toBeInTheDocument();
+      expect(screen.getByTestId("Window__123")).toBeInTheDocument();
+    });
+
+    it("keeps showing the dashboard when nothing was discarded", () => {
+      mockWindowStore({ windows: {}, accessDeniedWindowCount: 0 });
+
+      render(<Page />);
+
+      expect(screen.queryByTestId("AccessDeniedScreen")).not.toBeInTheDocument();
+      expect(screen.getByText("Home")).toBeInTheDocument();
+    });
+
+    it("yields to the recovery loading state", () => {
+      mockWindowStore({ windows: {}, isRecoveryLoading: true, accessDeniedWindowCount: 1 });
+
+      render(<Page />);
+
+      expect(screen.getByTestId("Loading__Recovery")).toBeInTheDocument();
+      expect(screen.queryByTestId("AccessDeniedScreen")).not.toBeInTheDocument();
+    });
+
+    it("clears the counter when the user goes home", () => {
+      mockWindowStore({ windows: {}, accessDeniedWindowCount: 2 });
+
+      render(<Page />);
+      fireEvent.click(screen.getByTestId("AccessDeniedScreen"));
+
+      expect(setAccessDeniedWindowCount).toHaveBeenCalledWith(0);
+    });
   });
 });

@@ -1,4 +1,6 @@
 import { screen, fireEvent, act } from "@testing-library/react";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
@@ -80,6 +82,7 @@ const mockDatasourceContext = {
 
 const mockToolbarContext = {
   registerActions: jest.fn(),
+  unregisterActions: jest.fn(),
   onSave: jest.fn(),
   onRefresh: jest.fn(),
   onNew: jest.fn(),
@@ -887,12 +890,14 @@ describe("DynamicTable", () => {
     it("registers toolbar actions", () => {
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
-      expect(mockToolbarContext.registerActions).toHaveBeenCalledWith({
-        refresh: expect.any(Function),
-        filter: expect.any(Function),
-        save: expect.any(Function),
-        columnFilters: expect.any(Function),
-      });
+      expect(mockToolbarContext.registerActions).toHaveBeenCalledWith(
+        {
+          refresh: expect.any(Function),
+          filter: expect.any(Function),
+          columnFilters: expect.any(Function),
+        },
+        TOOLBAR_ACTION_OWNERS.GRID
+      );
     });
 
     it("unregisters datasource on unmount", () => {
@@ -939,6 +944,17 @@ describe("DynamicTable", () => {
 
       // Table should have proper ARIA labels and roles
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
+    });
+
+    // In split view the grid pane hands the DOM focus to this container, which is
+    // where the row arrows and Enter are scoped. Without the marker they stay dead.
+    it("marks the scroll container as the grid pane focus target", () => {
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      expect(tableOptions?.muiTableContainerProps).toMatchObject({
+        [GRID_FOCUS_TARGET_ATTRIBUTE]: "",
+        tabIndex: -1,
+      });
     });
   });
 
@@ -1344,12 +1360,14 @@ describe("DynamicTable", () => {
     it("should register all toolbar actions", () => {
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
-      expect(mockToolbarContext.registerActions).toHaveBeenCalledWith({
-        refresh: expect.any(Function),
-        filter: expect.any(Function),
-        save: expect.any(Function),
-        columnFilters: expect.any(Function),
-      });
+      expect(mockToolbarContext.registerActions).toHaveBeenCalledWith(
+        {
+          refresh: expect.any(Function),
+          filter: expect.any(Function),
+          columnFilters: expect.any(Function),
+        },
+        TOOLBAR_ACTION_OWNERS.GRID
+      );
     });
 
     it("should handle graph selection events", () => {

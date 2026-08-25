@@ -161,6 +161,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.TIME.id:
         return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={`TimeSelector__${field.id}`} />;
+      case FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id:
+        return (
+          <TimeSelector field={field} isReadOnly={isReadOnly} absolute data-testid={`TimeSelector__${field.id}`} />
+        );
       case FIELD_REFERENCE_CODES.LIST_17.id:
       case FIELD_REFERENCE_CODES.LIST_13.id:
         return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;

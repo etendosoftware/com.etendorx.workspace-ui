@@ -45,9 +45,11 @@ export const useStatusModal = () => {
         onAfterClose?: () => void;
         isDeleteSuccess?: boolean;
         isProcessResult?: boolean; // Used to make toast persistent
+        onReload?: () => void | Promise<void>;
+        reloadLabel?: string;
       }
     ) => {
-      const isPersistent = options?.isProcessResult || false;
+      const isPersistent = options?.isProcessResult || !!options?.onReload || false;
       const description = options?.errorMessage
         ? React.createElement(ToastContent, { message: options.errorMessage })
         : undefined;
@@ -64,7 +66,11 @@ export const useStatusModal = () => {
         },
       };
 
-      const titleNode = React.createElement(ToastContent, { message: statusText });
+      const titleNode = React.createElement(ToastContent, {
+        message: statusText,
+        onReload: options?.onReload,
+        reloadLabel: options?.reloadLabel,
+      });
 
       if (statusType === "success") {
         toast.success(titleNode, toastOptions);
@@ -120,6 +126,8 @@ export const useStatusModal = () => {
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
         isProcessResult?: boolean;
+        onReload?: () => void | Promise<void>;
+        reloadLabel?: string;
       }
     ) => {
       showStatusModal("error", statusText, options);

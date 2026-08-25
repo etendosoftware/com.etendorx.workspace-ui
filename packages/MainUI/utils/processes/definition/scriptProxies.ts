@@ -375,6 +375,13 @@ export interface GridVisibility {
 export interface ViewProxy extends Record<string, unknown> {
   theForm: FormProxy;
   messageBar: MessageBarHandle;
+  /**
+   * The hook's plain data fields, also reachable nested. Migrated scripts written
+   * against the documented contract read `view.hookData.selectedRecords`; the same
+   * fields stay spread on the root (`view.selectedRecords`) for scripts that use
+   * the flat form. Always an object, never undefined.
+   */
+  hookData: Record<string, unknown>;
   viewGrid?: GridProxy;
   /** Read-only environment data (always present). */
   windowId?: string;
@@ -1150,7 +1157,9 @@ function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
  * `hookData` carries the plain data fields the onLoad / onProcess scripts read
  * directly off their second argument (`selectedRecords`, `recordIds`, …). It is
  * spread first so the canonical `view` surface always takes precedence over any
- * stray key, keeping "the second argument is the view" uniform across hooks.
+ * stray key, keeping "the second argument is the view" uniform across hooks, and
+ * is *also* attached nested as `view.hookData` — the form the migration guide
+ * documents. Both spellings resolve to the same fields.
  */
 export function createViewProxy(
   form: FormHandle,
@@ -1169,6 +1178,9 @@ export function createViewProxy(
 ): ViewProxy {
   const view = {
     ...(deps.hookData ?? {}),
+    // Declared after the spread so a stray `hookData` key inside the data can
+    // never shadow the canonical nested accessor.
+    hookData: deps.hookData ?? {},
     theForm: createFormProxy(form, parameters, deps.controller, deps.gridResolver),
     messageBar: deps.messageBar,
   } as ViewProxy;

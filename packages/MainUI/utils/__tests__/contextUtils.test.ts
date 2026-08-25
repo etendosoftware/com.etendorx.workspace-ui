@@ -1,4 +1,4 @@
-import { buildContextString, buildEtendoContext } from "../contextUtils";
+import { buildContextString, buildEtendoContext, buildParentSessionContext } from "../contextUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type Graph from "../../data/graph";
 
@@ -194,6 +194,38 @@ describe("contextUtils", () => {
 
       const result = buildEtendoContext(tab, mockGraph);
       expect(result).toEqual({});
+    });
+  });
+
+  describe("buildParentSessionContext", () => {
+    const parentTab = { id: "parentTab", entityName: "aeatsii_config" } as unknown as Tab;
+
+    it("emits the id, client and organization the server substitutes into a child where clause", () => {
+      const record = {
+        id: "EEA0890DCD7F4BFDB27D5D3AF4032FC9",
+        client: "23C59575B9CF467C9620760EB255B389",
+        organization: "B843C30461EA4501935CB1D125C9C25A",
+        monitordate: "2026-08-18",
+      };
+
+      expect(buildParentSessionContext(parentTab, record)).toEqual({
+        "@aeatsii_config.id@": "EEA0890DCD7F4BFDB27D5D3AF4032FC9",
+        "@aeatsii_config.client@": "23C59575B9CF467C9620760EB255B389",
+        "@aeatsii_config.organization@": "B843C30461EA4501935CB1D125C9C25A",
+      });
+    });
+
+    it("omits properties the record does not carry instead of sending empty values", () => {
+      // An empty organization makes AD_ISORGINCLUDED return -1, dropping every row — so the
+      // param must be absent (falling back to the session) rather than present and blank.
+      expect(buildParentSessionContext(parentTab, { id: "abc", organization: "" })).toEqual({
+        "@aeatsii_config.id@": "abc",
+      });
+    });
+
+    it("returns an empty context without a parent tab or without a record", () => {
+      expect(buildParentSessionContext(null, { id: "abc" })).toEqual({});
+      expect(buildParentSessionContext(parentTab, null)).toEqual({});
     });
   });
 });

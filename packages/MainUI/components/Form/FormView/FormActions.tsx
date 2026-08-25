@@ -29,12 +29,14 @@ import { useFormInitializationContext } from "@/contexts/FormInitializationConte
 import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
 interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
   onSave: (options: SaveOptions) => Promise<boolean>;
+  discardChanges: () => void;
   showErrorModal: (message: string) => void;
   mode: FormMode;
   isFocused?: boolean;
@@ -46,6 +48,7 @@ export function FormActions({
   onNew,
   refetch,
   onSave,
+  discardChanges,
   showErrorModal,
   mode,
   isFocused,
@@ -57,7 +60,7 @@ export function FormActions({
   const windowIdentifier = useCurrentWindowIdentifier();
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
-  const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
+  const { registerActions, unregisterActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
 
   useEffect(() => {
@@ -194,12 +197,23 @@ export function FormActions({
     resetFormChanges();
   }, [refetch, resetFormChanges]);
 
-  const handleBack = useCallback(() => {
+  const navigateBack = useCallback(() => {
     if (windowIdentifier) {
       clearTabFormState(windowIdentifier, tab.id);
     }
     resetFormChanges();
   }, [windowIdentifier, clearTabFormState, tab, resetFormChanges]);
+
+  const handleBack = useCallback(() => {
+    if (isDirty) {
+      // Discard pending changes: re-apply the last-loaded record data (restoring
+      // reference-field identifiers) and stay in Form View. This clears the dirty
+      // state, so the next Cancel click will navigate back to the grid.
+      discardChanges();
+      return;
+    }
+    navigateBack();
+  }, [isDirty, discardChanges, navigateBack]);
 
   const handleNew = useCallback(() => {
     onNew();
@@ -216,8 +230,8 @@ export function FormActions({
       const saved = await handleSave({ showModal: false });
       if (!saved) return;
     }
-    handleBack();
-  }, [isDirty, handleSave, handleBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+    navigateBack();
+  }, [isDirty, handleSave, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   useKeyboardShortcuts(
     {
@@ -237,8 +251,11 @@ export function FormActions({
       new: handleNew,
     };
 
-    registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew]);
+    registerActions(actions, TOOLBAR_ACTION_OWNERS.FORM);
+    // Releasing the bucket on unmount is what makes CANCEL fall back to the
+    // tab's own handler once the form pane is gone.
+    return () => unregisterActions(TOOLBAR_ACTION_OWNERS.FORM);
+  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew]);
 
   return null;
 }

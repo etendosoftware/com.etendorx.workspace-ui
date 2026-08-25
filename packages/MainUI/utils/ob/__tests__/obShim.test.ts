@@ -60,6 +60,15 @@ describe("createOBShim", () => {
     expect(createOBShim({ language: "es_ES" }).Format.defaultDecimalSymbol).toBe(",");
   });
 
+  it("exposes OB.User mapped from the injected session user", () => {
+    const ob = createOBShim({ user: { id: "100", name: "Admin Admin", username: "admin" } });
+    expect(ob.User).toEqual({ id: "100", name: "Admin Admin", userName: "admin" });
+  });
+
+  it("defaults OB.User to empty strings when no user is injected", () => {
+    expect(createOBShim().User).toEqual({ id: "", name: "", userName: "" });
+  });
+
   it("reads and writes a single preference via PropertyStore", () => {
     const ob = createOBShim();
     ob.PropertyStore.set(PREF_KEY, "Y");

@@ -32,6 +32,7 @@ import type {
   WindowRecoveryInfo,
 } from "@/utils/window/constants";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { DEFAULT_SPLIT_STATE } from "@/utils/window/splitView";
 
 /**
  * Generates a new tab form state for a specific record and mode.
@@ -102,6 +103,7 @@ export const createDefaultTabState = (tabLevel = 0): TabState => ({
     isImplicitFilterApplied: false,
   },
   form: {},
+  split: { ...DEFAULT_SPLIT_STATE },
   level: tabLevel,
 });
 
@@ -380,4 +382,21 @@ export const isSrOneToOneExtension = (tab: Tab): boolean => {
     return false;
   }
   return parentColumns.includes(keyFieldName);
+};
+
+/**
+ * Marks the last window of the list as the active one and every other as inactive.
+ *
+ * URL recovery assigns `isActive` while iterating the URL parameters, so once inaccessible windows
+ * are dropped from the result the flag has to be recomputed: otherwise, if the discarded window was
+ * the last one, no surviving window would be active and the dashboard would show behind the tabs.
+ *
+ * @param windows - The surviving window states, in URL order
+ * @returns The same states with `isActive` set only on the last one
+ */
+export const markLastWindowAsActive = (windows: WindowState[]): WindowState[] => {
+  return windows.map((window, index) => ({
+    ...window,
+    isActive: index === windows.length - 1,
+  }));
 };

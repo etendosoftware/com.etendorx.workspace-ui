@@ -218,6 +218,7 @@ export class ProcessParameterMapper {
 
       // Time
       Time: FIELD_REFERENCE_CODES.TIME.id,
+      "Absolute Time": FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id,
     };
 
     // Return mapped reference, or pass through if it already looks like a reference ID
@@ -298,7 +299,8 @@ export class ProcessParameterMapper {
     [FIELD_REFERENCE_CODES.DATE.id, "date"],
     [FIELD_REFERENCE_CODES.DATETIME.id, "datetime"],
     [FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id, "datetime"],
-    [FIELD_REFERENCE_CODES.TIME.id, "text"],
+    [FIELD_REFERENCE_CODES.TIME.id, "time"],
+    [FIELD_REFERENCE_CODES.ABSOLUTE_TIME.id, "time"],
     [FIELD_REFERENCE_CODES.SELECT_30.id, "select"],
     [FIELD_REFERENCE_CODES.PRODUCT.id, "product"],
     [FIELD_REFERENCE_CODES.TABLE_DIR_19.id, "tabledir"],

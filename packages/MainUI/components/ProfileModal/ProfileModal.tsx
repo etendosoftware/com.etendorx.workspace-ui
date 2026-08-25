@@ -34,8 +34,11 @@ import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useWindowStore } from "@/stores/windowStore";
+import { useSSO } from "@/hooks/useSSO";
+import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
+import { resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -64,12 +67,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { styles } = useStyle();
+  const { config: ssoConfig, startLink } = useSSO();
   const [currentSection, setCurrentSection] = useState<string>("profile");
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const { language: initialLanguage, getFlag } = useLanguage();
+  const { language: initialLanguage, getFlag, getLabel } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const cleanWindowState = useWindowStore((s) => s.cleanState);
@@ -311,32 +315,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleSave = useCallback(async () => {
     if (currentSection === "password") {
-      setPasswordError("");
-      if (!currentPwd || !newPwd || !confirmPwd) {
-        setPasswordError(t("navigation.profile.passwordRequired"));
+      const error = await submitPasswordChange({ currentPwd, newPwd, confirmPwd }, onPasswordChange);
+      setPasswordError(resolvePasswordErrorMessage(error, { getLabel, t }));
+      if (error) {
         return;
       }
-      if (newPwd !== confirmPwd) {
-        setPasswordError(t("navigation.profile.passwordMismatch"));
-        return;
-      }
-      try {
-        await onPasswordChange({ currentPwd, newPwd, confirmPwd });
-        setCurrentPwd("");
-        setNewPwd("");
-        setConfirmPwd("");
-        handleClose();
-      } catch (error) {
-        const code = error instanceof Error ? error.message : "";
-        const messageKey: Record<string, string> = {
-          UINAVBA_CurrentPwdIncorrect: t("navigation.profile.errorCurrentPwdIncorrect"),
-          CPDifferentPassword: t("navigation.profile.errorDifferentPassword"),
-          UINAVBA_IncorrectPwd: t("navigation.profile.errorIncorrectPwd"),
-          UINAVBA_UnequalPwd: t("navigation.profile.errorUnequalPwd"),
-          CPPasswordNotStrongEnough: t("navigation.profile.errorNotStrongEnough"),
-        };
-        setPasswordError(messageKey[code] ?? t("navigation.profile.errorGeneric"));
-      }
+      setCurrentPwd("");
+      setNewPwd("");
+      setConfirmPwd("");
+      handleClose();
       return;
     }
 
@@ -371,6 +358,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     newPwd,
     confirmPwd,
     onPasswordChange,
+    getLabel,
     t,
     handleClose,
     getProfileUpdates,
@@ -481,6 +469,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {t("common.save")}
           </Button>
         </div>
+        {currentSection === "profile" && ssoConfig?.enabled && ssoConfig.authType === "Middleware" && (
+          <div className="flex flex-col items-center gap-3 border-t border-(--color-transparent-neutral-10) px-4 pt-4 pb-6">
+            <span className="font-inter font-medium text-sm text-(--color-transparent-neutral-70)">
+              {t("navigation.profile.linkWith")}
+            </span>
+            <ProviderIconButtons
+              providers={ssoConfig.providers}
+              onSelect={startLink}
+              data-testid="ProviderIconButtons__75987a"
+            />
+          </div>
+        )}
       </Menu>
     </div>
   );

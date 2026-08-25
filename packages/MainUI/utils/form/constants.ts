@@ -64,6 +64,9 @@ export const FIELD_REFERENCE_CODES = {
   DATETIME: { id: "16", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
   ABSOLUTE_DATETIME: { id: "478169542A1747BD942DD70C8B45089C", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
   TIME: { id: "24", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  // Absolute Time — time-of-day stored/displayed exactly as entered, with NO
+  // timezone conversion (contrast with TIME id "24", which round-trips through UTC).
+  ABSOLUTE_TIME: { id: "20D7C424C217463F914DF632E5CF5923", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Boolean reference
   BOOLEAN: { id: "20", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },

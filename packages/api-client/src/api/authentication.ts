@@ -1,3 +1,4 @@
+import { API_REFRESH_URL } from "./constants";
 import { Metadata } from "./metadata";
 import type { LoginResponse } from "./types";
 
@@ -29,6 +30,35 @@ export const login = async (username: string, password: string): Promise<LoginRe
     console.error("Login error:", error);
     throw error;
   }
+};
+
+/**
+ * Renews the current session token before it expires.
+ *
+ * Goes through `loginClient`, which already carries the Authorization header and — unlike the other
+ * clients — is not covered by the global 401 interceptor. That is intentional: a failed renewal must
+ * not trigger an immediate logout, the expiry logic decides what happens next.
+ *
+ * @returns The response carrying the newly issued token
+ */
+export const refreshToken = async (): Promise<LoginResponse> => {
+  const result = await Metadata.loginClient.request(API_REFRESH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!result.ok) {
+    throw new Error(`Token refresh failed! status: ${result.status}`);
+  }
+
+  if (!result.data?.token) {
+    throw new Error("Token refresh returned no token");
+  }
+
+  return result.data;
 };
 
 export const logout = async (): Promise<void> => {

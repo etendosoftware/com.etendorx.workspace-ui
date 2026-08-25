@@ -20,6 +20,11 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { SaveButtonState, SaveOptions } from "@/contexts/ToolbarContext";
+import {
+  type ToolbarActionOwner,
+  type ToolbarActionsByOwner,
+  createEmptyActionsByOwner,
+} from "@/utils/toolbar/actionOwnership";
 
 /**
  * Raw toolbar actions registered by consumer components (FormView, Table, Tab, etc.).
@@ -32,6 +37,7 @@ export type ToolbarActions = {
   back: () => void;
   filter: () => void;
   treeView: () => void;
+  showTableAndForm: () => void;
   exportCSV: () => Promise<void>;
   columnFilters: (buttonRef?: HTMLElement | null) => void;
   printDocument: () => Promise<void>;
@@ -46,6 +52,7 @@ export const defaultActions: ToolbarActions = {
   back: () => {},
   filter: () => {},
   treeView: () => {},
+  showTableAndForm: () => {},
   exportCSV: async () => {},
   columnFilters: () => {},
   printDocument: async () => {},
@@ -69,11 +76,15 @@ export const defaultSaveButtonState: SaveButtonState = {
  * without this keying, all open tabs would share the same Zustand singleton.
  */
 export interface ToolbarTabState {
-  /** Raw actions registered by consumers (e.g. FormView, Table). */
-  registeredActions: ToolbarActions;
+  /**
+   * Raw actions registered by consumers, bucketed by owner. Reading code
+   * flattens them with `resolveToolbarActions`, so two panes that are on screen
+   * at the same time (split view) never clobber each other.
+   */
+  actionsByOwner: ToolbarActionsByOwner;
   /**
    * Wrapped save function created by ToolbarProvider.
-   * Wraps `registeredActions.save` with parent-tab refresh logic.
+   * Wraps the form owner's `save` with parent-tab refresh logic.
    * Set by ToolbarProvider via `setWrappedSave`; read by `useToolbarContext`.
    */
   wrappedSave: (options: SaveOptions) => Promise<boolean>;
@@ -86,7 +97,7 @@ export interface ToolbarTabState {
 }
 
 const defaultTabState = (): ToolbarTabState => ({
-  registeredActions: defaultActions,
+  actionsByOwner: createEmptyActionsByOwner(),
   wrappedSave: async () => false,
   saveButtonState: defaultSaveButtonState,
   isImplicitFilterApplied: false,
@@ -103,15 +114,18 @@ interface ToolbarStore {
   destroyTab: (tabId: string) => void;
 
   /**
-   * Called by consumer components to register their toolbar action implementations.
-   * Only updates `registeredActions`, NOT `wrappedSave` — the wrapped version is
-   * maintained by ToolbarProvider.
+   * Called by consumer components to register their toolbar action implementations
+   * under their own owner bucket. Never touches another owner's bucket, and never
+   * `wrappedSave` — the wrapped version is maintained by ToolbarProvider.
    */
-  registerRawActions: (tabId: string, actions: Partial<ToolbarActions>) => void;
+  registerRawActions: (tabId: string, actions: Partial<ToolbarActions>, owner: ToolbarActionOwner) => void;
+
+  /** Called by a consumer on unmount / when it stops owning the toolbar. */
+  clearOwnerActions: (tabId: string, owner: ToolbarActionOwner) => void;
 
   /**
    * Called by ToolbarProvider to update the wrapped save function.
-   * The wrapped version adds parent-tab refresh logic on top of `registeredActions.save`.
+   * The wrapped version adds parent-tab refresh logic on top of the form owner's `save`.
    */
   setWrappedSave: (tabId: string, fn: (options: SaveOptions) => Promise<boolean>) => void;
 
@@ -152,7 +166,7 @@ export const useToolbarStore = create<ToolbarStore>()(
           "toolbar/destroyTab"
         ),
 
-      registerRawActions: (tabId, actions) =>
+      registerRawActions: (tabId, actions, owner) =>
         set(
           (state) => {
             const current = state.byTabId[tabId] ?? defaultTabState();
@@ -161,13 +175,35 @@ export const useToolbarStore = create<ToolbarStore>()(
                 ...state.byTabId,
                 [tabId]: {
                   ...current,
-                  registeredActions: { ...current.registeredActions, ...actions },
+                  actionsByOwner: {
+                    ...current.actionsByOwner,
+                    [owner]: { ...current.actionsByOwner[owner], ...actions },
+                  },
                 },
               },
             };
           },
           false,
           "toolbar/registerRawActions"
+        ),
+
+      clearOwnerActions: (tabId, owner) =>
+        set(
+          (state) => {
+            const current = state.byTabId[tabId];
+            if (!current) return state;
+            return {
+              byTabId: {
+                ...state.byTabId,
+                [tabId]: {
+                  ...current,
+                  actionsByOwner: { ...current.actionsByOwner, [owner]: {} },
+                },
+              },
+            };
+          },
+          false,
+          "toolbar/clearOwnerActions"
         ),
 
       setWrappedSave: (tabId, fn) =>

@@ -17,7 +17,7 @@
 
 "use client";
 
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { logger } from "../utils/logger";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
@@ -34,9 +34,15 @@ import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-cl
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";
+import ForcePasswordChangeScreen from "@/screens/ForcePasswordChange";
+import SessionLoading from "@/components/SessionLoading";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
+import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
+import { isTokenExpired } from "@/utils/session/token";
 import { useUserStore } from "@/stores/userStore";
+import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
+import { toast } from "sonner";
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -44,6 +50,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
+  // Drives the full-screen SessionLoading gate. Kept separate from
+  // isVerifyingSession, which guards verifySession against re-entrancy and
+  // therefore cannot be pre-set from login() without skipping the load.
+  const [isSessionLoading, setIsSessionLoading] = useState(false);
+  // Records the token verifySession last ran for, so a silent keep-alive renewal can swap the token
+  // without re-triggering the full session verification (which would replace the whole app with the
+  // SessionLoading screen and lose any in-progress work). Starts as undefined, a value no token can
+  // equal, so login, boot and role switches are unaffected.
+  const lastVerifiedTokenRef = useRef<string | null | undefined>(undefined);
 
   // ── Subscribe to all store state so the context value stays reactive ──────
   // Each subscription is granular; UserProvider re-renders only when one of
@@ -64,6 +79,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
   const loginErrorText = useUserStore((s) => s.loginErrorText);
   const loginErrorDescription = useUserStore((s) => s.loginErrorDescription);
+  const passwordExpired = useUserStore((s) => s.passwordExpired);
+
+  // The password typed at login, needed as `currentPwd` by the ERP change-password handler when the
+  // mandatory change is forced. Kept in memory only — it is never persisted anywhere.
+  const pendingPasswordRef = useRef<string>("");
 
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -94,14 +114,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
       updateProfile(currentProfileInfo);
       useUserStore.getState().setUser(sessionResponse.user);
+      useUserStore.getState().setPasswordExpired(Boolean(sessionResponse.passwordExpired));
 
       localStorage.setItem("currentInfo", JSON.stringify(currentProfileInfo));
       localStorage.setItem("currentRole", JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem("currentRoleId", sessionResponse.currentRole.id);
 
-      const defaultLanguage = sessionResponse.user.defaultLanguage as Language;
-      if (!language && defaultLanguage) {
-        setLanguage(defaultLanguage);
+      // The user's default language is optional, so fall back to the one the backend resolved for
+      // the session. Without a language the backend message dictionary is never fetched
+      // (see useBackendLabels), leaving every ERP message code unresolved.
+      const sessionLanguage = (sessionResponse.user.defaultLanguage ?? sessionResponse.currentLanguage) as Language;
+      if (!language && sessionLanguage) {
+        setLanguage(sessionLanguage);
       }
 
       useUserStore.getState().setLanguages(Object.values(sessionResponse.languages) as LanguageOption[]);
@@ -181,18 +205,51 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
+  /**
+   * Tells whether the password typed at login is still held in memory. A page reload drops it, and
+   * without it the mandatory change cannot be submitted.
+   */
+  const hasPendingLoginPassword = useCallback(() => pendingPasswordRef.current !== "", []);
+
+  /**
+   * Completes the mandatory password change forced when the password has expired. Reuses the same
+   * ERP handler as the optional change from the profile modal, sending the password typed at login
+   * as `currentPwd`, and reloads the session so the expiration flag is re-read from the backend.
+   */
+  const completeExpiredPasswordChange = useCallback(
+    async (params: { newPwd: string; confirmPwd: string }) => {
+      await doChangePassword({ currentPwd: pendingPasswordRef.current, ...params });
+      pendingPasswordRef.current = "";
+      await updateSessionInfo(await getSession());
+      // The ERP confirmed the change and its trigger cleared the expired flag in the same update, so
+      // the gate must open even if the refreshed session were served from a stale layer.
+      useUserStore.getState().setPasswordExpired(false);
+      toast.success(t("navigation.profile.passwordChangedSuccess"));
+      router.push("/");
+    },
+    [router, t, updateSessionInfo]
+  );
+
   const login = useCallback(async (username: string, password: string) => {
     try {
       Metadata.setToken("");
       datasource.setToken("");
       CopilotClient.setToken("");
+      // A stale role from a previous session/user would otherwise make
+      // verifySession() restore a foreign role onto this new session.
+      localStorage.removeItem("currentRoleId");
 
       const loginResponse = await doLogin(username, password);
+      // Retained only for the forced password-change flow (see completeExpiredPasswordChange).
+      pendingPasswordRef.current = password;
 
       localStorage.setItem("token", loginResponse.token);
       Metadata.setToken(loginResponse.token);
       datasource.setToken(loginResponse.token);
       CopilotClient.setToken(loginResponse.token);
+      // Show the session loader from the very first render after the token is
+      // set, so the dashboard never flashes empty while getSession is in flight.
+      setIsSessionLoading(true);
       useUserStore.getState().setToken(loginResponse.token);
     } catch (e) {
       logger.warn("Login or session retrieval error:", e);
@@ -201,26 +258,92 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Optimistic logout: clear local state and every client token first so the
+    // user is fully logged out regardless of the backend outcome. The backend
+    // call is best-effort (the JWT is stateless and cannot be revoked), so its
+    // failure is swallowed and never surfaces as an unhandled rejection.
+    clearUserData();
+    pendingPasswordRef.current = "";
+    Metadata.setToken("");
+    datasource.setToken("");
+    CopilotClient.setToken("");
+
     try {
-      clearUserData();
       await doLogout();
-      Metadata.setToken("");
-      datasource.setToken("");
-      CopilotClient.setToken("");
     } catch (error) {
       logger.warn("Logout error:", error);
-      throw error;
     }
   }, [clearUserData]);
+
+  /**
+   * Adopts a token issued by the keep-alive renewal.
+   *
+   * Same sequence as changeProfile, minus getSession()/updateSessionInfo(): the user, role,
+   * organization and warehouse are unchanged by construction, so skipping them is exactly what
+   * makes the renewal transparent. Marking the ref first keeps verifySession from re-running and
+   * unmounting the app behind the SessionLoading screen.
+   */
+  const applySilentToken = useCallback((newToken: string) => {
+    lastVerifiedTokenRef.current = newToken;
+    useUserStore.getState().setToken(newToken);
+    Metadata.setToken(newToken);
+    datasource.setToken(newToken);
+    CopilotClient.setToken(newToken);
+  }, []);
+
+  /**
+   * Writes the message the login screen shows after an involuntary logout.
+   *
+   * Must be called right after logout(), never before: clearUserData() resets these very fields and
+   * runs synchronously before logout's first await.
+   */
+  const applyLogoutMessage = useCallback(
+    (expired: boolean) => {
+      const store = useUserStore.getState();
+
+      if (expired) {
+        store.setLoginErrorText(t("login.errors.sessionExpired.title"));
+        store.setLoginErrorDescription(t("login.errors.sessionExpired.description"));
+        return;
+      }
+
+      store.setLoginErrorText(t("login.errors.defaultLogout.title"));
+      store.setLoginErrorDescription(t("login.errors.defaultLogout.description"));
+    },
+    [t]
+  );
+
+  /** Closes the session once the token expired without being renewed, and tells the user why. */
+  const handleSessionExpired = useCallback(() => {
+    logout();
+    applyLogoutMessage(true);
+  }, [logout, applyLogoutMessage]);
+
+  useSessionKeepAlive({ token, onRefreshed: applySilentToken, onExpired: handleSessionExpired });
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const verifySession = async () => {
+      // The token was swapped by a silent keep-alive renewal: same user, role, organization and
+      // warehouse, so there is nothing to re-verify.
+      if (lastVerifiedTokenRef.current === token) return;
       if (isVerifyingSession) return;
+
+      lastVerifiedTokenRef.current = token;
+
+      // An expired token cannot authenticate anything. Verifying with it would only mount the app
+      // and fire a burst of doomed requests whose 401s surface as a generic system error, so the
+      // session is left closed here — useSessionKeepAlive already reported the expiry.
+      if (isTokenExpired(token)) {
+        setReady(true);
+        return;
+      }
+
       try {
         if (token) {
           setIsVerifyingSession(true);
+          setIsSessionLoading(true);
           let activeToken = token;
 
           const savedRoleId = localStorage.getItem("currentRoleId");
@@ -249,6 +372,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         console.error(error);
       } finally {
         setIsVerifyingSession(false);
+        setIsSessionLoading(false);
         setReady(true);
       }
     };
@@ -261,6 +385,24 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
+      // While the password is expired the backend rejects the whole data plane with 401 on purpose.
+      // Treating those as session failures would log the user out and prevent the mandatory change.
+      if (useUserStore.getState().passwordExpired) {
+        return response;
+      }
+
+      // The password expired while the session was open. The change cannot be applied from here (the
+      // ERP handler needs the current password, which is not held), so log out with a clear reason
+      // instead of the generic session-failure message. Checked before the ignorable-URL list so it
+      // wins over it: every endpoint is rejected in this state, ignorable ones included.
+      if (isPasswordExpiredResponse(response)) {
+        // logout() clears the store synchronously, so the message must be written afterwards.
+        logout();
+        useUserStore.getState().setLoginErrorText(t("login.errors.passwordExpired.title"));
+        useUserStore.getState().setLoginErrorDescription(t("login.errors.passwordExpired.description"));
+        return response;
+      }
+
       const isIgnorableError =
         (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) &&
         (response.url.includes("meta/window") ||
@@ -277,9 +419,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
         (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&
         !isIgnorableError
       ) {
+        // Read before logout(), which nulls the token: an expired one means the eviction was a
+        // session timeout, not a system error, and deserves the message that says so.
+        const expired = isTokenExpired(useUserStore.getState().token);
         logout();
-        useUserStore.getState().setLoginErrorText(t("login.errors.defaultLogout.title"));
-        useUserStore.getState().setLoginErrorDescription(t("login.errors.defaultLogout.description"));
+        applyLogoutMessage(expired);
       }
 
       return response;
@@ -296,7 +440,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterCopilotInterceptor();
       };
     }
-  }, [logout, t, token]);
+  }, [logout, applyLogoutMessage, token]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {
@@ -329,11 +473,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isCopilotInstalled,
       loginErrorText,
       loginErrorDescription,
+      passwordExpired,
       // Actions (hook-dependent — live in UserProvider)
       login,
       logout,
       changeProfile,
       changePassword,
+      completeExpiredPasswordChange,
+      hasPendingLoginPassword,
       clearUserData,
       setDefaultConfiguration,
       // Store setters (stable references — satisfy consumers that call setters)
@@ -361,22 +508,34 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isCopilotInstalled,
       loginErrorText,
       loginErrorDescription,
+      passwordExpired,
       login,
       logout,
       changeProfile,
       changePassword,
+      completeExpiredPasswordChange,
+      hasPendingLoginPassword,
       clearUserData,
       setDefaultConfiguration,
     ]
   );
 
+  const renderContent = () => {
+    if (!token) {
+      return <LoginScreen data-testid="LoginScreen__2e05d2" />;
+    }
+    if (isSessionLoading) {
+      return <SessionLoading data-testid="SessionLoading__2e05d2" />;
+    }
+    if (passwordExpired) {
+      return <ForcePasswordChangeScreen data-testid="ForcePasswordChangeScreen__2e05d2" />;
+    }
+    return props.children;
+  };
+
   if (!ready) {
-    return null;
+    return <SessionLoading data-testid="SessionLoading__2e05d2" />;
   }
 
-  return (
-    <UserContext.Provider value={value}>
-      {token ? props.children : <LoginScreen data-testid="LoginScreen__2e05d2" />}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{renderContent()}</UserContext.Provider>;
 }

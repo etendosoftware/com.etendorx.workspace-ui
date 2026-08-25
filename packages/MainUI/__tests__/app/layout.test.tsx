@@ -37,6 +37,12 @@ jest.mock("@/components/Layout/GlobalLoading", () => {
   };
 });
 
+jest.mock("@/components/HelpDrawer/HelpDrawer", () => {
+  return function MockHelpDrawer(props: any) {
+    return <div {...props}>HelpDrawer</div>;
+  };
+});
+
 describe("Layout Component", () => {
   const mockChildren = <div data-testid="test-children">Test Content</div>;
 

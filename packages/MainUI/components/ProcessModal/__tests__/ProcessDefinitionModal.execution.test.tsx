@@ -3,6 +3,7 @@ import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import type React from "react";
 // Keep imports for things used in the test body
 import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton, mockFormData } from "../testUtils";
+import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // Mock executeStringFunction
 const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
@@ -217,6 +218,40 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     });
   });
 
+  // Classic's openProcess returns before buildProcess when uiPattern is 'M', so a
+  // Manual process never gets a parameter window. Its OBUIAPP_Parameter rows are
+  // dead metadata (e.g. the SII senders' "Warning" row, whose default value is the
+  // confirmation text the migrated script raises through confirm()).
+  describe("Manual process parameters", () => {
+    const warningParameter = {
+      name: "Warning",
+      dBColumnName: "warning",
+      reference: "14",
+      defaultValue: "This action is not reversible",
+    };
+
+    const manualButton = (uIPattern?: string) => ({
+      name: "Send to SII",
+      processDefinition: {
+        id: "TEST_MANUAL_ID",
+        name: "SII Invoice Sender",
+        javaClassName: "OB.AEATSII.send",
+        uIPattern,
+        parameters: { warning: warningParameter },
+      },
+    });
+
+    test("does not render the dictionary parameters of a Manual process", () => {
+      const { queryAllByTestId } = renderModal(manualButton("M"));
+      expect(queryAllByTestId("param-selector")).toHaveLength(0);
+    });
+
+    test("still renders the same parameters for a non-Manual process", () => {
+      const { queryAllByTestId } = renderModal(manualButton());
+      expect(queryAllByTestId("param-selector")).toHaveLength(1);
+    });
+  });
+
   describe("onLoad seed timing", () => {
     const ON_LOAD_CODE = "view.theForm.getItem('payment_method').hide();";
     const onLoadButton = {
@@ -261,6 +296,129 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       await waitFor(() => {
         expect(mockFormData.clearErrors).toHaveBeenCalled();
       });
+    });
+  });
+
+  // An openUrl hand-off produces no result, so in direct-execute mode the bare
+  // overlay would stay up forever. When the popup is blocked, the "Open link"
+  // banner is the only remaining way to reach the URL and must be visible.
+  describe("direct-execute overlay and the message bar", () => {
+    const openUrlButton = {
+      name: "Open Swagger",
+      processDefinition: {
+        id: "TEST_OPENURL_ID",
+        name: "Open Swagger",
+        parameters: {},
+        etmetaOnload: "() => ({ type: 'directExecute' })",
+        etmetaOnprocess: "async () => ({ type: 'openUrl', url: 'https://example.test' })",
+      },
+    };
+
+    const originalOpen = window.open;
+
+    afterEach(() => {
+      window.open = originalOpen;
+      messageBar.hide();
+    });
+
+    test("closes on the script's request even though the execution transition is still pending", async () => {
+      const openedWindow = {} as Window;
+      window.open = jest.fn(() => openedWindow) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: "https://example.test", closeModal: true });
+
+      renderModal(openUrlButton);
+
+      // `closeModal` dispatches from inside the transition, so a close routed
+      // through the user-facing pending guard would never fire and the overlay
+      // would hang forever with no chrome to dismiss it.
+      await waitFor(() => expect(mockClose).toHaveBeenCalled());
+    });
+
+    test("gives the chrome back so the popup-blocked banner is reachable", async () => {
+      window.open = jest.fn(() => null) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: "https://example.test" });
+
+      const { findByTestId, findByText } = renderModal(openUrlButton);
+
+      // The message bar only exists in the chrome, never in the bare overlay.
+      expect(await findByTestId("ProcessMessageBar__container")).toBeInTheDocument();
+      expect(await findByText("process.popupBlocked")).toBeInTheDocument();
+      expect(await findByText("process.openLink")).toBeInTheDocument();
+    });
+
+    // The failure this whole change is about: the handler answered with a business
+    // error, the script never inspected it, so the URL came back undefined. The
+    // hand-off cannot be served — and reporting success would be a lie.
+    test("reports an error instead of success when the hand-off carries no url", async () => {
+      window.open = jest.fn(() => null) as unknown as typeof window.open;
+      mockExecuteStringFunction
+        .mockResolvedValueOnce({ type: "directExecute" })
+        .mockResolvedValueOnce({ type: "openUrl", url: undefined, closeModal: true });
+
+      const { findByText } = renderModal(openUrlButton);
+
+      expect(await findByText("process.openUrlMissingUrl")).toBeInTheDocument();
+      // The success path closes the modal; this one must leave it open and readable.
+      expect(mockClose).not.toHaveBeenCalled();
+    });
+  });
+
+  // Classic headed the message bar with the handler's own title
+  // (`setMessage(TYPE_ERROR, data.message.title, data.message.text)`), so the
+  // in-modal banner must use it whenever the response carries one.
+  describe("error banner heading", () => {
+    const errorButton = {
+      name: "Recalculate Permissions",
+      processDefinition: {
+        id: "TEST_BANNER_ID",
+        name: "Recalculate Role Permissions",
+        parameters: {},
+        etmetaOnprocess: "async () => ({})",
+      },
+    };
+
+    test("uses the server title when the response carries one", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { msgType: "error", msgTitle: "Recalculation failed", msgText: "Inconsistent inheritance" },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("Recalculation failed")).toBeInTheDocument();
+      expect(await container.findByText("Inconsistent inheritance")).toBeInTheDocument();
+    });
+
+    // A migrated script that hands the handler's own `message` back untouched —
+    // the raw Etendo spelling, not the script-facing msgType/msgTitle/msgText.
+    // This is how PSD2 Get Consents surfaces "No API Key available for the user."
+    test("renders the handler's raw message shape as an error, title included", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { severity: "error", title: "ERROR", text: "No API Key available for the user." },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("ERROR")).toBeInTheDocument();
+      expect(await container.findByText("No API Key available for the user.")).toBeInTheDocument();
+      // An error keeps the dialog open so the message stays readable.
+      expect(mockClose).not.toHaveBeenCalled();
+    });
+
+    test("falls back to the generic heading when the response carries no title", async () => {
+      mockExecuteStringFunction.mockResolvedValueOnce({
+        message: { msgType: "error", msgText: "Inconsistent inheritance" },
+      });
+
+      const container = renderModal(errorButton);
+      await clickExecuteButton(container);
+
+      expect(await container.findByText("process.processError")).toBeInTheDocument();
     });
   });
 });

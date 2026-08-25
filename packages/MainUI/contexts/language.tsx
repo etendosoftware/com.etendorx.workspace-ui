@@ -33,8 +33,18 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   const [language, setLanguage] = useLocalStorage<Language | null>("language", null);
   const prevLanguage = usePrevious(language);
   const token = useUserStore((state) => state.token);
-  const [labels, setLabels] = useBackendLabels(language, token);
   const router = useRouter();
+
+  // Declared before useBackendLabels so it runs first: effects fire in declaration order, and
+  // Metadata.setLanguage wipes the metadata cache when the language changes. Fetching the labels
+  // first would cache them under the previous language key and have them dropped right after.
+  useEffect(() => {
+    if (language) {
+      Metadata.setLanguage(language);
+    }
+  }, [language]);
+
+  const [labels, setLabels] = useBackendLabels(language, token);
 
   const getFlag = useCallback(
     (lang?: Language | null) => {
@@ -56,12 +66,6 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
     }),
     [language, setLanguage, setLabels, getFlag, prevLanguage, getLabel]
   );
-
-  useEffect(() => {
-    if (language) {
-      Metadata.setLanguage(language);
-    }
-  }, [language]);
 
   useEffect(() => {
     if (prevLanguage && language !== prevLanguage) {

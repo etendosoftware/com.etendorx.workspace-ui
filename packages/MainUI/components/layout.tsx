@@ -20,6 +20,7 @@ import Navigation from "./navigation";
 import Sidebar from "./Sidebar";
 import GlobalLoading from "./Layout/GlobalLoading";
 import ProcessStackHost from "./ProcessModal/ProcessStackHost";
+import HelpDrawer from "./HelpDrawer/HelpDrawer";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
@@ -32,6 +33,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
+      <HelpDrawer data-testid="HelpDrawer__519d5c" />
       {/* Host for nested process modals opened via view.openProcess. */}
       <ProcessStackHost data-testid="ProcessStackHost__519d5c" />
     </div>

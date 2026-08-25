@@ -282,6 +282,8 @@ export interface Field {
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
   isActive: boolean;
+  /** AD_Field.ISACTIVE, as sent on the wire (isActive above is not actually populated by the backend). */
+  active?: boolean;
   gridDisplayLogic: string;
   /**
    * Indicates if this field contains the parent record ID in a hierarchical tab structure.
@@ -441,6 +443,15 @@ export enum UIPattern {
   EDIT_AND_DELETE_ONLY = "ED",
   STANDARD = "STD",
   PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
+  /**
+   * Process-only pattern. A Manual process has no `OBUIAPP_Parameter` rows: its
+   * whole behaviour lives in the mandatory Handler field (`OBUIAPP_Process.Classname`),
+   * which for this pattern holds a **client-side JS namespace** (e.g.
+   * `OB.AEATSII.send`), not a Java `ActionHandler`. See `isManualProcess`.
+   */
+  MANUAL = "M",
+  /** Process-only pattern: a background/action process defined in the dictionary. */
+  ACTION = "A",
 }
 
 export interface AuxiliaryInput {
@@ -472,6 +483,13 @@ export interface Tab {
   sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
+  /**
+   * The tab's link-to-parent property, as resolved by the backend with the same function the
+   * classic UI uses (`ApplicationUtils.getParentProperty`). An **empty string is a real answer**:
+   * the tab has no link column to its parent and must be filtered by its `hqlwhereclause` alone.
+   * Absent when the metadata backend predates this key — see `resolveParentFieldName`.
+   */
+  parentProperty?: string;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;
@@ -508,6 +526,12 @@ export interface Tab {
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
   auxiliaryInputs?: AuxiliaryInput[];
+  /** AD_Tab.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
+  /** AD_Tab column position — used to order tabs the same way Classic's Help view does. */
+  sequenceNumber?: number;
+  /** AD_Tab.ISACTIVE — inactive tabs are excluded from Classic's Help view. */
+  active?: boolean;
 }
 
 export interface WindowMetadata {
@@ -518,6 +542,15 @@ export interface WindowMetadata {
   tabs: Tab[];
   window$_identifier: string;
   windowType?: string;
+  /** AD_Window.HELP, translated (FULL_TRANSLATABLE). Always present on the wire, null when empty. */
+  helpComment?: string | null;
+  /**
+   * `true` when the current role has an active AD_Window_Access record for this window, `false`
+   * when the ERP served it through its implicit read-only fallback. Optional because older
+   * backends (and metadata cached before the flag existed) omit it — `undefined` means "unknown",
+   * never "denied".
+   */
+  isWindowAccessible?: boolean;
 }
 
 export interface RecordPayload extends Record<string, string> {
@@ -609,8 +642,20 @@ export interface SessionResponse {
   currentClient: CurrentClient;
   currentWarehouse?: CurrentWarehouse;
   roles: RoleList;
+  /**
+   * Language code the backend actually answers in (e.g. `en_US`), resolved by the ERP context from
+   * the user, the client and finally the system. The user's own default language is optional, so
+   * this is the only reliable source for the language of the session.
+   */
+  currentLanguage: string;
   languages: Languages;
   attributes: { [key: string]: null | string };
+  /**
+   * True when the user must change their password before being granted access.
+   * Computed by the backend, either from the administrator flag on the user record
+   * or from the client's password validity window.
+   */
+  passwordExpired: boolean;
 }
 
 export type RoleList = {

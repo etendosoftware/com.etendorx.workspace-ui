@@ -32,19 +32,51 @@
 
 import { logger } from "@/utils/logger";
 
-/** Server-vocabulary input type of a dynamic field (the classic popup emits these two). */
-export type DynamicFormInputType = "TEXT" | "CHECK";
+/**
+ * Server-vocabulary input type of a dynamic field.
+ *
+ * `TEXT` / `CHECK` are what the classic `EAPM_Popup` payload emits. `LIST` is the
+ * new-UI equivalent of the classic `type: '_id_17'` combo that Manual processes
+ * build by hand inside an `isc.OBPopup` (e.g. the Open Close Periods "Action"
+ * picker), whose options are fetched at open time rather than declared in the AD.
+ */
+export type DynamicFormInputType = "TEXT" | "CHECK" | "LIST";
+
+/** One option of a `LIST` field. */
+export interface DynamicFormOption {
+  value: string;
+  label: string;
+}
 
 /** One field descriptor carried by the backend `actionData.processParameters`. */
 export interface DynamicFormField {
-  /** Form key and label of the field. */
+  /**
+   * Form key of the field, and its label when no `label` is supplied.
+   *
+   * React Hook Form parses `.` and `[]` in a key as a nested path, so a name
+   * carrying either character writes to a different location than the one the
+   * dialog reads back, silently returning the seeded default instead of the
+   * user's choice. Scripts that build fields at runtime from server data should
+   * therefore pass a safe key here (an id) and the human-readable text in
+   * {@link DynamicFormField.label}.
+   */
   name: string;
-  /** Input type: `TEXT` → text input, `CHECK` → checkbox. */
+  /**
+   * Label rendered for the field. Optional: when absent the `name` is shown, so
+   * existing callers are unaffected. Lets a script keep a safe form key while
+   * displaying arbitrary text (slashes, dots, …) coming from the AD.
+   */
+  label?: string;
+  /** Input type: `TEXT` → text input, `CHECK` → checkbox, `LIST` → single-select combo. */
   inputType: DynamicFormInputType;
   /** Default text value for a `TEXT` field. */
   defaultText?: string;
   /** Default checked state for a `CHECK` field (`"Y"`/`"N"`). */
   defaultCheck?: string;
+  /** Options of a `LIST` field. Ignored for the other input types. */
+  refList?: DynamicFormOption[];
+  /** Preselected option value of a `LIST` field. */
+  defaultValue?: string;
   /** Optional parameter id, echoed back on each collected value. */
   id?: string;
 }

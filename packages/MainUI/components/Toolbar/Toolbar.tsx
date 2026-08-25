@@ -50,6 +50,7 @@ import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
+import { getDefaultImplicitFilter } from "@/utils/table/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -65,7 +66,7 @@ import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSplitView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -115,10 +116,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tableColumnOrder,
     activeLevels,
     activeTabsByLevel,
+    isImplicitFilterApplied: storeImplicitFilterApplied,
   } = useTableStatePersistenceTab({
     windowIdentifier,
     tabId: tab?.id ?? "",
   });
+
+  // Effective implicit-filter value (windowStore state ?? metadata default) and the metadata
+  // default itself — the SAME source of truth the datasource uses. Saved views must capture
+  // this, NOT the toolbar's `isImplicitFilterApplied` which is inflated by `hasIdFilter` and
+  // meant only for the button's visual state (ETP-4381).
+  const defaultImplicitFilterApplied = tab ? getDefaultImplicitFilter(tab) : true;
+  const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -326,7 +335,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       if (isFormView && formViewRefetch) {
         await formViewRefetch();
-      } else {
+      }
+      // In split view the grid stays on screen next to the form, so it must be
+      // refreshed too; in form-only mode the form refetch above is enough.
+      if (!isFormView || isSplitView) {
         await refetchDatasource(tab.id);
       }
 
@@ -349,6 +361,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     refetchDatasource,
     tab,
     isFormView,
+    isSplitView,
     formViewRefetch,
     windowIdentifier,
     processChildTabsInFormView,
@@ -492,6 +505,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       buttons: buttons as ToolbarButtonMetadata[],
       onAction: handleActionWithTooltip,
       isFormView: isFormView,
+      isSplitView: isSplitView,
       isTreeNodeView: isTreeNodeView,
       hasFormChanges: hasFormChanges,
       hasParentRecordSelected: hasParentRecordSelected,
@@ -529,6 +543,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isTreeNodeView,
     isFormView,
+    isSplitView,
     selectedRecord?.id,
     selectedRecords,
     processButtons.length,
@@ -557,7 +572,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   return (
     <>
       <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
-      {!isFormView && tab?.id && (
+      {(!isFormView || isSplitView) && tab?.id && (
         <SaveViewMenu
           anchorEl={saveViewAnchorEl}
           onClose={handleSaveViewMenuClose}
@@ -566,7 +581,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
-          isImplicitFilterApplied={isImplicitFilterApplied}
+          isImplicitFilterApplied={effectiveImplicitFilterApplied}
+          defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}
           data-testid="SaveViewMenu__a2dd07"
         />
@@ -593,7 +609,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ProcessMenu__a2dd07"
         />
       )}
-      {searchOpen && !isFormView && (
+      {searchOpen && (!isFormView || isSplitView) && (
         <SearchPortal
           isOpen={searchOpen}
           searchValue={searchValue}

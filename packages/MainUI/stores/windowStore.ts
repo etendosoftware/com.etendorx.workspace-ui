@@ -21,10 +21,11 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import type { WindowContextState, WindowState, TableState, NavigationState } from "@/utils/window/constants";
+import type { WindowContextState, WindowState, TabState, TableState, NavigationState } from "@/utils/window/constants";
 import type { TabFormState } from "@/utils/url/constants";
 import { TAB_MODES } from "@/utils/url/constants";
 import { getWindowIdFromIdentifier, createDefaultTabState } from "@/utils/window/utils";
+import { DEFAULT_SPLIT_STATE, clampSplitTableWidth } from "@/utils/window/splitView";
 
 // ---------------------------------------------------------------------------
 // Internal helper: ensures window + tab exist in the draft (immer mutates)
@@ -59,6 +60,34 @@ function ensureTabExistsDraft(
   }
 }
 
+/**
+ * Closes a tab's form in the draft.
+ *
+ * Split view only exists next to an open form, so closing the form also switches
+ * it off: otherwise the next double click on a row would reopen the split
+ * instead of the maximized form the user asked for. The proportion survives, so
+ * reopening the split restores the width the user had chosen.
+ */
+function closeTabFormDraft(tab: TabState): void {
+  tab.form = {};
+  tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), enabled: false };
+}
+
+/**
+ * Clears a child tab after its parent's selection changed. A child already in
+ * form view is only cleared when the parent record actually changed.
+ */
+function clearChildTabDraft(tab: TabState, isParentSelectionChanging: boolean): void {
+  const isInFormView = tab.form?.mode === TAB_MODES.FORM;
+  if (isInFormView && !isParentSelectionChanging) {
+    return;
+  }
+  if (tab.selectedRecord !== undefined) {
+    delete tab.selectedRecord;
+  }
+  closeTabFormDraft(tab);
+}
+
 // ---------------------------------------------------------------------------
 // Default table state (returned by getters when nothing exists yet)
 // ---------------------------------------------------------------------------
@@ -69,6 +98,13 @@ export const DEFAULT_TABLE_STATE: TableState = {
   order: [],
   isImplicitFilterApplied: undefined,
 };
+
+/**
+ * Stable empty array returned by selectors when a tab has no stored section
+ * preference. A fresh literal would break zustand's snapshot caching and cause
+ * an endless re-render loop.
+ */
+export const DEFAULT_EXPANDED_SECTIONS: string[] = [];
 
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   activeLevels: [0],
@@ -88,6 +124,12 @@ export interface WindowStore {
   recoveryError: string | null;
   /** Triggers URL-based recovery to re-run. Set by WindowProvider. */
   triggerRecovery: () => void;
+  /**
+   * How many windows were discarded because the current role has no access to them. Greater than
+   * zero with no window left open means the page renders the full-screen Access Denied view.
+   */
+  accessDeniedWindowCount: number;
+  setAccessDeniedWindowCount: (count: number) => void;
 
   // ---- Dirty tracking -----------------------------------------------------
   /** Tracks which windows have unsaved changes, keyed by source (e.g. "form:tabId", "table:tabId") */
@@ -132,6 +174,17 @@ export interface WindowStore {
   // ---- Form state --------------------------------------------------------
   setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel?: number) => void;
   clearTabFormState: (windowIdentifier: string, tabId: string) => void;
+  /** Persists the ids of the form sections the user has expanded in a tab. */
+  setTabExpandedSections: (
+    windowIdentifier: string,
+    tabId: string,
+    expandedSections: string[],
+    tabLevel?: number
+  ) => void;
+
+  // ---- Split view (grid + form side by side) ------------------------------
+  setTabSplitEnabled: (windowIdentifier: string, tabId: string, enabled: boolean, tabLevel?: number) => void;
+  setTabSplitTableWidth: (windowIdentifier: string, tabId: string, tableWidth: number, tabLevel?: number) => void;
 
   // ---- Selection ---------------------------------------------------------
   setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string, tabLevel?: number) => void;
@@ -168,7 +221,17 @@ export const useWindowStore = create<WindowStore>()(
       isRecoveryLoading: false,
       recoveryError: null,
       triggerRecovery: () => {},
+      accessDeniedWindowCount: 0,
       dirtyWindows: {},
+
+      setAccessDeniedWindowCount: (count) =>
+        set(
+          (draft) => {
+            draft.accessDeniedWindowCount = count;
+          },
+          false,
+          "window/setAccessDeniedWindowCount"
+        ),
 
       // ---- Table state setters ----------------------------------------
       setTableFilters: (windowIdentifier, tabId, filters, tabLevel = 0) =>
@@ -291,6 +354,10 @@ export const useWindowStore = create<WindowStore>()(
       setWindowActive: ({ windowIdentifier, windowData }) =>
         set(
           (draft) => {
+            // Opening a window makes any pending Access Denied view obsolete; without this it
+            // would come back instead of the dashboard once this window is closed.
+            draft.accessDeniedWindowCount = 0;
+
             // Deactivate all windows
             for (const winId of Object.keys(draft.windows)) {
               if (draft.windows[winId]) {
@@ -384,6 +451,8 @@ export const useWindowStore = create<WindowStore>()(
           (draft) => {
             draft.windows = {};
             draft.dirtyWindows = {};
+            // Role change / logout: the previous role's denials no longer apply.
+            draft.accessDeniedWindowCount = 0;
           },
           false,
           "window/cleanState"
@@ -421,11 +490,48 @@ export const useWindowStore = create<WindowStore>()(
       clearTabFormState: (windowIdentifier, tabId) =>
         set(
           (draft) => {
-            if (!draft.windows[windowIdentifier]?.tabs[tabId]) return;
-            draft.windows[windowIdentifier].tabs[tabId].form = {};
+            const tab = draft.windows[windowIdentifier]?.tabs[tabId];
+            if (!tab) return;
+            closeTabFormDraft(tab);
           },
           false,
           "window/clearTabFormState"
+        ),
+
+      // ---- Split view -------------------------------------------------
+      // The chosen proportion survives closing a form, navigating between
+      // records and parent-selection changes; only the `enabled` flag is reset
+      // by `closeTabFormDraft`, since the split cannot outlive its form.
+      setTabSplitEnabled: (windowIdentifier, tabId, enabled, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            const tab = draft.windows[windowIdentifier].tabs[tabId];
+            tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), enabled };
+          },
+          false,
+          "window/setTabSplitEnabled"
+        ),
+
+      setTabSplitTableWidth: (windowIdentifier, tabId, tableWidth, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            const tab = draft.windows[windowIdentifier].tabs[tabId];
+            tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), tableWidth: clampSplitTableWidth(tableWidth) };
+          },
+          false,
+          "window/setTabSplitTableWidth"
+        ),
+      // Replaces the whole list: collapsing a section must be able to remove ids.
+      setTabExpandedSections: (windowIdentifier, tabId, expandedSections, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].expandedSections = expandedSections;
+          },
+          false,
+          "window/setTabExpandedSections"
         ),
 
       // ---- Selection -------------------------------------------------
@@ -462,16 +568,7 @@ export const useWindowStore = create<WindowStore>()(
             for (const tabId of childTabIds) {
               const tab = draft.windows[windowIdentifier].tabs[tabId];
               if (!tab) continue;
-
-              const isInFormView = tab.form?.mode === TAB_MODES.FORM;
-              const shouldClean = !isInFormView || isParentSelectionChanging;
-
-              if (shouldClean) {
-                if (tab.selectedRecord !== undefined) {
-                  delete tab.selectedRecord;
-                }
-                tab.form = {};
-              }
+              clearChildTabDraft(tab, isParentSelectionChanging);
             }
           },
           false,
@@ -495,16 +592,7 @@ export const useWindowStore = create<WindowStore>()(
             for (const childTabId of childTabIds) {
               const tab = draft.windows[windowIdentifier].tabs[childTabId];
               if (!tab) continue;
-
-              const isInFormView = tab.form?.mode === TAB_MODES.FORM;
-              const shouldClean = !isInFormView || isParentSelectionChanging;
-
-              if (shouldClean) {
-                if (tab.selectedRecord !== undefined) {
-                  delete tab.selectedRecord;
-                }
-                tab.form = {};
-              }
+              clearChildTabDraft(tab, isParentSelectionChanging);
             }
           },
           false,

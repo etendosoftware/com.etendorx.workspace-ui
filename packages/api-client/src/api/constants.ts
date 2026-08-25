@@ -30,6 +30,7 @@ const getAuthHeaderName = () => {
 };
 
 export const API_LOGIN_URL = "/api/auth/login";
+export const API_REFRESH_URL = "/api/auth/refresh";
 export const DEFAULT_LOGIN_CHARSET = "ISO-8859-1";
 export const API_METADATA_URL = "/sws/com.etendoerp.metadata";
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();

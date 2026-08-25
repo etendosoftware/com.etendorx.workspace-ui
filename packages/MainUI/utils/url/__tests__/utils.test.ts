@@ -35,7 +35,7 @@ import {
   buildEtendoClassicBookmarkUrl,
 } from "../utils";
 import type { WindowState } from "../../window/constants";
-import { TAB_MODES, FORM_MODES, URL_PREFIXS } from "../constants";
+import { TAB_MODES, FORM_MODES, NEW_RECORD_ID, URL_PREFIXS } from "../constants";
 
 /**
  * Test helpers
@@ -253,7 +253,10 @@ describe("URL Utility Functions", () => {
       });
     });
 
-    it("should include a TABLE-mode tab (selectedRecord set, no form.recordId) over a shallower FORM-mode ancestor", () => {
+    it("should include a shallower FORM-mode ancestor over a deeper TABLE-mode tab", () => {
+      // The URL can only express "this tab is in form view": the recovery pipeline reopens ti/ri in
+      // form view, so a deeper tab that merely has a grid row selected must not win over the tab the
+      // user actually drilled into.
       const windows: WindowState[] = [
         createMockWindowState(
           "143",
@@ -276,8 +279,61 @@ describe("URL Utility Functions", () => {
 
       expectUrlToContain(result, {
         wi_0: "143_123456",
-        ti_0: "tab2",
-        ri_0: "rec2",
+        ti_0: "tab1",
+        ri_0: "rec1",
+      });
+    });
+
+    it("should exclude a TABLE-mode tab so leaving form view drops the tab and record from the URL", () => {
+      // Regression lock: every exit path (toolbar Cancel, the form close button, Escape) clears
+      // tab.form but keeps selectedRecord, so encoding a selection would make a reload reopen the
+      // record the user just left.
+      const windows: WindowState[] = [
+        createMockWindowState(
+          "143",
+          "143_123456",
+          { tab1: createMockTabStateEmpty(0, "rec1") },
+          true,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
+      ];
+
+      const result = buildWindowsUrlParams(windows);
+
+      expect(result).toBe("wi_0=143_123456");
+    });
+
+    it("should exclude a tab whose form is still creating a record", () => {
+      const windows: WindowState[] = [
+        createMockWindowState(
+          "143",
+          "143_123456",
+          { tab1: createMockTabState(0, "rec1", NEW_RECORD_ID) },
+          true,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
+      ];
+
+      const result = buildWindowsUrlParams(windows);
+
+      expect(result).toBe("wi_0=143_123456");
+    });
+
+    it("should keep window indices aligned when only some windows are in form view", () => {
+      const windows: WindowState[] = [
+        createMockWindowState("143", "143_123456", { tab1: createMockTabStateEmpty(0, "rec1") }),
+        createMockWindowState("144", "144_789012", { tab1: createMockTabState(0, "rec2", "rec2") }),
+      ];
+
+      const result = buildWindowsUrlParams(windows);
+
+      expectParamsToHave(new URLSearchParams(result), {
+        wi_0: "143_123456",
+        ti_0: false,
+        ri_0: false,
+        wi_1: "144_789012",
+        ti_1: "tab1",
+        ri_1: "rec2",
       });
     });
 
@@ -586,7 +642,7 @@ describe("URL Utility Functions", () => {
   });
 
   describe("Edge cases and integration", () => {
-    it("should still include a tab with an empty form object as long as it has a selectedRecord", () => {
+    it("should roundtrip a window that left form view as having no recovery data", () => {
       const windows: WindowState[] = [
         createMockWindowState(
           "143",
@@ -597,13 +653,10 @@ describe("URL Utility Functions", () => {
         ),
       ];
 
-      const result = buildWindowsUrlParams(windows);
+      const recoveryData = parseWindowRecoveryData(new URLSearchParams(buildWindowsUrlParams(windows)));
 
-      expectUrlToContain(result, {
-        wi_0: "143_123456",
-        ti_0: "tab1",
-        ri_0: "rec1",
-      });
+      expect(recoveryData).toHaveLength(1);
+      expect(recoveryData[0]).toEqual(createMockRecoveryInfo("143_123456"));
     });
 
     it("should exclude a tab with no selectedRecord even if it has form.recordId set", () => {
