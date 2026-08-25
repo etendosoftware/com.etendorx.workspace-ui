@@ -23,6 +23,8 @@ docs/
 │   │   └── README.md
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
+│   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
+│   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
 │   └── table-state-persistence/      # Feature: Table state persistence

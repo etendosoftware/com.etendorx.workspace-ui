@@ -11,6 +11,9 @@ in the new UI, and what a new selector has to do to take part in it.
 **Related:** [`keyboard-shortcuts-focus-system.md`](../keyboard-shortcuts-focus-system.md)
 covers a different concern — which *view* (header form, lines grid…) receives
 application shortcuts. This page is about the DOM focus **inside** one form.
+[`menu-search-keyboard-navigation`](../menu-search-keyboard-navigation/README.md) covers
+the drawer's menu search, where Tab has the opposite role: it completes the search term
+rather than moving between controls.
 
 ---
 
