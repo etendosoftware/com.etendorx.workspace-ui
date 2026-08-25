@@ -90,6 +90,31 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     if (processId) triggerProcess(processId);
   }, [effectiveField, triggerProcess]);
 
+  const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
+  const canOpenSearchModal = Boolean(hasTableRelated) && !isReadOnly;
+
+  /**
+   * Ctrl+Enter opens the record picker, mirroring the `Selector_ShowPopup`
+   * shortcut of Etendo Classic. It replaces the magnifier as the keyboard path,
+   * since the magnifier itself is deliberately out of the tab sequence.
+   *
+   * Declared before the early returns below: every Hook in this component must run
+   * on every render, regardless of which branch ends up being rendered.
+   */
+  const handleFieldKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!canOpenSearchModal) return;
+      if (!isSelectorPopupShortcut(event)) return;
+      // A dropdown lives in a portal, but React still bubbles its events through
+      // this component, so its own Ctrl+Enter must not reach the picker.
+      if (isEventFromDropdownPortal(event)) return;
+
+      event.preventDefault();
+      setIsSearchModalOpen(true);
+    },
+    [canOpenSearchModal]
+  );
+
   const { reference } = effectiveField.column;
 
   const isProductStockModal =
@@ -261,28 +286,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
   })();
-
-  const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
-  const canOpenSearchModal = Boolean(hasTableRelated) && !isReadOnly;
-
-  /**
-   * Ctrl+Enter opens the record picker, mirroring the `Selector_ShowPopup`
-   * shortcut of Etendo Classic. It replaces the magnifier as the keyboard path,
-   * since the magnifier itself is deliberately out of the tab sequence.
-   */
-  const handleFieldKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (!canOpenSearchModal) return;
-      if (!isSelectorPopupShortcut(event)) return;
-      // A dropdown lives in a portal, but React still bubbles its events through
-      // this component, so its own Ctrl+Enter must not reach the picker.
-      if (isEventFromDropdownPortal(event)) return;
-
-      event.preventDefault();
-      setIsSearchModalOpen(true);
-    },
-    [canOpenSearchModal]
-  );
 
   const handleSelect = (record: EntityData) => {
     // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID

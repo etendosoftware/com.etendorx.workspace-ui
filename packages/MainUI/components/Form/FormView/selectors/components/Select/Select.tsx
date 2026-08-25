@@ -179,7 +179,7 @@ function SelectCmp({
       e.preventDefault();
 
       if (highlightedOption) {
-        handleSelect(highlightedOption.id, highlightedOption.label, highlightedOption.data as EntityData | undefined);
+        handleSelect(highlightedOption.id, highlightedOption.label, highlightedOption.data as EntityData);
       } else {
         setIsOpen(false);
         setHighlightedIndex(-1);
