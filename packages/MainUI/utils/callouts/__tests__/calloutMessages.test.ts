@@ -13,34 +13,16 @@ describe("showCalloutMessages", () => {
     expect(showStatusModal).not.toHaveBeenCalled();
   });
 
-  it("maps TYPE_INFO to info", () => {
+  it.each([
+    ["TYPE_INFO", "info"],
+    ["TYPE_WARNING", "warning"],
+    ["TYPE_SUCCESS", "success"],
+    ["TYPE_ERROR", "error"],
+    ["SOMETHING_ELSE", "info"],
+  ])("maps severity %s to %s", (severity, expected) => {
     const showStatusModal = jest.fn();
-    showCalloutMessages([{ text: "Info text", severity: "TYPE_INFO" }], showStatusModal);
-    expect(showStatusModal).toHaveBeenCalledWith("info", "Info text");
-  });
-
-  it("maps TYPE_WARNING to warning", () => {
-    const showStatusModal = jest.fn();
-    showCalloutMessages([{ text: "Warning text", severity: "TYPE_WARNING" }], showStatusModal);
-    expect(showStatusModal).toHaveBeenCalledWith("warning", "Warning text");
-  });
-
-  it("maps TYPE_SUCCESS to success", () => {
-    const showStatusModal = jest.fn();
-    showCalloutMessages([{ text: "Success text", severity: "TYPE_SUCCESS" }], showStatusModal);
-    expect(showStatusModal).toHaveBeenCalledWith("success", "Success text");
-  });
-
-  it("maps TYPE_ERROR to error", () => {
-    const showStatusModal = jest.fn();
-    showCalloutMessages([{ text: "Error text", severity: "TYPE_ERROR" }], showStatusModal);
-    expect(showStatusModal).toHaveBeenCalledWith("error", "Error text");
-  });
-
-  it("falls back to info for an unknown or missing severity", () => {
-    const showStatusModal = jest.fn();
-    showCalloutMessages([{ text: "Unknown severity", severity: "SOMETHING_ELSE" }], showStatusModal);
-    expect(showStatusModal).toHaveBeenCalledWith("info", "Unknown severity");
+    showCalloutMessages([{ text: "Message text", severity }], showStatusModal);
+    expect(showStatusModal).toHaveBeenCalledWith(expected, "Message text");
   });
 
   it("shows every message in a multi-message response, in order", () => {

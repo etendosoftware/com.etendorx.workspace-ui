@@ -47,6 +47,12 @@ describe("useCallout hook", () => {
     (useStatusModal as jest.Mock).mockReturnValue({ showStatusModal });
   });
 
+  const triggerWithResponse = async (data: unknown) => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({ data });
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    return result.current({});
+  };
+
   it("should trigger a callout request with correct parameters", async () => {
     (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
       data: { columnValues: { f1: "v1" } },
@@ -72,16 +78,12 @@ describe("useCallout hook", () => {
     expect(response).toEqual({ columnValues: { f1: "v1" } });
   });
 
-  it("should handle backend error status and show toast", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: { response: { status: -1, error: { message: "Validation failed" } } },
-    });
-
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    const response = await result.current({});
+  it("should handle backend error status and show toast, without regression from calloutMessages", async () => {
+    const response = await triggerWithResponse({ response: { status: -1, error: { message: "Validation failed" } } });
 
     expect(response).toBeUndefined();
     expect(toast.error).toHaveBeenCalledWith("Validation failed");
+    expect(showStatusModal).not.toHaveBeenCalled();
   });
 
   it("should not show toast on successful callout", async () => {
@@ -147,75 +149,33 @@ describe("useCallout hook", () => {
     expect(calledUrl).toContain("CHANGED_COLUMN=inpField1");
   });
 
-  it("shows a non-blocking notification for a warning calloutMessage", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: { columnValues: {}, calloutMessages: [{ text: "Careful", severity: "TYPE_WARNING" }] },
-    });
+  it.each([
+    ["TYPE_WARNING", "warning"],
+    ["TYPE_INFO", "info"],
+    ["TYPE_SUCCESS", "success"],
+  ])("shows a non-blocking notification for a %s calloutMessage", async (severity, expected) => {
+    await triggerWithResponse({ columnValues: {}, calloutMessages: [{ text: "Msg", severity }] });
 
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    await result.current({});
-
-    expect(showStatusModal).toHaveBeenCalledWith("warning", "Careful");
+    expect(showStatusModal).toHaveBeenCalledWith(expected, "Msg");
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("shows the correct severity for info and success calloutMessages", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: {
-        columnValues: {},
-        calloutMessages: [
-          { text: "FYI", severity: "TYPE_INFO" },
-          { text: "Great job", severity: "TYPE_SUCCESS" },
-        ],
-      },
-    });
-
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    await result.current({});
-
-    expect(showStatusModal).toHaveBeenNthCalledWith(1, "info", "FYI");
-    expect(showStatusModal).toHaveBeenNthCalledWith(2, "success", "Great job");
-  });
-
   it("shows all messages when the callout returns multiple", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: {
-        columnValues: {},
-        calloutMessages: [
-          { text: "One", severity: "TYPE_INFO" },
-          { text: "Two", severity: "TYPE_WARNING" },
-          { text: "Three", severity: "TYPE_ERROR" },
-        ],
-      },
+    await triggerWithResponse({
+      columnValues: {},
+      calloutMessages: [
+        { text: "One", severity: "TYPE_INFO" },
+        { text: "Two", severity: "TYPE_WARNING" },
+        { text: "Three", severity: "TYPE_ERROR" },
+      ],
     });
-
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    await result.current({});
 
     expect(showStatusModal).toHaveBeenCalledTimes(3);
   });
 
   it("does not call showStatusModal when the response has no calloutMessages", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: { columnValues: { f1: "v1" } },
-    });
+    await triggerWithResponse({ columnValues: { f1: "v1" } });
 
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    await result.current({});
-
-    expect(showStatusModal).not.toHaveBeenCalled();
-  });
-
-  it("still shows the blocking toast.error for status: -1, without regression", async () => {
-    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
-      data: { response: { status: -1, error: { message: "Validation failed" } } },
-    });
-
-    const { result } = renderHook(() => useCallout({ field: mockField }));
-    const response = await result.current({});
-
-    expect(response).toBeUndefined();
-    expect(toast.error).toHaveBeenCalledWith("Validation failed");
     expect(showStatusModal).not.toHaveBeenCalled();
   });
 });
