@@ -21,6 +21,7 @@ import { useCallout } from "../useCallout";
 import { useTabContext } from "@/contexts/tab";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { toast } from "sonner";
+import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 
 // Mocks
 jest.mock("@/contexts/tab");
@@ -33,14 +34,17 @@ jest.mock("@/utils/logger");
 jest.mock("sonner", () => ({
   toast: { error: jest.fn() },
 }));
+jest.mock("@/hooks/Toolbar/useStatusModal");
 
 describe("useCallout hook", () => {
   const mockTab = { id: "tab1" } as any;
   const mockField = { inputName: "inpField1" } as any;
+  const showStatusModal = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
+    (useStatusModal as jest.Mock).mockReturnValue({ showStatusModal });
   });
 
   it("should trigger a callout request with correct parameters", async () => {
@@ -141,5 +145,77 @@ describe("useCallout hook", () => {
 
     const calledUrl: string = (Metadata.kernelClient.post as jest.Mock).mock.calls[0][0];
     expect(calledUrl).toContain("CHANGED_COLUMN=inpField1");
+  });
+
+  it("shows a non-blocking notification for a warning calloutMessage", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { columnValues: {}, calloutMessages: [{ text: "Careful", severity: "TYPE_WARNING" }] },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    expect(showStatusModal).toHaveBeenCalledWith("warning", "Careful");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("shows the correct severity for info and success calloutMessages", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: {
+        columnValues: {},
+        calloutMessages: [
+          { text: "FYI", severity: "TYPE_INFO" },
+          { text: "Great job", severity: "TYPE_SUCCESS" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    expect(showStatusModal).toHaveBeenNthCalledWith(1, "info", "FYI");
+    expect(showStatusModal).toHaveBeenNthCalledWith(2, "success", "Great job");
+  });
+
+  it("shows all messages when the callout returns multiple", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: {
+        columnValues: {},
+        calloutMessages: [
+          { text: "One", severity: "TYPE_INFO" },
+          { text: "Two", severity: "TYPE_WARNING" },
+          { text: "Three", severity: "TYPE_ERROR" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    expect(showStatusModal).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not call showStatusModal when the response has no calloutMessages", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { columnValues: { f1: "v1" } },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    expect(showStatusModal).not.toHaveBeenCalled();
+  });
+
+  it("still shows the blocking toast.error for status: -1, without regression", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { response: { status: -1, error: { message: "Validation failed" } } },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    const response = await result.current({});
+
+    expect(response).toBeUndefined();
+    expect(toast.error).toHaveBeenCalledWith("Validation failed");
+    expect(showStatusModal).not.toHaveBeenCalled();
   });
 });
