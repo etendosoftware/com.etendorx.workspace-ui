@@ -25,7 +25,7 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import { useUserStore } from "@/stores/userStore";
-import type { TranslationKeys } from "@/hooks/types";
+import type { TranslateFunction, TranslationKeys } from "@/hooks/types";
 import type { ParsedSavedView, SavedViewScope } from "@/utils/savedViews/types";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 
@@ -45,6 +45,13 @@ function getManageableScopes(userLevel: string | undefined): SavedViewScope[] {
     scopes.push("SYSTEM");
   }
   return scopes;
+}
+
+function getSetDefaultTitle(view: ParsedSavedView, t: TranslateFunction): string {
+  if (!view.editable) {
+    return t("savedViews.notEditable");
+  }
+  return view.isDefault ? t("savedViews.defaultView") : t("savedViews.setAsDefault");
 }
 
 const SCOPE_LABEL_KEYS: Record<SavedViewScope, TranslationKeys> = {
@@ -409,13 +416,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                     onClick={() => !view.isDefault && view.editable && handleSetDefault(view.id)}
                     disabled={isUpdatingDefault || view.isDefault || !view.editable}
                     aria-label={t("savedViews.setAsDefault")}
-                    title={
-                      !view.editable
-                        ? t("savedViews.notEditable")
-                        : view.isDefault
-                          ? t("savedViews.defaultView")
-                          : t("savedViews.setAsDefault")
-                    }
+                    title={getSetDefaultTitle(view, t)}
                     data-testid="SaveViewMenu__view-set-default">
                     {view.isDefault ? (
                       <StarIcon fontSize="small" data-testid="StarIcon__f77826" />
