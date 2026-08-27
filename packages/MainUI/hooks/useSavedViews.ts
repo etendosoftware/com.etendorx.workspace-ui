@@ -19,7 +19,7 @@ import { useCallback, useState } from "react";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
 import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
-import type { ParsedSavedView, RawSavedViewRecord } from "@/utils/savedViews/types";
+import type { ParsedSavedView, RawSavedViewRecord, SavedViewScope } from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
 
 const BASE_URL = "/api/meta/saved-views";
@@ -59,6 +59,8 @@ export interface UseSavedViewsReturn {
     order: string[];
     implicitFilterApplied: boolean;
     isDefault?: boolean;
+    scope?: SavedViewScope;
+    roleId?: string;
   }) => Promise<void>;
   applyView: (view: ParsedSavedView) => {
     filters: MRT_ColumnFiltersState;
@@ -125,6 +127,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       order,
       implicitFilterApplied,
       isDefault = false,
+      scope,
+      roleId,
     }: {
       tabId: string;
       name: string;
@@ -134,6 +138,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       order: string[];
       implicitFilterApplied: boolean;
       isDefault?: boolean;
+      scope?: SavedViewScope;
+      roleId?: string;
     }): Promise<void> => {
       if (!token) throw new Error("Not authenticated");
 
@@ -143,23 +149,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         const gridConfiguration = buildGridConfiguration(filters, visibility, sorting, order, implicitFilterApplied);
 
-        // If saving as default, clear isDefault on existing default view first
-        if (isDefault) {
-          const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId);
-          if (currentDefault) {
-            await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
-              method: "PUT",
-              body: JSON.stringify({
-                name: currentDefault.name,
-                tab: tabId,
-                isdefault: false,
-                filterclause: currentDefault.filterClause,
-                gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
-              }),
-            });
-          }
-        }
-
+        // The backend atomically clears any other default sharing this view's (tab, scope)
+        // target before persisting isdefault=true — no separate clear-then-set round trip.
         await apiFetch(BASE_URL, token, {
           method: "POST",
           body: JSON.stringify({
@@ -168,6 +159,8 @@ export function useSavedViews(): UseSavedViewsReturn {
             isdefault: isDefault,
             filterclause: "",
             gridconfiguration: gridConfiguration,
+            ...(scope ? { scope } : {}),
+            ...(roleId ? { role: roleId } : {}),
           }),
         });
 
@@ -182,7 +175,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsSaving(false);
       }
     },
-    [token, views, fetchViews]
+    [token, fetchViews]
   );
 
   const setDefaultView = useCallback(
@@ -198,21 +191,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         const tabId = targetView.tabId;
 
-        // Clear current default if different from target
-        const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId && v.id !== viewId);
-        if (currentDefault) {
-          await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
-            method: "PUT",
-            body: JSON.stringify({
-              name: currentDefault.name,
-              tab: tabId,
-              isdefault: false,
-              filterclause: currentDefault.filterClause,
-              gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
-            }),
-          });
-        }
-
+        // The backend atomically clears any sibling default for this view's (tab, scope)
+        // target before persisting isdefault=true.
         await apiFetch(`${BASE_URL}/${viewId}`, token, {
           method: "PUT",
           body: JSON.stringify({

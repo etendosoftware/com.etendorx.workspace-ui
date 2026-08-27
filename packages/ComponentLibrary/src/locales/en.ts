@@ -658,6 +658,13 @@ const en = {
     setAsDefault: "Set as default",
     setDefaultError: "Error setting default view",
     resetToStandard: "Reset to standard view",
+    sharedView: "Shared",
+    notEditable: "You don't have permission to modify this shared view",
+    scopeUser: "Only me",
+    scopeRole: "My role",
+    scopeOrganization: "My organization",
+    scopeClient: "Entire client",
+    scopeSystem: "Entire system",
   },
   advancedFilters: {
     title: "Advanced Filters",

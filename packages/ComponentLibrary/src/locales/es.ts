@@ -660,6 +660,13 @@ const es = {
     setAsDefault: "Establecer como predeterminada",
     setDefaultError: "Error al establecer la vista predeterminada",
     resetToStandard: "Restablecer vista estándar",
+    sharedView: "Compartida",
+    notEditable: "No tenés permiso para modificar esta vista compartida",
+    scopeUser: "Solo yo",
+    scopeRole: "Mi rol",
+    scopeOrganization: "Mi organización",
+    scopeClient: "Todo el cliente",
+    scopeSystem: "Todo el sistema",
   },
   advancedFilters: {
     title: "Filtros avanzados",
