@@ -171,8 +171,13 @@ export function FormFields({
             // Use SmartContext to normalize boolean values (false → 'N', true → 'Y') so that
             // displayLogicExpressions comparing against 'N'/'Y' (after parseDynamicExpression
             // transforms === false → === 'N') evaluate correctly against raw RHF form data.
-            const sectionCtx = createSmartContext({ values: formData, fields: tab.fields, context: session });
-            return compiledExpr(sectionCtx, sectionCtx);
+            const sectionCtx = createSmartContext({
+              values: formData,
+              fields: tab.fields,
+              context: session,
+              windowId: tab.window,
+            });
+            return compiledExpr(sectionCtx, sectionCtx, tab.window);
           } catch (error) {
             console.warn("Error executing expression:", field.displayLogicExpression, error);
             return true;

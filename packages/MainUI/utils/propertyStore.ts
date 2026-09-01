@@ -80,5 +80,63 @@ export function setStoredPreference(key: string, value: unknown) {
   savePreferences(prefs);
 }
 
+/**
+ * Looks a key up in the preference map: exact match first, then a case-insensitive scan.
+ * The case-insensitive tolerance is not a classic behaviour, it is what the expression engine
+ * and the OB shims have always done, and it is preserved here so they can share one resolver.
+ *
+ * @param prefs - The stored preference map
+ * @param key - Preference key to look for
+ * @returns The raw stored value, or `undefined` when no key matches
+ */
+function findPreference(prefs: Record<string, unknown>, key: string): unknown {
+  if (prefs[key] !== undefined) return prefs[key];
+
+  const lowerKey = key.toLowerCase();
+  for (const storedKey of Object.keys(prefs)) {
+    if (storedKey.toLowerCase() === lowerKey) return prefs[storedKey];
+  }
+  return undefined;
+}
+
+/**
+ * Resolves a preference exactly as classic `OB.PropertyStore.get(propertyName, windowId)` does:
+ * the window-scoped key `${key}_${windowId}` wins, otherwise the global `key`.
+ *
+ * The window-scoped entry is skipped when its value is falsy — including the empty string the
+ * backend writes for a null preference value — matching the classic truthiness check in
+ * `ob-property-store.js`.
+ *
+ * Returns the RAW stored value so each caller keeps its own normalization (the expression engine
+ * needs to still see booleans as booleans).
+ *
+ * @param key - Preference key, without any window suffix
+ * @param windowId - AD window id to scope the lookup to, when known
+ * @returns The raw stored value, or `undefined` when the preference is not set
+ */
+export function resolvePreference(key: string, windowId?: string): unknown {
+  const prefs = getStoredPreferences();
+
+  if (windowId) {
+    const scoped = findPreference(prefs, `${key}_${windowId}`);
+    if (scoped) return scoped;
+  }
+
+  return findPreference(prefs, key);
+}
+
+/**
+ * String-coercing wrapper over {@link resolvePreference}, for the `OB.PropertyStore.get` contract.
+ *
+ * @param key - Preference key, without any window suffix
+ * @param windowId - AD window id to scope the lookup to, when known
+ * @returns The stored value as a string, or `undefined` when the preference is not set
+ */
+export function getStoredPreference(key: string, windowId?: string): string | undefined {
+  const value = resolvePreference(key, windowId);
+  if (value === undefined) return undefined;
+  return String(value);
+}
+
 // NOTE: `createOBShim` (the full OB.* shim) now lives in `utils/ob/obShim.ts`.
 // Import it from there directly.

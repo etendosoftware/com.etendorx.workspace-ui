@@ -57,7 +57,7 @@ import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
-import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
@@ -130,6 +130,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
+import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 
@@ -192,6 +193,8 @@ const createFieldWithData = (
 interface CellEditingContextProps {
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
+  /** AD window id, so inline-edit readonly logic resolves window-scoped preferences. */
+  windowId?: string;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -242,6 +245,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   setInitialFocusCell,
   loadTableDirOptions,
   isLoadingTableDirOptions,
+  windowId,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -249,7 +253,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
   const isNewRow = editingData.isNew || false;
   const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
-  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
+  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session, windowId);
 
   const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
   const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
@@ -390,6 +394,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   setInitialFocusCell,
   loadTableDirOptions,
   isLoadingTableDirOptions,
+  windowId,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -419,6 +424,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         setInitialFocusCell={setInitialFocusCell}
         loadTableDirOptions={loadTableDirOptions}
         isLoadingTableDirOptions={isLoadingTableDirOptions}
+        windowId={windowId}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -483,7 +489,8 @@ const isFieldReadOnly = (
   field: Field,
   isNewRow = false,
   rowValues?: Record<string, unknown>,
-  session?: Record<string, unknown>
+  session?: Record<string, unknown>,
+  windowId?: string
 ): boolean => {
   // Field explicitly marked as readonly
   if (field.isReadOnly) return true;
@@ -495,7 +502,7 @@ const isFieldReadOnly = (
   if (field.readOnlyLogicExpression && rowValues) {
     try {
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);
-      const result = compiledExpr(session || {}, rowValues);
+      const result = compiledExpr(session || {}, rowValues, windowId);
       return Boolean(result);
     } catch (error) {
       logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
@@ -645,6 +652,12 @@ interface DynamicTableProps {
    * primary in split view, where the form pane owns the user's attention.
    */
   isPrimaryView?: boolean;
+  /**
+   * True when the whole tab is collapsed, i.e. its level is not expanded and `Tab` renders it
+   * inside a `hidden` container. Distinct from `isVisible`, which only tells grid pane from form
+   * pane *within* this tab and therefore stays true for a tab the user cannot see at all.
+   */
+  isTabCollapsed?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
@@ -731,6 +744,7 @@ const DynamicTable = ({
   isTreeMode = true,
   isVisible = true,
   isPrimaryView = true,
+  isTabCollapsed = false,
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
@@ -855,6 +869,10 @@ const DynamicTable = ({
   // Tracks the last parent record id for which the logical-SR auto-open has
   // fired, so closing the form does not re-trigger for the same parent.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
+  // Tracks the record id the single-record rule last auto-selected, so deselecting it by hand is
+  // not immediately undone. Reset whenever the result set stops holding exactly one record, which
+  // is what lets the rule fire again after filtering back down to a single result.
+  const autoSelectedSingleRecordRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -2466,6 +2484,7 @@ const DynamicTable = ({
           setInitialFocusCell={setInitialFocusCell}
           loadTableDirOptions={loadTableDirOptions}
           isLoadingTableDirOptions={isLoadingTableDirOptions}
+          windowId={tab.window}
           data-testid="DataColumnCell__8ca888"
         />
       );
@@ -2493,6 +2512,7 @@ const DynamicTable = ({
       loadTableDirOptions,
       isLoadingTableDirOptions,
       renderFirstColumnCell,
+      tab.window,
     ]
   );
 
@@ -3779,6 +3799,63 @@ const DynamicTable = ({
       return () => clearTimeout(timer);
     }
   }, [pendingSelectionId, table, loading, isUploading]);
+
+  // A settled load that yielded exactly one record selects it — classic's OBViewGrid.dataArrived
+  // single-record branch. Declared last of the selection effects so any earlier branch (deep link,
+  // SR auto-open, new-record mode) has already written its own decision for this render.
+  // Writing MRT's rowSelection is all that is needed: useTableSelection propagates it to the window
+  // store, the selection graph, the server session and the child tabs, exactly as a row click does.
+  useEffect(() => {
+    if (!windowIdentifier) return;
+
+    const decision = getSingleRecordAutoSelectDecision({
+      loading,
+      isVisible: isVisible ?? true,
+      isTabCollapsed,
+      records,
+      hasMoreRecords,
+      storedSelectedId: getSelectedRecord(windowIdentifier, tab.id),
+      srAutoOpens: getSrAutoOpenDecision({ uIPattern, tab, loading, displayRecords, parentTab, parentRecord }).open,
+      isNewRecordMode: getTabFormState(windowIdentifier, tab.id)?.formMode === FORM_MODES.NEW,
+      hasEditingRows: editingRowsCount > 0,
+      lastAutoSelectedId: autoSelectedSingleRecordRef.current,
+    });
+
+    if (!decision.select) {
+      if (records.length !== 1) autoSelectedSingleRecordRef.current = undefined;
+      return;
+    }
+
+    // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+    console.debug("[DEBUG-LINKEDITEMS] Rule A auto-select firing", {
+      windowIdentifier,
+      tabId: tab.id,
+      tabName: tab.name,
+      tabLevel: tab.tabLevel,
+      isVisible: isVisible ?? true,
+      isTabCollapsed,
+      recordId: decision.recordId,
+    });
+
+    autoSelectedSingleRecordRef.current = decision.recordId;
+    table.setRowSelection({ [decision.recordId]: true });
+  }, [
+    windowIdentifier,
+    tab,
+    loading,
+    isVisible,
+    isTabCollapsed,
+    records,
+    hasMoreRecords,
+    displayRecords,
+    parentTab,
+    parentRecord,
+    uIPattern,
+    editingRowsCount,
+    getSelectedRecord,
+    getTabFormState,
+    table,
+  ]);
 
   if (error) {
     return <TableErrorDisplay error={error} onRetry={refetch} data-testid="TableErrorDisplay__8ca888" />;

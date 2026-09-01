@@ -68,15 +68,20 @@ export const compileExpression = (expression: string) => {
         PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
         getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
-          get: (key) => {
+          get: (key, keyWindowId) => {
             // 1. Check context (session attributes with #/$ prefixes)
             // Note: the SmartContext Proxy returns "" for unknown keys (not undefined/null),
             // so we must also skip "" to allow the localStorage fallback to work.
             const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
             if (fromContext !== undefined && fromContext !== null && fromContext !== '') return normalize(fromContext);
-            // 2. Check preferences loaded from backend (stored in localStorage at login)
+            // 2. Check preferences loaded from backend (stored in localStorage at login).
+            // The window-scoped key wins over the global one, and an explicit windowId argument
+            // wins over the one the caller compiled this expression with — same resolution order
+            // as classic OB.PropertyStore.get(propertyName, windowId).
+            const wid = keyWindowId || windowId;
             try {
               const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
+              if (wid && prefs[key + '_' + wid]) return normalize(prefs[key + '_' + wid]);
               if (prefs[key] !== undefined) return normalize(prefs[key]);
               // Case-insensitive fallback
               const lowerKey = key.toLowerCase();
@@ -114,10 +119,13 @@ export const compileExpression = (expression: string) => {
 
     // This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    // `windowId` is a parameter rather than baked into the body so the cache can stay keyed by
+    // the expression alone: the same expression is evaluated from several windows.
     const compiled = new Function(
       // NOSONAR typescript:S1523
       "context",
       "currentValues",
+      "windowId",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
     );
     compiledExpressionCache.set(expression, compiled);
@@ -297,8 +305,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
         parentValues: parentRecord || undefined,
         parentFields: parentTab?.fields,
         context: session,
+        windowId: tab.window,
       });
-      return toClassicBoolean(compiledExpr(smartContext, smartContext));
+      return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
