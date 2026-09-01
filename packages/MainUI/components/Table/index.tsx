@@ -79,7 +79,12 @@ import {
 } from "@/utils/table/utils";
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
-import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
+import {
+  ACTION_FORM_INITIALIZATION,
+  MODE_CHANGE,
+  FIC_ERROR_STATUS,
+} from "@/utils/hooks/useFormInitialization/constants";
+import { showCalloutMessages } from "@/utils/callouts/calloutMessages";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -784,7 +789,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { showErrorModal, showSuccessModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal, showStatusModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -1559,6 +1564,13 @@ const DynamicTable = ({
 
           const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
 
+          if (response?.data?.response?.status === FIC_ERROR_STATUS) {
+            const errorMsg = response.data.response.error?.message || "Unknown callout error";
+            logger.warn(`[InlineCallout] Backend callout error for ${field.hqlName}: ${errorMsg}`);
+            showErrorModal(errorMsg);
+            return;
+          }
+
           if (response?.data?.columnValues || response?.data?.auxiliaryInputValues) {
             // Mark that we're applying callout values to prevent loops
             editingRowUtils.setCalloutApplying(rowId, true);
@@ -1589,12 +1601,14 @@ const DynamicTable = ({
           } else {
             logger.warn(`[InlineCallout] No columnValues or auxiliaryInputValues in response for ${field.hqlName}`);
           }
+
+          showCalloutMessages(response.data?.calloutMessages, showStatusModal);
         });
       } catch (error) {
         logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
       }
     },
-    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow]
+    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
   );
 
   const toggleColumnsDropdown = useCallback(
