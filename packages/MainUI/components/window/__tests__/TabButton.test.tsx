@@ -1,9 +1,17 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
+import { useWindowStore } from "@/stores/windowStore";
+import { DIRTY_TITLE_PREFIX, DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 
 // Mocks
 jest.mock("@/hooks/useMetadataContext");
+
+const WINDOW_IDENTIFIER = "143_1000";
+
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: () => "143_1000",
+}));
 
 describe("TabButton", () => {
   const mockTab = {
@@ -18,7 +26,32 @@ describe("TabButton", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useWindowStore.setState({ dirtyWindows: {} });
     (useMetadataContext as jest.Mock).mockReturnValue({ window: { name: "Window Name" } });
+  });
+
+  describe("pending-changes marker", () => {
+    const markTabDirty = (tabId: string) => {
+      useWindowStore.setState({
+        dirtyWindows: { [WINDOW_IDENTIFIER]: { [buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, tabId)]: true } },
+      });
+    };
+
+    it("prefixes the marker when this tab has unsaved changes", () => {
+      markTabDirty(mockTab.id);
+
+      render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+
+      expect(screen.getByText(`${DIRTY_TITLE_PREFIX}Tab Name`)).toBeInTheDocument();
+    });
+
+    it("leaves the label untouched when another tab is the dirty one", () => {
+      markTabDirty("other-tab");
+
+      render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+
+      expect(screen.getByText("Tab Name")).toBeInTheDocument();
+    });
   });
 
   it("should render the tab name when tabLevel > 0", () => {

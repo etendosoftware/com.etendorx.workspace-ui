@@ -24,7 +24,9 @@ import {
   isGridPaneVisible,
   isPaneFocused,
   isSplitViewAvailable,
+  resolveGuardedSplitTarget,
   resolveSplitViewFormRecord,
+  shouldPromptSplitViewChange,
   resolvePaneFocusTarget,
 } from "../splitView";
 
@@ -298,5 +300,74 @@ describe("resolveSplitViewFormRecord", () => {
 
   it("never discards a record being created", () => {
     expect(resolve({ isNewRecord: true })).toBeUndefined();
+  });
+});
+
+describe("shouldPromptSplitViewChange", () => {
+  const CURRENT_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+
+  const shouldPrompt = (overrides: Record<string, unknown> = {}) =>
+    shouldPromptSplitViewChange({
+      isSplitView: true,
+      selectedRecordId: CLICKED_RECORD,
+      currentRecordId: CURRENT_RECORD,
+      isDirty: true,
+      ...overrides,
+    });
+
+  it("asks before leaving a record with unsaved changes", () => {
+    expect(shouldPrompt()).toBe(true);
+  });
+
+  it("does not ask when the form is clean", () => {
+    expect(shouldPrompt({ isDirty: false })).toBe(false);
+  });
+
+  it("does not ask outside split view", () => {
+    expect(shouldPrompt({ isSplitView: false })).toBe(false);
+  });
+
+  it("does not ask when nothing is selected", () => {
+    expect(shouldPrompt({ selectedRecordId: undefined })).toBe(false);
+  });
+
+  it("does not ask when the form already shows the selected record", () => {
+    expect(shouldPrompt({ selectedRecordId: CURRENT_RECORD })).toBe(false);
+  });
+});
+
+describe("resolveGuardedSplitTarget", () => {
+  const FORM_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+  const NEWER_RECORD = "record-3";
+
+  const resolveTarget = (overrides: Record<string, unknown> = {}) =>
+    resolveGuardedSplitTarget({
+      latestSelection: CLICKED_RECORD,
+      promptedSelection: CLICKED_RECORD,
+      formRecordId: FORM_RECORD,
+      ...overrides,
+    });
+
+  it("keeps the clicked record when the grid did not move", () => {
+    expect(resolveTarget()).toBe(CLICKED_RECORD);
+  });
+
+  it("follows a row selected while the prompt was open", () => {
+    expect(resolveTarget({ latestSelection: NEWER_RECORD })).toBe(NEWER_RECORD);
+  });
+
+  // Saving re-selects the record it saved, which is the one the form already shows.
+  it("ignores a selection that points back at the form record", () => {
+    expect(resolveTarget({ latestSelection: FORM_RECORD })).toBe(CLICKED_RECORD);
+  });
+
+  it("falls back to the clicked record when nothing is selected", () => {
+    expect(resolveTarget({ latestSelection: undefined })).toBe(CLICKED_RECORD);
+  });
+
+  it("keeps the clicked record when the form holds no record yet", () => {
+    expect(resolveTarget({ formRecordId: undefined })).toBe(CLICKED_RECORD);
   });
 });

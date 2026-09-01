@@ -360,6 +360,42 @@ describe("createButtonByType - extended", () => {
     selectedRecordsLength: 1,
   };
 
+  describe("REFRESH", () => {
+    const refreshProps = {
+      ...defaultProps,
+      button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.REFRESH }),
+    };
+
+    it("is disabled in form view while the form has unsaved changes", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true, hasFormChanges: true });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("is disabled in form view while the record is still being created", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true, isNewRecord: true });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("is enabled in form view on a clean saved record", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true });
+      expect(result.disabled).toBe(false);
+    });
+
+    it("stays enabled in the grid even with a dirty form elsewhere", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: false, hasFormChanges: true });
+      expect(result.disabled).toBe(false);
+    });
+
+    it("is disabled while the document is being processed", () => {
+      const result = createButtonByType({
+        ...refreshProps,
+        isFormView: true,
+        saveButtonState: { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true },
+      });
+      expect(result.disabled).toBe(true);
+    });
+  });
+
   it("should disable DELETE when no record is selected", () => {
     const result = createButtonByType({
       ...defaultProps,

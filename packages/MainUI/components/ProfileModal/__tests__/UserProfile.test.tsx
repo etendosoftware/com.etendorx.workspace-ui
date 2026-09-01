@@ -17,9 +17,14 @@
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import UserProfile from "../UserProfile";
+import { useWindowStore } from "@/stores/windowStore";
+import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 
 const logout = jest.fn();
 const t = jest.fn((key: string) => key);
+const WINDOW_IDENTIFIER = "143_1000";
+const FORM_SOURCE_KEY = buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, "header");
 
 jest.mock("@/hooks/useUserContext", () => ({
   useUserContext: () => ({ logout }),
@@ -53,6 +58,8 @@ jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
 describe("UserProfile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useWindowStore.setState({ dirtyWindows: {} });
+    useUnsavedChangesStore.setState({ request: null, bypassUnloadWarning: false });
   });
 
   it("calls logout when the logout button is clicked", async () => {
@@ -67,5 +74,25 @@ describe("UserProfile", () => {
     render(<UserProfile name="John Doe" />);
 
     expect(t).toHaveBeenCalledWith("common.logout");
+  });
+
+  it("asks before logging out while a window holds unsaved changes", () => {
+    useWindowStore.setState({ dirtyWindows: { [WINDOW_IDENTIFIER]: { [FORM_SOURCE_KEY]: true } } });
+    render(<UserProfile name="John Doe" />);
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(logout).not.toHaveBeenCalled();
+    expect(useUnsavedChangesStore.getState().request).not.toBeNull();
+  });
+
+  it("logs out once the pending request is allowed to proceed", async () => {
+    useWindowStore.setState({ dirtyWindows: { [WINDOW_IDENTIFIER]: { [FORM_SOURCE_KEY]: true } } });
+    render(<UserProfile name="John Doe" />);
+
+    fireEvent.click(screen.getByRole("button"));
+    useUnsavedChangesStore.getState().request?.onProceed();
+
+    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
   });
 });
