@@ -72,6 +72,13 @@ const HEADERS_TO_STRIP = [
   "access-control-allow-methods",
   "access-control-expose-headers",
   "x-frame-options",
+  // `fetch` already decompresses the body before we read it as `html`, but leaves these
+  // headers describing the original wire representation. Forwarding them makes the browser
+  // try to decode an already-decoded body, failing with net::ERR_CONTENT_DECODING_FAILED
+  // whenever the backend compresses its response (e.g. gzip in some deployments but not others).
+  "content-encoding",
+  "content-length",
+  "transfer-encoding",
 ];
 
 export function createHtmlResponse(html: string, originalResponse: Response): Response {
