@@ -29,6 +29,7 @@ import { TextInput } from "./components/TextInput";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useLocation } from "@/hooks/useLocation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { LocationData, CountryOption, RegionOption } from "./LocationSelector/types";
 
@@ -382,7 +383,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             isReadOnly ? "bg-gray-100 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer border-gray-300"
           }`}
           onClick={handleOpenModal}
-          tabIndex={isReadOnly ? -1 : 0}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           onKeyDown={(e) => {
             if ((e.key === "Enter" || e.key === " ") && !isReadOnly) {
               e.preventDefault();

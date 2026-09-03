@@ -2,6 +2,7 @@ import { memo, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import SearchInput from "@/components/Form/FormView/selectors/components/Select/SearchInput";
 import type { DropdownViewportData } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
+import { DROPDOWN_PORTAL_ATTRIBUTE } from "@/utils/form/keyboard";
 
 const GAP = 4;
 const MAX_DROPDOWN_HEIGHT = 300;
@@ -82,7 +83,7 @@ const DropdownPortal = memo(
     return createPortal(
       <div
         ref={containerRef}
-        data-dropdown-portal={dropdownId}
+        {...{ [DROPDOWN_PORTAL_ATTRIBUTE]: dropdownId }}
         className="fixed z-[9999] bg-white rounded shadow-lg border border-gray-200 overflow-hidden flex"
         style={{
           top: `${top}px`,

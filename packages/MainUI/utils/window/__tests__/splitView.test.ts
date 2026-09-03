@@ -27,6 +27,7 @@ import {
   resolveSplitViewFormRecord,
   resolvePaneFocusTarget,
 } from "../splitView";
+import { FORM_FIELDS_ROOT_ATTRIBUTE, FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
 
 const FOCUS_BORDER = "border-l-transparent";
 const DUAL_PANE_MODES: TabViewMode[] = [TAB_VIEW_MODES.SPLIT, TAB_VIEW_MODES.TREE_SIDE_BY_SIDE];
@@ -174,6 +175,17 @@ describe("getPaneTabIndex", () => {
   });
 });
 
+/** One field as the form renders it: a named wrapper around its control. */
+const buildFieldMarkup = (fieldName: string, control: string) =>
+  `<div ${FORM_FIELD_NAME_ATTRIBUTE}="${fieldName}">${control}</div>`;
+
+const buildFieldsRoot = (...content: string[]): HTMLElement => {
+  const root = document.createElement("div");
+  root.setAttribute(FORM_FIELDS_ROOT_ATTRIBUTE, "");
+  root.innerHTML = content.join("");
+  return root;
+};
+
 describe("resolvePaneFocusTarget", () => {
   it("prefers the marked descendant", () => {
     const pane = document.createElement("div");
@@ -184,9 +196,31 @@ describe("resolvePaneFocusTarget", () => {
     expect(resolvePaneFocusTarget(pane)).toBe(target);
   });
 
+  it("hands the keyboard to the first editable field of a form pane", () => {
+    const pane = document.createElement("div");
+    // The record navigation buttons of the form header precede the fields.
+    pane.appendChild(document.createElement("button"));
+    const fieldsRoot = buildFieldsRoot(
+      // A section header, whose decorative icons come before every field.
+      "<div><button type='button'>section icon</button></div>",
+      buildFieldMarkup("documentNo", "<input disabled />"),
+      buildFieldMarkup("businessPartner", "<input id='editable-field' />")
+    );
+    pane.appendChild(fieldsRoot);
+
+    expect(resolvePaneFocusTarget(pane)).toBe(fieldsRoot.querySelector("#editable-field"));
+  });
+
   it("falls back to the pane itself when nothing is marked", () => {
     const pane = document.createElement("div");
     pane.appendChild(document.createElement("input"));
+
+    expect(resolvePaneFocusTarget(pane)).toBe(pane);
+  });
+
+  it("falls back to the pane itself when a form pane has no editable field", () => {
+    const pane = document.createElement("div");
+    pane.appendChild(buildFieldsRoot(buildFieldMarkup("documentNo", "<input disabled />")));
 
     expect(resolvePaneFocusTarget(pane)).toBe(pane);
   });

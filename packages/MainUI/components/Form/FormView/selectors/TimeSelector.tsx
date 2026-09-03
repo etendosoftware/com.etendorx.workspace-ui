@@ -21,6 +21,7 @@ import { useState, useEffect, useMemo } from "react";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { getTimeFormatters } from "@/utils/date/utils";
 import { getInputClassNames, getButtonClassNames, getLabelClassNames } from "@/utils/date/constants";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 interface TimeSelectorProps {
   field: Field;
@@ -115,7 +116,7 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label, abso
           onClick={handleIconClick}
           className={buttonClassNames}
           disabled={isReadOnly}
-          tabIndex={-1}>
+          tabIndex={NOT_TABBABLE}>
           <ClockIcon fill="currentColor" className="h-5 w-5" data-testid={"ClockIcon__" + field.id} />
         </button>
       </div>

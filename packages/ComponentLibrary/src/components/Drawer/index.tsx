@@ -19,13 +19,32 @@
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAllItemTitles } from "../../utils/searchUtils";
+import {
+  findAdjacentMenuItem,
+  findHighlightedMenuItem,
+  findNavigableMenuItems,
+  getMenuItemId,
+  MENU_NAVIGATION_OFFSETS,
+  type MenuNavigationOffset,
+} from "../../utils/drawerUtils";
 import TextInputAutocomplete from "../Input/TextInput/TextInputAutocomplete";
 import DrawerHeader from "./Header";
+import { DrawerHighlightContext } from "./DrawerHighlightContext";
 import { DrawerItems } from "./Search";
 import type { DrawerProps } from "./types";
 import ResizeHandle from "../ResizeHandle";
 
 const DRAWER_STATE_KEY = "etendo-drawer-open";
+
+/** Keys the menu search reacts to. Everything else — Tab included — is left untouched. */
+const SEARCH_KEYS = {
+  ARROW_DOWN: "ArrowDown",
+  ARROW_UP: "ArrowUp",
+  ENTER: "Enter",
+  ESCAPE: "Escape",
+} as const;
+
+const EMPTY_SEARCH_VALUE = "";
 interface RecentlyViewedHandler {
   handleWindowAccess?: (item: Menu) => void;
 }
@@ -57,8 +76,10 @@ const Drawer: React.FC<DrawerProps> = ({
     return false;
   });
   const [drawerWidth, setDrawerWidth] = useState<number>(DRAWER_OPEN_WIDTH);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const menuListRef = useRef<HTMLDivElement>(null);
 
   const drawerRefs = useRef<{
     recentlyViewedHandler: RecentlyViewedHandler;
@@ -112,6 +133,74 @@ const Drawer: React.FC<DrawerProps> = ({
     drawerRefs.current.recentlyViewedHandler = ref;
   }, []);
 
+  /**
+   * While a search term is active the first result is highlighted, mirroring the pickList
+   * of the Quick Launch of Etendo Classic, so typing and pressing Enter is enough.
+   * Without a term nothing is highlighted: the first arrow-down picks, so Enter can never
+   * open something the user did not choose.
+   *
+   * The visible set is only knowable after the list has rendered, which is why this runs
+   * as an effect rather than being derived while rendering.
+   */
+  useEffect(() => {
+    if (!searchValue || filteredItems.length === 0) {
+      setHighlightedItemId(null);
+      return;
+    }
+    const navigableItems = findNavigableMenuItems(menuListRef.current);
+    setHighlightedItemId((current) => {
+      const isStillVisible = navigableItems.some((element) => getMenuItemId(element) === current);
+      if (isStillVisible) return current;
+      return getMenuItemId(navigableItems[0] ?? null);
+    });
+  }, [searchValue, filteredItems]);
+
+  const moveHighlight = useCallback(
+    (offset: MenuNavigationOffset) => {
+      const navigableItems = findNavigableMenuItems(menuListRef.current);
+      const target = findAdjacentMenuItem(navigableItems, highlightedItemId, offset);
+      if (target) {
+        setHighlightedItemId(getMenuItemId(target));
+      }
+    },
+    [highlightedItemId]
+  );
+
+  /**
+   * Enter takes the same path as the mouse: clicking the entry runs the handler of
+   * `DrawerSection`, which already decides between expanding a folder and opening a leaf.
+   */
+  const activateHighlighted = useCallback(() => {
+    findHighlightedMenuItem(menuListRef.current, highlightedItemId)?.click();
+  }, [highlightedItemId]);
+
+  const handleSearchKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === SEARCH_KEYS.ARROW_DOWN) {
+        event.preventDefault();
+        moveHighlight(MENU_NAVIGATION_OFFSETS.NEXT);
+        return;
+      }
+      if (event.key === SEARCH_KEYS.ARROW_UP) {
+        event.preventDefault();
+        moveHighlight(MENU_NAVIGATION_OFFSETS.PREVIOUS);
+        return;
+      }
+      if (event.key === SEARCH_KEYS.ENTER) {
+        event.preventDefault();
+        activateHighlighted();
+        return;
+      }
+      if (event.key === SEARCH_KEYS.ESCAPE && searchValue) {
+        event.preventDefault();
+        setSearchValue(EMPTY_SEARCH_VALUE);
+      }
+    },
+    [moveHighlight, activateHighlighted, searchValue, setSearchValue]
+  );
+
+  const highlightContextValue = useMemo(() => ({ highlightedItemId }), [highlightedItemId]);
+
   return (
     <ResizeHandle
       initialWidth={drawerWidth}
@@ -128,7 +217,11 @@ const Drawer: React.FC<DrawerProps> = ({
              rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
         <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
         {open && (
-          <div className="p-2 pb-0">
+          // The navigation keys are handled here, on the container, and not on the input:
+          // its key events bubble up to this point, so the Tab autocompletion of
+          // `TextInputAutocomplete` keeps working untouched — passing it an `onKeyDown`
+          // would replace its own handler instead of composing with it.
+          <div className="p-2 pb-0" onKeyDown={handleSearchKeyDown}>
             <TextInputAutocomplete
               value={searchValue}
               setValue={setSearchValue}
@@ -149,20 +242,22 @@ const Drawer: React.FC<DrawerProps> = ({
             ref={setRecentlyViewedRef}
           />
         )}
-        <div className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
-          <DrawerItems
-            items={searchValue ? filteredItems : items}
-            onClick={handleItemClick}
-            onItemHover={onItemHover}
-            onReportClick={onReportClick}
-            onProcessClick={onProcessClick}
-            open={open}
-            expandedItems={expandedItems}
-            toggleItemExpansion={toggleItemExpansion}
-            searchValue={searchValue}
-            windowId={windowId}
-            pendingWindowId={pendingWindowId}
-          />
+        <div ref={menuListRef} className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+          <DrawerHighlightContext.Provider value={highlightContextValue}>
+            <DrawerItems
+              items={searchValue ? filteredItems : items}
+              onClick={handleItemClick}
+              onItemHover={onItemHover}
+              onReportClick={onReportClick}
+              onProcessClick={onProcessClick}
+              open={open}
+              expandedItems={expandedItems}
+              toggleItemExpansion={toggleItemExpansion}
+              searchValue={searchValue}
+              windowId={windowId}
+              pendingWindowId={pendingWindowId}
+            />
+          </DrawerHighlightContext.Provider>
         </div>
         {open && VersionComponent && <VersionComponent />}
       </div>

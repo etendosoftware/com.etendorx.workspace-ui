@@ -55,6 +55,7 @@ import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
+import { useFormInitialFocus } from "@/hooks/useFormInitialFocus";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
@@ -127,6 +128,7 @@ export function FormView({
   uIPattern,
   isFocused,
   onFocusAcquire,
+  canAutoFocus = true,
 }: FormViewProps) {
   const theme = useTheme();
 
@@ -143,6 +145,7 @@ export function FormView({
   const [formInstanceKey, setFormInstanceKey] = useState(0);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const fieldsRootRef = useRef<HTMLDivElement | null>(null);
   const lastSelectedRecordRef = useRef<string | null>(null);
   // Set to true in onSuccess when saving a NEW record so the first re-initialization
   // triggered by the NEW→EDIT transition is treated as a data refresh (uses setValue
@@ -478,6 +481,34 @@ export function FormView({
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
+
+  /**
+   * Field the application dictionary marks as the entry point of the form
+   * (AD_Field.ISFIRSTFOCUSEDFIELD), the first rule of Classic's
+   * `OBViewForm.computeFocusItem`.
+   */
+  const firstFocusedFieldName = useMemo(() => {
+    const flaggedField = Object.values(tab.fields ?? {}).find((field) => field.isFirstFocusedField && field.displayed);
+    return flaggedField?.hqlName;
+  }, [tab.fields]);
+
+  // A new key means "this is a different record or a different form", which is
+  // exactly when Classic re-places the focus. Post-save refreshes keep the key.
+  const initialFocusKey = `${formInstanceKey}:${currentRecordId}:${currentMode}`;
+
+  // Sections start collapsed until the metadata-driven preference is seeded, and a
+  // collapsed section holds no focusable field, so the focus attempt has to be
+  // retried once the expansion state settles.
+  const focusLayoutToken = expandedSections.join("|");
+
+  useFormInitialFocus({
+    fieldsRootRef,
+    enabled: Boolean(canAutoFocus),
+    isReady: !loadingFormInitialization,
+    focusKey: initialFocusKey,
+    layoutToken: focusLayoutToken,
+    firstFocusedFieldName,
+  });
 
   // Seed the collapsed/expanded state from the fieldGroupCollapsed metadata only the
   // first time this tab's form is opened. Every later opening reuses the preference
@@ -1204,6 +1235,7 @@ export function FormView({
               openAttachmentModal={openAttachmentModal}
               onAttachmentModalClose={() => setOpenAttachmentModal(false)}
               isReadOnly={isReadOnly}
+              fieldsRootRef={fieldsRootRef}
               data-testid="FormFields__1a0853"
             />
 

@@ -38,6 +38,7 @@ import { useFormInitializationContext } from "@/contexts/FormInitializationConte
 import useFormParent from "@/hooks/useFormParent";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
+import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
@@ -569,6 +570,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     return (
       <div
         className={[containerClasses, layoutClasses].filter(Boolean).join(" ")}
+        {...{ [FORM_FIELD_NAME_ATTRIBUTE]: field.hqlName }}
         title={field.helpComment || ""}
         aria-describedby={field.helpComment ? `${field.name}-help` : ""}
         onBlurCapture={(e) => {
