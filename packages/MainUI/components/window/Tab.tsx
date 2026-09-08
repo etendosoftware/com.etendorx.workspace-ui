@@ -55,8 +55,12 @@ import {
   isGridPaneVisible,
   isPaneFocused,
   isSplitViewAvailable,
+  resolveGuardedSplitTarget,
   resolveSplitViewFormRecord,
+  shouldPromptSplitViewChange,
 } from "@/utils/window/splitView";
+import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
+import { isTabDirty } from "@/utils/window/dirtyState";
 import { useSplitPaneFocus } from "@/hooks/useSplitPaneFocus";
 import { useWindowStore, DEFAULT_TABLE_STATE } from "@/stores/windowStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -162,8 +166,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
   }, []);
 
-  const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied, onRestoreSelection } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
+  const { guardTransition } = useUnsavedChangesTabGuard();
   const { graph } = useSelected();
 
   // Zustand store — reactive subscriptions (re-render when these change)
@@ -178,6 +183,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     if (!parentTabId || !windowIdentifier) return undefined;
     return s.windows[windowIdentifier]?.tabs[parentTabId]?.selectedRecord;
   });
+  // Same source of truth as the guard itself: TabContext's `hasFormChanges` is also raised
+  // for a pristine NEW record, which must not trigger the prompt.
+  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
+  const isCurrentTabDirty = isTabDirty(dirtyWindows, windowIdentifier, tab.id);
   const splitState = useWindowStore((s) => {
     if (!windowIdentifier) return DEFAULT_SPLIT_STATE;
     return s.windows[windowIdentifier]?.tabs[tab.id]?.split ?? DEFAULT_SPLIT_STATE;
@@ -197,14 +206,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
   // This prevents re-opening the form view after the user explicitly closes it.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
+  // Record the split-view unsaved-changes prompt was last opened for, so holding an arrow
+  // key in the grid raises one prompt instead of one per row.
+  const promptedSplitRecordRef = useRef<string | undefined>(undefined);
 
-  const { isFocused, acquire } = useFocusRegion(tab.id, {
-    onBlur: async () => {
-      if (hasFormChanges) {
-        await onSave({ showModal: true });
-      }
-    },
-  });
+  // No onBlur autosave: moving to another tab must never save on the user's behalf. The
+  // tab keeps its pending edits (it stays mounted) and advertises them with the `*` marker.
+  const { isFocused, acquire } = useFocusRegion(tab.id);
 
   // Level-0 tab (header) acquires focus on mount — sets initial focus for the window
   useEffect(() => {
@@ -360,10 +368,41 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   );
 
   /**
+   * Loads the record the user asked for once the guard has been answered.
+   *
+   * Saving re-selects the saved record in the grid, so the stored selection is only
+   * followed while it points somewhere else than the record the form is showing; the
+   * selection is then re-pointed at the target so grid and form never disagree.
+   */
+  const loadGuardedSplitRecord = useCallback(
+    (promptedSelection: string) => {
+      if (!windowIdentifier) return;
+      const target = resolveGuardedSplitTarget({
+        latestSelection: getSelectedRecord(windowIdentifier, tab.id),
+        promptedSelection,
+        formRecordId: getTabFormState(windowIdentifier, tab.id)?.recordId,
+      });
+      setSelectedRecord(windowIdentifier, tab.id, target);
+      handleSetRecordId(target);
+    },
+    [windowIdentifier, tab.id, getSelectedRecord, getTabFormState, setSelectedRecord, handleSetRecordId]
+  );
+
+  /** Puts the grid highlight back on the record the form is still showing. */
+  const restoreGridSelectionToForm = useCallback(() => {
+    if (!currentRecordId) return;
+    onRestoreSelection(currentRecordId);
+  }, [currentRecordId, onRestoreSelection]);
+
+  /**
    * In split view the form pane follows the grid selection, so a single click on
    * a row is enough to load that record — the same as Classic. The grid writes
    * its selection to the store, so reacting to the stored value covers row
    * clicks, keyboard navigation and programmatic selection alike.
+   *
+   * With pending edits the switch is not silent any more: the guard asks whether to
+   * save or discard them, and backing out re-selects the form's record so the grid
+   * highlight never contradicts what the form shows.
    */
   useEffect(() => {
     const recordToLoad = resolveSplitViewFormRecord({
@@ -373,9 +412,37 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       hasFormChanges,
       isNewRecord: currentFormMode === FORM_MODES.NEW,
     });
-    if (!recordToLoad) return;
-    handleSetRecordId(recordToLoad);
-  }, [isSplitView, selectedRecordId, currentRecordId, hasFormChanges, currentFormMode, handleSetRecordId]);
+    if (recordToLoad) {
+      promptedSplitRecordRef.current = undefined;
+      handleSetRecordId(recordToLoad);
+      return;
+    }
+
+    const needsPrompt = shouldPromptSplitViewChange({
+      isSplitView,
+      selectedRecordId,
+      currentRecordId,
+      isDirty: isCurrentTabDirty,
+    });
+    if (!needsPrompt || !selectedRecordId) return;
+    // Holding an arrow key in the grid must not stack one prompt per row.
+    if (promptedSplitRecordRef.current === selectedRecordId) return;
+
+    promptedSplitRecordRef.current = selectedRecordId;
+    const promptedSelection = selectedRecordId;
+    guardTransition(() => loadGuardedSplitRecord(promptedSelection), restoreGridSelectionToForm);
+  }, [
+    isSplitView,
+    selectedRecordId,
+    currentRecordId,
+    hasFormChanges,
+    currentFormMode,
+    isCurrentTabDirty,
+    handleSetRecordId,
+    guardTransition,
+    loadGuardedSplitRecord,
+    restoreGridSelectionToForm,
+  ]);
 
   const handleNew = useCallback(() => {
     if (windowIdentifier) {

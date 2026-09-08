@@ -18,6 +18,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { ToolbarProvider } from "./ToolbarContext";
+import UnsavedChangesTabGuardProvider from "./UnsavedChangesTabGuard";
 import { SearchProvider } from "./searchContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelected } from "@/hooks/useSelected";
@@ -86,7 +87,9 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
   return (
     <TabContext.Provider value={value}>
       <ToolbarProvider data-testid="ToolbarProvider__24e3a6">
-        <SearchProvider data-testid="SearchProvider__24e3a6">{children}</SearchProvider>
+        <UnsavedChangesTabGuardProvider data-testid="UnsavedChangesTabGuardProvider__24e3a6">
+          <SearchProvider data-testid="SearchProvider__24e3a6">{children}</SearchProvider>
+        </UnsavedChangesTabGuardProvider>
       </ToolbarProvider>
     </TabContext.Provider>
   );
