@@ -259,9 +259,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const logout = useCallback(async () => {
     // Optimistic logout: clear local state and every client token first so the
-    // user is fully logged out regardless of the backend outcome. The backend
-    // call is best-effort (the JWT is stateless and cannot be revoked), so its
-    // failure is swallowed and never surfaces as an unhandled rejection.
+    // user is fully logged out regardless of the backend outcome. doLogout()
+    // asks the backend to revoke the token (closing the reuse window for
+    // /sws/com.etendoerp.metadata.meta/* requests), but the call is best-effort:
+    // its failure is swallowed and never surfaces as an unhandled rejection.
     clearUserData();
     pendingPasswordRef.current = "";
     Metadata.setToken("");

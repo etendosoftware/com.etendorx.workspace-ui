@@ -68,6 +68,21 @@ describe("ERP route helper functions", () => {
       const response = createHtmlResponse("<html>rewritten</html>", original);
       expect(response.headers.get("X-Custom")).toBe("test");
     });
+
+    it("should strip content-encoding/content-length/transfer-encoding, since the body was already decoded by fetch", () => {
+      const original = new Response("<html></html>", {
+        headers: {
+          "Content-Type": "text/html",
+          "Content-Encoding": "gzip",
+          "Content-Length": "1234",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+      const response = createHtmlResponse("<html>rewritten</html>", original);
+      expect(response.headers.get("Content-Encoding")).toBeNull();
+      expect(response.headers.get("Content-Length")).toBeNull();
+      expect(response.headers.get("Transfer-Encoding")).toBeNull();
+    });
   });
 
   describe("rewriteHtmlResourceUrls", () => {

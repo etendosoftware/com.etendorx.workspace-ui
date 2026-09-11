@@ -311,6 +311,29 @@ export interface ToggleFavoriteResponse {
   menuId: string;
 }
 
+export interface RecentDocumentItem {
+  recordId: string;
+  identifier: string;
+  windowId: string;
+  windowTitle: string;
+  tabId: string;
+  tabLevel: number;
+  viewedAt: number;
+}
+
+export interface RecentDocumentsResponse {
+  items: RecentDocumentItem[];
+}
+
+export interface TrackRecentDocumentRequest {
+  windowId: string;
+  windowTitle: string;
+  tabId: string;
+  tabLevel: number;
+  recordId: string;
+  identifier: string;
+}
+
 // ── API functions ─────────────────────────────────────────────────────────────
 
 export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
@@ -390,6 +413,26 @@ export async function toggleFavorite(menuId: string): Promise<ToggleFavoriteResp
     throw new Error(`Failed to toggle favorite: ${response.status}`);
   }
   return response.data as ToggleFavoriteResponse;
+}
+
+export async function fetchRecentDocuments(): Promise<RecentDocumentsResponse> {
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/recent-documents`, { method: "GET" });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch recent documents: ${response.status}`);
+  }
+  return response.data as RecentDocumentsResponse;
+}
+
+export async function trackRecentDocument(payload: TrackRecentDocumentRequest): Promise<{ status: string }> {
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/recent-documents`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: JSON_HEADERS,
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to track recent document: ${response.status}`);
+  }
+  return response.data as { status: string };
 }
 
 export async function updateWidgetParams(

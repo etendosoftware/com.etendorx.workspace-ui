@@ -436,7 +436,7 @@ export function FormView({
     const identifier = record?._identifier;
     if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
     addRecentDocument({
-      id: currentRecordId,
+      recordId: currentRecordId,
       identifier: String(identifier),
       windowId: windowMetadata.id,
       windowTitle: windowMetadata.name,

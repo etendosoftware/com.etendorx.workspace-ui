@@ -108,7 +108,10 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
       await closeToastIfPresent(page);
 
       // Verify Net Amount: 22.40
-      await expect(page.getByText("22.4").first()).toBeVisible({ timeout: 10_000 });
+      // Scoped to visible elements — the Recent Documents widget on the Home page (kept
+      // mounted but hidden while this window is active) can also match "22.4" once it has
+      // real history, since a document's identifier text may embed the same amount.
+      await expect(page.getByText("22.4").and(page.locator(":visible")).first()).toBeVisible({ timeout: 10_000 });
 
       // ── Step 5: Complete Purchase Invoice ─────────────────────────────────────
       await page.getByRole("button", { name: "Available Process" }).click();
@@ -141,7 +144,8 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
       await page.waitForTimeout(1_000);
 
       // Verify Grand Total: 24.64
-      await expect(page.getByText("24.64").first()).toBeVisible({ timeout: 10_000 });
+      // Scoped to visible elements — see note above on the Recent Documents widget.
+      await expect(page.getByText("24.64").and(page.locator(":visible")).first()).toBeVisible({ timeout: 10_000 });
 
       // Verify Payment Complete: Yes
       await expect(page.locator('span[name="paymentComplete"]')).toHaveText("Yes", { timeout: 20_000 });
