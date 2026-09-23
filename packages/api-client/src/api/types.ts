@@ -1042,6 +1042,7 @@ export interface FormInitializationResponse {
   noteCount: number;
   attachmentCount?: number;
   _readOnly?: boolean;
+  calloutMessages?: Array<{ text: string; severity: string }>;
 }
 
 export interface ProcessBindings {
