@@ -385,7 +385,7 @@ describe("useSavedViews — setDefaultView", () => {
     expect(result.current.isUpdatingDefault).toBe(false);
   });
 
-  it("clears the previous default before setting the new one", async () => {
+  it("sends a single PUT and lets the backend clear the previous default atomically", async () => {
     const spy = jest
       .spyOn(global, "fetch")
       .mockReturnValueOnce(
@@ -394,7 +394,6 @@ describe("useSavedViews — setDefaultView", () => {
           makeRawRecord({ id: "view-002", isdefault: false }),
         ])
       )
-      .mockReturnValueOnce(makeResponse(null, true, 204))
       .mockReturnValueOnce(makeResponse(null, true, 204))
       .mockReturnValueOnce(
         makeFetchViewsResponse([
@@ -414,15 +413,11 @@ describe("useSavedViews — setDefaultView", () => {
     });
 
     const putCalls = spy.mock.calls.filter((c) => (c[1] as RequestInit)?.method === "PUT");
-    expect(putCalls).toHaveLength(2);
+    expect(putCalls).toHaveLength(1);
 
-    const clearBody = JSON.parse((putCalls[0][1] as RequestInit).body as string);
-    expect(clearBody.isdefault).toBe(false);
-    expect(putCalls[0][0] as string).toContain("view-001");
-
-    const setBody = JSON.parse((putCalls[1][1] as RequestInit).body as string);
+    const setBody = JSON.parse((putCalls[0][1] as RequestInit).body as string);
     expect(setBody.isdefault).toBe(true);
-    expect(putCalls[1][0] as string).toContain("view-002");
+    expect(putCalls[0][0] as string).toContain("view-002");
   });
 
   it("throws when viewId is not found in current views", async () => {
