@@ -72,6 +72,33 @@ export function notifyStaleObjectAwareError(
 }
 
 /**
+ * Invalidates what an inline save leaves stale, before the saved row is read back.
+ *
+ * - The datasource response cache of the entity, as FormView does after a save: otherwise a second
+ *   save of the same row within the cache TTL reads back the snapshot cached by the first one,
+ *   stale `updated` included, and the next save hits a false concurrency conflict.
+ * - The parent tabs, as a delete does: a child save can change its parent on the server (e.g. an
+ *   event handler rolling up a total), and a parent kept with its old `updated` fails on its next
+ *   save with a conflict nobody else caused.
+ */
+export function invalidateAfterInlineSave({
+  tab,
+  datasource,
+  triggerParentRefreshes,
+}: {
+  tab: Pick<Tab, "entityName" | "tabLevel">;
+  datasource: { clearCacheForEntity: (entity: string) => void };
+  triggerParentRefreshes: (currentLevel: number) => Promise<void>;
+}): void {
+  datasource.clearCacheForEntity(tab.entityName);
+  if (tab.tabLevel > 0) {
+    triggerParentRefreshes(tab.tabLevel).catch((error: unknown) => {
+      logger.warn("[SaveOperation] Failed to refresh parent tabs after inline save:", error);
+    });
+  }
+}
+
+/**
  * Builds the payload for saving a record via the datasource servlet
  * @param values The record data to save
  * @param oldValues The original record data (for updates)

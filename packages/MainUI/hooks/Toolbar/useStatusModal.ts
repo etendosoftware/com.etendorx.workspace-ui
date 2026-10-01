@@ -66,20 +66,30 @@ export const useStatusModal = () => {
         },
       };
 
+      // A toast with a reload action never auto-closes, so the action itself has to dismiss it
+      let toastId: string | number | undefined;
+      const reload = options?.onReload;
+      const handleReload = reload
+        ? () => {
+            if (toastId !== undefined) toast.dismiss(toastId);
+            return reload();
+          }
+        : undefined;
+
       const titleNode = React.createElement(ToastContent, {
         message: statusText,
-        onReload: options?.onReload,
+        onReload: handleReload,
         reloadLabel: options?.reloadLabel,
       });
 
       if (statusType === "success") {
-        toast.success(titleNode, toastOptions);
+        toastId = toast.success(titleNode, toastOptions);
       } else if (statusType === "error") {
-        toast.error(titleNode, toastOptions);
+        toastId = toast.error(titleNode, toastOptions);
       } else if (statusType === "warning") {
-        toast.warning(titleNode, toastOptions);
+        toastId = toast.warning(titleNode, toastOptions);
       } else {
-        toast.info(titleNode, toastOptions);
+        toastId = toast.info(titleNode, toastOptions);
       }
     },
     []

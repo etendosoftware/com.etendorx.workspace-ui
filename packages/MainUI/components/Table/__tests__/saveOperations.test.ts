@@ -28,6 +28,7 @@ import {
   notifyStaleObjectAwareError,
   buildSavePayload,
   validateRecordBeforeSave,
+  invalidateAfterInlineSave,
 } from "../utils/saveOperations";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
@@ -1066,6 +1067,30 @@ describe("saveOperations", () => {
         const generalError = getGeneralErrorMessage(result.errors!);
         expect(generalError).toBe("Validation failed");
       });
+    });
+  });
+
+  describe("invalidateAfterInlineSave", () => {
+    const setup = (tabLevel: number) => {
+      const datasource = { clearCacheForEntity: jest.fn() };
+      const triggerParentRefreshes = jest.fn().mockResolvedValue(undefined);
+      invalidateAfterInlineSave({ tab: { entityName: "SMFOKR_Okr_Kr", tabLevel }, datasource, triggerParentRefreshes });
+      return { datasource, triggerParentRefreshes };
+    };
+
+    it("evicts the saved entity from the response cache", () => {
+      const { datasource } = setup(0);
+      expect(datasource.clearCacheForEntity).toHaveBeenCalledWith("SMFOKR_Okr_Kr");
+    });
+
+    it("refreshes the parent tabs of a child tab", () => {
+      const { triggerParentRefreshes } = setup(1);
+      expect(triggerParentRefreshes).toHaveBeenCalledWith(1);
+    });
+
+    it("does not refresh parents of a root tab", () => {
+      const { triggerParentRefreshes } = setup(0);
+      expect(triggerParentRefreshes).not.toHaveBeenCalled();
     });
   });
 });

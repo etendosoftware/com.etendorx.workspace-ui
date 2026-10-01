@@ -109,22 +109,35 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 ): ((...args: Parameters<T>) => void) => {
   const lastExecutionRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The trailing call must carry the latest arguments: with the ones that scheduled it, every
+  // keystroke typed inside the interval is lost and the saved value is an intermediate one.
+  const pendingArgsRef = useRef<Parameters<T> | null>(null);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
 
   return useCallback(
     (...args: Parameters<T>) => {
       const now = Date.now();
 
-      if (now - lastExecutionRef.current >= interval) {
+      if (now - lastExecutionRef.current >= interval && !timeoutRef.current) {
         lastExecutionRef.current = now;
         callback(...args);
-      } else if (!timeoutRef.current) {
+        return;
+      }
+
+      pendingArgsRef.current = args;
+      if (!timeoutRef.current) {
         timeoutRef.current = setTimeout(
           () => {
+            const pendingArgs = pendingArgsRef.current;
             lastExecutionRef.current = Date.now();
             timeoutRef.current = null;
-            callback(...args);
+            pendingArgsRef.current = null;
+            if (pendingArgs) {
+              callbackRef.current(...pendingArgs);
+            }
           },
-          interval - (now - lastExecutionRef.current)
+          Math.max(0, interval - (now - lastExecutionRef.current))
         );
       }
     },

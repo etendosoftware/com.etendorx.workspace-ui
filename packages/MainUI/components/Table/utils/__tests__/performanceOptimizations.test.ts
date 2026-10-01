@@ -1,6 +1,8 @@
+import { renderHook } from "@testing-library/react";
 import {
   debounce,
   throttle,
+  useThrottledCallback,
   LazyLoadingManager,
   createLazyLoadingManager,
   PerformanceMonitor,
@@ -87,6 +89,37 @@ describe("throttle", () => {
     jest.advanceTimersByTime(110);
     throttled();
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("useThrottledCallback", () => {
+  const renderThrottled = (callback: jest.Mock) => renderHook(() => useThrottledCallback(callback, 50)).result.current;
+
+  it("runs the first call immediately", () => {
+    const callback = jest.fn();
+    renderThrottled(callback)("K");
+    expect(callback).toHaveBeenCalledWith("K");
+  });
+
+  it("flushes the latest value typed inside the interval, not the first one", () => {
+    const callback = jest.fn();
+    const throttled = renderThrottled(callback);
+    throttled("K");
+    throttled("KR");
+    throttled("KR u");
+    throttled("KR uno");
+
+    jest.advanceTimersByTime(50);
+
+    expect(callback).toHaveBeenCalledTimes(2);
+    expect(callback).toHaveBeenLastCalledWith("KR uno");
+  });
+
+  it("does not run twice for a single call", () => {
+    const callback = jest.fn();
+    renderThrottled(callback)("K");
+    jest.advanceTimersByTime(100);
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 });
 
