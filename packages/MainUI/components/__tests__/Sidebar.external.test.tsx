@@ -18,10 +18,11 @@
  * Unit tests for the External (external link) branch of the Sidebar menu click dispatch.
  */
 
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import Sidebar from "../Sidebar";
 import { useWindowStore } from "@/stores/windowStore";
+import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 
 const mockOpenExternalMenuEntry = jest.fn();
 let capturedOnClick: (item: Menu) => void = () => {};
@@ -52,9 +53,22 @@ jest.mock("@/stores/metadataStore", () => ({
     selector({ loadWindowData: jest.fn().mockResolvedValue({}), prefetchWindowData: jest.fn() }),
 }));
 
+jest.mock("@/utils/reportPopup", () => ({ tryOpenReportPopup: jest.fn(), notifyReportPopupBlocked: jest.fn() }));
+
+const buildReportItem = (isModalProcess: boolean): Menu => ({
+  id: "MENU_REPORT",
+  name: "Report",
+  type: "Report",
+  processUrl: "/ad_reports/Report.html",
+  isModalProcess,
+});
+
+/** Runs the retry handed to the blocked-popup notice. */
+const retryBlockedPopup = () => jest.mocked(notifyReportPopupBlocked).mock.calls[0][0]();
+
 const clickMenuItem = (item: Menu) => {
   render(<Sidebar />);
-  capturedOnClick(item);
+  act(() => capturedOnClick(item));
 };
 
 describe("Sidebar menu click dispatch", () => {
@@ -75,6 +89,53 @@ describe("Sidebar menu click dispatch", () => {
 
     expect(mockOpenExternalMenuEntry).toHaveBeenCalledWith(item);
     expect(useWindowStore.getState().windows).toEqual({});
+  });
+
+  describe("Classic ProcessManual / Report entries", () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      openSpy = jest.spyOn(window, "open").mockReturnValue({} as Window);
+    });
+
+    afterEach(() => {
+      openSpy.mockRestore();
+    });
+
+    it("opens modal processes in a popup", () => {
+      jest.mocked(tryOpenReportPopup).mockReturnValue(true);
+
+      clickMenuItem(buildReportItem(true));
+
+      expect(tryOpenReportPopup).toHaveBeenCalledTimes(1);
+      expect(notifyReportPopupBlocked).not.toHaveBeenCalled();
+      expect(openSpy).not.toHaveBeenCalled();
+    });
+
+    it("offers a manual retry when the modal popup is blocked", () => {
+      jest.mocked(tryOpenReportPopup).mockReturnValue(false);
+
+      clickMenuItem(buildReportItem(true));
+      retryBlockedPopup();
+
+      expect(tryOpenReportPopup).toHaveBeenCalledTimes(2);
+    });
+
+    it("opens non-modal processes in a new tab", () => {
+      clickMenuItem(buildReportItem(false));
+
+      expect(openSpy).toHaveBeenCalledWith(expect.any(String), "_blank");
+      expect(notifyReportPopupBlocked).not.toHaveBeenCalled();
+    });
+
+    it("offers a manual retry when the new tab is blocked", () => {
+      openSpy.mockReturnValue(null);
+
+      clickMenuItem(buildReportItem(false));
+      retryBlockedPopup();
+
+      expect(openSpy).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("keeps opening Window entries as windows", () => {

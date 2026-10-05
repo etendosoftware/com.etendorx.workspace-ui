@@ -20,49 +20,54 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { UseItemActionsProps } from "./types";
 import { OPENABLE_MENU_ITEM_TYPES } from "../utils/drawerUtils";
 
+type ItemCallbackName = keyof UseItemActionsProps;
+
+/** Which callback opens an item type, and what the item needs to be opened. */
+interface ItemRoute {
+  callback: ItemCallbackName;
+  canOpen: (item: Menu) => boolean;
+}
+
+const hasId = (item: Menu): boolean => Boolean(item.id);
+
+const PROCESS_ROUTE: ItemRoute = { callback: "onProcessClick", canOpen: hasId };
+
+type OpenableMenuItemType = (typeof OPENABLE_MENU_ITEM_TYPES)[number];
+
+/** Typed over OPENABLE_MENU_ITEM_TYPES, so both lists can never drift apart. */
+const ITEM_ROUTES: Record<OpenableMenuItemType, ItemRoute> = {
+  Window: { callback: "onWindowClick", canOpen: (item) => Boolean(item.windowId) },
+  View: { callback: "onWindowClick", canOpen: () => true },
+  Report: { callback: "onReportClick", canOpen: hasId },
+  ProcessManual: PROCESS_ROUTE,
+  ProcessDefinition: PROCESS_ROUTE,
+  Form: PROCESS_ROUTE,
+  Process: PROCESS_ROUTE,
+  External: { callback: "onWindowClick", canOpen: (item) => Boolean(item.url) },
+};
+
+const isOpenableMenuItemType = (type: string): type is OpenableMenuItemType =>
+  OPENABLE_MENU_ITEM_TYPES.includes(type as OpenableMenuItemType);
+
+/** The route that opens the item, or undefined when the drawer cannot open its type. */
+const getItemRoute = (item: Menu): ItemRoute | undefined => {
+  const type = item.type ?? "";
+  if (!isOpenableMenuItemType(type)) return undefined;
+  return ITEM_ROUTES[type];
+};
+
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(
     (item: Menu) => {
-      const validType = OPENABLE_MENU_ITEM_TYPES.includes(
-        (item.type || "") as (typeof OPENABLE_MENU_ITEM_TYPES)[number]
-      );
-      if (!validType) {
+      const route = getItemRoute(item);
+      if (!route) {
         console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
         return;
       }
+      if (!route.canOpen(item)) return;
 
-      switch (item.type) {
-        case "Window":
-          if (item.windowId && onWindowClick) {
-            onWindowClick(item);
-          }
-          break;
-        case "View":
-          if (onWindowClick) {
-            onWindowClick(item);
-          }
-          break;
-        case "Report":
-          if (item.id && onReportClick) {
-            onReportClick(item);
-          }
-          break;
-        case "ProcessManual":
-        case "ProcessDefinition":
-        case "Form":
-        case "Process":
-          if (item.id && onProcessClick) {
-            onProcessClick(item);
-          }
-          break;
-        case "External":
-          if (item.url && onWindowClick) {
-            onWindowClick(item);
-          }
-          break;
-        default:
-          console.warn(`Unhandled item type: ${item.type}`);
-      }
+      const callback = { onWindowClick, onReportClick, onProcessClick }[route.callback];
+      callback?.(item);
     },
     [onWindowClick, onReportClick, onProcessClick]
   );

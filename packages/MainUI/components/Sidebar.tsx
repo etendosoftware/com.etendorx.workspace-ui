@@ -15,7 +15,7 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
+import { type ReportPopupBlockedTexts, notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
@@ -148,6 +148,32 @@ const getManualProcessConfig = (
 
 const getManualProcessUrl = (item: Menu): string | null => {
   return item.processUrl || null;
+};
+
+/** ProcessManual and Report entries are opened in Etendo Classic. */
+const isClassicProcessMenuItem = (item: Menu): boolean =>
+  item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
+
+/**
+ * Opens the Classic URL of a ProcessManual / Report entry: modal processes in a popup, the rest
+ * in a new tab. When the browser blocks it, a notice offers to open it manually.
+ */
+const openClassicProcessUrl = (
+  classicUrl: string,
+  isModalProcess: boolean | undefined,
+  popupBlockedTexts: ReportPopupBlockedTexts
+): void => {
+  if (isModalProcess) {
+    if (!tryOpenReportPopup(classicUrl)) {
+      notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
+    }
+    return;
+  }
+
+  // Fallback: Open in new tab
+  if (!window.open(classicUrl, "_blank")) {
+    notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
+  }
 };
 
 /**
@@ -300,8 +326,7 @@ export default function Sidebar() {
 
       // Handle ProcessManual / Report items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
-      const isClassicProcess = item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
-      if (isClassicProcess && processUrl) {
+      if (isClassicProcessMenuItem(item) && processUrl) {
         const classicUrl = buildEtendoClassicBookmarkUrl({
           baseUrl: ETENDO_BASE_URL,
           processUrl,
@@ -313,17 +338,7 @@ export default function Sidebar() {
           title: t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle"),
           openLabel: t("processModal.gridToolbar.openLegacyReport.openManually"),
         };
-        if (item.isModalProcess) {
-          if (!tryOpenReportPopup(classicUrl)) {
-            notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
-          }
-          return;
-        }
-
-        // Fallback: Open in new tab
-        if (!window.open(classicUrl, "_blank")) {
-          notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
-        }
+        openClassicProcessUrl(classicUrl, item.isModalProcess, popupBlockedTexts);
         return;
       }
 
