@@ -23,6 +23,7 @@ import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/che
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
+import ExternalLinkIcon from "@workspaceui/componentlibrary/src/assets/icons/external-link.svg";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -41,6 +42,12 @@ const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, 
     return metadata.name;
   }
   return "Untitled Window";
+};
+
+/** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
+const getIconForWindow = (window: WindowState) => {
+  if (!window.externalUrl) return undefined;
+  return <ExternalLinkIcon className="fill-black" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
 };
 
 export default function WindowTabs() {
@@ -167,6 +174,7 @@ export default function WindowTabs() {
               }}>
               <WindowTab
                 title={title}
+                icon={getIconForWindow(window)}
                 isActive={isActive}
                 onActivate={() => {
                   handleSelectWindow(window.windowIdentifier);

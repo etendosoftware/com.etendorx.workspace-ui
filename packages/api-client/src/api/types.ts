@@ -584,11 +584,16 @@ export interface Menu {
   processDefinitionId?: string;
   description?: string;
   viewId?: string;
+  /** Target URL of an External (external link) entry. */
+  url?: string | null;
+  /** External entries only: true opens the URL in a new browser tab, false inside the app. */
+  openLinkInBrowser?: boolean;
 }
 
 export enum Action {
   OBUIAPPOpenView = "OBUIAPP_OpenView",
   OBUIAPPProcess = "OBUIAPP_Process",
+  L = "L",
   P = "P",
   R = "R",
   W = "W",

@@ -31,10 +31,16 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg", (
   default: (props: any) => <svg {...props} data-testid={props["data-testid"] || "ChevronsRightIcon"} />,
 }));
 
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/external-link.svg", () => ({
+  __esModule: true,
+  default: (props: React.SVGProps<SVGSVGElement>) => <svg {...props} />,
+}));
+
 jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   __esModule: true,
-  default: ({ title, isActive, onActivate, onClose, canClose, "data-testid": testId }: any) => (
+  default: ({ title, icon, isActive, onActivate, onClose, canClose, "data-testid": testId }: any) => (
     <div data-testid={testId} data-active={isActive} data-can-close={canClose}>
+      {icon}
       <span onClick={onActivate}>{title}</span>
       <button onClick={onClose} data-testid="CloseButton">
         Close
@@ -200,6 +206,36 @@ describe("WindowTabs", () => {
     expect(tabs).toHaveLength(2);
     expect(screen.getByText("Window 1")).toBeInTheDocument();
     expect(screen.getByText("Window 2")).toBeInTheDocument();
+  });
+
+  it("gives the external-link icon only to the in-app tabs of External menu entries", () => {
+    const externalIdentifier = "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6_1";
+    setWindowStoreState({
+      w1: {
+        windowIdentifier: "w1",
+        title: "Window 1",
+        isActive: false,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "w1",
+        initialized: true,
+      },
+      [externalIdentifier]: {
+        windowIdentifier: externalIdentifier,
+        title: "TEST External",
+        isActive: true,
+        tabs: {},
+        navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+        windowId: "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+        initialized: true,
+        externalUrl: "http://example.com",
+      },
+    });
+
+    render(<WindowTabs />);
+
+    expect(screen.getByTestId(`ExternalLinkIcon__${externalIdentifier}`)).toBeInTheDocument();
+    expect(screen.queryByTestId("ExternalLinkIcon__w1")).not.toBeInTheDocument();
   });
 
   it("activates window when tab is clicked", () => {

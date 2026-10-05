@@ -29,6 +29,8 @@ import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { type ExtendedMenu, MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
+import { isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
+import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
 
 interface FormData {
   paramUrl: string;
@@ -192,6 +194,7 @@ export default function Sidebar() {
   }, [windowsObj]);
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
+  const openExternalMenuEntry = useOpenExternalMenuEntry();
   const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
   const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -262,6 +265,7 @@ export default function Sidebar() {
    * 3. Process / Form items: Opens ProcessIframeModal (legacy implementation)
    * 4. ProcessManual / Report items: Opens Etendo Classic in a popup or new tab
    * 5. Window items: Opens/activates window using multi-window system
+   * 6. External items: Opens the URL in a new browser tab or in its own in-app tab
    *
    * Features optimistic UI updates by immediately setting pendingWindowId
    * for visual feedback before state synchronization completes.
@@ -270,6 +274,11 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
+      if (isExternalMenuEntry(item)) {
+        openExternalMenuEntry(item);
+        return;
+      }
+
       const extendedItem = item as ExtendedMenu;
 
       const intent = resolveMenuClickIntent(extendedItem);
@@ -342,7 +351,7 @@ export default function Sidebar() {
       loadWindowData(windowId).catch(() => {});
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData, openProcessModal]
+    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData, openProcessModal, openExternalMenuEntry]
   );
 
   /**

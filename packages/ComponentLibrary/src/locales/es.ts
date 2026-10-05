@@ -385,6 +385,8 @@ const es = {
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
+    externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
+    openExternalLink: "Abrir enlace",
   },
   login: {
     title: "Iniciar sesión",

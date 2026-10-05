@@ -28,7 +28,7 @@ interface WindowTabProps {
   icon?: React.ReactNode;
 }
 
-export default function WindowTab({ title, isActive, onActivate, onClose }: WindowTabProps) {
+export default function WindowTab({ title, isActive, onActivate, onClose, icon }: WindowTabProps) {
   const { t } = useTranslation();
 
   return (
@@ -51,7 +51,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose }: Wind
           type="button"
           className="h-full flex items-center flex-1 truncate gap-2 bg-transparent border-none cursor-pointer"
           onClick={onActivate}>
-          <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />
+          {icon ?? <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />}
           <span className="flex-1 truncate text-sm font-medium">{title}</span>
         </button>
         <button
