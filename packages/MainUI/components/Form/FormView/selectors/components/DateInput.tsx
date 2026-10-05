@@ -20,6 +20,7 @@ import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "r
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { autocompleteDate } from "@/utils/dateAutocomplete";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 import {
   getInputClassNames,
   getButtonClassNames,
@@ -242,6 +243,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             id={name}
             value={displayValue}
             readOnly={isReadOnly}
+            // Disabled — not merely read-only — so the field leaves the tab
+            // sequence, matching how Classic renders a read-only form item.
+            disabled={isReadOnly}
             className={inputClassNames}
             onFocus={handleDisplayInputFocus}
             onBlur={handleBlur}
@@ -264,11 +268,16 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             name={name}
             onChange={handleHiddenDateChange}
             className="sr-only"
-            tabIndex={-1}
+            tabIndex={NOT_TABBABLE}
             readOnly={isReadOnly}
             disabled={isReadOnly}
           />
-          <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>
+          <button
+            type="button"
+            onClick={handleCalendarClick}
+            className={buttonClassNames}
+            disabled={isReadOnly}
+            tabIndex={NOT_TABBABLE}>
             <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid="CalendarIcon__417e7f" />
           </button>
         </div>

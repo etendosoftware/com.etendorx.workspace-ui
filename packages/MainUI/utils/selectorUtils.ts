@@ -11,10 +11,21 @@ export const useKeyboardNavigation = <T extends Element = Element>(
   highlightedIndex: number,
   setHighlightedIndex: (index: number | ((prev: number) => number)) => void,
   onSelect: (option: Option) => void,
-  onClose: () => void
+  onClose: () => void,
+  /**
+   * Optional Tab handler. A dropdown renders in a portal on `document.body`, so
+   * without it Tab would take the focus out of the surrounding form. Consumers
+   * that do not pass it keep the browser's default behaviour.
+   */
+  onTab?: (e: React.KeyboardEvent<T>, highlightedOption?: Option) => void
 ) => {
   return useCallback(
     (e: React.KeyboardEvent<T>) => {
+      if (e.key === "Tab" && onTab) {
+        onTab(e, filteredOptions[highlightedIndex]);
+        return;
+      }
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
@@ -36,7 +47,7 @@ export const useKeyboardNavigation = <T extends Element = Element>(
         onClose();
       }
     },
-    [filteredOptions, highlightedIndex, setHighlightedIndex, onSelect, onClose]
+    [filteredOptions, highlightedIndex, setHighlightedIndex, onSelect, onClose, onTab]
   );
 };
 

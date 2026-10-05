@@ -1399,6 +1399,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
               uIPattern={tab.uIPattern}
               isFocused={isFocused}
               onFocusAcquire={acquire}
+              canAutoFocus={isFormPaneFocused}
               data-testid="FormView__5893c8"
             />
           </div>

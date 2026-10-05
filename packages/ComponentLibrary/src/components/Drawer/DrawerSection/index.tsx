@@ -18,7 +18,7 @@
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useItemActions } from "../../../hooks/useItemType";
-import { findActive } from "../../../utils/drawerUtils";
+import { findActive, MENU_COLLAPSED_ATTRIBUTE } from "../../../utils/drawerUtils";
 import { MenuTitle } from "../MenuTitle";
 import type { DrawerSectionProps, ToggleFunctions } from "../types";
 import MenuLibrary from "../../Menu";
@@ -228,8 +228,12 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           isExpandable={isExpandable && !isSearchActive}
         />
         {hasChildren && open && (
+          // The children of a collapsed section stay in the DOM, only clipped, so they are
+          // marked here for the keyboard navigation to skip them. `undefined` rather than
+          // `false`: the latter would still render the attribute and match the selector.
           <div
-            className={`transition-all duration-300 ease-in-out h-auto 
+            {...{ [MENU_COLLAPSED_ATTRIBUTE]: shouldShowChildren ? undefined : "true" }}
+            className={`transition-all duration-300 ease-in-out h-auto
               ${shouldShowChildren ? "opacity-100" : "max-h-0 overflow-hidden"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection

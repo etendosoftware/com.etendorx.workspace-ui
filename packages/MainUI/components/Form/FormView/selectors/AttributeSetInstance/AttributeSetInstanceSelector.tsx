@@ -6,6 +6,7 @@ import X from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import AttributeSetInstanceModal from "./AttributeSetInstanceModal";
 import { useProductAttributeSet } from "@/hooks/useProductAttributeSet";
+import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 
 interface AttributeSetInstanceSelectorProps {
   field: Field;
@@ -167,7 +168,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
               : "bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer"
           }`}
           onClick={handleOpenModal}
-          tabIndex={isReadOnly ? -1 : 0}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           onKeyDown={(e) => {
             if ((e.key === "Enter" || e.key === " ") && !isReadOnly) {
               e.preventDefault();
@@ -184,6 +185,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
                 type="button"
                 onClick={handleClear}
                 className="p-0.5 hover:text-gray-600 transition-colors"
+                tabIndex={NOT_TABBABLE}
                 data-testid={`clear-attr__${field.id}`}>
                 <X className="w-3.5 h-3.5 text-gray-400" data-testid={"X__" + field.id} />
               </button>

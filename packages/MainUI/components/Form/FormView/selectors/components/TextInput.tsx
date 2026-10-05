@@ -1,5 +1,6 @@
 import { useState, useMemo, type ChangeEvent } from "react";
 import X from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
+import { NOT_TABBABLE, focusOwningField } from "@/utils/form/focus";
 import type { TextInputProps } from "./types";
 
 export const TextInput = ({
@@ -77,11 +78,12 @@ export const TextInput = ({
       props.onKeyDown(e);
     }
   };
-  const handleClear = () => {
+  const handleClear = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (setValue) {
       setValue(""); // <-- solo si setValue está adaptado
     }
     if (onClear) onClear();
+    focusOwningField(e.currentTarget);
   };
 
   const finalClassName = className ? `${inputBaseClassNames} ${className}` : inputBaseClassNames;
@@ -99,7 +101,12 @@ export const TextInput = ({
       <div className={`relative flex items-center w-full ${isDisabled ? "pointer-events-none" : ""}`}>
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
-            <button type="button" onClick={onLeftIconClick} className="p-1 focus:outline-none" disabled={isDisabled}>
+            <button
+              type="button"
+              onClick={onLeftIconClick}
+              className="p-1 focus:outline-none"
+              disabled={isDisabled}
+              tabIndex={NOT_TABBABLE}>
               {leftIcon}
             </button>
           </div>
@@ -123,6 +130,7 @@ export const TextInput = ({
           <button
             type="button"
             onClick={handleClear}
+            tabIndex={NOT_TABBABLE}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
             <X className="h-4 w-4 text-gray-400" data-testid={`X__${field.id}`} />
           </button>

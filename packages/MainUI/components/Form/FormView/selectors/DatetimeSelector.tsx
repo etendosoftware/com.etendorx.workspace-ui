@@ -19,6 +19,7 @@ import { useFormContext } from "react-hook-form";
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 interface DatetimeSelectorProps {
   field: Field;
@@ -158,6 +159,9 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           id={field.hqlName}
           value={displayValue}
           readOnly
+          // Disabled — not merely read-only — so the field leaves the tab
+          // sequence, matching how Classic renders a read-only form item.
+          disabled={isReadOnly}
           className={getInputClass()}
           onFocus={handleDisplayInputFocus}
           onBlur={handleBlur}
@@ -176,7 +180,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           onFocus={handleFocus}
           onBlur={handleBlur}
           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-          tabIndex={-1}
+          tabIndex={NOT_TABBABLE}
           readOnly={isReadOnly}
           disabled={isReadOnly}
           value={value ? formatDateForInputSafe(value) : ""}

@@ -44,6 +44,8 @@ import {
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
+import { buildDropdownPortalSelector } from "@/utils/form/keyboard";
 
 interface TreeSelectorProps {
   field: Field;
@@ -214,10 +216,10 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
       const relatedTarget = e.relatedTarget as Element | null;
-      if (relatedTarget?.closest(`[data-dropdown-portal="${dropdownId}"]`)) return;
+      if (relatedTarget?.closest(buildDropdownPortalSelector(dropdownId))) return;
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) closeDropdown();
       }, 150);
@@ -231,7 +233,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
       if (wrapperRef.current?.contains(relatedTarget)) return;
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) closeDropdown();
       }, 150);
@@ -244,7 +246,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       const isInWrapper = wrapperRef.current?.contains(target);
-      const isInPortal = target.closest(`[data-dropdown-portal="${dropdownId}"]`);
+      const isInPortal = target.closest(buildDropdownPortalSelector(dropdownId));
       if (!isInWrapper && !isInPortal) closeDropdown();
     };
     const timeoutId = setTimeout(() => {
@@ -394,7 +396,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
         aria-required={field.isMandatory}
         aria-disabled={isReadOnly}
         aria-details={field.helpComment}
-        tabIndex={-1}>
+        tabIndex={NOT_TABBABLE}>
         <input {...register(fieldName)} type="hidden" readOnly={isReadOnly} />
         <div
           ref={triggerRef}
@@ -403,7 +405,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onFocus={handleFocus}
-          tabIndex={isReadOnly ? -1 : 0}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           className={mainDivClassNames}>
           <span className={labelClassNames}>{selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}</span>
           <div className="flex items-center flex-shrink-0 ml-2">
@@ -415,6 +417,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
                 className={`mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded ${
                   isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
                 }`}
+                tabIndex={NOT_TABBABLE}
                 aria-label="Clear selection">
                 <XIcon />
               </button>

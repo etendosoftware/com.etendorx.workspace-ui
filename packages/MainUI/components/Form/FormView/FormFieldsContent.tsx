@@ -23,7 +23,7 @@ import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { createSmartContext } from "@/utils/expressions";
-import { useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState, type RefObject } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
@@ -32,6 +32,7 @@ import AttachmentSection from "./Sections/AttachmentSection";
 import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import { useTranslation } from "@/hooks/useTranslation";
 import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
+import { FORM_FIELDS_ROOT_ATTRIBUTE } from "@/utils/form/focus";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -47,6 +48,11 @@ interface FormFieldsProps {
   openAttachmentModal?: boolean;
   onAttachmentModalClose?: () => void;
   isReadOnly?: boolean;
+  /**
+   * Receives the sections container so the form can resolve its tab sequence
+   * (see `utils/form/focus.ts`).
+   */
+  fieldsRootRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function FormFields({
@@ -63,6 +69,7 @@ export function FormFields({
   openAttachmentModal = false,
   onAttachmentModalClose,
   isReadOnly,
+  fieldsRootRef,
 }: FormFieldsProps) {
   const { watch } = useFormContext();
   const session = useUserStore((s) => s.session);
@@ -77,6 +84,18 @@ export function FormFields({
   const recordIdentifier = formData?._identifier as string | undefined;
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // The container is both scrolled from here and read by the form to resolve its
+  // tab sequence, so the node is handed to the two refs that need it.
+  const setContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+      if (fieldsRootRef) {
+        fieldsRootRef.current = node;
+      }
+    },
+    [fieldsRootRef]
+  );
 
   // Track whether sections have been displayed at least once.
   // After the first successful load, data refreshes (e.g. post-save refetches)
@@ -158,7 +177,10 @@ export function FormFields({
   }
 
   return (
-    <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
+    <div
+      className="flex flex-col gap-2 flex-grow overflow-auto"
+      ref={setContainerRef}
+      {...{ [FORM_FIELDS_ROOT_ATTRIBUTE]: "" }}>
       {groups.map(([id, group]) => {
         const sectionId = String(id || "_main");
 

@@ -1,5 +1,6 @@
 import {
   handleKeyboardActivation,
+  type Option,
   useFocusHandler,
   useHoverHandlers,
   useInfiniteScroll,
@@ -8,6 +9,8 @@ import {
   useSearchHandler,
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
+import { FIELD_NAVIGATION_OFFSETS, NOT_TABBABLE, TABBABLE, findAdjacentFocusableField } from "@/utils/form/focus";
+import { buildDropdownPortalSelector } from "@/utils/form/keyboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -58,6 +61,9 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  // Set right before a programmatic focus, so the `onFocus` datasource refetch
+  // only runs when the user actually reaches the field.
+  const skipFocusFetchRef = useRef(false);
 
   const dropdownId = useMemo(() => `dropdown-${name}`, [name]);
 
@@ -117,6 +123,24 @@ function SelectCmp({
     return `${baseClasses} ${colorClass} ${rotationClass}`;
   }, [isFocused, isOpen]);
 
+  /**
+   * Returns the keyboard to the field itself. Picking an option unmounts the
+   * dropdown (it lives in a portal), which would otherwise drop the focus on the
+   * document body and break the tab sequence.
+   *
+   * The datasource refetch bound to `onFocus` is skipped: this focus is ours, not
+   * the user arriving at the field.
+   */
+  const restoreTriggerFocus = useCallback(() => {
+    setIsFocused(true);
+    const trigger = triggerRef.current;
+    // Focusing an already focused element fires no event, which would leave the
+    // skip flag armed for the user's next real visit to the field.
+    if (!trigger || document.activeElement === trigger) return;
+    skipFocusFetchRef.current = true;
+    trigger.focus({ preventScroll: true });
+  }, []);
+
   const handleSelect = useCallback(
     (id: string, label: string, explicitData?: EntityData) => {
       const option = options.find((opt) => opt.id === id);
@@ -129,9 +153,9 @@ function SelectCmp({
 
       setIsOpen(false);
       setHighlightedIndex(-1);
-      setIsFocused(false);
+      restoreTriggerFocus();
     },
-    [name, options, setValue]
+    [name, options, setValue, restoreTriggerFocus]
   );
 
   const handleOptionClick = useCallback(
@@ -145,6 +169,30 @@ function SelectCmp({
     setHighlightedIndex(index);
   }, []);
 
+  /**
+   * Tab inside the dropdown commits the highlighted option and moves on to the
+   * neighbouring field, the way Classic's combo box behaves. Without this the
+   * focus would escape the form: the dropdown is portalled onto `document.body`.
+   */
+  const handleDropdownTab = useCallback(
+    (e: React.KeyboardEvent, highlightedOption?: Option) => {
+      e.preventDefault();
+
+      if (highlightedOption) {
+        handleSelect(highlightedOption.id, highlightedOption.label, highlightedOption.data as EntityData);
+      } else {
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+        restoreTriggerFocus();
+      }
+
+      const offset = e.shiftKey ? FIELD_NAVIGATION_OFFSETS.PREVIOUS : FIELD_NAVIGATION_OFFSETS.NEXT;
+      const adjacentField = findAdjacentFocusableField(triggerRef.current, offset);
+      adjacentField?.focus({ preventScroll: true });
+    },
+    [handleSelect, restoreTriggerFocus]
+  );
+
   const handleKeyDown = useKeyboardNavigation(
     filteredOptions,
     highlightedIndex,
@@ -153,7 +201,8 @@ function SelectCmp({
     () => {
       setIsOpen(false);
       setHighlightedIndex(-1);
-    }
+    },
+    handleDropdownTab
   );
 
   const closeDropdown = useCallback(() => {
@@ -165,12 +214,12 @@ function SelectCmp({
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
       const relatedTarget = e.relatedTarget as Element | null;
-      if (relatedTarget?.closest(`[data-dropdown-portal="${dropdownId}"]`)) {
+      if (relatedTarget?.closest(buildDropdownPortalSelector(dropdownId))) {
         return;
       }
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) {
           closeDropdown();
@@ -188,7 +237,7 @@ function SelectCmp({
       }
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) {
           closeDropdown();
@@ -217,13 +266,22 @@ function SelectCmp({
       setValue(name, "", { shouldDirty: true, shouldValidate: true });
       setSelectedLabel("");
       setSelectedColor(undefined);
+      restoreTriggerFocus();
     },
-    [name, setValue]
+    [name, setValue, restoreTriggerFocus]
   );
 
   const { handleMouseEnter, handleMouseLeave } = useHoverHandlers(setIsHovering);
   const handleScroll = useInfiniteScroll(listRef as React.RefObject<HTMLUListElement>, loading, hasMore, onLoadMore);
   const handleFocus = useFocusHandler(onFocus);
+
+  const handleTriggerFocus = useCallback(() => {
+    if (skipFocusFetchRef.current) {
+      skipFocusFetchRef.current = false;
+      return;
+    }
+    handleFocus();
+  }, [handleFocus]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -231,7 +289,7 @@ function SelectCmp({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       const isInWrapper = wrapperRef.current?.contains(target);
-      const isInPortal = target.closest(`[data-dropdown-portal="${dropdownId}"]`);
+      const isInPortal = target.closest(buildDropdownPortalSelector(dropdownId));
       if (!isInWrapper && !isInPortal) {
         closeDropdown();
       }
@@ -378,7 +436,7 @@ function SelectCmp({
         aria-required={field.isMandatory}
         aria-disabled={isReadOnly}
         aria-details={field.helpComment}
-        tabIndex={-1}>
+        tabIndex={NOT_TABBABLE}>
         <input {...register(name)} type="hidden" readOnly={isReadOnly} />
         <div
           ref={triggerRef}
@@ -386,8 +444,8 @@ function SelectCmp({
           onKeyDown={(e) => handleKeyboardActivation(e, () => handleClick(e as unknown as React.MouseEvent))}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onFocus={handleFocus}
-          tabIndex={isReadOnly ? -1 : 0}
+          onFocus={handleTriggerFocus}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           className={mainDivClassNames}>
           {selectedLabel && selectedColor ? (
             (() => {
@@ -415,6 +473,7 @@ function SelectCmp({
                 onClick={handleClear}
                 onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
                 className={clearButtonClassNames}
+                tabIndex={NOT_TABBABLE}
                 aria-label="Clear selection">
                 <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
