@@ -80,7 +80,7 @@ describe("externalMenuEntry", () => {
     it("recognises only external page window ids", () => {
       expect(isExternalPageWindowId(buildExternalPageWindowId(MENU_ID))).toBe(true);
       expect(isExternalPageWindowId("143")).toBe(false);
-      expect(isExternalPageWindowId(undefined)).toBe(false);
+      expect(isExternalPageWindowId()).toBe(false);
       expect(isExternalPageWindowId(null)).toBe(false);
     });
 
