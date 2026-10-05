@@ -25,6 +25,7 @@ jest.mock("sonner", () => ({
     error: jest.fn(),
     warning: jest.fn(),
     info: jest.fn(),
+    dismiss: jest.fn(),
   },
 }));
 
@@ -45,8 +46,21 @@ describe("useStatusModal", () => {
     const [titleNode, toastOptions] = mockToastError.mock.calls[0];
 
     expect(toastOptions.duration).toBe(Number.POSITIVE_INFINITY);
-    expect(titleNode.props.onReload).toBe(onReload);
     expect(titleNode.props.reloadLabel).toBe("Reload");
+
+    titleNode.props.onReload();
+    expect(onReload).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismisses the persistent toast when its reload action is used", () => {
+    mockToastError.mockReturnValueOnce("toast-1");
+    const { result } = renderHook(() => useStatusModal());
+
+    result.current.showErrorModal("Conflict detected", { onReload: jest.fn(), reloadLabel: "Reload" });
+    const [titleNode] = mockToastError.mock.calls[0];
+    titleNode.props.onReload();
+
+    expect(toast.dismiss).toHaveBeenCalledWith("toast-1");
   });
 
   it("keeps the default auto-dismiss duration and no reload action for a plain error", () => {
