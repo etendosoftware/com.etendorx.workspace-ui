@@ -39,8 +39,8 @@ interface FormHeaderProps {
   statusModal: StatusModalState;
   hideStatusModal: () => void;
   navigationState?: NavigationState;
-  onNavigateNext?: () => Promise<void>;
-  onNavigatePrevious?: () => Promise<void>;
+  onNavigateNext?: () => void;
+  onNavigatePrevious?: () => void;
   isNavigating?: boolean;
 }
 

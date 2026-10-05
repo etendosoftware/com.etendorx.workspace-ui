@@ -19,20 +19,24 @@ import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
+import { formatDirtyTitle } from "@/utils/window/dirtyState";
 
 interface WindowTabProps {
   title: string;
   isActive: boolean;
   onActivate: () => void;
   onClose: () => void;
+  /** Prefixes the label with the pending-changes marker, like Classic's tab titles. */
+  isDirty?: boolean;
   icon?: React.ReactNode;
 }
 
-export default function WindowTab({ title, isActive, onActivate, onClose }: WindowTabProps) {
+export default function WindowTab({ title, isActive, onActivate, onClose, isDirty = false }: WindowTabProps) {
   const { t } = useTranslation();
+  const label = formatDirtyTitle(title, isDirty);
 
   return (
-    <Tooltip title={title} data-testid="Tooltip__15c554">
+    <Tooltip title={label} data-testid="Tooltip__15c554">
       <div
         className={`
          h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
@@ -52,7 +56,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose }: Wind
           className="h-full flex items-center flex-1 truncate gap-2 bg-transparent border-none cursor-pointer"
           onClick={onActivate}>
           <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />
-          <span className="flex-1 truncate text-sm font-medium">{title}</span>
+          <span className="flex-1 truncate text-sm font-medium">{label}</span>
         </button>
         <button
           type="button"

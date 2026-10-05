@@ -1,12 +1,13 @@
 import {
   getMergedRowData,
+  hasRowsWithUnsavedChanges,
   hasValidationErrors,
   getFieldValue,
   createEmptyRowData,
   insertNewRowAtTop,
   removeNewRowFromRecords,
 } from "@/components/Table/utils/editingRowUtils";
-import type { EditingRowData } from "@/components/Table/types/inlineEditing";
+import type { EditingRowData, EditingRowsState } from "@/components/Table/types/inlineEditing";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@/utils", () => ({
@@ -156,5 +157,30 @@ describe("removeNewRowFromRecords", () => {
     const records = [{ id: "1" }];
     const result = removeNewRowFromRecords(records, "999");
     expect(result).toHaveLength(1);
+  });
+});
+
+describe("hasRowsWithUnsavedChanges", () => {
+  const createEditingRow = (hasUnsavedChanges: boolean): EditingRowData => ({
+    originalData: { id: "1" },
+    modifiedData: {},
+    isNew: false,
+    validationErrors: {},
+    isSaving: false,
+    hasUnsavedChanges,
+  });
+
+  it("is false with no rows in edit mode", () => {
+    expect(hasRowsWithUnsavedChanges({})).toBe(false);
+  });
+
+  it("is false when the editor is open but nothing was typed", () => {
+    const editingRows: EditingRowsState = { "1": createEditingRow(false) };
+    expect(hasRowsWithUnsavedChanges(editingRows)).toBe(false);
+  });
+
+  it("is true as soon as one row holds changes", () => {
+    const editingRows: EditingRowsState = { "1": createEditingRow(false), "2": createEditingRow(true) };
+    expect(hasRowsWithUnsavedChanges(editingRows)).toBe(true);
   });
 });

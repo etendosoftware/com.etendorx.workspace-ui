@@ -21,8 +21,8 @@ import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/che
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface RecordNavigationControlsProps {
-  onNext: () => Promise<void>;
-  onPrevious: () => Promise<void>;
+  onNext: () => void;
+  onPrevious: () => void;
   canNavigateNext: boolean;
   canNavigatePrevious: boolean;
   currentIndex: number;

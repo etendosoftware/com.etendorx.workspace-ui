@@ -61,6 +61,7 @@ import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
 import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
@@ -176,6 +177,7 @@ export function FormView({
     useToolbarContext();
   const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
+  const { guardTransition } = useUnsavedChangesTabGuard();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
   useEffect(() => {
@@ -1097,14 +1099,13 @@ export function FormView({
 
   /**
    * Record navigation integration
-   * Provides next/previous navigation with autosave functionality
+   * Provides next/previous navigation, asking what to do with unsaved changes first
    */
   const { navigationState, navigateToNext, navigateToPrevious, isNavigating } = useRecordNavigation({
     currentRecordId: recordId,
     records: navigationRecords,
     onNavigate: handleNavigateToRecord,
-    formState,
-    handleSave,
+    guardTransition,
     showErrorModal,
     hasMoreRecords,
     fetchMore,

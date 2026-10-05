@@ -187,6 +187,7 @@ export const createButtonByType = ({
   onAction,
   isFormView,
   hasFormChanges,
+  isNewRecord = false,
   hasParentRecordSelected,
   isCopilotInstalled,
   saveButtonState,
@@ -203,6 +204,7 @@ export const createButtonByType = ({
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
   isFormView: boolean;
   hasFormChanges: boolean;
+  isNewRecord?: boolean;
   hasParentRecordSelected: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
@@ -298,6 +300,13 @@ export const createButtonByType = ({
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      // Refreshing a form with pending edits would drop them without asking, so the
+      // button is blocked instead — the same rule as Classic's `hasNotChanged()`, which
+      // also covers a record still being created.
+      [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => {
+        const formHasPendingWork = isFormView && (hasFormChanges || isNewRecord);
+        return buildDisableConfig(formHasPendingWork || isDocumentProcessing);
+      },
       // With a form open it toggles split ⇄ maximized form; from the grid it
       // needs a selected record to open in split view.
       [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]: () => buildDisableConfig(!isFormView && !hasSelectedRecord),
@@ -383,6 +392,7 @@ export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: bool
 interface ButtonConfig {
   isFormView: boolean;
   hasFormChanges: boolean;
+  isNewRecord?: boolean;
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
@@ -411,6 +421,7 @@ const createSectionButtons = (
       onAction,
       isFormView: config.isFormView,
       hasFormChanges: config.hasFormChanges,
+      isNewRecord: config.isNewRecord,
       hasParentRecordSelected: config.hasParentRecordSelected,
       saveButtonState: config.saveButtonState,
       isCopilotInstalled: config.isCopilotInstalled,
@@ -457,6 +468,7 @@ interface ToolbarSectionsConfig {
   isFormView: boolean;
   isTreeNodeView?: boolean;
   hasFormChanges?: boolean;
+  isNewRecord?: boolean;
   hasParentRecordSelected?: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
@@ -477,6 +489,7 @@ export const getToolbarSections = ({
   isFormView,
   isTreeNodeView,
   hasFormChanges = false,
+  isNewRecord = false,
   hasParentRecordSelected = false,
   isCopilotInstalled = false,
   saveButtonState,
@@ -507,6 +520,7 @@ export const getToolbarSections = ({
     isFormView,
     isSplitView,
     hasFormChanges,
+    isNewRecord,
     hasParentRecordSelected,
     saveButtonState,
     isCopilotInstalled,
