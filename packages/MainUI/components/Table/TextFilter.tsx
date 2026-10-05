@@ -2,6 +2,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isTextFilterValue } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import type { TextFilterValue } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useDebouncedCallback } from "./utils/performanceOptimizations";
 
@@ -15,7 +16,13 @@ export const TextFilter: React.FC<TextFilterProps> = ({ column, onFilterChange, 
   const [inputValue, setInputValue] = useState("");
 
   const debouncedFilterChange = useDebouncedCallback((value: string) => {
-    onFilterChange(value);
+    // Classic numeric filters clear the input when the expression uses an unsupported operator
+    if (LegacyColumnFilterUtils.hasUnsupportedNumericOperator(value, column)) {
+      setInputValue("");
+      onFilterChange("");
+    } else {
+      onFilterChange(value);
+    }
   }, 500);
 
   useEffect(() => {
