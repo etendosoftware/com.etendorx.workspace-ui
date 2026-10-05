@@ -276,9 +276,11 @@ export const useRedirect = () => {
       tabLevel,
       referencedLinkContext,
     }: HandleKeyDownRedirectProps) => {
-      e.stopPropagation();
-      e.preventDefault();
+      // Only the activation keys are swallowed: cancelling every key also cancelled
+      // Tab, which trapped the keyboard focus on the label for good.
       if (e.key === "Enter" || e.key === " ") {
+        e.stopPropagation();
+        e.preventDefault();
         return handleAction({
           windowId,
           windowTitle,

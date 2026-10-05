@@ -21,6 +21,7 @@ import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { CollapsibleProps } from "./FormView/types";
+import { FOCUSABLE_SELECTOR, NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
@@ -77,9 +78,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
   useEffect(() => {
     if (!innerContentRef.current) return;
 
-    const focusableElements = innerContentRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    const focusableElements = innerContentRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
 
     for (const el of focusableElements) {
       const element = el as HTMLElement;
@@ -93,9 +92,9 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       } else {
         // Save original tabindex and disable it
         if (!element.dataset.originalTabIndex) {
-          element.dataset.originalTabIndex = element.getAttribute("tabindex") || "0";
+          element.dataset.originalTabIndex = element.getAttribute("tabindex") || String(TABBABLE);
         }
-        element.setAttribute("tabindex", "-1");
+        element.setAttribute("tabindex", String(NOT_TABBABLE));
       }
     }
   }, [isExpanded]);
@@ -122,13 +121,16 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3">
-          <IconButton className="[&>svg]:text-[1rem]" data-testid="IconButton__650187_1">
+          {/* Both icons are decoration: the whole header is the click target, so
+              they carry no handler and must not be tab stops either — they were
+              swallowing the initial focus of the form. */}
+          <IconButton className="[&>svg]:text-[1rem]" tabIndex={NOT_TABBABLE} data-testid="IconButton__650187_1">
             {icon || <InfoIcon data-testid="InfoIcon__650187_1" />}
           </IconButton>
           <span className="font-semibold text-gray-800">{title}</span>
         </div>
         <div>
-          <IconButton data-testid="IconButton__650187_2">
+          <IconButton tabIndex={NOT_TABBABLE} data-testid="IconButton__650187_2">
             {isExpanded ? (
               <ChevronUp data-testid="ChevronUp__650187_1" />
             ) : (

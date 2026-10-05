@@ -2,16 +2,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type React from "react";
 import Collapsible from "@/components/Form/Collapsible";
+import { findFocusableFields } from "@/utils/form/focus";
 
 // Mock simple de los íconos
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg", () => "div");
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg", () => "div");
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/file-text.svg", () => "div");
 
-// Mock simple del IconButton
+// Mock del IconButton: renderiza un <button> real y propaga tabIndex, porque el
+// header de la sección debe quedar fuera de la secuencia de tabulación.
 jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => {
-  return function MockIconButton({ children }: { children: React.ReactNode }) {
-    return <div>{children}</div>;
+  return function MockIconButton({ children, tabIndex }: { children: React.ReactNode; tabIndex?: number }) {
+    return (
+      <button type="button" tabIndex={tabIndex}>
+        {children}
+      </button>
+    );
   };
 });
 
@@ -80,5 +86,16 @@ describe("Collapsible", () => {
 
     const header = screen.getByText("Test Title").closest("[aria-expanded]");
     expect(header).toHaveAttribute("aria-expanded", "true");
+  });
+
+  // Los iconos del header son decorativos (el click lo maneja el header entero).
+  // Siendo <button> eran paradas de tabulación que se quedaban con el foco inicial
+  // del formulario antes de llegar a ningún field.
+  it("keeps the decorative header icons out of the tab sequence", () => {
+    const { container } = render(<Collapsible {...defaultProps} isExpanded={true} />);
+
+    const header = container.querySelector("[aria-expanded]") as HTMLElement;
+
+    expect(findFocusableFields(header)).toEqual([]);
   });
 });

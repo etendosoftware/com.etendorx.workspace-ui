@@ -92,12 +92,13 @@ const TabsGroupRenderer = ({
       values: grandParentRecord || undefined,
       fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
       context: session,
+      windowId: activeParentTab.window,
     });
 
     try {
       const compiledExpr = compileExpression(expression);
       // We pass the context (which includes session) as the first argument
-      return toClassicBoolean(compiledExpr(context, context));
+      return toClassicBoolean(compiledExpr(context, context, activeParentTab.window));
     } catch {
       return true;
     }
@@ -114,10 +115,14 @@ const TabsGroupRenderer = ({
 
     // 3. Filter current tabs
     // Use createEvaluationContext for robust evaluation (Flat Object with Normalized Values)
+    // Every tab in this container belongs to the same window, so one window id scopes them all.
+    const contextWindowId = activeParentTab?.window ?? tabs[0]?.window;
+
     const context = createSmartContext({
       values: parentRecord || undefined,
       fields: activeParentTab?.fields,
       context: session,
+      windowId: contextWindowId,
     });
 
     const result = tabs.filter((tab) => {
@@ -129,7 +134,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        return toClassicBoolean(compiledExpr(context, context));
+        return toClassicBoolean(compiledExpr(context, context, contextWindowId));
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
         return false;

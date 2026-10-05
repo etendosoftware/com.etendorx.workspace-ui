@@ -63,6 +63,21 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
     throw new Error(`Error fetching linked item categories: ${error instanceof Error ? error.message : String(error)}`);
   }
 
+  // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+  console.debug("[DEBUG-LINKEDITEMS] fetchLinkedItemCategories", {
+    requestWindowId: params.windowId,
+    entityName: params.entityName,
+    recordId: params.recordId,
+    categories: (responseData?.usedByLinkData || []).map((c) => ({
+      adWindowId: (c as unknown as LinkedItemCategory).adWindowId,
+      adTabId: (c as unknown as LinkedItemCategory).adTabId,
+      fullElementName: (c as unknown as LinkedItemCategory).fullElementName,
+      tableName: (c as unknown as LinkedItemCategory).tableName,
+      columnName: (c as unknown as LinkedItemCategory).columnName,
+      total: (c as unknown as LinkedItemCategory).total,
+    })),
+  });
+
   return (responseData?.usedByLinkData || []) as LinkedItemCategory[];
 }
 
@@ -98,6 +113,23 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
   } catch (error) {
     throw new Error(`Error fetching linked items: ${error instanceof Error ? error.message : String(error)}`);
   }
+
+  // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+  console.debug("[DEBUG-LINKEDITEMS] fetchLinkedItems", {
+    requestWindowId: params.windowId,
+    entityName: params.entityName,
+    adTabId: params.adTabId,
+    tableName: params.tableName,
+    columnName: params.columnName,
+    recordId: params.recordId,
+    items: (responseData?.usedByLinkData || []).map((i) => ({
+      id: (i as unknown as LinkedItem).id,
+      adWindowId: (i as unknown as LinkedItem).adWindowId,
+      adTabId: (i as unknown as LinkedItem).adTabId,
+      adMenuName: (i as unknown as LinkedItem).adMenuName,
+      name: (i as unknown as LinkedItem).name,
+    })),
+  });
 
   return (responseData?.usedByLinkData || []) as LinkedItem[];
 }

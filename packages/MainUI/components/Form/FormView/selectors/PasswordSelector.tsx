@@ -20,6 +20,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
 import { useFormContext, type FieldValues } from "react-hook-form";
 import { PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 const EyeIcon = ({ open }: { open: boolean }): React.ReactElement => (
   <svg
@@ -70,6 +71,7 @@ export const PasswordSelector = ({ field, showToggle = true }: PasswordSelectorP
         type="button"
         data-testid={`eye-toggle__${field.id}`}
         onClick={() => setShowPassword((prev) => !prev)}
+        tabIndex={NOT_TABBABLE}
         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors z-10">
         <EyeIcon open={showPassword} data-testid="EyeIcon__1b1414" />
       </button>

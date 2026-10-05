@@ -30,6 +30,8 @@ import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
+import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
 
 interface FormActionsProps {
   tab: Tab;
@@ -62,6 +64,7 @@ export function FormActions({
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { registerActions, unregisterActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { guardTransition } = useUnsavedChangesTabGuard();
 
   useEffect(() => {
     setSaveButtonState((prev) => ({ ...prev, isDocumentProcessing: isDocumentProcessing ?? false }));
@@ -108,14 +111,15 @@ export function FormActions({
     }
   }, [isDirty, markFormAsChanged, resetFormChanges]);
 
-  // Report form dirty state to windowStore for tab-close confirmation
+  // Report form dirty state to windowStore — read by every unsaved-changes guard
   useEffect(() => {
+    const sourceKey = buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, tab.id);
     if (windowIdentifier) {
-      setWindowDirtySource(windowIdentifier, `form:${tab.id}`, isDirty);
+      setWindowDirtySource(windowIdentifier, sourceKey, isDirty);
     }
     return () => {
       if (windowIdentifier) {
-        setWindowDirtySource(windowIdentifier, `form:${tab.id}`, false);
+        setWindowDirtySource(windowIdentifier, sourceKey, false);
       }
     };
   }, [isDirty, windowIdentifier, tab.id, setWindowDirtySource]);
@@ -215,23 +219,29 @@ export function FormActions({
     navigateBack();
   }, [isDirty, discardChanges, navigateBack]);
 
-  const handleNew = useCallback(() => {
+  /**
+   * New autosaves the record being edited before clearing the form, the way Classic's
+   * `newDocument` routes through `doActionAfterAutoSave`. A failed save aborts the
+   * creation: its own message is already on screen.
+   */
+  const handleNew = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (isDirty) {
+      const saved = await handleSave({ showModal: true });
+      if (!saved) return;
+    }
     onNew();
-  }, [onNew]);
+  }, [isDirty, handleSave, onNew, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   const handleKeyboardSave = useCallback(async () => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
     await handleSave({ showModal: true });
   }, [handleSave, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
-  const handleKeyboardEscape = useCallback(async () => {
+  const handleKeyboardEscape = useCallback(() => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
-    if (isDirty) {
-      const saved = await handleSave({ showModal: false });
-      if (!saved) return;
-    }
-    navigateBack();
-  }, [isDirty, handleSave, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+    guardTransition(navigateBack);
+  }, [guardTransition, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   useKeyboardShortcuts(
     {
@@ -249,13 +259,14 @@ export function FormActions({
       refresh: onReset,
       back: handleBack,
       new: handleNew,
+      discard: discardChanges,
     };
 
     registerActions(actions, TOOLBAR_ACTION_OWNERS.FORM);
     // Releasing the bucket on unmount is what makes CANCEL fall back to the
     // tab's own handler once the form pane is gone.
     return () => unregisterActions(TOOLBAR_ACTION_OWNERS.FORM);
-  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew]);
+  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew, discardChanges]);
 
   return null;
 }

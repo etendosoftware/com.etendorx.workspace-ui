@@ -17,6 +17,10 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback } from "react";
+import { FORM_KEYS } from "@/utils/form/keyboard";
+
+/** Key that flips a boolean field, the one Classic's CycleItem listens to. */
+const TOGGLE_KEY = FORM_KEYS.SPACE;
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked: boolean;
@@ -25,12 +29,35 @@ interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   field: Field;
 }
 
+/**
+ * Focus ring of the switch. It is stated explicitly — with a colour — because
+ * `focus:outline-none` removes the browser's own indicator, and a ring with no
+ * colour falls back to `currentColor`, which is invisible against the track. A
+ * keyboard user could reach the field without any sign of being on it.
+ */
+const FOCUS_RING_CLASSES =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#004ACA]";
+
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
   ({ checked = false, onCheckedChange, disabled = false, className = "", field, ...props }, ref) => {
     const handleToggle = useCallback(() => {
       if (disabled) return;
       onCheckedChange(!checked);
     }, [checked, disabled, onCheckedChange]);
+
+    /**
+     * Space toggles the value, exactly as `isc.CycleItem.handleKeyPress` does in
+     * Etendo Classic. Cancelling the default keeps the page from scrolling and
+     * suppresses the button's own activation, so the value flips only once.
+     */
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (e.key !== TOGGLE_KEY) return;
+        e.preventDefault();
+        handleToggle();
+      },
+      [handleToggle]
+    );
 
     return (
       <button
@@ -44,8 +71,9 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
         aria-details={field.helpComment}
         disabled={disabled}
         onClick={handleToggle}
+        onKeyDown={handleKeyDown}
         ref={ref}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${FOCUS_RING_CLASSES} ${
           checked ? "bg-blue-600" : "bg-gray-300"
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`}
         {...props}>
