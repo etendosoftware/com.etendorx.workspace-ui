@@ -40,6 +40,7 @@ import { createMockTab, createMockWindowMetadata } from "@/utils/tests/mockHelpe
 import { toast } from "sonner";
 import { WindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
 import { useWindowStore } from "@/stores/windowStore";
+import { recoverExternalPageWindow } from "@/utils/window/externalPageRecovery";
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -52,6 +53,7 @@ jest.mock("@/utils/recovery/hierarchyCalculator");
 jest.mock("@/utils/recovery/stateReconstructor");
 jest.mock("@/utils/recovery/reconstructedSessionSync");
 jest.mock("sonner", () => ({ toast: { warning: jest.fn() } }));
+jest.mock("@/utils/window/externalPageRecovery", () => ({ recoverExternalPageWindow: jest.fn() }));
 
 const mockUseSearchParams = useSearchParams as jest.Mock;
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;
@@ -661,6 +663,52 @@ describe("useGlobalUrlStateRecovery", () => {
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(result.current.recoveredWindows[0].windowId).toBe("143");
       expect(result.current.recoveredWindows[0].windowIdentifier).toBe("143_123456789");
+    });
+  });
+
+  describe("External menu entry tabs", () => {
+    const WINDOW_IDENTIFIER = "143_111";
+    const EXTERNAL_IDENTIFIER = "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6_222";
+    const mockRecoverExternalPageWindow = jest.mocked(recoverExternalPageWindow);
+
+    beforeEach(() => {
+      setupSimpleRecovery("143", WINDOW_IDENTIFIER);
+      mockParseWindowRecoveryData.mockReturnValue([
+        createMockRecoveryInfo(WINDOW_IDENTIFIER),
+        createMockRecoveryInfo(EXTERNAL_IDENTIFIER),
+      ]);
+    });
+
+    it("recovers them from the menu instead of loading AD window metadata", async () => {
+      mockRecoverExternalPageWindow.mockResolvedValue({
+        windowId: "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+        windowIdentifier: EXTERNAL_IDENTIFIER,
+        title: "TEST External",
+        isActive: false,
+        initialized: true,
+        externalUrl: "http://example.com",
+      } as never);
+
+      const { result } = await renderHookAndWait();
+
+      expect(mockLoadWindowData).toHaveBeenCalledTimes(1);
+      expect(mockLoadWindowData).toHaveBeenCalledWith("143");
+      expect(mockRecoverExternalPageWindow).toHaveBeenCalledWith(createMockRecoveryInfo(EXTERNAL_IDENTIFIER));
+      expect(result.current.recoveredWindows).toHaveLength(2);
+      expect(result.current.recoveredWindows[1]).toMatchObject({
+        windowIdentifier: EXTERNAL_IDENTIFIER,
+        externalUrl: "http://example.com",
+        isActive: true,
+      });
+    });
+
+    it("drops them when they cannot be resolved and activates the surviving window", async () => {
+      mockRecoverExternalPageWindow.mockResolvedValue(null);
+
+      const { result } = await renderHookAndWait();
+
+      expect(result.current.recoveredWindows).toHaveLength(1);
+      expect(result.current.recoveredWindows[0]).toMatchObject({ windowIdentifier: WINDOW_IDENTIFIER, isActive: true });
     });
   });
 

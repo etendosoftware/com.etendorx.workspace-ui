@@ -55,6 +55,11 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
             onProcessClick(item);
           }
           break;
+        case "External":
+          if (item.url && onWindowClick) {
+            onWindowClick(item);
+          }
+          break;
         default:
           console.warn(`Unhandled item type: ${item.type}`);
       }

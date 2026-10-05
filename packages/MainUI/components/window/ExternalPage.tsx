@@ -14,19 +14,22 @@
  *************************************************************************
  */
 
-/**
- * Canonical string values returned by the metadata backend for the
- * `Menu.type` field. Centralised here to avoid magic strings sprinkled
- * across the menu dispatch layer.
- */
-export const MENU_ITEM_TYPES = {
-  PROCESS_DEFINITION: "ProcessDefinition",
-  PROCESS: "Process",
-  FORM: "Form",
-  WINDOW: "Window",
-  PROCESS_MANUAL: "ProcessManual",
-  REPORT: "Report",
-  EXTERNAL: "External",
-} as const;
+import type { WindowState } from "@/utils/window/constants";
+import { IFRAME_SANDBOX_PERMISSIVE } from "@/utils/iframeSandbox";
 
-export type MenuItemType = (typeof MENU_ITEM_TYPES)[keyof typeof MENU_ITEM_TYPES];
+/**
+ * Content of an in-app tab opened from an External menu entry: the configured URL embedded in an
+ * iframe that fills the tab (the counterpart of Classic's `OBExternalPage`).
+ */
+export default function ExternalPage({ window }: { window: WindowState }) {
+  return (
+    <iframe
+      src={window.externalUrl}
+      sandbox={IFRAME_SANDBOX_PERMISSIVE}
+      referrerPolicy="no-referrer"
+      className="w-full h-full border-0"
+      title={window.title}
+      data-testid={`ExternalPage__${window.windowIdentifier}`}
+    />
+  );
+}

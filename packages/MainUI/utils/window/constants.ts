@@ -84,6 +84,8 @@ export interface WindowState {
   tabs: {
     [tabId: string]: TabState;
   };
+  /** Set only on the in-app tabs that embed an External menu entry: the URL they show. */
+  externalUrl?: string;
 }
 
 export interface WindowContextState {

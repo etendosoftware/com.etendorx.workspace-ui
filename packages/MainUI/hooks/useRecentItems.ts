@@ -38,6 +38,8 @@ const createRecentItem = (
   processDefinitionId: item.processDefinitionId,
   processUrl: item.processUrl,
   isModalProcess: item.isModalProcess,
+  url: item.url,
+  openLinkInBrowser: item.openLinkInBrowser,
 });
 
 const updateItemsWithTranslations = (
