@@ -238,11 +238,12 @@ function evaluateExpression(
   session: Record<string, unknown>,
   context: Record<string, unknown>,
   fieldName: string,
-  kind: string
+  kind: string,
+  windowId?: string
 ): boolean {
   try {
     const compiled = compileExpression(expression);
-    return !!compiled(session, context);
+    return !!compiled(session, context, windowId);
   } catch (e) {
     console.warn(`Error evaluating ${kind} for field ${fieldName}`, e);
     return true;
@@ -259,7 +260,8 @@ function evaluateExpression(
 export function isFieldVisibleForContext(
   field: any,
   session: Record<string, unknown>,
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
+  windowId?: string
 ): boolean {
   if (field.isActive === false) return false;
   if (field.displayed === false) return false;
@@ -267,14 +269,14 @@ export function isFieldVisibleForContext(
 
   if (
     field.displayLogicExpression &&
-    !evaluateExpression(field.displayLogicExpression, session, context, field.name, "display logic")
+    !evaluateExpression(field.displayLogicExpression, session, context, field.name, "display logic", windowId)
   ) {
     return false;
   }
 
   if (
     field.gridDisplayLogicExpression &&
-    !evaluateExpression(field.gridDisplayLogicExpression, session, context, field.name, "grid display logic")
+    !evaluateExpression(field.gridDisplayLogicExpression, session, context, field.name, "grid display logic", windowId)
   ) {
     return false;
   }
@@ -1332,7 +1334,7 @@ export function applyRecordValues(
  * 1. Check field-level static flags (readOnly, isReadOnly)
  * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
  */
-export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
+export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>, windowId?: string): boolean {
   // Static flags
   if (field.readOnly === true || field.isReadOnly === true) return true;
 
@@ -1342,7 +1344,7 @@ export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, u
 
   try {
     const compiled = compileExpression(expression);
-    const result = !!compiled(context, context);
+    const result = !!compiled(context, context, windowId);
     return result;
   } catch (e) {
     console.warn(`Error evaluating readOnlyLogic for field ${field.name}:`, e);
@@ -1713,7 +1715,7 @@ const WindowReferenceGrid = ({
     for (const field of fields) {
       // Index by both identifiers so a lookup by record property name (hqlName,
       // e.g. `amount`) resolves even when `columnName` differs from it.
-      const readOnly = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
+      const readOnly = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext, stableWindowReferenceTab?.window);
       const columnName = (field as any).columnName;
       const hqlName = (field as any).hqlName;
       if (columnName) map[columnName] = readOnly;
@@ -1721,7 +1723,7 @@ const WindowReferenceGrid = ({
     }
 
     return map;
-  }, [stableWindowReferenceTab?.fields, fieldReadOnlyContext]);
+  }, [stableWindowReferenceTab?.fields, stableWindowReferenceTab?.window, fieldReadOnlyContext]);
 
   // Mirror the read-only map into a ref so the selection-sync effect can read it
   // without adding it to the effect deps (keeps the existing run timing intact).
@@ -1758,9 +1760,9 @@ const WindowReferenceGrid = ({
       // `context['$Element_BP_APP_L']`). Those keys live in `session` because
       // `SessionBuilder` exposes them via `attributes`.
       const context = { ...user, ...session, ...recordValues };
-      return isFieldVisibleForContext(field, session, context);
+      return isFieldVisibleForContext(field, session, context, stableWindowReferenceTab?.window);
     },
-    [user, session, recordValues]
+    [user, session, recordValues, stableWindowReferenceTab?.window]
   );
 
   // Filter fields based on visibility logic (displayLogic & gridDisplayLogic)

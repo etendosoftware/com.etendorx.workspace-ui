@@ -130,6 +130,7 @@ function buildEnrichedContext(context: Record<string, unknown>): Record<string, 
  * @param parameters - Record of process parameters to evaluate
  * @param context - Session context (typically from useUserStore)
  * @param currentValues - Current form values
+ * @param windowId - AD window id, so `OB.PropertyStore.get` resolves window-scoped preferences
  * @returns Object with evaluated default values keyed by parameter name
  *
  * @example
@@ -139,7 +140,8 @@ function buildEnrichedContext(context: Record<string, unknown>): Record<string, 
 export function evaluateParameterDefaults(
   parameters: Record<string, ProcessParameter>,
   context: Record<string, unknown>,
-  currentValues: Record<string, unknown>
+  currentValues: Record<string, unknown>,
+  windowId?: string
 ): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   const enrichedContext = buildEnrichedContext(context);
@@ -178,7 +180,7 @@ export function evaluateParameterDefaults(
 
     try {
       const compiledExpr = compileExpression(expr);
-      const value = compiledExpr(enrichedContext, currentValues);
+      const value = compiledExpr(enrichedContext, currentValues, windowId);
 
       if (value !== undefined && value !== null && value !== "") {
         defaults[param.name] = value;

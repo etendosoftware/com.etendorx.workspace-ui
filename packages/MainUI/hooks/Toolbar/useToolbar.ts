@@ -159,8 +159,9 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
             parentFields: parentTab?.fields,
             context: session,
             defaultValue: "",
+            windowId: tab.window,
           });
-          return toClassicBoolean(compiledExpr(smartContext, smartContext));
+          return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
         };
 
         // For multi-record processes: ALL selected records must satisfy the condition

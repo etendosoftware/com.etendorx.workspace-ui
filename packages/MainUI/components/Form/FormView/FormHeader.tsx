@@ -79,8 +79,13 @@ export function FormHeader({
           if (!field.displayLogicExpression) return true;
           const compiledExpr = compileExpression(field.displayLogicExpression);
           try {
-            const ctx = createSmartContext({ values: formData, fields: tab?.fields, context: session });
-            return compiledExpr(ctx, ctx);
+            const ctx = createSmartContext({
+              values: formData,
+              fields: tab?.fields,
+              context: session,
+              windowId: tab?.window,
+            });
+            return compiledExpr(ctx, ctx, tab?.window);
           } catch {
             return true;
           }

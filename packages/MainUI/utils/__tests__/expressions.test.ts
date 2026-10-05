@@ -16,15 +16,15 @@
  */
 
 import { createEvaluationContext } from "../expressions";
-import * as propertyStore from "../propertyStore";
-
-jest.mock("../propertyStore", () => ({
-  getStoredPreferences: jest.fn(),
-}));
+import { savePreferences } from "../propertyStore";
+import { installLocalStorageMock } from "../testUtils/localStorageMock";
 
 describe("expressions - createEvaluationContext", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Seed the real preference store rather than mocking the resolver, so these tests exercise
+    // the same lookup path (window-scoped key, then global, then case-insensitive) as production.
+    installLocalStorageMock();
   });
 
   describe("Basic value access", () => {
@@ -133,7 +133,7 @@ describe("expressions - createEvaluationContext", () => {
     });
 
     it("should handle # and $ prefixes for preferences", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({
+      savePreferences({
         MyPref: "Value",
       });
 
@@ -143,7 +143,7 @@ describe("expressions - createEvaluationContext", () => {
     });
 
     it("should handle case-insensitive preference lookup", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({
+      savePreferences({
         MyPref: "Value",
       });
 
@@ -152,7 +152,7 @@ describe("expressions - createEvaluationContext", () => {
     });
 
     it("should return empty string if preference not found", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({});
+      savePreferences({});
       const context = createEvaluationContext({});
       expect(context["#Missing"]).toBe("");
     });
@@ -265,25 +265,25 @@ describe("expressions - createEvaluationContext", () => {
     const SHOW_ACCT_PROP = "_ShowAcct";
 
     it("resolves _ShowAcct from preferences when context has no #ShowAcct", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ ShowAcct: "Y" });
+      savePreferences({ ShowAcct: "Y" });
       const context = createEvaluationContext({ context: {} });
       expect(context[SHOW_ACCT_PROP]).toBe("Y");
     });
 
     it("prefers context['#AD_Org_ID'] over prefs when the session attribute is present", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ AD_Org_ID: "pref" });
+      savePreferences({ AD_Org_ID: "pref" });
       const context = createEvaluationContext({ context: { "#AD_Org_ID": "0" } });
       expect(context._AD_Org_ID).toBe("0");
     });
 
     it("falls back to prefs when neither context nor record has the attribute", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ IsAcctDimCentrally: "N" });
+      savePreferences({ IsAcctDimCentrally: "N" });
       const context = createEvaluationContext({});
       expect(context._IsAcctDimCentrally).toBe("N");
     });
 
     it("does not shadow legitimate _identifier / _entityName record values", () => {
-      (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({ identifier: "WRONG" });
+      savePreferences({ identifier: "WRONG" });
       const context = createEvaluationContext({
         values: { _identifier: "Record A", _entityName: "MyEntity" },
       });

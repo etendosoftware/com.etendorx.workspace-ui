@@ -1360,6 +1360,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
               onRecordSelection={handleRecordSelection}
               isVisible={isGridPaneVisible(viewMode)}
               isPrimaryView={isGridPaneExclusive(viewMode)}
+              isTabCollapsed={collapsed}
               areFiltersDisabled={advancedFilters.length > 0}
               uIPattern={tab.uIPattern}
               isFocused={isFocused}
