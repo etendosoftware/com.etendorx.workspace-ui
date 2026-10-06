@@ -39,14 +39,37 @@ export interface EvaluationContextOptions {
 /** The proxy handed to compiled expressions: a flat record with flexible (case/underscore-insensitive) reads. */
 export type EvaluationContext = Record<string, any>;
 
+/** Lowercase without underscores: two keys with the same form are treated as the same name. */
+const normalizedForm = (key: string) => key.toLowerCase().replace(/_/g, "");
+
+/** camelCase → SNAKE_CASE, as display logic written against DB column names expects. */
+const toSnakeKey = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+
+const isEmptyValue = (val: unknown) => val === "" || val === null || val === undefined;
+
+interface LookupIndexes {
+  /** First key, in Object.keys order, for each lowercase form. */
+  byLowercase: Map<string, string>;
+  /** First key, in Object.keys order, for each normalized form. */
+  byNormalizedForm: Map<string, string>;
+}
+
 /**
- * Creates a Proxy object that allows flexible property access for Display Logic evaluation.
+ * Builds the context that compiled display/read-only logic expressions read from.
  *
  * It supports:
- * 1. Case-insensitive property access.
- * 2. Mapping from DB Column Names (e.g. C_BPARTNER_ID) to HQL Property Names (e.g. cBpartner)
- *    based on provided field metadata.
- * 3. Fallback across multiple data sources (Values > ParentValues > Context).
+ * 1. Case-insensitive property access, with an underscore-insensitive fallback.
+ * 2. Mapping from DB column names (e.g. C_BPARTNER_ID) to HQL property names (e.g. cBpartner)
+ *    based on the provided field metadata.
+ * 3. Precedence across sources: record values > parent values > auxiliary inputs > session.
+ *
+ * The result is identical to the pre-ETP-5641 builder (kept as a test oracle in
+ * `__mocks__/legacyEvaluationContext.ts`), but the build is O(n) and reads are O(1): keys are grouped by
+ * normalized form while they are written, instead of rescanning every key for each value. (O(n) assumes
+ * small groups of keys sharing a normalized form, which holds for real session and record data.)
+ *
+ * Outside the equivalence contract: a `__proto__` input whose value carries accessors that create own
+ * keys. Inputs come from JSON, which cannot carry accessors.
  */
 export const buildEvaluationContext = (options: EvaluationContextOptions): EvaluationContext => {
   const {
@@ -68,63 +91,69 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     return val;
   };
 
-  // 1. Base Context: Start with session/global context
   const evalContext: Record<string, any> = {};
-  Object.entries(context).forEach(([key, val]) => {
-    evalContext[key] = normalize(val);
-  });
+  // Own keys written so far, grouped by normalized form (step 3 overwrites every key of a group).
+  const keysByNormalizedForm = new Map<string, Set<string>>();
+
+  // Used by steps 1–4 only. Step 5 (mapFields) assigns directly on purpose: it runs after the last group
+  // lookup, and the read indexes are built from Object.keys, not from these groups.
+  const write = (key: string, value: unknown) => {
+    evalContext[key] = value;
+    // Assigning `__proto__` calls the prototype setter and creates no own key: never record it.
+    if (!Object.prototype.hasOwnProperty.call(evalContext, key)) return;
+    const form = normalizedForm(key);
+    let group = keysByNormalizedForm.get(form);
+    if (!group) {
+      group = new Set();
+      keysByNormalizedForm.set(form, group);
+    }
+    group.add(key);
+  };
+
+  // 1. Base Context: Start with session/global context
+  for (const [key, val] of Object.entries(context)) {
+    write(key, normalize(val));
+  }
 
   // 2. Tab-scoped auxiliary inputs (higher priority than session, lower than record values)
   if (auxiliaryInputs) {
-    Object.entries(auxiliaryInputs).forEach(([key, val]) => {
+    for (const [key, val] of Object.entries(auxiliaryInputs)) {
       const normalizedVal = normalize(val);
-      evalContext[key] = normalizedVal;
-      const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
-      evalContext[snakeKey] = normalizedVal;
-    });
+      write(key, normalizedVal);
+      write(toSnakeKey(key), normalizedVal);
+    }
   }
 
   // 3. Merge & Normalize Values (Current & Parent)
-  const allValues = { ...parentValues, ...values };
-
-  Object.entries(allValues).forEach(([key, val]) => {
+  for (const [key, val] of Object.entries({ ...parentValues, ...values })) {
     const normalizedVal = normalize(val);
-    evalContext[key] = normalizedVal;
+    write(key, normalizedVal);
 
-    if (typeof key === "string") {
-      const lowerKey = key.toLowerCase();
-      const normalizedKey = lowerKey.replace(/_/g, "");
-
-      // 3. Case-Insensitive Overwrite (Strict & Loose)
-      // Guard: do not overwrite an existing non-empty value with an empty one.
-      // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
-      // (e.g. productType:"I") and must not corrupt them.
-      Object.keys(evalContext).forEach((existingKey) => {
-        if (existingKey === key) return;
-        const existingLower = existingKey.toLowerCase();
-
-        if (existingLower === lowerKey || existingLower.replace(/_/g, "") === normalizedKey) {
-          const existingVal = evalContext[existingKey];
-          const existingIsEmpty = existingVal === "" || existingVal === null || existingVal === undefined;
-          if (existingIsEmpty || (normalizedVal !== "" && normalizedVal !== null && normalizedVal !== undefined)) {
-            evalContext[existingKey] = normalizedVal;
-          }
+    // Case/underscore-insensitive overwrite of every key written before this one.
+    // Guard: do not overwrite an existing non-empty value with an empty one.
+    // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
+    // (e.g. productType:"I") and must not corrupt them.
+    const sameName = keysByNormalizedForm.get(normalizedForm(key));
+    if (sameName) {
+      for (const existingKey of sameName) {
+        if (existingKey === key) continue;
+        if (isEmptyValue(evalContext[existingKey]) || !isEmptyValue(normalizedVal)) {
+          evalContext[existingKey] = normalizedVal;
         }
-      });
-
-      // 4. Fallback: Auto-generate Snake Case
-      if (!key.startsWith("$") && !key.startsWith("#")) {
-        const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
-        evalContext[snakeKey] = normalizedVal;
       }
     }
-  });
 
-  // 3. Apply Metadata Mapping
+    // 4. Fallback: Auto-generate Snake Case
+    if (!key.startsWith("$") && !key.startsWith("#")) {
+      write(toSnakeKey(key), normalizedVal);
+    }
+  }
+
+  // 5. Apply Metadata Mapping
   const mapFields = (schemaFields?: Record<string, Field>, sourceValues?: Record<string, unknown>) => {
     if (!schemaFields || !sourceValues) return;
 
-    Object.values(schemaFields).forEach((field) => {
+    for (const field of Object.values(schemaFields)) {
       const dbCol = field.column?.dBColumnName || field.columnName;
       if (dbCol && field.hqlName) {
         const val = sourceValues[field.hqlName];
@@ -134,43 +163,50 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
           evalContext[dbCol.toUpperCase()] = normalized;
         }
       }
-    });
+    }
   };
 
   mapFields(parentFields, parentValues);
   mapFields(fields, values);
 
-  const resolveProperty = (target: Record<string, any>, prop: string) => {
-    // 1. Exact match
-    if (prop in target) return target[prop];
-
-    const lowerProp = prop.toLowerCase();
-    const normalizedProp = lowerProp.replace(/_/g, "");
-    let looseMatchValue = undefined;
-    let looseMatchFound = false;
-
-    // Single loop for both checks
-    for (const key of Object.keys(target)) {
-      const keyLower = key.toLowerCase();
-
-      // 2. Case-insensitive match (Priority)
-      if (keyLower === lowerProp) {
-        return target[key];
-      }
-
-      // 3. Loose match (Fallback)
-      if (!looseMatchFound && keyLower.replace(/_/g, "") === normalizedProp) {
-        looseMatchValue = target[key];
-        looseMatchFound = true;
-      }
+  // Read indexes, built on first lookup and dropped on any write through the proxy.
+  let lookupIndexes: LookupIndexes | null = null;
+  const getLookupIndexes = (): LookupIndexes => {
+    if (lookupIndexes) return lookupIndexes;
+    const byLowercase = new Map<string, string>();
+    const byNormalizedForm = new Map<string, string>();
+    for (const key of Object.keys(evalContext)) {
+      const lower = key.toLowerCase();
+      if (!byLowercase.has(lower)) byLowercase.set(lower, key);
+      const form = lower.replace(/_/g, "");
+      if (!byNormalizedForm.has(form)) byNormalizedForm.set(form, key);
     }
-
-    return looseMatchFound ? looseMatchValue : undefined;
+    lookupIndexes = { byLowercase, byNormalizedForm };
+    return lookupIndexes;
+  };
+  const invalidateLookupIndexes = () => {
+    lookupIndexes = null;
   };
 
-  // Window-scoped key first, then the global one — the classic OB.PropertyStore.get resolution.
-  // The exact/case-insensitive lookup lives in resolvePreference, shared with the OB shims.
+  const resolveProperty = (target: Record<string, any>, prop: string) => {
+    // 1. Exact match (including inherited properties, as before)
+    if (prop in target) return target[prop];
+
+    const { byLowercase, byNormalizedForm } = getLookupIndexes();
+    const lowerProp = prop.toLowerCase();
+
+    // 2. Case-insensitive match (Priority)
+    const caseInsensitiveKey = byLowercase.get(lowerProp);
+    if (caseInsensitiveKey !== undefined) return target[caseInsensitiveKey];
+
+    // 3. Loose match (Fallback)
+    const looseKey = byNormalizedForm.get(lowerProp.replace(/_/g, ""));
+    return looseKey !== undefined ? target[looseKey] : undefined;
+  };
+
   const getFromPrefs = (key: string) => {
+    // Window-scoped key first, then the global one — the classic OB.PropertyStore.get resolution.
+    // The exact/case-insensitive lookup lives in resolvePreference, shared with the OB shims.
     const value = resolvePreference(key, windowId);
     if (value === undefined) return undefined;
     return normalize(value);
@@ -202,9 +238,9 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     // preferences store (localStorage etendo_preferences).
     if (prop.startsWith("_")) {
       const original = prop.slice(1);
-      const fromContext = resolveProperty(target, "#" + original) ?? resolveProperty(target, "$" + original);
+      const fromContext = resolveProperty(target, `#${original}`) ?? resolveProperty(target, `$${original}`);
       if (fromContext !== undefined && fromContext !== null) return fromContext;
-      const fromPrefs = getFromPrefs(original) ?? getFromPrefs("#" + original) ?? getFromPrefs("$" + original);
+      const fromPrefs = getFromPrefs(original) ?? getFromPrefs(`#${original}`) ?? getFromPrefs(`$${original}`);
       if (fromPrefs !== undefined) return fromPrefs;
     }
     return undefined;
@@ -232,14 +268,28 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
       // In Classic, unresolved context variables always resolve to '' (empty string).
       // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
       // removing the null->'' conversion that getValue provided. The Proxy must handle it.
-
       return defaultValue !== undefined ? defaultValue : "";
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);
       if (prop in target) return true;
-      const lowerProp = prop.toLowerCase();
-      return Object.keys(target).some((k) => k.toLowerCase() === lowerProp);
+      return getLookupIndexes().byLowercase.has(prop.toLowerCase());
+    },
+    // Writes are not expected, but must stay visible to later reads exactly as before.
+    set(target, prop, value, receiver) {
+      const ok = Reflect.set(target, prop, value, receiver);
+      invalidateLookupIndexes();
+      return ok;
+    },
+    defineProperty(target, prop, descriptor) {
+      const ok = Reflect.defineProperty(target, prop, descriptor);
+      invalidateLookupIndexes();
+      return ok;
+    },
+    deleteProperty(target, prop) {
+      const ok = Reflect.deleteProperty(target, prop);
+      invalidateLookupIndexes();
+      return ok;
     },
   });
 };
