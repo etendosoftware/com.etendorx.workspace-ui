@@ -70,7 +70,38 @@ const BASE_NAMES = [
   "__proto__",
 ] as const;
 
-const VALUES = ["", null, undefined, "Y", "N", true, false, 0, 7, "abc", "A5ABE40B99F94D94A5FAAC741E659EA5"] as const;
+/**
+ * Shared reference instances: both builders always receive the exact same `options` object, so a
+ * value picked from here keeps its identity across `actual`/`expected` — the builder must round-trip
+ * it unchanged (no cloning). A shared object assigned to a `__proto__` key changes the prototype in
+ * BOTH builders identically — that's fine, the prototype assertion in `expectSameContext` covers it.
+ */
+const SHARED_ARRAY = ["A", "B"];
+const SHARED_OBJECT = { id: "X" };
+
+const VALUES = [
+  "",
+  null,
+  undefined,
+  "Y",
+  "N",
+  true,
+  false,
+  0,
+  7,
+  "abc",
+  "A5ABE40B99F94D94A5FAAC741E659EA5",
+  Number.NaN,
+  SHARED_ARRAY,
+  SHARED_OBJECT,
+] as const;
+
+/** Inserts or removes one underscore at a seeded interior position (e.g. AD_OrgID, ADORG_ID). */
+const toggleUnderscoreAt = (rnd: Rnd, name: string): string => {
+  if (name.length < 2) return name;
+  const pos = 1 + Math.floor(rnd() * (name.length - 1));
+  return name[pos] === "_" ? name.slice(0, pos) + name.slice(pos + 1) : `${name.slice(0, pos)}_${name.slice(pos)}`;
+};
 
 const variantOf = (rnd: Rnd, name: string): string =>
   pick(rnd, [
@@ -82,6 +113,7 @@ const variantOf = (rnd: Rnd, name: string): string =>
     `#${name}`,
     `$${name}`,
     `${name}$_identifier`,
+    toggleUnderscoreAt(rnd, name),
   ]);
 
 /** A record of `size` entries mixing colliding names with unique ones. Built with fromEntries so `__proto__` is an own key. */
@@ -94,17 +126,36 @@ const genRecord = (rnd: Rnd, size: number, uniquePrefix: string): Record<string,
   return Object.fromEntries(entries);
 };
 
-/** Field metadata mapping some value keys (hqlName) to DB column names, with and without `column`. */
-const genFields = (rnd: Rnd, values: Record<string, unknown>): Record<string, Field> => {
+/**
+ * Field metadata mapping some value keys (hqlName) to DB column names. Covers: the normal shape
+ * (columnName, optionally `column.dBColumnName`), a missing `hqlName`, an empty `dBColumnName`,
+ * neither `column` nor `columnName`, and occasionally an `hqlName` that only exists in the other
+ * record (current <-> parent), via `crossKeys`.
+ */
+const genFields = (rnd: Rnd, values: Record<string, unknown>, crossKeys: string[] = []): Record<string, Field> => {
   const fields: Record<string, Field> = {};
   for (const key of Object.keys(values)) {
     if (rnd() < 0.6) continue;
     const dbColumn = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2");
-    fields[`f_${key}`] = {
-      hqlName: key,
-      columnName: dbColumn,
-      ...(rnd() < 0.5 ? { column: { dBColumnName: `${dbColumn}_DB` } } : {}),
-    } as unknown as Field;
+
+    const hqlRoll = rnd();
+    const hqlName = hqlRoll < 0.1 ? undefined : hqlRoll < 0.2 && crossKeys.length > 0 ? pick(rnd, crossKeys) : key;
+
+    const shapeRoll = rnd();
+    const field: Record<string, unknown> = {};
+    if (hqlName !== undefined) field.hqlName = hqlName;
+
+    if (shapeRoll >= 0.15) {
+      field.columnName = dbColumn;
+      if (shapeRoll < 0.3) {
+        field.column = { dBColumnName: "" };
+      } else if (shapeRoll < 0.5) {
+        field.column = { dBColumnName: `${dbColumn}_DB` };
+      }
+    }
+    // shapeRoll < 0.15: neither `column` nor `columnName`.
+
+    fields[`f_${key}`] = field as unknown as Field;
   }
   return fields;
 };
@@ -112,23 +163,35 @@ const genFields = (rnd: Rnd, values: Record<string, unknown>): Record<string, Fi
 const genOptions = (rnd: Rnd, sizes: { session: number; record: number; aux: number; parent: number }) => {
   const values = genRecord(rnd, sizes.record, "rec");
   const parentValues = rnd() < 0.7 ? genRecord(rnd, sizes.parent, "par") : undefined;
+  const defaultValueRoll = rnd();
   const options: EvaluationContextOptions = {
     context: genRecord(rnd, sizes.session, "#ATTR_"),
     auxiliaryInputs: rnd() < 0.7 ? (genRecord(rnd, sizes.aux, "aux") as Record<string, string>) : undefined,
     values,
-    fields: genFields(rnd, values),
+    fields: genFields(rnd, values, parentValues ? Object.keys(parentValues) : []),
     parentValues,
-    parentFields: parentValues ? genFields(rnd, parentValues) : undefined,
+    parentFields: parentValues ? genFields(rnd, parentValues, Object.keys(values)) : undefined,
     normalizeValues: rnd() < 0.85,
-    defaultValue: rnd() < 0.2 ? "DEF" : undefined,
+    defaultValue: defaultValueRoll < 0.15 ? "DEF" : defaultValueRoll < 0.25 ? null : undefined,
     windowId: rnd() < 0.5 ? "W1" : undefined,
   };
   return options;
 };
 
-/** Every key plus its case, underscore, prefixed and identifier variants, missing and inherited names. */
+/**
+ * Every key plus its case, underscore, prefixed, identifier, snake-case and interior/trailing
+ * underscore variants, plus missing and inherited names.
+ */
 const probesFor = (keys: string[]): string[] => {
-  const probes = new Set<string>(["missing_name", "MISSING", "toString", "constructor", "__proto__", "hasOwnProperty"]);
+  const probes = new Set<string>([
+    "missing_name",
+    "MISSING",
+    "toString",
+    "constructor",
+    "__proto__",
+    "hasOwnProperty",
+    "",
+  ]);
   for (const key of keys) {
     probes.add(key);
     probes.add(key.toLowerCase());
@@ -139,18 +202,71 @@ const probesFor = (keys: string[]): string[] => {
     probes.add(`#${key}`);
     probes.add(`$${key}`);
     probes.add(`${key}$_identifier`);
+
+    const snake = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+    probes.add(snake);
+    probes.add(snake.toLowerCase());
+
+    if (key.length > 1) {
+      probes.add(`${key[0]}_${key.slice(1)}`);
+    }
+    probes.add(`${key}_`);
   }
   return [...probes];
+};
+
+type Mismatch = { probe: string; kind: "get" | "has"; actual: unknown; expected: unknown };
+
+/** Raw stored values, bypassing the `get` trap (catches null vs undefined the trap's fallback hides). */
+const rawOwnValues = (x: Record<string, any>): unknown[] =>
+  Object.keys(x).map((k) => Object.getOwnPropertyDescriptor(x, k)?.value);
+
+/** Objects/functions must round-trip by reference (no cloning); primitives compare by value, NaN included. */
+const sameProbeValue = (actualVal: unknown, expectedVal: unknown): boolean => {
+  if (expectedVal !== null && (typeof expectedVal === "object" || typeof expectedVal === "function")) {
+    return Object.is(actualVal, expectedVal);
+  }
+  return actualVal === expectedVal || (Number.isNaN(actualVal) && Number.isNaN(expectedVal));
 };
 
 const expectSameContext = (actual: Record<string, any>, expected: Record<string, any>) => {
   expect(Object.keys(actual)).toEqual(Object.keys(expected));
   expect(Object.getPrototypeOf(actual)).toBe(Object.getPrototypeOf(expected));
+  expect(rawOwnValues(actual)).toEqual(rawOwnValues(expected));
+
+  const mismatches: Mismatch[] = [];
   for (const probe of probesFor(Object.keys(expected))) {
-    // Pair each value with its probe so a failure names the lookup that differs.
-    expect([probe, actual[probe]]).toEqual([probe, expected[probe]]);
-    expect([probe, probe in actual]).toEqual([probe, probe in expected]);
+    const actualVal = actual[probe];
+    const expectedVal = expected[probe];
+    if (!sameProbeValue(actualVal, expectedVal)) {
+      mismatches.push({ probe, kind: "get", actual: actualVal, expected: expectedVal });
+    }
+
+    const actualHas = probe in actual;
+    const expectedHas = probe in expected;
+    if (actualHas !== expectedHas) {
+      mismatches.push({ probe, kind: "has", actual: actualHas, expected: expectedHas });
+    }
   }
+
+  // Symbol probes: the get/has traps fall through to Reflect for non-string props.
+  const actualTag = Reflect.get(actual, Symbol.toStringTag);
+  const expectedTag = Reflect.get(expected, Symbol.toStringTag);
+  if (!Object.is(actualTag, expectedTag)) {
+    mismatches.push({ probe: "Symbol.toStringTag", kind: "get", actual: actualTag, expected: expectedTag });
+  }
+  const actualHasIterator = Reflect.has(actual, Symbol.iterator);
+  const expectedHasIterator = Reflect.has(expected, Symbol.iterator);
+  if (actualHasIterator !== expectedHasIterator) {
+    mismatches.push({
+      probe: "Symbol.iterator",
+      kind: "has",
+      actual: actualHasIterator,
+      expected: expectedHasIterator,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
 };
 
 describe("buildEvaluationContext — differential against the legacy builder", () => {
@@ -171,10 +287,39 @@ describe("buildEvaluationContext — differential against the legacy builder", (
     }
   });
 
-  it("matches the legacy builder after writes through the proxy", () => {
+  it("matches the legacy builder after writes through the proxy (deterministic collision group)", () => {
+    const options: EvaluationContextOptions = {
+      context: { PRODUCTTYPE: "S", product_type: "T" },
+      values: { productType: "I", documentNo: "1" },
+    };
+    const actual = buildEvaluationContext(options);
+    const expected = legacyCreateEvaluationContext(options);
+
+    // Before any write: forces a lazily built lookup index (if any) to materialize.
+    expectSameContext(actual, expected);
+
+    const collisionGroup = ["PRODUCTTYPE", "product_type", "productType"];
+    for (const ctx of [actual, expected]) {
+      const firstCollisionKey = Object.keys(ctx).find((k) => collisionGroup.includes(k));
+      if (firstCollisionKey) Reflect.deleteProperty(ctx, firstCollisionKey);
+
+      ctx.DOCUMENTNO_NEW = "x";
+      ctx.DocumentNo = "y";
+      ctx.documentNo = "";
+      Object.defineProperty(ctx, "definedKey", { value: "d", enumerable: true, configurable: true, writable: true });
+    }
+
+    // After the writes: the (possibly stale) index must still agree with the legacy builder.
+    expectSameContext(actual, expected);
+  });
+
+  it("matches the legacy builder after writes through the proxy (seeded random data)", () => {
     const options = genOptions(mulberry32(7), { session: 40, record: 30, aux: 6, parent: 8 });
     const actual = buildEvaluationContext(options);
     const expected = legacyCreateEvaluationContext(options);
+
+    expectSameContext(actual, expected);
+
     for (const ctx of [actual, expected]) {
       ctx.extraKey = "W";
       ctx.DOCUMENTNO = "OVERRIDE";
@@ -182,6 +327,7 @@ describe("buildEvaluationContext — differential against the legacy builder", (
       // (which Biome's noDelete rejects in this repo).
       Reflect.deleteProperty(ctx, "AD_Org_ID");
     }
+
     expectSameContext(actual, expected);
   });
 
@@ -197,6 +343,15 @@ describe("buildEvaluationContext — differential against the legacy builder", (
       expectSameContext(
         buildEvaluationContext({ ...options, normalizeValues: false }),
         legacyCreateEvaluationContext(options)
+      )
+    ).toThrow();
+  });
+
+  it("detects a difference from key order (harness self-check)", () => {
+    expect(() =>
+      expectSameContext(
+        legacyCreateEvaluationContext({ values: { a: "1", b: "2" } }),
+        legacyCreateEvaluationContext({ values: { b: "2", a: "1" } })
       )
     ).toThrow();
   });
