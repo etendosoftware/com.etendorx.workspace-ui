@@ -90,6 +90,14 @@ describe("useAuditTrail", () => {
     expect(mockNotifyPopupBlocked).not.toHaveBeenCalled();
   });
 
+  it("opens the popup without a record when nothing is selected", () => {
+    const { result } = renderAuditTrail({ selectedRecords: [] });
+
+    act(() => result.current.openAuditTrail());
+
+    expect(openedUrl().searchParams.has("inpRecordId")).toBe(false);
+  });
+
   it("builds a host-relative URL while the runtime config is not loaded", () => {
     mockUseRuntimeConfig.mockReturnValueOnce({ config: null, loading: true } as never);
     const { result } = renderAuditTrail();

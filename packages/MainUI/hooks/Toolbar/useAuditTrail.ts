@@ -33,6 +33,11 @@ import {
 /** Classic `ToolBar_Audit` keyboard shortcut (Ctrl+Shift+Y). */
 export const AUDIT_TRAIL_SHORTCUT = "ctrl+shift+y";
 
+const getSelectedRecordId = (selectedRecords: EntityData[]): string | undefined => {
+  const [record] = selectedRecords;
+  return record ? String(record.id) : undefined;
+};
+
 interface UseAuditTrailParams {
   tab?: Tab;
   selectedRecords: EntityData[];
@@ -41,10 +46,10 @@ interface UseAuditTrailParams {
 }
 
 /**
- * Opens the classic Audit Trail popup for the selected record, applying the same rules as
- * `OB.ToolbarUtils.showAuditTrail`: a multiple selection shows the JS28 warning, and a new
- * or never modified record does nothing. Also binds the `ToolBar_Audit` shortcut while the
- * tab is focused and its table is Fully Audited.
+ * Opens the classic Audit Trail popup, applying the same rules as `OB.ToolbarUtils.showAuditTrail`:
+ * a multiple selection shows the JS28 warning, a new or never modified record does nothing, and
+ * without a selection the popup opens without a record (its "View deleted records" view).
+ * Also binds the `ToolBar_Audit` shortcut while the tab is focused and its table is Fully Audited.
  */
 export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = false }: UseAuditTrailParams) => {
   const { t } = useTranslation();
@@ -64,7 +69,7 @@ export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = f
       publicHost: config?.etendoClassicHost || "",
       tabId: tab.id,
       tableId: tab.table,
-      recordId: String(selectedRecords[0].id),
+      recordId: getSelectedRecordId(selectedRecords),
       token,
     });
     if (!openAuditTrailPopup(url)) {

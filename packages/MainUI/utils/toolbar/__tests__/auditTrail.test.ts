@@ -21,34 +21,33 @@ import {
   AUDIT_TRAIL_STATUS,
   buildAuditTrailUrl,
   getAuditTrailStatus,
-  isRecordModified,
+  isRecordNeverModified,
   openAuditTrailPopup,
 } from "../auditTrail";
-import { MODIFIED_RECORD, UNMODIFIED_RECORD } from "../test-utils/auditTrailFixtures";
+import { MODIFIED_RECORD, UNMODIFIED_RECORD, makeAuditRecord } from "../test-utils/auditTrailFixtures";
 
-describe("isRecordModified", () => {
-  it("returns true when updated differs from creationDate", () => {
-    expect(isRecordModified(MODIFIED_RECORD)).toBe(true);
-  });
-
-  it("returns false when updated equals creationDate", () => {
-    expect(isRecordModified(UNMODIFIED_RECORD)).toBe(false);
+describe("isRecordNeverModified", () => {
+  it("returns true when updated equals creationDate", () => {
+    expect(isRecordNeverModified(UNMODIFIED_RECORD)).toBe(true);
   });
 
   it.each([
-    ["no record", undefined],
-    ["null record", null],
-    ["missing timestamps", { id: "new-row" }],
-    ["empty updated", { ...UNMODIFIED_RECORD, updated: "" }],
-    ["unparsable updated", { ...UNMODIFIED_RECORD, updated: "not a date" }],
-  ])("returns false for %s", (_label, record) => {
-    expect(isRecordModified(record as EntityData | null | undefined)).toBe(false);
+    ["updated differs from creationDate", MODIFIED_RECORD],
+    ["timestamps are missing", { id: "rec-3" }],
+    ["updated is empty", { ...UNMODIFIED_RECORD, updated: "" }],
+    ["updated is not a date", { ...UNMODIFIED_RECORD, updated: "not a date" }],
+  ])("returns false when %s", (_label, record) => {
+    expect(isRecordNeverModified(record as EntityData)).toBe(false);
   });
 });
 
 describe("getAuditTrailStatus", () => {
-  it("is READY for a single modified record", () => {
-    expect(getAuditTrailStatus({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false })).toBe(
+  it.each([
+    ["no selection", []],
+    ["a single modified record", [MODIFIED_RECORD]],
+    ["a record without timestamps", [{ id: "rec-3" }]],
+  ])("is READY with %s", (_label, selectedRecords) => {
+    expect(getAuditTrailStatus({ selectedRecords: selectedRecords as EntityData[], isNewRecord: false })).toBe(
       AUDIT_TRAIL_STATUS.READY
     );
   });
@@ -60,8 +59,8 @@ describe("getAuditTrailStatus", () => {
   });
 
   it.each([
-    ["no selection", [], false],
-    ["a new unsaved record", [MODIFIED_RECORD], true],
+    ["a new record in the form", [], true],
+    ["an unsaved inline row", [makeAuditRecord("new_123", "2026-10-02T11:30:00-03:00")], false],
     ["a never modified record", [UNMODIFIED_RECORD], false],
   ])("is UNAVAILABLE with %s", (_label, selectedRecords, isNewRecord) => {
     expect(getAuditTrailStatus({ selectedRecords: selectedRecords as EntityData[], isNewRecord })).toBe(
@@ -88,6 +87,11 @@ describe("buildAuditTrailUrl", () => {
   it("sends the browser time zone offset", () => {
     const url = parse(buildAuditTrailUrl(baseParams));
     expect(url.searchParams.get("inpClientTZOffset")).toBe(String(new Date().getTimezoneOffset()));
+  });
+
+  it("omits the record when nothing is selected", () => {
+    const url = parse(buildAuditTrailUrl({ ...baseParams, recordId: undefined }));
+    expect(url.searchParams.has("inpRecordId")).toBe(false);
   });
 
   it.each([undefined, null, ""])("omits the token when it is %p", (token) => {

@@ -23,11 +23,11 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
  * classic `BUTTON_PROPERTIES.audit.updateState` rules (ob-toolbar.js).
  */
 export const AUDIT_TRAIL_STATUS = {
-  /** Exactly one saved record that has been modified at least once. */
+  /** No selection (popup without a record) or one saved record that was modified. */
   READY: "READY",
   /** More than one record selected — classic warns with message JS28. */
   MULTIPLE: "MULTIPLE",
-  /** No record, a new unsaved record, or a record never modified. */
+  /** A new unsaved record, or a record never modified. */
   UNAVAILABLE: "UNAVAILABLE",
 } as const;
 
@@ -54,6 +54,8 @@ const AUDIT_TRAIL_POPUP_FEATURES = "width=900,height=600,resizable=yes,scrollbar
 
 const CREATION_DATE_PROPERTY = "creationDate";
 const UPDATED_PROPERTY = "updated";
+/** Id prefix the grid gives to inline rows that are not saved yet. */
+const UNSAVED_ROW_ID_PREFIX = "new_";
 
 const toTime = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") {
@@ -64,30 +66,40 @@ const toTime = (value: unknown): number | null => {
 };
 
 /**
- * Tells whether a record was modified after its creation (`updated` differs from
- * `creationDate`). A record without both timestamps has never been persisted, so it
- * counts as not modified.
+ * Tells whether a record was never modified: both `creationDate` and `updated` are present and
+ * equal. Same check as the classic `BUTTON_PROPERTIES.audit.updateState`, which leaves the button
+ * enabled when a timestamp is missing.
  */
-export const isRecordModified = (record?: EntityData | null): boolean => {
-  const created = toTime(record?.[CREATION_DATE_PROPERTY]);
-  const updated = toTime(record?.[UPDATED_PROPERTY]);
+export const isRecordNeverModified = (record: EntityData): boolean => {
+  const created = toTime(record[CREATION_DATE_PROPERTY]);
+  const updated = toTime(record[UPDATED_PROPERTY]);
   if (created === null || updated === null) {
     return false;
   }
-  return created !== updated;
+  return created === updated;
 };
+
+const isUnsavedRow = (record: EntityData): boolean => String(record.id).startsWith(UNSAVED_ROW_ID_PREFIX);
 
 interface AuditTrailStatusParams {
   selectedRecords: EntityData[];
   isNewRecord: boolean;
 }
 
-/** Resolves whether the Audit Trail can be opened for the given selection. */
+/**
+ * Resolves whether the Audit Trail can be opened for the given selection. Without a selection
+ * it stays available, as in Classic: the popup opens without a record, which still gives access
+ * to the deleted records of the tab.
+ */
 export const getAuditTrailStatus = ({ selectedRecords, isNewRecord }: AuditTrailStatusParams): AuditTrailStatus => {
   if (selectedRecords.length > 1) {
     return AUDIT_TRAIL_STATUS.MULTIPLE;
   }
-  if (isNewRecord || !isRecordModified(selectedRecords[0])) {
+  if (isNewRecord) {
+    return AUDIT_TRAIL_STATUS.UNAVAILABLE;
+  }
+  const [record] = selectedRecords;
+  if (record && (isUnsavedRow(record) || isRecordNeverModified(record))) {
     return AUDIT_TRAIL_STATUS.UNAVAILABLE;
   }
   return AUDIT_TRAIL_STATUS.READY;
@@ -97,7 +109,8 @@ interface BuildAuditTrailUrlParams {
   publicHost: string;
   tabId: string;
   tableId: string;
-  recordId: string;
+  /** Omitted when nothing is selected, like the classic popup call. */
+  recordId?: string;
   token?: string | null;
 }
 
@@ -116,9 +129,11 @@ export const buildAuditTrailUrl = ({
     [COMMAND_PARAM]: AUDIT_TRAIL_HISTORY_COMMAND,
     [TAB_ID_PARAM]: tabId,
     [TABLE_ID_PARAM]: tableId,
-    [RECORD_ID_PARAM]: recordId,
     [CLIENT_TZ_OFFSET_PARAM]: String(new Date().getTimezoneOffset()),
   });
+  if (recordId) {
+    params.set(RECORD_ID_PARAM, recordId);
+  }
   if (token) {
     params.set(TOKEN_PARAM, token);
   }

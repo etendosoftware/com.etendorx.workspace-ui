@@ -815,8 +815,11 @@ describe("SHOW_AUDIT_TRAIL button", () => {
     expect(result.center).toHaveLength(expectedCount);
   });
 
-  it("is enabled for a single modified record", () => {
-    expect(createButtonByType(auditProps).disabled).toBe(false);
+  it.each([
+    ["a single modified record", {}],
+    ["no selection, as in Classic", { selectedRecords: undefined, selectedRecordsLength: 0 }],
+  ])("is enabled with %s", (_label, overrides) => {
+    expect(createButtonByType({ ...auditProps, ...overrides }).disabled).toBe(false);
   });
 
   it.each([
@@ -826,7 +829,6 @@ describe("SHOW_AUDIT_TRAIL button", () => {
     ],
     ["the record is new", { isNewRecord: true }],
     ["the record was never modified", { selectedRecords: [UNMODIFIED_RECORD] }],
-    ["no selection is given", { selectedRecords: undefined, selectedRecordsLength: 0 }],
     [
       "a document is processing",
       { saveButtonState: { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true } },
