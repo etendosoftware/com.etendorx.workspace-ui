@@ -85,13 +85,20 @@ module in place, Phases 2 and 3 change its internals, not its callers.
 ```
 packages/MainUI/utils/evaluation/
   buildEvaluationContext.ts      # pure builder + proxy (moved from utils/expressions.ts, rewritten)
+  lazyContext.ts                 # build-once getters (one per pass, one per record)
+  __mocks__/
+    legacyEvaluationContext.ts   # verbatim copy of the current implementation, test-only oracle
   __tests__/
     buildEvaluationContext.test.ts
     buildEvaluationContext.differential.test.ts
-    legacyEvaluationContext.ts   # verbatim copy of the current implementation, test-only oracle
+    lazyContext.test.ts
 packages/MainUI/hooks/evaluation/
   useEvaluationContext.ts        # memoized hook over the builder
 ```
+
+The oracle lives in `__mocks__/` because Biome (`files.ignore`) and Sonar (`sonar.exclusions`) ignore
+that folder and Jest does not run it as a suite (any `.ts` under `__tests__/` would be). It is imported
+directly by the differential test, never through `jest.mock`.
 
 `utils/expressions.ts` stays the **public import path** of the builder in Phase 1: it re-exports
 `buildEvaluationContext` as `createEvaluationContext` and `createSmartContext`. Callers that keep
@@ -215,7 +222,7 @@ and `useToolbar`; `field.displayed` in `useFormValidation`). In Phase 1:
 
 ## 6. Testing
 
-1. **Differential test (the equivalence gate).** `legacyEvaluationContext.ts` is a verbatim copy of the
+1. **Differential test (the equivalence gate).** `__mocks__/legacyEvaluationContext.ts` is a verbatim copy of the
    current implementation at the start of the branch, with the same `resolvePreference` dependency
    (mocked identically for both). For every input set, the test asserts:
    - `Object.keys(newCtx)` equals `Object.keys(legacyCtx)`, in order, and every value is equal;
@@ -240,9 +247,11 @@ and `useToolbar`; `field.displayed` in `useFormValidation`). In Phase 1:
    their mocks and expected results. The only edits allowed are expectations about **how many times**
    the builder is called (where a test asserted one call per field) and about log output (none
    asserts on it today).
-3. **Caller tests:** `FormHeader`, `FormFieldsContent`, `useToolbar` and `useFormValidation` assert that
-   the builder is called once per render or pass (lazily, per record in `useToolbar`), that visibility
-   results are unchanged, and that a throwing build ends in the same fallback as today.
+3. **Caller tests:** `FormHeader`, `FormFieldsContent` and `useFormValidation` assert that the builder is
+   called once per render or pass, that visibility results are unchanged, and that a throwing build ends
+   in the same fallback as today. `useToolbar`'s build-once-per-record behavior is covered by the unit
+   tests of `lazyContextByKey` (built lazily, cached per record, a throwing build not cached), and its
+   results by the existing `useToolbar` tests.
 4. **Micro-benchmark** (not part of CI): one build with the realistic generated data drops from ~13 ms
    to under 0.5 ms on the developer machine.
 5. **Benchmark** (acceptance, section 8).
