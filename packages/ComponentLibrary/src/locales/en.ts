@@ -145,6 +145,14 @@ const en = {
     updated: "Updated",
     updatedBy: "Updated By",
   },
+  auditTrail: {
+    title: "Audit Trail",
+    selectOneRecord: "You must select exactly one record to view the audit trail for it.",
+    loading: "Loading audit trail...",
+    iframeTitle: "Audit Trail",
+    close: "Close",
+    requestFailed: "The audit trail could not be loaded.",
+  },
   status: {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",

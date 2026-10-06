@@ -44,6 +44,8 @@ import {
 } from "../ProcessModal/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
+import AuditTrailModal from "./Modals/AuditTrailModal";
+import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
 import SearchPortal from "./SearchPortal";
@@ -66,7 +68,12 @@ import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSplitView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({
+  windowId,
+  isFormView = false,
+  isSplitView = false,
+  isFocused = false,
+}) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -111,6 +118,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
+  const { openAuditTrail, modalProps: auditTrailModalProps } = useAuditTrail({
+    tab,
+    selectedRecords,
+    isNewRecord,
+    isFocused,
+  });
   const hasParentTab = !!tab?.parentTabId;
   const {
     tableColumnFilters,
@@ -494,9 +507,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
         handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
         return;
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL) {
+        openAuditTrail();
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle]
+    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle, openAuditTrail]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -521,6 +538,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       showShareLinkTooltip: showShareLinkTooltip,
       tab: tab,
       selectedRecordsLength: selectedRecordsLength,
+      selectedRecords: selectedRecords,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
@@ -665,6 +683,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
         initialData={emailConfig ?? undefined}
         data-testid="EmailSendModal__a2dd07"
       />
+      <AuditTrailModal {...auditTrailModalProps} data-testid="AuditTrailModal__a2dd07" />
     </>
   );
 };

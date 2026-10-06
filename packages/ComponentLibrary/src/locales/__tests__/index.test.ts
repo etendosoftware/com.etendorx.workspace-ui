@@ -36,4 +36,10 @@ describe("locales/index", () => {
     expect(translations.en_US).toBeDefined();
     expect(typeof translations.en_US).toBe("object");
   });
+
+  it("should define the same auditTrail keys in every language", () => {
+    const enKeys = Object.keys(translations.en_US.auditTrail).sort();
+    expect(enKeys).toEqual(["close", "iframeTitle", "loading", "requestFailed", "selectOneRecord", "title"]);
+    expect(Object.keys(translations.es_ES.auditTrail).sort()).toEqual(enKeys);
+  });
 });

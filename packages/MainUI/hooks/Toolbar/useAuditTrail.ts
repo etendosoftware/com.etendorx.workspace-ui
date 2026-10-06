@@ -1,0 +1,78 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2026 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useUserStore } from "@/stores/userStore";
+import { AUDIT_TRAIL_STATUS, buildAuditTrailUrl, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
+
+/** Classic `ToolBar_Audit` keyboard shortcut (Ctrl+Shift+Y). */
+export const AUDIT_TRAIL_SHORTCUT = "ctrl+shift+y";
+
+interface UseAuditTrailParams {
+  tab?: Tab;
+  selectedRecords: EntityData[];
+  isNewRecord: boolean;
+  isFocused?: boolean;
+}
+
+/**
+ * Opens the classic Audit Trail viewer for the selected record, applying the same rules as
+ * `OB.ToolbarUtils.showAuditTrail`: a multiple selection shows the JS28 warning, and a new
+ * or never modified record does nothing. Also binds the `ToolBar_Audit` shortcut while the
+ * tab is focused and its table is Fully Audited.
+ */
+export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = false }: UseAuditTrailParams) => {
+  const { t } = useTranslation();
+  const { config } = useRuntimeConfig();
+  const token = useUserStore((s) => s.token);
+  const [url, setUrl] = useState("");
+
+  const openAuditTrail = useCallback(() => {
+    if (!tab) return;
+    const status = getAuditTrailStatus({ selectedRecords, isNewRecord });
+    if (status === AUDIT_TRAIL_STATUS.MULTIPLE) {
+      toast.warning(t("auditTrail.selectOneRecord"));
+      return;
+    }
+    if (status !== AUDIT_TRAIL_STATUS.READY) return;
+
+    setUrl(
+      buildAuditTrailUrl({
+        publicHost: config?.etendoClassicHost || "",
+        tabId: tab.id,
+        tableId: tab.table,
+        recordId: String(selectedRecords[0].id),
+        token,
+      })
+    );
+  }, [tab, selectedRecords, isNewRecord, t, config?.etendoClassicHost, token]);
+
+  const closeAuditTrail = useCallback(() => setUrl(""), []);
+
+  const shortcuts = useMemo(() => ({ [AUDIT_TRAIL_SHORTCUT]: { handler: openAuditTrail } }), [openAuditTrail]);
+  useKeyboardShortcuts(shortcuts, isFocused && Boolean(tab?.tableFullyAudited));
+
+  return {
+    openAuditTrail,
+    modalProps: { isOpen: url !== "", url, onClose: closeAuditTrail },
+  };
+};
