@@ -94,6 +94,15 @@ export const LinkedItems = memo(
       [onItemClick]
     );
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: the record identity is the reset trigger
+    useEffect(() => {
+      // The component is reused across records, so drop the previous record's data
+      // to avoid showing stale categories/items until the new ones are loaded.
+      setCategories([]);
+      setSelectedCategory(null);
+      setItems([]);
+    }, [windowId, entityName, recordId]);
+
     useEffect(() => {
       // Skip fetch when windowId or recordId are not yet stable (e.g., during session
       // updates triggered by callouts). This prevents redundant UsedByLink requests
