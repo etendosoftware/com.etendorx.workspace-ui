@@ -37,7 +37,7 @@ jest.mock("@/utils/reportPopup", () => ({
 const openSpy = jest.spyOn(window, "open");
 const openedUrl = () => new URL(String(openSpy.mock.calls[0][0]));
 
-const DEFAULT_RUNTIME_CONFIG = { config: { etendoClassicHost: "http://host/etendo" }, loading: false };
+const DEFAULT_RUNTIME_CONFIG = { config: { etendoClassicHost: "https://host/etendo" }, loading: false };
 const mockUseRuntimeConfig = jest.fn(() => DEFAULT_RUNTIME_CONFIG);
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
   useRuntimeConfig: () => mockUseRuntimeConfig(),

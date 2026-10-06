@@ -70,7 +70,7 @@ describe("getAuditTrailStatus", () => {
 });
 
 describe("buildAuditTrailUrl", () => {
-  const baseParams = { publicHost: "http://host/etendo", tabId: "tab-1", tableId: "table-1", recordId: "rec-1" };
+  const baseParams = { publicHost: "https://host/etendo", tabId: "tab-1", tableId: "table-1", recordId: "rec-1" };
 
   const parse = (url: string) => new URL(url);
 
@@ -108,9 +108,9 @@ describe("openAuditTrailPopup", () => {
   it("opens the popup in its own 900x600 window", () => {
     openSpy.mockReturnValueOnce({} as Window);
 
-    expect(openAuditTrailPopup("http://popup")).toBe(true);
+    expect(openAuditTrailPopup("https://popup")).toBe(true);
     expect(openSpy).toHaveBeenCalledWith(
-      "http://popup",
+      "https://popup",
       expect.any(String),
       expect.stringContaining("width=900,height=600")
     );
@@ -119,6 +119,6 @@ describe("openAuditTrailPopup", () => {
   it("returns false when the browser blocks the window", () => {
     openSpy.mockReturnValueOnce(null);
 
-    expect(openAuditTrailPopup("http://popup")).toBe(false);
+    expect(openAuditTrailPopup("https://popup")).toBe(false);
   });
 });
