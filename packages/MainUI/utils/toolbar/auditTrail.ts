@@ -44,6 +44,14 @@ const RECORD_ID_PARAM = "inpRecordId";
 const CLIENT_TZ_OFFSET_PARAM = "inpClientTZOffset";
 const TOKEN_PARAM = "token";
 
+/**
+ * Separate browser window with the classic popup size (`OB.ToolbarUtils.showAuditTrail` opens it
+ * as a 900×600 popup). An iframe is not viable: the classic DataGrid reads `parent.frameMenu`,
+ * which a cross-origin parent window blocks.
+ */
+const AUDIT_TRAIL_POPUP_NAME = "etendoAuditTrail";
+const AUDIT_TRAIL_POPUP_FEATURES = "width=900,height=600,resizable=yes,scrollbars=yes";
+
 const CREATION_DATE_PROPERTY = "creationDate";
 const UPDATED_PROPERTY = "updated";
 
@@ -116,3 +124,11 @@ export const buildAuditTrailUrl = ({
   }
   return `${publicHost}${API_IFRAME_FORWARD_PATH}${AUDIT_TRAIL_LEGACY_PATH}?${params.toString()}`;
 };
+
+/**
+ * Opens the classic Audit Trail popup in its own browser window.
+ *
+ * @returns `false` when the browser blocked the window.
+ */
+export const openAuditTrailPopup = (url: string): boolean =>
+  Boolean(window.open(url, AUDIT_TRAIL_POPUP_NAME, AUDIT_TRAIL_POPUP_FEATURES));

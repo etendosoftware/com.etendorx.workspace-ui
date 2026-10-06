@@ -44,7 +44,6 @@ import {
 } from "../ProcessModal/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
-import AuditTrailModal from "./Modals/AuditTrailModal";
 import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
@@ -118,7 +117,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
-  const { openAuditTrail, modalProps: auditTrailModalProps } = useAuditTrail({
+  const { openAuditTrail } = useAuditTrail({
     tab,
     selectedRecords,
     isNewRecord,
@@ -683,7 +682,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
         initialData={emailConfig ?? undefined}
         data-testid="EmailSendModal__a2dd07"
       />
-      <AuditTrailModal {...auditTrailModalProps} data-testid="AuditTrailModal__a2dd07" />
     </>
   );
 };

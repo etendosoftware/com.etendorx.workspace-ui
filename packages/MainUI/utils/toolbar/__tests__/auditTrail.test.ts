@@ -22,6 +22,7 @@ import {
   buildAuditTrailUrl,
   getAuditTrailStatus,
   isRecordModified,
+  openAuditTrailPopup,
 } from "../auditTrail";
 import { MODIFIED_RECORD, UNMODIFIED_RECORD } from "../test-utils/auditTrailFixtures";
 
@@ -92,5 +93,28 @@ describe("buildAuditTrailUrl", () => {
   it.each([undefined, null, ""])("omits the token when it is %p", (token) => {
     const url = parse(buildAuditTrailUrl({ ...baseParams, token }));
     expect(url.searchParams.has("token")).toBe(false);
+  });
+});
+
+describe("openAuditTrailPopup", () => {
+  const openSpy = jest.spyOn(window, "open");
+
+  afterAll(() => openSpy.mockRestore());
+
+  it("opens the popup in its own 900x600 window", () => {
+    openSpy.mockReturnValueOnce({} as Window);
+
+    expect(openAuditTrailPopup("http://popup")).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      "http://popup",
+      expect.any(String),
+      expect.stringContaining("width=900,height=600")
+    );
+  });
+
+  it("returns false when the browser blocks the window", () => {
+    openSpy.mockReturnValueOnce(null);
+
+    expect(openAuditTrailPopup("http://popup")).toBe(false);
   });
 });

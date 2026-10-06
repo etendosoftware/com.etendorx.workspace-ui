@@ -145,12 +145,9 @@ const es = {
     updatedBy: "Actualizado por",
   },
   auditTrail: {
-    title: "Historial de auditoría",
     selectOneRecord: "Debe seleccionar exactamente un registro para ver su historial de auditoría.",
-    loading: "Cargando historial de auditoría...",
-    iframeTitle: "Historial de auditoría",
-    close: "Cerrar",
-    requestFailed: "No se pudo cargar el historial de auditoría.",
+    popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
+    openPopup: "Abrir historial de auditoría",
   },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",

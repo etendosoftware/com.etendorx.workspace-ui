@@ -94,12 +94,6 @@ jest.mock("../Modals/EmailSendModal", () => ({
     ) : null,
 }));
 
-jest.mock("../Modals/AuditTrailModal", () => ({
-  __esModule: true,
-  default: ({ isOpen, url }: { isOpen: boolean; url: string }) =>
-    isOpen ? <div data-testid="audit-trail-modal">{url}</div> : null,
-}));
-
 // Mock other modals to avoid server-side imports
 jest.mock("../../ProcessModal/ProcessDefinitionModal", () => ({
   __esModule: true,
@@ -275,11 +269,17 @@ describe("Toolbar - Audit Trail", () => {
     });
   });
 
-  it("opens the audit trail viewer for the selected record", () => {
+  it("opens the audit trail popup for the selected record", () => {
+    const openSpy = jest.spyOn(window, "open").mockReturnValue({} as Window);
     render(<Toolbar windowId="win-id" />);
 
     fireEvent.click(screen.getByTestId("IconButton__audit-trail"));
 
-    expect(screen.getByTestId("audit-trail-modal")).toHaveTextContent(`inpRecordId=${String(MODIFIED_RECORD.id)}`);
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`inpRecordId=${String(MODIFIED_RECORD.id)}`),
+      expect.any(String),
+      expect.any(String)
+    );
+    openSpy.mockRestore();
   });
 });

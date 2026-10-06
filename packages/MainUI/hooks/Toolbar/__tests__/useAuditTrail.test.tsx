@@ -29,6 +29,14 @@ import {
 
 jest.mock("sonner", () => ({ toast: { warning: jest.fn() } }));
 
+const mockNotifyPopupBlocked = jest.fn();
+jest.mock("@/utils/reportPopup", () => ({
+  notifyReportPopupBlocked: (...args: unknown[]) => mockNotifyPopupBlocked(...args),
+}));
+
+const openSpy = jest.spyOn(window, "open");
+const openedUrl = () => new URL(String(openSpy.mock.calls[0][0]));
+
 const DEFAULT_RUNTIME_CONFIG = { config: { etendoClassicHost: "http://host/etendo" }, loading: false };
 const mockUseRuntimeConfig = jest.fn(() => DEFAULT_RUNTIME_CONFIG);
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
@@ -58,26 +66,28 @@ const pressAuditShortcut = () => fireEvent.keyDown(document, { key: "Y", ctrlKey
 describe("useAuditTrail", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    openSpy.mockReturnValue({} as Window);
     useUserStore.setState({ token: "jwt" });
   });
 
-  it("starts with the viewer closed", () => {
-    const { result } = renderAuditTrail();
-    expect(result.current.modalProps.isOpen).toBe(false);
-    expect(result.current.modalProps.url).toBe("");
-  });
+  afterAll(() => openSpy.mockRestore());
+
+  const expectNothingOpened = () => {
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(toast.warning).not.toHaveBeenCalled();
+  };
 
   it("opens the classic popup for the selected record", () => {
     const { result } = renderAuditTrail();
 
     act(() => result.current.openAuditTrail());
 
-    const url = new URL(result.current.modalProps.url);
-    expect(result.current.modalProps.isOpen).toBe(true);
+    const url = openedUrl();
     expect(url.searchParams.get("inpTabId")).toBe(AUDITED_TAB.id);
     expect(url.searchParams.get("inpTableId")).toBe(AUDITED_TAB.table);
     expect(url.searchParams.get("inpRecordId")).toBe(String(MODIFIED_RECORD.id));
     expect(url.searchParams.get("token")).toBe("jwt");
+    expect(mockNotifyPopupBlocked).not.toHaveBeenCalled();
   });
 
   it("builds a host-relative URL while the runtime config is not loaded", () => {
@@ -86,16 +96,22 @@ describe("useAuditTrail", () => {
 
     act(() => result.current.openAuditTrail());
 
-    expect(result.current.modalProps.url.startsWith("/meta/legacy/")).toBe(true);
+    expect(String(openSpy.mock.calls[0][0]).startsWith("/meta/legacy/")).toBe(true);
   });
 
-  it("closes the viewer", () => {
+  it("offers to retry when the browser blocks the popup", () => {
+    openSpy.mockReturnValue(null);
     const { result } = renderAuditTrail();
 
     act(() => result.current.openAuditTrail());
-    act(() => result.current.modalProps.onClose());
 
-    expect(result.current.modalProps.isOpen).toBe(false);
+    expect(mockNotifyPopupBlocked).toHaveBeenCalledWith(expect.any(Function), {
+      title: "auditTrail.popupBlocked",
+      openLabel: "auditTrail.openPopup",
+    });
+    const retry = mockNotifyPopupBlocked.mock.calls[0][0] as () => void;
+    retry();
+    expect(openSpy).toHaveBeenCalledTimes(2);
   });
 
   it("warns instead of opening when several records are selected", () => {
@@ -104,60 +120,48 @@ describe("useAuditTrail", () => {
     act(() => result.current.openAuditTrail());
 
     expect(toast.warning).toHaveBeenCalledWith("auditTrail.selectOneRecord");
-    expect(result.current.modalProps.isOpen).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
   });
-
-  const expectNothingOpened = (result: { current: ReturnType<typeof useAuditTrail> }) => {
-    act(() => result.current.openAuditTrail());
-
-    expect(result.current.modalProps.isOpen).toBe(false);
-    expect(toast.warning).not.toHaveBeenCalled();
-  };
 
   it.each<[string, HookParams]>([
     ["the record was never modified", { selectedRecords: [UNMODIFIED_RECORD] }],
     ["the record is new", { isNewRecord: true }],
   ])("does nothing when %s", (_label, params) => {
-    expectNothingOpened(renderAuditTrail(params).result);
+    const { result } = renderAuditTrail(params);
+    act(() => result.current.openAuditTrail());
+    expectNothingOpened();
   });
 
   it("does nothing when there is no tab", () => {
     const { result } = renderHook(() => useAuditTrail({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false }));
-    expectNothingOpened(result);
+    act(() => result.current.openAuditTrail());
+    expectNothingOpened();
   });
 
-  it(`opens the viewer with ${AUDIT_TRAIL_SHORTCUT} when the audited tab is focused`, () => {
-    const { result } = renderAuditTrail({ isFocused: true });
+  it(`opens the popup with ${AUDIT_TRAIL_SHORTCUT} when the audited tab is focused`, () => {
+    renderAuditTrail({ isFocused: true });
 
-    act(() => {
-      pressAuditShortcut();
-    });
+    pressAuditShortcut();
 
-    expect(result.current.modalProps.isOpen).toBe(true);
+    expect(openSpy).toHaveBeenCalledTimes(1);
   });
 
   it.each<[string, HookParams]>([
     ["the tab is not focused", { isFocused: false }],
     ["the table is not audited", { isFocused: true, tab: NOT_AUDITED_TAB }],
   ])("ignores the shortcut when %s", (_label, params) => {
-    const { result } = renderAuditTrail(params);
+    renderAuditTrail(params);
 
-    act(() => {
-      pressAuditShortcut();
-    });
+    pressAuditShortcut();
 
-    expect(result.current.modalProps.isOpen).toBe(false);
+    expectNothingOpened();
   });
 
   it("ignores the shortcut when there is no tab", () => {
-    const { result } = renderHook(() =>
-      useAuditTrail({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false, isFocused: true })
-    );
+    renderHook(() => useAuditTrail({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false, isFocused: true }));
 
-    act(() => {
-      pressAuditShortcut();
-    });
+    pressAuditShortcut();
 
-    expect(result.current.modalProps.isOpen).toBe(false);
+    expectNothingOpened();
   });
 });

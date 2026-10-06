@@ -15,14 +15,20 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
-import { AUDIT_TRAIL_STATUS, buildAuditTrailUrl, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
+import { notifyReportPopupBlocked } from "@/utils/reportPopup";
+import {
+  AUDIT_TRAIL_STATUS,
+  buildAuditTrailUrl,
+  getAuditTrailStatus,
+  openAuditTrailPopup,
+} from "@/utils/toolbar/auditTrail";
 
 /** Classic `ToolBar_Audit` keyboard shortcut (Ctrl+Shift+Y). */
 export const AUDIT_TRAIL_SHORTCUT = "ctrl+shift+y";
@@ -35,7 +41,7 @@ interface UseAuditTrailParams {
 }
 
 /**
- * Opens the classic Audit Trail viewer for the selected record, applying the same rules as
+ * Opens the classic Audit Trail popup for the selected record, applying the same rules as
  * `OB.ToolbarUtils.showAuditTrail`: a multiple selection shows the JS28 warning, and a new
  * or never modified record does nothing. Also binds the `ToolBar_Audit` shortcut while the
  * tab is focused and its table is Fully Audited.
@@ -44,7 +50,6 @@ export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = f
   const { t } = useTranslation();
   const { config } = useRuntimeConfig();
   const token = useUserStore((s) => s.token);
-  const [url, setUrl] = useState("");
 
   const openAuditTrail = useCallback(() => {
     if (!tab) return;
@@ -55,24 +60,23 @@ export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = f
     }
     if (status !== AUDIT_TRAIL_STATUS.READY) return;
 
-    setUrl(
-      buildAuditTrailUrl({
-        publicHost: config?.etendoClassicHost || "",
-        tabId: tab.id,
-        tableId: tab.table,
-        recordId: String(selectedRecords[0].id),
-        token,
-      })
-    );
+    const url = buildAuditTrailUrl({
+      publicHost: config?.etendoClassicHost || "",
+      tabId: tab.id,
+      tableId: tab.table,
+      recordId: String(selectedRecords[0].id),
+      token,
+    });
+    if (!openAuditTrailPopup(url)) {
+      notifyReportPopupBlocked(() => openAuditTrailPopup(url), {
+        title: t("auditTrail.popupBlocked"),
+        openLabel: t("auditTrail.openPopup"),
+      });
+    }
   }, [tab, selectedRecords, isNewRecord, t, config?.etendoClassicHost, token]);
-
-  const closeAuditTrail = useCallback(() => setUrl(""), []);
 
   const shortcuts = useMemo(() => ({ [AUDIT_TRAIL_SHORTCUT]: { handler: openAuditTrail } }), [openAuditTrail]);
   useKeyboardShortcuts(shortcuts, isFocused && Boolean(tab?.tableFullyAudited));
 
-  return {
-    openAuditTrail,
-    modalProps: { isOpen: url !== "", url, onClose: closeAuditTrail },
-  };
+  return { openAuditTrail };
 };
