@@ -75,23 +75,39 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(objectUrl);
 }
 
-/** Fetches and opens a report; logs and swallows failures (best-effort UX). */
-export async function browseReport(url: string, token: string): Promise<void> {
+/** Optional callback notified when a report file cannot be fetched. */
+export type ReportErrorHandler = (error: unknown) => void;
+
+/**
+ * Fetches and opens a report. Failures are logged and, when `onError` is given,
+ * reported to the caller so the user is not left without feedback.
+ */
+export async function browseReport(url: string, token: string, onError?: ReportErrorHandler): Promise<void> {
   try {
     const { blob } = await fetchReportBlob(url, token);
     openBlobInNewTab(blob);
   } catch (error) {
     logger.warn("[ProcessModal] browseReport failed", error);
+    onError?.(error);
   }
 }
 
-/** Fetches and downloads a report; logs and swallows failures (best-effort UX). */
-export async function downloadReport(url: string, token: string, fileName: string): Promise<void> {
+/**
+ * Fetches and downloads a report. Failures are logged and, when `onError` is
+ * given, reported to the caller so the user is not left without feedback.
+ */
+export async function downloadReport(
+  url: string,
+  token: string,
+  fileName: string,
+  onError?: ReportErrorHandler
+): Promise<void> {
   try {
     const { blob, fileName: headerName } = await fetchReportBlob(url, token);
     downloadBlob(blob, fileName || headerName || "report");
   } catch (error) {
     logger.warn("[ProcessModal] downloadReport failed", error);
+    onError?.(error);
   }
 }
 

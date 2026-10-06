@@ -365,6 +365,7 @@ const es = {
     manualProcessNotMigrated: "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
     popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
     openLink: "Abrir enlace",
+    reportFileFailed: "El reporte se generó pero no se pudo abrir ni descargar el archivo.",
     openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {

@@ -361,6 +361,7 @@ const en = {
     manualProcessNotMigrated: "This process has logic thas has not been migrated yet. Please contact support.",
     popupBlocked: "Your browser blocked the window this process tried to open.",
     openLink: "Open link",
+    reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
   },
   processModal: {
