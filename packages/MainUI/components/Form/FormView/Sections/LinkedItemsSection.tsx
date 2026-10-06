@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
@@ -58,28 +58,6 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: 
   const hasBeenExpanded = useExpandedOnce(isSectionExpanded, recordId);
   const ready = !isFormInitializing && !isSessionSyncLoading && hasBeenExpanded;
 
-  // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-  // Logs the real DOM element that receives every click while this section is mounted,
-  // to check whether clicks on a linked-item row actually reach it or land elsewhere
-  // (e.g. a sibling section-tab button like "Line Tax") due to a re-render/reflow.
-  useEffect(() => {
-    const logClickTarget = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      console.debug("[DEBUG-LINKEDITEMS] document click captured", {
-        tag: target?.tagName,
-        text: target?.textContent?.slice(0, 80),
-        outerHTML: target?.outerHTML?.slice(0, 200),
-        closestButton: target?.closest("button")?.textContent?.slice(0, 80),
-        closestButtonTestId: target?.closest("button")?.getAttribute("data-testid"),
-        closestTestId: target?.closest("[data-testid]")?.getAttribute("data-testid"),
-        clientX: event.clientX,
-        clientY: event.clientY,
-      });
-    };
-    document.addEventListener("click", logClickTarget, { capture: true });
-    return () => document.removeEventListener("click", logClickTarget, { capture: true });
-  }, []);
-
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
       return await fetchLinkedItemCategories(params);
@@ -117,17 +95,8 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: 
    */
   const handleItemClick = useCallback(
     (item: LinkedItem) => {
-      // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-      console.debug("[DEBUG-LINKEDITEMS] handleItemClick ENTRY", {
-        isRecoveryLoading,
-        currentWindowId: windowId,
-        clickedItem: item,
-      });
-
       // Guard: Prevent multiple rapid clicks during recovery
       if (isRecoveryLoading) {
-        // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-        console.debug("[DEBUG-LINKEDITEMS] handleItemClick BLOCKED by isRecoveryLoading guard");
         return;
       }
 
@@ -151,17 +120,6 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: 
       // Update URL to trigger recovery
       const newUrl = `window?${newUrlParams}`;
 
-      // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-      console.debug("[DEBUG-LINKEDITEMS] handleItemClick", {
-        currentWindowId: windowId,
-        currentSearchParams: searchParams?.toString(),
-        clickedItem: item,
-        newWindowIdentifier,
-        newTabId,
-        newRecordId,
-        newUrl,
-      });
-
       router.replace(newUrl);
 
       // Note: Recovery system will handle:
@@ -172,7 +130,7 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: 
       // - Showing loading state
       // Then WindowProvider's useEffect will rebuild complete URL from state
     },
-    [searchParams, triggerRecovery, router, isRecoveryLoading, windowId]
+    [searchParams, triggerRecovery, router, isRecoveryLoading]
   );
 
   return (
