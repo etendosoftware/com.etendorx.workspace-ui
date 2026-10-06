@@ -167,6 +167,27 @@ describe("LegacyColumnFilterUtils - classic numeric filter syntax", () => {
     });
   });
 
+  describe("hasInvalidNumericValue", () => {
+    it.each(["100 100", "1 2 and >5", ">", "100abc", "100...", "1,5", "^100"])("flags %p", (value) => {
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue(value, numericColumn)).toBe(true);
+    });
+
+    it.each(["100", " 100 ", "100...500", "#", ">=100 and <=500", "<100 | >500", "", "   "])("accepts %p", (value) => {
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue(value, numericColumn)).toBe(false);
+    });
+
+    it("ignores non numeric columns and non string values", () => {
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue("100 100", textColumn)).toBe(false);
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue(100, numericColumn)).toBe(false);
+    });
+
+    it("reads values with the user's number format", () => {
+      setNumericFilterFormat({ decimalSymbol: ",", groupingSymbol: "." });
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue("1.234,5", numericColumn)).toBe(false);
+      expect(LegacyColumnFilterUtils.hasInvalidNumericValue("1,234.5", numericColumn)).toBe(true);
+    });
+  });
+
   describe("invertOperator", () => {
     it.each([
       ["equals", "notEqual"],

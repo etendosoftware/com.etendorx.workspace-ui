@@ -284,6 +284,7 @@ const es = {
     },
     setSummaryFunction: "Establecer función de resumen",
     removeSummaryFunction: "Eliminar función de resumen",
+    invalidFilterValue: "Valor de filtro no válido",
     summary: {
       min: "Mín",
       max: "Máx",

@@ -284,6 +284,7 @@ const en = {
     },
     setSummaryFunction: "Set summary function",
     removeSummaryFunction: "Remove summary function",
+    invalidFilterValue: "Invalid filter value",
     summary: {
       min: "Min",
       max: "Max",

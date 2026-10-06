@@ -2,10 +2,13 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { TextFilter } from "../TextFilter";
 import type { Column } from "@workspaceui/api-client/src/api/types";
+import { toast } from "sonner";
 
 jest.mock("../utils/performanceOptimizations", () => ({
   useDebouncedCallback: (fn: (...args: unknown[]) => void) => fn,
 }));
+
+jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
 
 const column: Column = {
   id: "documentNo",
@@ -14,6 +17,8 @@ const column: Column = {
 } as Column;
 
 describe("TextFilter", () => {
+  beforeEach(() => jest.clearAllMocks());
+
   describe("rendering", () => {
     it("renders a text input with placeholder derived from column name", () => {
       render(<TextFilter column={column} onFilterChange={jest.fn()} />);
@@ -96,11 +101,25 @@ describe("TextFilter", () => {
       expect(screen.getByPlaceholderText(numericPlaceholder)).toHaveValue("");
     });
 
-    it.each(["100", "100...500", "#", ">=100 and <=500", ">"])("keeps the supported expression %s", (value) => {
+    it.each(["100", "100...500", "#", ">=100 and <=500"])("keeps the supported expression %s", (value) => {
       const onFilterChange = typeInNumericFilter(value);
       expect(onFilterChange).toHaveBeenCalledWith(value);
       expect(screen.getByPlaceholderText(numericPlaceholder)).toHaveValue(value);
+      expect(toast.error).not.toHaveBeenCalled();
     });
+
+    it.each(["100 100", ">", "100abc", ">=100 and 1 2"])(
+      "shows a toast and applies no filter for invalid value %s",
+      (value) => {
+        const onFilterChange = typeInNumericFilter(value);
+        expect(onFilterChange).not.toHaveBeenCalled();
+        expect(screen.getByPlaceholderText(numericPlaceholder)).toHaveValue(value);
+        expect(toast.error).toHaveBeenCalledWith("Invalid filter value", {
+          id: "invalid-column-filter-value",
+          description: value,
+        });
+      }
+    );
 
     it("does not validate expressions on non-numeric columns", () => {
       const onFilterChange = jest.fn();

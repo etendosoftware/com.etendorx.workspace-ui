@@ -793,6 +793,17 @@ export class LegacyColumnFilterUtils {
     return LegacyColumnFilterUtils.splitLogicalParts(value.trim(), LOGICAL_SEPARATOR).some(isUnsupportedNumericTerm);
   }
 
+  /**
+   * True when a numeric column filter is not a valid classic expression (e.g. `100 100`, `>1x`).
+   * The classic UI rejects these values with an "Invalid filter value" message.
+   */
+  static hasInvalidNumericValue(value: unknown, column: Column): boolean {
+    if (typeof value !== "string" || !value.trim() || !LegacyColumnFilterUtils.isNumericField(column)) return false;
+    return LegacyColumnFilterUtils.splitLogicalParts(value.trim(), LOGICAL_SEPARATOR).some(
+      (part) => parseNumericTerm(column.columnName, part) === null
+    );
+  }
+
   private static handleNotCondition(fieldName: string, trimmedValue: string, column: Column): BaseCriteria | null {
     if (!trimmedValue.startsWith("!")) return null;
 
