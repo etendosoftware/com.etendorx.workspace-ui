@@ -46,6 +46,14 @@ describe("ERP route helper functions", () => {
       expect(isBinaryContentType("application/pdf")).toBe(true);
     });
 
+    it.each([
+      "application/xls",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ])("should detect the report spreadsheet type %s as binary", (contentType) => {
+      expect(isBinaryContentType(contentType)).toBe(true);
+    });
+
     it("should not detect text as binary", () => {
       expect(isBinaryContentType("text/html")).toBe(false);
       expect(isBinaryContentType("application/json")).toBe(false);
