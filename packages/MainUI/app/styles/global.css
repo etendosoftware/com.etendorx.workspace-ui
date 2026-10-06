@@ -121,6 +121,7 @@
 .toolbar-button-copy-record .icon-base64,
 .toolbar-button-advanced-filters .icon-base64,
 .toolbar-button-send-mail .icon-base64,
+.toolbar-button-show-audit-trail .icon-base64,
 .toolbar-button-save-view .icon-base64 {
   opacity: 1;
 }
@@ -139,6 +140,7 @@
 .toolbar-button-copy-record:hover .icon-base64,
 .toolbar-button-advanced-filters:hover .icon-base64,
 .toolbar-button-send-mail:hover .icon-base64,
+.toolbar-button-show-audit-trail:hover .icon-base64,
 .toolbar-button-save-view:hover .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
@@ -153,7 +155,8 @@
 .toolbar-button-attachment:disabled,
 .toolbar-button-print-record:disabled,
 .toolbar-button-copy-record:disabled,
-.toolbar-button-send-mail:disabled {
+.toolbar-button-send-mail:disabled,
+.toolbar-button-show-audit-trail:disabled {
   cursor: default;
   pointer-events: none;
 }
@@ -169,7 +172,8 @@
 .toolbar-button-share-link:disabled .icon-base64,
 .toolbar-button-copy-record:disabled .icon-base64,
 .toolbar-button-advanced-filters:disabled .icon-base64,
-.toolbar-button-send-mail:disabled .icon-base64 {
+.toolbar-button-send-mail:disabled .icon-base64,
+.toolbar-button-show-audit-trail:disabled .icon-base64 {
   filter: grayscale(100%);
   opacity: 0.3;
 }
