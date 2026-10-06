@@ -18,7 +18,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { toast } from "sonner";
 import { LEGACY_ACTIONS, LEGACY_MESSAGE_TYPE } from "@/components/ProcessModal/legacyMessageProtocol";
-import AuditTrailModal from "../AuditTrailModal";
+import AuditTrailModal, { AUDIT_TRAIL_MODAL_SIZE_CLASS } from "../AuditTrailModal";
 
 jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
 
@@ -60,6 +60,13 @@ describe("AuditTrailModal", () => {
     fireEvent.load(getIframe());
 
     expect(screen.queryByText("auditTrail.loading")).not.toBeInTheDocument();
+  });
+
+  it("sizes the modal for the classic 900x600 popup", () => {
+    renderModal();
+    expect(screen.getByText("auditTrail.title").closest("div.relative")).toHaveClass(
+      ...AUDIT_TRAIL_MODAL_SIZE_CLASS.split(" ")
+    );
   });
 
   it("closes from the modal close button", () => {

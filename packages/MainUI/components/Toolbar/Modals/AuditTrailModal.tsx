@@ -21,6 +21,12 @@ import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/Cust
 import { LEGACY_ACTIONS, LEGACY_MESSAGE_TYPE } from "@/components/ProcessModal/legacyMessageProtocol";
 import { useTranslation } from "@/hooks/useTranslation";
 
+/**
+ * The classic popup is laid out for a 900×600 window (`OB.ToolbarUtils.showAuditTrail`), so the
+ * modal grows to give the iframe that viewport on top of its own header and footer.
+ */
+export const AUDIT_TRAIL_MODAL_SIZE_CLASS = "!w-[min(912px,96vw)] !h-[min(712px,96vh)]";
+
 export interface AuditTrailModalProps {
   isOpen: boolean;
   url: string;
@@ -70,6 +76,7 @@ const AuditTrailModal = ({ isOpen, url, onClose }: AuditTrailModalProps) => {
       isOpen={isOpen}
       title={t("auditTrail.title")}
       iframeLoading={iframeLoading}
+      customContentClass={AUDIT_TRAIL_MODAL_SIZE_CLASS}
       url={url}
       handleIframeLoad={handleIframeLoad}
       handleClose={onClose}
