@@ -33,7 +33,7 @@ describe("treeMode", () => {
     });
 
     it("returns false when there is no tab", () => {
-      expect(isTreeModeSupported(undefined)).toBe(false);
+      expect(isTreeModeSupported()).toBe(false);
     });
 
     it("ignores tree-like names when the metadata has no tree", () => {

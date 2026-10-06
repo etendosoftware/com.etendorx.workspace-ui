@@ -31,10 +31,9 @@ import {
   isGridRenderableColumn,
 } from "../utils";
 import type { MRT_Column, MRT_ColumnDef, MRT_Row } from "material-react-table";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "../../form/constants";
 import { createMockField } from "../../tests/mockHelpers";
-import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import type { Field, Tab, EntityData } from "@workspaceui/api-client/src/api/types";
 import { isDateLike, formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
