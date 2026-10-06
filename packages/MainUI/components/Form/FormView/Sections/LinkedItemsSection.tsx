@@ -25,6 +25,7 @@ import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useExpandedOnce } from "@/hooks/useExpandedOnce";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 
@@ -32,9 +33,10 @@ interface LinkedItemsSectionProps {
   tabId: string;
   entityName: string;
   recordId: string;
+  isSectionExpanded: boolean;
 }
 
-export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
+export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,7 +53,10 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   // "Session attribute required". Gate the fetch until both signals settle.
   const { isFormInitializing } = useFormInitializationContext();
   const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
-  const ready = !isFormInitializing && !isSessionSyncLoading;
+  // Like the classic UI, categories are only requested once the section has been
+  // expanded for the current record; collapsing it again keeps the loaded data.
+  const hasBeenExpanded = useExpandedOnce(isSectionExpanded, recordId);
+  const ready = !isFormInitializing && !isSessionSyncLoading && hasBeenExpanded;
 
   // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
   // Logs the real DOM element that receives every click while this section is mounted,
