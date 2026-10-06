@@ -30,6 +30,8 @@ import {
   sortFieldsByGridOrder,
   isGridRenderableColumn,
 } from "../utils";
+import type { MRT_Column, MRT_ColumnDef, MRT_Row } from "material-react-table";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "../../form/constants";
 import { createMockField } from "../../tests/mockHelpers";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
@@ -175,6 +177,30 @@ describe("table utils", () => {
         row: { original: { __level: 1 } } as any,
       });
       expect(props).toEqual({ paddingLeft: "28px", position: "relative" });
+    });
+
+    describe("when the first data column is hidden and the tree renders on a later column", () => {
+      const columns = [
+        { id: "actions" },
+        { id: "hidden-col" },
+        { id: "tree-col", _shouldUseTreeMode: true },
+      ] as unknown as MRT_ColumnDef<EntityData>[];
+      const getProps = (columnId: string) =>
+        getMUITableBodyCellProps({
+          shouldUseTreeMode: true,
+          sx: {},
+          columns,
+          column: { id: columnId } as MRT_Column<EntityData>,
+          row: { original: { __level: 1 } } as unknown as MRT_Row<EntityData>,
+        });
+
+      it("indents the column rendering the tree controls", () => {
+        expect(getProps("tree-col")).toEqual({ paddingLeft: "28px", position: "relative" });
+      });
+
+      it("does not indent the hidden second column", () => {
+        expect(getProps("hidden-col")).toEqual({});
+      });
     });
   });
 
