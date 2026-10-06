@@ -241,3 +241,45 @@ describe("Toolbar - Email Integration", () => {
     });
   });
 });
+
+describe("Toolbar - Toggle tree view button", () => {
+  const toggleTreeButton = {
+    id: "toggle-tree",
+    action: "TOGGLE_TREE_VIEW",
+    name: "Toggle Tree",
+    section: "left" as const,
+    buttonType: "ACTION" as const,
+    active: true,
+    windows: [],
+  };
+  const toggleTreeTestId = "IconButton__toggle-tree";
+
+  const renderWithTab = (tab: Record<string, unknown>) => {
+    (useTabContext as jest.Mock).mockReturnValue({ tab: { id: "tab-id", entityName: "ProductCategory", ...tab } });
+    render(<Toolbar windowId="win-id" isFormView={false} />);
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
+    (useUserContext as jest.Mock).mockReturnValue({ token: "test-token", session: {} });
+    (useSelectedRecord as jest.Mock).mockReturnValue(undefined);
+    (useSelectedRecords as jest.Mock).mockReturnValue([]);
+    (useToolbar as jest.Mock).mockReturnValue({
+      buttons: [toggleTreeButton],
+      processButtons: [],
+      loading: false,
+      refetch: jest.fn(),
+    });
+  });
+
+  it("shows the button when the adapter metadata reports a tree", () => {
+    renderWithTab({ hasTree: true, treeDatasourceId: "ds-1" });
+    expect(screen.getByTestId(toggleTreeTestId)).toBeInTheDocument();
+  });
+
+  it("hides the button when the tab has no tree metadata", () => {
+    renderWithTab({ tableTree: "tree-1" });
+    expect(screen.queryByTestId(toggleTreeTestId)).not.toBeInTheDocument();
+  });
+});
