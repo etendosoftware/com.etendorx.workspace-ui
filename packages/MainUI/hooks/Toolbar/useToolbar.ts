@@ -24,6 +24,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
+import { lazyContextByKey } from "@/utils/evaluation/lazyContext";
 import { useUserStore } from "@/stores/userStore";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
@@ -134,6 +135,20 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
 
   const processButtons = useMemo(() => {
     const buttons = Object.values(actionFields) || [];
+    // One context per selected record, built the first time a button needs it and shared by the
+    // rest. Built inside each button's try below, so a failed build keeps that button's fallback.
+    const contextForRecord = lazyContextByKey((record: Record<string, unknown>) =>
+      createSmartContext({
+        values: { ...record, ...formValues },
+        fields: tab.fields,
+        auxiliaryInputs: effectiveAuxInputs,
+        parentValues: parentRecord || undefined,
+        parentFields: parentTab?.fields,
+        context: session,
+        defaultValue: "",
+        windowId: tab.window,
+      })
+    );
     return buttons.filter((button) => {
       if (!button.displayed) return false;
       if (selectedItems?.length === 0) return false;
@@ -151,16 +166,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       const compiledExpr = compileExpression(button.displayLogicExpression);
       try {
         const checkRecord = (record: Record<string, unknown>) => {
-          const smartContext = createSmartContext({
-            values: { ...record, ...formValues },
-            fields: tab.fields,
-            auxiliaryInputs: effectiveAuxInputs,
-            parentValues: parentRecord || undefined,
-            parentFields: parentTab?.fields,
-            context: session,
-            defaultValue: "",
-            windowId: tab.window,
-          });
+          const smartContext = contextForRecord(record);
           return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
         };
 

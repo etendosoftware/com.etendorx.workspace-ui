@@ -19,6 +19,8 @@ import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { useFormContext } from "react-hook-form";
+import { createSmartContext } from "@/utils/expressions";
 import { FormFields } from "../FormFieldsContent";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
@@ -29,8 +31,9 @@ jest.mock("react-hook-form", () => ({
   })),
 }));
 
+const mockSession = {};
 jest.mock("@/stores/userStore", () => ({
-  useUserStore: (selector: any) => selector({ session: {} }),
+  useUserStore: (selector: any) => selector({ session: mockSession }),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -182,5 +185,42 @@ describe("FormFields — loading state", () => {
     render(<FormFields {...baseProps} mode={FormMode.EDIT} loading={true} />);
     // Spinner is rendered; sections are not
     expect(screen.queryByTestId("note-section")).not.toBeInTheDocument();
+  });
+});
+
+describe("FormFields — expression evaluation context", () => {
+  // The module mock's watch() returns a new object per call; here it returns the same one, like
+  // react-hook-form between edits, so the mount re-render (setHasLoadedOnce) reuses the context.
+  const stableFormValues = { a: "Y" };
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useFormContext as jest.Mock).mockReturnValue({ watch: jest.fn(() => stableFormValues) });
+  });
+  // clearAllMocks keeps implementations: restore the module mocks' defaults so overrides don't leak.
+  afterEach(() => {
+    (useFormContext as jest.Mock).mockReset().mockImplementation(() => ({ watch: jest.fn(() => ({})) }));
+    (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
+  });
+
+  const withLogic = (hqlName: string) => makeField({ hqlName, displayLogicExpression: "@a@ = 'Y'" } as any);
+  const groups = [
+    ["main", { identifier: "Main", fields: { f1: withLogic("f1"), f2: withLogic("f2") } }],
+    ["more", { identifier: "More", fields: { f3: withLogic("f3"), f4: withLogic("f4") } }],
+  ] as typeof baseProps.groups;
+
+  it("builds the evaluation context once per render, not once per section", () => {
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("More")).toBeInTheDocument();
+    expect(createSmartContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("still shows the sections when the context build throws", () => {
+    (createSmartContext as jest.Mock).mockImplementation(() => {
+      throw new Error("boom");
+    });
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("More")).toBeInTheDocument();
   });
 });

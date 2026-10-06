@@ -31,7 +31,7 @@ import type { NavigationState } from "@/hooks/useRecordNavigation";
 import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { compileExpression } from "./selectors/BaseSelector";
-import { createSmartContext } from "@/utils/expressions";
+import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
 
 interface FormHeaderProps {
   statusBarFields: Record<string, Field>;
@@ -61,6 +61,13 @@ export function FormHeader({
   const { watch } = useFormContext();
   const formData = watch();
 
+  const evaluationContext = useEvaluationContext({
+    values: formData,
+    fields: tab?.fields,
+    context: session,
+    windowId: tab?.window,
+  });
+
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__cb26f1" />,
     [theme.palette.baselineColor.neutral]
@@ -79,13 +86,9 @@ export function FormHeader({
           if (!field.displayLogicExpression) return true;
           const compiledExpr = compileExpression(field.displayLogicExpression);
           try {
-            const ctx = createSmartContext({
-              values: formData,
-              fields: tab?.fields,
-              context: session,
-              windowId: tab?.window,
-            });
-            return compiledExpr(ctx, ctx, tab?.window);
+            // A failed context build shows the section, like a failed expression always has.
+            if (!evaluationContext) return true;
+            return compiledExpr(evaluationContext, evaluationContext, tab?.window);
           } catch {
             return true;
           }
@@ -99,7 +102,7 @@ export function FormHeader({
         hoverFill: theme.palette.baselineColor.neutral[0],
         showInTab: true,
       }));
-  }, [groups, formData, tab?.fields, session, getIconForGroup, theme.palette.baselineColor.neutral, t]);
+  }, [groups, evaluationContext, tab?.window, getIconForGroup, theme.palette.baselineColor.neutral, t]);
 
   return (
     <>

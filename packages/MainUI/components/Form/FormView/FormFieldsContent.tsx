@@ -22,7 +22,7 @@ import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
-import { createSmartContext } from "@/utils/expressions";
+import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
 import { useCallback, useRef, useEffect, useState, type RefObject } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
@@ -82,6 +82,15 @@ export function FormFields({
   // Get record identifier from form data
   const formData = watch();
   const recordIdentifier = formData?._identifier as string | undefined;
+
+  // Built once per render and shared by every section's visibility check below.
+  // Must stay above the `loading` early return (rules of hooks).
+  const sectionContext = useEvaluationContext({
+    values: formData,
+    fields: tab.fields,
+    context: session,
+    windowId: tab.window,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -193,13 +202,9 @@ export function FormFields({
             // Use SmartContext to normalize boolean values (false → 'N', true → 'Y') so that
             // displayLogicExpressions comparing against 'N'/'Y' (after parseDynamicExpression
             // transforms === false → === 'N') evaluate correctly against raw RHF form data.
-            const sectionCtx = createSmartContext({
-              values: formData,
-              fields: tab.fields,
-              context: session,
-              windowId: tab.window,
-            });
-            return compiledExpr(sectionCtx, sectionCtx, tab.window);
+            // A failed context build shows the section, like a failed expression always has.
+            if (!sectionContext) return true;
+            return compiledExpr(sectionContext, sectionContext, tab.window);
           } catch (error) {
             console.warn("Error executing expression:", field.displayLogicExpression, error);
             return true;
