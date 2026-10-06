@@ -266,7 +266,7 @@ describe("OBUIAPP_Report execution", () => {
   it("sends the report id as the reportId request parameter", async () => {
     mockFetchJson(REPORT_RESPONSE);
     await runProcess({ reportId: REPORT_ID });
-    expect(new URL(requestedUrl(), "http://host").searchParams.get("reportId")).toBe(REPORT_ID);
+    expect(new URL(requestedUrl(), "https://host").searchParams.get("reportId")).toBe(REPORT_ID);
   });
 
   it("does not send reportId for a non-report process", async () => {
