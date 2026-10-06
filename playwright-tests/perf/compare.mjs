@@ -14,12 +14,29 @@ const kb = (n) => Math.round(n / 1024);
 console.log(
   `before: ${a.label} ${a.date} (CPU ${a.cpuThrottle || 1}x)\nafter:  ${b.label} ${b.date} (CPU ${b.cpuThrottle || 1}x)\n(negative % = improvement)\n`
 );
+
+// Union of flow keys: a flow present only in one file (or that errored in either) is reported,
+// never silently dropped, and excluded from the comparable set used for the table row and TOTAL.
+const flowKeys = new Set([...Object.keys(a.flows), ...Object.keys(b.flows)]);
 const table = {};
-for (const k of Object.keys(a.flows)) {
+const common = [];
+const notComparable = [];
+for (const k of flowKeys) {
   const x = a.flows[k];
   const y = b.flows[k];
-  if (!y || x.error || y.error) {
-    table[k] = { note: "missing or error in one run" };
+  if (!x) {
+    table[k] = { note: "only in after" };
+    notComparable.push(`${k} (only in after)`);
+    continue;
+  }
+  if (!y) {
+    table[k] = { note: "only in before" };
+    notComparable.push(`${k} (only in before)`);
+    continue;
+  }
+  if (x.error || y.error) {
+    table[k] = { note: "failed in before, after, or both" };
+    notComparable.push(`${k} (failed)`);
     continue;
   }
   table[k] = {
@@ -31,12 +48,19 @@ for (const k of Object.keys(a.flows)) {
     apiKB: `${kb(x.apiBytes)} → ${kb(y.apiBytes)} (${pct(x.apiBytes, y.apiBytes)})`,
     waitMs: row(x, y, "apiWaitMs"),
   };
+  common.push([k, x, y]);
 }
 console.table(table);
 
-console.log("\nTOTAL (sum of all flows)");
-const t = {};
-for (const f of [
+// TOTAL: sum of per-flow medians over flows present and successful in BOTH files, so runs with
+// different failed steps (e.g. one missing "type-10-chars") stay comparable instead of showing a
+// false regression from flows that only exist on one side.
+console.log(
+  `\nTOTAL (sum of per-flow medians, ${common.length} of ${flowKeys.size} flows compared)${
+    notComparable.length ? `; not comparable: ${notComparable.join(", ")}` : ""
+  }`
+);
+const TOTAL_METRICS = [
   "settledMs",
   "visibleMs",
   "interactiveMs",
@@ -46,7 +70,18 @@ for (const f of [
   "apiBytes",
   "bytes",
   "apiWaitMs",
-])
-  if (a.totals[f] != null && b.totals[f] != null)
-    t[f] = { before: a.totals[f], after: b.totals[f], change: pct(a.totals[f], b.totals[f]) };
+];
+const t = {};
+for (const f of TOTAL_METRICS) {
+  let before = 0;
+  let after = 0;
+  let n = 0;
+  for (const [, x, y] of common) {
+    if (x[f] == null || y[f] == null) continue; // skip this flow's contribution if either side lacks the metric
+    before += x[f];
+    after += y[f];
+    n++;
+  }
+  if (n > 0) t[f] = { before, after, change: pct(before, after) };
+}
 console.table(t);

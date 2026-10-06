@@ -45,6 +45,9 @@ default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER
 
 Results are written to `perf/results/<LABEL>-<date>.json`. Compare runs taken from the same
 machine and network; demo numbers include network RTT (~260ms on the 2026-10-01 baseline machine).
+The committed React baselines (local-react-cpu1x/cpu4x) lack `type-10-chars` for Sales Order and
+Purchase Order (the typing step failed on those windows when they were recorded); `compare.mjs`
+totals only flows that succeeded in both files.
 
 ## Troubleshooting
 

@@ -6,6 +6,7 @@
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const BASE = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 const USER = process.env.ETENDO_USER || "admin";
@@ -17,7 +18,7 @@ const WINDOWS = (process.env.WINDOWS || "Sales Order,Sales Invoice,Goods Shipmen
 const CPU_THROTTLE = Number(process.env.CPU_THROTTLE || 1);
 const PROFILE = process.env.PROFILE === "1";
 const QUIET_MS = 1000; // flow is "settled" when no API request is in flight for this long
-const RESULTS_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), "results");
+const RESULTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "results");
 const TIMEOUT = 120000;
 // FLAVOR=classic drives Etendo Classic (SmartClient) at BASE_URL=http://host/etendo with the same steps
 const FLAVOR = process.env.FLAVOR || "react";
@@ -95,11 +96,13 @@ async function attachRecorder(page) {
     // Network quiet = no API in flight for QUIET_MS; CPU quiet = additionally no long task for QUIET_MS.
     // page.evaluate itself waits while the main thread is blocked, so a frozen UI delays cpuQuiet.
     async settle() {
+      const start = Date.now();
       let netQuietSince = Date.now();
       let netQuiet = null;
       for (;;) {
         await page.waitForTimeout(100);
         const now = Date.now();
+        if (now - start > TIMEOUT) throw new Error("settle timeout");
         if ([...reqs.values()].some((r) => r.inflight && isApi(r.url))) netQuietSince = now;
         if (netQuiet === null && now - netQuietSince >= QUIET_MS) netQuiet = netQuietSince;
         const ltEnd = await page.evaluate(() => window.__ltEnd || 0).catch(() => 0);
