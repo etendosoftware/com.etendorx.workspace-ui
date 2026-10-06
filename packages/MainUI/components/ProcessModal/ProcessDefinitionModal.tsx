@@ -1130,9 +1130,12 @@ function ProcessDefinitionModalContent({
   // Execution handlers
   // -------------------------------------------------------------------------
 
+  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
+
   const { handleExecute, handleReportProcessExecute, handleNavigateToTab } = useProcessExecution({
     processId,
     javaClassName,
+    reportId: isOBUIAPPReport ? processDefinition.report?.id : undefined,
     windowId,
     tabId,
     etmetaOnprocess,
@@ -1854,7 +1857,6 @@ function ProcessDefinitionModalContent({
     handleReportProcessExecute();
   }, [parameters, form, logicFields, handleReportProcessExecute, t]);
 
-  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
   const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
 
   /**

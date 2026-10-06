@@ -245,3 +245,55 @@ describe("multi-record invocation", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("OBUIAPP_Report execution", () => {
+  const REPORT_ID = "68A8BDCCDCC54B4E8D2D780334B6FF1D";
+  const DOWNLOAD_ACTION = {
+    OBUIAPP_downloadReport: {
+      processParameters: { reportId: REPORT_ID },
+      tmpfileName: "tmp.pdf",
+      fileName: "Aging.pdf",
+    },
+  };
+  /** Classic `BaseReportActionHandler` answer: retry + success message + file action. */
+  const REPORT_RESPONSE = {
+    retryExecution: true,
+    responseActions: [{ showMsgInProcessView: { msgType: "success", msgText: "Report generated" } }, DOWNLOAD_ACTION],
+  };
+
+  const requestedUrl = (): string => (global.fetch as jest.Mock).mock.calls[0][0];
+
+  it("sends the report id as the reportId request parameter", async () => {
+    mockFetchJson(REPORT_RESPONSE);
+    await runProcess({ reportId: REPORT_ID });
+    expect(new URL(requestedUrl(), "http://host").searchParams.get("reportId")).toBe(REPORT_ID);
+  });
+
+  it("does not send reportId for a non-report process", async () => {
+    mockFetchJson(SUCCESS_RESPONSE);
+    await runProcess({});
+    expect(requestedUrl()).not.toContain("reportId");
+  });
+
+  it("keeps the modal open with the success banner after the report is generated", async () => {
+    mockFetchJson(REPORT_RESPONSE);
+    const setResult = jest.fn();
+    const onClose = jest.fn();
+
+    await runProcess({ reportId: REPORT_ID, setResult, onClose });
+
+    expect(setResult).toHaveBeenCalledWith(
+      expect.objectContaining({ keepOpen: true, success: true, data: "Report generated" })
+    );
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("dispatches the report file action through executeJSON", async () => {
+    mockFetchJson(REPORT_RESPONSE);
+    const executeJSON = jest.fn();
+
+    await runProcess({ reportId: REPORT_ID, scriptContext: { OB: { Utilities: { Action: { executeJSON } } } } });
+
+    expect(executeJSON).toHaveBeenCalledWith([DOWNLOAD_ACTION]);
+  });
+});

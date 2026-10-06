@@ -18,6 +18,7 @@ import {
   PROCESS_RESPONSE_FIELDS,
   readProcessResponseFlag,
   shouldRefreshAfterProcess,
+  shouldKeepModalOpen,
   shouldRetryAfterProcess,
 } from "../processResponseFlags";
 
@@ -105,6 +106,19 @@ describe("processResponseFlags", () => {
           response: { data: { [PROCESS_RESPONSE_FIELDS.RETRY_EXECUTION]: true } },
         })
       ).toBe(true);
+    });
+  });
+
+  describe("shouldKeepModalOpen", () => {
+    const RETRY = { [PROCESS_RESPONSE_FIELDS.RETRY_EXECUTION]: true };
+
+    it.each([
+      ["no retryExecution", {}, false, true, false],
+      ["retry without an explicit success message", RETRY, false, false, true],
+      ["retry with an explicit success message (non-report)", RETRY, true, false, false],
+      ["retry with an explicit success message (report)", RETRY, true, true, true],
+    ])("%s", (_label, data, isExplicitSuccess, isReport, expected) => {
+      expect(shouldKeepModalOpen(data, isExplicitSuccess, isReport)).toBe(expected);
     });
   });
 });

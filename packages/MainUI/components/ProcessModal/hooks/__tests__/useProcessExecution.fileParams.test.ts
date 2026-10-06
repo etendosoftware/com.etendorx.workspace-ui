@@ -145,6 +145,17 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
     expect(fd.get("reportId")).toBe("null");
   });
 
+  it("appends the report id to FormData for a report process", async () => {
+    const file = makeTestFile();
+    const { result } = renderHook(() =>
+      useProcessExecution(makeParams({ reportId: "REPORT-1", fileParams: { col: file } }))
+    );
+    await result.current.executeJavaProcess({});
+
+    const fd = lastFetch?.body as FormData;
+    expect(fd.get("reportId")).toBe("REPORT-1");
+  });
+
   it("appends a paramValues JSON string containing the payload", async () => {
     const file = makeTestFile();
     const payload = { _buttonValue: "execute", _params: { note: "test" } };
