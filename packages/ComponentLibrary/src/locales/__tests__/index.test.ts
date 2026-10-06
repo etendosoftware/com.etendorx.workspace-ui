@@ -38,8 +38,9 @@ describe("locales/index", () => {
   });
 
   it("should define the same auditTrail keys in every language", () => {
-    const enKeys = Object.keys(translations.en_US.auditTrail).sort();
+    const sortedKeys = (section: object) => Object.keys(section).sort((a, b) => a.localeCompare(b));
+    const enKeys = sortedKeys(translations.en_US.auditTrail);
     expect(enKeys).toEqual(["openPopup", "popupBlocked", "selectOneRecord"]);
-    expect(Object.keys(translations.es_ES.auditTrail).sort()).toEqual(enKeys);
+    expect(sortedKeys(translations.es_ES.auditTrail)).toEqual(enKeys);
   });
 });
