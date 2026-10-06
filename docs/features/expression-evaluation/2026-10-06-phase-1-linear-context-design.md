@@ -1,6 +1,6 @@
 # Expression evaluation – Phase 1: linear context builder and single API
 
-- **Ticket:** ETP-5641 (branch `feature/ETP-5641`)
+- **Ticket:** ETP-5641 (branch `hotfix/ETP-5641`)
 - **Status:** Draft for review
 - **Date:** 2026-10-06
 - **Scope of this document:** Phase 1 of 3. Phases 2 and 3 are described as a roadmap only.
@@ -45,7 +45,7 @@ The proxy returned by the function adds a smaller cost: every property read that
 ## 2. Roadmap (three phases, one branch)
 
 The target is a form-level expression evaluation module that, like Classic, only re-evaluates what a
-change affects. It is delivered in three phases on `feature/ETP-5641`, each in its own commits, each
+change affects. It is delivered in three phases on `hotfix/ETP-5641`, each in its own commits, each
 keeping evaluation results identical and each measured with the benchmark.
 
 | Phase | Content | Expected effect |
@@ -256,18 +256,18 @@ and `useToolbar`; `field.displayed` in `useFormValidation`). In Phase 1:
    to under 0.5 ms on the developer machine.
 5. **Benchmark** (acceptance, section 8).
 
-## 7. Commits on `feature/ETP-5641` (Phase 1)
+## 7. Commits on `hotfix/ETP-5641` (Phase 1)
 
-0. `Feature ETP-5641: Add UI performance benchmark and baselines`
+0. `Hotfix ETP-5641: Add UI performance benchmark and baselines`
    – `playwright-tests/perf/` (`bench.mjs`, `compare.mjs`, `hotspots.mjs`, README, the baseline result
    files) and the opt-in `SOURCE_MAPS` flag in `next.config.ts` that `hotspots.mjs` needs. No
    application behavior changes.
-1. `Feature ETP-5641: Add evaluation module with differential test oracle`
+1. `Hotfix ETP-5641: Add evaluation module with differential test oracle`
    – the module, the verbatim legacy copy and the differential test; the new builder still delegates to
    the legacy algorithm, so the test establishes the harness.
-2. `Feature ETP-5641: Make evaluation context build linear`
+2. `Hotfix ETP-5641: Make evaluation context build linear`
    – the indexed builder and proxy; differential and existing tests green.
-3. `Feature ETP-5641: Build evaluation context once per render in forms`
+3. `Hotfix ETP-5641: Build evaluation context once per render in forms`
    – the caller changes in section 4.4 and their tests.
 
 ## 8. Acceptance criteria (Phase 1)

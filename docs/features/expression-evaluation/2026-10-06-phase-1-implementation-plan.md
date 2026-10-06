@@ -10,7 +10,7 @@
 
 **Spec:** `docs/features/expression-evaluation/2026-10-06-phase-1-linear-context-design.md`
 
-**Branch:** `feature/ETP-5641` (already created from `main`). Commit messages: `Feature ETP-5641: <description>`, first line ≤ 80 characters, ending with the `Co-Authored-By` trailer.
+**Branch:** `hotfix/ETP-5641` (already created from `main`). Commit messages: `Hotfix ETP-5641: <description>`, first line ≤ 80 characters, ending with the `Co-Authored-By` trailer.
 
 ---
 
@@ -134,7 +134,7 @@ git add playwright-tests/.gitignore playwright-tests/perf/bench.mjs playwright-t
   playwright-tests/perf/hotspots.mjs playwright-tests/perf/README.md playwright-tests/perf/results/*.json \
   packages/MainUI/next.config.ts
 git status --short   # must NOT list perf/results/profiles or the useTableData/utils files as staged
-git commit -m "Feature ETP-5641: Add UI performance benchmark and baselines
+git commit -m "Hotfix ETP-5641: Add UI performance benchmark and baselines
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -418,7 +418,7 @@ the file is still a verbatim move and Task 3 rewrites it. Any other finding: fix
 
 ```bash
 git add packages/MainUI/utils/evaluation packages/MainUI/utils/expressions.ts
-git commit -m "Feature ETP-5641: Add evaluation module with differential test oracle
+git commit -m "Hotfix ETP-5641: Add evaluation module with differential test oracle
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -760,7 +760,7 @@ Expected: no errors (the rewrite has no `forEach` and uses template literals; `_
 
 ```bash
 git add packages/MainUI/utils/evaluation
-git commit -m "Feature ETP-5641: Make evaluation context build linear
+git commit -m "Hotfix ETP-5641: Make evaluation context build linear
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1491,7 +1491,7 @@ git add packages/MainUI/utils/evaluation/lazyContext.ts packages/MainUI/utils/ev
   packages/MainUI/components/Form/FormView/__tests__/FormFieldsContent.test.tsx \
   packages/MainUI/hooks/Toolbar/useToolbar.ts packages/MainUI/hooks/useFormValidation.ts \
   packages/MainUI/hooks/__tests__/useFormValidation.evaluationContext.test.tsx
-git commit -m "Feature ETP-5641: Build evaluation context once per render in forms
+git commit -m "Hotfix ETP-5641: Build evaluation context once per render in forms
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
