@@ -24,13 +24,27 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export type SummaryType = "min" | "max" | "count" | "sum" | "avg";
 
+const NUMERIC_COLUMN_TYPES: readonly string[] = ["integer", "number", "quantity", "amount"];
+const BASE_SUMMARY_TYPES: SummaryType[] = ["min", "max", "count"];
+const ALL_SUMMARY_TYPES: SummaryType[] = [...BASE_SUMMARY_TYPES, "sum", "avg"];
+
+/** Whether a column holds numbers, so it also accepts the sum and average summary functions. */
+export const isNumericSummaryColumn = (columnDef: { type?: string }): boolean =>
+  NUMERIC_COLUMN_TYPES.includes(columnDef.type ?? "");
+
+/** Summary functions a column accepts. */
+export const getSummaryTypes = (columnDef: { type?: string }): SummaryType[] => {
+  if (isNumericSummaryColumn(columnDef)) {
+    return ALL_SUMMARY_TYPES;
+  }
+  return BASE_SUMMARY_TYPES;
+};
+
 const MENU_ITEM_CLASS_NAME =
   "w-full text-left bg-transparent border-0 cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)";
 
-/** Grouping actions offered by the header menu (classic "Group by ‹column›" / "Ungroup"). */
-export interface HeaderGroupingOptions {
-  /** Whether the right-clicked column can be used to group the grid. */
-  canGroupBy: boolean;
+/** Grouping actions offered by the column menus (classic "Group by ‹column›" / "Ungroup"). */
+export interface GroupingMenuActions {
   /** Column the grid is currently grouped by, if any. */
   groupedColumnId?: string;
   getGroupByLabel: (title: string) => string;
@@ -39,6 +53,21 @@ export interface HeaderGroupingOptions {
   onUngroup: () => void;
 }
 
+/** Grouping actions for a given column of the header context menu. */
+export interface HeaderGroupingOptions extends GroupingMenuActions {
+  /** Whether the right-clicked column can be used to group the grid. */
+  canGroupBy: boolean;
+}
+
+/**
+ * Like classic, "Group by" is hidden for the column the grid is already grouped by,
+ * and "Ungroup" is offered whenever the grid is grouped.
+ */
+export const getGroupingMenuVisibility = (columnId: string, grouping: HeaderGroupingOptions) => ({
+  showGroupBy: grouping.canGroupBy && grouping.groupedColumnId !== columnId,
+  showUngroup: Boolean(grouping.groupedColumnId),
+});
+
 interface GroupingMenuItemsProps {
   columnId: string;
   title: string;
@@ -46,12 +75,9 @@ interface GroupingMenuItemsProps {
   onClose: () => void;
 }
 
-/**
- * "Group by ‹column›" / "Ungroup" items. Like classic, "Group by" is hidden for the column the grid
- * is already grouped by, and "Ungroup" is offered whenever the grid is grouped.
- */
+/** "Group by ‹column›" / "Ungroup" items of the header context menu. */
 const GroupingMenuItems = ({ columnId, title, grouping, onClose }: GroupingMenuItemsProps) => {
-  const showGroupBy = grouping.canGroupBy && grouping.groupedColumnId !== columnId;
+  const { showGroupBy, showUngroup } = getGroupingMenuVisibility(columnId, grouping);
 
   const handleGroupBy = () => {
     grouping.onGroupBy(columnId);
@@ -70,7 +96,7 @@ const GroupingMenuItems = ({ columnId, title, grouping, onClose }: GroupingMenuI
           {grouping.getGroupByLabel(title)}
         </button>
       )}
-      {Boolean(grouping.groupedColumnId) && (
+      {showUngroup && (
         <button type="button" onClick={handleUngroup} className={MENU_ITEM_CLASS_NAME} data-testid="ungroup-menu-item">
           {grouping.getUngroupLabel()}
         </button>
@@ -105,11 +131,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   const columnId = column.id;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columnDef = column.columnDef as { type?: string };
-  const isNumeric =
-    columnDef.type === "integer" ||
-    columnDef.type === "number" ||
-    columnDef.type === "quantity" ||
-    columnDef.type === "amount";
+  const isNumeric = isNumericSummaryColumn(columnDef);
 
   const handleMouseEnterSubMenu = (event: React.MouseEvent<HTMLElement>) => {
     setSubMenuAnchorEl(event.currentTarget);

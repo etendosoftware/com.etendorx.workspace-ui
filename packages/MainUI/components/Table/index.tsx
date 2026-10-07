@@ -104,6 +104,7 @@ import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useTableGrouping } from "./hooks/useTableGrouping";
+import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
 import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
 import { canGroupByColumn, isGroupRow } from "@/utils/table/grouping";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
@@ -3137,19 +3138,34 @@ const DynamicTable = ({
   // Group header rows cannot be selected (classic draws no checkbox on them)
   const isSelectableRow = useCallback((row: MRT_Row<EntityData>) => !isGroupRow(row), []);
 
-  const headerGroupingOptions = useMemo(
+  // Grouping actions shared by the header context menu and the column actions menu
+  const groupingMenuActions = useMemo(
     () =>
       isGroupingAvailable
-        ? {
-            canGroupBy: canGroupByColumn(headerContextMenuColumn?.columnDef),
-            groupedColumnId,
-            getGroupByLabel,
-            getUngroupLabel,
-            onGroupBy: groupBy,
-            onUngroup: ungroup,
-          }
+        ? { groupedColumnId, getGroupByLabel, getUngroupLabel, onGroupBy: groupBy, onUngroup: ungroup }
         : undefined,
-    [isGroupingAvailable, headerContextMenuColumn, groupedColumnId, getGroupByLabel, getUngroupLabel, groupBy, ungroup]
+    [isGroupingAvailable, groupedColumnId, getGroupByLabel, getUngroupLabel, groupBy, ungroup]
+  );
+
+  const headerGroupingOptions = useMemo(
+    () =>
+      groupingMenuActions && {
+        ...groupingMenuActions,
+        canGroupBy: canGroupByColumn(headerContextMenuColumn?.columnDef),
+      },
+    [groupingMenuActions, headerContextMenuColumn]
+  );
+
+  // Column actions ("3 dots") menu: MRT's items plus the summary and grouping actions of the header context menu
+  const renderColumnActionsMenuItems = useCallback(
+    (args: ColumnActionsMenuArgs) =>
+      buildColumnActionsMenuItems(args, {
+        activeSummary: summaryState,
+        onSetSummary: handleSetSummary,
+        onRemoveSummary: handleRemoveSummary,
+        grouping: groupingMenuActions,
+      }),
+    [summaryState, handleSetSummary, handleRemoveSummary, groupingMenuActions]
   );
 
   // Memoize the expanded state to avoid creating new empty objects
@@ -3345,6 +3361,7 @@ const DynamicTable = ({
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
+    renderColumnActionsMenuItems,
     manualFiltering: true,
     manualSorting: true,
     enableColumnOrdering: true,
