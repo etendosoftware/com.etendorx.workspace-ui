@@ -284,6 +284,9 @@ const en = {
     },
     setSummaryFunction: "Set summary function",
     removeSummaryFunction: "Remove summary function",
+    groupBy: "Group by {column}",
+    ungroup: "Ungroup",
+    maxGroupingReached: "There are more than {count} records, grouping is disabled for larger datasets.",
     summary: {
       min: "Min",
       max: "Max",

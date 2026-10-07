@@ -106,6 +106,9 @@ export const DEFAULT_TABLE_STATE: TableState = {
  */
 export const DEFAULT_EXPANDED_SECTIONS: string[] = [];
 
+/** Stable empty grouping returned when a tab is not grouped (same snapshot-caching reason). */
+export const DEFAULT_TABLE_GROUPING: string[] = [];
+
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   activeLevels: [0],
   activeTabsByLevel: new Map(),
@@ -151,6 +154,7 @@ export interface WindowStore {
   ) => void;
   setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState, tabLevel?: number) => void;
   setTableOrder: (windowIdentifier: string, tabId: string, order: string[], tabLevel?: number) => void;
+  setTableGrouping: (windowIdentifier: string, tabId: string, grouping: string[], tabLevel?: number) => void;
   setTableImplicitFilterApplied: (
     windowIdentifier: string,
     tabId: string,
@@ -273,6 +277,16 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setTableOrder"
+        ),
+
+      setTableGrouping: (windowIdentifier, tabId, grouping, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.grouping = grouping;
+          },
+          false,
+          "window/setTableGrouping"
         ),
 
       setTableImplicitFilterApplied: (windowIdentifier, tabId, isApplied, tabLevel = 0) =>

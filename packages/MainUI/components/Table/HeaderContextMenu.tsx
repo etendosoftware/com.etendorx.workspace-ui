@@ -24,6 +24,61 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export type SummaryType = "min" | "max" | "count" | "sum" | "avg";
 
+const MENU_ITEM_CLASS_NAME =
+  "w-full text-left bg-transparent border-0 cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)";
+
+/** Grouping actions offered by the header menu (classic "Group by ‹column›" / "Ungroup"). */
+export interface HeaderGroupingOptions {
+  /** Whether the right-clicked column can be used to group the grid. */
+  canGroupBy: boolean;
+  /** Column the grid is currently grouped by, if any. */
+  groupedColumnId?: string;
+  getGroupByLabel: (title: string) => string;
+  getUngroupLabel: () => string;
+  onGroupBy: (columnId: string) => void;
+  onUngroup: () => void;
+}
+
+interface GroupingMenuItemsProps {
+  columnId: string;
+  title: string;
+  grouping: HeaderGroupingOptions;
+  onClose: () => void;
+}
+
+/**
+ * "Group by ‹column›" / "Ungroup" items. Like classic, "Group by" is hidden for the column the grid
+ * is already grouped by, and "Ungroup" is offered whenever the grid is grouped.
+ */
+const GroupingMenuItems = ({ columnId, title, grouping, onClose }: GroupingMenuItemsProps) => {
+  const showGroupBy = grouping.canGroupBy && grouping.groupedColumnId !== columnId;
+
+  const handleGroupBy = () => {
+    grouping.onGroupBy(columnId);
+    onClose();
+  };
+
+  const handleUngroup = () => {
+    grouping.onUngroup();
+    onClose();
+  };
+
+  return (
+    <>
+      {showGroupBy && (
+        <button type="button" onClick={handleGroupBy} className={MENU_ITEM_CLASS_NAME} data-testid="group-by-menu-item">
+          {grouping.getGroupByLabel(title)}
+        </button>
+      )}
+      {Boolean(grouping.groupedColumnId) && (
+        <button type="button" onClick={handleUngroup} className={MENU_ITEM_CLASS_NAME} data-testid="ungroup-menu-item">
+          {grouping.getUngroupLabel()}
+        </button>
+      )}
+    </>
+  );
+};
+
 interface HeaderContextMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
@@ -31,6 +86,7 @@ interface HeaderContextMenuProps {
   onSetSummary: (columnId: string, type: SummaryType) => void;
   onRemoveSummary: (columnId: string) => void;
   activeSummary: Record<string, SummaryType>;
+  grouping?: HeaderGroupingOptions;
 }
 
 export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
@@ -40,6 +96,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   onSetSummary,
   onRemoveSummary,
   activeSummary,
+  grouping,
 }) => {
   const { t } = useTranslation();
   const [subMenuAnchorEl, setSubMenuAnchorEl] = useState<HTMLElement | null>(null);
@@ -131,6 +188,15 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
             data-testid="remove-summary-menu-item">
             {t("table.removeSummaryFunction")}
           </div>
+        )}
+
+        {grouping && (
+          <GroupingMenuItems
+            columnId={columnId}
+            title={String(column.columnDef.header ?? columnId)}
+            grouping={grouping}
+            onClose={onClose}
+          />
         )}
       </div>
     </Menu>

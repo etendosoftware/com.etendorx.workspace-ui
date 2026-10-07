@@ -284,6 +284,10 @@ const es = {
     },
     setSummaryFunction: "Establecer función de resumen",
     removeSummaryFunction: "Eliminar función de resumen",
+    groupBy: "Agrupar por {column}",
+    ungroup: "Desagrupar",
+    maxGroupingReached:
+      "Hay más de {count} registros, la agrupación está deshabilitada para grandes conjuntos de datos.",
     summary: {
       min: "Mín",
       max: "Máx",
