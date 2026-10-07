@@ -7,6 +7,10 @@ import type React from "react";
 import DynamicTable from "../../../components/Table";
 import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { logger } from "@/utils/logger";
+import { GROUP_ROW_CLASS_NAME } from "@/components/Table/utils/groupingColumns";
+import { clearPreferences, savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import type {
   MRT_Row,
   MRT_RowData,
@@ -98,6 +102,7 @@ const mockToolbarContext = {
 const mockLanguageContext = {
   language: "en_US",
   setLanguage: jest.fn(),
+  getLabel: (key: string) => key,
 };
 
 const mockTabContext: {
@@ -276,7 +281,9 @@ const mockTableStatePersistenceTab = {
   tableColumnVisibility: {},
   tableColumnSorting: [],
   tableColumnOrder: [],
+  tableColumnGrouping: [] as string[],
   isImplicitFilterApplied: false,
+  setTableColumnGrouping: jest.fn(),
   setTableColumnFilters: jest.fn(),
   setTableColumnVisibility: jest.fn(),
   setTableColumnSorting: jest.fn(),
@@ -325,6 +332,7 @@ jest.mock("@/hooks/useUserContext", () => ({
   useUserContext: () => mockUserContext,
 }));
 
+const mockShowWarningModal = jest.fn();
 jest.mock("@/hooks/Toolbar/useStatusModal", () => ({
   useStatusModal: () => ({
     statusModal: {
@@ -335,6 +343,7 @@ jest.mock("@/hooks/Toolbar/useStatusModal", () => ({
     hideStatusModal: jest.fn(),
     showErrorModal: jest.fn(),
     showSuccessModal: jest.fn(),
+    showWarningModal: mockShowWarningModal,
   }),
 }));
 
@@ -693,6 +702,7 @@ describe("DynamicTable", () => {
     mockTableStatePersistenceTab.tableColumnVisibility = {};
     mockTableStatePersistenceTab.tableColumnSorting = [];
     mockTableStatePersistenceTab.tableColumnOrder = [];
+    mockTableStatePersistenceTab.tableColumnGrouping = [];
     mockTableStatePersistenceTab.isImplicitFilterApplied = false;
   });
 
@@ -1605,6 +1615,171 @@ describe("DynamicTable", () => {
 
       // Should show the table (but empty due to skip=true)
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
+    });
+  });
+
+  describe("Grouping", () => {
+    const GROUPED_COLUMN = "name";
+    const OTHER_COLUMN = "status";
+    const makeMouseEvent = () => ({ preventDefault: jest.fn(), currentTarget: document.body });
+    const groupingProps = { ...defaultProps, isTreeMode: false };
+
+    /** Group header row mock as built by TanStack's grouped row model. */
+    const makeGroupRow = () => ({
+      id: `${GROUPED_COLUMN}:Record 1`,
+      original: mockRecords[0],
+      getIsGrouped: () => true,
+      getToggleExpandedHandler: () => mockToggleGroup,
+    });
+    const makeRecordRow = () => ({ ...makeGroupRow(), getIsGrouped: () => false });
+    const mockToggleGroup = jest.fn();
+
+    const getOptions = () => tableOptions as MRT_TableOptions<EntityData>;
+    const getColumn = (id: string) =>
+      (getOptions().columns as Array<Record<string, unknown>>).find((column) => column.id === id);
+
+    /** Enables grouping for the test window the way the login flow stores preferences. */
+    const enableGrouping = (maxRecords?: number) => {
+      savePreferences({
+        OBUIAPP_GroupingEnabled: "Y",
+        ...(maxRecords ? { OBUIAPP_GroupingMaxRecords: String(maxRecords) } : {}),
+      });
+    };
+
+    beforeEach(() => {
+      installLocalStorageMock();
+      enableGrouping();
+    });
+
+    afterEach(() => clearPreferences());
+
+    it("keeps grouping disabled when the window does not enable it", () => {
+      clearPreferences();
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+
+      expect(getOptions().enableGrouping).toBe(false);
+      expect(getOptions().state?.grouping).toEqual([]);
+    });
+
+    it("groups the grid by the stored column and locks it", () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+
+      expect(getOptions()).toMatchObject({
+        enableGrouping: true,
+        groupedColumnMode: "reorder",
+        enableExpandAll: false,
+      });
+      expect(getOptions().state?.grouping).toEqual([GROUPED_COLUMN]);
+      expect(getColumn(GROUPED_COLUMN)).toMatchObject({ enableHiding: false, enableGrouping: false });
+      expect(getColumn(OTHER_COLUMN)).not.toHaveProperty("enableHiding", false);
+    });
+
+    it("toggles group header rows instead of selecting records", () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const rowPropsFn = getOptions().muiTableBodyRowProps as (props: unknown) => Record<string, unknown>;
+      const canSelect = getOptions().enableRowSelection as (row: unknown) => boolean;
+
+      const groupRowProps = rowPropsFn({ row: makeGroupRow(), table: {} });
+
+      expect(groupRowProps.onClick).toBe(mockToggleGroup);
+      expect(groupRowProps.className).toBe(GROUP_ROW_CLASS_NAME);
+      expect(canSelect(makeGroupRow())).toBe(false);
+      expect(canSelect(makeRecordRow())).toBe(true);
+    });
+
+    it("opens no cell context menu on group header rows", () => {
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const cellPropsFn = getOptions().muiTableBodyCellProps as (props: unknown) => {
+        onContextMenu: (event: unknown) => void;
+      };
+      const event = makeMouseEvent();
+
+      cellPropsFn({ column: { id: OTHER_COLUMN }, row: makeGroupRow(), cell: { getValue: () => "x" } }).onContextMenu(
+        event
+      );
+
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("keeps the group expanded state apart from the tree one", () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const groupId = `${GROUPED_COLUMN}:Record 2`;
+
+      act(() => getOptions().onExpandedChange?.({ [groupId]: true }));
+
+      expect(getOptions().state?.expanded).toEqual({ [groupId]: true });
+      expect(mockTableDataHook.handleMRTExpandChange).not.toHaveBeenCalled();
+    });
+
+    it("uses the tree expanded state in tree mode", () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      mockTableDataHook.shouldUseTreeMode = true;
+      mockTableDataHook.expanded = { "1": true };
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      expect(getOptions().state?.expanded).toEqual({ "1": true });
+      expect(getOptions().enableGrouping).toBe(false);
+
+      mockTableDataHook.shouldUseTreeMode = false;
+      mockTableDataHook.expanded = {};
+    });
+
+    it("routes expand changes to the tree when the grid is not grouped", () => {
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+
+      act(() => getOptions().onExpandedChange?.({}));
+
+      expect(mockTableDataHook.handleMRTExpandChange).toHaveBeenCalled();
+    });
+
+    it("groups and ungroups from the header context menu", () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const headPropsFn = getOptions().muiTableHeadCellProps as (props: unknown) => {
+        onContextMenu: (event: unknown) => void;
+      };
+      const statusColumn = { id: OTHER_COLUMN, columnDef: { id: OTHER_COLUMN, header: "Status", type: "string" } };
+      const openHeaderMenu = () => act(() => headPropsFn({ column: statusColumn }).onContextMenu(makeMouseEvent()));
+
+      openHeaderMenu();
+      fireEvent.click(screen.getByTestId("group-by-menu-item"));
+
+      expect(mockTableStatePersistenceTab.setTableColumnSorting).toHaveBeenCalledWith([
+        { id: OTHER_COLUMN, desc: false },
+      ]);
+      expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([OTHER_COLUMN]);
+
+      openHeaderMenu();
+      fireEvent.click(screen.getByTestId("ungroup-menu-item"));
+
+      expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([]);
+    });
+
+    it("ungroups with the classic message when the records exceed the limit", () => {
+      enableGrouping(2);
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+
+      expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([]);
+      expect(mockShowWarningModal).toHaveBeenCalledWith("table.maxGroupingReached");
+    });
+
+    it("blocks inserting rows in the grid while grouped", async () => {
+      mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const emptyState = getOptions().renderEmptyRowsFallback?.({ table: {} } as never) as React.ReactElement<{
+        onInsertRow: () => Promise<void>;
+      }>;
+
+      await act(async () => {
+        await emptyState.props.onInsertRow();
+      });
+
+      expect(logger.warn).toHaveBeenCalledWith("[InlineEditing] Insert blocked while the grid is grouped");
     });
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -6,6 +6,8 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useToolbar } from "@/hooks/Toolbar/useToolbar";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import "@testing-library/jest-dom";
 
 // Mocks
@@ -239,5 +241,22 @@ describe("Toolbar - Email Integration", () => {
       expect(toast.success).toHaveBeenCalledWith("email.successMessage");
       expect(screen.queryByTestId("email-modal")).not.toBeInTheDocument();
     });
+  });
+
+  it("applies the grouping of a saved view to the tab", () => {
+    render(
+      <CurrentWindowProvider windowIdentifier="win-id" windowId="win-id">
+        <Toolbar windowId="win-id" isFormView={true} />
+      </CurrentWindowProvider>
+    );
+    const { onApplyView, windowIdentifier, tabId } = (useAutoApplyDefaultView as jest.Mock).mock.calls.at(-1)[0];
+    const viewState = { filters: [], visibility: {}, sorting: [], order: [], implicitFilterApplied: false };
+    const getGrouping = () => useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table.grouping;
+
+    act(() => onApplyView({ ...viewState, grouping: ["Business Partner"] }));
+    expect(getGrouping()).toEqual(["Business Partner"]);
+
+    act(() => onApplyView(viewState));
+    expect(getGrouping()).toEqual([]);
   });
 });

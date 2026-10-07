@@ -45,6 +45,14 @@ describe("buildGridConfiguration", () => {
     expect(parsed.order).toEqual(order);
   });
 
+  it("stores the grouping only for grouped views", () => {
+    const grouped = JSON.parse(buildGridConfiguration([], {}, [], [], false, ["status"])) as MRTViewConfig;
+    const ungrouped = JSON.parse(buildGridConfiguration([], {}, [], [], false, [])) as MRTViewConfig;
+
+    expect(grouped.grouping).toEqual(["status"]);
+    expect(ungrouped).not.toHaveProperty("grouping");
+  });
+
   it("produces a valid JSON string", () => {
     const result = buildGridConfiguration([], {}, [], [], false);
     expect(() => JSON.parse(result)).not.toThrow();
