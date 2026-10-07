@@ -1660,6 +1660,7 @@ describe("DynamicTable", () => {
 
       expect(getOptions().enableGrouping).toBe(false);
       expect(getOptions().state?.grouping).toEqual([]);
+      expect(getOptions().paginateExpandedRows).toBe(false);
     });
 
     it("groups the grid by the stored column and locks it", () => {
@@ -1670,6 +1671,7 @@ describe("DynamicTable", () => {
         enableGrouping: true,
         groupedColumnMode: "reorder",
         enableExpandAll: false,
+        paginateExpandedRows: true,
       });
       expect(getOptions().state?.grouping).toEqual([GROUPED_COLUMN]);
       expect(getColumn(GROUPED_COLUMN)).toMatchObject({ enableHiding: false, enableGrouping: false });

@@ -3325,7 +3325,9 @@ const DynamicTable = ({
     enableGrouping: isGroupingAvailable,
     groupedColumnMode: "reorder",
     enableExpandAll: false,
-    paginateExpandedRows: false,
+    // Without a pagination row model, TanStack only inserts the sub rows of expanded groups when
+    // expanded rows are "paginated"; the tree builds its own flat rows, so it keeps the previous value
+    paginateExpandedRows: Boolean(groupedColumnId),
     getRowCanExpand: handleGetRowCanExpand,
     initialState: {
       ...initialState,
