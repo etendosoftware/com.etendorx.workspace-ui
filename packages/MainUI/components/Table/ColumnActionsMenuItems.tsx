@@ -23,15 +23,29 @@ import { MRT_ActionMenuItem, type MRT_Column, type MRT_TableInstance } from "mat
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { canGroupByColumn } from "@/utils/table/grouping";
-import {
-  type GroupingMenuActions,
-  type SummaryType,
-  getGroupingMenuVisibility,
-  getSummaryTypes,
-} from "./HeaderContextMenu";
+import { type SummaryType, getSummaryTypes } from "./HeaderContextMenu";
 
 type Column = MRT_Column<EntityData>;
 type Table = MRT_TableInstance<EntityData>;
+
+/** Grouping actions of the column actions menu (classic "Group by ‹column›" / "Ungroup"). */
+export interface GroupingMenuActions {
+  /** Column the grid is currently grouped by, if any. */
+  groupedColumnId?: string;
+  getGroupByLabel: (title: string) => string;
+  getUngroupLabel: () => string;
+  onGroupBy: (columnId: string) => void;
+  onUngroup: () => void;
+}
+
+/**
+ * Like classic, "Group by" is hidden for the column the grid is already grouped by (and for
+ * non-groupable columns), and "Ungroup" is offered whenever the grid is grouped.
+ */
+const getGroupingMenuVisibility = (column: Column, grouping: GroupingMenuActions) => ({
+  showGroupBy: canGroupByColumn(column.columnDef) && grouping.groupedColumnId !== column.id,
+  showUngroup: Boolean(grouping.groupedColumnId),
+});
 
 /** Arguments MRT passes to `renderColumnActionsMenuItems`. */
 export interface ColumnActionsMenuArgs {
@@ -131,10 +145,7 @@ const buildGroupingMenuItems = (
   { column, table, closeMenu }: MenuItemProps,
   grouping: GroupingMenuActions
 ): React.ReactNode[] => {
-  const { showGroupBy, showUngroup } = getGroupingMenuVisibility(column.id, {
-    ...grouping,
-    canGroupBy: canGroupByColumn(column.columnDef),
-  });
+  const { showGroupBy, showUngroup } = getGroupingMenuVisibility(column, grouping);
   const { DynamicFeedIcon } = table.options.icons;
   const items: React.ReactNode[] = [];
 

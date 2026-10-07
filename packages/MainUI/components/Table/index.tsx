@@ -106,7 +106,7 @@ import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useTableGrouping } from "./hooks/useTableGrouping";
 import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
 import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
-import { canGroupByColumn, isGroupRow } from "@/utils/table/grouping";
+import { isGroupRow } from "@/utils/table/grouping";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
 import {
@@ -3138,7 +3138,7 @@ const DynamicTable = ({
   // Group header rows cannot be selected (classic draws no checkbox on them)
   const isSelectableRow = useCallback((row: MRT_Row<EntityData>) => !isGroupRow(row), []);
 
-  // Grouping actions shared by the header context menu and the column actions menu
+  // Grouping actions of the column actions menu
   const groupingMenuActions = useMemo(
     () =>
       isGroupingAvailable
@@ -3147,16 +3147,7 @@ const DynamicTable = ({
     [isGroupingAvailable, groupedColumnId, getGroupByLabel, getUngroupLabel, groupBy, ungroup]
   );
 
-  const headerGroupingOptions = useMemo(
-    () =>
-      groupingMenuActions && {
-        ...groupingMenuActions,
-        canGroupBy: canGroupByColumn(headerContextMenuColumn?.columnDef),
-      },
-    [groupingMenuActions, headerContextMenuColumn]
-  );
-
-  // Column actions ("3 dots") menu: MRT's items plus the summary and grouping actions of the header context menu
+  // Column actions ("3 dots") menu: MRT's items plus the summary (as in the header context menu) and grouping actions
   const renderColumnActionsMenuItems = useCallback(
     (args: ColumnActionsMenuArgs) =>
       buildColumnActionsMenuItems(args, {
@@ -4067,7 +4058,6 @@ const DynamicTable = ({
         onSetSummary={handleSetSummary}
         onRemoveSummary={handleRemoveSummary}
         activeSummary={summaryState}
-        grouping={headerGroupingOptions}
         data-testid="HeaderContextMenu__8ca888"
       />
       <AddAttachmentModal
