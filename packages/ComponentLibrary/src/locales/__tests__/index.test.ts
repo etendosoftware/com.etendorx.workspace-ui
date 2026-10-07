@@ -36,4 +36,9 @@ describe("locales/index", () => {
     expect(translations.en_US).toBeDefined();
     expect(typeof translations.en_US).toBe("object");
   });
+
+  it.each(["en_US", "es_ES"] as const)("should translate the linked items empty message in %s", (language) => {
+    expect(translations[language].forms.sections.noLinkedItems).toEqual(expect.any(String));
+    expect(translations[language].forms.sections.noLinkedItems).not.toHaveLength(0);
+  });
 });
