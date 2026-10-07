@@ -65,6 +65,7 @@ describe("resolveAlertShortcut", () => {
   it.each([
     ["the preference is missing", undefined],
     ["the alert entry is missing", shortcutList("NavBar_OBHelpAbout", { key: "h", ctrl: true })],
+    ["the list has null entries", "[null]"],
     ["the combination is not supported", shortcutList(ALERT_SHORTCUT_ID, { key: "a", alt: true })],
   ])("falls back to the classic default when %s", (_case, value) => {
     mockShortcutPreference(value);

@@ -105,7 +105,11 @@ describe("useAlertCount", () => {
 
   it("ignores a response that arrives after unmount", async () => {
     let resolvePoll: (value: number) => void = () => {};
-    mockFetchAlertCount.mockReturnValue(new Promise((resolve) => (resolvePoll = resolve)));
+    mockFetchAlertCount.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePoll = resolve;
+      })
+    );
 
     const { unmount } = renderAlertCount();
     unmount();

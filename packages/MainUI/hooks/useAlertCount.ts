@@ -32,6 +32,7 @@ import { ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
 export function useAlertCount(enabled: boolean, roleId?: string): number | null {
   const [count, setCount] = useState<number | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: roleId restarts the polling on role change
   useEffect(() => {
     if (!enabled) {
       return;

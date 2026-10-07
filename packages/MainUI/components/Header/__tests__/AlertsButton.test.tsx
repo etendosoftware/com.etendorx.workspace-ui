@@ -31,8 +31,11 @@ jest.mock("@/contexts/language", () => ({
   useLanguage: () => ({ getLabel: (key: string) => (key === "UINAVBA_Alerts" ? "Alerts (%0)" : key) }),
 }));
 
+const CLASSIC_HOST = "http://classic";
+
+let mockRuntimeConfig: { etendoClassicHost: string } | null = { etendoClassicHost: CLASSIC_HOST };
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
-  useRuntimeConfig: () => ({ config: { etendoClassicHost: "http://classic" } }),
+  useRuntimeConfig: () => ({ config: mockRuntimeConfig }),
 }));
 
 jest.mock("@/hooks/useAlertCount", () => ({
@@ -58,9 +61,9 @@ const renderWithCount = (count: number | null) => {
 
 const getButton = () => screen.getByRole("button");
 
-const expectAlertManagementOpened = () => {
+const expectAlertManagementOpened = (baseUrl = CLASSIC_HOST) => {
   expect(openEtendoViewPopup).toHaveBeenCalledWith({
-    baseUrl: "http://classic",
+    baseUrl,
     viewId: ALERT_MANAGEMENT_VIEW_ID,
     token: TOKEN,
   });
@@ -69,6 +72,7 @@ const expectAlertManagementOpened = () => {
 describe("AlertsButton", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRuntimeConfig = { etendoClassicHost: CLASSIC_HOST };
     useUserStore.setState({
       token: TOKEN,
       currentRole: { id: "role-1" } as never,
@@ -87,11 +91,21 @@ describe("AlertsButton", () => {
     expect(screen.getByTestId("mock-svg")).toBeInTheDocument();
   });
 
-  it("polls only while a session is active, for the current role", () => {
-    useUserStore.setState({ passwordExpired: true });
+  it("polls while a session is active, for the current role", () => {
     renderWithCount(null);
 
-    expect(mockUseAlertCount).toHaveBeenCalledWith(false, "role-1");
+    expect(mockUseAlertCount).toHaveBeenCalledWith(true, "role-1");
+  });
+
+  it.each([
+    ["the password is expired", { passwordExpired: true }, "role-1"],
+    ["there is no token", { token: null }, "role-1"],
+    ["there is no role", { currentRole: undefined }, undefined],
+  ])("does not poll when %s", (_case, state, roleId) => {
+    useUserStore.setState(state);
+    renderWithCount(null);
+
+    expect(mockUseAlertCount).toHaveBeenCalledWith(false, roleId);
   });
 
   it("opens Alert Management on click", () => {
@@ -108,6 +122,15 @@ describe("AlertsButton", () => {
     fireEvent.keyDown(document, { key: "F8" });
 
     expectAlertManagementOpened();
+  });
+
+  it("opens Alert Management with an empty base URL while the runtime config is not loaded", () => {
+    mockRuntimeConfig = null;
+    renderWithCount(1);
+
+    fireEvent.click(getButton());
+
+    expectAlertManagementOpened("");
   });
 });
 
