@@ -21,8 +21,8 @@ import { logger } from "@/utils/logger";
 /** localStorage key of the recent items cache (kept as a backup of the server-side list). */
 export const RECENT_ITEMS_STORAGE_KEY = "recentlyViewedItems";
 
-/** Classic default of the UINAVBA_RecentListSize preference, used until the backend answers. */
-export const DEFAULT_RECENT_LIST_SIZE = 3;
+/** Default size of the recent list (as the classic workspace recent lists), used until the backend answers. */
+export const DEFAULT_RECENT_LIST_SIZE = 5;
 
 const SCOPE_SEPARATOR = "|";
 
