@@ -18,11 +18,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { useAlertCount } from "../useAlertCount";
 import { fetchAlertCount } from "@/utils/alerts/fetchAlertCount";
-import {
-  ALERT_COUNT_MESSAGE_ACTION,
-  ALERT_COUNT_MESSAGE_TYPE,
-  ALERTS_POLL_DELAY_MS,
-} from "@/utils/alerts/constants";
+import { ALERT_COUNT_MESSAGE_ACTION, ALERT_COUNT_MESSAGE_TYPE, ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
 
 jest.mock("@/utils/alerts/fetchAlertCount", () => ({
   fetchAlertCount: jest.fn(),
