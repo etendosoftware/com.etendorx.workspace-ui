@@ -295,6 +295,119 @@ describe("useToolbarConfig", () => {
     });
   });
 
+  describe("EXPORT_CSV", () => {
+    const EXPORT_ERROR_KEY = "table.exportError";
+
+    /** Builds a promise whose settlement is controlled by the test. */
+    const createDeferred = () => {
+      let resolve: () => void = () => {};
+      let reject: (reason?: unknown) => void = () => {};
+      const promise = new Promise<void>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise, resolve, reject };
+    };
+
+    /** Renders the hook with the given export action registered in the toolbar context. */
+    const renderWithExport = (onExportCSV: jest.Mock) => {
+      (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh, onExportCSV });
+      return renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+    };
+
+    /** Triggers the export through the toolbar handler without waiting for it to finish. */
+    const triggerExport = (result: { current: ReturnType<typeof useToolbarConfig> }) => {
+      act(() => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+    };
+
+    it("starts idle", () => {
+      const { result } = renderWithExport(jest.fn());
+      expect(result.current.isExporting).toBe(false);
+    });
+
+    it("keeps the busy state while the export is in progress and clears it on completion", async () => {
+      const deferred = createDeferred();
+      const onExportCSV = jest.fn(() => deferred.promise);
+      const { result } = renderWithExport(onExportCSV);
+
+      triggerExport(result);
+      expect(result.current.isExporting).toBe(true);
+
+      await act(async () => {
+        deferred.resolve();
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(onExportCSV).toHaveBeenCalledTimes(1);
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("clears the busy state and shows the error message when the export fails", async () => {
+      const deferred = createDeferred();
+      const { result } = renderWithExport(jest.fn(() => deferred.promise));
+
+      triggerExport(result);
+      await act(async () => {
+        deferred.reject(new Error("CSV Export failed: boom"));
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(toast.error).toHaveBeenCalledWith(EXPORT_ERROR_KEY, expect.objectContaining({ description: expect.anything() }));
+      const { description } = (toast.error as jest.Mock).mock.calls[0][1];
+      expect(description.props.message).toBe("CSV Export failed: boom");
+    });
+
+    it("falls back to the translated message when the failure is not an Error", async () => {
+      const { result } = renderWithExport(jest.fn(() => Promise.reject("unexpected")));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      const { description } = (toast.error as jest.Mock).mock.calls[0][1];
+      expect(description.props.message).toBe(EXPORT_ERROR_KEY);
+    });
+
+    it("does not leave the busy state hanging after a fast export", async () => {
+      const { result } = renderWithExport(jest.fn(() => Promise.resolve()));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+    });
+
+    it("ignores new triggers while an export is already running", async () => {
+      const deferred = createDeferred();
+      const onExportCSV = jest.fn(() => deferred.promise);
+      const { result } = renderWithExport(onExportCSV);
+
+      triggerExport(result);
+      triggerExport(result);
+      await act(async () => {
+        deferred.resolve();
+      });
+
+      expect(onExportCSV).toHaveBeenCalledTimes(1);
+    });
+
+    it("clears the busy state when no export action is registered", async () => {
+      (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+  });
+
   describe("INITIALIZE_RX_SERVICES", () => {
     beforeEach(() => {
       global.fetch = jest.fn();
