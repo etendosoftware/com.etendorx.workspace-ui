@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { MRT_Column, MRT_TableInstance } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import { type ColumnActionsMenuOptions, buildColumnActionsMenuItems } from "../ColumnActionsMenuItems";
-import type { GroupingMenuActions } from "../HeaderContextMenu";
+import {
+  type ColumnActionsMenuOptions,
+  type GroupingMenuActions,
+  buildColumnActionsMenuItems,
+} from "../ColumnActionsMenuItems";
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),

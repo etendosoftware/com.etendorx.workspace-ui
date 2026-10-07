@@ -1738,26 +1738,33 @@ describe("DynamicTable", () => {
       expect(mockTableDataHook.handleMRTExpandChange).toHaveBeenCalled();
     });
 
-    it("groups and ungroups from the header context menu", () => {
+    it("groups and ungroups from the column actions menu, not from the header context menu", () => {
       mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
       renderWithProviders(<DynamicTable {...groupingProps} />);
       const headPropsFn = getOptions().muiTableHeadCellProps as (props: unknown) => {
         onContextMenu: (event: unknown) => void;
       };
+      const renderItems = getOptions().renderColumnActionsMenuItems as (args: unknown) => React.ReactNode[];
       const statusColumn = { id: OTHER_COLUMN, columnDef: { id: OTHER_COLUMN, header: "Status", type: "string" } };
-      const openHeaderMenu = () => act(() => headPropsFn({ column: statusColumn }).onContextMenu(makeMouseEvent()));
+      const table = { options: { icons: { DynamicFeedIcon: () => null } } };
 
-      openHeaderMenu();
-      fireEvent.click(screen.getByTestId("group-by-menu-item"));
+      act(() => headPropsFn({ column: statusColumn }).onContextMenu(makeMouseEvent()));
+      expect(screen.getByTestId("set-summary-menu-item")).toBeInTheDocument();
+      expect(screen.queryByTestId("group-by-menu-item")).not.toBeInTheDocument();
+
+      const items = renderItems({ closeMenu: jest.fn(), column: statusColumn, table, internalColumnMenuItems: [] });
+      // material-react-table is mocked in this suite, so the menu items are triggered through their props
+      const clickItem = (key: string) => {
+        const item = items.find((node) => (node as React.ReactElement).key === key);
+        act(() => (item as React.ReactElement<{ onClick: () => void }>).props.onClick());
+      };
+      clickItem("etendo-group-by");
+      clickItem("etendo-ungroup");
 
       expect(mockTableStatePersistenceTab.setTableColumnSorting).toHaveBeenCalledWith([
         { id: OTHER_COLUMN, desc: false },
       ]);
       expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([OTHER_COLUMN]);
-
-      openHeaderMenu();
-      fireEvent.click(screen.getByTestId("ungroup-menu-item"));
-
       expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([]);
     });
 

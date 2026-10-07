@@ -1,48 +1,28 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { MRT_Column } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import { HeaderContextMenu, type HeaderGroupingOptions } from "../HeaderContextMenu";
+import { HeaderContextMenu, type SummaryType, getSummaryTypes } from "../HeaderContextMenu";
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-const COLUMN_ID = "Business Partner";
-const OTHER_COLUMN_ID = "Document Status";
-const GROUP_BY_ITEM = "group-by-menu-item";
-const UNGROUP_ITEM = "ungroup-menu-item";
+const COLUMN_ID = "Total Gross Amount";
+const SET_SUMMARY_ITEM = "set-summary-menu-item";
 
-const makeColumn = (id = COLUMN_ID, columnDef: Record<string, unknown> = { header: id }) =>
-  ({ id, columnDef: { type: "tabledir", ...columnDef } }) as unknown as MRT_Column<EntityData>;
+const makeColumn = (type: string) =>
+  ({ id: COLUMN_ID, columnDef: { header: COLUMN_ID, type } }) as unknown as MRT_Column<EntityData>;
 
-const makeGrouping = (overrides: Partial<HeaderGroupingOptions> = {}): HeaderGroupingOptions => ({
-  canGroupBy: true,
-  groupedColumnId: undefined,
-  getGroupByLabel: (title) => `Group by ${title}`,
-  getUngroupLabel: () => "Ungroup",
-  onGroupBy: jest.fn(),
-  onUngroup: jest.fn(),
-  ...overrides,
-});
-
-/** Renders the menu open on the given column. */
-const renderMenu = (grouping?: HeaderGroupingOptions, column = makeColumn()) => {
-  const onClose = jest.fn();
+/** Renders the menu open on a column of the given type. */
+const renderMenu = (type: string, activeSummary: Record<string, SummaryType> = {}) => {
+  const props = { onClose: jest.fn(), onSetSummary: jest.fn(), onRemoveSummary: jest.fn() };
   render(
-    <HeaderContextMenu
-      anchorEl={document.body}
-      onClose={onClose}
-      column={column}
-      onSetSummary={jest.fn()}
-      onRemoveSummary={jest.fn()}
-      activeSummary={{}}
-      grouping={grouping}
-    />
+    <HeaderContextMenu anchorEl={document.body} column={makeColumn(type)} activeSummary={activeSummary} {...props} />
   );
-  return { onClose };
+  return props;
 };
 
-describe("HeaderContextMenu grouping items", () => {
+describe("HeaderContextMenu", () => {
   it("renders nothing without a column", () => {
     const { container } = render(
       <HeaderContextMenu
@@ -57,52 +37,47 @@ describe("HeaderContextMenu grouping items", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("offers no grouping items when grouping is not available", () => {
-    renderMenu(undefined);
+  it("offers only the summary functions, not grouping", () => {
+    renderMenu("tabledir");
 
-    expect(screen.getByTestId("set-summary-menu-item")).toBeInTheDocument();
-    expect(screen.queryByTestId(GROUP_BY_ITEM)).not.toBeInTheDocument();
-    expect(screen.queryByTestId(UNGROUP_ITEM)).not.toBeInTheDocument();
+    expect(screen.getByTestId(SET_SUMMARY_ITEM)).toBeInTheDocument();
+    expect(screen.queryByText(/group/i)).not.toBeInTheDocument();
   });
 
-  it("groups by the column", () => {
-    const grouping = makeGrouping();
-    const { onClose } = renderMenu(grouping);
+  it("offers sum and average only for numeric columns", () => {
+    renderMenu("amount");
+    fireEvent.mouseEnter(screen.getByTestId(SET_SUMMARY_ITEM));
 
-    fireEvent.click(screen.getByText(`Group by ${COLUMN_ID}`));
-
-    expect(grouping.onGroupBy).toHaveBeenCalledWith(COLUMN_ID);
-    expect(onClose).toHaveBeenCalled();
-    expect(screen.queryByTestId(UNGROUP_ITEM)).not.toBeInTheDocument();
+    expect(screen.getByText("table.summary.sum")).toBeInTheDocument();
+    expect(screen.getByText("table.summary.avg")).toBeInTheDocument();
   });
 
-  it("uses the column id as title when the header is missing", () => {
-    renderMenu(makeGrouping(), makeColumn(COLUMN_ID, {}));
+  it("sets the chosen summary function", () => {
+    const props = renderMenu("tabledir");
+    fireEvent.mouseEnter(screen.getByTestId(SET_SUMMARY_ITEM));
 
-    expect(screen.getByTestId(GROUP_BY_ITEM)).toHaveTextContent(`Group by ${COLUMN_ID}`);
+    fireEvent.click(screen.getByText("table.summary.count"));
+
+    expect(props.onSetSummary).toHaveBeenCalledWith(COLUMN_ID, "count");
+    expect(props.onClose).toHaveBeenCalled();
+    expect(screen.queryByText("table.summary.sum")).not.toBeInTheDocument();
   });
 
-  it("does not offer grouping by a non-groupable column", () => {
-    renderMenu(makeGrouping({ canGroupBy: false }));
+  it("removes an active summary function", () => {
+    const props = renderMenu("amount", { [COLUMN_ID]: "sum" });
 
-    expect(screen.queryByTestId(GROUP_BY_ITEM)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("remove-summary-menu-item"));
+
+    expect(props.onRemoveSummary).toHaveBeenCalledWith(COLUMN_ID);
+  });
+});
+
+describe("getSummaryTypes", () => {
+  it.each(["integer", "number", "quantity", "amount"])("adds sum and average for %s columns", (type) => {
+    expect(getSummaryTypes({ type })).toEqual(["min", "max", "count", "sum", "avg"]);
   });
 
-  it("offers only Ungroup on the grouped column", () => {
-    const grouping = makeGrouping({ groupedColumnId: COLUMN_ID });
-    const { onClose } = renderMenu(grouping);
-
-    expect(screen.queryByTestId(GROUP_BY_ITEM)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Ungroup"));
-
-    expect(grouping.onUngroup).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it("offers both regrouping and Ungroup on another column of a grouped grid", () => {
-    renderMenu(makeGrouping({ groupedColumnId: OTHER_COLUMN_ID }));
-
-    expect(screen.getByTestId(GROUP_BY_ITEM)).toBeInTheDocument();
-    expect(screen.getByTestId(UNGROUP_ITEM)).toBeInTheDocument();
+  it.each([undefined, "tabledir", "date"])("offers min, max and count for %p columns", (type) => {
+    expect(getSummaryTypes({ type })).toEqual(["min", "max", "count"]);
   });
 });
