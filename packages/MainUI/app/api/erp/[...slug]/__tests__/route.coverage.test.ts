@@ -463,16 +463,13 @@ describe("ERP slug route coverage", () => {
   });
 
   describe("Session cookie capture", () => {
-    it("captures the ERP JSESSIONID from a mutation response into the session store", async () => {
-      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
-      clearErpSessionCookie("test-token");
-
+    const mockFetchWithSessionCookie = (cookie: string) =>
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         status: 200,
         headers: {
           get: (k: string) => {
-            if (k === "set-cookie") return "JSESSIONID=NEWSESSION123; Path=/etendo; HttpOnly";
+            if (k === "set-cookie") return `${cookie}; Path=/etendo; HttpOnly`;
             if (k === "content-type") return "application/json";
             return null;
           },
@@ -482,6 +479,12 @@ describe("ERP slug route coverage", () => {
         text: async () => '{"ok":true}',
         arrayBuffer: async () => new TextEncoder().encode('{"ok":true}').buffer,
       });
+
+    it("captures the ERP JSESSIONID from a mutation response into the session store", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+
+      mockFetchWithSessionCookie("JSESSIONID=NEWSESSION123");
 
       const req = createMockRequest(
         "POST",
@@ -494,6 +497,19 @@ describe("ERP slug route coverage", () => {
       // The rotating JSESSIONID must be persisted so the next request reuses the same
       // backend session (keeping SETSESSION state alive for e.g. UsedByLink).
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
+    });
+
+    it("serves meta/recent-items GET requests through the uncached mutation path", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+      mockFetchWithSessionCookie("JSESSIONID=RECENTITEMS123");
+
+      const req = createMockRequest("GET", "https://localhost/api/erp/meta/recent-items");
+      await GET(req, { params: Promise.resolve({ slug: ["meta", "recent-items"] }) });
+
+      // Only the uncached mutation path captures the session cookie, so this proves the
+      // per-user recent items list is never served from the Next.js Data Cache.
+      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=RECENTITEMS123");
     });
   });
 });
