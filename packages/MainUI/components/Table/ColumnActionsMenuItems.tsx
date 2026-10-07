@@ -94,7 +94,7 @@ const SummaryActionMenuItem = ({
   return (
     <>
       <MRT_ActionMenuItem
-        icon={<FunctionsIcon />}
+        icon={<FunctionsIcon data-testid="FunctionsIcon__24ecc7" />}
         label={t("table.setSummaryFunction")}
         onClick={handleOpenSubMenu}
         onOpenSubMenu={handleOpenSubMenu}
@@ -128,7 +128,7 @@ const RemoveSummaryActionMenuItem = ({
   const { ClearAllIcon } = table.options.icons;
   return (
     <MRT_ActionMenuItem
-      icon={<ClearAllIcon />}
+      icon={<ClearAllIcon data-testid="ClearAllIcon__24ecc7" />}
       label={t("table.removeSummaryFunction")}
       onClick={() => {
         onRemoveSummary(column.id);
@@ -153,7 +153,7 @@ const buildGroupingMenuItems = (
     items.push(
       <MRT_ActionMenuItem
         key="etendo-group-by"
-        icon={<DynamicFeedIcon />}
+        icon={<DynamicFeedIcon data-testid="DynamicFeedIcon__24ecc7" />}
         label={grouping.getGroupByLabel(String(column.columnDef.header ?? column.id))}
         onClick={() => {
           grouping.onGroupBy(column.id);
@@ -168,7 +168,7 @@ const buildGroupingMenuItems = (
     items.push(
       <MRT_ActionMenuItem
         key="etendo-ungroup"
-        icon={<DynamicFeedIcon />}
+        icon={<DynamicFeedIcon data-testid="DynamicFeedIcon__24ecc7" />}
         label={grouping.getUngroupLabel()}
         onClick={() => {
           grouping.onUngroup();
@@ -196,13 +196,23 @@ export const buildColumnActionsMenuItems = (
   const itemProps = { column, table, closeMenu };
   const items: React.ReactNode[] = [
     ...internalColumnMenuItems,
-    <Divider key="etendo-divider" />,
-    <SummaryActionMenuItem key="etendo-set-summary" {...itemProps} onSetSummary={onSetSummary} />,
+    <Divider key="etendo-divider" data-testid="Divider__24ecc7" />,
+    <SummaryActionMenuItem
+      key="etendo-set-summary"
+      {...itemProps}
+      onSetSummary={onSetSummary}
+      data-testid="SummaryActionMenuItem__24ecc7"
+    />,
   ];
 
   if (activeSummary[column.id]) {
     items.push(
-      <RemoveSummaryActionMenuItem key="etendo-remove-summary" {...itemProps} onRemoveSummary={onRemoveSummary} />
+      <RemoveSummaryActionMenuItem
+        key="etendo-remove-summary"
+        {...itemProps}
+        onRemoveSummary={onRemoveSummary}
+        data-testid="RemoveSummaryActionMenuItem__24ecc7"
+      />
     );
   }
   if (grouping) {
