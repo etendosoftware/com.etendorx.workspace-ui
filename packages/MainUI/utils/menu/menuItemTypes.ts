@@ -26,6 +26,7 @@ export const MENU_ITEM_TYPES = {
   WINDOW: "Window",
   PROCESS_MANUAL: "ProcessManual",
   REPORT: "Report",
+  VIEW: "View",
 } as const;
 
 export type MenuItemType = (typeof MENU_ITEM_TYPES)[keyof typeof MENU_ITEM_TYPES];

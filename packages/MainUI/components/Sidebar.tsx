@@ -16,7 +16,8 @@ import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
-import { buildEtendoClassicBookmarkUrl, buildEtendoViewUrl } from "@/utils/url/utils";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
+import { openEtendoViewPopup } from "@/utils/menu/openEtendoView";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
@@ -319,9 +320,8 @@ export default function Sidebar() {
       }
 
       // Handle View items — open as OpenUI view in Classic (popup window, same as legacy modal processes)
-      if (item.type === "View" && item.viewId) {
-        const viewUrl = buildEtendoViewUrl({ baseUrl: ETENDO_BASE_URL, viewId: item.viewId, token });
-        window.open(viewUrl, "Test", "width=950,height=700");
+      if (item.type === MENU_ITEM_TYPES.VIEW && item.viewId) {
+        openEtendoViewPopup({ baseUrl: ETENDO_BASE_URL, viewId: item.viewId, token });
         return;
       }
 
