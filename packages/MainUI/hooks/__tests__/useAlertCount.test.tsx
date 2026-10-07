@@ -18,7 +18,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { useAlertCount } from "../useAlertCount";
 import { fetchAlertCount } from "@/utils/alerts/fetchAlertCount";
-import { ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
+import {
+  ALERT_COUNT_MESSAGE_ACTION,
+  ALERT_COUNT_MESSAGE_TYPE,
+  ALERTS_POLL_DELAY_MS,
+} from "@/utils/alerts/constants";
 
 jest.mock("@/utils/alerts/fetchAlertCount", () => ({
   fetchAlertCount: jest.fn(),
@@ -37,8 +41,24 @@ const advanceToNextPoll = async () => {
   await flushPoll();
 };
 
+const CLASSIC_HOST = "http://localhost:8080/etendodev";
+const CLASSIC_ORIGIN = "http://localhost:8080";
+
 const renderAlertCount = (enabled = true, roleId = "role-1") =>
-  renderHook(({ enabled, roleId }) => useAlertCount(enabled, roleId), { initialProps: { enabled, roleId } });
+  renderHook(({ enabled, roleId }) => useAlertCount(enabled, roleId, CLASSIC_HOST), {
+    initialProps: { enabled, roleId },
+  });
+
+/** Posts an alert count message, as the classic Alert Management popup does. */
+const dispatchAlertMessage = (cnt: number, origin = CLASSIC_ORIGIN) =>
+  act(() => {
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        origin,
+        data: { type: ALERT_COUNT_MESSAGE_TYPE, action: ALERT_COUNT_MESSAGE_ACTION, payload: { cnt } },
+      })
+    );
+  });
 
 describe("useAlertCount", () => {
   beforeEach(() => {
@@ -128,5 +148,45 @@ describe("useAlertCount", () => {
     await flushPoll();
 
     expect(mockFetchAlertCount).toHaveBeenCalledTimes(2);
+  });
+
+  it("updates the count from the classic popup message without polling again", async () => {
+    mockFetchAlertCount.mockResolvedValue(1);
+
+    const { result } = renderAlertCount();
+    await flushPoll();
+    dispatchAlertMessage(0);
+
+    expect(result.current).toBe(0);
+    expect(mockFetchAlertCount).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores alert count messages from another origin", async () => {
+    mockFetchAlertCount.mockResolvedValue(1);
+
+    const { result } = renderAlertCount();
+    await flushPoll();
+    dispatchAlertMessage(0, "http://evil.test");
+
+    expect(result.current).toBe(1);
+  });
+
+  it("does not listen to messages while disabled", () => {
+    const { result } = renderAlertCount(false);
+    dispatchAlertMessage(3);
+
+    expect(result.current).toBeNull();
+  });
+
+  it("stops listening to messages when unmounted", async () => {
+    mockFetchAlertCount.mockResolvedValue(1);
+    const removeSpy = jest.spyOn(window, "removeEventListener");
+
+    const { unmount } = renderAlertCount();
+    await flushPoll();
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalledWith("message", expect.any(Function));
+    removeSpy.mockRestore();
   });
 });

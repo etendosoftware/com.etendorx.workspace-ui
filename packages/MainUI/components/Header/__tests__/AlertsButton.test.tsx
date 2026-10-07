@@ -94,7 +94,7 @@ describe("AlertsButton", () => {
   it("polls while a session is active, for the current role", () => {
     renderWithCount(null);
 
-    expect(mockUseAlertCount).toHaveBeenCalledWith(true, "role-1");
+    expect(mockUseAlertCount).toHaveBeenCalledWith(true, "role-1", CLASSIC_HOST);
   });
 
   it.each([
@@ -105,7 +105,7 @@ describe("AlertsButton", () => {
     useUserStore.setState(state);
     renderWithCount(null);
 
-    expect(mockUseAlertCount).toHaveBeenCalledWith(false, roleId);
+    expect(mockUseAlertCount).toHaveBeenCalledWith(false, roleId, CLASSIC_HOST);
   });
 
   it("opens Alert Management on click", () => {
@@ -131,6 +131,7 @@ describe("AlertsButton", () => {
     fireEvent.click(getButton());
 
     expectAlertManagementOpened("");
+    expect(mockUseAlertCount).toHaveBeenCalledWith(true, "role-1", undefined);
   });
 });
 
