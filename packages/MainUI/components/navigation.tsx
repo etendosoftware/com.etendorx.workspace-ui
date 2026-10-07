@@ -211,7 +211,7 @@ const Navigation: React.FC = () => {
   return (
     <>
       <Nav data-testid="Nav__120cc9">
-        <AlertsButton />
+        <AlertsButton data-testid="AlertsButton__120cc9" />
         {isCopilotInstalled && (
           <CopilotButton
             onClick={handleCopilotOpen}

@@ -81,8 +81,13 @@ const AlertsButton: React.FC = () => {
   useKeyboardShortcuts(shortcuts, enabled);
 
   return (
-    <IconButton onClick={openAlertManagement} tooltip={label} ariaLabel={label} className="w-10 h-10">
-      <Icon />
+    <IconButton
+      onClick={openAlertManagement}
+      tooltip={label}
+      ariaLabel={label}
+      className="w-10 h-10"
+      data-testid="IconButton__3b7cdf">
+      <Icon data-testid="Icon__3b7cdf" />
     </IconButton>
   );
 };
