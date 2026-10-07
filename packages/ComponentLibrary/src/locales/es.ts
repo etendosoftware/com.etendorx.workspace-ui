@@ -82,7 +82,8 @@ const es = {
       moreInformation: "Más Información",
       noCategories: "No hay categorias disponibles",
       selectCategory: "Por favor selecciona una categoría",
-      noLinkedItems: "No hay artículos asociados, haga clic en una categoría de la izquierda para mostrar los artículos asociados de esa categoría",
+      noLinkedItems:
+        "No hay artículos asociados, haga clic en una categoría de la izquierda para mostrar los artículos asociados de esa categoría",
     },
     notes: {
       title: "Notas",
