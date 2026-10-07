@@ -1053,6 +1053,8 @@ function ProcessDefinitionModalContent({
 
   const initializationBlocksSubmit = Boolean(initializationError);
 
+  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
+
   const hasMandatoryParametersWithoutValue = useMemo(() => {
     if (loading || initializationLoading) return false;
 
@@ -1064,11 +1066,14 @@ function ProcessDefinitionModalContent({
         parameter,
         formValues,
         isDisplayed: isParamDisplayedRef.current,
+        // Report export buttons follow Classic: enabled only when every visible
+        // mandatory parameter actually holds a value.
+        requireActualValue: isOBUIAPPReport,
       })
     );
     // logicFields is read indirectly through isParamDisplayedRef; keep it in deps so
     // the check recomputes when a callout/script toggles a parameter's visibility.
-  }, [loading, initializationLoading, parameters, formValues, logicFields]);
+  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport]);
 
   const peGrids = useMemo(() => {
     if (!isPE) return [];
@@ -1129,8 +1134,6 @@ function ProcessDefinitionModalContent({
   // -------------------------------------------------------------------------
   // Execution handlers
   // -------------------------------------------------------------------------
-
-  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
 
   const { handleExecute, handleReportProcessExecute, handleNavigateToTab } = useProcessExecution({
     processId,
