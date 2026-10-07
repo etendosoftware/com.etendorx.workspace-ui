@@ -354,7 +354,10 @@ describe("useToolbarConfig", () => {
       });
 
       expect(result.current.isExporting).toBe(false);
-      expect(toast.error).toHaveBeenCalledWith(EXPORT_ERROR_KEY, expect.objectContaining({ description: expect.anything() }));
+      expect(toast.error).toHaveBeenCalledWith(
+        EXPORT_ERROR_KEY,
+        expect.objectContaining({ description: expect.anything() })
+      );
       const { description } = (toast.error as jest.Mock).mock.calls[0][1];
       expect(description.props.message).toBe("CSV Export failed: boom");
     });

@@ -368,7 +368,9 @@ export const createButtonByType = ({
 
   const getBusyConfig = (): Partial<ToolbarButton> => {
     if (button.action === TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV && isExporting) {
-      return { icon: <CircularProgress size={BUSY_SPINNER_SIZE} color="inherit" data-testid="CircularProgress__5aeccd" /> };
+      return {
+        icon: <CircularProgress size={BUSY_SPINNER_SIZE} color="inherit" data-testid="CircularProgress__5aeccd" />,
+      };
     }
     return {};
   };
