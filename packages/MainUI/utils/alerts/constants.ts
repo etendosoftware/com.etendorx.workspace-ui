@@ -47,3 +47,10 @@ export const IGNORE_SESSION_TIMEOUT_PARAMS = {
   IsAjaxCall: "1",
   ignoreForSessionTimeout: "1",
 } as const;
+
+/**
+ * Envelope of the message posted by the classic Alert Management popup (`alert-count-bridge.js` of
+ * the metadata module) each time its alert count is refreshed: `{ type, action, payload: { cnt } }`.
+ */
+export const ALERT_COUNT_MESSAGE_TYPE = "etendoAlertCount";
+export const ALERT_COUNT_MESSAGE_ACTION = "alertCountChanged";

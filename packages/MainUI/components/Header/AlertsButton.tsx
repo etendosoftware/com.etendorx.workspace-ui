@@ -66,7 +66,7 @@ const AlertsButton: React.FC = () => {
   const { config } = useRuntimeConfig();
 
   const enabled = Boolean(token && roleId && !passwordExpired);
-  const count = useAlertCount(enabled, roleId);
+  const count = useAlertCount(enabled, roleId, config?.etendoClassicHost);
   const label = createI18N({ getLabel }).getLabel(ALERTS_LABEL_KEY, [formatAlertCount(count)]);
   const Icon = hasPendingAlerts(count) ? BellAlertIcon : BellIcon;
 

@@ -18,6 +18,7 @@
 import { useEffect, useState } from "react";
 import { fetchAlertCount } from "@/utils/alerts/fetchAlertCount";
 import { ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
+import { getOrigin, readAlertCountMessage } from "@/utils/alerts/readAlertCountMessage";
 
 /**
  * Polls the pending alerts count like classic `OB.AlertManager`: once right away and then
@@ -25,11 +26,15 @@ import { ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
  * last known count). Polling restarts immediately when the role changes, since the count depends
  * on it, and stops when disabled or unmounted.
  *
+ * The count is also refreshed in real time by the messages posted from the classic Alert
+ * Management popup (only those coming from the classic host origin).
+ *
  * @param enabled - Whether a session is active (no polling while logging in or logged out)
  * @param roleId - Current role id
+ * @param classicHost - Etendo Classic base URL, used to validate the popup messages origin
  * @returns The last known pending alerts count, or `null` until the first successful response
  */
-export function useAlertCount(enabled: boolean, roleId?: string): number | null {
+export function useAlertCount(enabled: boolean, roleId?: string, classicHost?: string): number | null {
   const [count, setCount] = useState<number | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: roleId restarts the polling on role change
@@ -59,6 +64,25 @@ export function useAlertCount(enabled: boolean, roleId?: string): number | null 
       clearTimeout(timer);
     };
   }, [enabled, roleId]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const classicOrigin = getOrigin(classicHost);
+    const handleMessage = (event: MessageEvent) => {
+      const messageCount = readAlertCountMessage(event, classicOrigin);
+      if (messageCount !== null) {
+        setCount(messageCount);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [enabled, classicHost]);
 
   return count;
 }
