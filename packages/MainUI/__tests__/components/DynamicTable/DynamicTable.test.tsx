@@ -1761,6 +1761,21 @@ describe("DynamicTable", () => {
       expect(mockTableStatePersistenceTab.setTableColumnGrouping).toHaveBeenCalledWith([]);
     });
 
+    it("adds the summary and grouping actions to the column actions menu", () => {
+      renderWithProviders(<DynamicTable {...groupingProps} />);
+      const renderItems = getOptions().renderColumnActionsMenuItems as (args: unknown) => React.ReactNode[];
+      const column = { id: OTHER_COLUMN, columnDef: { id: OTHER_COLUMN, header: "Status", type: "string" } };
+      const internalItem = <li key="internal" />;
+
+      const table = { options: { icons: { DynamicFeedIcon: () => null } } };
+
+      const items = renderItems({ closeMenu: jest.fn(), column, table, internalColumnMenuItems: [internalItem] });
+
+      // MRT's item, divider, summary and "Group by"
+      expect(items).toHaveLength(4);
+      expect(items[0]).toBe(internalItem);
+    });
+
     it("ungroups with the classic message when the records exceed the limit", () => {
       enableGrouping(2);
       mockTableStatePersistenceTab.tableColumnGrouping = [GROUPED_COLUMN];
