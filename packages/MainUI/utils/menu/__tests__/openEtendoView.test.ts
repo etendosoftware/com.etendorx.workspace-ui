@@ -19,18 +19,18 @@ import { CLASSIC_POPUP_FEATURES, CLASSIC_POPUP_NAME, openEtendoViewPopup } from 
 import { buildEtendoViewUrl } from "@/utils/url/utils";
 
 jest.mock("@/utils/url/utils", () => ({
-  buildEtendoViewUrl: jest.fn(() => "http://classic/view-url"),
+  buildEtendoViewUrl: jest.fn(() => "https://classic/view-url"),
 }));
 
 describe("openEtendoViewPopup", () => {
   it("opens the classic view URL in the menu popup", () => {
     const openSpy = jest.spyOn(window, "open").mockReturnValue(null);
-    const options = { baseUrl: "http://classic", viewId: "OBUIAPP_AlertManagement", token: "jwt" };
+    const options = { baseUrl: "https://classic", viewId: "OBUIAPP_AlertManagement", token: "jwt" };
 
     openEtendoViewPopup(options);
 
     expect(buildEtendoViewUrl).toHaveBeenCalledWith(options);
-    expect(openSpy).toHaveBeenCalledWith("http://classic/view-url", CLASSIC_POPUP_NAME, CLASSIC_POPUP_FEATURES);
+    expect(openSpy).toHaveBeenCalledWith("https://classic/view-url", CLASSIC_POPUP_NAME, CLASSIC_POPUP_FEATURES);
     openSpy.mockRestore();
   });
 });

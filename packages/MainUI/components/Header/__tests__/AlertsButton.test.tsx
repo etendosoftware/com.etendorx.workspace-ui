@@ -31,7 +31,7 @@ jest.mock("@/contexts/language", () => ({
   useLanguage: () => ({ getLabel: (key: string) => (key === "UINAVBA_Alerts" ? "Alerts (%0)" : key) }),
 }));
 
-const CLASSIC_HOST = "http://classic";
+const CLASSIC_HOST = "https://classic";
 
 let mockRuntimeConfig: { etendoClassicHost: string } | null = { etendoClassicHost: CLASSIC_HOST };
 jest.mock("@/contexts/RuntimeConfigContext", () => ({

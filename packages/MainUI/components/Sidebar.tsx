@@ -15,7 +15,7 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
+import { type ReportPopupBlockedTexts, notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { openEtendoViewPopup } from "@/utils/menu/openEtendoView";
 import { useWindowStore } from "@/stores/windowStore";
@@ -145,6 +145,31 @@ const getManualProcessConfig = (
   return null;
 };
 
+const isClassicProcessMenuItem = (item: Menu): boolean =>
+  item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
+
+/**
+ * Opens a classic process/report URL: in a popup for modal processes, otherwise in a new tab.
+ * When the browser blocks it, a notification offers to open it manually.
+ */
+const openClassicProcessUrl = (
+  classicUrl: string,
+  isModalProcess: boolean | undefined,
+  popupBlockedTexts: ReportPopupBlockedTexts
+): void => {
+  if (isModalProcess) {
+    if (!tryOpenReportPopup(classicUrl)) {
+      notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
+    }
+    return;
+  }
+
+  // Fallback: Open in new tab
+  if (!window.open(classicUrl, "_blank")) {
+    notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
+  }
+};
+
 const getManualProcessUrl = (item: Menu): string | null => {
   return item.processUrl || null;
 };
@@ -255,6 +280,54 @@ export default function Sidebar() {
   }, []);
 
   /**
+   * Opens a ProcessManual / Report menu item in Etendo Classic (popup or new tab).
+   *
+   * @param item - Menu item that was clicked
+   * @param processUrl - Classic manual process URL of the item
+   */
+  const openClassicProcess = useCallback(
+    (item: Menu, processUrl: string) => {
+      const classicUrl = buildEtendoClassicBookmarkUrl({
+        baseUrl: ETENDO_BASE_URL,
+        processUrl,
+        tabTitle: item.name,
+        token: token,
+        kioskMode: true,
+      });
+      const popupBlockedTexts = {
+        title: t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle"),
+        openLabel: t("processModal.gridToolbar.openLegacyReport.openManually"),
+      };
+      openClassicProcessUrl(classicUrl, item.isModalProcess, popupBlockedTexts);
+    },
+    [token, ETENDO_BASE_URL, t]
+  );
+
+  /**
+   * Opens/activates a Window menu item using the multi-window system, with an optimistic
+   * pendingWindowId for visual feedback before state synchronization completes.
+   *
+   * @param item - Window menu item that was clicked
+   */
+  const openWindowItem = useCallback(
+    (item: Menu) => {
+      const windowId = item.windowId ?? "";
+
+      if (!windowId) {
+        return;
+      }
+
+      setPendingWindowId(windowId);
+
+      const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      // Eager fetch: start metadata loading immediately on click
+      loadWindowData(windowId).catch(() => {});
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
+    },
+    [setWindowActive, loadWindowData]
+  );
+
+  /**
    * Handles menu item clicks and window navigation.
    *
    * Manages different navigation scenarios:
@@ -292,30 +365,8 @@ export default function Sidebar() {
 
       // Handle ProcessManual / Report items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
-      const isClassicProcess = item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
-      if (isClassicProcess && processUrl) {
-        const classicUrl = buildEtendoClassicBookmarkUrl({
-          baseUrl: ETENDO_BASE_URL,
-          processUrl,
-          tabTitle: item.name,
-          token: token,
-          kioskMode: true,
-        });
-        const popupBlockedTexts = {
-          title: t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle"),
-          openLabel: t("processModal.gridToolbar.openLegacyReport.openManually"),
-        };
-        if (item.isModalProcess) {
-          if (!tryOpenReportPopup(classicUrl)) {
-            notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
-          }
-          return;
-        }
-
-        // Fallback: Open in new tab
-        if (!window.open(classicUrl, "_blank")) {
-          notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
-        }
+      if (isClassicProcessMenuItem(item) && processUrl) {
+        openClassicProcess(item, processUrl);
         return;
       }
 
@@ -325,24 +376,11 @@ export default function Sidebar() {
         return;
       }
 
-      if (item.type !== MENU_ITEM_TYPES.WINDOW) {
-        return;
+      if (item.type === MENU_ITEM_TYPES.WINDOW) {
+        openWindowItem(item);
       }
-
-      const windowId = item.windowId ?? "";
-
-      if (!windowId) {
-        return;
-      }
-
-      setPendingWindowId(windowId);
-
-      const newWindowIdentifier = getNewWindowIdentifier(windowId);
-      // Eager fetch: start metadata loading immediately on click
-      loadWindowData(windowId).catch(() => {});
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [token, ETENDO_BASE_URL, setWindowActive, loadWindowData, openProcessModal]
+    [token, ETENDO_BASE_URL, openProcessModal, openClassicProcess, openWindowItem]
   );
 
   /**
