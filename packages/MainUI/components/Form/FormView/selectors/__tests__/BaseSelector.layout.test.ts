@@ -72,6 +72,11 @@ describe("getFieldLayoutClasses", () => {
     expect(classes.valueWidthClass).toBe(DEFAULT_VALUE_CLASS);
   });
 
+  it("treats a field without reference as a regular field", () => {
+    const field = makeField(FIELD_REFERENCE_CODES.STRING.id, { column: {} as Field["column"] });
+    expect(getFieldLayoutClasses(field).containerClassName).toBe("h-12 flex items-center");
+  });
+
   it("applies the explicit rowspan and colspan of a regular field", () => {
     const containerClasses = containerClassesOf(
       makeField(FIELD_REFERENCE_CODES.STRING.id, { obuiappColspan: 2, obuiappRowspan: 2 })
