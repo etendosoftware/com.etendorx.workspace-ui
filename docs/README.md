@@ -21,6 +21,8 @@ docs/
 │   │   └── preferences.md           # Reading ERP preferences in scripts
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
+│   ├── form-field-layout/            # Feature: Field placement in the form grid
+│   │   └── README.md                # Colspan/rowspan rules, full-width text fields
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
