@@ -134,7 +134,11 @@ describe("addSectionsToExpand", () => {
   });
 
   it("appends every collapsed section, keeping the expanded ones", () => {
-    expect(addSectionsToExpand([MAIN_SECTION_ID], ["g1", MAIN_SECTION_ID, "g2"])).toEqual([MAIN_SECTION_ID, "g1", "g2"]);
+    expect(addSectionsToExpand([MAIN_SECTION_ID], ["g1", MAIN_SECTION_ID, "g2"])).toEqual([
+      MAIN_SECTION_ID,
+      "g1",
+      "g2",
+    ]);
   });
 
   it("does not duplicate a section requested more than once", () => {
