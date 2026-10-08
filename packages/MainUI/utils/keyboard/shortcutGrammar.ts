@@ -60,12 +60,17 @@ export function normalizeShortcutKey(key: string): string {
   return key;
 }
 
+/** The fields of a keyboard event the grammar reads; native and React events both have them. */
+export type KeyEventLike = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> & {
+  code?: string;
+};
+
 /**
  * Canonical key of a keyboard event. Letters and digits come from `event.key` so the user's
  * layout decides them, as in classic; when a modifier turned the key into another character
  * (Shift+1 → `!`, Alt+A → `å` on macOS) the physical `event.code` is used instead.
  */
-export function getEventKey(event: KeyboardEvent): string {
+export function getEventKey(event: KeyEventLike): string {
   if (ASCII_LETTER_OR_DIGIT.test(event.key)) return event.key.toUpperCase();
   const match = ALPHANUMERIC_CODE.exec(event.code ?? "");
   if (match) return match[1];
@@ -76,13 +81,13 @@ export function getEventKey(event: KeyboardEvent): string {
  * Exact match, as classic `OB.KeyboardManager.Shortcuts.monitor`: every modifier must be in the
  * state the combination asks for. Meta (Cmd) counts as Ctrl.
  */
-export function matchesCombination(event: KeyboardEvent, combination: KeyCombination, isSpacePressed: boolean) {
-  const isCtrl = event.ctrlKey || event.metaKey;
+export function matchesCombination(event: KeyEventLike, combination: KeyCombination, isSpacePressed: boolean) {
+  const isCtrl = Boolean(event.ctrlKey || event.metaKey);
   return (
     getEventKey(event) === normalizeShortcutKey(combination.key) &&
     isCtrl === Boolean(combination.ctrl) &&
-    event.altKey === Boolean(combination.alt) &&
-    event.shiftKey === Boolean(combination.shift) &&
+    Boolean(event.altKey) === Boolean(combination.alt) &&
+    Boolean(event.shiftKey) === Boolean(combination.shift) &&
     isSpacePressed === Boolean(combination.space)
   );
 }

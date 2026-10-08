@@ -39,6 +39,7 @@ import useFormParent from "@/hooks/useFormParent";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
+import { handleFieldLinkOutShortcut } from "@/utils/form/keyboard";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
@@ -586,7 +587,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           if (!e.currentTarget.contains(e.relatedTarget)) {
             runCallout(true);
           }
-        }}>
+        }}
+        onKeyDown={handleFieldLinkOutShortcut}>
         <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (

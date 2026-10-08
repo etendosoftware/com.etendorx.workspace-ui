@@ -17,7 +17,13 @@
 
 import { resolvePreference } from "@/utils/propertyStore";
 import { DEFAULT_KEYBOARD_SHORTCUTS } from "@/utils/keyboard/defaultShortcuts";
-import { formatCombination, parseShortcutPreference } from "@/utils/keyboard/shortcutGrammar";
+import {
+  type KeyEventLike,
+  formatCombination,
+  matchesCombination,
+  parseShortcutPreference,
+} from "@/utils/keyboard/shortcutGrammar";
+import { isSpacePressed } from "@/utils/keyboard/spaceChordTracker";
 import {
   ALTERNATIVE_SHORTCUT_SUFFIX,
   KEYBOARD_SHORTCUTS_PREFERENCE,
@@ -51,6 +57,15 @@ export function getCombinationsFor(id: string, table: ShortcutTable = getEffecti
   return [table.get(id), table.get(`${id}${ALTERNATIVE_SHORTCUT_SUFFIX}`)].filter(
     (combination): combination is KeyCombination => Boolean(combination)
   );
+}
+
+/**
+ * Whether a key press is the shortcut `id` (or its alternative). Meant for field-local handlers,
+ * which receive the key press themselves instead of binding through `useShortcutBindings`.
+ */
+export function matchesShortcut(event: KeyEventLike, id: string): boolean {
+  const spacePressed = isSpacePressed();
+  return getCombinationsFor(id).some((combination) => matchesCombination(event, combination, spacePressed));
 }
 
 /** Display text of the primary combination of a shortcut, e.g. `Ctrl+Shift+R`. */
