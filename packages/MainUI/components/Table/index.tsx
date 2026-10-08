@@ -48,8 +48,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useShortcutBindings } from "@/hooks/useShortcutBindings";
-import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
+import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -3375,11 +3374,20 @@ const DynamicTable = ({
     editingRowsCount === 0 && (isFocused ?? true)
   );
 
-  // New document (Ctrl+D) is bound by the toolbar NEW button; the grid owns the inline new row.
-  useShortcutBindings(
-    { [SHORTCUT_IDS.TOOLBAR_NEW_ROW]: { handler: handleNewRowWithParentGuard, allowInInputs: true } },
-    isVisible && editingRowsCount === 0 && (isFocused ?? true)
+  const handleOpenRowInForm = useCallback(
+    (row: MRT_Row<EntityData>) => openRecordInFormView(row.original, tableRef.current),
+    [openRecordInFormView]
   );
+
+  // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
+  useGridShortcuts({
+    containerRef: tableContainerRef,
+    tableRef,
+    enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
+    onNewRow: handleNewRowWithParentGuard,
+    onEditRow: handleEditRow,
+    onOpenInForm: handleOpenRowInForm,
+  });
 
   // When the grid becomes visible again after leaving form view, DOM focus is
   // on <body>. The row-click handler (line ~2594) focuses the table container,

@@ -50,9 +50,11 @@ describe("toolbar shortcuts", () => {
   });
 
   describe("buildToolbarShortcutBindings", () => {
-    it("binds every classic toolbar shortcut", () => {
+    it("binds every classic toolbar shortcut plus Delete on the grid rows", () => {
       const bindings = buildToolbarShortcutBindings(buildToolbarSections());
-      expect(Object.keys(bindings).sort()).toEqual(Object.keys(TOOLBAR_SHORTCUT_ACTIONS).sort());
+      expect(Object.keys(bindings).sort()).toEqual(
+        [...Object.keys(TOOLBAR_SHORTCUT_ACTIONS), SHORTCUT_IDS.VIEW_GRID_DELETE_SELECTED].sort()
+      );
     });
 
     it("presses the mapped button from the binding handler", () => {
@@ -79,14 +81,13 @@ describe("toolbar shortcuts", () => {
     it.each([
       [CANCEL, SHORTCUT_IDS.TOOLBAR_UNDO],
       [SAVE, SHORTCUT_IDS.TOOLBAR_SAVE],
-      [FILTER, SHORTCUT_IDS.GRID_CLEAR_FILTER],
       [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL, SHORTCUT_IDS.TOOLBAR_AUDIT],
     ])("advertises the shortcut of %s", (action, id) => {
       expect(getToolbarActionShortcutId(action)).toBe(id);
     });
 
-    it("has no shortcut for other actions", () => {
-      expect(getToolbarActionShortcutId(FIND)).toBeUndefined();
+    it.each([FIND, FILTER])("has no shortcut for %s", (action) => {
+      expect(getToolbarActionShortcutId(action)).toBeUndefined();
     });
   });
 });

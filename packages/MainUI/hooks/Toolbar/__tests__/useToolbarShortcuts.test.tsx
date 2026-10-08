@@ -21,6 +21,7 @@ import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import { type KeyPress, appendElement, pressKey } from "@/utils/keyboard/test-utils/keyboardEvents";
 import { buildToolbarSections, makeToolbarButton } from "@/utils/toolbar/test-utils/toolbarShortcutFixtures";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
 
 const ctrlShift = (key: string): KeyPress => ({ key, code: `Key${key}`, ctrl: true, shift: true });
 
@@ -81,6 +82,36 @@ describe("useToolbarShortcuts", () => {
 
     expect(refresh.onClick).not.toHaveBeenCalled();
     expect(cancel.onClick).toHaveBeenCalledTimes(1);
+  });
+
+  describe("Delete on the grid rows", () => {
+    const renderWithGrid = () => {
+      const button = makeToolbarButton(TOOLBAR_BUTTONS_ACTIONS.DELETE);
+      renderHook(() => useToolbarShortcuts(buildToolbarSections([], [button]), true));
+      const grid = appendElement("div");
+      grid.setAttribute(GRID_FOCUS_TARGET_ATTRIBUTE, "");
+      return { button, grid };
+    };
+
+    it("presses Delete when the rows have the focus", () => {
+      const { button, grid } = renderWithGrid();
+
+      pressKey({ key: "Delete" }, grid);
+
+      expect(button.onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ["outside the grid", () => appendElement("button")],
+      ["in the filter row", (grid: Element) => appendElement("button", appendElement("thead", grid))],
+    ])("ignores Delete %s", (_label, createTarget) => {
+      const { button, grid } = renderWithGrid();
+
+      const event = pressKey({ key: "Delete" }, createTarget(grid));
+
+      expect(button.onClick).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+    });
   });
 
   it("uses the buttons of the latest render", () => {

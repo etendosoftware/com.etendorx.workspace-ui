@@ -19,6 +19,7 @@ import type { ToolbarButton, TopToolbarProps } from "@/components/Toolbar/types"
 import type { ShortcutBindings } from "@/hooks/useShortcutBindings";
 import { SHORTCUT_IDS, type ShortcutId } from "@/utils/keyboard/shortcutIds";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { isGridBodyTarget } from "@/utils/table/gridShortcutScope";
 
 /** Classic toolbar shortcuts and the toolbar action each one presses. */
 export const TOOLBAR_SHORTCUT_ACTIONS: Partial<Record<ShortcutId, string>> = {
@@ -41,14 +42,10 @@ export const TOOLBAR_SHORTCUT_ACTIONS: Partial<Record<ShortcutId, string>> = {
  */
 const ACTIONS_ALLOWED_IN_INPUTS = new Set<string>([TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.CANCEL]);
 
-/**
- * Shortcut shown in the tooltip of each toolbar action. Besides the toolbar shortcuts it includes
- * Save (bound by the form) and Filter, whose button is the grid's "clear filters" action.
- */
+/** Shortcut shown in the tooltip of each toolbar action: the toolbar ones plus Save, bound by the form. */
 const ACTION_TOOLTIP_SHORTCUTS: Record<string, ShortcutId> = {
   ...Object.fromEntries(Object.entries(TOOLBAR_SHORTCUT_ACTIONS).map(([id, action]) => [action, id as ShortcutId])),
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]: SHORTCUT_IDS.TOOLBAR_SAVE,
-  [TOOLBAR_BUTTONS_ACTIONS.FILTER]: SHORTCUT_IDS.GRID_CLEAR_FILTER,
 };
 
 /** The shortcut id advertised in the tooltip of a toolbar action, if any. */
@@ -77,16 +74,26 @@ export function pressToolbarAction(sections: ToolbarSections, action: string): b
   return true;
 }
 
-/** Shortcut bindings that press the toolbar buttons of the current tab. */
+const pressAction = (sections: ToolbarSections, action: string) => () => {
+  pressToolbarAction(sections, action);
+};
+
+/**
+ * Shortcut bindings that press the toolbar buttons of the current tab. Besides the toolbar ones it
+ * binds classic `ViewGrid_DeleteSelectedRecords` (plain Delete on the grid rows) to the Delete
+ * button, so it asks for confirmation the same way.
+ */
 export function buildToolbarShortcutBindings(sections: ToolbarSections): ShortcutBindings {
   const bindings: ShortcutBindings = {};
   for (const [id, action] of Object.entries(TOOLBAR_SHORTCUT_ACTIONS)) {
     bindings[id as ShortcutId] = {
-      handler: () => {
-        pressToolbarAction(sections, action);
-      },
+      handler: pressAction(sections, action),
       allowInInputs: ACTIONS_ALLOWED_IN_INPUTS.has(action),
     };
   }
+  bindings[SHORTCUT_IDS.VIEW_GRID_DELETE_SELECTED] = {
+    handler: pressAction(sections, TOOLBAR_BUTTONS_ACTIONS.DELETE),
+    isInScope: (event) => isGridBodyTarget(event.target),
+  };
   return bindings;
 }
