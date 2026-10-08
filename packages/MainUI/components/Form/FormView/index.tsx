@@ -38,6 +38,7 @@ import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import LiveTabValuesPublisher from "./LiveTabValuesPublisher";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { useFormAction, buildReloadModalOptions, type OnErrorOptions } from "@/hooks/useFormAction";
@@ -1238,6 +1239,12 @@ export function FormView({
               isReadOnly={isReadOnly}
               fieldsRootRef={fieldsRootRef}
               data-testid="FormFields__1a0853"
+            />
+
+            <LiveTabValuesPublisher
+              tab={tab}
+              windowTabs={windowMetadata?.tabs}
+              data-testid="LiveTabValuesPublisher__1a0853"
             />
 
             <FormActions
