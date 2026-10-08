@@ -32,9 +32,11 @@ interface LinkedItemsSectionProps {
   tabId: string;
   entityName: string;
   recordId: string;
+  /** Linked items are only fetched while their section is open, as in Classic. */
+  isSectionExpanded?: boolean;
 }
 
-export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
+export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded = true }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,7 +53,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   // "Session attribute required". Gate the fetch until both signals settle.
   const { isFormInitializing } = useFormInitializationContext();
   const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
-  const ready = !isFormInitializing && !isSessionSyncLoading;
+  const ready = isSectionExpanded && !isFormInitializing && !isSessionSyncLoading;
 
   // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
   // Logs the real DOM element that receives every click while this section is mounted,

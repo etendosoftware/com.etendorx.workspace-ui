@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { RichTextSelector } from "../RichTextSelector";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("next/cache", () => ({
@@ -42,6 +42,7 @@ describe("RichTextSelector", () => {
       setValue,
     });
     getValues.mockReturnValue("");
+    (useWatch as jest.Mock).mockImplementation(({ name }: { name: string }) => getValues(name));
   });
 
   it("renders read-only view with sanitized HTML", () => {

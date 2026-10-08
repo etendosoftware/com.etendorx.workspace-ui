@@ -1,0 +1,250 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+/**
+ * TEST ORACLE — do not edit, do not import from application code.
+ *
+ * Verbatim copy of `createEvaluationContext` as it was before ETP-5641 (quadratic build). The
+ * differential test compares the new builder against it. Kept under `__mocks__/` so Biome and Sonar
+ * ignore it and Jest does not run it as a test suite; it is imported directly, never via jest.mock.
+ */
+
+import type { Field } from "@workspaceui/api-client/src/api/types";
+import { resolvePreference } from "@/utils/propertyStore";
+
+interface SmartContextOptions {
+  values?: Record<string, unknown>; // Primary values (current record, form values)
+  fields?: Record<string, Field>; // Field metadata for the current record, to map DB names
+
+  parentValues?: Record<string, unknown>;
+  parentFields?: Record<string, Field>;
+
+  context?: Record<string, unknown>; // Session/Global context
+  auxiliaryInputs?: Record<string, string>; // Tab-scoped evaluated auxiliary inputs
+  normalizeValues?: boolean;
+  defaultValue?: unknown;
+  /**
+   * AD window id, used to resolve window-scoped preferences the way classic
+   * `OB.PropertyStore.get(key, windowId)` does. When omitted, only global preference keys resolve.
+   */
+  windowId?: string;
+}
+
+/**
+ * Creates a Proxy object that allows flexible property access for Display Logic evaluation.
+ *
+ * It supports:
+ * 1. Case-insensitive property access.
+ * 2. Mapping from DB Column Names (e.g. C_BPARTNER_ID) to HQL Property Names (e.g. cBpartner)
+ *    based on provided field metadata.
+ * 3. Fallback across multiple data sources (Values > ParentValues > Context).
+ */
+export const legacyCreateEvaluationContext = (options: SmartContextOptions) => {
+  const {
+    values,
+    fields,
+    parentValues,
+    parentFields,
+    context = {},
+    auxiliaryInputs,
+    normalizeValues = true,
+    defaultValue,
+    windowId,
+  } = options;
+
+  // Helper to normalize values (true -> 'Y', false -> 'N')
+  const normalize = (val: unknown) => {
+    if (!normalizeValues) return val;
+    if (typeof val === "boolean") return val ? "Y" : "N";
+    return val;
+  };
+
+  // 1. Base Context: Start with session/global context
+  const evalContext: Record<string, any> = {};
+  Object.entries(context).forEach(([key, val]) => {
+    evalContext[key] = normalize(val);
+  });
+
+  // 2. Tab-scoped auxiliary inputs (higher priority than session, lower than record values)
+  if (auxiliaryInputs) {
+    Object.entries(auxiliaryInputs).forEach(([key, val]) => {
+      const normalizedVal = normalize(val);
+      evalContext[key] = normalizedVal;
+      const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+      evalContext[snakeKey] = normalizedVal;
+    });
+  }
+
+  // 3. Merge & Normalize Values (Current & Parent)
+  const allValues = { ...parentValues, ...values };
+
+  Object.entries(allValues).forEach(([key, val]) => {
+    const normalizedVal = normalize(val);
+    evalContext[key] = normalizedVal;
+
+    if (typeof key === "string") {
+      const lowerKey = key.toLowerCase();
+      const normalizedKey = lowerKey.replace(/_/g, "");
+
+      // 3. Case-Insensitive Overwrite (Strict & Loose)
+      // Guard: do not overwrite an existing non-empty value with an empty one.
+      // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
+      // (e.g. productType:"I") and must not corrupt them.
+      Object.keys(evalContext).forEach((existingKey) => {
+        if (existingKey === key) return;
+        const existingLower = existingKey.toLowerCase();
+
+        if (existingLower === lowerKey || existingLower.replace(/_/g, "") === normalizedKey) {
+          const existingVal = evalContext[existingKey];
+          const existingIsEmpty = existingVal === "" || existingVal === null || existingVal === undefined;
+          if (existingIsEmpty || (normalizedVal !== "" && normalizedVal !== null && normalizedVal !== undefined)) {
+            evalContext[existingKey] = normalizedVal;
+          }
+        }
+      });
+
+      // 4. Fallback: Auto-generate Snake Case
+      if (!key.startsWith("$") && !key.startsWith("#")) {
+        const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+        evalContext[snakeKey] = normalizedVal;
+      }
+    }
+  });
+
+  // 3. Apply Metadata Mapping
+  const mapFields = (schemaFields?: Record<string, Field>, sourceValues?: Record<string, unknown>) => {
+    if (!schemaFields || !sourceValues) return;
+
+    Object.values(schemaFields).forEach((field) => {
+      const dbCol = field.column?.dBColumnName || field.columnName;
+      if (dbCol && field.hqlName) {
+        const val = sourceValues[field.hqlName];
+        if (val !== undefined) {
+          const normalized = normalize(val);
+          evalContext[dbCol] = normalized;
+          evalContext[dbCol.toUpperCase()] = normalized;
+        }
+      }
+    });
+  };
+
+  mapFields(parentFields, parentValues);
+  mapFields(fields, values);
+
+  const resolveProperty = (target: Record<string, any>, prop: string) => {
+    // 1. Exact match
+    if (prop in target) return target[prop];
+
+    const lowerProp = prop.toLowerCase();
+    const normalizedProp = lowerProp.replace(/_/g, "");
+    let looseMatchValue = undefined;
+    let looseMatchFound = false;
+
+    // Single loop for both checks
+    for (const key of Object.keys(target)) {
+      const keyLower = key.toLowerCase();
+
+      // 2. Case-insensitive match (Priority)
+      if (keyLower === lowerProp) {
+        return target[key];
+      }
+
+      // 3. Loose match (Fallback)
+      if (!looseMatchFound && keyLower.replace(/_/g, "") === normalizedProp) {
+        looseMatchValue = target[key];
+        looseMatchFound = true;
+      }
+    }
+
+    return looseMatchFound ? looseMatchValue : undefined;
+  };
+
+  // Window-scoped key first, then the global one — the classic OB.PropertyStore.get resolution.
+  // The exact/case-insensitive lookup lives in resolvePreference, shared with the OB shims.
+  const getFromPrefs = (key: string) => {
+    const value = resolvePreference(key, windowId);
+    if (value === undefined) return undefined;
+    return normalize(value);
+  };
+
+  // Check if a cleared foreign key should return empty string.
+  // Only applies to UUID-like ID values (32+ hex chars), not to short values like 'Y'/'N'.
+  const checkClearedIdentifier = (target: Record<string, any>, prop: string, val: unknown): string | undefined => {
+    if (typeof val === "string" && val.length > 8) {
+      const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+      if (identifierVal === "") return "";
+    }
+    return undefined;
+  };
+
+  // Resolve special prefixed properties (@prop@, #prop, $prop, _prop)
+  const resolvePrefixed = (target: Record<string, any>, prop: string): unknown => {
+    if (prop.startsWith("@") && prop.endsWith("@")) {
+      const cleanVal = resolveProperty(target, prop.slice(1, -1));
+      if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
+    }
+    if (prop.startsWith("#") || prop.startsWith("$")) {
+      const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
+      if (valFromPrefs !== undefined) return valFromPrefs;
+    }
+    // Server-side DynamicExpressionParser rewrites @#FOO@ → context._FOO as a name
+    // sanitization (# is not a valid JS identifier). Recover the original session
+    // attribute by looking up #FOO / $FOO in the context, then falling back to the
+    // preferences store (localStorage etendo_preferences).
+    if (prop.startsWith("_")) {
+      const original = prop.slice(1);
+      const fromContext = resolveProperty(target, "#" + original) ?? resolveProperty(target, "$" + original);
+      if (fromContext !== undefined && fromContext !== null) return fromContext;
+      const fromPrefs = getFromPrefs(original) ?? getFromPrefs("#" + original) ?? getFromPrefs("$" + original);
+      if (fromPrefs !== undefined) return fromPrefs;
+    }
+    return undefined;
+  };
+
+  return new Proxy(evalContext, {
+    get(target, prop, receiver) {
+      if (typeof prop !== "string") {
+        return Reflect.get(target, prop, receiver);
+      }
+
+      const val = resolveProperty(target, prop);
+
+      // If the field has an empty identifier, treat as empty (Classic behavior for cleared foreign keys)
+      const cleared = checkClearedIdentifier(target, prop, val);
+      if (cleared !== undefined) return cleared;
+
+      if (val !== undefined && val !== null) return val;
+
+      // Handle @property@, #property, $property access patterns
+      const prefixed = resolvePrefixed(target, prop);
+      if (prefixed !== undefined) return prefixed;
+
+      // Fallback to default value, then empty string (matching Classic behavior).
+      // In Classic, unresolved context variables always resolve to '' (empty string).
+      // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
+      // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+
+      return defaultValue !== undefined ? defaultValue : "";
+    },
+    has(target, prop) {
+      if (typeof prop !== "string") return Reflect.has(target, prop);
+      if (prop in target) return true;
+      const lowerProp = prop.toLowerCase();
+      return Object.keys(target).some((k) => k.toLowerCase() === lowerProp);
+    },
+  });
+};
