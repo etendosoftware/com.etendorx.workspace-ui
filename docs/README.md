@@ -23,6 +23,8 @@ docs/
 │   │   └── README.md
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
+│   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
+│   │   └── README.md                # Grammar, preference source, shortcut map per surface
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
 │   ├── data-grids/                   # Feature: Data grids

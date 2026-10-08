@@ -2,6 +2,9 @@
 
 **Date:** 2026-03-25
 **Status:** Pending / Not yet implemented
+**Update:** the focus regions are implemented (`contexts/focus.tsx`, `hooks/useFocusRegion.ts`)
+and the classic shortcuts are bound to the focused tab. See
+[`features/keyboard-shortcuts`](keyboard-shortcuts/README.md).
 **Related:** `docs/superpowers/specs/2026-03-20-keyboard-shortcuts-design.md`, branch `epic/ETP-3595`
 
 ---
