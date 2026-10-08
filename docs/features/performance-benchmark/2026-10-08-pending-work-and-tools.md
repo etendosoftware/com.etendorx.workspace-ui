@@ -79,7 +79,7 @@ slower than a local Tomcat; navigation cost is ~4 s per window with either UI.
 | ~~Metadata cache is written but never read~~ **Done (round 2, window/tab part)** | see §2.0 | the menu part is still pending: `hooks/useMenu.ts:50` always calls `getMenu(true)` on mount, so the role check in `metadata.ts:244` never runs; see §2.0 follow-ups |
 | ~~Cache stores window and tabs duplicated, overflows localStorage (5 MB)~~ **Done (round 2)** | see §2.0 | window/tab definitions now live in memory; old persisted copies are removed on start |
 | ~~`CacheStore.get` parses the whole window JSON on every call~~ **Done for window/tab (round 2)** | see §2.0 | `getCachedWindow` / `getColumns` / `getTab` read an in-memory `Map`; other `CacheStore` keys (menu, labels, toolbar) still parse on read, but they are small |
-| Grid fetches all 182 properties per row | grid datasource (`hooks/table/useTableData.tsx`, `useDatasource`) | Sales Invoice page: 506 KB; visible columns only ~66 KB (`_selectedProperties`) |
+| Grid fetches all 182 properties per row | grid datasource (`hooks/table/useTableData.tsx`, `useDatasource`) | Sales Invoice page: 506 KB; visible columns only ~66 KB (`_selectedProperties`); 37 rows measured: 187 KB / 221 ms server → 37 KB / 37 ms. Not a parameter change: grid rows are used as full records in ~15 backend payloads. Design: `2026-10-08-grid-selected-properties-design.md` |
 | Process definitions embedded in every button; each process parameter embeds a whole window; 69 properties per column | module `com.etendoerp.metadata` (Java, `WindowBuilder`) + UI on-demand loading | ~670 KB of the 1.07 MB Sales Order header tab; 215 KB for Add Payment alone |
 | Duplicate requests | `useTreeModeMetadata` (`hooks/useTreeModeMetadata.ts`, via `Metadata.getTab`) re-requests a tab (up to 1.36 MB) only to read whether it is a tree — `getTab` checks the cache first, so this request was a symptom of the quota overflow above (now in memory; not seen in the round 2 runs); FIC and navigation repeated on open record | see `perf/results/*` `byEndpoint` |
 
@@ -87,9 +87,9 @@ slower than a local Tomcat; navigation cost is ~4 s per window with either UI.
 
 | Item | Where | Evidence |
 |---|---|---|
-| Four hooks still call `watch(name)` while rendering, so select / table-dir changes still re-render `FormView` | `hooks/useSelectFieldOptions.ts:71`, `hooks/datasource/useTableDirDatasource.ts:171`, `hooks/useFieldValue.ts:33` (`StatusBarField` depends on the root re-render), `hooks/useComboSelect.ts:36` | phase 5 design §2 "Remaining root subscriptions" |
-| `FormProvider` gets a new value on every `FormView` render, re-rendering every `useFormContext()` consumer | `components/Form/FormView/index.tsx:1201` (`{...form}` plus `formState`); memory note "useFormContext unstable identity" | any root render (formState changes, the four hooks above) cascades to all fields |
-| Per-field evaluation contexts | `hooks/useDisplayLogic.ts:40`, `BaseSelector.tsx` read-only logic (~line 303) | ~6% of open record; the "layered context" idea (stable session layer + light values layer) |
+| ~~Four hooks still call `watch(name)` while rendering~~ **Done (round 2)** | `useFieldValue`, `useComboSelect`, `useSelectFieldOptions`, `useTableDirDatasource` use `useWatch`; `hooks/__tests__/fieldSubscriptions.isolation.test.tsx` fails on the old code (the form host re-rendered) | no measurable change in the new `select-change` step (4x: ~250 ms, ~110 ms blocking before and after): the step is already cheap after phases 2–5 (144 ms busy CPU, 67 ms of it GC, < 10 ms per first-party file) |
+| `FormProvider` gets a new value on every `FormView` render, re-rendering every `useFormContext()` consumer | `components/Form/FormView/index.tsx:1201` (`{...form}` plus `formState`); memory note "useFormContext unstable identity" | any root render (formState changes, the four hooks above) cascades to all fields; **not pursued**: RHF 7.62 builds the context value inside `FormProvider` and its children are the whole form, so a stable value needs a FormView restructure, and the select/typing steps no longer show the cascade |
+| Per-field evaluation contexts — **next lever for form steps** | `hooks/useDisplayLogic.ts:40`, `BaseSelector.tsx` read-only logic (~line 303) | `new-record` at 4x (Sales Invoice): 1,323 ms busy CPU, `buildEvaluationContext` 179 ms (13.5%) — one build per field with logic (76 display + 51 read-only in Sales Invoice header), each re-processing session, aux inputs and record; idea: build the session/aux layer once per pass (layered context, equivalence-tested against `__mocks__/legacyEvaluationContext.ts`) |
 | Grid repaints every row on a selection change | MRT rows (`components/Table/index.tsx`), MUI/emotion `sx` per row, select checkbox and actions display columns | ~0.5 s blocking per ArrowDown at 4x after all fixes; options: CSS-only selection highlight, lighter row/checkbox components, row memo with selection-aware comparator |
 | Form Next: one FIC + one recent-documents request per record | `hooks/useFormInitialization.ts`, recent documents store | 5 Next → 5 FIC + 5 recent-documents; could settle like phase 4 (leading + trailing) |
 | `SETSESSION` almost once per arrow on slow machines | `hooks/useTableSelection.ts` (debounce now 400 ms) | each key takes > 400 ms to process at 4x, so the debounce rarely coalesces; key auto-repeat does coalesce (not measured) |
@@ -111,6 +111,9 @@ slower than a local Tomcat; navigation cost is ~4 s per window with either UI.
 - Turn the manual functional checks into `@smoke` e2e tests: inline grid edit (enter, type, cancel), form
   Next/Previous replacing every field, typing, select change, arrow navigation highlight.
 - Run a full `pnpm perf:compare` (4 windows, 3 rounds) as a reference for the next round.
+- Round 2 added two `bench.mjs` steps after `type-10-chars`: `new-record` (New from the form, FIC NEW) and
+  `select-change` (pick another Payment Terms value on that new record; skipped in Goods Shipment). The
+  list opening and option loading are setup, not measured. Results: `etp5641-formwatch-{base,head}-cpu4x-*.json`.
 
 ### 2.5 Security (from the original analysis; separate tickets)
 

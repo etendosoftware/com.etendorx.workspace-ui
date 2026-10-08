@@ -18,7 +18,7 @@
 import type { SelectProps } from "@/components/Form/FormView/selectors/components/types";
 import type { EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 
 const buildOptionsFromInjected = (injectedEntries: any[]): SelectProps["options"] => {
   const result: SelectProps["options"] = [];
@@ -62,17 +62,14 @@ const addCurrentValueIfMissing = (
 };
 
 export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
-  const { watch } = useFormContext();
   const idKey = (field.selector?.valueField ?? "id") as string;
   const identifierKey = (field.selector?.displayField ?? "_identifier") as string;
   const selectorId = field.selector?._selectorDefinitionId as string | undefined;
   const colorFieldName = field.colorFieldName;
   const fieldName = field.hqlName || field.columnName || field.name;
-  const [currentValue, currentIdentifier, injectedEntries] = watch([
-    fieldName,
-    `${fieldName}$_identifier`,
-    `${fieldName}$_entries`,
-  ]) as [string, string, any[]];
+  const [currentValue, currentIdentifier, injectedEntries] = useWatch({
+    name: [fieldName, `${fieldName}$_identifier`, `${fieldName}$_entries`],
+  }) as [string, string, any[]];
 
   return useMemo(() => {
     const injected = Array.isArray(injectedEntries) ? injectedEntries : [];
