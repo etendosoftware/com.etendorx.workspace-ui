@@ -173,6 +173,15 @@ async function step(rec, name, action, ready, profileName) {
   };
 }
 
+// In the page: whether the visible grid row at `index` is selected (its checkbox is checked)
+const rowIsSelected = (index) => {
+  const rows = [...document.querySelectorAll("table tbody tr")].filter((tr) => tr.offsetParent !== null);
+  return !!rows[index]?.querySelector('input[type="checkbox"]')?.checked;
+};
+
+// "3 / 100" or "3 of 100" -> 3
+const recordPosition = (text) => Number.parseInt(text, 10);
+
 const gridReady = (page) => () =>
   page
     .getByText(/Showing \d+ records?/)
@@ -231,6 +240,27 @@ async function windowFlow(browser, winName, run) {
         `${tag}-load-unfiltered`
       )
     );
+    // Keyboard navigation: select the second row, then 5 ArrowDown 100 ms apart. Measures what every
+    // selection change costs (child tabs, toolbar, session sync) when moving fast over the grid.
+    const navStart = page.locator("table tbody tr").filter({ visible: true }).nth(1).locator("td").nth(3);
+    if (await navStart.isVisible().catch(() => false)) {
+      await navStart.click();
+      await rec.settle();
+      steps.push(
+        await step(
+          rec,
+          "arrow-nav-5",
+          async () => {
+            for (let i = 0; i < 5; i++) {
+              await page.keyboard.press("ArrowDown");
+              await page.waitForTimeout(100);
+            }
+          },
+          () => page.waitForFunction(rowIsSelected, 6, { timeout: TIMEOUT, polling: 100 }),
+          `${tag}-arrow-nav-5`
+        )
+      );
+    }
     const firstCell = page.locator("table tbody tr td").filter({ visible: true }).nth(3);
     if (await firstCell.isVisible().catch(() => false)) {
       steps.push(
@@ -242,6 +272,36 @@ async function windowFlow(browser, winName, run) {
           `${tag}-open-record`
         )
       );
+      // Record navigation from the form: 5 Next clicks as fast as the button allows.
+      const next = page.getByTestId("next-record-button").filter({ visible: true }).first();
+      if (await next.isEnabled().catch(() => false)) {
+        const position = page.getByTestId("record-position-indicator").filter({ visible: true }).first();
+        const startAt = recordPosition(await position.innerText());
+        steps.push(
+          await step(
+            rec,
+            "form-next-5",
+            async () => {
+              for (let i = 0; i < 5; i++) {
+                await next.click({ timeout: TIMEOUT });
+                await page.waitForTimeout(100);
+              }
+            },
+            () =>
+              page.waitForFunction(
+                ({ expected }) => {
+                  const el = [...document.querySelectorAll('[data-testid="record-position-indicator"]')].find(
+                    (e) => e.offsetParent !== null
+                  );
+                  return Number.parseInt(el?.textContent ?? "", 10) === expected;
+                },
+                { expected: startAt + 5 },
+                { timeout: TIMEOUT, polling: 100 }
+              ),
+            `${tag}-form-next-5`
+          )
+        );
+      }
       // Typing latency: 10 keystrokes into the Description field (exists in all benchmarked headers).
       // The text is never saved: the context is discarded without pressing Save.
       const field = page.locator('textarea[name="description"]').filter({ visible: true }).first();

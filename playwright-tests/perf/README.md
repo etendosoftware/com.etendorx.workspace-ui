@@ -27,7 +27,9 @@ default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER
 | `open-cold` | Open the window from the menu search | Grid shows "Showing N records" |
 | `reload-warm` | Browser reload of the same window URL (localStorage/HTTP cache populated) | Grid visible |
 | `load-unfiltered` | Toggle the implicit filter off (full first page of 100 rows) | Grid shows "Showing N records", N > 0 |
+| `arrow-nav-5` | Select the second row, then 5 ArrowDown 100 ms apart | 7th row selected |
 | `open-record` | Double click first grid row | URL has the record id |
+| `form-next-5` | 5 clicks on the form's Next button, each as soon as it is enabled | position indicator advanced by 5 |
 | `type-10-chars` | Type "perf-check" into the Description textarea (never saved) | keystrokes done (CPU tail counted in `interactiveMs`) |
 
 ## Metrics
