@@ -548,6 +548,19 @@ describe("FormInitialization Utils - SessionMode Support", () => {
       expect(result).toEqual({ $GlobalVar: "val1", field1: "b" });
     });
 
+    it("returns the previous session for a no-op root tab call", () => {
+      const prevSession = { $GlobalVar: "val1", field1: "" };
+      const result = mergeSessionAttributes(prevSession, { field1: "" }, true);
+      expect(result).toBe(prevSession);
+    });
+
+    it("returns a new session when a stale record key is dropped", () => {
+      const prevSession = { $GlobalVar: "val1", field1: "a", stale: "Y" };
+      const result = mergeSessionAttributes(prevSession, { field1: "a" });
+      expect(result).not.toBe(prevSession);
+      expect(result).toEqual({ $GlobalVar: "val1", field1: "a" });
+    });
+
     it("returns a new session when only the key order changes", () => {
       const prevSession = { field1: "a", $GlobalVar: "val1" };
       const result = mergeSessionAttributes(prevSession, { field1: "a" });

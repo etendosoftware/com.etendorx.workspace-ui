@@ -3427,6 +3427,11 @@ const DynamicTable = ({
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
+    // While hidden behind the form the grid's rows are not rendered (useFrozenWhileHidden), so a scroll
+    // now would be clamped to an empty container. Wait until the grid is shown again.
+    if (!isVisible) {
+      return;
+    }
 
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
@@ -3447,10 +3452,12 @@ const DynamicTable = ({
           const containerElement = tableContainerRef.current;
           const estimatedRowHeight = 40; // Approximate row height
           const headerHeight = 75; // Approximate header height
-          const scrollTop = index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+          const scrollTop = Math.max(0, index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight);
 
+          // Keeps the scroll restore that runs when the grid is shown again from undoing this scroll
+          savedScrollTop.current = scrollTop;
           containerElement.scrollTo({
-            top: Math.max(0, scrollTop),
+            top: scrollTop,
             behavior: "smooth",
           });
         }
@@ -3470,7 +3477,7 @@ const DynamicTable = ({
         scrollToIndex(selectedIndex);
       }
     }
-  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table, isVisible]);
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state

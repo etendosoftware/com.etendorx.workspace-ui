@@ -298,6 +298,15 @@ const collectGlobalKeys = (prev: ISession): Record<string, unknown> => {
   return preserved;
 };
 
+const isSameSession = (prev: ISession, next: Record<string, unknown>): boolean => {
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return false;
+  return prevKeys.every(
+    (key, index) => key === nextKeys[index] && Object.is((prev as Record<string, unknown>)[key], next[key])
+  );
+};
+
 // Keep the previous value when the incoming one is empty and would erase meaningful context.
 // Mirrors the guard used during display-logic evaluation in utils/expressions.ts.
 // When allowEmptyOverwrite is true (root-tab FIC call, PARENT_ID=null), the incoming
@@ -336,17 +345,9 @@ const resolveMergedValue = (prev: ISession, key: string, newValue: string, allow
  * @param isRootTabCall - When true (PARENT_ID=null), empty values ARE authoritative and
  *   overwrite existing ones. Workaround for backends that return "" for keys they do not
  *   own (child tabs), while root-tab calls must be able to legitimately reset a key to "".
- * @returns A clean session with global keys preserved and record-specific keys replaced
+ * @returns A clean session with global keys preserved and record-specific keys replaced, or `prev`
+ *   itself when nothing changed (same keys, order and values)
  */
-const isSameSession = (prev: ISession, next: Record<string, unknown>): boolean => {
-  const prevKeys = Object.keys(prev);
-  const nextKeys = Object.keys(next);
-  if (prevKeys.length !== nextKeys.length) return false;
-  return prevKeys.every(
-    (key, index) => key === nextKeys[index] && Object.is((prev as Record<string, unknown>)[key], next[key])
-  );
-};
-
 export const mergeSessionAttributes = (
   prev: ISession,
   newAttributes: Record<string, string>,
