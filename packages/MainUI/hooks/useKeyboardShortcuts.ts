@@ -47,7 +47,7 @@ function findShortcut(shortcuts: ShortcutMap, event: KeyboardEvent): ShortcutCon
   return shortcuts[normalizeKey(event)];
 }
 
-function isInputTarget(target: EventTarget | null): boolean {
+export function isInputTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof Element)) return false;
   const tag = target.tagName.toLowerCase();
   return tag === "input" || tag === "textarea" || tag === "select" || target.getAttribute("contenteditable") === "true";

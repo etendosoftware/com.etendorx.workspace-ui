@@ -27,7 +27,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <div className="flex w-full h-full relative overflow-hidden">
       <GlobalLoading data-testid="GlobalLoading__519d5c" />
       <Sidebar data-testid="Sidebar__519d5c" />
-      <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
+      <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden" data-shortcut-root="true">
         <div className="w-full h-14 min-h-14 p-1">
           <Navigation data-testid="Navigation__519d5c" />
         </div>
