@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { extractDependenciesFromExpression } from "@/utils/expressions/dependencies";
 
 export interface TabWithParentInfo extends Tab {
   parentTabId?: string;
@@ -130,4 +131,44 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
   }
 
   return false;
+}
+
+/**
+ * Display logic of a tab, accepting both metadata spellings.
+ *
+ * @returns The expression, or `undefined` when the tab is always shown.
+ */
+export function getTabDisplayLogic(tab: Tab): string | undefined {
+  return tab.displayLogic || tab.displayLogicExpression || undefined;
+}
+
+/**
+ * Tabs one level below `parentTab` that belong to it, using the same parent check as the tab container.
+ */
+export function getChildTabs(tabs: Tab[], parentTab: Tab): Tab[] {
+  return tabs.filter(
+    (tab) => tab.tabLevel === parentTab.tabLevel + 1 && shouldShowTab(tab as TabWithParentInfo, parentTab)
+  );
+}
+
+/**
+ * Parent field names the display logic of the given child tabs reads.
+ *
+ * @param childTabs - Tabs whose display logic is evaluated against the parent record.
+ * @param parentFields - Parent tab fields, used to resolve column names to form field names.
+ * @returns Unique field names; empty when no child tab has display logic.
+ */
+export function getTabDisplayLogicDependencies(childTabs: Tab[], parentFields?: Record<string, Field>): string[] {
+  const dependencies = new Set<string>();
+  for (const tab of childTabs) {
+    for (const dependency of extractDependenciesFromExpression(getTabDisplayLogic(tab), parentFields)) {
+      dependencies.add(dependency);
+    }
+  }
+  return Array.from(dependencies);
+}
+
+/** True when both lists hold the very same tab objects in the same order. */
+export function haveSameTabs(a: Tab[], b: Tab[]): boolean {
+  return a.length === b.length && a.every((tab, index) => tab === b[index]);
 }
