@@ -3158,6 +3158,10 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
+    // Data cells re-render only when their cell changes, so a selection change repaints the rows, not
+    // every cell in them. Inline editing (our own state, not MRT's) and tree expansion change what a
+    // cell shows without changing the cell, so cells are not memoized while either is in use.
+    memoMode: editingRowsCount === 0 && !shouldUseTreeMode ? "cells" : undefined,
     enableTopToolbar: true,
     renderTopToolbar: ({ table: mrtTable }) => {
       const isFullScreen = mrtTable.getState().isFullScreen;

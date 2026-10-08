@@ -72,3 +72,17 @@ The row highlight, the selection graph, the URL and the form's own initializatio
 - Whole MainUI suite, `tsc`, Biome, data-testid codemod.
 - Re-run the selection measurement: 5 ArrowDown and 5 Next at `CPU_THROTTLE=4` with fewer requests and
   lower blocking time; the normal benchmark with no step more than 10% worse.
+
+## 5. Grid cell memoization (separate commit)
+
+After settling, one arrow key still cost ~0.5 s of blocking CPU at `CPU_THROTTLE=4`, ~80% of it MUI/emotion
+rendering the grid. A row-level memo is not usable: material-react-table compares rows by identity, so
+the selection highlight would stop updating. The table now sets `memoMode: "cells"`, so a selection
+change re-renders the rows but not the data cells in them, except while a row is being edited inline
+(our own editing state, which does not change the MRT cell) or in tree mode (the expand control does not
+change the cell either).
+
+A/B on Sales Order at `CPU_THROTTLE=4`, median of 3 runs: one ArrowDown 566 → 528 ms blocking, five
+ArrowDown 1353 → 1055 ms. A scripted check confirmed the selection highlight follows the arrows, inline
+editing shows its editors and accepts input, cancelling restores the row, and sorting re-renders rows.
+
