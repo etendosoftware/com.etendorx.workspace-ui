@@ -48,6 +48,8 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useShortcutBindings } from "@/hooks/useShortcutBindings";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -813,7 +815,7 @@ const DynamicTable = ({
     registerAddRecord,
     refetchDatasource,
   } = useDatasourceContext();
-  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
+  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal } =
     useToolbarContext();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
@@ -3317,10 +3319,11 @@ const DynamicTable = ({
     [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
 
-  const handleNewWithParentGuard = useCallback(() => {
+  /** Classic `ToolBar_NewRow`: a new inline row, which needs the parent record of a child tab. */
+  const handleNewRowWithParentGuard = useCallback(() => {
     if (parentTab && !parentRecord) return;
-    onNew?.();
-  }, [parentTab, parentRecord, onNew]);
+    handleInsertRow();
+  }, [parentTab, parentRecord, handleInsertRow]);
 
   const handleTreeArrowRight = useCallback(
     (_event: KeyboardEvent) => {
@@ -3360,7 +3363,6 @@ const DynamicTable = ({
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
-      "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
       ...(shouldUseTreeMode
@@ -3371,6 +3373,12 @@ const DynamicTable = ({
         : {}),
     },
     editingRowsCount === 0 && (isFocused ?? true)
+  );
+
+  // New document (Ctrl+D) is bound by the toolbar NEW button; the grid owns the inline new row.
+  useShortcutBindings(
+    { [SHORTCUT_IDS.TOOLBAR_NEW_ROW]: { handler: handleNewRowWithParentGuard, allowInInputs: true } },
+    isVisible && editingRowsCount === 0 && (isFocused ?? true)
   );
 
   // When the grid becomes visible again after leaving form view, DOM focus is

@@ -189,6 +189,41 @@ describe("useShortcutBindings", () => {
     expect(second).not.toHaveBeenCalled();
   });
 
+  describe("with a scope", () => {
+    it("leaves an out-of-scope key press to the next binding of the same keys", () => {
+      const scoped = jest.fn();
+      const fallback = jest.fn();
+      renderBindings({
+        [SHORTCUT_IDS.GRID_FOCUS_GRID]: { handler: scoped, isInScope: () => false },
+        [SHORTCUT_IDS.STATUS_BAR_CLOSE]: { handler: fallback },
+      });
+
+      pressKey({ key: "Escape" });
+
+      expect(scoped).not.toHaveBeenCalled();
+      expect(fallback).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not consume an out-of-scope key press", () => {
+      const handler = jest.fn();
+      renderBindings({ [SHORTCUT_IDS.TOOLBAR_REFRESH]: { handler, isInScope: () => false } });
+
+      const event = pressKey(CTRL_SHIFT_R);
+
+      expect(handler).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it("fires inside its scope", () => {
+      const handler = jest.fn();
+      renderBindings({ [SHORTCUT_IDS.TOOLBAR_REFRESH]: { handler, isInScope: () => true } });
+
+      pressKey(CTRL_SHIFT_R);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("ignores key presses coming from a portal outside the layout", () => {
     const handler = jest.fn();
     const layout = appendElement("div");

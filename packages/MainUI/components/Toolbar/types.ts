@@ -89,6 +89,8 @@ export interface BasicToolbarButton {
 }
 
 export interface ToolbarButton extends BasicToolbarButton {
+  /** Toolbar action the button runs, so a keyboard shortcut can press it. */
+  action?: string;
   icon: React.ReactNode;
   iconText?: string;
   tooltip?: string;

@@ -15,11 +15,10 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
 import { notifyReportPopupBlocked } from "@/utils/reportPopup";
@@ -30,9 +29,6 @@ import {
   openAuditTrailPopup,
 } from "@/utils/toolbar/auditTrail";
 
-/** Classic `ToolBar_Audit` keyboard shortcut (Ctrl+Shift+Y). */
-export const AUDIT_TRAIL_SHORTCUT = "ctrl+shift+y";
-
 const getSelectedRecordId = (selectedRecords: EntityData[]): string | undefined => {
   const [record] = selectedRecords;
   return record ? String(record.id) : undefined;
@@ -42,16 +38,15 @@ interface UseAuditTrailParams {
   tab?: Tab;
   selectedRecords: EntityData[];
   isNewRecord: boolean;
-  isFocused?: boolean;
 }
 
 /**
  * Opens the classic Audit Trail popup, applying the same rules as `OB.ToolbarUtils.showAuditTrail`:
  * a multiple selection shows the JS28 warning, a new or never modified record does nothing, and
  * without a selection the popup opens without a record (its "View deleted records" view).
- * Also binds the `ToolBar_Audit` shortcut while the tab is focused and its table is Fully Audited.
+ * Its `ToolBar_Audit` shortcut presses the toolbar button (see `useToolbarShortcuts`).
  */
-export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = false }: UseAuditTrailParams) => {
+export const useAuditTrail = ({ tab, selectedRecords, isNewRecord }: UseAuditTrailParams) => {
   const { t } = useTranslation();
   const { config } = useRuntimeConfig();
   const token = useUserStore((s) => s.token);
@@ -79,9 +74,6 @@ export const useAuditTrail = ({ tab, selectedRecords, isNewRecord, isFocused = f
       });
     }
   }, [tab, selectedRecords, isNewRecord, t, config?.etendoClassicHost, token]);
-
-  const shortcuts = useMemo(() => ({ [AUDIT_TRAIL_SHORTCUT]: { handler: openAuditTrail } }), [openAuditTrail]);
-  useKeyboardShortcuts(shortcuts, isFocused && Boolean(tab?.tableFullyAudited));
 
   return { openAuditTrail };
 };

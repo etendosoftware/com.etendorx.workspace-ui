@@ -230,6 +230,7 @@ export const createButtonByType = ({
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
+    action: button.action,
     icon:
       isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ? (
         <PlusIcon className="w-4 h-4" data-testid="PlusIcon__5aeccd" />

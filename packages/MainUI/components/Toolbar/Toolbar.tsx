@@ -45,6 +45,7 @@ import {
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
+import { useToolbarShortcuts } from "@/hooks/Toolbar/useToolbarShortcuts";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
 import SearchPortal from "./SearchPortal";
@@ -121,7 +122,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     tab,
     selectedRecords,
     isNewRecord,
-    isFocused,
   });
   const hasParentTab = !!tab?.parentTabId;
   const {
@@ -587,6 +587,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     isAdvancedFilterApplied,
     isProcessRefreshing,
   ]);
+
+  useToolbarShortcuts(toolbarConfig, isFocused);
 
   if (loading) {
     return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;

@@ -28,6 +28,11 @@ export interface ShortcutBinding {
   handler: (event: KeyboardEvent) => void | Promise<void>;
   /** Fire even when the focus is in a text field (save, save and close, undo). */
   allowInInputs?: boolean;
+  /**
+   * Narrows the binding to a surface (the grid body, a filter row...). A key press out of scope is
+   * left untouched, so another binding of the same keys (or the browser) can still take it.
+   */
+  isInScope?: (event: KeyboardEvent) => boolean;
 }
 
 export type ShortcutBindings = Partial<Record<ShortcutId, ShortcutBinding>>;
@@ -38,17 +43,6 @@ export type ShortcutBindings = Partial<Record<ShortcutId, ShortcutBinding>>;
  */
 export const SHORTCUT_ROOT_ATTRIBUTE = "data-shortcut-root";
 
-/** The binding whose classic combination (or its `_Alternative`) the event matches. */
-export function findShortcutBinding(bindings: ShortcutBindings, event: KeyboardEvent): ShortcutBinding | undefined {
-  const table = getEffectiveShortcuts();
-  const spacePressed = isSpacePressed();
-  const match = Object.entries(bindings).find(([id, binding]) => {
-    if (!binding) return false;
-    return getCombinationsFor(id, table).some((combination) => matchesCombination(event, combination, spacePressed));
-  });
-  return match?.[1];
-}
-
 /**
  * True when the event comes from an element rendered outside the layout (a portal). Without a
  * marked layout in the document (isolated renders) nothing is considered outside.
@@ -57,6 +51,25 @@ export function isOutsideShortcutRoot(target: EventTarget | null): boolean {
   if (!(target instanceof Element) || target === document.body) return false;
   if (!document.querySelector(`[${SHORTCUT_ROOT_ATTRIBUTE}]`)) return false;
   return !target.closest(`[${SHORTCUT_ROOT_ATTRIBUTE}]`);
+}
+
+function canFire(binding: ShortcutBinding, event: KeyboardEvent): boolean {
+  if (isInputTarget(event.target) && !binding.allowInInputs) return false;
+  if (isOutsideShortcutRoot(event.target)) return false;
+  return binding.isInScope?.(event) ?? true;
+}
+
+/**
+ * The first binding whose classic combination (or its `_Alternative`) the event matches and that
+ * may fire from where the event comes.
+ */
+export function findShortcutBinding(bindings: ShortcutBindings, event: KeyboardEvent): ShortcutBinding | undefined {
+  const table = getEffectiveShortcuts();
+  const spacePressed = isSpacePressed();
+  const matches = (id: string) =>
+    getCombinationsFor(id, table).some((combination) => matchesCombination(event, combination, spacePressed));
+  const match = Object.entries(bindings).find(([id, binding]) => binding && matches(id) && canFire(binding, event));
+  return match?.[1];
 }
 
 /**
@@ -74,7 +87,8 @@ export function useIsCurrentWindowActive(): boolean {
  * preference changes the keys without touching code.
  *
  * - Only fires while `enabled` and while the owning window is the active one.
- * - Skips text fields unless the binding allows them, and key presses from portals.
+ * - Skips text fields unless the binding allows them, key presses from portals and, when the
+ *   binding has a scope, key presses outside it.
  * - Prevents the browser default, and ignores events another handler already consumed
  *   (`defaultPrevented`), so one key press runs a single shortcut.
  */
@@ -92,8 +106,6 @@ export function useShortcutBindings(bindings: ShortcutBindings, enabled = true):
       if (event.defaultPrevented) return;
       const binding = findShortcutBinding(bindingsRef.current, event);
       if (!binding) return;
-      if (isInputTarget(event.target) && !binding.allowInInputs) return;
-      if (isOutsideShortcutRoot(event.target)) return;
 
       event.preventDefault();
       binding.handler(event);

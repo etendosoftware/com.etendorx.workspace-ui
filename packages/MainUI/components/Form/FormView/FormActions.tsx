@@ -16,7 +16,8 @@
  */
 
 import { useCallback, useEffect, useRef, useMemo } from "react";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useShortcutBindings } from "@/hooks/useShortcutBindings";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
@@ -63,7 +64,7 @@ export function FormActions({
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { registerActions, unregisterActions, setSaveButtonState, saveButtonState } = useToolbarContext();
-  const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { markFormAsChanged, resetFormChanges, hasFormChanges } = useTabContext();
   const { guardTransition } = useUnsavedChangesTabGuard();
 
   useEffect(() => {
@@ -243,11 +244,25 @@ export function FormActions({
     guardTransition(navigateBack);
   }, [guardTransition, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
-  useKeyboardShortcuts(
+  /**
+   * Classic `ToolBar_SaveClose`: saves the pending changes and returns to the grid, the same steps
+   * as the status bar close button, except that a failed save keeps the form open.
+   */
+  const handleKeyboardSaveAndClose = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (hasFormChanges) {
+      const saved = await handleSave({ skipFormStateUpdate: true });
+      if (!saved) return;
+    }
+    navigateBack();
+  }, [handleSave, hasFormChanges, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  // New (Ctrl+D) is bound by the toolbar, whose NEW button resolves to `handleNew` while the form is open.
+  useShortcutBindings(
     {
-      "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
-      "ctrl+n": { handler: handleNew, allowInInputs: true },
-      Escape: { handler: handleKeyboardEscape },
+      [SHORTCUT_IDS.TOOLBAR_SAVE]: { handler: handleKeyboardSave, allowInInputs: true },
+      [SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE]: { handler: handleKeyboardSaveAndClose, allowInInputs: true },
+      [SHORTCUT_IDS.STATUS_BAR_CLOSE]: { handler: handleKeyboardEscape },
     },
     isFocused ?? true
   );
