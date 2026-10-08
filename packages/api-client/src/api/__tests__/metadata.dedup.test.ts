@@ -14,14 +14,20 @@ jest.mock("../cache", () => ({
 
 describe("Metadata in-flight deduplication", () => {
   let postSpy: jest.SpyInstance;
+  let requestSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (Metadata as any).currentRoleId = null;
     (Metadata as any).cache.clear();
+    (Metadata as any).definitions.clear();
     (Metadata as any).pendingRequests?.clear();
 
     postSpy = jest.spyOn(Metadata.client, "post").mockResolvedValue({
+      data: { tabs: [] },
+      ok: true,
+    } as any);
+    requestSpy = jest.spyOn(Metadata.client, "request").mockResolvedValue({
       data: { tabs: [] },
       ok: true,
     } as any);
@@ -42,7 +48,7 @@ describe("Metadata in-flight deduplication", () => {
     const promise2 = Metadata.forceWindowReload("win-1");
 
     expect(promise1).toBe(promise2);
-    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(requestSpy).toHaveBeenCalledTimes(1);
 
     await Promise.all([promise1, promise2]);
   });
@@ -52,27 +58,27 @@ describe("Metadata in-flight deduplication", () => {
     const promise2 = Metadata.forceWindowReload("win-2");
 
     expect(promise1).not.toBe(promise2);
-    expect(postSpy).toHaveBeenCalledTimes(2);
+    expect(requestSpy).toHaveBeenCalledTimes(2);
 
     await Promise.all([promise1, promise2]);
   });
 
   it("should allow a new request after the previous one resolves", async () => {
     await Metadata.forceWindowReload("win-1");
-    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(requestSpy).toHaveBeenCalledTimes(1);
 
     await Metadata.forceWindowReload("win-1");
-    expect(postSpy).toHaveBeenCalledTimes(2);
+    expect(requestSpy).toHaveBeenCalledTimes(2);
   });
 
   it("should clean up pending request on error", async () => {
-    postSpy.mockRejectedValueOnce(new Error("Network error"));
+    requestSpy.mockRejectedValueOnce(new Error("Network error"));
 
     await expect(Metadata.forceWindowReload("win-1")).rejects.toThrow("Network error");
 
-    postSpy.mockResolvedValueOnce({ data: { tabs: [] }, ok: true } as any);
+    requestSpy.mockResolvedValueOnce({ data: { tabs: [] }, ok: true } as any);
     await Metadata.forceWindowReload("win-1");
-    expect(postSpy).toHaveBeenCalledTimes(2);
+    expect(requestSpy).toHaveBeenCalledTimes(2);
   });
 
   it("should deduplicate concurrent getToolbar calls", async () => {

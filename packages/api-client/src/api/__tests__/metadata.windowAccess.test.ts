@@ -34,7 +34,7 @@ const WINDOW_ID = "102";
 const TAB_ID = "107";
 const ROLE_ID = "test-role";
 
-/** Mirrors the shape of `Metadata.client.post` responses for the window endpoint. */
+/** Mirrors the shape of `Metadata.client.request` responses for the window endpoint. */
 type WindowResponse = { ok: boolean; status?: number; data?: unknown };
 
 /** Reaches into the private statics of `Metadata` so each test starts from a clean slate. */
@@ -42,10 +42,10 @@ type WindowResponse = { ok: boolean; status?: number; data?: unknown };
 const metadataInternals = () => Metadata as any;
 
 describe("Metadata window access classification", () => {
-  let postSpy: jest.SpyInstance;
+  let requestSpy: jest.SpyInstance;
 
   const mockWindowResponse = (response: WindowResponse) => {
-    postSpy.mockResolvedValue(response as never);
+    requestSpy.mockResolvedValue(response as never);
   };
 
   const loadWindow = () => Metadata.forceWindowReload(WINDOW_ID);
@@ -56,7 +56,7 @@ describe("Metadata window access classification", () => {
     ...(isWindowAccessible === undefined ? {} : { isWindowAccessible }),
   });
 
-  const cachedKeys = () => metadataInternals().cache.set.mock.calls.map((call: unknown[]) => call[0]);
+  const cachedKeys = () => Array.from(metadataInternals().definitions.keys());
 
   /** Returns the rejection reason so its type can be asserted, since jest-extended is not loaded. */
   const captureRejection = async (promise: Promise<unknown>): Promise<unknown> => {
@@ -72,10 +72,11 @@ describe("Metadata window access classification", () => {
     jest.clearAllMocks();
     metadataInternals().currentRoleId = ROLE_ID;
     metadataInternals().cache.clear();
+    metadataInternals().definitions.clear();
     metadataInternals().pendingRequests?.clear();
     jest.clearAllMocks();
 
-    postSpy = jest.spyOn(Metadata.client, "post");
+    requestSpy = jest.spyOn(Metadata.client, "request");
   });
 
   it("throws the typed error and caches nothing on a 401", async () => {

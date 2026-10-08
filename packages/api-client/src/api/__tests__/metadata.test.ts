@@ -27,6 +27,7 @@ jest.mock("../cache", () => {
         set: jest.fn((key, value) => store.set(key, value)),
         clear: jest.fn(() => store.clear()),
         delete: jest.fn((key) => store.delete(key)),
+        deleteWhere: jest.fn(),
       };
     }),
   };
@@ -38,6 +39,7 @@ describe("Metadata", () => {
     // Reset Metadata internal state
     (Metadata as any).currentRoleId = null;
     (Metadata as any).cache.clear();
+    (Metadata as any).definitions.clear();
 
     // Mock localStorage
     const localStorageMock = (() => {
@@ -74,6 +76,18 @@ describe("Metadata", () => {
       expect(spyKernel).toHaveBeenCalledWith(expect.stringContaining(API_KERNEL_SERVLET));
       expect(spyDatasource).toHaveBeenCalled();
     });
+
+    it("should remove window and tab definitions persisted by earlier versions", () => {
+      Metadata.setBaseUrl();
+
+      const deleteWhere = (Metadata as any).cache.deleteWhere as jest.Mock;
+      expect(deleteWhere).toHaveBeenCalledTimes(1);
+      const predicate = deleteWhere.mock.calls[0][0] as (id: string) => boolean;
+      expect(predicate("window-143-role")).toBe(true);
+      expect(predicate("tab-186-role")).toBe(true);
+      expect(predicate("OBMenu")).toBe(false);
+      expect(predicate("toolbar")).toBe(false);
+    });
   });
 
   describe("setLanguage", () => {
@@ -81,6 +95,15 @@ describe("Metadata", () => {
       const spyClient = jest.spyOn(Metadata.client, "setLanguageHeader");
       Metadata.setLanguage("es_ES");
       expect(spyClient).toHaveBeenCalledWith("es_ES");
+    });
+
+    it("should drop the in-memory definitions when the language changes", () => {
+      (Metadata as any).cache.set("current_language", "en_US");
+      (Metadata as any).definitions.set("window-win1-default", { id: "win1" });
+
+      Metadata.setLanguage("es_ES");
+
+      expect(Metadata.getCachedWindow("win1")).toEqual({});
     });
   });
 
@@ -148,26 +171,29 @@ describe("Metadata", () => {
   });
 
   describe("getWindow", () => {
-    it("should fetch and cache window including tabs", async () => {
+    it("should fetch with GET and keep the window and its tabs in memory only", async () => {
       const mockWindow = {
         id: "win1",
         tabs: [{ id: "tab1", fields: [] }],
       };
-      const spyPost = jest.spyOn(Metadata.client, "post").mockResolvedValue({
+      const spyRequest = jest.spyOn(Metadata.client, "request").mockResolvedValue({
         ok: true,
         data: mockWindow,
       } as any);
 
       const result = await Metadata.getWindow("win1");
-      expect(spyPost).toHaveBeenCalledWith("meta/window/win1");
+      expect(spyRequest).toHaveBeenCalledWith("meta/window/win1");
       expect(result).toEqual(mockWindow);
-      expect((Metadata as any).cache.get("window-win1-default")).toEqual(mockWindow);
       // Expect default role suffix when no role is set
-      expect((Metadata as any).cache.get("tab-tab1-default")).toEqual(mockWindow.tabs[0]);
+      expect(Metadata.getCachedWindow("win1")).toEqual(mockWindow);
+      expect(await Metadata.getTab("tab1")).toEqual(mockWindow.tabs[0]);
+      expect(spyRequest).toHaveBeenCalledTimes(1);
+      // Nothing persisted: definitions overflowed localStorage
+      expect((Metadata as any).cache.set).not.toHaveBeenCalled();
     });
 
     it("should throw error if window not found", async () => {
-      jest.spyOn(Metadata.client, "post").mockResolvedValue({ ok: false } as any);
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: false } as any);
       await expect(Metadata.getWindow("invalid")).rejects.toThrow("Window not found");
     });
   });
@@ -211,12 +237,12 @@ describe("Metadata", () => {
       const roleA = "roleA";
       const roleB = "roleB";
 
-      jest.spyOn(Metadata.client, "post").mockResolvedValue({ data: mockTab } as any);
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({ data: mockTab } as any);
 
       // Role A
       localStorage.setItem("currentRoleId", roleA);
       await Metadata.getTab("tab1");
-      expect((Metadata as any).cache.get(`tab-tab1-${roleA}`)).toEqual(mockTab);
+      expect((Metadata as any).definitions.get(`tab-tab1-${roleA}`)).toEqual(mockTab);
 
       // Role B
       localStorage.setItem("currentRoleId", roleB);
@@ -224,7 +250,7 @@ describe("Metadata", () => {
       (Metadata as any).currentRoleId = null;
 
       await Metadata.getTab("tab1");
-      expect((Metadata as any).cache.get(`tab-tab1-${roleB}`)).toEqual(mockTab);
+      expect((Metadata as any).definitions.get(`tab-tab1-${roleB}`)).toEqual(mockTab);
     });
 
     it("should segregate window cache by role ID", async () => {
@@ -232,19 +258,19 @@ describe("Metadata", () => {
       const roleA = "roleA";
       const roleB = "roleB";
 
-      jest.spyOn(Metadata.client, "post").mockResolvedValue({ ok: true, data: mockWindow } as any);
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({ ok: true, data: mockWindow } as any);
 
       // Role A
       localStorage.setItem("currentRoleId", roleA);
       await Metadata.getWindow("win1");
-      expect((Metadata as any).cache.get(`window-win1-${roleA}`)).toEqual(mockWindow);
+      expect((Metadata as any).definitions.get(`window-win1-${roleA}`)).toEqual(mockWindow);
 
       // Role B
       localStorage.setItem("currentRoleId", roleB);
       (Metadata as any).currentRoleId = null;
 
       await Metadata.getWindow("win1");
-      expect((Metadata as any).cache.get(`window-win1-${roleB}`)).toEqual(mockWindow);
+      expect((Metadata as any).definitions.get(`window-win1-${roleB}`)).toEqual(mockWindow);
     });
   });
 
@@ -260,9 +286,9 @@ describe("Metadata", () => {
     });
 
     it("should clear window cache", () => {
-      (Metadata as any).cache.set("window-123-default", {});
+      (Metadata as any).definitions.set("window-123-default", {});
       Metadata.clearWindowCache("123");
-      expect((Metadata as any).cache.get("window-123-default")).toBeUndefined();
+      expect((Metadata as any).definitions.get("window-123-default")).toBeUndefined();
     });
   });
 
@@ -270,7 +296,7 @@ describe("Metadata", () => {
     it("should return columns for multiple tabs", () => {
       const mockTab = { id: "tab1" };
       const mockFields = [{ name: "field1" }];
-      (Metadata as any).cache.set("tab-tab1-default", { fields: mockFields });
+      (Metadata as any).definitions.set("tab-tab1-default", { fields: mockFields });
 
       const result = Metadata.getTabsColumns([mockTab as any]);
       expect(result).toEqual({ tab1: mockFields });
