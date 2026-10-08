@@ -166,7 +166,10 @@ describe("WidgetCard manual refresh", () => {
     clickRefresh();
     await act(async () => pending.reject(new Error("boom")));
 
-    expect(logger.warn).toHaveBeenCalledWith(`[WidgetCard] Failed to refresh widget ${INSTANCE_ID}:`, expect.any(Error));
+    expect(logger.warn).toHaveBeenCalledWith(
+      `[WidgetCard] Failed to refresh widget ${INSTANCE_ID}:`,
+      expect.any(Error)
+    );
     expectIdle();
   });
 });

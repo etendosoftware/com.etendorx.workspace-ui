@@ -211,7 +211,7 @@ describe("dashboardStore", () => {
     });
 
     it("keeps the auto-refresh interval running after a manual refresh", async () => {
-      mockFetchLayout.mockResolvedValue({ widgets: [makeWidget("w1", 30)] } as any);
+      mockFetchLayout.mockResolvedValue({ widgets: [makeWidget("w1", 30)] });
       mockFetchWidgetData.mockResolvedValue(makeData("x"));
       await useDashboardStore.getState().loadLayout();
 

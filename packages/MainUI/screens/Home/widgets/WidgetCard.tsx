@@ -106,6 +106,34 @@ const REFRESHING_ICON_CLASS = "animate-spin";
 /** Dims the current content while a manual refresh is in flight (content stays visible, no flicker). */
 const REFRESHING_BODY_CLASS = "opacity-50";
 
+/**
+ * Local state of the card's manual refresh. Kept out of the store on purpose so auto-refresh,
+ * pagination and other `refreshWidget` callers are unaffected.
+ */
+function useManualRefresh(instanceId: string, onRefresh?: (instanceId: string) => Promise<void>) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Bumped after each manual refresh to remount the renderer, so local renderer state
+  // (e.g. the QueryList page) resets to match the first page returned by the refresh.
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const refresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh(instanceId);
+    } catch (err) {
+      // The store surfaces fetch errors through widgetErrors; this only guards against
+      // an unexpected rejection escaping the click handler.
+      logger.warn(`[WidgetCard] Failed to refresh widget ${instanceId}:`, err);
+    } finally {
+      setIsRefreshing(false);
+      setRefreshCount((count) => count + 1);
+    }
+  };
+
+  return { isRefreshing, refreshCount, refresh };
+}
+
 interface WidgetCardProps {
   instance: WidgetInstance;
   data: WidgetDataResponse | undefined;
@@ -129,31 +157,13 @@ export default function WidgetCard({
   onRefresh,
 }: WidgetCardProps) {
   const { t } = useTranslation();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  // Bumped after each manual refresh to remount the renderer, so local renderer state
-  // (e.g. the QueryList page) resets to match the first page returned by the refresh.
-  const [refreshCount, setRefreshCount] = useState(0);
+  const { isRefreshing, refreshCount, refresh } = useManualRefresh(instance.instanceId, onRefresh);
   const isLocked = instance.layer !== "USER";
   const isUnavailable = instance.available === false || data?.available === false;
   const isLoading = data === undefined && error === undefined && !isUnavailable;
   const theme = getTheme(instance.type);
   const refreshStateClass = isRefreshing ? REFRESHING_ICON_CLASS : "";
   const bodyStateClass = isRefreshing ? REFRESHING_BODY_CLASS : "";
-
-  const handleRefresh = async () => {
-    if (!onRefresh || isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await onRefresh(instance.instanceId);
-    } catch (err) {
-      // The store surfaces fetch errors through widgetErrors; this only guards against
-      // an unexpected rejection escaping the click handler.
-      logger.warn(`[WidgetCard] Failed to refresh widget ${instance.instanceId}:`, err);
-    } finally {
-      setIsRefreshing(false);
-      setRefreshCount((count) => count + 1);
-    }
-  };
 
   return (
     <div
@@ -175,14 +185,14 @@ export default function WidgetCard({
           {onRefresh && (
             <button
               type="button"
-              onClick={handleRefresh}
+              onClick={refresh}
               disabled={isRefreshing}
               aria-busy={isRefreshing}
               className={`${theme.icon} transition-colors cursor-pointer rounded p-0.5 disabled:cursor-wait`}
               title={t("dashboard.widget.refresh")}
               data-testid={`WidgetCard__refresh_${instance.instanceId}`}>
               <span className={`flex ${refreshStateClass}`}>
-                <RefreshIcon />
+                <RefreshIcon data-testid="RefreshIcon__cb8729" />
               </span>
             </button>
           )}
