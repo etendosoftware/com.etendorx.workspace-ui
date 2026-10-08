@@ -3,6 +3,7 @@ import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "../constants";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
+import { AUDITED_TAB, MODIFIED_RECORD, NOT_AUDITED_TAB, UNMODIFIED_RECORD } from "../test-utils/auditTrailFixtures";
 
 const makeButtonMetadata = (action: string): ToolbarButtonMetadata =>
   ({
@@ -789,5 +790,66 @@ describe("getToolbarSections", () => {
     });
 
     expect(result.rightSection.buttons[0].badgeContent).toBeUndefined();
+  });
+});
+
+describe("SHOW_AUDIT_TRAIL button", () => {
+  const auditButton = { ...makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL), section: "center" };
+
+  const auditProps = {
+    button: auditButton,
+    onAction: jest.fn(),
+    isFormView: false,
+    hasFormChanges: false,
+    hasParentRecordSelected: true,
+    tab: AUDITED_TAB,
+    selectedRecordsLength: 1,
+    selectedRecords: [MODIFIED_RECORD],
+  };
+
+  it.each([
+    [AUDITED_TAB, 1],
+    [NOT_AUDITED_TAB, 0],
+  ])("is shown only when the tab table is fully audited (%#)", (tab, expectedCount) => {
+    const result = organizeButtonsBySection([auditButton], { isFormView: false, tab });
+    expect(result.center).toHaveLength(expectedCount);
+  });
+
+  it.each([
+    ["a single modified record", {}],
+    ["no selection, as in Classic", { selectedRecords: undefined, selectedRecordsLength: 0 }],
+  ])("is enabled with %s", (_label, overrides) => {
+    expect(createButtonByType({ ...auditProps, ...overrides }).disabled).toBe(false);
+  });
+
+  it.each([
+    [
+      "several records are selected",
+      { selectedRecords: [MODIFIED_RECORD, UNMODIFIED_RECORD], selectedRecordsLength: 2 },
+    ],
+    ["the record is new", { isNewRecord: true }],
+    ["the record was never modified", { selectedRecords: [UNMODIFIED_RECORD] }],
+    [
+      "a document is processing",
+      { saveButtonState: { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true } },
+    ],
+  ])("is disabled when %s", (_label, overrides) => {
+    expect(createButtonByType({ ...auditProps, ...overrides }).disabled).toBe(true);
+  });
+
+  it("receives the selected records from getToolbarSections", () => {
+    const sections = getToolbarSections({
+      buttons: [auditButton],
+      onAction: jest.fn(),
+      isFormView: false,
+      tab: AUDITED_TAB,
+      selectedRecordsLength: 1,
+      selectedRecords: [MODIFIED_RECORD],
+    });
+    expect(sections.centerSection.buttons[0].disabled).toBe(false);
+  });
+
+  it("applies its button style", () => {
+    expect(getButtonStyles(auditButton, false)).toContain("toolbar-button-show-audit-trail");
   });
 });

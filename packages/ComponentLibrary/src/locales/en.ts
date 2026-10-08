@@ -145,6 +145,11 @@ const en = {
     updated: "Updated",
     updatedBy: "Updated By",
   },
+  auditTrail: {
+    selectOneRecord: "You must select exactly one record to view the audit trail for it.",
+    popupBlocked: "The browser blocked the Audit Trail window.",
+    openPopup: "Open Audit Trail",
+  },
   status: {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",
