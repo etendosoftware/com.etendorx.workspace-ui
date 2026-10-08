@@ -58,3 +58,34 @@ totals only flows that succeeded in both files.
 - Port 3000 taken by another dev server: start the production build on another port
   (`npx next start -p 3100` from `packages/MainUI`) and pass `BASE_URL=http://localhost:3100`.
 - Classic runs need `FLAVOR=classic` and `BASE_URL=http://localhost:8080/etendo`.
+
+## Comparing a branch with its base (`pnpm perf:compare`)
+
+Machines differ too much to compare absolute numbers, so a branch is measured against its own base on the
+same machine, in the same session. Run it before opening a PR when the pre-push hook warns that the branch
+touches performance-sensitive code (`perf/sensitive-paths.txt`), and paste the report in the PR.
+
+```bash
+# Local Etendo backend running (the one packages/MainUI/.env points to)
+pnpm perf:compare              # 4 windows, 3 rounds per side (~20-40 min)
+QUICK=1 pnpm perf:compare      # Sales Invoice only (~5-10 min)
+```
+
+What it does: finds the base (`git merge-base HEAD origin/develop`, or `origin/main` for `hotfix/*`;
+`BASE_REF` overrides), builds it in a cached worktree under `~/.cache/workspace-ui-perf-compare/`, builds the
+working tree, serves both (ports 3201/3202), runs `bench.mjs` alternating base and head, and writes
+`perf/results/compare-<date>.md`.
+
+How to read it: more requests than the base, or API bytes more than 5% higher, is a regression. Time and
+blocking CPU are regressions only when more than 10% higher, at least 100 ms (time) or 50 ms (blocking CPU)
+more, **and** the bootstrap 95% interval of the difference is above zero, i.e. larger than the noise
+measured on that machine. Use at least 3 rounds: with fewer, the noise estimate is weak. The command never fails
+unless `STRICT=1`.
+
+Options: `ROUNDS`, `WINDOWS`, `QUICK=1`, `CPU_THROTTLE` (default 1), `BASE_REF`, `BASE_PORT`/`HEAD_PORT`,
+`SKIP_BUILD=1` (reuse existing builds), `PERF_WORKTREES_DIR`. Remove old base worktrees with
+`git worktree prune` after deleting the folders.
+
+The pre-push hook (`.githooks/pre-push`, enabled by `pnpm install`) only prints the warning; it never blocks
+a push. Unit tests of the comparison: `pnpm test:perf`.
+
