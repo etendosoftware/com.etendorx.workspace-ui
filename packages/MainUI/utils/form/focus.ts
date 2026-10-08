@@ -114,6 +114,26 @@ export const findFieldFocusTarget = (root: HTMLElement | null | undefined, field
 };
 
 /**
+ * The control of the first field, in form order, among `fieldNames` that can take
+ * the focus — mirroring Classic's `getFirstErrorItem`, which walks the fields in the
+ * order they are rendered rather than in the order the errors were reported.
+ */
+export const findFirstFieldFocusTarget = (
+  root: HTMLElement | null | undefined,
+  fieldNames: readonly string[]
+): HTMLElement | null => {
+  if (!root || fieldNames.length === 0) return null;
+  const wrappers = Array.from(root.querySelectorAll<HTMLElement>(`[${FORM_FIELD_NAME_ATTRIBUTE}]`)).filter((element) =>
+    fieldNames.includes(element.getAttribute(FORM_FIELD_NAME_ATTRIBUTE) ?? "")
+  );
+  for (const wrapper of wrappers) {
+    const target = findFirstFocusableField(wrapper);
+    if (target) return target;
+  }
+  return null;
+};
+
+/**
  * Field that takes the focus when the form opens, mirroring
  * `OBViewForm.computeFocusItem`: the field flagged as `isFirstFocusedField` in the
  * application dictionary, falling back to the first focusable field in tab order.
