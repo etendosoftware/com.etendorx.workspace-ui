@@ -234,6 +234,7 @@ const en = {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
   },
   table: {
+    exportError: "Export failed",
     newRecord: "New Record",
     tooltips: {
       search: "Search",

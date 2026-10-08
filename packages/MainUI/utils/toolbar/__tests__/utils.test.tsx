@@ -3,6 +3,11 @@ import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "../constants";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
+import { CircularProgress } from "@mui/material";
+import type React from "react";
+
+/** Whether the toolbar button icon is the busy spinner */
+const isSpinnerIcon = (icon: React.ReactNode) => (icon as React.ReactElement)?.type === CircularProgress;
 
 const makeButtonMetadata = (action: string): ToolbarButtonMetadata =>
   ({
@@ -359,6 +364,34 @@ describe("createButtonByType - extended", () => {
     tab: defaultTab,
     selectedRecordsLength: 1,
   };
+
+  describe("EXPORT_CSV busy state", () => {
+    const exportButton = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, name: "Export CSV" });
+
+    it("is enabled and keeps its icon when no export is running", () => {
+      const result = createButtonByType({ ...defaultProps, button: exportButton });
+      expect(result.disabled).toBe(false);
+      expect(result.tooltip).toBe("Export CSV");
+      expect(isSpinnerIcon(result.icon)).toBe(false);
+    });
+
+    it("is disabled and shows a spinner while exporting", () => {
+      const result = createButtonByType({ ...defaultProps, button: exportButton, isExporting: true });
+      expect(result.disabled).toBe(true);
+      expect(isSpinnerIcon(result.icon)).toBe(true);
+    });
+
+    it("stays disabled when the button is inactive", () => {
+      const result = createButtonByType({ ...defaultProps, button: { ...exportButton, active: false } });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("does not affect other buttons while exporting", () => {
+      const result = createButtonByType({ ...defaultProps, button: makeButton(), isExporting: true });
+      expect(result.disabled).toBe(false);
+      expect(isSpinnerIcon(result.icon)).toBe(false);
+    });
+  });
 
   describe("REFRESH", () => {
     const refreshProps = {
@@ -745,6 +778,21 @@ describe("getToolbarSections", () => {
     expect(result.leftSection.style).toBeDefined();
     expect(result.centerSection.style).toBeDefined();
     expect(result.rightSection.style).toBeDefined();
+  });
+
+  it("should propagate the exporting state to the EXPORT_CSV button", () => {
+    const result = getToolbarSections({
+      buttons: [makeBtn(TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, "right")],
+      onAction,
+      isFormView: false,
+      tab: defaultTab,
+      selectedRecordsLength: 0,
+      isExporting: true,
+    });
+
+    const [exportButton] = result.rightSection.buttons;
+    expect(exportButton.disabled).toBe(true);
+    expect(isSpinnerIcon(exportButton.icon)).toBe(true);
   });
 
   it("should apply button styles when available", () => {

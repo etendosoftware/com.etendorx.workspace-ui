@@ -25,6 +25,10 @@ import type { SaveButtonState } from "@/contexts/ToolbarContext";
 import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import { CircularProgress } from "@mui/material";
+
+/** Size (px) of the spinner shown in place of a toolbar button icon while its action is running */
+const BUSY_SPINNER_SIZE = 16;
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -199,6 +203,7 @@ export const createButtonByType = ({
   selectedRecordsLength,
   isAdvancedFilterApplied,
   isSplitView,
+  isExporting = false,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -216,6 +221,7 @@ export const createButtonByType = ({
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -300,6 +306,8 @@ export const createButtonByType = ({
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      // Busy while the export request is in flight, so it cannot be triggered twice.
+      [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () => buildDisableConfig(!button.active || isExporting),
       // Refreshing a form with pending edits would drop them without asking, so the
       // button is blocked instead — the same rule as Classic's `hasNotChanged()`, which
       // also covers a record still being created.
@@ -358,12 +366,22 @@ export const createButtonByType = ({
     return {};
   };
 
+  const getBusyConfig = (): Partial<ToolbarButton> => {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV && isExporting) {
+      return {
+        icon: <CircularProgress size={BUSY_SPINNER_SIZE} color="inherit" data-testid="CircularProgress__5aeccd" />,
+      };
+    }
+    return {};
+  };
+
   const finalConfig = {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
     ...getPressedConfig(),
+    ...getBusyConfig(),
   };
 
   if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && showFilterTooltip) {
@@ -405,6 +423,7 @@ interface ButtonConfig {
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }
 
 /**
@@ -433,6 +452,7 @@ const createSectionButtons = (
       selectedRecordsLength: config.selectedRecordsLength,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
       isSplitView: config.isSplitView,
+      isExporting: config.isExporting,
     });
 
     // Apply button-specific styles if available
@@ -481,6 +501,7 @@ interface ToolbarSectionsConfig {
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -502,6 +523,7 @@ export const getToolbarSections = ({
   selectedRecordsLength,
   isAdvancedFilterApplied = false,
   isSplitView = false,
+  isExporting = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -532,6 +554,7 @@ export const getToolbarSections = ({
     selectedRecordsLength,
     t,
     isAdvancedFilterApplied,
+    isExporting,
   };
 
   return {
