@@ -17,7 +17,7 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
-import { useFormContext, type FieldValues } from "react-hook-form";
+import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
 
 interface LinkSelectorProps {
   field: Field;
@@ -25,9 +25,9 @@ interface LinkSelectorProps {
 }
 
 export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
-  const { register, watch, setValue } = useFormContext<FieldValues>();
+  const { register, setValue } = useFormContext<FieldValues>();
   const fieldName = field.hqlName;
-  const currentValue = watch(fieldName) as string | undefined;
+  const currentValue = useWatch({ name: fieldName }) as string | undefined;
 
   if (isReadOnly) {
     if (!currentValue) {

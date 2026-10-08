@@ -69,6 +69,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
+import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserStore } from "@/stores/userStore";
 import {
@@ -3157,6 +3158,10 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
+    // Data cells re-render only when their cell changes, so a selection change repaints the rows, not
+    // every cell in them. Inline editing (our own state, not MRT's) and tree expansion change what a
+    // cell shows without changing the cell, so cells are not memoized while either is in use.
+    memoMode: editingRowsCount === 0 && !shouldUseTreeMode ? "cells" : undefined,
     enableTopToolbar: true,
     renderTopToolbar: ({ table: mrtTable }) => {
       const isFullScreen = mrtTable.getState().isFullScreen;
@@ -3426,6 +3431,11 @@ const DynamicTable = ({
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
+    // While hidden behind the form the grid's rows are not rendered (useFrozenWhileHidden), so a scroll
+    // now would be clamped to an empty container. Wait until the grid is shown again.
+    if (!isVisible) {
+      return;
+    }
 
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
@@ -3446,10 +3456,12 @@ const DynamicTable = ({
           const containerElement = tableContainerRef.current;
           const estimatedRowHeight = 40; // Approximate row height
           const headerHeight = 75; // Approximate header height
-          const scrollTop = index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+          const scrollTop = Math.max(0, index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight);
 
+          // Keeps the scroll restore that runs when the grid is shown again from undoing this scroll
+          savedScrollTop.current = scrollTop;
           containerElement.scrollTo({
-            top: Math.max(0, scrollTop),
+            top: scrollTop,
             behavior: "smooth",
           });
         }
@@ -3469,7 +3481,7 @@ const DynamicTable = ({
         scrollToIndex(selectedIndex);
       }
     }
-  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table, isVisible]);
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state
@@ -3880,6 +3892,14 @@ const DynamicTable = ({
     table,
   ]);
 
+  // Hidden behind the form, the grid skips re-renders that change nothing it shows (cells, date
+  // formatting, row measurement); its rows and selection still update while hidden.
+  const tableElement = useFrozenWhileHidden(
+    isVisible,
+    <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
+    [effectiveRecords, table.getState().rowSelection]
+  );
+
   if (error) {
     return <TableErrorDisplay error={error} onRetry={refetch} data-testid="TableErrorDisplay__8ca888" />;
   }
@@ -3902,7 +3922,7 @@ const DynamicTable = ({
       }`}
       onClick={onFocusAcquire}>
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
-        <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+        {tableElement}
       </div>
       <SummaryRow
         table={table}

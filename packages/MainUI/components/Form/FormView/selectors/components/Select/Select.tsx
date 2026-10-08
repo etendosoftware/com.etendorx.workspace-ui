@@ -13,7 +13,7 @@ import { FIELD_NAVIGATION_OFFSETS, NOT_TABBABLE, TABBABLE, findAdjacentFocusable
 import { buildDropdownPortalSelector } from "@/utils/form/keyboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -45,9 +45,9 @@ function SelectCmp({
   columns,
 }: SelectProps) {
   const { t } = useTranslation();
-  const { register, setValue, watch } = useFormContext();
-  const selectedValue = watch(name);
-  const currentIdentifier = watch(`${name}$_identifier`);
+  const { register, setValue } = useFormContext();
+  const selectedValue = useWatch({ name: name });
+  const currentIdentifier = useWatch({ name: `${name}$_identifier` });
   const [selectedLabel, setSelectedLabel] = useState("");
   const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");

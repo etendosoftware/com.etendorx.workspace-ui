@@ -17,13 +17,13 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextAreaInput } from "./components/TextAreaInput";
-import { useFormContext, type FieldValues } from "react-hook-form";
+import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
 
 export const TextLongSelector = (props: { field: Field } & React.ComponentProps<typeof TextAreaInput>) => {
-  const { register, watch, setValue } = useFormContext<FieldValues>();
+  const { register, setValue } = useFormContext<FieldValues>();
   const fieldName = props.field.hqlName;
 
-  const currentValue = watch(fieldName);
+  const currentValue = useWatch({ name: fieldName });
   const handleSetValue = (value: string) => {
     setValue(fieldName, value, { shouldValidate: true });
   };
