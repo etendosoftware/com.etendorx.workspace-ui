@@ -512,7 +512,9 @@ async function main() {
     raw,
   };
   fs.mkdirSync(RESULTS_DIR, { recursive: true });
-  const file = path.join(RESULTS_DIR, `${LABEL}-${out.date.replace(/[:.]/g, "-")}.json`);
+  // OUT_FILE: exact path (used by compare-branches.mjs); otherwise results/<LABEL>-<date>.json
+  const file = process.env.OUT_FILE || path.join(RESULTS_DIR, `${LABEL}-${out.date.replace(/[:.]/g, "-")}.json`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(out, null, 2));
 
   const kb = (b) => `${(b / 1024).toFixed(0)}KB`;
