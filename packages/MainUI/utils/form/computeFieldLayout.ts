@@ -16,17 +16,54 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 export interface FieldLayoutEntry {
   colStart?: number;
 }
 
+/** Number of columns of the form view grid (`grid-cols-3`). */
+export const FORM_GRID_COLUMNS = 3;
+
+/**
+ * References whose fields take the full form row by default (long text, memo, rich text),
+ * mirroring Classic, which widens text areas but explicitly excludes images.
+ */
+export const FULL_WIDTH_REFERENCE_IDS: ReadonlySet<string> = new Set([
+  FIELD_REFERENCE_CODES.TEXT_LONG.id,
+  FIELD_REFERENCE_CODES.MEMO.id,
+  FIELD_REFERENCE_CODES.RICH_TEXT.id,
+]);
+
+/**
+ * A field spans the full row when it is a long-text/memo/rich-text field and the
+ * metadata does not define an explicit colspan (an explicit value always wins).
+ */
+export function isFullWidthField(field: Field): boolean {
+  if (field.obuiappColspan != null) return false;
+  return FULL_WIDTH_REFERENCE_IDS.has(field.column?.reference ?? "");
+}
+
+/** Number of grid columns the field occupies: explicit colspan, full row, or a single column. */
+export function getEffectiveColspan(field: Field): number {
+  if (field.obuiappColspan != null) {
+    return field.obuiappColspan;
+  }
+  if (isFullWidthField(field)) {
+    return FORM_GRID_COLUMNS;
+  }
+  return 1;
+}
+
 /**
  * Computes explicit CSS grid column-start values for fields that require
- * positional overrides (startnewline, startinoddcolumn).
+ * positional overrides (startnewline, startinoddcolumn, full-width fields).
  *
  * Returns a Map<fieldId, FieldLayoutEntry>. Only fields that need an explicit
  * colStart are included — absent entries mean CSS auto-placement applies.
+ *
+ * Full-width fields always start a new row and close it, so the next field
+ * starts on column 1.
  *
  * Known limitation: cursor wrap is a heuristic. obuiappColspan > 1 combined
  * with startinoddcolumn on the immediately following field may be slightly off.
@@ -36,9 +73,9 @@ export function computeFieldLayout(fields: Field[]): Map<string, FieldLayoutEntr
   let cursor = 1;
 
   for (const field of fields) {
-    const colspan = field.obuiappColspan ?? 1;
+    const colspan = getEffectiveColspan(field);
 
-    if (field.startnewline) {
+    if (isFullWidthField(field) || field.startnewline) {
       result.set(field.id, { colStart: 1 });
       cursor = 1 + colspan;
     } else if (field.startinoddcolumn) {
@@ -52,7 +89,7 @@ export function computeFieldLayout(fields: Field[]): Map<string, FieldLayoutEntr
       cursor += colspan;
     }
 
-    if (cursor > 3) cursor = 1;
+    if (cursor > FORM_GRID_COLUMNS) cursor = 1;
   }
 
   return result;

@@ -39,6 +39,7 @@ import useFormParent from "@/hooks/useFormParent";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
+import { getEffectiveColspan, isFullWidthField } from "@/utils/form/computeFieldLayout";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
@@ -204,6 +205,59 @@ const ROW_SPAN_CLASS: Record<number, string> = {
   4: "row-span-4",
   5: "row-span-5",
   6: "row-span-6",
+};
+const FIELD_LABEL_WIDTH_CLASS = "w-1/3";
+const FIELD_VALUE_WIDTH_CLASS = "w-2/3";
+// Same width as the label of a single-column field: the row minus the two `gap-x-5`
+// (1.25rem) gaps of the form grid, split into 3 columns, of which the label takes 1/3.
+const FULL_WIDTH_LABEL_WIDTH_CLASS = "w-[calc((100%-2.5rem)/9)]";
+const FULL_WIDTH_VALUE_WIDTH_CLASS = "flex-1 min-w-0";
+
+const getColSpanClass = (field: Field): string | undefined => {
+  const colspan = getEffectiveColspan(field);
+  if (field.obuiappColspan == null && colspan === 1) return undefined;
+  return COL_SPAN_CLASS[colspan];
+};
+
+const EXPANDED_FIELD_REFERENCE_IDS: ReadonlySet<string> = new Set([
+  FIELD_REFERENCE_CODES.TEXT_LONG.id,
+  FIELD_REFERENCE_CODES.MEMO.id,
+  FIELD_REFERENCE_CODES.IMAGE.id,
+  FIELD_REFERENCE_CODES.RICH_TEXT.id,
+  FIELD_REFERENCE_CODES.MULTI_SELECTOR.id,
+]);
+
+export interface FieldLayoutClasses {
+  containerClassName: string;
+  labelWidthClass: string;
+  valueWidthClass: string;
+}
+
+/**
+ * Resolves the grid classes of a form field: expanded fields (text, image, multi selector)
+ * grow vertically, long-text/memo/rich-text fields also span the full row unless the
+ * metadata defines an explicit colspan.
+ */
+export const getFieldLayoutClasses = (field: Field, colStart?: number): FieldLayoutClasses => {
+  const isExpandedField = EXPANDED_FIELD_REFERENCE_IDS.has(field.column.reference ?? "");
+  const rowspanFromMeta = field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : null;
+  const containerClasses = isExpandedField
+    ? `${rowspanFromMeta ?? "row-span-4"} flex items-start pt-2`
+    : "h-12 flex items-center";
+  const layoutClasses = [
+    colStart != null ? COL_START_CLASS[colStart] : undefined,
+    getColSpanClass(field),
+    !isExpandedField && field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const isFullWidth = isFullWidthField(field);
+
+  return {
+    containerClassName: [containerClasses, layoutClasses].filter(Boolean).join(" "),
+    labelWidthClass: isFullWidth ? FULL_WIDTH_LABEL_WIDTH_CLASS : FIELD_LABEL_WIDTH_CLASS,
+    valueWidthClass: isFullWidth ? FULL_WIDTH_VALUE_WIDTH_CLASS : FIELD_VALUE_WIDTH_CLASS,
+  };
 };
 
 interface BaseSelectorProps {
@@ -558,27 +612,11 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
   }, [isFormInitializing, setIsSettingInitialValues]);
 
   if (isDisplayed) {
-    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
-    const isMemo = field.column.reference === FIELD_REFERENCE_CODES.MEMO.id;
-    const isImage = field.column.reference === FIELD_REFERENCE_CODES.IMAGE.id;
-    const isRichText = field.column.reference === FIELD_REFERENCE_CODES.RICH_TEXT.id;
-    const isMultiSelector = field.column.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id;
-    const isExpandedField = isTextLong || isMemo || isImage || isRichText || isMultiSelector;
-    const rowspanFromMeta = field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : null;
-    const containerClasses = isExpandedField
-      ? `${rowspanFromMeta ?? "row-span-4"} flex items-start pt-2`
-      : "h-12 flex items-center";
-    const layoutClasses = [
-      colStart != null ? COL_START_CLASS[colStart] : undefined,
-      field.obuiappColspan != null ? COL_SPAN_CLASS[field.obuiappColspan] : undefined,
-      !isExpandedField && field.obuiappRowspan != null ? ROW_SPAN_CLASS[field.obuiappRowspan] : undefined,
-    ]
-      .filter(Boolean)
-      .join(" ");
+    const { containerClassName, labelWidthClass, valueWidthClass } = getFieldLayoutClasses(field, colStart);
 
     return (
       <div
-        className={[containerClasses, layoutClasses].filter(Boolean).join(" ")}
+        className={containerClassName}
         {...{ [FORM_FIELD_NAME_ATTRIBUTE]: field.hqlName }}
         title={field.helpComment || ""}
         aria-describedby={field.helpComment ? `${field.name}-help` : ""}
@@ -587,7 +625,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
             runCallout(true);
           }
         }}>
-        <div className="w-1/3 flex items-center gap-2 pr-2">
+        <div className={`${labelWidthClass} flex items-center gap-2 pr-2`}>
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (
             <Asterisk
@@ -597,7 +635,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           )}
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
-        <div className="w-2/3">
+        <div className={valueWidthClass}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
         </div>
       </div>
