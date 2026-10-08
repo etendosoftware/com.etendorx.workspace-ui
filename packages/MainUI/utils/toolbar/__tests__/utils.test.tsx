@@ -597,6 +597,32 @@ describe("createButtonByType - extended", () => {
     expect(result.isPressed).toBe(true);
   });
 
+  describe("keyboard shortcut hint", () => {
+    it("adds the classic shortcut to the tooltip of the action", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, name: "Export" }),
+      });
+      expect(result.tooltip).toBe("Export (Ctrl+Shift+E)");
+    });
+
+    it("keeps the plain name for actions without a shortcut", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.FIND, name: "Find" }),
+      });
+      expect(result.tooltip).toBe("Find");
+    });
+
+    it("exposes the action so a shortcut can press the button", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.REFRESH }),
+      });
+      expect(result.action).toBe(TOOLBAR_BUTTONS_ACTIONS.REFRESH);
+    });
+  });
+
   it("should set filter tooltip when showFilterTooltip is true", () => {
     const t = jest.fn().mockReturnValue("Filter active");
     const result = createButtonByType({
