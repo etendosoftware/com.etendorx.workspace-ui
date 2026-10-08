@@ -315,6 +315,7 @@ export function FormFields({
               tabId={tab.id}
               entityName={tab.entityName}
               recordId={recordId}
+              isSectionExpanded={isSectionExpanded("linked-items")}
               data-testid="LinkedItemsSection__38e4a6"
             />
           </Collapsible>
