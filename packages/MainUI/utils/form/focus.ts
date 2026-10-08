@@ -123,8 +123,9 @@ export const findFirstFieldFocusTarget = (
   fieldNames: readonly string[]
 ): HTMLElement | null => {
   if (!root || fieldNames.length === 0) return null;
+  const names = new Set<string | null>(fieldNames);
   const wrappers = Array.from(root.querySelectorAll<HTMLElement>(`[${FORM_FIELD_NAME_ATTRIBUTE}]`)).filter((element) =>
-    fieldNames.includes(element.getAttribute(FORM_FIELD_NAME_ATTRIBUTE) ?? "")
+    names.has(element.getAttribute(FORM_FIELD_NAME_ATTRIBUTE))
   );
   for (const wrapper of wrappers) {
     const target = findFirstFocusableField(wrapper);

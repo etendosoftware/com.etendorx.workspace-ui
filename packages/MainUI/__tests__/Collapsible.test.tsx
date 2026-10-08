@@ -1,8 +1,9 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type React from "react";
 import Collapsible from "@/components/Form/Collapsible";
 import { findFocusableFields } from "@/utils/form/focus";
+import { SECTION_TRANSITION_MS } from "@/utils/form/expandedSections";
 
 // Mock simple de los íconos
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg", () => "div");
@@ -74,6 +75,26 @@ describe("Collapsible", () => {
   });
 
   // Test de estados - estos deberían funcionar
+  it("ignores toggles until the section transition ends", () => {
+    jest.useFakeTimers();
+    try {
+      const mockOnToggle = jest.fn();
+      render(<Collapsible {...defaultProps} onToggle={mockOnToggle} />);
+      const header = screen.getByText("Test Title").closest("[aria-expanded]") as HTMLElement;
+
+      fireEvent.click(header);
+      expect(mockOnToggle).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(SECTION_TRANSITION_MS);
+      });
+      fireEvent.click(header);
+      expect(mockOnToggle).toHaveBeenCalledWith(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("shows collapsed state correctly", () => {
     render(<Collapsible {...defaultProps} isExpanded={false} />);
 
