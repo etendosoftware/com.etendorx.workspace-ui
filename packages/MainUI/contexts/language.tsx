@@ -21,10 +21,12 @@ import { useBackendLabels } from "@/hooks/useBackendLabels";
 import { usePrevious } from "@/hooks/usePrevious";
 import { useUserStore } from "@/stores/userStore";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { setNumericFilterFormat } from "@workspaceui/api-client/src/utils/numeric-filter-utils";
 import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { getLanguageFlag } from "../utils/languageFlags";
+import { createFormat } from "../utils/ob/format";
 import type { Language, LanguageContextType } from "./types";
 
 export const LanguageContext = createContext({} as LanguageContextType);
@@ -41,6 +43,8 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   useEffect(() => {
     if (language) {
       Metadata.setLanguage(language);
+      const { defaultDecimalSymbol, defaultGroupingSymbol } = createFormat(language);
+      setNumericFilterFormat({ decimalSymbol: defaultDecimalSymbol, groupingSymbol: defaultGroupingSymbol });
     }
   }, [language]);
 

@@ -28,6 +28,10 @@ export interface BaseCriteria {
   fieldName: string;
   operator: string;
   value: string | number | string[] | undefined;
+  /** Lower limit of a `betweenInclusive` criterion. */
+  start?: string | number;
+  /** Upper limit of a `betweenInclusive` criterion. */
+  end?: string | number;
 }
 
 export interface CompositeCriteria {
