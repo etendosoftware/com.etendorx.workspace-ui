@@ -22,6 +22,7 @@ import IconButton from "@workspaceui/componentlibrary/src/components/IconButton"
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { CollapsibleProps } from "./FormView/types";
 import { FOCUSABLE_SELECTOR, NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
+import { SECTION_TRANSITION_MS } from "@/utils/form/expandedSections";
 
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
@@ -69,7 +70,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
 
     const timeoutId = setTimeout(() => {
       setIsAnimating(false);
-    }, 300);
+    }, SECTION_TRANSITION_MS);
 
     return () => clearTimeout(timeoutId);
   }, [isExpanded]);

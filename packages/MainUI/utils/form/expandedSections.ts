@@ -55,3 +55,36 @@ function isInitiallyExpanded([id, group]: FormSectionGroupEntry): boolean {
 export function computeInitialExpandedSections(groups: readonly FormSectionGroupEntry[]): string[] {
   return groups.filter(isInitiallyExpanded).map(([id]) => String(id ?? MAIN_SECTION_ID));
 }
+
+/**
+ * Duration, in milliseconds, of the expand/collapse animation of a form section.
+ * Fields of a section that has just been expanded only become reachable once it ends.
+ */
+export const SECTION_TRANSITION_MS = 300;
+
+/**
+ * Resolves the id of the section a field is rendered in, following the same rule
+ * useFormFields applies when grouping: its AD_FieldGroup, or the main section.
+ *
+ * @param field - Field metadata holding the optional field group id
+ * @returns Id of the section that contains the field
+ */
+export function resolveFieldSectionId(field: { fieldGroup?: string | null }): string {
+  return field.fieldGroup || MAIN_SECTION_ID;
+}
+
+/**
+ * Adds the given sections to the expanded ones without duplicates.
+ *
+ * Returns the very same `current` array when every section is already expanded,
+ * so callers can detect that nothing changed and skip a needless state update.
+ *
+ * @param current - Ids of the sections currently expanded
+ * @param sectionIds - Ids of the sections that must end up expanded
+ * @returns The expanded sections including the requested ones
+ */
+export function addSectionsToExpand(current: string[], sectionIds: readonly string[]): string[] {
+  const missing = sectionIds.filter((id, index) => !current.includes(id) && sectionIds.indexOf(id) === index);
+  if (missing.length === 0) return current;
+  return [...current, ...missing];
+}
