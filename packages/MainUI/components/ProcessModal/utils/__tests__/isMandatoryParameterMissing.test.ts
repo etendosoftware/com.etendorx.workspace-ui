@@ -25,6 +25,7 @@
  */
 
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { isMandatoryParameterMissing } from "../isMandatoryParameterMissing";
 
 const FIELD_NAME = "Business Partner Category";
@@ -115,6 +116,45 @@ describe("isMandatoryParameterMissing", () => {
     ).toBe(true);
     expect(
       isMandatoryParameterMissing({ parameter, formValues: { [FIELD_NAME]: ["x"] }, isDisplayed: alwaysVisible })
+    ).toBe(false);
+  });
+});
+
+/**
+ * Value-only mode used by OBUIAPP_Report export buttons (Classic
+ * `allRequiredParametersSet` parity): only the current value counts, so neither a
+ * `defaultValue` expression nor the absence of the key in the form values hides an
+ * empty mandatory parameter.
+ */
+describe("isMandatoryParameterMissing with requireActualValue", () => {
+  it.each([
+    ["is absent from the form values", makeParam(), {}, true],
+    [
+      "has a default expression that resolved empty",
+      makeParam({ defaultValue: "@AD_Org_ID@" }),
+      { [FIELD_NAME]: "" },
+      true,
+    ],
+    ["holds an empty multi-selector array", makeParam(), { [FIELD_NAME]: [] }, true],
+    ["holds a value", makeParam(), { [FIELD_NAME]: "cat-1" }, false],
+    ["holds false", makeParam(), { [FIELD_NAME]: false }, false],
+    ["holds zero", makeParam(), { [FIELD_NAME]: 0 }, false],
+    ["holds its value only under the dBColumnName", makeParam(), { [DB_COLUMN_NAME]: "cat-1" }, false],
+    ["is a window-reference grid", makeParam({ reference: FIELD_REFERENCE_CODES.WINDOW.id }), {}, false],
+  ])("when the mandatory parameter %s, returns %s", (_case, parameter, formValues, expected) => {
+    expect(
+      isMandatoryParameterMissing({ parameter, formValues, isDisplayed: alwaysVisible, requireActualValue: true })
+    ).toBe(expected);
+  });
+
+  it("returns false when the empty mandatory parameter is hidden", () => {
+    expect(
+      isMandatoryParameterMissing({
+        parameter: makeParam(),
+        formValues: {},
+        isDisplayed: alwaysHidden,
+        requireActualValue: true,
+      })
     ).toBe(false);
   });
 });

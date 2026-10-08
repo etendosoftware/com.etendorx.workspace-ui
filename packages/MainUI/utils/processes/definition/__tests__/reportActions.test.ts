@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { downloadBlob, fetchReportBlob, openBlobInNewTab } from "../reportActions";
+import { browseReport, downloadBlob, downloadReport, fetchReportBlob, openBlobInNewTab } from "../reportActions";
 
 const TOKEN = "tok-123";
 const OBJECT_URL = "blob:mock-url";
@@ -89,5 +89,28 @@ describe("reportActions", () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith(OBJECT_URL);
     append.mockRestore();
     remove.mockRestore();
+  });
+
+  describe("error reporting", () => {
+    const REPORT_URL = "/api/erp/report";
+    const failFetch = (): void => {
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+    };
+    const runners = [
+      ["browseReport", (onError?: jest.Mock) => browseReport(REPORT_URL, TOKEN, onError)],
+      ["downloadReport", (onError?: jest.Mock) => downloadReport(REPORT_URL, TOKEN, "out.pdf", onError)],
+    ] as const;
+
+    it.each(runners)("%s notifies onError when the file cannot be fetched", async (_name, run) => {
+      failFetch();
+      const onError = jest.fn();
+      await run(onError);
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it.each(runners)("%s still swallows the failure without onError", async (_name, run) => {
+      failFetch();
+      await expect(run()).resolves.toBeUndefined();
+    });
   });
 });
