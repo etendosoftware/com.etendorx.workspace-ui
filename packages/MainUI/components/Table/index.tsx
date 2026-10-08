@@ -104,6 +104,10 @@ import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
+import { useTableGrouping } from "./hooks/useTableGrouping";
+import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
+import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
+import { isGroupRow } from "@/utils/table/grouping";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
 import {
@@ -800,7 +804,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { showErrorModal, showSuccessModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal, showWarningModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -839,12 +843,19 @@ const DynamicTable = ({
     tab: tab,
   });
 
-  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({
-      windowIdentifier,
-      tabId: tab.id,
-      tabLevel: tab.tabLevel,
-    });
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    tableColumnSorting,
+    tableColumnOrder,
+    tableColumnGrouping,
+    setTableColumnGrouping,
+    setTableColumnSorting,
+  } = useTableStatePersistenceTab({
+    windowIdentifier,
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+  });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -1024,6 +1035,32 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
+
+  // Grid grouping (classic "Group by" / "Ungroup"); regrouping is blocked like sorting while rows are being edited
+  const canChangeGrouping = useCallback(() => canSortWithEditingRows(editingRowsRef.current), []);
+  const showGroupingWarning = useCallback((message: string) => showWarningModal(message), [showWarningModal]);
+  const {
+    groupedColumnId,
+    activeGrouping,
+    isGroupingAvailable,
+    groupExpanded,
+    handleGroupExpandedChange,
+    groupBy,
+    ungroup,
+    getGroupByLabel,
+    getUngroupLabel,
+  } = useTableGrouping({
+    windowId: tab.window,
+    columns: baseColumns,
+    grouping: tableColumnGrouping,
+    setGrouping: setTableColumnGrouping,
+    setSorting: setTableColumnSorting,
+    records: displayRecords,
+    loading,
+    shouldUseTreeMode,
+    canChangeGrouping,
+    showWarning: showGroupingWarning,
+  });
 
   // Report table dirty state to windowStore — read by every unsaved-changes guard.
   // Keyed on real edits, not on merely having a row open for editing: opening the editor
@@ -1783,6 +1820,12 @@ const DynamicTable = ({
       return;
     }
 
+    // Classic hides "create record in grid" while the grid is grouped
+    if (groupedColumnId) {
+      logger.warn("[InlineEditing] Insert blocked while the grid is grouped");
+      return;
+    }
+
     // Import utility functions for new row creation
     const { generateNewRowId, createEmptyRowData, insertNewRowAtTop } = await import("./utils/editingRowUtils");
 
@@ -1841,6 +1884,7 @@ const DynamicTable = ({
     displayRecords,
     setInitialFocusCell,
     setOptimisticRecords,
+    groupedColumnId,
   ]);
 
   // Validate an entire row before saving
@@ -2555,6 +2599,9 @@ const DynamicTable = ({
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
 
+      // Group header rendering, locking of the grouped column and group subtotals
+      Object.assign(column, getGroupingColumnProps(col, { groupedColumnId, summaryType: summaryState[col.id] }));
+
       // Tree reference columns get a tree-aware dropdown filter instead of text
       const ref = col.column?.reference;
       if (ref === FIELD_REFERENCE_CODES.TREE_REFERENCE.id || ref === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id) {
@@ -2643,6 +2690,8 @@ const DynamicTable = ({
     tab.entityName,
     tab.id,
     handleMRTColumnFiltersChange,
+    groupedColumnId,
+    summaryState,
   ]);
 
   // Helper function to check if a row is being edited
@@ -2716,7 +2765,7 @@ const DynamicTable = ({
     [onRecordSelection, tab.id]
   );
 
-  const rowProps = useCallback<RowProps>(
+  const recordRowProps = useCallback<RowProps>(
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
@@ -2928,6 +2977,12 @@ const DynamicTable = ({
     ]
   );
 
+  // Group header rows only expand/collapse: their `original` is the group's first record
+  const rowProps = useCallback<RowProps>(
+    (props) => (isGroupRow(props.row) ? getGroupRowProps(props.row, props.table) : recordRowProps(props)),
+    [recordRowProps]
+  );
+
   const renderEmptyRowsFallback = useCallback(
     ({ table }: { table: MRT_TableInstance<EntityData> }) => {
       if (loading) {
@@ -3065,9 +3120,13 @@ const DynamicTable = ({
 
   const handleExpandedChange = useCallback(
     (newExpanded: Updater<ExpandedState>) => {
+      if (groupedColumnId) {
+        handleGroupExpandedChange(newExpanded);
+        return;
+      }
       handleMRTExpandChange({ newExpanded });
     },
-    [handleMRTExpandChange]
+    [handleMRTExpandChange, groupedColumnId, handleGroupExpandedChange]
   );
 
   const handleGetRowCanExpand = useCallback(
@@ -3077,10 +3136,36 @@ const DynamicTable = ({
     [shouldUseTreeMode]
   );
 
+  // Group header rows cannot be selected (classic draws no checkbox on them)
+  const isSelectableRow = useCallback((row: MRT_Row<EntityData>) => !isGroupRow(row), []);
+
+  // Grouping actions of the column actions menu
+  const groupingMenuActions = useMemo(
+    () =>
+      isGroupingAvailable
+        ? { groupedColumnId, getGroupByLabel, getUngroupLabel, onGroupBy: groupBy, onUngroup: ungroup }
+        : undefined,
+    [isGroupingAvailable, groupedColumnId, getGroupByLabel, getUngroupLabel, groupBy, ungroup]
+  );
+
+  // Column actions ("3 dots") menu: MRT's items plus the summary (as in the header context menu) and grouping actions
+  const renderColumnActionsMenuItems = useCallback(
+    (args: ColumnActionsMenuArgs) =>
+      buildColumnActionsMenuItems(args, {
+        activeSummary: summaryState,
+        onSetSummary: handleSetSummary,
+        onRemoveSummary: handleRemoveSummary,
+        grouping: groupingMenuActions,
+      }),
+    [summaryState, handleSetSummary, handleRemoveSummary, groupingMenuActions]
+  );
+
   // Memoize the expanded state to avoid creating new empty objects
   const expandedState = useMemo(() => {
-    return shouldUseTreeMode ? expanded : {};
-  }, [shouldUseTreeMode, expanded]);
+    if (shouldUseTreeMode) return expanded;
+    if (groupedColumnId) return groupExpanded;
+    return {};
+  }, [shouldUseTreeMode, expanded, groupedColumnId, groupExpanded]);
 
   // Memoize the entire state object to prevent unnecessary re-renders
   const tableState = useMemo(
@@ -3089,12 +3174,21 @@ const DynamicTable = ({
       columnVisibility: tableColumnVisibility,
       sorting: tableColumnSorting,
       columnOrder: tableColumnOrder,
+      grouping: activeGrouping,
       expanded: expandedState,
       showColumnFilters: true,
       showProgressBars: loading,
       isLoading: loading,
     }),
-    [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
+    [
+      tableColumnFilters,
+      tableColumnVisibility,
+      tableColumnSorting,
+      tableColumnOrder,
+      activeGrouping,
+      expandedState,
+      loading,
+    ]
   );
 
   // Memoize initialState to avoid creating new objects
@@ -3120,6 +3214,7 @@ const DynamicTable = ({
           row: props.row,
         }),
         onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
+          if (isGroupRow(props.row)) return;
           handleCellContextMenu(event, props.cell, props.row);
         },
         title: currentTitle,
@@ -3147,7 +3242,7 @@ const DynamicTable = ({
     enableGlobalFilter: false,
     columns,
     data: effectiveRecords,
-    enableRowSelection: true,
+    enableRowSelection: isSelectableRow,
     enableMultiRowSelection: true,
     muiSelectAllCheckboxProps,
     positionToolbarAlertBanner: "none",
@@ -3239,7 +3334,12 @@ const DynamicTable = ({
     },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
-    paginateExpandedRows: false,
+    enableGrouping: isGroupingAvailable,
+    groupedColumnMode: "reorder",
+    enableExpandAll: false,
+    // Without a pagination row model, TanStack only inserts the sub rows of expanded groups when
+    // expanded rows are "paginated"; the tree builds its own flat rows, so it keeps the previous value
+    paginateExpandedRows: Boolean(groupedColumnId),
     getRowCanExpand: handleGetRowCanExpand,
     initialState: {
       ...initialState,
@@ -3257,6 +3357,7 @@ const DynamicTable = ({
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
+    renderColumnActionsMenuItems,
     manualFiltering: true,
     manualSorting: true,
     enableColumnOrdering: true,

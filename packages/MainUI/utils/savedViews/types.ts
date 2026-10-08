@@ -29,6 +29,8 @@ export interface MRTViewConfig {
   sorting: MRT_SortingState;
   order: string[];
   implicitFilterApplied: boolean;
+  /** Grouped column ids; absent in views saved before grouping existed or saved ungrouped. */
+  grouping?: string[];
 }
 
 /**

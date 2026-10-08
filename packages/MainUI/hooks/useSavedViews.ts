@@ -58,6 +58,7 @@ export interface UseSavedViewsReturn {
     sorting: MRT_SortingState;
     order: string[];
     implicitFilterApplied: boolean;
+    grouping?: string[];
     isDefault?: boolean;
   }) => Promise<void>;
   applyView: (view: ParsedSavedView) => {
@@ -66,6 +67,7 @@ export interface UseSavedViewsReturn {
     sorting: MRT_SortingState;
     order: string[];
     implicitFilterApplied: boolean;
+    grouping: string[];
   } | null;
   deleteView: (viewId: string) => Promise<void>;
 }
@@ -124,6 +126,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       sorting,
       order,
       implicitFilterApplied,
+      grouping = [],
       isDefault = false,
     }: {
       tabId: string;
@@ -133,6 +136,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       sorting: MRT_SortingState;
       order: string[];
       implicitFilterApplied: boolean;
+      grouping?: string[];
       isDefault?: boolean;
     }): Promise<void> => {
       if (!token) throw new Error("Not authenticated");
@@ -141,7 +145,14 @@ export function useSavedViews(): UseSavedViewsReturn {
       setError(null);
 
       try {
-        const gridConfiguration = buildGridConfiguration(filters, visibility, sorting, order, implicitFilterApplied);
+        const gridConfiguration = buildGridConfiguration(
+          filters,
+          visibility,
+          sorting,
+          order,
+          implicitFilterApplied,
+          grouping
+        );
 
         // If saving as default, clear isDefault on existing default view first
         if (isDefault) {
@@ -281,6 +292,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       sorting: MRT_SortingState;
       order: string[];
       implicitFilterApplied: boolean;
+      grouping: string[];
     } | null => {
       if (!view.config) {
         logger.warn("[useSavedViews] Cannot apply view — no MRT config:", view.name);
@@ -293,6 +305,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         sorting: view.config.sorting,
         order: view.config.order,
         implicitFilterApplied: view.config.implicitFilterApplied,
+        grouping: view.config.grouping ?? [],
       };
     },
     []

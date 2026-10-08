@@ -276,6 +276,34 @@ describe("useSavedViews — saveView", () => {
     expect(gridConfig.version).toBe(1);
     expect(gridConfig.source).toBe("workspace-ui");
     expect(gridConfig.filters).toEqual([{ id: "amount", value: "100" }]);
+    expect(gridConfig).not.toHaveProperty("grouping");
+  });
+
+  it("stores the grouping of a grouped grid", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.saveView({
+        tabId: "tab-abc",
+        name: "Grouped",
+        filters: [],
+        visibility: {},
+        sorting: [],
+        order: [],
+        implicitFilterApplied: false,
+        grouping: ["amount"],
+      });
+    });
+
+    const postCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "POST");
+    const body = JSON.parse((postCall![1] as RequestInit).body as string);
+
+    expect(JSON.parse(body.gridconfiguration).grouping).toEqual(["amount"]);
   });
 
   it("throws and sets error when server returns error on save", async () => {
@@ -336,6 +364,31 @@ describe("useSavedViews — applyView", () => {
     expect(state?.visibility).toEqual({ status: true });
     expect(state?.sorting).toEqual([{ id: "status", desc: false }]);
     expect(state?.order).toEqual(["status"]);
+    expect(state?.grouping).toEqual([]);
+  });
+
+  it("restores the grouping of a grouped view", () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    const state = result.current.applyView({
+      id: "v2",
+      name: "Grouped View",
+      tabId: "tab-abc",
+      isDefault: false,
+      filterClause: "",
+      config: {
+        version: 1,
+        source: "workspace-ui",
+        filters: [],
+        visibility: {},
+        sorting: [],
+        order: [],
+        implicitFilterApplied: true,
+        grouping: ["status"],
+      },
+    });
+
+    expect(state?.grouping).toEqual(["status"]);
   });
 
   it("returns null when the view has no config", () => {

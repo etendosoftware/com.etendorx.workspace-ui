@@ -96,6 +96,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
   const setTableSorting = useWindowStore((s) => s.setTableSorting);
   const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
@@ -117,6 +118,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
     tableColumnVisibility,
     tableColumnSorting,
     tableColumnOrder,
+    tableColumnGrouping,
     activeLevels,
     activeTabsByLevel,
     isImplicitFilterApplied: storeImplicitFilterApplied,
@@ -244,6 +246,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       sorting: typeof tableColumnSorting;
       order: typeof tableColumnOrder;
       implicitFilterApplied: boolean;
+      grouping?: string[];
     }) => {
       if (!windowIdentifier || !tab?.id) return;
       const ti = tab.id;
@@ -252,6 +255,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       setTableSorting(windowIdentifier, ti, state.sorting);
       setTableOrder(windowIdentifier, ti, state.order);
       setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
+      setTableGrouping(windowIdentifier, ti, state.grouping ?? []);
     },
     [
       windowIdentifier,
@@ -261,6 +265,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableGrouping,
     ]
   );
 
@@ -587,6 +592,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
+          currentGrouping={tableColumnGrouping}
           isImplicitFilterApplied={effectiveImplicitFilterApplied}
           defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}

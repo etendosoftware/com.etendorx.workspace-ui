@@ -57,7 +57,8 @@ export function buildGridConfiguration(
   visibility: MRT_VisibilityState,
   sorting: MRT_SortingState,
   order: string[],
-  implicitFilterApplied: boolean
+  implicitFilterApplied: boolean,
+  grouping: string[] = []
 ): string {
   const config: MRTViewConfig = {
     version: 1,
@@ -67,6 +68,8 @@ export function buildGridConfiguration(
     sorting,
     order,
     implicitFilterApplied,
+    // Only grouped views carry the key, so ungrouped views keep their previous shape
+    ...(grouping.length > 0 && { grouping }),
   };
   return JSON.stringify(config);
 }

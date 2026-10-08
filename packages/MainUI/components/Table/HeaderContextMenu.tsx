@@ -24,6 +24,22 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export type SummaryType = "min" | "max" | "count" | "sum" | "avg";
 
+const NUMERIC_COLUMN_TYPES: readonly string[] = ["integer", "number", "quantity", "amount"];
+const BASE_SUMMARY_TYPES: SummaryType[] = ["min", "max", "count"];
+const ALL_SUMMARY_TYPES: SummaryType[] = [...BASE_SUMMARY_TYPES, "sum", "avg"];
+
+/** Whether a column holds numbers, so it also accepts the sum and average summary functions. */
+export const isNumericSummaryColumn = (columnDef: { type?: string }): boolean =>
+  NUMERIC_COLUMN_TYPES.includes(columnDef.type ?? "");
+
+/** Summary functions a column accepts. */
+export const getSummaryTypes = (columnDef: { type?: string }): SummaryType[] => {
+  if (isNumericSummaryColumn(columnDef)) {
+    return ALL_SUMMARY_TYPES;
+  }
+  return BASE_SUMMARY_TYPES;
+};
+
 interface HeaderContextMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
@@ -48,11 +64,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   const columnId = column.id;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columnDef = column.columnDef as { type?: string };
-  const isNumeric =
-    columnDef.type === "integer" ||
-    columnDef.type === "number" ||
-    columnDef.type === "quantity" ||
-    columnDef.type === "amount";
+  const isNumeric = isNumericSummaryColumn(columnDef);
 
   const handleMouseEnterSubMenu = (event: React.MouseEvent<HTMLElement>) => {
     setSubMenuAnchorEl(event.currentTarget);
