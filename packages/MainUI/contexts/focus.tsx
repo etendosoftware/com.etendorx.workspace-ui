@@ -27,6 +27,8 @@ interface FocusContextI {
   setFocus: (id: string) => void;
   registerRegion: (region: FocusRegion) => void;
   unregisterRegion: (id: string) => void;
+  /** Whether a region with this id is mounted, i.e. its tab is rendered. */
+  hasRegion: (id: string) => boolean;
 }
 
 const FocusContext = createContext<FocusContextI>({} as FocusContextI);
@@ -45,6 +47,8 @@ export function FocusProvider({ children }: React.PropsWithChildren) {
     regionsRef.current.delete(id);
   }, []);
 
+  const hasRegion = useCallback((id: string) => regionsRef.current.has(id), []);
+
   const setFocus = useCallback((id: string) => {
     const prev = activeFocusIdRef.current;
     if (prev === id) return;
@@ -58,8 +62,8 @@ export function FocusProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ activeFocusId, setFocus, registerRegion, unregisterRegion }),
-    [activeFocusId, setFocus, registerRegion, unregisterRegion]
+    () => ({ activeFocusId, setFocus, registerRegion, unregisterRegion, hasRegion }),
+    [activeFocusId, setFocus, registerRegion, unregisterRegion, hasRegion]
   );
 
   return <FocusContext.Provider value={value}>{children}</FocusContext.Provider>;

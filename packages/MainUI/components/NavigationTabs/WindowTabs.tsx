@@ -33,6 +33,7 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { isWindowDirty } from "@/utils/window/dirtyState";
 import { getTitleForWindow } from "@/utils/window/windowTitle";
 import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
+import { useWindowTabShortcuts } from "@/hooks/navigation/useWindowTabShortcuts";
 import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
 
 export default function WindowTabs() {
@@ -129,6 +130,15 @@ export default function WindowTabs() {
     () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
     [windows, closingWindowIds]
   );
+
+  useWindowTabShortcuts({
+    windows: visibleWindows,
+    onSelectWindow: handleSelectWindow,
+    onCloseWindow: handleCloseWindow,
+    onSelectWorkspace: setAllWindowsInactive,
+    // While the close prompt is open its own buttons decide; shortcuts would act behind it.
+    enabled: !pendingCloseWindow,
+  });
 
   // Clear any optimistic closing ids that no longer exist in windows
   useEffect(() => {

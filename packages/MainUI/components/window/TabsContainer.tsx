@@ -34,6 +34,9 @@ import { compileExpression } from "@/components/Form/FormView/selectors/BaseSele
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { useTabLevelShortcuts, useWindowActivationFocus } from "@/hooks/navigation/useTabLevelShortcuts";
+
+const NO_TABS: Tab[] = [];
 
 /**
  * TabsContainer Component
@@ -173,6 +176,10 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
+
+  const windowTabs = windowData?.tabs ?? NO_TABS;
+  useTabLevelShortcuts(windowTabs);
+  useWindowActivationFocus(windowTabs);
 
   /**
    * Memoized tab grouping by hierarchical levels.

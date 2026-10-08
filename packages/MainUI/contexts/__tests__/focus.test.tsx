@@ -48,4 +48,14 @@ describe("FocusContext", () => {
     act(() => result.current.setFocus("tab-2"));
     expect(onBlur).not.toHaveBeenCalled();
   });
+
+  it("hasRegion reports only the mounted regions", () => {
+    const { result } = renderHook(() => useFocusContext(), { wrapper });
+    act(() => result.current.registerRegion({ id: "tab-1" }));
+    expect(result.current.hasRegion("tab-1")).toBe(true);
+    expect(result.current.hasRegion("tab-2")).toBe(false);
+
+    act(() => result.current.unregisterRegion("tab-1"));
+    expect(result.current.hasRegion("tab-1")).toBe(false);
+  });
 });
