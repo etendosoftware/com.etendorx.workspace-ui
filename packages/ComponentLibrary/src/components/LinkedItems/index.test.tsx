@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LinkedItems, type LinkedItemsProps } from "./index";
 
 const baseProps = (): LinkedItemsProps => ({
@@ -36,5 +36,33 @@ describe("LinkedItems ready gating", () => {
 
     rerender(<LinkedItems {...props} ready={true} />);
     await waitFor(() => expect(props.onFetchCategories).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("LinkedItems record change", () => {
+  const category = {
+    adTabId: "tab-1",
+    adWindowId: "123",
+    columnName: "C_BPartner_ID",
+    fullElementName: "Sales Order - Business Partner",
+    tableName: "C_Order",
+    total: "1",
+  };
+  const item = { adTabId: "tab-2", adWindowId: "456", adMenuName: "Sales Order", id: "order-1", name: "SO-001" };
+
+  it("clears the previous record categories, selection and items when the record changes", async () => {
+    const props = baseProps();
+    (props.onFetchCategories as jest.Mock).mockResolvedValueOnce([category]).mockReturnValueOnce(new Promise(() => {}));
+    (props.onFetchItems as jest.Mock).mockResolvedValue([item]);
+    const { rerender } = render(<LinkedItems {...props} />);
+
+    fireEvent.click(await screen.findByText(category.fullElementName));
+    expect(await screen.findByText(item.name)).toBeInTheDocument();
+
+    rerender(<LinkedItems {...props} recordId="ANOTHER_RECORD" />);
+
+    expect(screen.queryByText(category.fullElementName)).not.toBeInTheDocument();
+    expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+    expect(screen.getByText(props.noSelectedCategoryText)).toBeInTheDocument();
   });
 });

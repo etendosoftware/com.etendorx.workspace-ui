@@ -22,6 +22,8 @@ import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
 import { createSmartContext } from "@/utils/expressions";
 import { FormFields } from "../FormFieldsContent";
+import { useFormViewContext } from "../contexts/FormViewContext";
+import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
@@ -80,7 +82,9 @@ jest.mock("../Sections/AttachmentSection", () => ({
 
 jest.mock("../Sections/LinkedItemsSection", () => ({
   __esModule: true,
-  default: () => <div data-testid="linked-items-section" />,
+  default: ({ isSectionExpanded }: { isSectionExpanded: boolean }) => (
+    <div data-testid="linked-items-section" data-expanded={String(isSectionExpanded)} />
+  ),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -171,6 +175,33 @@ describe("FormFields — Notes / Attachments / LinkedItems visibility by mode", 
       renderFormFields(FormMode.VIEW);
       expect(screen.getByTestId("linked-items-section")).toBeInTheDocument();
     });
+  });
+});
+
+describe("FormFields — LinkedItems expansion state", () => {
+  const mockUseFormViewContext = useFormViewContext as jest.Mock;
+  const defaultImplementation = mockUseFormViewContext.getMockImplementation();
+
+  const renderWithLinkedItemsExpanded = (isExpanded: boolean) => {
+    const context = defaultImplementation?.();
+    mockUseFormViewContext.mockImplementation(() => ({
+      ...context,
+      isSectionExpanded: jest.fn((id: string) => id !== LINKED_ITEMS_SECTION_ID || isExpanded),
+    }));
+    renderFormFields(FormMode.EDIT);
+    return screen.getByTestId("linked-items-section");
+  };
+
+  afterEach(() => {
+    mockUseFormViewContext.mockImplementation(defaultImplementation);
+  });
+
+  it("tells the LinkedItemsSection when its section is expanded", () => {
+    expect(renderWithLinkedItemsExpanded(true)).toHaveAttribute("data-expanded", "true");
+  });
+
+  it("tells the LinkedItemsSection when its section is collapsed", () => {
+    expect(renderWithLinkedItemsExpanded(false)).toHaveAttribute("data-expanded", "false");
   });
 });
 
