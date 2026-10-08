@@ -25,7 +25,7 @@ import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { createSmartContext } from "@/utils/expressions";
 import { lazyContextByKey } from "@/utils/evaluation/lazyContext";
-import { extractDependenciesFromExpression } from "@/utils/expressions/dependencies";
+import { collectExpressionDependencies } from "@/utils/expressions/dependencies";
 import { useTabFormValues } from "@/hooks/useTabFormValues";
 import { SELECTION_SETTLE_MS, useSettledValue } from "@/hooks/useSettledValue";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
@@ -76,16 +76,14 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
 
   // Form values the buttons' display logic reads, plus their identifiers (the context treats a FK whose
   // identifier is "" as cleared): editing any other field does not re-evaluate them.
-  const displayLogicDependencies = useMemo(() => {
-    const names = new Set<string>();
-    for (const button of Object.values(actionFields)) {
-      for (const name of extractDependenciesFromExpression(button.displayLogicExpression, tab?.fields)) {
-        names.add(name);
-        names.add(`${name}$_identifier`);
-      }
-    }
-    return Array.from(names);
-  }, [actionFields, tab?.fields]);
+  const displayLogicDependencies = useMemo(
+    () =>
+      collectExpressionDependencies(
+        Object.values(actionFields).map((button) => button.displayLogicExpression),
+        tab?.fields
+      ),
+    [actionFields, tab?.fields]
+  );
   const formValues = useTabFormValues(displayLogicDependencies);
 
   // Toolbar-local auxiliary inputs fetched when a single record is selected in table view, tagged

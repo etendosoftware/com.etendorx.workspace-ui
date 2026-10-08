@@ -3,7 +3,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { TranslateFunction } from "@/hooks/types";
 import { useState, useCallback, useMemo, useRef, type DragEvent, type ChangeEvent } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useTabContext } from "@/contexts/tab";
 import { useUserStore } from "@/stores/userStore";
@@ -106,7 +106,7 @@ function isViolated(action: string, oldW: number, oldH: number, newW: number, ne
 
 const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
   const { t } = useTranslation();
-  const { setValue, watch } = useFormContext();
+  const { setValue } = useFormContext();
   const { tab } = useTabContext();
   const session = useUserStore((s) => s.session);
   const currentOrganization = useUserStore((s) => s.currentOrganization);
@@ -122,7 +122,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
   const [pendingError, setPendingError] = useState<{ message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const imageId = watch(field.hqlName);
+  const imageId = useWatch({ name: field.hqlName });
 
   const orgId = useMemo(() => {
     return (session?.["#AD_Org_ID"] || session?.adOrgId || currentOrganization?.id || "") as string;

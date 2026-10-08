@@ -1,6 +1,6 @@
 import type React from "react";
 import { useState, useCallback, useEffect } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import X from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { Field } from "@workspaceui/api-client/src/api/types";
@@ -76,11 +76,11 @@ const resolveProductId = (values: Record<string, unknown>): string | null => {
 };
 
 const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> = ({ field, isReadOnly }) => {
-  const { watch, setValue, getValues } = useFormContext();
+  const { setValue } = useFormContext();
   const fieldName = field.hqlName || field.columnName || field.name;
 
-  const value = watch(fieldName);
-  const identifier = watch(`${fieldName}$_identifier`);
+  const value = useWatch({ name: fieldName });
+  const identifier = useWatch({ name: `${fieldName}$_identifier` });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState<string>("");
   // Track the last saved instance ID for re-opening the modal in same session
@@ -139,7 +139,8 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
     [fieldName, setValue]
   );
 
-  const formValues = getValues();
+  // The product and attribute set come from other fields, so this (rare) selector follows the whole form.
+  const formValues = useWatch() as Record<string, unknown>;
   const formAttributeSetId = resolveAttributeSetId(formValues);
   let productId = resolveProductId(formValues);
 

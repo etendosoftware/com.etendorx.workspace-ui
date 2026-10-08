@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-import { useFormContext } from "react-hook-form";
 import { useUserStore } from "@/stores/userStore";
 import { FormMode, type Field, type Tab } from "@workspaceui/api-client/src/api/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
@@ -23,6 +22,7 @@ import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
+import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
 import { useCallback, useRef, useEffect, useState, type RefObject } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
@@ -33,6 +33,9 @@ import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import { useTranslation } from "@/hooks/useTranslation";
 import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
 import { FORM_FIELDS_ROOT_ATTRIBUTE } from "@/utils/form/focus";
+
+// Besides display logic, the form follows the record identifier (attachments section).
+const RECORD_IDENTIFIER_NAMES = ["_identifier"];
 
 interface FormFieldsProps {
   tab: Tab;
@@ -71,7 +74,6 @@ export function FormFields({
   isReadOnly,
   fieldsRootRef,
 }: FormFieldsProps) {
-  const { watch } = useFormContext();
   const session = useUserStore((s) => s.session);
   const [noteCount, setNoteCount] = useState(initialNoteCount);
   const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
@@ -79,8 +81,8 @@ export function FormFields({
     useFormViewContext();
   const { t } = useTranslation();
 
-  // Get record identifier from form data
-  const formData = watch();
+  // Form values for section display logic; re-renders only when a field that logic reads changes.
+  const formData = useDisplayLogicFormValues(tab.fields, RECORD_IDENTIFIER_NAMES);
   const recordIdentifier = formData?._identifier as string | undefined;
 
   // Built once per render and shared by every section's visibility check below.

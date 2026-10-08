@@ -19,16 +19,14 @@ import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
-import { useFormContext } from "react-hook-form";
+import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
 import { createSmartContext } from "@/utils/expressions";
 import { FormFields } from "../FormFieldsContent";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
-jest.mock("react-hook-form", () => ({
-  useFormContext: jest.fn(() => ({
-    watch: jest.fn(() => ({})),
-  })),
+jest.mock("@/hooks/evaluation/useDisplayLogicFormValues", () => ({
+  useDisplayLogicFormValues: jest.fn(() => ({})),
 }));
 
 const mockSession = {};
@@ -189,16 +187,16 @@ describe("FormFields — loading state", () => {
 });
 
 describe("FormFields — expression evaluation context", () => {
-  // The module mock's watch() returns a new object per call; here it returns the same one, like
-  // react-hook-form between edits, so the mount re-render (setHasLoadedOnce) reuses the context.
+  // The module mock returns a new object per call; here it returns the same one, like the hook between
+  // edits of unrelated fields, so the mount re-render (setHasLoadedOnce) reuses the context.
   const stableFormValues = { a: "Y" };
   beforeEach(() => {
     jest.clearAllMocks();
-    (useFormContext as jest.Mock).mockReturnValue({ watch: jest.fn(() => stableFormValues) });
+    (useDisplayLogicFormValues as jest.Mock).mockReturnValue(stableFormValues);
   });
   // clearAllMocks keeps implementations: restore the module mocks' defaults so overrides don't leak.
   afterEach(() => {
-    (useFormContext as jest.Mock).mockReset().mockImplementation(() => ({ watch: jest.fn(() => ({})) }));
+    (useDisplayLogicFormValues as jest.Mock).mockReset().mockImplementation(() => ({}));
     (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
   });
 

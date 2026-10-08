@@ -25,7 +25,7 @@ jest.mock("@mui/material", () => ({
 }));
 // Same object on every call, like react-hook-form between edits, so the hook's memo holds across renders.
 const mockFormValues = { docStatus: "CO" };
-jest.mock("react-hook-form", () => ({ useFormContext: () => ({ watch: () => mockFormValues }) }));
+jest.mock("@/hooks/evaluation/useDisplayLogicFormValues", () => ({ useDisplayLogicFormValues: () => mockFormValues }));
 jest.mock("@/stores/userStore", () => ({ useUserStore: (selector: any) => selector({ session: {} }) }));
 jest.mock("@/contexts/tab", () => ({ useTabContext: () => ({ tab: { fields: {}, window: "W1" } }) }));
 jest.mock("@/hooks/useTranslation", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));

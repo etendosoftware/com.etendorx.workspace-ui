@@ -17,7 +17,6 @@
 
 import { useMemo } from "react";
 import { useTheme } from "@mui/material";
-import { useFormContext } from "react-hook-form";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab";
 import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
@@ -32,6 +31,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { compileExpression } from "./selectors/BaseSelector";
 import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
+import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
 
 interface FormHeaderProps {
   statusBarFields: Record<string, Field>;
@@ -58,8 +58,7 @@ export function FormHeader({
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
   const session = useUserStore((s) => s.session);
   const { tab } = useTabContext();
-  const { watch } = useFormContext();
-  const formData = watch();
+  const formData = useDisplayLogicFormValues(tab?.fields);
 
   const evaluationContext = useEvaluationContext({
     values: formData,
