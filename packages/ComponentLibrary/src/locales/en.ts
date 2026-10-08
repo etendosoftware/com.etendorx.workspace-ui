@@ -83,6 +83,7 @@ const en = {
       moreInformation: "More Information",
       noCategories: "No Categories Available",
       selectCategory: "Please select a category",
+      noLinkedItems: "No linked items, click on a category on the left to show the linked items for that category",
     },
     notes: {
       title: "Notes",

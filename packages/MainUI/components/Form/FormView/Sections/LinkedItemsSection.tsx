@@ -184,6 +184,7 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded = t
       loadingText={t("common.loading")}
       noCategoriesText={t("forms.sections.noCategories")}
       noSelectedCategoryText={t("forms.sections.selectCategory")}
+      noItemsText={t("forms.sections.noLinkedItems")}
       data-testid="LinkedItems__92af80"
     />
   );

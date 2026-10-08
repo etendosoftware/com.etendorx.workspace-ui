@@ -37,6 +37,11 @@ export interface LinkedItemsProps {
   noCategoriesText: string;
   noSelectedCategoryText: string;
   /**
+   * Text shown in the items panel when the selected category returns no records.
+   * Falls back to `noCategoriesText` when omitted to preserve existing behavior.
+   */
+  noItemsText?: string;
+  /**
    * When false, the categories fetch is deferred. Used to wait until the record's
    * session context is established (form initialization / session sync) before
    * calling the backend, which requires the `<windowId>|<keyColumn>` session
@@ -44,6 +49,12 @@ export interface LinkedItemsProps {
    */
   ready?: boolean;
 }
+
+const renderEmptyMessage = (text: string) => (
+  <div className="p-4">
+    <p className="text-sm text-gray-500">{text}</p>
+  </div>
+);
 
 export const LinkedItems = memo(
   ({
@@ -56,6 +67,7 @@ export const LinkedItems = memo(
     loadingText,
     noCategoriesText,
     noSelectedCategoryText,
+    noItemsText,
     ready = true,
   }: LinkedItemsProps) => {
     const [categories, setCategories] = useState<LinkedItemCategory[]>([]);
@@ -140,13 +152,11 @@ export const LinkedItems = memo(
       [loadingText]
     );
 
-    const noCategoriesContent = useMemo(
-      () => (
-        <div className="p-4">
-          <p className="text-sm text-gray-500">{noCategoriesText}</p>
-        </div>
-      ),
-      [noCategoriesText]
+    const noCategoriesContent = useMemo(() => renderEmptyMessage(noCategoriesText), [noCategoriesText]);
+
+    const noItemsContent = useMemo(
+      () => renderEmptyMessage(noItemsText ?? noCategoriesText),
+      [noItemsText, noCategoriesText]
     );
 
     const noSelectedCategoryContent = useMemo(
@@ -213,7 +223,7 @@ export const LinkedItems = memo(
     const rightPanelContent = useMemo(() => {
       if (!selectedCategory) return noSelectedCategoryContent;
       if (loadingItems) return loadingContent;
-      if (items.length === 0) return noCategoriesContent;
+      if (items.length === 0) return noItemsContent;
       return itemsContent;
     }, [
       selectedCategory,
@@ -221,7 +231,7 @@ export const LinkedItems = memo(
       items.length,
       noSelectedCategoryContent,
       loadingContent,
-      noCategoriesContent,
+      noItemsContent,
       itemsContent,
     ]);
 
