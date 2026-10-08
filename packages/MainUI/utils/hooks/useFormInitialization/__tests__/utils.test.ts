@@ -535,6 +535,26 @@ describe("FormInitialization Utils - SessionMode Support", () => {
   });
 
   describe("mergeSessionAttributes", () => {
+    it("returns the previous session when the merge changes no key, value or key order", () => {
+      const prevSession = { $GlobalVar: "val1", field1: "a" };
+      const result = mergeSessionAttributes(prevSession, { field1: "a" });
+      expect(result).toBe(prevSession);
+    });
+
+    it("returns a new session when a value changes", () => {
+      const prevSession = { $GlobalVar: "val1", field1: "a" };
+      const result = mergeSessionAttributes(prevSession, { field1: "b" });
+      expect(result).not.toBe(prevSession);
+      expect(result).toEqual({ $GlobalVar: "val1", field1: "b" });
+    });
+
+    it("returns a new session when only the key order changes", () => {
+      const prevSession = { field1: "a", $GlobalVar: "val1" };
+      const result = mergeSessionAttributes(prevSession, { field1: "a" });
+      expect(result).not.toBe(prevSession);
+      expect(Object.keys(result)).toEqual(["$GlobalVar", "field1"]);
+    });
+
     it("should preserve global keys and merge new attributes", () => {
       const prevSession = {
         $GlobalVar: "val1",

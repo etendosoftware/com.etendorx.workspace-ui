@@ -69,6 +69,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
+import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserStore } from "@/stores/userStore";
 import {
@@ -3880,6 +3881,13 @@ const DynamicTable = ({
     table,
   ]);
 
+  // Hidden behind the form, the grid keeps its last rendered rows: React skips re-rendering them (cells,
+  // date formatting, row measurement) until the grid is shown again.
+  const tableElement = useFrozenWhileHidden(
+    isVisible,
+    <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+  );
+
   if (error) {
     return <TableErrorDisplay error={error} onRetry={refetch} data-testid="TableErrorDisplay__8ca888" />;
   }
@@ -3902,7 +3910,7 @@ const DynamicTable = ({
       }`}
       onClick={onFocusAcquire}>
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
-        <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+        {tableElement}
       </div>
       <SummaryRow
         table={table}

@@ -338,6 +338,15 @@ const resolveMergedValue = (prev: ISession, key: string, newValue: string, allow
  *   own (child tabs), while root-tab calls must be able to legitimately reset a key to "".
  * @returns A clean session with global keys preserved and record-specific keys replaced
  */
+const isSameSession = (prev: ISession, next: Record<string, unknown>): boolean => {
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return false;
+  return prevKeys.every(
+    (key, index) => key === nextKeys[index] && Object.is((prev as Record<string, unknown>)[key], next[key])
+  );
+};
+
 export const mergeSessionAttributes = (
   prev: ISession,
   newAttributes: Record<string, string>,
@@ -347,5 +356,7 @@ export const mergeSessionAttributes = (
   for (const [key, value] of Object.entries(newAttributes)) {
     merged[key] = resolveMergedValue(prev, key, value, isRootTabCall);
   }
-  return merged as ISession;
+  // Same keys, order and values: keep the previous object so session subscribers do not re-render
+  // and rebuild their evaluation contexts for nothing.
+  return isSameSession(prev, merged) ? prev : (merged as ISession);
 };
