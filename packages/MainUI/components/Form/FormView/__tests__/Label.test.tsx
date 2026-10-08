@@ -24,7 +24,7 @@ const mockHandleClickRedirect = jest.fn();
 const mockHandleKeyDownRedirect = jest.fn();
 
 jest.mock("react-hook-form", () => ({
-  useFormContext: () => ({ watch: mockWatch }),
+  useWatch: ({ name }: { name: string }) => mockWatch(name),
 }));
 
 jest.mock("@/contexts/tab", () => ({

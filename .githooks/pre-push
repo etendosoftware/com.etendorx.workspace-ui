@@ -1,0 +1,4 @@
+#!/bin/sh
+# Warns when the pushed branch touches performance-sensitive code. Never blocks the push.
+env -u NODE_OPTIONS node "$(git rev-parse --show-toplevel)/playwright-tests/perf/pre-push-check.mjs" || true
+exit 0

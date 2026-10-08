@@ -40,6 +40,7 @@ import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useCallback, useEffect, useRef } from "react";
+import { SELECTION_SETTLE_MS } from "@/hooks/useSettledValue";
 import {
   syncSelectedRecordsToSession,
   clearRecordContextFromSession,
@@ -51,7 +52,8 @@ import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/Curre
 import type { TabFormState } from "@/utils/url/constants";
 import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
 
-const KEYBOARD_NAV_DEBOUNCE_MS = 150;
+// Same pause as the other selection side effects (child tabs, toolbar): Classic's delayedRecordSelected.
+const KEYBOARD_NAV_DEBOUNCE_MS = SELECTION_SETTLE_MS;
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
