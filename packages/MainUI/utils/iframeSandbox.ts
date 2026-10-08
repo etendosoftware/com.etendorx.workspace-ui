@@ -15,18 +15,8 @@
  */
 
 /**
- * Canonical string values returned by the metadata backend for the
- * `Menu.type` field. Centralised here to avoid magic strings sprinkled
- * across the menu dispatch layer.
+ * Sandbox for trusted embedded pages: needed for embedded apps (auth popups, forms, downloads).
+ * allow-top-navigation is intentionally excluded to prevent iframes from redirecting the parent
+ * page (e.g. Google Calendar auth redirects).
  */
-export const MENU_ITEM_TYPES = {
-  PROCESS_DEFINITION: "ProcessDefinition",
-  PROCESS: "Process",
-  FORM: "Form",
-  WINDOW: "Window",
-  PROCESS_MANUAL: "ProcessManual",
-  REPORT: "Report",
-  EXTERNAL: "External",
-} as const;
-
-export type MenuItemType = (typeof MENU_ITEM_TYPES)[keyof typeof MENU_ITEM_TYPES];
+export const IFRAME_SANDBOX_PERMISSIVE = "allow-scripts allow-same-origin allow-popups allow-forms allow-downloads";

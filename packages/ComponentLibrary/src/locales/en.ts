@@ -400,6 +400,8 @@ const en = {
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
+    externalLinkPopupBlocked: "Your browser blocked the link this menu entry tried to open.",
+    openExternalLink: "Open link",
   },
   login: {
     title: "Log In",

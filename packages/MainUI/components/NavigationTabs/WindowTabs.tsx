@@ -24,6 +24,7 @@ import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/che
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
+import ExternalLinkIcon from "@workspaceui/componentlibrary/src/assets/icons/external-link.svg";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -34,6 +35,12 @@ import { isWindowDirty } from "@/utils/window/dirtyState";
 import { getTitleForWindow } from "@/utils/window/windowTitle";
 import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
 import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
+
+/** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
+const getIconForWindow = (window: WindowState) => {
+  if (!window.externalUrl) return undefined;
+  return <ExternalLinkIcon className="fill-black" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
+};
 
 export default function WindowTabs() {
   const { t } = useTranslation();
@@ -182,6 +189,7 @@ export default function WindowTabs() {
               }}>
               <WindowTab
                 title={title}
+                icon={getIconForWindow(window)}
                 isActive={isActive}
                 isDirty={isWindowDirty(dirtyWindows, window.windowIdentifier)}
                 onActivate={() => {

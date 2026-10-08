@@ -55,6 +55,7 @@ export const OPENABLE_MENU_ITEM_TYPES = [
   "Form",
   "Process",
   "ProcessManual",
+  "External",
 ] as const;
 
 /** Offsets accepted by {@link findAdjacentMenuItem}. */
@@ -69,13 +70,15 @@ const MENU_ITEM_SELECTOR = `[${MENU_ITEM_ID_ATTRIBUTE}]`;
 const COLLAPSED_SUBTREE_SELECTOR = `[${MENU_COLLAPSED_ATTRIBUTE}]`;
 
 /**
- * Whether clicking this item opens something. A `Window` needs its `windowId`, every
- * other openable type needs its `id`; a folder (`Summary`) is never openable.
+ * Whether clicking this item opens something. A `Window` needs its `windowId`, an
+ * `External` link needs its `url`, every other openable type needs its `id`; a folder
+ * (`Summary`) is never openable.
  */
 export const isOpenableMenuItem = (item: Menu): boolean => {
   const type = item.type ?? "";
   if (!OPENABLE_MENU_ITEM_TYPES.includes(type as (typeof OPENABLE_MENU_ITEM_TYPES)[number])) return false;
   if (type === "Window") return Boolean(item.windowId);
+  if (type === "External") return Boolean(item.url);
   return Boolean(item.id);
 };
 
