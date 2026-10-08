@@ -126,6 +126,29 @@ const genRecord = (rnd: Rnd, size: number, uniquePrefix: string): Record<string,
   return Object.fromEntries(entries);
 };
 
+/** Mostly the value key itself; sometimes missing, sometimes a key of the other record. */
+const pickHqlName = (rnd: Rnd, key: string, crossKeys: string[]): string | undefined => {
+  const roll = rnd();
+  if (roll < 0.1) return undefined;
+  if (roll < 0.2 && crossKeys.length > 0) return pick(rnd, crossKeys);
+  return key;
+};
+
+/** The column part of a field: none (roll < 0.15), `columnName` only, or `columnName` plus an empty or set `dBColumnName`. */
+const fieldShape = (roll: number, dbColumn: string): Record<string, unknown> => {
+  if (roll < 0.15) return {};
+  if (roll < 0.3) return { columnName: dbColumn, column: { dBColumnName: "" } };
+  if (roll < 0.5) return { columnName: dbColumn, column: { dBColumnName: `${dbColumn}_DB` } };
+  return { columnName: dbColumn };
+};
+
+/** `"DEF"`, `null` or no default, so the proxy's fallback is exercised with each. */
+const pickDefaultValue = (roll: number): unknown => {
+  if (roll < 0.15) return "DEF";
+  if (roll < 0.25) return null;
+  return undefined;
+};
+
 /**
  * Field metadata mapping some value keys (hqlName) to DB column names. Covers: the normal shape
  * (columnName, optionally `column.dBColumnName`), a missing `hqlName`, an empty `dBColumnName`,
@@ -138,22 +161,9 @@ const genFields = (rnd: Rnd, values: Record<string, unknown>, crossKeys: string[
     if (rnd() < 0.6) continue;
     const dbColumn = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2");
 
-    const hqlRoll = rnd();
-    const hqlName = hqlRoll < 0.1 ? undefined : hqlRoll < 0.2 && crossKeys.length > 0 ? pick(rnd, crossKeys) : key;
-
-    const shapeRoll = rnd();
-    const field: Record<string, unknown> = {};
+    const hqlName = pickHqlName(rnd, key, crossKeys);
+    const field = fieldShape(rnd(), dbColumn);
     if (hqlName !== undefined) field.hqlName = hqlName;
-
-    if (shapeRoll >= 0.15) {
-      field.columnName = dbColumn;
-      if (shapeRoll < 0.3) {
-        field.column = { dBColumnName: "" };
-      } else if (shapeRoll < 0.5) {
-        field.column = { dBColumnName: `${dbColumn}_DB` };
-      }
-    }
-    // shapeRoll < 0.15: neither `column` nor `columnName`.
 
     fields[`f_${key}`] = field as unknown as Field;
   }
@@ -172,7 +182,7 @@ const genOptions = (rnd: Rnd, sizes: { session: number; record: number; aux: num
     parentValues,
     parentFields: parentValues ? genFields(rnd, parentValues, Object.keys(values)) : undefined,
     normalizeValues: rnd() < 0.85,
-    defaultValue: defaultValueRoll < 0.15 ? "DEF" : defaultValueRoll < 0.25 ? null : undefined,
+    defaultValue: pickDefaultValue(defaultValueRoll),
     windowId: rnd() < 0.5 ? "W1" : undefined,
   };
   return options;

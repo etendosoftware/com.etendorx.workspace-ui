@@ -47,6 +47,27 @@ const toSnakeKey = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").t
 
 const isEmptyValue = (val: unknown) => val === "" || val === null || val === undefined;
 
+/**
+ * Step 3's case/underscore-insensitive overwrite of every key written before `key` under the same name.
+ * Guard: do not overwrite an existing non-empty value with an empty one. Session attributes
+ * (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys (e.g. productType:"I") and must
+ * not corrupt them.
+ */
+const overwriteSameName = (
+  evalContext: Record<string, unknown>,
+  sameName: Set<string> | undefined,
+  key: string,
+  value: unknown
+) => {
+  if (!sameName) return;
+  for (const existingKey of sameName) {
+    if (existingKey === key) continue;
+    if (isEmptyValue(evalContext[existingKey]) || !isEmptyValue(value)) {
+      evalContext[existingKey] = value;
+    }
+  }
+};
+
 interface LookupIndexes {
   /** First key, in Object.keys order, for each lowercase form. */
   byLowercase: Map<string, string>;
@@ -128,20 +149,7 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
   for (const [key, val] of Object.entries({ ...parentValues, ...values })) {
     const normalizedVal = normalize(val);
     write(key, normalizedVal);
-
-    // Case/underscore-insensitive overwrite of every key written before this one.
-    // Guard: do not overwrite an existing non-empty value with an empty one.
-    // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
-    // (e.g. productType:"I") and must not corrupt them.
-    const sameName = keysByNormalizedForm.get(normalizedForm(key));
-    if (sameName) {
-      for (const existingKey of sameName) {
-        if (existingKey === key) continue;
-        if (isEmptyValue(evalContext[existingKey]) || !isEmptyValue(normalizedVal)) {
-          evalContext[existingKey] = normalizedVal;
-        }
-      }
-    }
+    overwriteSameName(evalContext, keysByNormalizedForm.get(normalizedForm(key)), key, normalizedVal);
 
     // 4. Fallback: Auto-generate Snake Case
     if (!key.startsWith("$") && !key.startsWith("#")) {
