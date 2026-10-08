@@ -46,6 +46,20 @@ describe("useFrozenWhileHidden", () => {
     expect(result.current).toBe("c");
   });
 
+  it("takes the new value while hidden when a refresh key changes", () => {
+    const rows = ["r1"];
+    const { result, rerender } = renderHook(({ visible, value, keys }) => useFrozenWhileHidden(visible, value, keys), {
+      initialProps: { visible: true, value: "a", keys: [rows] as unknown[] },
+    });
+    rerender({ visible: false, value: "b", keys: [rows] });
+    expect(result.current).toBe("a");
+    const refetched = ["r1", "r2"];
+    rerender({ visible: false, value: "c", keys: [refetched] });
+    expect(result.current).toBe("c");
+    rerender({ visible: false, value: "d", keys: [refetched] });
+    expect(result.current).toBe("c");
+  });
+
   it("uses the first value when it mounts hidden", () => {
     const { result, rerender } = renderHook(({ visible, value }) => useFrozenWhileHidden(visible, value), {
       initialProps: { visible: false, value: "a" },

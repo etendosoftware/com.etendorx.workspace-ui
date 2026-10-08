@@ -17,15 +17,23 @@
 
 import { useRef } from "react";
 
+const NO_KEYS: readonly unknown[] = [];
+
+const sameKeys = (a: readonly unknown[], b: readonly unknown[]) =>
+  a.length === b.length && a.every((key, index) => Object.is(key, b[index]));
+
 /**
  * Returns `value` while `isVisible`, and the last value seen while visible once it is hidden (or the
  * first value, if it mounts hidden). Rendering a React element obtained this way lets React skip that
  * subtree entirely while it cannot be seen: the same element instance is never re-rendered.
+ *
+ * `refreshKeys` lists what the hidden subtree must still reflect (e.g. its rows and selection): when one
+ * of them changes, the current value is taken even while hidden.
  */
-export function useFrozenWhileHidden<T>(isVisible: boolean, value: T): T {
-  const frozenRef = useRef<{ value: T } | null>(null);
-  if (isVisible || frozenRef.current === null) {
-    frozenRef.current = { value };
+export function useFrozenWhileHidden<T>(isVisible: boolean, value: T, refreshKeys: readonly unknown[] = NO_KEYS): T {
+  const frozenRef = useRef<{ value: T; keys: readonly unknown[] } | null>(null);
+  if (isVisible || frozenRef.current === null || !sameKeys(frozenRef.current.keys, refreshKeys)) {
+    frozenRef.current = { value, keys: refreshKeys };
   }
   return frozenRef.current.value;
 }

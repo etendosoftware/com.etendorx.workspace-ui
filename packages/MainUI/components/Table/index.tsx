@@ -3892,11 +3892,12 @@ const DynamicTable = ({
     table,
   ]);
 
-  // Hidden behind the form, the grid keeps its last rendered rows: React skips re-rendering them (cells,
-  // date formatting, row measurement) until the grid is shown again.
+  // Hidden behind the form, the grid skips re-renders that change nothing it shows (cells, date
+  // formatting, row measurement); its rows and selection still update while hidden.
   const tableElement = useFrozenWhileHidden(
     isVisible,
-    <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+    <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
+    [effectiveRecords, table.getState().rowSelection]
   );
 
   if (error) {
