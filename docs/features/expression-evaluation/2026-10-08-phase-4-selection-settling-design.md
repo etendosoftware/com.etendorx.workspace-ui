@@ -44,6 +44,9 @@ user navigates quickly over a grid".
 3. **The toolbar settles the record it fetches auxiliary inputs for**, and does not fetch them at all
    while the tab is in form view (the form's FIC provides them).
 4. **Linked Items fetch only while their section is expanded.**
+5. **The keyboard-navigation debounce of the URL update and `SETSESSION` goes from 150 ms to
+   `SELECTION_SETTLE_MS`:** on a slow machine each key press takes longer than 150 ms, so it sent a
+   `SETSESSION` for almost every row.
 
 The row highlight, the selection graph, the URL and the form's own initialization are unchanged.
 
