@@ -17,8 +17,10 @@
 
 "use client";
 
+import { useState } from "react";
 import type { WidgetInstance, WidgetDataResponse, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
 import { useTranslation } from "@/hooks/useTranslation";
+import { logger } from "@/utils/logger";
 import WidgetRenderer from "./WidgetRenderer";
 
 interface WidgetTheme {
@@ -81,11 +83,56 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const RefreshIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path
+      d="M21 12a9 9 0 0 1-15.36 6.36L3 16M3 12a9 9 0 0 1 15.36-6.36L21 8M21 3v5h-5M3 21v-5h5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const CloseIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
+
+/** Applied to the refresh icon wrapper while a manual refresh is in flight. */
+const REFRESHING_ICON_CLASS = "animate-spin";
+/** Dims the current content while a manual refresh is in flight (content stays visible, no flicker). */
+const REFRESHING_BODY_CLASS = "opacity-50";
+
+/**
+ * Local state of the card's manual refresh. Kept out of the store on purpose so auto-refresh,
+ * pagination and other `refreshWidget` callers are unaffected.
+ */
+function useManualRefresh(instanceId: string, onRefresh?: (instanceId: string) => Promise<void>) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Bumped after each manual refresh to remount the renderer, so local renderer state
+  // (e.g. the QueryList page) resets to match the first page returned by the refresh.
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const refresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh(instanceId);
+    } catch (err) {
+      // The store surfaces fetch errors through widgetErrors; this only guards against
+      // an unexpected rejection escaping the click handler.
+      logger.warn(`[WidgetCard] Failed to refresh widget ${instanceId}:`, err);
+    } finally {
+      setIsRefreshing(false);
+      setRefreshCount((count) => count + 1);
+    }
+  };
+
+  return { isRefreshing, refreshCount, refresh };
+}
 
 interface WidgetCardProps {
   instance: WidgetInstance;
@@ -95,6 +142,8 @@ interface WidgetCardProps {
   onRemove: (instanceId: string) => void;
   onEditParams?: (instanceId: string) => void;
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
+  /** Re-requests this instance's data on demand. The refresh button is only rendered when provided. */
+  onRefresh?: (instanceId: string) => Promise<void>;
 }
 
 export default function WidgetCard({
@@ -105,12 +154,16 @@ export default function WidgetCard({
   onRemove,
   onEditParams,
   onFetchPage,
+  onRefresh,
 }: WidgetCardProps) {
   const { t } = useTranslation();
+  const { isRefreshing, refreshCount, refresh } = useManualRefresh(instance.instanceId, onRefresh);
   const isLocked = instance.layer !== "USER";
   const isUnavailable = instance.available === false || data?.available === false;
   const isLoading = data === undefined && error === undefined && !isUnavailable;
   const theme = getTheme(instance.type);
+  const refreshStateClass = isRefreshing ? REFRESHING_ICON_CLASS : "";
+  const bodyStateClass = isRefreshing ? REFRESHING_BODY_CLASS : "";
 
   return (
     <div
@@ -129,6 +182,20 @@ export default function WidgetCard({
           <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         </span>
         <div className="flex items-center gap-1 shrink-0">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={isRefreshing}
+              aria-busy={isRefreshing}
+              className={`${theme.icon} transition-colors cursor-pointer rounded p-0.5 disabled:cursor-wait`}
+              title={t("dashboard.widget.refresh")}
+              data-testid={`WidgetCard__refresh_${instance.instanceId}`}>
+              <span className={`flex ${refreshStateClass}`}>
+                <RefreshIcon data-testid="RefreshIcon__cb8729" />
+              </span>
+            </button>
+          )}
           {hasConfigurableParams && onEditParams && (
             <button
               type="button"
@@ -150,7 +217,9 @@ export default function WidgetCard({
         </div>
       </div>
       {/* Content — scrollable area that fills remaining card height */}
-      <div className="flex-1 min-h-0 overflow-y-auto" data-testid={`WidgetCard__body_${instance.instanceId}`}>
+      <div
+        className={`flex-1 min-h-0 overflow-y-auto transition-opacity ${bodyStateClass}`}
+        data-testid={`WidgetCard__body_${instance.instanceId}`}>
         {isUnavailable && (
           <p className="text-sm text-baseline-50 italic" data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
             {t("dashboard.widget.unavailable")}
@@ -170,6 +239,7 @@ export default function WidgetCard({
         )}
         {!isUnavailable && data !== undefined && !error && data.data !== null && (
           <WidgetRenderer
+            key={refreshCount}
             type={instance.type}
             data={data.data}
             onFetchPage={onFetchPage}

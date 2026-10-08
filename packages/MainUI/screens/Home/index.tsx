@@ -211,6 +211,7 @@ export default function Home() {
           onRemove={handleRemove}
           onEditParams={handleEditParams}
           onFetchPage={fetchWidgetPage}
+          onRefresh={refreshWidget}
           onUpdateLayout={updateLayout}
           data-testid="DashboardGrid__home"
         />
