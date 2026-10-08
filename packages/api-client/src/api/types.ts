@@ -496,6 +496,9 @@ export interface Tab {
   hasTree?: boolean;
   tableId?: string;
   tableTreeId?: string;
+  treeStructure?: string;
+  /** Datasource serving the tree nodes; emitted by the metadata adapter for tabs with a table tree. */
+  treeDatasourceId?: string;
   isReadOnlyTree?: boolean;
   showTreeNodeIcons?: boolean;
   hqlWhereClauseForRootNodes?: string;

@@ -887,6 +887,7 @@ const DynamicTable = ({
     shouldUseTreeMode,
     treeEntity,
     referencedTableId,
+    canMoveTreeNodes,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -1145,8 +1146,11 @@ const DynamicTable = ({
     onDragStateChange: setDropTargetState,
   });
 
+  // Read-only trees cannot move nodes, as in the Classic UI (canReorderRecords)
+  const isTreeNodeDragEnabled = shouldUseTreeMode && canMoveTreeNodes;
+
   const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
-    shouldUseTreeMode,
+    shouldUseTreeMode: isTreeNodeDragEnabled,
     treeEntity,
     referencedTableId,
     tabId: tab.id,
@@ -2851,7 +2855,7 @@ const DynamicTable = ({
           const nodeDrop = getNodeDropProps(record as EntityData);
           return {
             // Make rows draggable in tree mode for node reordering/reparenting
-            draggable: shouldUseTreeMode,
+            draggable: isTreeNodeDragEnabled,
             onDragStart: nodeDrag.onDragStart,
             onDragEnd: nodeDrag.onDragEnd,
             // File drop uses onDragEnter; tree drop does not need it
@@ -2918,7 +2922,7 @@ const DynamicTable = ({
       sx.rowSelected,
       editingRowUtils,
       getRowDropZoneProps,
-      shouldUseTreeMode,
+      isTreeNodeDragEnabled,
       draggingRowId,
       dropTarget,
       getNodeDragProps,
