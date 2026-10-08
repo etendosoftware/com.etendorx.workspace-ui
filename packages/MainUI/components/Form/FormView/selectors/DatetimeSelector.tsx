@@ -15,7 +15,7 @@
  *************************************************************************
  */
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
@@ -63,11 +63,11 @@ function formatDateForInputSafe(value: string): string {
 }
 
 export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
-  const { register, getValues, formState } = useFormContext();
+  const { register, formState } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
   const [displayValue, setDisplayValue] = useState<string>("");
   const hiddenDatetimeInputRef = useRef<HTMLInputElement | null>(null);
-  const value = getValues(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const fieldError = formState.errors[field.hqlName];
   const hasError = error || !!fieldError;
 

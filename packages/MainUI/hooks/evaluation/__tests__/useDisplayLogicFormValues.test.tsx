@@ -55,10 +55,12 @@ describe("useDisplayLogicFormValues", () => {
     expect(hook.result.current.docStatus).toBe("CO");
   });
 
-  it("keeps the same values object when only an unrelated field changes", () => {
-    const { hook, methods } = setup();
+  it("does not re-render, and keeps the same values object, when only an unrelated field changes", () => {
+    const { hook, methods, renders } = setup();
     const before = hook.result.current;
+    const rendersBefore = renders();
     act(() => methods().setValue("description", "perf"));
+    expect(renders()).toBe(rendersBefore);
     expect(hook.result.current).toBe(before);
   });
 

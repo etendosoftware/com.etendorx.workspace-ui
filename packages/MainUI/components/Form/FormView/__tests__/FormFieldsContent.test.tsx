@@ -213,6 +213,11 @@ describe("FormFields — expression evaluation context", () => {
     expect(createSmartContext).toHaveBeenCalledTimes(1);
   });
 
+  it("follows the display-logic fields of the tab and the record identifier", () => {
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(useDisplayLogicFormValues).toHaveBeenCalledWith(baseProps.tab.fields, ["_identifier"]);
+  });
+
   it("still shows the sections when the context build throws", () => {
     (createSmartContext as jest.Mock).mockImplementation(() => {
       throw new Error("boom");

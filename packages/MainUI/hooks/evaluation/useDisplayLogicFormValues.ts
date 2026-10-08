@@ -43,6 +43,8 @@ export function useDisplayLogicFormValues(
     ],
     [fields, extraNames]
   );
+  // When `names` changes (new tab metadata), useWatch keeps its previous result until the next form event;
+  // metadata changes come with a reset, which is such an event.
   const watched = useWatch({ name: names });
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new snapshot each time a watched value changes
   return useMemo(() => getValues(), [watched, getValues]);

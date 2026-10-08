@@ -32,6 +32,17 @@ The selectors relied on that root re-render to see their new value.
    per-field display logic and the toolbar).
 5. `collectExpressionDependencies` (`utils/expressions/dependencies.ts`) is shared by this hook and
    `useToolbar`.
+6. Selectors that read their own value with `getValues()` while rendering also relied on the root
+   re-render: `DatetimeSelector` and `RichTextSelector` now use `useWatch` too (found in review; a value set
+   by a callout or a data refresh, which does not re-render the root, left them showing the old value).
+
+### Remaining root subscriptions (next lever, not in this phase)
+
+`hooks/useSelectFieldOptions.ts`, `hooks/datasource/useTableDirDatasource.ts`, `hooks/useFieldValue.ts`
+(`StatusBarField`) and `hooks/useComboSelect.ts` still call `watch(name)` while rendering, so a change in a
+select or table-dir field still re-renders `FormView`; `StatusBarField` depends on it to stay fresh.
+Process modal hosts (`ProcessDefinitionModal`, `ParameterDialogHost`, `useProcessFICCallout`) subscribe to
+their whole form with `form.watch()`.
 
 ## 3. Results
 
@@ -48,5 +59,7 @@ of `useWatch`), typing shows in the field, and choosing a value in a select show
 ## 4. Tests
 
 - `hooks/evaluation/__tests__/useDisplayLogicFormValues.test.tsx`: whole values, update on a watched
-  field, same object for an unrelated field, extra names, reset.
+  field, no re-render and same object for an unrelated field, extra names, reset.
+- `components/Form/FormView/selectors/__tests__/selectorsFollowSetValue.test.tsx`: with a real form,
+  `RichTextSelector` and `DatetimeSelector` show a value set programmatically.
 - Selector tests updated to mock `useWatch`; whole MainUI suite, `tsc`, Biome, data-testid codemod.
