@@ -34,9 +34,11 @@ interface UseGridShortcutsParams {
   tableRef: RefObject<GridTable | null>;
   /** The grid is visible, its tab is focused and no row is being edited inline. */
   enabled: boolean;
+  /** A child tab needs the record of its parent before a row can be added. */
+  canAddRow: boolean;
   onNewRow: () => void;
   onEditRow: (row: MRT_Row<EntityData>) => void;
-  onOpenInForm: (row: MRT_Row<EntityData>) => void;
+  onOpenInForm: (record: EntityData, table: GridTable) => void;
 }
 
 /** The selected row when exactly one is selected, as the classic edit shortcuts require. */
@@ -61,12 +63,14 @@ export function focusGridRows(container: HTMLElement | null, table: GridTable | 
  * - filter row: back to the rows (Escape);
  * - anywhere in the grid: focus the filter row (Ctrl+Shift+F), clear the column filters keeping
  *   the implicit filter, as classic `clearFilter(true)` (Alt+Delete).
- * New row (Ctrl+I) works from any part of the focused tab. Delete is the toolbar's (it confirms).
+ * New row (Ctrl+I) works from any part of the focused tab, once a child tab has its parent record.
+ * Delete is the toolbar's (it confirms).
  */
 export function useGridShortcuts({
   containerRef,
   tableRef,
   enabled,
+  canAddRow,
   onNewRow,
   onEditRow,
   onOpenInForm,
@@ -75,13 +79,18 @@ export function useGridShortcuts({
     const inGrid = (event: KeyboardEvent) => isGridTarget(event.target, containerRef.current);
     const inRows = (event: KeyboardEvent) => isGridBodyTarget(event.target, containerRef.current);
     const inFilterRow = (event: KeyboardEvent) => isGridHeaderTarget(event.target, containerRef.current);
-    const withSingleRow = (action: (row: MRT_Row<EntityData>) => void) => () => {
-      const row = getSingleSelectedRow(tableRef.current);
-      if (row) action(row);
+    const withSingleRow = (action: (row: MRT_Row<EntityData>, table: GridTable) => void) => () => {
+      const table = tableRef.current;
+      const row = getSingleSelectedRow(table);
+      if (table && row) action(row, table);
     };
+    const addRow = () => {
+      if (canAddRow) onNewRow();
+    };
+    const openInForm = (row: MRT_Row<EntityData>, table: GridTable) => onOpenInForm(row.original, table);
 
     return {
-      [SHORTCUT_IDS.TOOLBAR_NEW_ROW]: { handler: onNewRow, allowInInputs: true },
+      [SHORTCUT_IDS.TOOLBAR_NEW_ROW]: { handler: addRow, allowInInputs: true },
       [SHORTCUT_IDS.GRID_FOCUS_FILTER]: {
         handler: () => findFirstFilterInput(containerRef.current)?.focus(),
         allowInInputs: true,
@@ -106,9 +115,9 @@ export function useGridShortcuts({
         isInScope: inRows,
       },
       [SHORTCUT_IDS.VIEW_GRID_EDIT_IN_GRID]: { handler: withSingleRow(onEditRow), isInScope: inRows },
-      [SHORTCUT_IDS.VIEW_GRID_EDIT_IN_FORM]: { handler: withSingleRow(onOpenInForm), isInScope: inRows },
+      [SHORTCUT_IDS.VIEW_GRID_EDIT_IN_FORM]: { handler: withSingleRow(openInForm), isInScope: inRows },
     };
-  }, [containerRef, tableRef, onNewRow, onEditRow, onOpenInForm]);
+  }, [containerRef, tableRef, canAddRow, onNewRow, onEditRow, onOpenInForm]);
 
   useShortcutBindings(bindings, enabled);
 }

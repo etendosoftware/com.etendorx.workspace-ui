@@ -41,11 +41,17 @@ const makeTable = (selected: MRT_Row<EntityData>[], rows: MRT_Row<EntityData>[] 
     toggleAllRowsSelected: jest.fn(),
   }) as unknown as GridTable & Record<string, jest.Mock>;
 
-const renderGridShortcuts = (table: GridTable | null, enabled = true) => {
+const renderGridShortcuts = (table: GridTable | null, { enabled = true, canAddRow = true } = {}) => {
   const dom = buildGridDom();
   const handlers = { onNewRow: jest.fn(), onEditRow: jest.fn(), onOpenInForm: jest.fn() };
   renderHook(() =>
-    useGridShortcuts({ containerRef: { current: dom.grid }, tableRef: { current: table }, enabled, ...handlers })
+    useGridShortcuts({
+      containerRef: { current: dom.grid },
+      tableRef: { current: table },
+      enabled,
+      canAddRow,
+      ...handlers,
+    })
   );
   return { ...dom, ...handlers };
 };
@@ -58,13 +64,14 @@ describe("useGridShortcuts", () => {
 
   it("edits the selected row inline with F2 and in the form with Ctrl+F2", () => {
     const row = makeRow("1");
-    const { cell, onEditRow, onOpenInForm } = renderGridShortcuts(makeTable([row]));
+    const table = makeTable([row]);
+    const { cell, onEditRow, onOpenInForm } = renderGridShortcuts(table);
 
     pressKey(F2, cell);
     pressKey(CTRL_F2, cell);
 
-    expect(onEditRow).toHaveBeenCalledWith(row);
-    expect(onOpenInForm).toHaveBeenCalledWith(row);
+    expect(onEditRow).toHaveBeenCalledWith(row, table);
+    expect(onOpenInForm).toHaveBeenCalledWith(row.original, table);
   });
 
   it("does not edit without exactly one selected row", () => {
@@ -139,8 +146,16 @@ describe("useGridShortcuts", () => {
     expect(onNewRow).toHaveBeenCalledTimes(1);
   });
 
+  it("does not add a row to a child tab without its parent record", () => {
+    const { onNewRow } = renderGridShortcuts(makeTable([]), { canAddRow: false });
+
+    pressKey({ key: "i", code: "KeyI", ctrl: true });
+
+    expect(onNewRow).not.toHaveBeenCalled();
+  });
+
   it("does nothing while disabled", () => {
-    const { cell, onNewRow, onEditRow } = renderGridShortcuts(makeTable([makeRow("1")]), false);
+    const { cell, onNewRow, onEditRow } = renderGridShortcuts(makeTable([makeRow("1")]), { enabled: false });
 
     pressKey({ key: "i", code: "KeyI", ctrl: true });
     pressKey(F2, cell);

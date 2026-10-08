@@ -15,10 +15,12 @@
  *************************************************************************
  */
 
+import { createElement, type ReactNode } from "react";
 import { renderHook } from "@testing-library/react";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import { useFocusContext } from "@/contexts/focus";
-import { useIsCurrentWindowActive } from "@/hooks/useShortcutBindings";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useWindowStore } from "@/stores/windowStore";
 import { useTabLevelShortcuts, useWindowActivationFocus } from "@/hooks/navigation/useTabLevelShortcuts";
 import { type KeyPress, pressKey } from "@/utils/keyboard/test-utils/keyboardEvents";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
@@ -26,10 +28,14 @@ import { HEADER_TAB, LINES_TAB, WINDOW_TABS } from "@/utils/window/test-utils/ta
 
 jest.mock("@/contexts/focus", () => ({ useFocusContext: jest.fn() }));
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({ useTableStatePersistenceTab: jest.fn() }));
-jest.mock("@/hooks/useShortcutBindings", () => ({
-  ...jest.requireActual("@/hooks/useShortcutBindings"),
-  useIsCurrentWindowActive: jest.fn(),
-}));
+jest.mock("@/stores/windowStore", () => ({ useWindowStore: jest.fn() }));
+
+const WINDOW_IDENTIFIER = "win-1";
+const OTHER_WINDOW_TAB = "other-window-tab";
+
+/** Renders inside the window `WINDOW_IDENTIFIER`, whose activity `arrange` decides. */
+const inWindow = ({ children }: { children: ReactNode }) =>
+  createElement(CurrentWindowProvider, { windowIdentifier: WINDOW_IDENTIFIER, windowId: "143", children });
 
 const PARENT: KeyPress = { key: "ArrowUp", alt: true, shift: true };
 const CHILD: KeyPress = { key: "ArrowDown", alt: true, shift: true };
@@ -57,7 +63,9 @@ const arrange = ({
     setActiveLevel,
     setActiveTabsByLevel,
   });
-  (useIsCurrentWindowActive as jest.Mock).mockReturnValue(isWindowActive);
+  (useWindowStore as unknown as jest.Mock).mockImplementation((selector: (state: unknown) => unknown) =>
+    selector({ windows: { [WINDOW_IDENTIFIER]: { isActive: isWindowActive } } })
+  );
 };
 
 describe("useTabLevelShortcuts", () => {
@@ -68,7 +76,7 @@ describe("useTabLevelShortcuts", () => {
 
   it("moves the focus from a child tab to its parent", () => {
     arrange({ activeFocusId: LINES_TAB.id });
-    renderHook(() => useTabLevelShortcuts(WINDOW_TABS));
+    renderHook(() => useTabLevelShortcuts(WINDOW_TABS), { wrapper: inWindow });
 
     pressKey(PARENT);
 
@@ -78,7 +86,7 @@ describe("useTabLevelShortcuts", () => {
 
   it("moves the focus from the header to its rendered child", () => {
     arrange({ activeFocusId: HEADER_TAB.id });
-    renderHook(() => useTabLevelShortcuts(WINDOW_TABS));
+    renderHook(() => useTabLevelShortcuts(WINDOW_TABS), { wrapper: inWindow });
 
     pressKey(CHILD);
 
@@ -90,10 +98,10 @@ describe("useTabLevelShortcuts", () => {
   it.each([
     ["the header has no parent", HEADER_TAB.id, PARENT, undefined],
     ["no child is on screen", HEADER_TAB.id, CHILD, [HEADER_TAB.id]],
-    ["the focus belongs to another window", "other-window-tab", CHILD, undefined],
+    ["the focus belongs to another window", OTHER_WINDOW_TAB, CHILD, undefined],
   ])("does nothing when %s", (_label, activeFocusId, press, renderedTabs) => {
     arrange({ activeFocusId, renderedTabs });
-    renderHook(() => useTabLevelShortcuts(WINDOW_TABS));
+    renderHook(() => useTabLevelShortcuts(WINDOW_TABS), { wrapper: inWindow });
 
     pressKey(press);
 
@@ -105,22 +113,22 @@ describe("useWindowActivationFocus", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("focuses the header tab when the window is activated with the focus elsewhere", () => {
-    arrange({ activeFocusId: "other-window-tab" });
-    renderHook(() => useWindowActivationFocus(WINDOW_TABS));
+    arrange({ activeFocusId: OTHER_WINDOW_TAB });
+    renderHook(() => useWindowActivationFocus(WINDOW_TABS), { wrapper: inWindow });
 
     expect(setFocus).toHaveBeenCalledWith(HEADER_TAB.id);
   });
 
   it("keeps the focus that already belongs to the window", () => {
     arrange({ activeFocusId: LINES_TAB.id });
-    renderHook(() => useWindowActivationFocus(WINDOW_TABS));
+    renderHook(() => useWindowActivationFocus(WINDOW_TABS), { wrapper: inWindow });
 
     expect(setFocus).not.toHaveBeenCalled();
   });
 
   it("does nothing while the window is hidden", () => {
-    arrange({ activeFocusId: "other-window-tab", isWindowActive: false });
-    renderHook(() => useWindowActivationFocus(WINDOW_TABS));
+    arrange({ activeFocusId: OTHER_WINDOW_TAB, isWindowActive: false });
+    renderHook(() => useWindowActivationFocus(WINDOW_TABS), { wrapper: inWindow });
 
     expect(setFocus).not.toHaveBeenCalled();
   });
@@ -128,8 +136,8 @@ describe("useWindowActivationFocus", () => {
   it("falls back to the first header tab and to nothing without tabs", () => {
     arrange({ activeFocusId: null });
     (useTableStatePersistenceTab as jest.Mock).mockReturnValue({ activeTabsByLevel: new Map() });
-    renderHook(() => useWindowActivationFocus(WINDOW_TABS));
-    renderHook(() => useWindowActivationFocus([]));
+    renderHook(() => useWindowActivationFocus(WINDOW_TABS), { wrapper: inWindow });
+    renderHook(() => useWindowActivationFocus([]), { wrapper: inWindow });
 
     expect(setFocus).toHaveBeenCalledTimes(1);
     expect(setFocus).toHaveBeenCalledWith(HEADER_TAB.id);

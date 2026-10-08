@@ -28,6 +28,7 @@ import {
 
 const REFRESH = SHORTCUT_IDS.TOOLBAR_REFRESH;
 const REFRESH_TEXT = "Refresh";
+const UNKNOWN_SHORTCUT = "Unknown_Shortcut";
 
 const storeShortcutPreference = (value: unknown) => savePreferences({ [KEYBOARD_SHORTCUTS_PREFERENCE]: value });
 
@@ -66,11 +67,11 @@ describe("shortcutRegistry", () => {
       { alt: true, shift: true, key: "Arrow_Right" },
       { ctrl: true, space: true, key: "Arrow_Right" },
     ]);
-    expect(getCombinationsFor("Unknown_Shortcut")).toEqual([]);
+    expect(getCombinationsFor(UNKNOWN_SHORTCUT)).toEqual([]);
   });
 
   it("has no label for an unknown id", () => {
-    expect(getShortcutLabel("Unknown_Shortcut")).toBeUndefined();
+    expect(getShortcutLabel(UNKNOWN_SHORTCUT)).toBeUndefined();
   });
 
   describe("withShortcutHint", () => {
@@ -80,7 +81,7 @@ describe("shortcutRegistry", () => {
 
     it("leaves the text alone without a shortcut or without a text", () => {
       expect(withShortcutHint(REFRESH_TEXT)).toBe(REFRESH_TEXT);
-      expect(withShortcutHint(REFRESH_TEXT, "Unknown_Shortcut")).toBe(REFRESH_TEXT);
+      expect(withShortcutHint(REFRESH_TEXT, UNKNOWN_SHORTCUT)).toBe(REFRESH_TEXT);
       expect(withShortcutHint("", REFRESH)).toBe("");
     });
   });

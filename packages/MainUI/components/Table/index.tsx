@@ -3318,12 +3318,6 @@ const DynamicTable = ({
     [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
 
-  /** Classic `ToolBar_NewRow`: a new inline row, which needs the parent record of a child tab. */
-  const handleNewRowWithParentGuard = useCallback(() => {
-    if (parentTab && !parentRecord) return;
-    handleInsertRow();
-  }, [parentTab, parentRecord, handleInsertRow]);
-
   const handleTreeArrowRight = useCallback(
     (_event: KeyboardEvent) => {
       if (!shouldUseTreeMode || !tableRef.current) return;
@@ -3374,19 +3368,15 @@ const DynamicTable = ({
     editingRowsCount === 0 && (isFocused ?? true)
   );
 
-  const handleOpenRowInForm = useCallback(
-    (row: MRT_Row<EntityData>) => openRecordInFormView(row.original, tableRef.current),
-    [openRecordInFormView]
-  );
-
   // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
   useGridShortcuts({
     containerRef: tableContainerRef,
     tableRef,
     enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
-    onNewRow: handleNewRowWithParentGuard,
+    canAddRow: !parentTab || Boolean(parentRecord),
+    onNewRow: handleInsertRow,
     onEditRow: handleEditRow,
-    onOpenInForm: handleOpenRowInForm,
+    onOpenInForm: openRecordInFormView,
   });
 
   // When the grid becomes visible again after leaving form view, DOM focus is

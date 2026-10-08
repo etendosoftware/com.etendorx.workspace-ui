@@ -24,13 +24,14 @@ import {
 } from "@/utils/keyboard/shortcutGrammar";
 import { createKeyEvent } from "@/utils/keyboard/test-utils/keyboardEvents";
 
+const ARROW_LEFT = "Arrow_Left";
 const SAVE_DEFINITION = { id: "ToolBar_Save", keyComb: { ctrl: true, key: "S" } };
 
 describe("normalizeShortcutKey", () => {
   it.each([
     ["Arrow_Up", "ArrowUp"],
     ["Arrow_Down", "ArrowDown"],
-    ["Arrow_Left", "ArrowLeft"],
+    [ARROW_LEFT, "ArrowLeft"],
     ["Arrow_Right", "ArrowRight"],
     ["Page_Up", "PageUp"],
     ["Page_Down", "PageDown"],
@@ -91,11 +92,11 @@ describe("matchesCombination", () => {
   });
 
   it("requires Space for the chord combinations and its absence otherwise", () => {
-    const chord = { ctrl: true, space: true, key: "Arrow_Left" };
+    const chord = { ctrl: true, space: true, key: ARROW_LEFT };
     const arrow = createKeyEvent({ key: "ArrowLeft", ctrl: true });
     expect(matchesCombination(arrow, chord, true)).toBe(true);
     expect(matchesCombination(arrow, chord, false)).toBe(false);
-    expect(matchesCombination(arrow, { ctrl: true, key: "Arrow_Left" }, true)).toBe(false);
+    expect(matchesCombination(arrow, { ctrl: true, key: ARROW_LEFT }, true)).toBe(false);
   });
 });
 
