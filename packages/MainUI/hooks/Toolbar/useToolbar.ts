@@ -27,6 +27,10 @@ import { createSmartContext } from "@/utils/expressions";
 import { lazyContextByKey } from "@/utils/evaluation/lazyContext";
 import { extractDependenciesFromExpression } from "@/utils/expressions/dependencies";
 import { useTabFormValues } from "@/hooks/useTabFormValues";
+import { SELECTION_SETTLE_MS, useSettledValue } from "@/hooks/useSettledValue";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useWindowStore } from "@/stores/windowStore";
+import { TAB_MODES } from "@/utils/url/constants";
 import { useUserStore } from "@/stores/userStore";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
@@ -55,6 +59,8 @@ const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 // generic guard is kept for any future backend-misconfigured `isMultiRecord` process.
 const SINGLE_RECORD_ONLY_PROCESSES = new Set<string>();
 
+const EMPTY_AUX_INPUTS: Record<string, string> = {};
+
 export function useToolbar(windowIdentifier: string, tabId?: string) {
   const cacheKey = `${windowIdentifier}-${tabId || "default"}`;
   const [toolbar, setToolbar] = useState<ToolbarButtonMetadata[] | null>(() => toolbarCache.get(cacheKey) || null);
@@ -82,27 +88,39 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   }, [actionFields, tab?.fields]);
   const formValues = useTabFormValues(displayLogicDependencies);
 
-  // Toolbar-local auxiliary inputs fetched when a single record is selected in table view.
-  // Kept separate from TabContext.auxiliaryInputs so it doesn't interfere with form view.
-  const [toolbarAuxInputs, setToolbarAuxInputs] = useState<Record<string, string>>({});
-  // Tracks the record ID for which toolbarAuxInputs was last fetched.
+  // Toolbar-local auxiliary inputs fetched when a single record is selected in table view, tagged
+  // with the record they belong to. Kept separate from TabContext.auxiliaryInputs so it doesn't
+  // interfere with form view.
+  const [toolbarAux, setToolbarAux] = useState<{ recordId: string | null; values: Record<string, string> }>({
+    recordId: null,
+    values: {},
+  });
+  // Tracks the record ID for which toolbarAux was last fetched.
   const lastFetchedAuxIdRef = useRef<string | null>(null);
 
   const singleSelected = selectedItems.length === 1 ? selectedItems[0] : null;
   const singleSelectedId = singleSelected ? String(singleSelected.id) : null;
+  // Moving fast over records fetches the first and the last one only (Classic waits the same pause).
+  const settledSelectedId = useSettledValue(singleSelectedId, SELECTION_SETTLE_MS);
+  // The form's own initialization provides the auxiliary inputs in form view.
+  // The window store is keyed by the identifier of the window this toolbar lives in.
+  const currentWindowIdentifier = useCurrentWindowIdentifier();
+  const isFormView = useWindowStore(
+    (s) => s.windows[currentWindowIdentifier]?.tabs[tabId ?? ""]?.form?.mode === TAB_MODES.FORM
+  );
+  // Until the selected record's own values arrive, the Classic === '' fallback applies.
+  const toolbarAuxInputs = toolbarAux.recordId === singleSelectedId ? toolbarAux.values : EMPTY_AUX_INPUTS;
 
   // When exactly one record is selected, lazily fetch its auxiliary inputs so that
   // display logic expressions that reference context.* (e.g. context.APRM_OrderIsPaid)
   // can be evaluated correctly in both table view and form view.
-  // In form view, TabContext.auxiliaryInputs (set by FormView) takes priority.
+  // In form view, TabContext.auxiliaryInputs (set by FormView) takes priority, so nothing is fetched.
   useEffect(() => {
+    // Wait until the selection has settled on this record.
+    if (isFormView || settledSelectedId !== singleSelectedId) return;
     // Already have fresh data for this record — nothing to do.
     if (singleSelectedId === lastFetchedAuxIdRef.current) return;
-
-    // Record changed (or deselected): reset local aux inputs immediately so the
-    // Classic === '' fallback applies during the async fetch.
     lastFetchedAuxIdRef.current = singleSelectedId;
-    setToolbarAuxInputs({});
 
     if (!singleSelected || !singleSelectedId) return;
 
@@ -137,10 +155,10 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         for (const [key, { value }] of Object.entries(data.auxiliaryInputValues || {})) {
           aux[key] = value;
         }
-        setToolbarAuxInputs(aux);
+        setToolbarAux({ recordId: capturedId, values: aux });
       })
       .catch((err) => logger.warn("Toolbar aux inputs fetch failed:", err));
-  }, [singleSelectedId, singleSelected, actionFields, tab, parentRecord]);
+  }, [singleSelectedId, settledSelectedId, isFormView, singleSelected, actionFields, tab, parentRecord]);
 
   // Effective auxiliary inputs for display logic evaluation.
   // TabContext.auxiliaryInputs (form view / callouts) takes priority over the toolbar fetch.
