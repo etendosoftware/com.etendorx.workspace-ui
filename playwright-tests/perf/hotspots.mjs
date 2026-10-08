@@ -1,6 +1,7 @@
 // Aggregates bench.mjs CPU profiles into source-level hotspots using the production source maps.
 // Usage: node perf/hotspots.mjs perf/results/profiles/<LABEL> [../packages/MainUI/.next] [filter]
 // `filter` keeps only profiles whose file name contains it (e.g. "open-record").
+// `CALLERS=<function name>` also prints the call stacks (innermost first) that spent time in that function.
 import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
 import fs from "node:fs";
 import path from "node:path";
@@ -48,6 +49,8 @@ const self = new Map(); // "fn src:line" -> ms
 const inclusiveApp = new Map(); // first-party function -> ms (time with it on the stack)
 const byFile = new Map(); // first-party file -> self ms of the file + libs it called
 const perProfile = [];
+const CALLERS = process.env.CALLERS;
+const callerStacks = new Map(); // "frame < frame < ..." -> ms, for samples inside CALLERS
 let grand = 0;
 let idle = 0;
 
@@ -89,6 +92,15 @@ for (const f of files) {
         inclusiveApp.set(k, (inclusiveApp.get(k) || 0) + ms);
       }
     }
+    if (CALLERS && l.fn === CALLERS) {
+      const stack = [];
+      for (let x = parent.get(id); x !== undefined && stack.length < 8; x = parent.get(x)) {
+        const fl = lab(x);
+        if (fl.fn !== "(root)") stack.push(`${fl.fn} ${fl.src}`);
+      }
+      const k = stack.join("  <  ");
+      callerStacks.set(k, (callerStacks.get(k) || 0) + ms);
+    }
     const o = owner || "(library/framework only)";
     byFile.set(o, (byFile.get(o) || 0) + ms);
   }
@@ -108,3 +120,4 @@ console.log(`== Busy CPU per step\n${perProfile.map(([k, v]) => `${String(v).pad
 console.log(`\n== Self time (where the CPU actually burns)\n${top(self, 30)}`);
 console.log(`\n== First-party files (self + library time they triggered)\n${top(byFile, 25)}`);
 console.log(`\n== First-party functions, inclusive (on the stack)\n${top(inclusiveApp, 40)}`);
+if (CALLERS) console.log(`\n== Call stacks into ${CALLERS}\n${top(callerStacks, 15)}`);
