@@ -25,6 +25,8 @@ docs/
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
+│   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
 │   └── table-state-persistence/      # Feature: Table state persistence

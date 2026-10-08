@@ -18,21 +18,20 @@
 "use client";
 
 import { useCallback } from "react";
-import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
+import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
   const currentRole = useUserStore((s) => s.currentRole);
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
-  const [recentlyViewedItems] = useLocalStorage<Record<string, RecentItem[]>>("recentlyViewedItems", {});
+  const recentItems = useRecentItemsStore((s) => s.items);
 
-  const roleId = currentRole?.id ?? "";
-  const items = roleId ? (recentlyViewedItems[roleId] ?? []) : [];
+  const items = currentRole?.id ? recentItems : [];
 
   const handleClick = useCallback(
     (item: RecentItem) => {
