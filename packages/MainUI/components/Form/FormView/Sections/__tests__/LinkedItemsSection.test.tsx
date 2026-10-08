@@ -148,6 +148,11 @@ describe("LinkedItemsSection lazy loading", () => {
     });
   });
 
+  it("requests categories right away when the expansion state is not provided", async () => {
+    render(<LinkedItemsSection tabId="tab-0" entityName={ENTITY_NAME} recordId={RECORD_A} />);
+    await waitFor(() => expect(mockFetchCategories).toHaveBeenCalledTimes(1));
+  });
+
   it.each([
     ["the form is initializing", { isFormInitializing: true }],
     ["the session is syncing", { isSessionSyncLoading: true }],

@@ -1,0 +1,36 @@
+# Changes to these paths can affect UI performance: the pre-push hook asks to run `pnpm perf:compare`
+# before opening the PR. One glob per line (** = any depth, * = within a path segment). Tests are ignored.
+
+# Form view, selectors and display / read-only logic
+packages/MainUI/components/Form/**
+packages/MainUI/hooks/useDisplayLogic.ts
+packages/MainUI/hooks/useExpressionDependencies.ts
+packages/MainUI/hooks/useFormFields.ts
+packages/MainUI/hooks/useFormInitialization.ts
+packages/MainUI/hooks/useFormValidation.ts
+packages/MainUI/hooks/evaluation/**
+packages/MainUI/utils/evaluation/**
+packages/MainUI/utils/expressions.ts
+packages/MainUI/utils/expressions/**
+packages/MainUI/utils/hooks/useFormInitialization/**
+
+# Grid, selection and child tabs
+packages/MainUI/components/Table/**
+packages/MainUI/hooks/table/**
+packages/MainUI/hooks/useTableSelection.ts
+packages/MainUI/utils/hooks/useTableSelection/**
+packages/MainUI/utils/table/**
+packages/MainUI/components/window/**
+
+# Toolbar and process buttons
+packages/MainUI/components/Toolbar/**
+packages/MainUI/hooks/Toolbar/**
+
+# Shared state read by every tab
+packages/MainUI/contexts/**
+packages/MainUI/stores/**
+packages/MainUI/hooks/useSelected*.ts
+
+# Data fetching and metadata
+packages/MainUI/hooks/datasource/**
+packages/api-client/src/api/**

@@ -33,10 +33,14 @@ interface LinkedItemsSectionProps {
   tabId: string;
   entityName: string;
   recordId: string;
-  isSectionExpanded: boolean;
+  /**
+   * Linked items are only fetched once their section has been opened for the
+   * current record, as in Classic. Defaults to true to preserve existing behavior.
+   */
+  isSectionExpanded?: boolean;
 }
 
-export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded }: LinkedItemsSectionProps) => {
+export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded = true }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();

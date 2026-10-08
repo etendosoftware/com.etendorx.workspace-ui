@@ -16,12 +16,12 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { DateInput } from "./components/DateInput";
 
 export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
-  const { register, watch } = useFormContext();
-  const value = watch(field.hqlName);
+  const { register } = useFormContext();
+  const value = useWatch({ name: field.hqlName });
 
   return (
     <DateInput

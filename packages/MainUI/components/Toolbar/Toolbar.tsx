@@ -129,7 +129,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   // default itself — the SAME source of truth the datasource uses. Saved views must capture
   // this, NOT the toolbar's `isImplicitFilterApplied` which is inflated by `hasIdFilter` and
   // meant only for the button's visual state (ETP-4381).
-  const defaultImplicitFilterApplied = tab ? getDefaultImplicitFilter(tab) : true;
+  // Reads the cached window metadata (a JSON.parse of the whole window): once per tab, not per render.
+  const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
