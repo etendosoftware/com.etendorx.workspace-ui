@@ -15,8 +15,15 @@
  *************************************************************************
  */
 
-import { shouldShowTab, type TabWithParentInfo } from "../utils/tabUtils";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import {
+  getChildTabs,
+  getTabDisplayLogic,
+  getTabDisplayLogicDependencies,
+  haveSameTabs,
+  shouldShowTab,
+  type TabWithParentInfo,
+} from "../utils/tabUtils";
+import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 
 const createMockTab = (overrides: Partial<Tab> = {}): Tab =>
   ({
@@ -330,6 +337,66 @@ describe("tabUtils", () => {
 
       const result = shouldShowTab(tab, activeParentTab);
       expect(result).toBe(true);
+    });
+  });
+
+  describe("tab display logic helpers", () => {
+    const HAS_REGION_LOGIC = "@HasRegion@='Y'";
+    const parentTab = createMockTab({ id: "country", tabLevel: 0 });
+    const parentFields = {
+      hasRegion: { hqlName: "hasRegion", columnName: "HasRegion" },
+      name: { hqlName: "name", columnName: "Name" },
+    } as unknown as Record<string, Field>;
+    const createChildTab = (overrides: Partial<TabWithParentInfo> = {}) =>
+      createMockTabWithParentInfo({ id: "region", tabLevel: 1, parentTabId: "country", ...overrides });
+
+    describe("getTabDisplayLogic", () => {
+      it.each([
+        ["displayLogic", { displayLogic: HAS_REGION_LOGIC }, HAS_REGION_LOGIC],
+        ["displayLogicExpression", { displayLogicExpression: HAS_REGION_LOGIC }, HAS_REGION_LOGIC],
+        ["no expression", {}, undefined],
+      ])("reads %s", (_case, overrides, expected) => {
+        expect(getTabDisplayLogic(createMockTab(overrides as Partial<Tab>))).toBe(expected);
+      });
+    });
+
+    describe("getChildTabs", () => {
+      it("returns only the tabs one level below that belong to the parent", () => {
+        const child = createChildTab();
+        const otherParentChild = createChildTab({ id: "other", parentTabId: "another-parent" });
+        const grandChild = createChildTab({ id: "grand", tabLevel: 2, parentTabId: "region" });
+
+        expect(getChildTabs([parentTab, child, otherParentChild, grandChild], parentTab)).toEqual([child]);
+      });
+    });
+
+    describe("getTabDisplayLogicDependencies", () => {
+      it("collects the parent fields read by the child tabs, resolving column names", () => {
+        const tabs = [
+          createChildTab({ displayLogic: HAS_REGION_LOGIC }),
+          createChildTab({ id: "b", displayLogic: "@HasRegion@='Y' & @Name@!''" }),
+        ];
+
+        expect(getTabDisplayLogicDependencies(tabs, parentFields)).toEqual(["hasRegion", "name"]);
+      });
+
+      it("returns no dependencies when no child tab has display logic", () => {
+        expect(getTabDisplayLogicDependencies([createChildTab()], parentFields)).toEqual([]);
+      });
+    });
+
+    describe("haveSameTabs", () => {
+      const first = createChildTab();
+      const second = createChildTab({ id: "b" });
+
+      it.each([
+        ["the same tabs in the same order", [first, second], true],
+        ["a different length", [first], false],
+        ["a different order", [second, first], false],
+        ["a different object for the same id", [{ ...first }, second], false],
+      ])("compares lists with %s", (_case, other, expected) => {
+        expect(haveSameTabs([first, second], other as Tab[])).toBe(expected);
+      });
     });
   });
 });
