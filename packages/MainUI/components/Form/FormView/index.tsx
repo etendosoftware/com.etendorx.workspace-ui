@@ -54,6 +54,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
+import { useRecordNavigationShortcuts } from "@/hooks/useRecordNavigationShortcuts";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useFormInitialFocus } from "@/hooks/useFormInitialFocus";
 import { useWindowStore } from "@/stores/windowStore";
@@ -1109,6 +1110,12 @@ export function FormView({
     showErrorModal,
     hasMoreRecords,
     fetchMore,
+  });
+
+  useRecordNavigationShortcuts({
+    onPrevious: navigateToPrevious,
+    onNext: navigateToNext,
+    enabled: isFocused ?? true,
   });
 
   const handleNewRecord = useCallback(() => {
