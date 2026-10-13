@@ -142,3 +142,32 @@ describe("Tooltip", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
+
+describe("Tooltip near the viewport edge", () => {
+  it("stays inside the screen and points the arrow at the trigger", () => {
+    jest.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const isTooltip = this.getAttribute("role") === "tooltip";
+      const rect = isTooltip
+        ? { top: 0, left: 0, width: 200, height: 30 }
+        : { top: 100, left: window.innerWidth - 30, width: 20, height: 20 };
+      return { ...rect, right: rect.left + rect.width, bottom: rect.top + rect.height } as DOMRect;
+    });
+
+    render(
+      <Tooltip title="Next Record (Alt+Shift+PgDn)">
+        <button type="button">Next</button>
+      </Tooltip>
+    );
+    fireEvent.mouseEnter(screen.getByRole("button"));
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    const tooltip = screen.getByRole("tooltip");
+    const arrow = tooltip.querySelector<HTMLElement>(".rotate-45");
+    expect(tooltip.style.left).toBe(`${window.innerWidth - 208}px`);
+    expect(arrow?.style.left).toBe("188px"); // trigger center (innerWidth - 20) - tooltip left
+
+    jest.restoreAllMocks();
+  });
+});
