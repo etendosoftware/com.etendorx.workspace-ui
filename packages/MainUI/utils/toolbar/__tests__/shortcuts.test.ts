@@ -26,6 +26,7 @@ import {
 import { buildToolbarSections, makeToolbarButton } from "@/utils/toolbar/test-utils/toolbarShortcutFixtures";
 
 const { DELETE, REFRESH, NEW, CANCEL, SAVE, FILTER, FIND } = TOOLBAR_BUTTONS_ACTIONS;
+const byName = (a: string, b: string) => a.localeCompare(b);
 
 describe("toolbar shortcuts", () => {
   describe("pressToolbarAction", () => {
@@ -52,8 +53,8 @@ describe("toolbar shortcuts", () => {
   describe("buildToolbarShortcutBindings", () => {
     it("binds every classic toolbar shortcut plus Delete on the grid rows", () => {
       const bindings = buildToolbarShortcutBindings(buildToolbarSections());
-      expect(Object.keys(bindings).sort()).toEqual(
-        [...Object.keys(TOOLBAR_SHORTCUT_ACTIONS), SHORTCUT_IDS.VIEW_GRID_DELETE_SELECTED].sort()
+      expect(Object.keys(bindings).sort(byName)).toEqual(
+        [...Object.keys(TOOLBAR_SHORTCUT_ACTIONS), SHORTCUT_IDS.VIEW_GRID_DELETE_SELECTED].sort(byName)
       );
     });
 
@@ -71,9 +72,9 @@ describe("toolbar shortcuts", () => {
       const allowedInInputs = Object.entries(bindings)
         .filter(([, binding]) => binding?.allowInInputs)
         .map(([id]) => id)
-        .sort();
+        .sort(byName);
 
-      expect(allowedInInputs).toEqual([SHORTCUT_IDS.TOOLBAR_NEW_DOC, SHORTCUT_IDS.TOOLBAR_UNDO].sort());
+      expect(allowedInInputs).toEqual([SHORTCUT_IDS.TOOLBAR_NEW_DOC, SHORTCUT_IDS.TOOLBAR_UNDO].sort(byName));
     });
   });
 

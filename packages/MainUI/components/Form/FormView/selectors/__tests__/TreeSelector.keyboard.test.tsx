@@ -51,7 +51,7 @@ function Harness({ isReadOnly = false }: { isReadOnly?: boolean }) {
 }
 
 const getTrigger = () => screen.getByLabelText(FIELD_LABEL).querySelector("[tabindex='0']") as HTMLElement;
-const getSearchInput = () => document.querySelector("[data-dropdown-portal] input") as HTMLInputElement | null;
+const getSearchInput = () => document.querySelector("[data-dropdown-portal] input");
 
 describe("TreeSelector keyboard shortcuts", () => {
   beforeEach(() => installLocalStorageMock());
