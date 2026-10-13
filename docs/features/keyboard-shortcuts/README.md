@@ -108,6 +108,10 @@ tooltip shows `Ctrl+Shift+X`.
 Confirmation modals (`ConfirmModal`, e.g. the delete confirmation) focus their confirm button, so
 `Enter` confirms, as the classic confirm dialog does. `Enter` on a modal button stays in the modal:
 it never reaches the page shortcuts (the grid `Enter` listener would otherwise cancel the click).
+`ActionModal` (e.g. the clone confirmation) is a modal dialog too: it focuses its first action, keeps
+`Tab` / `Shift+Tab` inside, closes with `Escape` (not while loading) and shows a focus ring. It stops
+the immediate propagation of its keys, because the Next app router hydrates React on `document`,
+the same node the page shortcuts listen on.
 Tooltips are kept inside the viewport and wrap when wider than it.
 
 ## Decisions
