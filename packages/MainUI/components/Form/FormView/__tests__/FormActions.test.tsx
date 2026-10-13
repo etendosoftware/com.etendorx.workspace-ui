@@ -215,6 +215,7 @@ describe("FormActions", () => {
         back: expect.any(Function),
         new: expect.any(Function),
         discard: expect.any(Function),
+        saveAndClose: expect.any(Function),
       },
       TOOLBAR_ACTION_OWNERS.FORM
     );
@@ -457,6 +458,17 @@ describe("FormActions", () => {
 
         await waitFor(() => expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1"));
         expect(mockOnSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
+      });
+
+      it("is the action the status bar close button runs", async () => {
+        mockHasFormChanges = true;
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        await mockRegisterActions.mock.calls.at(-1)[0].saveAndClose();
+
+        expect(mockOnSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
+        expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
       });
 
       it("keeps the form open when the save fails", async () => {

@@ -245,10 +245,10 @@ export function FormActions({
   }, [guardTransition, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   /**
-   * Classic `ToolBar_SaveClose`: saves the pending changes and returns to the grid, the same steps
-   * as the status bar close button, except that a failed save keeps the form open.
+   * Classic `ToolBar_SaveClose`, shared by `Ctrl+Shift+X` and the status bar close button: saves the
+   * pending changes and returns to the grid. A failed save keeps the form open.
    */
-  const handleKeyboardSaveAndClose = useCallback(async () => {
+  const handleSaveAndClose = useCallback(async () => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
     if (hasFormChanges) {
       const saved = await handleSave({ skipFormStateUpdate: true });
@@ -261,7 +261,7 @@ export function FormActions({
   useShortcutBindings(
     {
       [SHORTCUT_IDS.TOOLBAR_SAVE]: { handler: handleKeyboardSave, allowInInputs: true },
-      [SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE]: { handler: handleKeyboardSaveAndClose, allowInInputs: true },
+      [SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE]: { handler: handleSaveAndClose, allowInInputs: true },
       [SHORTCUT_IDS.STATUS_BAR_CLOSE]: { handler: handleKeyboardEscape },
     },
     isFocused ?? true
@@ -275,13 +275,23 @@ export function FormActions({
       back: handleBack,
       new: handleNew,
       discard: discardChanges,
+      saveAndClose: handleSaveAndClose,
     };
 
     registerActions(actions, TOOLBAR_ACTION_OWNERS.FORM);
     // Releasing the bucket on unmount is what makes CANCEL fall back to the
     // tab's own handler once the form pane is gone.
     return () => unregisterActions(TOOLBAR_ACTION_OWNERS.FORM);
-  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew, discardChanges]);
+  }, [
+    registerActions,
+    unregisterActions,
+    handleSave,
+    onReset,
+    handleBack,
+    handleNew,
+    discardChanges,
+    handleSaveAndClose,
+  ]);
 
   return null;
 }

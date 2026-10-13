@@ -157,6 +157,7 @@ export const useToolbarContext = () => {
     onNew: actions.new,
     onBack: actions.back,
     onDiscard: actions.discard,
+    onSaveAndClose: actions.saveAndClose,
     onRestoreSelection: actions.restoreSelection,
     onFilter: actions.filter,
     onExportCSV: actions.exportCSV,

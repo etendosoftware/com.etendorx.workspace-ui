@@ -65,7 +65,7 @@ Field-local shortcuts (picker, link out, tree) are handled on the field with `ma
 | `ToolBar_NewDoc` | `Ctrl+D` | Focused tab | Presses the toolbar NEW button (new record in the form) |
 | `ToolBar_NewRow` | `Ctrl+I` | Visible grid | New inline row (needs the parent record of a child tab) |
 | `ToolBar_Save` | `Ctrl+S` | Form | Saves |
-| `ToolBar_SaveClose` | `Ctrl+Shift+X` | Form | Saves and returns to the grid. Stays in the form when the save fails |
+| `ToolBar_SaveClose` | `Ctrl+Shift+X` | Form | Saves and returns to the grid. Stays in the form when the save fails. The status bar close button runs the same action |
 | `ToolBar_Undo` | `Ctrl+Shift+Z` | Focused tab | Presses CANCEL |
 | `ToolBar_Eliminate` | `Ctrl+Delete` | Focused tab | Presses DELETE (asks for confirmation) |
 | `ToolBar_Refresh` | `Ctrl+Shift+R` | Focused tab | Presses REFRESH |
@@ -99,6 +99,11 @@ Toolbar shortcuts **press the button**: a hidden or disabled button does nothing
 own confirmations and modals are reused. Their tooltips show the keys, e.g. `Refresh (Ctrl+Shift+R)`,
 read from the same table, so they follow the preference. The status bar previous / next / close
 buttons show theirs too.
+
+The status bar close button (X) and `Ctrl+Shift+X` are one action: `FormActions` registers it as the
+`saveAndClose` toolbar action and the button calls `onSaveAndClose`, so both wait for running saves
+and callouts, save only when there are changes and stay in the form when the save fails. Its
+tooltip shows `Ctrl+Shift+X`.
 
 Confirmation modals (`ConfirmModal`, e.g. the delete confirmation) focus their confirm button, so
 `Enter` confirms, as the classic confirm dialog does. `Enter` on a modal button stays in the modal:
