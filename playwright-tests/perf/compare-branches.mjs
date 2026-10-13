@@ -7,7 +7,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compareRuns, METRICS } from "./stats.mjs";
+import { busyRounds, busyPct, cpuTimes, IDLE_MAX_BUSY_PCT, sampleBusyPct } from "./machine.mjs";
+import { compareRuns, METRICS, windowsToRemeasure } from "./stats.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const run = (cmd, args, opts = {}) =>
@@ -23,6 +24,8 @@ const git = (...args) => run("git", args);
 const ROOT = git("rev-parse", "--show-toplevel");
 
 const ROUNDS = Number(process.env.ROUNDS || 3);
+// Rounds added per side, only for the windows with a regression, before writing the report (0 disables)
+const EXTRA_ROUNDS = Number(process.env.EXTRA_ROUNDS ?? 3);
 const QUICK = process.env.QUICK === "1";
 const WINDOWS = process.env.WINDOWS || (QUICK ? "Sales Invoice" : "");
 const CPU_THROTTLE = process.env.CPU_THROTTLE || "1";
@@ -104,9 +107,12 @@ async function serve(dir, port, label) {
   throw new Error(`${label} did not start on port ${port}`);
 }
 
-function bench(url, side, round, outDir) {
-  const out = path.join(outDir, `${side}-${round}.json`);
-  log(`Round ${round + 1}/${ROUNDS}: ${side}`);
+/** One bench.mjs run of one side; `windows` limits it (extra rounds), otherwise WINDOWS or all of them. */
+function bench({ url, side, label, outDir, windows, load }) {
+  const out = path.join(outDir, `${side}-${label}.json`);
+  log(`Round ${label}: ${side}${windows ? ` (${windows})` : ""}`);
+  const before = cpuTimes();
+  const selected = windows || WINDOWS;
   run("node", [path.join(HERE, "bench.mjs")], {
     cwd: path.dirname(HERE),
     env: childEnv({
@@ -115,10 +121,25 @@ function bench(url, side, round, outDir) {
       CPU_THROTTLE,
       LABEL: `perfcmp-${side}`,
       OUT_FILE: out,
-      ...(WINDOWS ? { WINDOWS } : {}),
+      ...(selected ? { WINDOWS: selected } : {}),
     }),
   });
+  load.push({ label: `${side} ${label}`, busyPct: busyPct(before, cpuTimes()) });
   return JSON.parse(fs.readFileSync(out, "utf8"));
+}
+
+/**
+ * Runs `count` rounds per side, alternating which side goes first so drift and warm-up affect both alike.
+ * `first` numbers the rounds after the ones already run.
+ */
+function runRounds({ servers, runs, outDir, load, count, first = 0, windows }) {
+  for (let round = first; round < first + count; round++) {
+    const order = round % 2 === 0 ? ["base", "head"] : ["head", "base"];
+    for (const side of order) {
+      const url = servers[side === "base" ? 0 : 1].url;
+      runs[side].push(bench({ url, side, label: String(round + 1), outDir, windows, load }));
+    }
+  }
 }
 
 const fmt = (metric, value) =>
@@ -130,7 +151,23 @@ const fmt = (metric, value) =>
 const pct = (n) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 const LABELS = { settledMs: "time", blockingMs: "blocking CPU", apiRequests: "requests", apiBytes: "API bytes" };
 
-function report({ base, report: r, rounds, startedAt }) {
+function machineLines({ idleBusyPct, load }) {
+  const lines = [];
+  if (idleBusyPct > IDLE_MAX_BUSY_PCT) {
+    lines.push(
+      `> ⚠️ The machine was already ${idleBusyPct}% busy before starting: timings are less reliable. Close other programs and run it again.`
+    );
+  }
+  const busy = busyRounds(load);
+  if (busy.length) {
+    lines.push(
+      `> ⚠️ Other programs were using the CPU during round(s) ${busy.join(", ")}: their timings are less reliable.`
+    );
+  }
+  return lines.length ? [...lines, ""] : [];
+}
+
+function report({ base, report: r, rounds, startedAt, machine, remeasured }) {
   const cpu = os.cpus()[0]?.model ?? "unknown CPU";
   const lines = [
     "## Performance comparison (`pnpm perf:compare`)",
@@ -138,8 +175,12 @@ function report({ base, report: r, rounds, startedAt }) {
     `- **Base:** \`${base.target}\` merge-base \`${base.baseSha.slice(0, 9)}\``,
     `- **Head:** \`${base.branch}\` \`${base.headSha.slice(0, 9)}\`${base.dirty ? " + uncommitted changes" : ""}`,
     `- **Machine:** ${cpu}, ${os.cpus().length} cores, ${Math.round(os.totalmem() / 2 ** 30)} GB, ${os.platform()} · CPU throttle ${CPU_THROTTLE}x · ${rounds} rounds per side, alternated · ${startedAt}`,
-    "",
+    `- **CPU in use:** ${machine.idleBusyPct}% before starting · per round ${machine.load.map((l) => `${l.label} ${l.busyPct}%`).join(", ")}`,
   ];
+  if (remeasured.length) {
+    lines.push(`- **Re-measured** with ${EXTRA_ROUNDS} extra rounds per side: ${remeasured.join(", ")}`);
+  }
+  lines.push("", ...machineLines(machine));
   if (r.regressions.length === 0) {
     lines.push("**No regressions** beyond this machine's noise.", "");
   } else {
@@ -178,15 +219,25 @@ function report({ base, report: r, rounds, startedAt }) {
     lines.push(`| ${row.flow} | ${cell("settledMs")} | ${cell("blockingMs")} | ${cell("apiRequests")} |`);
   }
   lines.push("", "</details>", "");
+  if (r.unstable.length) {
+    lines.push(
+      `Requests vary between the base rounds (timing-dependent, compared against that noise): ${r.unstable.join(", ")}`,
+      ""
+    );
+  }
   if (r.skipped.length) lines.push(`Not compared (failed in some round): ${r.skipped.join(", ")}`, "");
   lines.push(
-    "Rules: more requests than the base, or API bytes > +5%, is a regression; time and blocking CPU only when > +10%, at least 100 ms (time) or 50 ms (blocking CPU) more, and the bootstrap 95% interval of the difference is above zero (larger than this machine's noise)."
+    "Rules: a change is a regression only when the bootstrap 95% interval of the difference is above zero (larger than this machine's noise) and it is more requests than the base, API bytes > +5%, or time and blocking CPU > +10% and at least 100 ms (time) or 50 ms (blocking CPU) more."
   );
   return lines.join("\n");
 }
 
 async function main() {
   const startedAt = new Date().toISOString();
+  const idleBusyPct = await sampleBusyPct();
+  if (idleBusyPct > IDLE_MAX_BUSY_PCT) {
+    log(`Warning: ${idleBusyPct}% of the CPU is in use before starting; close other programs for reliable timings.`);
+  }
   const base = resolveBase();
   log(
     `Base ${base.target} @ ${base.baseSha.slice(0, 9)} · head ${base.branch} @ ${base.headSha.slice(0, 9)}${base.dirty ? " (+ uncommitted changes)" : ""}`
@@ -208,13 +259,18 @@ async function main() {
     servers.push(await serve(ROOT, HEAD_PORT, "head"));
     const outDir = path.join(HERE, "results", "compare-tmp", startedAt.replace(/[:.]/g, "-"));
     const runs = { base: [], head: [] };
-    for (let round = 0; round < ROUNDS; round++) {
-      // Alternate which side goes first so drift and warm-up affect both alike
-      const order = round % 2 === 0 ? ["base", "head"] : ["head", "base"];
-      for (const side of order) runs[side].push(bench(servers[side === "base" ? 0 : 1].url, side, round, outDir));
+    const load = [];
+    runRounds({ servers, runs, outDir, load, count: ROUNDS });
+    let result = compareRuns(runs.base, runs.head);
+    // A regression on few rounds is often noise: measure only those windows again and compare all the rounds
+    const remeasured = EXTRA_ROUNDS > 0 ? windowsToRemeasure(result.regressions) : [];
+    if (remeasured.length) {
+      log(`Regressions in ${remeasured.join(", ")}: ${EXTRA_ROUNDS} extra rounds per side for those windows`);
+      runRounds({ servers, runs, outDir, load, count: EXTRA_ROUNDS, first: ROUNDS, windows: remeasured.join(",") });
+      result = compareRuns(runs.base, runs.head);
     }
-    const result = compareRuns(runs.base, runs.head);
-    const md = report({ base, report: result, rounds: ROUNDS, startedAt });
+    const machine = { idleBusyPct, load };
+    const md = report({ base, report: result, rounds: ROUNDS, startedAt, machine, remeasured });
     const file = path.join(HERE, "results", `compare-${startedAt.replace(/[:.]/g, "-")}.md`);
     fs.writeFileSync(file, md);
     console.log(`\n${md}\n`);
