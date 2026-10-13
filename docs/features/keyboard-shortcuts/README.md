@@ -97,7 +97,13 @@ Field-local shortcuts (picker, link out, tree) are handled on the field with `ma
 
 Toolbar shortcuts **press the button**: a hidden or disabled button does nothing, and the button's
 own confirmations and modals are reused. Their tooltips show the keys, e.g. `Refresh (Ctrl+Shift+R)`,
-read from the same table, so they follow the preference.
+read from the same table, so they follow the preference. The status bar previous / next / close
+buttons show theirs too.
+
+Confirmation modals (`ConfirmModal`, e.g. the delete confirmation) focus their confirm button, so
+`Enter` confirms, as the classic confirm dialog does. `Enter` on a modal button stays in the modal:
+it never reaches the page shortcuts (the grid `Enter` listener would otherwise cancel the click).
+Tooltips are kept inside the viewport and wrap when wider than it.
 
 ## Decisions
 
