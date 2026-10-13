@@ -28,9 +28,9 @@ jest.mock(
 
 // Mock Modal component from the parent directory
 jest.mock("../../index", () => ({
-  Modal: ({ children, open, saveButtonLabel, secondaryButtonLabel, onSave, onCancel }: any) =>
+  Modal: ({ children, open, saveButtonLabel, secondaryButtonLabel, onSave, onCancel, autoFocusSave }: any) =>
     open ? (
-      <div data-testid="mock-modal">
+      <div data-testid="mock-modal" data-autofocus-save={String(Boolean(autoFocusSave))}>
         <button onClick={onSave}>{saveButtonLabel}</button>
         <button onClick={onCancel}>{secondaryButtonLabel}</button>
         {children}
@@ -97,5 +97,10 @@ describe("ConfirmModal", () => {
   it("does not render when open is false", () => {
     render(<ConfirmModal {...defaultProps} open={false} />);
     expect(screen.queryByTestId("mock-modal")).not.toBeInTheDocument();
+  });
+
+  it("focuses the confirm button so Enter confirms", () => {
+    render(<ConfirmModal {...defaultProps} />);
+    expect(screen.getByTestId("mock-modal")).toHaveAttribute("data-autofocus-save", "true");
   });
 });

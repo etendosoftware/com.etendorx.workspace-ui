@@ -15,7 +15,16 @@
  *************************************************************************
  */
 
-import { cloneElement, useCallback, useState, useRef, useEffect, useMemo, type ReactElement } from "react";
+import {
+  cloneElement,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  type KeyboardEvent,
+  type ReactElement,
+} from "react";
 import { Typography, Button, Box, useTheme, type SxProps, type Theme } from "@mui/material";
 import ModalMUI from "@mui/material/Modal";
 import IconButton from "../IconButton";
@@ -26,6 +35,16 @@ import CloseIcon from "../../assets/icons/x.svg";
 import MaximizeIcon from "../../assets/icons/maximize-2.svg";
 import MinimizeIcon from "../../assets/icons/minimize-2.svg";
 import { calculateModalStyles } from "../../helpers/updateModal";
+
+/**
+ * Enter on a modal button belongs to that button: the page keyboard shortcuts listen on the
+ * document and could take it, and cancel the click, before the button gets it.
+ */
+export const keepButtonEnterInModal = (event: KeyboardEvent<HTMLElement>) => {
+  if (event.key === "Enter" && event.target instanceof HTMLButtonElement) {
+    event.stopPropagation();
+  }
+};
 
 const Modal = ({
   height = Container.Auto,
@@ -47,6 +66,7 @@ const Modal = ({
   SaveIcon,
   backgroundGradient,
   isFullScreenEnabled = false,
+  autoFocusSave = false,
   open: externalOpen,
   ref,
 }: ModalIProps) => {
@@ -174,7 +194,10 @@ const Modal = ({
         keepMounted={false}
         closeAfterTransition
         data-testid="BasicModal_Modal">
-        <Box ref={ref} sx={[styles.boxStyles, modalStyles, gradientStyles] as SxProps<Theme>}>
+        <Box
+          ref={ref}
+          sx={[styles.boxStyles, modalStyles, gradientStyles] as SxProps<Theme>}
+          onKeyDown={keepButtonEnterInModal}>
           <Box sx={sx.modalContainer}>
             {showHeader && (
               <Box sx={sx.headerContainer}>
@@ -220,6 +243,7 @@ const Modal = ({
                       <SaveIcon fill={theme.palette.baselineColor.neutral[0]} width={IconSize} height={IconSize} />
                     }
                     sx={sx.saveButton}
+                    autoFocus={autoFocusSave}
                     onClick={handleSave}>
                     {saveButtonLabel}
                   </Button>
