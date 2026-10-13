@@ -119,7 +119,8 @@ Tooltips are kept inside the viewport and wrap when wider than it.
 - **Ctrl+N is gone.** New is now classic `Ctrl+D` (form) and `Ctrl+I` (inline row). Chrome also
   reserves `Ctrl+N` for a new browser window and never delivers it to the page.
 - **New UI shortcuts outside the classic list stay as they were.** `Ctrl+M` (split view) and `F6`
-  (switch pane) still use `useKeyboardShortcuts`, which was not changed.
+  (switch pane) still use `useKeyboardShortcuts`. Its only change: with Shift held it matches only
+  `ctrl+shift+<key>`, so `ctrl+m` no longer takes `Ctrl+Shift+M` (Email) away from the toolbar.
 - **Previous / next tab always moves between windows.** Classic moves between sibling sub-tabs
   inside a window and only changes window at the top level. Here, `←` / `→` always change window,
   and `↑` / `↓` move between parent and child tabs.
