@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { FormProvider, useForm } from "react-hook-form";
@@ -170,6 +170,9 @@ const mockFields: Record<string, Field> = {
     helpComment: "Updated by help",
   },
 };
+
+/** The ComponentLibrary tooltip shows after this hover delay. */
+const TOOLTIP_DELAY_MS = 1000;
 
 describe("StatusBar", () => {
   beforeEach(() => {
@@ -663,6 +666,23 @@ describe("StatusBar", () => {
       const closeButton = screen.getByTestId("icon-button");
       expect(closeButton).toBeInTheDocument();
       // Note: tooltip prop testing might require additional setup depending on IconButton implementation
+    });
+
+    it("advertises the classic close shortcut in the tooltip", () => {
+      jest.useFakeTimers();
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      fireEvent.mouseEnter(screen.getByTestId("icon-button").parentElement as HTMLElement);
+      act(() => {
+        jest.advanceTimersByTime(TOOLTIP_DELAY_MS);
+      });
+
+      expect(screen.getByText("Close Record (Esc)")).toBeInTheDocument();
+      jest.useRealTimers();
     });
 
     it("handles missing translation keys gracefully", () => {

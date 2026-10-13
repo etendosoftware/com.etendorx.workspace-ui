@@ -25,6 +25,8 @@ import { useCallback } from "react";
 import { useTabContext } from "@/contexts/tab";
 import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
+import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 
 interface StatusBarProps {
   fields: Record<string, Field>;
@@ -84,7 +86,7 @@ export default function StatusBar({
           data-testid="icon-button"
           onClick={handleCloseRecord}
           className="w-8 h-8"
-          tooltip={t("forms.statusBar.closeRecord")}
+          tooltip={withShortcutHint(t("forms.statusBar.closeRecord"), SHORTCUT_IDS.STATUS_BAR_CLOSE)}
           disabled={false}>
           <CloseIcon data-testid="CloseIcon__cfc328" />
         </IconButton>
