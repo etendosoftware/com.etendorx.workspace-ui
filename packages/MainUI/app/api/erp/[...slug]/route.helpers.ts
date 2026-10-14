@@ -43,6 +43,17 @@ export function detectCharset(contentType: string | null): string {
 }
 
 /**
+ * Spreadsheet content types served by the classic report handler: `application/xls`
+ * (AD_DataType "Excel" used by ExportType.XLS), the standard XLS MIME type and the
+ * OOXML prefix used by XLSX.
+ */
+const SPREADSHEET_CONTENT_TYPES = [
+  "application/xls",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument",
+] as const;
+
+/**
  * Check if response is binary file
  * @param contentType - Content-Type header value
  * @returns true if binary content type
@@ -54,7 +65,8 @@ export function isBinaryContentType(contentType: string): boolean {
     contentType.includes("image/") ||
     contentType.includes("video/") ||
     contentType.includes("audio/") ||
-    contentType.includes("application/pdf")
+    contentType.includes("application/pdf") ||
+    SPREADSHEET_CONTENT_TYPES.some((type) => contentType.includes(type))
   );
 }
 

@@ -28,6 +28,10 @@ export interface BaseCriteria {
   fieldName: string;
   operator: string;
   value: string | number | string[] | undefined;
+  /** Lower limit of a `betweenInclusive` criterion. */
+  start?: string | number;
+  /** Upper limit of a `betweenInclusive` criterion. */
+  end?: string | number;
 }
 
 export interface CompositeCriteria {
@@ -511,6 +515,12 @@ export interface Tab {
    */
   obuiappCanAdd?: boolean;
   /**
+   * Whether the tab's table is marked as Fully Audited (`AD_Table.isFullyAudited`).
+   * Gates the Audit Trail toolbar button, same rule as the classic UI in
+   * OBViewTab#getIconButtons().
+   */
+  tableFullyAudited?: boolean;
+  /**
    * Mirrors AD_Tab.EM_OBUIAPP_CAN_DELETE. When true, the P&E grid shows a
    * per-row trash icon that removes the row from the local grid buffer
    * (no backend call) — matches classic UI behavior for tabs like APRM GL Items.
@@ -587,11 +597,16 @@ export interface Menu {
   processDefinitionId?: string;
   description?: string;
   viewId?: string;
+  /** Target URL of an External (external link) entry. */
+  url?: string | null;
+  /** External entries only: true opens the URL in a new browser tab, false inside the app. */
+  openLinkInBrowser?: boolean;
 }
 
 export enum Action {
   OBUIAPPOpenView = "OBUIAPP_OpenView",
   OBUIAPPProcess = "OBUIAPP_Process",
+  L = "L",
   P = "P",
   R = "R",
   W = "W",
