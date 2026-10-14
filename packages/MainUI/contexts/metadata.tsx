@@ -27,6 +27,7 @@ import { useMetadataStore } from "./metadataStore";
 import { isWindowAccessDeniedError } from "@workspaceui/api-client/src/api/errors";
 import { buildAccessDeniedToastTexts, reportWindowsAccessDenied } from "@/utils/accessDenied";
 import { useTranslation } from "@/hooks/useTranslation";
+import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
 
 export const MetadataSynchronizer = () => {
   const windowsObj = useWindowStore((s) => s.windows);
@@ -52,6 +53,8 @@ export const MetadataSynchronizer = () => {
     };
 
     for (const win of windows) {
+      // In-app tabs of External menu entries are not AD windows: there is no metadata to load.
+      if (isExternalPageWindowId(win.windowId)) continue;
       if (win.windowId && !windowsData[win.windowId] && !isWindowLoading(win.windowId)) {
         loadWindowData(win.windowId).catch((error) => {
           if (isWindowAccessDeniedError(error)) {
