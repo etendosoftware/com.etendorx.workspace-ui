@@ -132,6 +132,49 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 };
 
 /**
+ * The toolbar commands and registrars of the current tab, with no subscription to toolbar state: the
+ * returned object and its functions are stable per tab, and each command runs the implementation
+ * registered when it is called (the save wrapper for `onSave`, the highest-priority owner for the rest).
+ *
+ * Use it in components that only call commands or register actions. {@link useToolbarContext} re-renders
+ * its caller on every toolbar state change (save button state, registered actions, form refetch...), which
+ * re-rendered the hidden grid ~10 times per form Next.
+ */
+export const useToolbarCommands = () => {
+  const { tab } = useTabContext();
+  const tabId = tab?.id ?? "";
+
+  return useMemo(() => {
+    const store = () => useToolbarStore.getState();
+    const command =
+      <K extends keyof ToolbarActions>(action: K) =>
+      (...args: Parameters<ToolbarActions[K]>): ReturnType<ToolbarActions[K]> => {
+        const byOwner = store().byTabId[tabId]?.actionsByOwner ?? createEmptyActionsByOwner();
+        const implementation = resolveToolbarActions(byOwner)[action] as (
+          ...a: Parameters<ToolbarActions[K]>
+        ) => ReturnType<ToolbarActions[K]>;
+        return implementation(...args);
+      };
+
+    return {
+      onSave: (options: SaveOptions) => (store().byTabId[tabId]?.wrappedSave ?? defaultActions.save)(options),
+      onRefresh: command("refresh"),
+      onNew: command("new"),
+      onBack: command("back"),
+      onDiscard: command("discard"),
+      onRestoreSelection: command("restoreSelection"),
+      registerActions: (newActions: Partial<ToolbarActions>, owner: ToolbarActionOwner) =>
+        store().registerRawActions(tabId, newActions, owner),
+      unregisterActions: (owner: ToolbarActionOwner) => store().clearOwnerActions(tabId, owner),
+      registerAttachmentAction: (action?: () => void) => store().registerAttachmentAction(tabId, action),
+      setShouldOpenAttachmentModal: (open: boolean) => store().setShouldOpenAttachmentModal(tabId, open),
+      setIsImplicitFilterApplied: (value: boolean) => store().setIsImplicitFilterApplied(tabId, value),
+      setIsAdvancedFilterApplied: (value: boolean) => store().setIsAdvancedFilterApplied(tabId, value),
+    };
+  }, [tabId]);
+};
+
+/**
  * Backward-compatible hook that reads from the Zustand toolbar store for the current tab.
  *
  * All consumers of this hook work unchanged — it returns the same shape as the old

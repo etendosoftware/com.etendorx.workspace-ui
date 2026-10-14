@@ -44,7 +44,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -814,7 +814,7 @@ const DynamicTable = ({
     refetchDatasource,
   } = useDatasourceContext();
   const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
-    useToolbarContext();
+    useToolbarCommands();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
 
@@ -4014,4 +4014,6 @@ const DynamicTable = ({
   );
 };
 
-export default DynamicTable;
+// Memoized: Tab re-renders several times per form navigation with the same props, and the grid body (MRT
+// instance, columns) is expensive even while hidden behind the form. Context and store updates still apply.
+export default React.memo(DynamicTable);

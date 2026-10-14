@@ -20,7 +20,7 @@ import StatusBarField from "@/components/Form/FormView/StatusBarField";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { useCallback } from "react";
 import { useTabContext } from "@/contexts/tab";
 import { RecordNavigationControls } from "./RecordNavigationControls";
@@ -42,7 +42,7 @@ export default function StatusBar({
   isNavigating = false,
 }: StatusBarProps) {
   const { t } = useTranslation();
-  const { onBack, onSave } = useToolbarContext();
+  const { onBack, onSave } = useToolbarCommands();
   const { hasFormChanges } = useTabContext();
 
   const handleCloseRecord = useCallback(async () => {

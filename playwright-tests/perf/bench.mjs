@@ -330,29 +330,7 @@ async function windowFlow(browser, winName, run) {
           )
         );
       }
-      // Typing latency: 10 keystrokes into the Description field (exists in all benchmarked headers).
-      // The text is never saved: the context is discarded without pressing Save.
-      const field = page.locator('textarea[name="description"]').filter({ visible: true }).first();
-      if (await field.isVisible().catch(() => false)) {
-        steps.push(
-          await step(
-            rec,
-            "type-10-chars",
-            async () => {
-              // React textarea takes programmatic focus; a click can be intercepted by overlapping chrome
-              await field.focus();
-              await page.keyboard.type("perf-check");
-            },
-            async () =>
-              page.waitForFunction((el) => el.value.includes("perf-check"), await field.elementHandle(), {
-                timeout: TIMEOUT,
-                polling: 100,
-              }),
-            `${tag}-type-10-chars`
-          )
-        );
-      }
-      // New record from the form (FIC in NEW mode). The typed description is discarded without a prompt.
+      // New record from the form (FIC in NEW mode). Runs while the form is clean: New saves a dirty form first.
       const newButton = page.locator("button.toolbar-button-new-form").filter({ visible: true }).first();
       if (await newButton.isVisible().catch(() => false)) {
         steps.push(
@@ -411,9 +389,37 @@ async function windowFlow(browser, winName, run) {
           )
         );
       }
+      // Typing latency: 10 keystrokes into the Description field (exists in all benchmarked headers). It runs
+      // last, on the new record, so nothing saves the text: New auto-saves a dirty form, which wrote the
+      // typed text into real records while this step ran before New. The context is discarded unsaved.
+      const field = page.locator('textarea[name="description"]').filter({ visible: true }).first();
+      if (await field.isVisible().catch(() => false)) {
+        steps.push(
+          await step(
+            rec,
+            "type-10-chars",
+            async () => {
+              // React textarea takes programmatic focus; a click can be intercepted by overlapping chrome
+              await field.focus();
+              await page.keyboard.type("perf-check");
+            },
+            async () =>
+              page.waitForFunction((el) => el.value.includes("perf-check"), await field.elementHandle(), {
+                timeout: TIMEOUT,
+                polling: 100,
+              }),
+            `${tag}-type-10-chars`
+          )
+        );
+      }
     }
   } catch (e) {
     steps.push({ name: "error", error: String(e.message || e).slice(0, 300) });
+    if (process.env.SCREENSHOT_ON_ERROR) {
+      await page
+        .screenshot({ path: path.join(RESULTS_DIR, `error-${winName.replace(/ /g, "")}-${run}.png`) })
+        .catch(() => {});
+    }
   } finally {
     await ctx.close();
   }
@@ -541,6 +547,11 @@ async function classicWindowFlow(browser, winName, run) {
     }
   } catch (e) {
     steps.push({ name: "error", error: String(e.message || e).slice(0, 300) });
+    if (process.env.SCREENSHOT_ON_ERROR) {
+      await page
+        .screenshot({ path: path.join(RESULTS_DIR, `error-${winName.replace(/ /g, "")}-${run}.png`) })
+        .catch(() => {});
+    }
   } finally {
     await ctx.close();
   }
