@@ -93,8 +93,10 @@ export function useActionDispatchContext({
   const { config } = useRuntimeConfig();
   const classicHost = config?.etendoClassicHost ?? "";
 
-  const ctx = useMemo<ActionDispatchContext>(
-    () => ({
+  const ctx = useMemo<ActionDispatchContext>(() => {
+    // A report file that cannot be opened/downloaded must not fail silently.
+    const showReportFileError = () => messageBar.setMessage("error", null, t("process.reportFileFailed"));
+    return {
       showMessageInProcessView: (payload) => {
         messageBar.setMessage(payload.msgType ?? "info", payload.msgTitle ?? null, payload.msgText ?? "");
       },
@@ -113,13 +115,14 @@ export function useActionDispatchContext({
         dialogScriptApi.say(message);
       },
       browseReport: (payload) => {
-        fetchAndBrowseReport(buildReportActionUrl(payload, REPORT_ACTION_MODES.BROWSE), token);
+        fetchAndBrowseReport(buildReportActionUrl(payload, REPORT_ACTION_MODES.BROWSE), token, showReportFileError);
       },
       downloadReport: (payload) => {
         fetchAndDownloadReport(
           buildReportActionUrl(payload, REPORT_ACTION_MODES.DOWNLOAD),
           token,
-          payload.fileName ?? "report"
+          payload.fileName ?? "report",
+          showReportFileError
         );
       },
       openUrl: (payload) => {
@@ -141,9 +144,8 @@ export function useActionDispatchContext({
         // that carries the only remaining way to reach the URL.
         if (payload.closeModal && opened) closeModal();
       },
-    }),
-    [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t, classicHost]
-  );
+    };
+  }, [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t, classicHost]);
 
   useEffect(() => {
     setActionDispatchContext(ctx);

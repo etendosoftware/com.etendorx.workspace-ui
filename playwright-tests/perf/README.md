@@ -29,7 +29,7 @@ default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER
 | `load-unfiltered` | Toggle the implicit filter off (full first page of 100 rows) | Grid shows "Showing N records", N > 0 |
 | `arrow-nav-5` | Select the second row, then 5 ArrowDown 100 ms apart | 7th row selected |
 | `open-record` | Double click first grid row | URL has the record id |
-| `form-next-5` | 5 clicks on the form's Next button, each as soon as it is enabled | position indicator advanced by 5 |
+| `form-next-5` | Up to 5 clicks on the form's Next button, each as soon as it is enabled, never past the last record | position indicator advanced by the clicks done |
 | `type-10-chars` | Type "perf-check" into the Description textarea (never saved) | keystrokes done (CPU tail counted in `interactiveMs`) |
 
 ## Metrics
@@ -74,15 +74,26 @@ QUICK=1 pnpm perf:compare      # Sales Invoice only (~5-10 min)
 What it does: finds the base (`git merge-base HEAD origin/develop`, or `origin/main` for `hotfix/*`;
 `BASE_REF` overrides), builds it in a cached worktree under `~/.cache/workspace-ui-perf-compare/`, builds the
 working tree, serves both (ports 3201/3202), runs `bench.mjs` alternating base and head, and writes
-`perf/results/compare-<date>.md`.
+`perf/results/compare-<date>.md`. When some step comes out as a regression, it runs `EXTRA_ROUNDS` (default 3)
+more rounds per side of only those windows and compares again with all the rounds, so a regression in the
+report held up on twice the samples.
 
-How to read it: more requests than the base, or API bytes more than 5% higher, is a regression. Time and
-blocking CPU are regressions only when more than 10% higher, at least 100 ms (time) or 50 ms (blocking CPU)
-more, **and** the bootstrap 95% interval of the difference is above zero, i.e. larger than the noise
-measured on that machine. Use at least 3 rounds: with fewer, the noise estimate is weak. The command never fails
-unless `STRICT=1`.
+How to read it: a change is a regression only when the bootstrap 95% interval of the difference is above
+zero, i.e. larger than the noise measured on that machine, **and** it is more requests than the base, API
+bytes more than 5% higher, or time and blocking CPU more than 10% higher and at least 100 ms (time) or 50 ms
+(blocking CPU) more. An extra request in every round is still a regression; one that comes and goes on both
+sides is not. Steps that move fast (`arrow-nav-5`, `form-next-5`: keys 100 ms apart) fire a variable number of
+child-tab requests depending on the machine's speed; the report lists the steps whose requests vary between
+the base rounds. Use at least 3 rounds: with fewer, the noise estimate is weak. The command never fails unless
+`STRICT=1`.
 
-Options: `ROUNDS`, `WINDOWS`, `QUICK=1`, `CPU_THROTTLE` (default 1), `BASE_REF`, `BASE_PORT`/`HEAD_PORT`,
+Keep the machine idle while it runs: other programs (a browser, an IDE build) slow down some rounds and not
+others. The report shows the CPU in use before starting and during each round, and warns when the machine was
+already busy or some round was much busier than the quietest one. Step failures are listed under "Not
+compared"; `form-next-5` fails with an "Unsaved changes" message when the opened record is marked as modified
+without any edit (a UI bug to report, since the step types nothing before).
+
+Options: `ROUNDS`, `EXTRA_ROUNDS` (0 disables the re-measure), `WINDOWS`, `QUICK=1`, `CPU_THROTTLE` (default 1), `BASE_REF`, `BASE_PORT`/`HEAD_PORT`,
 `SKIP_BUILD=1` (reuse existing builds), `PERF_WORKTREES_DIR`. Remove old base worktrees with
 `git worktree prune` after deleting the folders.
 

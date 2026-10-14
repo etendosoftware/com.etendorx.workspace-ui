@@ -27,8 +27,10 @@
  */
 
 import {
+  addSectionsToExpand,
   computeInitialExpandedSections,
   MAIN_SECTION_ID,
+  resolveFieldSectionId,
   type FormSectionGroupEntry,
 } from "@/utils/form/expandedSections";
 
@@ -105,5 +107,41 @@ describe("computeInitialExpandedSections", () => {
       makeGroup("linked-items", "Linked Items"),
     ];
     expect(computeInitialExpandedSections(groups)).toEqual([]);
+  });
+});
+
+describe("resolveFieldSectionId", () => {
+  it("returns the field group of the field", () => {
+    expect(resolveFieldSectionId({ fieldGroup: "g1" })).toBe("g1");
+  });
+
+  it.each([undefined, null, ""])("falls back to the main section when the field group is %p", (fieldGroup) => {
+    expect(resolveFieldSectionId({ fieldGroup })).toBe(MAIN_SECTION_ID);
+  });
+});
+
+describe("addSectionsToExpand", () => {
+  it("returns the same array when every section is already expanded", () => {
+    const current = [MAIN_SECTION_ID, "g1"];
+
+    expect(addSectionsToExpand(current, ["g1", MAIN_SECTION_ID])).toBe(current);
+  });
+
+  it("returns the same array when no section is requested", () => {
+    const current = [MAIN_SECTION_ID];
+
+    expect(addSectionsToExpand(current, [])).toBe(current);
+  });
+
+  it("appends every collapsed section, keeping the expanded ones", () => {
+    expect(addSectionsToExpand([MAIN_SECTION_ID], ["g1", MAIN_SECTION_ID, "g2"])).toEqual([
+      MAIN_SECTION_ID,
+      "g1",
+      "g2",
+    ]);
+  });
+
+  it("does not duplicate a section requested more than once", () => {
+    expect(addSectionsToExpand([], ["g1", "g1"])).toEqual(["g1"]);
   });
 });

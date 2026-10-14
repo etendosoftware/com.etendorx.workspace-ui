@@ -17,15 +17,12 @@
 
 import type { UrlWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { isSafeUrl } from "@/utils/urlSafety";
+import { IFRAME_SANDBOX_PERMISSIVE } from "@/utils/iframeSandbox";
 
 interface UrlRendererProps {
   data: UrlWidgetData;
 }
 
-// Permissions always granted: needed for embedded apps (auth popups, forms, downloads).
-// allow-top-navigation is intentionally excluded to prevent iframes from
-// redirecting the parent page (e.g. Google Calendar auth redirects).
-const SANDBOX_PERMISSIVE = "allow-scripts allow-same-origin allow-popups allow-forms allow-downloads";
 // Restricted mode: no popups, no forms — for untrusted content.
 const SANDBOX_RESTRICTED = "allow-scripts allow-same-origin";
 
@@ -42,7 +39,7 @@ export default function UrlRenderer({ data }: UrlRendererProps) {
     <iframe
       key={data.url}
       src={data.url}
-      sandbox={data.sandbox ? SANDBOX_RESTRICTED : SANDBOX_PERMISSIVE}
+      sandbox={data.sandbox ? SANDBOX_RESTRICTED : IFRAME_SANDBOX_PERMISSIVE}
       referrerPolicy="no-referrer"
       className="w-full h-full rounded-lg border-0"
       title="widget-url-content"
