@@ -105,7 +105,7 @@ describe("useDeleteRecord - Parent Refresh Integration", () => {
     });
 
     // Mock ToolbarContext
-    require("@/contexts/ToolbarContext").useToolbarContext.mockReturnValue({
+    require("@/contexts/ToolbarContext").useToolbarCommands.mockReturnValue({
       onBack: jest.fn(),
     });
   });

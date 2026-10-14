@@ -43,7 +43,7 @@ jest.mock("@/contexts/tab", () => ({
 }));
 
 jest.mock("@/contexts/ToolbarContext", () => ({
-  useToolbarContext: () => ({ onSave: mockOnSave, onDiscard: mockOnDiscard }),
+  useToolbarCommands: () => ({ onSave: mockOnSave, onDiscard: mockOnDiscard }),
 }));
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({

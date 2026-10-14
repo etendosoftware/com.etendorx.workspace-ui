@@ -44,6 +44,11 @@ interface UseRowKeyboardNavigationArgs {
   effectiveRecords: EntityData[];
   containerRef: React.RefObject<HTMLDivElement | null>;
   editingRowsCount: number;
+  /**
+   * Called with the new row index on every keyboard step, right after the selection moves. Used to keep
+   * the selected row in view while the key is held; the selection's other side effects stay debounced.
+   */
+  onStep?: (index: number) => void;
 }
 
 interface UseRowKeyboardNavigationResult {
@@ -62,6 +67,7 @@ export const useRowKeyboardNavigation = ({
   effectiveRecords,
   containerRef,
   editingRowsCount,
+  onStep,
 }: UseRowKeyboardNavigationArgs): UseRowKeyboardNavigationResult => {
   const pendingIndexRef = useRef<number | null>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -74,6 +80,8 @@ export const useRowKeyboardNavigation = ({
   editingRowsCountRef.current = editingRowsCount;
   const tableRef = useRef(table);
   tableRef.current = table;
+  const onStepRef = useRef(onStep);
+  onStepRef.current = onStep;
 
   const clearSourceResetTimer = useCallback(() => {
     if (sourceResetTimerRef.current) {
@@ -103,6 +111,7 @@ export const useRowKeyboardNavigation = ({
 
     markKeyboardSource();
     tableRef.current.setRowSelection({ [String(target.id)]: true });
+    onStepRef.current?.(nextIndex);
   }, [markKeyboardSource]);
 
   const scheduleSelection = useCallback(

@@ -2,6 +2,8 @@
 // Usage: node perf/hotspots.mjs perf/results/profiles/<LABEL> [../packages/MainUI/.next] [filter]
 // `filter` keeps only profiles whose file name contains it (e.g. "open-record").
 // `CALLERS=<function name>` also prints the call stacks (innermost first) that spent time in that function.
+// `CALLERS_OF=<source path substring>` prints, for all time spent inside that file (inclusive), the nearest
+// first-party callers outside it — useful when production function names are minified.
 import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
 import fs from "node:fs";
 import path from "node:path";
@@ -51,6 +53,8 @@ const byFile = new Map(); // first-party file -> self ms of the file + libs it c
 const perProfile = [];
 const CALLERS = process.env.CALLERS;
 const callerStacks = new Map(); // "frame < frame < ..." -> ms, for samples inside CALLERS
+const CALLERS_OF = process.env.CALLERS_OF;
+const callersOf = new Map(); // "caller < caller" -> ms, for samples whose stack enters CALLERS_OF
 let grand = 0;
 let idle = 0;
 
@@ -92,6 +96,22 @@ for (const f of files) {
         inclusiveApp.set(k, (inclusiveApp.get(k) || 0) + ms);
       }
     }
+    if (CALLERS_OF) {
+      // Outermost frame inside the file, then up to 3 first-party frames above it outside the file
+      let entry;
+      for (let x = id; x !== undefined; x = parent.get(x)) {
+        if (lab(x).src?.includes(CALLERS_OF)) entry = x;
+      }
+      if (entry !== undefined) {
+        const stack = [];
+        for (let x = parent.get(entry); x !== undefined && stack.length < 3; x = parent.get(x)) {
+          const fl = lab(x);
+          if (!fl.lib && fl.fn !== "(root)") stack.push(`${fl.fn} ${fl.src}`);
+        }
+        const k = stack.join("  <  ") || "(no first-party caller)";
+        callersOf.set(k, (callersOf.get(k) || 0) + ms);
+      }
+    }
     if (CALLERS && l.fn === CALLERS) {
       const stack = [];
       for (let x = parent.get(id); x !== undefined && stack.length < 8; x = parent.get(x)) {
@@ -121,3 +141,4 @@ console.log(`\n== Self time (where the CPU actually burns)\n${top(self, 30)}`);
 console.log(`\n== First-party files (self + library time they triggered)\n${top(byFile, 25)}`);
 console.log(`\n== First-party functions, inclusive (on the stack)\n${top(inclusiveApp, 40)}`);
 if (CALLERS) console.log(`\n== Call stacks into ${CALLERS}\n${top(callerStacks, 15)}`);
+if (CALLERS_OF) console.log(`\n== Callers of ${CALLERS_OF} (inclusive)\n${top(callersOf, 15)}`);
