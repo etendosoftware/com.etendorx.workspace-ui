@@ -260,6 +260,7 @@ jest.mock("@/contexts/datasourceContext", () => ({
 
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => mockToolbarContext,
+  useToolbarCommands: () => mockToolbarContext,
 }));
 
 jest.mock("@/contexts/language", () => ({

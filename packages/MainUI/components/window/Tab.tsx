@@ -29,7 +29,7 @@ import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
@@ -166,7 +166,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table ?? DEFAULT_TABLE_STATE;
   }, []);
 
-  const { registerActions, setIsAdvancedFilterApplied, onRestoreSelection } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied, onRestoreSelection } = useToolbarCommands();
   const { hasFormChanges } = useTabContext();
   const { guardTransition } = useUnsavedChangesTabGuard();
   const { graph } = useSelected();

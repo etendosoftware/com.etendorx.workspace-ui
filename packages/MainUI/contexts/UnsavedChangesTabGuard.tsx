@@ -19,7 +19,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { useTabContext } from "@/contexts/tab";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { isTabDirty } from "@/utils/window/dirtyState";
@@ -62,7 +62,7 @@ const UnsavedChangesTabGuardContext = createContext<UnsavedChangesTabGuardI>({
 export default function UnsavedChangesTabGuardProvider({ children }: React.PropsWithChildren) {
   const { t } = useTranslation();
   const { tab } = useTabContext();
-  const { onSave, onDiscard } = useToolbarContext();
+  const { onSave, onDiscard } = useToolbarCommands();
   const windowIdentifier = useCurrentWindowIdentifier();
   const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
 

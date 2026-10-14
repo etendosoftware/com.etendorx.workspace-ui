@@ -24,6 +24,7 @@ const mockTabContext = {
 
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => mockToolbarContext,
+  useToolbarCommands: () => mockToolbarContext,
 }));
 
 jest.mock("@/contexts/tab", () => ({

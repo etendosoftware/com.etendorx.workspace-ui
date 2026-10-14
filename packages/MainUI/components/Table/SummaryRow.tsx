@@ -20,7 +20,6 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
   tableContainerRef,
 }) => {
   const rowRef = useRef<HTMLDivElement>(null);
-  const visibleColumns = table.getVisibleLeafColumns();
 
   // Sync scroll with table container
   useEffect(() => {
@@ -78,6 +77,10 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
   if (Object.keys(summaryState).length === 0) {
     return null;
   }
+
+  // Only after the early return: the column model is recomputed on demand, and without summaries (the
+  // usual case) nothing else asks for it while the grid is hidden behind the form.
+  const visibleColumns = table.getVisibleLeafColumns();
 
   return (
     <div
