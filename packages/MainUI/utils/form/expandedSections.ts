@@ -22,6 +22,11 @@
 export const MAIN_SECTION_ID = "_main";
 
 /**
+ * Section id of the Linked Items section of the form.
+ */
+export const LINKED_ITEMS_SECTION_ID = "linked-items";
+
+/**
  * Minimal shape of a `useFormFields().groups` entry needed to decide whether a
  * section starts expanded. Declared structurally so this module stays free of
  * hook/metadata dependencies and therefore trivially testable.
