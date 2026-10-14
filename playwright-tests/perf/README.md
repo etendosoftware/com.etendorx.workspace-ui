@@ -51,6 +51,21 @@ The committed React baselines (local-react-cpu1x/cpu4x) lack `type-10-chars` for
 Purchase Order (the typing step failed on those windows when they were recorded); `compare.mjs`
 totals only flows that succeeded in both files.
 
+## Counting re-renders (`perf/render-count.mjs`)
+
+When a step costs more CPU than its work explains, count what React renders during it. The script opens a
+record, clicks the form's Next once and prints renders per component, which components render in each
+commit, and (with `CAUSE`) why: changed props, changed state hooks by index, changed contexts. It installs a
+stub React DevTools hook, so the app is not modified. Component names are only readable on `next dev`.
+
+```bash
+cd packages/MainUI && npx next dev -p 3400          # separate terminal
+BASE_URL=http://localhost:3400 CAUSE=FormViewComponent node perf/render-count.mjs
+```
+
+Env: `WINDOW`, `TOP`, `WATCH` (components counted per commit), `CAUSE`. Absolute counts are dev-mode
+renders, not CPU: check what a reduction is worth with `bench.mjs` / `perf:compare` on a production build.
+
 ## Troubleshooting
 
 - `Cannot find module '.../restore-node-options.cjs'`: the shell injects a `NODE_OPTIONS` preload that no
