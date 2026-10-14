@@ -7,6 +7,7 @@ import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { availableNextClicks, parseRecordPosition } from "./recordPosition.mjs";
 
 const BASE = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 const USER = process.env.ETENDO_USER || "admin";
@@ -28,6 +29,14 @@ const CLASSIC_TAB_IDS = {
   "Goods Shipment": "257",
   "Purchase Order": "294",
 };
+// Keep timers and rendering at full speed even if the OS considers the browser in the background
+const CHROMIUM_ARGS = [
+  "--disable-background-timer-throttling",
+  "--disable-renderer-backgrounding",
+  "--disable-backgrounding-occluded-windows",
+];
+const NEXT_CLICKS = 5;
+const UNSAVED_CHANGES_TITLE = "Unsaved changes";
 const FILTER_BUTTON_ID = "D73C2AD100854463B3F697F3D36CDE3E"; // AD toolbar button with action FILTER (implicit filter toggle)
 
 // Static assets never count as API, wherever they live (Classic serves them under /etendo/web/)
@@ -179,8 +188,21 @@ const rowIsSelected = (index) => {
   return !!rows[index]?.querySelector('input[type="checkbox"]')?.checked;
 };
 
-// "3 / 100" or "3 of 100" -> 3
-const recordPosition = (text) => Number.parseInt(text, 10);
+// Next on a form the UI considers modified opens this dialog over the button, and the step would wait until
+// the timeout. Nothing is typed before form-next-5, so the record was marked modified on load: fail at once
+// with that reason instead.
+const unlessUnsavedChangesDialog = (page, pending) =>
+  Promise.race([
+    pending,
+    page
+      .getByText(UNSAVED_CHANGES_TITLE, { exact: true })
+      .filter({ visible: true })
+      .first()
+      .waitFor({ timeout: TIMEOUT })
+      .then(() => {
+        throw new Error(`"${UNSAVED_CHANGES_TITLE}" dialog on Next: the record opened as modified without any edit`);
+      }),
+  ]);
 
 const gridReady = (page) => () =>
   page
@@ -272,31 +294,37 @@ async function windowFlow(browser, winName, run) {
           `${tag}-open-record`
         )
       );
-      // Record navigation from the form: 5 Next clicks as fast as the button allows.
+      // Record navigation from the form: up to 5 Next clicks as fast as the button allows, never past the
+      // last record (a window with few records would leave Next disabled and the click waiting forever).
       const next = page.getByTestId("next-record-button").filter({ visible: true }).first();
-      if (await next.isEnabled().catch(() => false)) {
-        const position = page.getByTestId("record-position-indicator").filter({ visible: true }).first();
-        const startAt = recordPosition(await position.innerText());
+      const position = page.getByTestId("record-position-indicator").filter({ visible: true }).first();
+      const positionText = await position.innerText().catch(() => "");
+      const clicks = availableNextClicks(positionText, NEXT_CLICKS);
+      if (clicks > 0 && (await next.isEnabled().catch(() => false))) {
+        const expected = parseRecordPosition(positionText).current + clicks;
         steps.push(
           await step(
             rec,
             "form-next-5",
             async () => {
-              for (let i = 0; i < 5; i++) {
-                await next.click({ timeout: TIMEOUT });
+              for (let i = 0; i < clicks; i++) {
+                await unlessUnsavedChangesDialog(page, next.click({ timeout: TIMEOUT }));
                 await page.waitForTimeout(100);
               }
             },
             () =>
-              page.waitForFunction(
-                ({ expected }) => {
-                  const el = [...document.querySelectorAll('[data-testid="record-position-indicator"]')].find(
-                    (e) => e.offsetParent !== null
-                  );
-                  return Number.parseInt(el?.textContent ?? "", 10) === expected;
-                },
-                { expected: startAt + 5 },
-                { timeout: TIMEOUT, polling: 100 }
+              unlessUnsavedChangesDialog(
+                page,
+                page.waitForFunction(
+                  (target) => {
+                    const el = [...document.querySelectorAll('[data-testid="record-position-indicator"]')].find(
+                      (e) => e.offsetParent !== null
+                    );
+                    return Number.parseInt(el?.textContent ?? "", 10) === target;
+                  },
+                  expected,
+                  { timeout: TIMEOUT, polling: 100 }
+                )
               ),
             `${tag}-form-next-5`
           )
@@ -466,7 +494,7 @@ const median = (xs) => {
 };
 
 async function main() {
-  const browser = await chromium.launch({ headless: HEADLESS });
+  const browser = await chromium.launch({ headless: HEADLESS, args: CHROMIUM_ARGS });
   const raw = {};
   for (let run = 1; run <= RUNS; run++) {
     for (const w of WINDOWS) {
