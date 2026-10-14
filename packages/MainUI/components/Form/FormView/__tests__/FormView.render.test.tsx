@@ -96,10 +96,9 @@ const mockRegisterFormViewRefetch = jest.fn();
 const mockRegisterAttachmentAction = jest.fn();
 const mockSetShouldOpenAttachmentModal = jest.fn();
 jest.mock("@/contexts/ToolbarContext", () => ({
-  useToolbarContext: () => ({
+  useToolbarCommands: () => ({
     registerFormViewRefetch: mockRegisterFormViewRefetch,
     registerAttachmentAction: mockRegisterAttachmentAction,
-    shouldOpenAttachmentModal: false,
     setShouldOpenAttachmentModal: mockSetShouldOpenAttachmentModal,
   }),
 }));
