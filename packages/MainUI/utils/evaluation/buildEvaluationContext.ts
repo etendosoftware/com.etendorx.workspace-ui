@@ -34,6 +34,11 @@ export interface EvaluationContextOptions {
    * `OB.PropertyStore.get(key, windowId)` does. When omitted, only global preference keys resolve.
    */
   windowId?: string;
+  /**
+   * Called after every write through the returned proxy (set, defineProperty, deleteProperty). Not part
+   * of the context: lets a cache drop a shared context as soon as one caller mutates it.
+   */
+  onWrite?: () => void;
 }
 
 /** The proxy handed to compiled expressions: a flat record with flexible (case/underscore-insensitive) reads. */
@@ -103,6 +108,7 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     normalizeValues = true,
     defaultValue,
     windowId,
+    onWrite,
   } = options;
 
   // Helper to normalize values (true -> 'Y', false -> 'N')
@@ -287,16 +293,19 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     set(target, prop, value, receiver) {
       const ok = Reflect.set(target, prop, value, receiver);
       invalidateLookupIndexes();
+      onWrite?.();
       return ok;
     },
     defineProperty(target, prop, descriptor) {
       const ok = Reflect.defineProperty(target, prop, descriptor);
       invalidateLookupIndexes();
+      onWrite?.();
       return ok;
     },
     deleteProperty(target, prop) {
       const ok = Reflect.deleteProperty(target, prop);
       invalidateLookupIndexes();
+      onWrite?.();
       return ok;
     },
   });
