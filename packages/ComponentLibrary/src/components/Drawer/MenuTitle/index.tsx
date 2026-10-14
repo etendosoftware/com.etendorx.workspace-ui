@@ -19,7 +19,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
-import { DEFAULT_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
+import { DEFAULT_B64, EXTERNAL_LINK_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
 import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
@@ -37,6 +37,8 @@ function getIconSrc(item: { icon?: string | null; type?: string }): string {
       return `data:image/svg+xml;base64,${PROCESS_B64}`;
     case "Summary":
       return `data:image/svg+xml;base64,${SUMMARY_B64}`;
+    case "External":
+      return `data:image/svg+xml;base64,${EXTERNAL_LINK_B64}`;
     default:
       return `data:image/svg+xml;base64,${DEFAULT_B64}`;
   }

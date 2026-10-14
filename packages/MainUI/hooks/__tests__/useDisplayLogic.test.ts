@@ -22,14 +22,14 @@ import { useUserStore } from "@/stores/userStore";
 import { useTabContext } from "@/contexts/tab";
 import { useExpressionDependencies } from "../useExpressionDependencies";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 
 // Mocks
 jest.mock("@/stores/userStore");
 jest.mock("@/contexts/tab");
 jest.mock("../useExpressionDependencies");
 jest.mock("@/components/Form/FormView/selectors/BaseSelector");
-jest.mock("@/utils/expressions");
+jest.mock("@/utils/evaluation/sharedEvaluationContext");
 jest.mock("@/utils/logger", () => ({
   logger: {
     error: jest.fn((msg, err) => false),
@@ -57,7 +57,7 @@ describe("useDisplayLogic", () => {
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: {} });
     (useExpressionDependencies as jest.Mock).mockReturnValue({});
     (compileExpression as jest.Mock).mockReturnValue(jest.fn(() => true));
-    (createSmartContext as jest.Mock).mockReturnValue({});
+    (getEvaluationContext as jest.Mock).mockReturnValue({});
   });
 
   it("should return false if tab is not present", () => {
@@ -99,11 +99,11 @@ describe("useDisplayLogic", () => {
 
     renderHook(() => useDisplayLogic({ field: mockField, values: extraValues }));
 
-    expect(createSmartContext).toHaveBeenCalledWith(
-      expect.objectContaining({
-        values: { ...record, ...formValues, ...extraValues },
-      })
-    );
+    // The context is the one for { ...record, ...formValues, ...extraValues }: record as base, the rest on top
+    expect(getEvaluationContext).toHaveBeenCalledWith(expect.objectContaining({ values: record }), {
+      ...formValues,
+      ...extraValues,
+    });
   });
 
   it("should handle expression errors and return false", () => {
@@ -126,10 +126,8 @@ describe("useDisplayLogic", () => {
 
     renderHook(() => useDisplayLogic({ field: mockField }));
 
-    expect(createSmartContext).toHaveBeenCalledWith(
-      expect.objectContaining({
-        values: { field1: "recordVal", field2: "formVal" },
-      })
-    );
+    expect(getEvaluationContext).toHaveBeenCalledWith(expect.objectContaining({ values: record }), {
+      field2: "formVal",
+    });
   });
 });

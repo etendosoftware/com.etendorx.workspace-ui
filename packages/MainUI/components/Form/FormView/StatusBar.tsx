@@ -20,7 +20,7 @@ import StatusBarField from "@/components/Form/FormView/StatusBarField";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
 import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
@@ -43,7 +43,7 @@ export default function StatusBar({
 }: StatusBarProps) {
   const { t } = useTranslation();
   // Same action as Ctrl+Shift+X (classic ToolBar_SaveClose), registered by FormActions.
-  const { onSaveAndClose } = useToolbarContext();
+  const { onSaveAndClose } = useToolbarCommands();
 
   return (
     <div

@@ -358,6 +358,13 @@ describe("FormView", () => {
     expect(mockSave).toHaveBeenCalledWith({});
   });
 
+  it("hands FormActions the handler that reveals the missing required fields", () => {
+    renderFormView();
+
+    expect(capturedFormActionsProps?.onFieldErrors).toEqual(expect.any(Function));
+    expect(() => capturedFormActionsProps?.onFieldErrors?.([] as never)).not.toThrow();
+  });
+
   it("starts a new record via FormActions' onNew", async () => {
     renderFormView();
 

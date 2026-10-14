@@ -131,6 +131,9 @@ export interface RecentItem {
   type: string | "Window" | "Process" | "Report";
   processUrl?: string;
   isModalProcess?: boolean;
+  /** External entries only: kept so the entry can be reopened from the stored item. */
+  url?: string | null;
+  openLinkInBrowser?: boolean;
 }
 
 export interface DrawerHeaderProps {

@@ -422,6 +422,58 @@ async function handleMutationRequest(
   return parseFinalMutationResponse(result as string);
 }
 
+/**
+ * Window and tab definitions are answered by com.etendoerp.metadata with an ETag computed from
+ * the body. They skip the Next.js Data Cache (which never revalidates) and pass the conditional
+ * headers through, so the browser HTTP cache revalidates them and an unchanged definition costs
+ * a 304 instead of 1–3 MB.
+ */
+function isRevalidatedMetadataRoute(slug: string, method: string): boolean {
+  return method === "GET" && /^meta\/(window|tab)\/[^/]+$/.test(slug);
+}
+
+const REVALIDATION_RESPONSE_HEADERS = ["content-type", "etag", "cache-control"];
+
+async function handleRevalidatedMetadataRequest(
+  request: Request,
+  erpUrl: string,
+  userToken: string,
+  slug: string
+): Promise<Response> {
+  const headers = buildErpHeaders(userToken, request, "GET", undefined, "", slug);
+  const ifNoneMatch = request.headers.get("if-none-match");
+  if (ifNoneMatch) {
+    headers["If-None-Match"] = ifNoneMatch;
+  }
+
+  const response = await fetch(erpUrl, { method: "GET", headers, cache: "no-store" });
+  captureErpSessionCookie(userToken, response);
+
+  if (!response.ok && response.status !== 304) {
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed: ${response.status} ${response.statusText}. ${errorText}`,
+      status: response.status,
+      statusText: response.statusText,
+      slug,
+      errorText,
+    });
+  }
+
+  const responseHeaders = new Headers();
+  for (const name of REVALIDATION_RESPONSE_HEADERS) {
+    const value = response.headers.get(name);
+    if (value) {
+      responseHeaders.set(name, value);
+    }
+  }
+
+  return new Response(response.status === 304 ? null : response.body, {
+    status: response.status,
+    headers: responseHeaders,
+  });
+}
+
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
@@ -433,6 +485,11 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     }
 
     const erpUrl = buildErpUrl(slug, request.url);
+
+    if (isRevalidatedMetadataRoute(slug, method)) {
+      return await handleRevalidatedMetadataRequest(request, erpUrl, userToken, slug);
+    }
+
     const requestBody = await getRequestBody(request, method);
     const contentType = getContentType(request);
 

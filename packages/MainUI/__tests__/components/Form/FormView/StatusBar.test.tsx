@@ -20,6 +20,7 @@ const mockToolbarContext = {
 
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => mockToolbarContext,
+  useToolbarCommands: () => mockToolbarContext,
 }));
 
 // Mock dependencies

@@ -25,6 +25,7 @@
 
 import { render, screen, waitFor } from "@testing-library/react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { getNumericFilterFormat, setNumericFilterFormat } from "@workspaceui/api-client/src/utils/numeric-filter-utils";
 import { useUserStore } from "@/stores/userStore";
 import LanguageProvider, { useLanguage } from "../language";
 
@@ -43,6 +44,7 @@ const LANGUAGE = "es_ES";
 const MESSAGE_KEY = "ETAS_PasswordAlreadyUsed";
 const MESSAGE_TEXT = "Password has been used already. Try another";
 const UNKNOWN_KEY = "UINAVBA_IncorrectPwd";
+const DEFAULT_NUMBER_FORMAT = { decimalSymbol: ".", groupingSymbol: "," };
 
 let mockStoredLanguage: string | null = LANGUAGE;
 
@@ -73,6 +75,7 @@ describe("LanguageProvider", () => {
     callOrder.length = 0;
     mockStoredLanguage = LANGUAGE;
     useUserStore.setState({ token: "jwt-token" });
+    setNumericFilterFormat(DEFAULT_NUMBER_FORMAT);
 
     mockMetadata.setLanguage.mockImplementation(() => {
       callOrder.push("setLanguage");
@@ -114,5 +117,12 @@ describe("LanguageProvider", () => {
     await waitFor(() => expect(screen.getByTestId("label")).toHaveTextContent(MESSAGE_KEY));
     expect(mockMetadata.setLanguage).not.toHaveBeenCalled();
     expect(mockMetadata.getLabels).not.toHaveBeenCalled();
+    expect(getNumericFilterFormat()).toEqual(DEFAULT_NUMBER_FORMAT);
+  });
+
+  it("aligns the numeric filter format with the language's separators", async () => {
+    renderWithLabel(MESSAGE_KEY);
+
+    await waitFor(() => expect(getNumericFilterFormat()).toEqual({ decimalSymbol: ",", groupingSymbol: "." }));
   });
 });

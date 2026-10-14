@@ -31,6 +31,7 @@ import {
 
 const WINDOW_ID = "W-1";
 const FOLDER_TYPE = "Summary";
+const EXTERNAL_URL = "example.com";
 
 const buildItem = (overrides: Partial<Menu> = {}): Menu =>
   ({ id: "item-1", name: "Item", type: "Window", windowId: WINDOW_ID, ...overrides }) as Menu;
@@ -118,7 +119,7 @@ describe("drawerUtils", () => {
 
   describe("isOpenableMenuItem", () => {
     it.each(OPENABLE_MENU_ITEM_TYPES)("accepts an item of type %s", (type) => {
-      expect(isOpenableMenuItem(buildItem({ type }))).toBe(true);
+      expect(isOpenableMenuItem(buildItem({ type, url: EXTERNAL_URL }))).toBe(true);
     });
 
     it("rejects a folder, which is only a container of results", () => {
@@ -132,6 +133,11 @@ describe("drawerUtils", () => {
     // Mirrors the dispatch of useItemActions: a Window without windowId is never opened.
     it("rejects a Window with no windowId", () => {
       expect(isOpenableMenuItem(buildItem({ type: "Window", windowId: undefined }))).toBe(false);
+    });
+
+    // Mirrors the dispatch of useItemActions: an External link without url is never opened.
+    it("rejects an External link with no url", () => {
+      expect(isOpenableMenuItem(buildItem({ type: "External", url: null }))).toBe(false);
     });
 
     it("rejects a non-Window openable type with no id", () => {

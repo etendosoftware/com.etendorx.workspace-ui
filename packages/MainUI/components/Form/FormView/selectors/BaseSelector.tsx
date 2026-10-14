@@ -22,7 +22,7 @@ import { useUserStore } from "@/stores/userStore";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { isDebugCallouts } from "@/utils/debug";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
@@ -301,14 +301,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
     try {
-      const smartContext = createSmartContext({
-        values: { ...record, ...readOnlyValues },
-        fields: tab.fields,
-        parentValues: parentRecord || undefined,
-        parentFields: parentTab?.fields,
-        context: session,
-        windowId: tab.window,
-      });
+      // Same context as building it from { ...record, ...readOnlyValues }, shared with the other fields
+      const smartContext = getEvaluationContext(
+        {
+          values: record || undefined,
+          fields: tab.fields,
+          parentValues: parentRecord || undefined,
+          parentFields: parentTab?.fields,
+          context: session,
+          windowId: tab.window,
+        },
+        readOnlyValues
+      );
       return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
