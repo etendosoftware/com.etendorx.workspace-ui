@@ -30,6 +30,8 @@ import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { type ExtendedMenu, MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
+import { isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
+import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
 
 interface FormData {
   paramUrl: string;
@@ -145,12 +147,17 @@ const getManualProcessConfig = (
   return null;
 };
 
+const getManualProcessUrl = (item: Menu): string | null => {
+  return item.processUrl || null;
+};
+
+/** ProcessManual and Report entries are opened in Etendo Classic. */
 const isClassicProcessMenuItem = (item: Menu): boolean =>
   item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
 
 /**
- * Opens a classic process/report URL: in a popup for modal processes, otherwise in a new tab.
- * When the browser blocks it, a notification offers to open it manually.
+ * Opens the Classic URL of a ProcessManual / Report entry: modal processes in a popup, the rest
+ * in a new tab. When the browser blocks it, a notice offers to open it manually.
  */
 const openClassicProcessUrl = (
   classicUrl: string,
@@ -168,10 +175,6 @@ const openClassicProcessUrl = (
   if (!window.open(classicUrl, "_blank")) {
     notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
   }
-};
-
-const getManualProcessUrl = (item: Menu): string | null => {
-  return item.processUrl || null;
 };
 
 /**
@@ -218,6 +221,7 @@ export default function Sidebar() {
   }, [windowsObj]);
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
+  const openExternalMenuEntry = useOpenExternalMenuEntry();
   const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
   const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -336,6 +340,7 @@ export default function Sidebar() {
    * 3. Process / Form items: Opens ProcessIframeModal (legacy implementation)
    * 4. ProcessManual / Report items: Opens Etendo Classic in a popup or new tab
    * 5. Window items: Opens/activates window using multi-window system
+   * 6. External items: Opens the URL in a new browser tab or in its own in-app tab
    *
    * Features optimistic UI updates by immediately setting pendingWindowId
    * for visual feedback before state synchronization completes.
@@ -344,6 +349,11 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
+      if (isExternalMenuEntry(item)) {
+        openExternalMenuEntry(item);
+        return;
+      }
+
       const extendedItem = item as ExtendedMenu;
 
       const intent = resolveMenuClickIntent(extendedItem);
@@ -380,7 +390,7 @@ export default function Sidebar() {
         openWindowItem(item);
       }
     },
-    [token, ETENDO_BASE_URL, openProcessModal, openClassicProcess, openWindowItem]
+    [token, ETENDO_BASE_URL, openProcessModal, openClassicProcess, openWindowItem, openExternalMenuEntry]
   );
 
   /**

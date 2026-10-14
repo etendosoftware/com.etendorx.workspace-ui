@@ -384,6 +384,7 @@ export const useWindowStore = create<WindowStore>()(
                   initialized: false,
                 },
                 tabs: windowData?.tabs ?? {},
+                externalUrl: windowData?.externalUrl,
               };
             }
           },

@@ -33,6 +33,7 @@ import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import { useTranslation } from "@/hooks/useTranslation";
 import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
 import { FORM_FIELDS_ROOT_ATTRIBUTE } from "@/utils/form/focus";
+import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
 
 // Besides display logic, the form follows the record identifier (attachments section).
 const RECORD_IDENTIFIER_NAMES = ["_identifier"];
@@ -305,19 +306,19 @@ export function FormFields({
       )}
       {/* Linked Items Section — only visible in EDIT/VIEW mode, not during record creation */}
       {mode !== FormMode.NEW && (
-        <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+        <div ref={handleSectionRef(LINKED_ITEMS_SECTION_ID)} data-section-id={LINKED_ITEMS_SECTION_ID}>
           <Collapsible
             title={t("forms.sections.linkedItems")}
-            isExpanded={isSectionExpanded("linked-items")}
-            sectionId="linked-items"
+            isExpanded={isSectionExpanded(LINKED_ITEMS_SECTION_ID)}
+            sectionId={LINKED_ITEMS_SECTION_ID}
             icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-            onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
+            onToggle={(isOpen: boolean) => handleAccordionChange(LINKED_ITEMS_SECTION_ID, isOpen)}
             data-testid="Collapsible__linkeditems">
             <LinkedItemsSection
               tabId={tab.id}
               entityName={tab.entityName}
               recordId={recordId}
-              isSectionExpanded={isSectionExpanded("linked-items")}
+              isSectionExpanded={isSectionExpanded(LINKED_ITEMS_SECTION_ID)}
               data-testid="LinkedItemsSection__38e4a6"
             />
           </Collapsible>

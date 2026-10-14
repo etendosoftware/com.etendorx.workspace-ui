@@ -18,7 +18,7 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type ProcessSelectorContext, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
@@ -156,7 +156,7 @@ export const useTableDirDatasource = ({
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
 
-  const { getValues, watch } = useFormContext();
+  const { getValues } = useFormContext();
   const { tab, parentTab, parentRecord } = useTabContext();
   const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>(
@@ -168,7 +168,7 @@ export const useTableDirDatasource = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const fetchInProgressRef = useRef(false);
 
   const isProductField =

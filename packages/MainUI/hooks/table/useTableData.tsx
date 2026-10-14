@@ -31,7 +31,7 @@ import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
-import { useToolbarContext } from "../../contexts/ToolbarContext";
+import { useToolbarCommands } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useSettledParent } from "@/hooks/table/useSettledParent";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -83,6 +83,7 @@ interface UseTableDataReturn {
   shouldUseTreeMode: boolean;
   treeEntity: string;
   referencedTableId?: string;
+  canMoveTreeNodes: boolean;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -149,7 +150,7 @@ export const useTableData = ({
   const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
   }, []);
-  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarCommands();
   const { graph } = useSelected();
 
   const {
@@ -168,7 +169,7 @@ export const useTableData = ({
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
-  const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
+  const { treeMetadata } = useTreeModeMetadata(tab);
 
   // Computed values
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
@@ -186,8 +187,8 @@ export const useTableData = ({
     isPending: isParentPending,
   } = useSettledParent({ parentRecord, parentIdFromUrl });
 
-  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
-  const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode;
+  const treeEntity = (shouldUseTreeMode && treeMetadata.treeEntity) || tab.entityName;
 
   // Reactive subscription — re-render when form state changes
   const tabFormState = useWindowStore((s) =>
@@ -1381,6 +1382,7 @@ export const useTableData = ({
     shouldUseTreeMode,
     treeEntity,
     referencedTableId: treeMetadata.referencedTableId,
+    canMoveTreeNodes: treeMetadata.canMoveNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,

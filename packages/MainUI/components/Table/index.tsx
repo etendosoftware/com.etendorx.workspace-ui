@@ -20,6 +20,7 @@ import {
   MRT_ToggleDensePaddingButton,
   MRT_ToggleFullScreenButton,
   type MRT_Row,
+  type MRT_RowVirtualizer,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
@@ -44,7 +45,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -79,6 +80,7 @@ import {
   getCellTitle,
 } from "@/utils/table/utils";
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
+import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
@@ -814,7 +816,7 @@ const DynamicTable = ({
     refetchDatasource,
   } = useDatasourceContext();
   const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
-    useToolbarContext();
+    useToolbarCommands();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
 
@@ -847,6 +849,7 @@ const DynamicTable = ({
     });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizerInstanceRef = useRef<MRT_RowVirtualizer | null>(null);
 
   // Hook for drag & drop file attachments on table rows
   const handleFileDrop = useCallback((files: File[], record: EntityData) => {
@@ -887,6 +890,7 @@ const DynamicTable = ({
     shouldUseTreeMode,
     treeEntity,
     referencedTableId,
+    canMoveTreeNodes,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -1145,8 +1149,11 @@ const DynamicTable = ({
     onDragStateChange: setDropTargetState,
   });
 
+  // Read-only trees cannot move nodes, as in the Classic UI (canReorderRecords)
+  const isTreeNodeDragEnabled = shouldUseTreeMode && canMoveTreeNodes;
+
   const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
-    shouldUseTreeMode,
+    shouldUseTreeMode: isTreeNodeDragEnabled,
     treeEntity,
     referencedTableId,
     tabId: tab.id,
@@ -2851,7 +2858,7 @@ const DynamicTable = ({
           const nodeDrop = getNodeDropProps(record as EntityData);
           return {
             // Make rows draggable in tree mode for node reordering/reparenting
-            draggable: shouldUseTreeMode,
+            draggable: isTreeNodeDragEnabled,
             onDragStart: nodeDrag.onDragStart,
             onDragEnd: nodeDrag.onDragEnd,
             // File drop uses onDragEnter; tree drop does not need it
@@ -2918,7 +2925,7 @@ const DynamicTable = ({
       sx.rowSelected,
       editingRowUtils,
       getRowDropZoneProps,
-      shouldUseTreeMode,
+      isTreeNodeDragEnabled,
       draggingRowId,
       dropTarget,
       getNodeDragProps,
@@ -3158,6 +3165,8 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
+    // MRT 2 exposes the row virtualizer only through this ref (the table instance has no `rowVirtualizer`)
+    rowVirtualizerInstanceRef,
     // Data cells re-render only when their cell changes, so a selection change repaints the rows, not
     // every cell in them. Inline editing (our own state, not MRT's) and tree expansion change what a
     // cell shows without changing the cell, so cells are not memoized while either is in use.
@@ -3271,29 +3280,47 @@ const DynamicTable = ({
   const tableRef = useRef(table);
   tableRef.current = table;
 
+  /**
+   * Keeps the row at `index` in view on every keyboard step: no movement while it is visible, otherwise
+   * the least scroll that shows it below the sticky header. A row the virtualizer has not rendered (a jump
+   * far away) is first brought near with the virtualizer, then aligned on the next frame.
+   */
+  const keepRowInView = useCallback((index: number) => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    const findRow = () => container.querySelector<HTMLElement>(`tbody tr[data-index="${index}"]`);
+    try {
+      const row = findRow();
+      if (row) {
+        scrollRowIntoContainer(container, row);
+        return;
+      }
+      rowVirtualizerInstanceRef.current?.scrollToIndex(index, { align: "center" });
+      requestAnimationFrame(() => {
+        const rendered = findRow();
+        if (rendered) scrollRowIntoContainer(container, rendered);
+      });
+    } catch (error) {
+      logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
+    }
+  }, []);
+
   const { handleArrowUp, handleArrowDown, isKeyboardNavigationSource } = useRowKeyboardNavigation({
     table,
     effectiveRecords,
     containerRef: tableContainerRef,
     editingRowsCount,
+    onStep: keepRowInView,
   });
 
+  // After keyboard navigation settles: a no-op when every step already kept the row in view, a safety net
+  // otherwise (e.g. the records changed while the keys were held).
   const handleStableKeyboardSelection = useCallback(
     (recordId: string) => {
-      if (!tableContainerRef.current) return;
       const index = effectiveRecords.findIndex((r) => String(r.id) === recordId);
-      if (index < 0) return;
-      try {
-        // @ts-ignore - rowVirtualizer is available at runtime but missing from MRT types
-        const virtualizer = tableRef.current.rowVirtualizer;
-        if (virtualizer && typeof virtualizer.scrollToIndex === "function") {
-          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
-        }
-      } catch (error) {
-        logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
-      }
+      if (index >= 0) keepRowInView(index);
     },
-    [effectiveRecords]
+    [effectiveRecords, keepRowInView]
   );
 
   useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
@@ -3447,10 +3474,9 @@ const DynamicTable = ({
 
       try {
         // Use the virtualizer to scroll to the index - this handles variable row heights and prevents drift
-        // @ts-ignore - rowVirtualizer is available in the table instance but might be missing from types
-        if (table.rowVirtualizer) {
-          // @ts-ignore
-          table.rowVirtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        const virtualizer = rowVirtualizerInstanceRef.current;
+        if (virtualizer) {
+          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
         } else {
           // Fallback for when virtualizer is not ready (should be rare)
           const containerElement = tableContainerRef.current;
@@ -4014,4 +4040,6 @@ const DynamicTable = ({
   );
 };
 
-export default DynamicTable;
+// Memoized: Tab re-renders several times per form navigation with the same props, and the grid body (MRT
+// instance, columns) is expensive even while hidden behind the form. Context and store updates still apply.
+export default React.memo(DynamicTable);

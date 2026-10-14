@@ -18,6 +18,12 @@
 import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
 import type { ColumnFilterState } from "./column-filter-utils";
 import { ColumnFilterUtils, isTextFilterValue } from "./column-filter-utils";
+import {
+  NUMERIC_OPERATORS,
+  NUMERIC_REFERENCE_CODES,
+  isUnsupportedNumericTerm,
+  parseNumericTerm,
+} from "./numeric-filter-utils";
 
 type FormattedValue = string | number | null;
 
@@ -49,6 +55,12 @@ const EXCLUDED_NUMERIC_FIELDS = [
 ];
 
 const STATUS_FIELDS = ["documentStatus"];
+
+/** Longest filter text split into logical parts (prevents ReDoS). */
+const MAX_LOGICAL_FILTER_LENGTH = 2000;
+const OR_SEPARATOR = /\|| or /i;
+const AND_SEPARATOR = /&| and /i;
+const LOGICAL_SEPARATOR = /\|| or |&| and /i;
 
 export class SearchUtils {
   private static readonly FULL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -285,6 +297,15 @@ export class LegacyColumnFilterUtils {
   }
 
   static isNumericField(column: Column): boolean {
+    return LegacyColumnFilterUtils.hasNumericType(column) || LegacyColumnFilterUtils.hasNumericReference(column);
+  }
+
+  private static hasNumericReference(column: Column): boolean {
+    const reference = column.reference || column.column?.reference;
+    return Boolean(reference) && NUMERIC_REFERENCE_CODES.includes(String(reference));
+  }
+
+  private static hasNumericType(column: Column): boolean {
     if (column.type && typeof column.type === "string") {
       const lowerType = column.type.toLowerCase();
 
@@ -705,6 +726,10 @@ export class LegacyColumnFilterUtils {
     const andResult = LegacyColumnFilterUtils.handleAndCondition(fieldName, trimmedValue, column);
     if (andResult) return andResult;
 
+    if (LegacyColumnFilterUtils.isNumericField(column)) {
+      return parseNumericTerm(fieldName, trimmedValue);
+    }
+
     const notResult = LegacyColumnFilterUtils.handleNotCondition(fieldName, trimmedValue, column);
     if (notResult) return notResult;
 
@@ -718,61 +743,65 @@ export class LegacyColumnFilterUtils {
   }
 
   private static handleOrCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
-    // Prevent ReDoS by limiting length
-    if (trimmedValue.length > 2000) return null;
-
-    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
-    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
-
-    // Split by '|' or ' or ' (case insensitive)
-    // Since whitespace is normalized, we can use a simple space check
-    const orParts = normalizedValue.split(/\|| or /i);
-
-    if (orParts.length <= 1) return null;
-
-    const criteriaList: BaseCriteria[] = [];
-    for (const part of orParts) {
-      const parsed = LegacyColumnFilterUtils.parseLogicalFilter(fieldName, part, column);
-      if (parsed) {
-        criteriaList.push(parsed as unknown as BaseCriteria);
-      }
-    }
-
-    return criteriaList.length > 0
-      ? {
-          operator: "or",
-          criteria: criteriaList,
-        }
-      : null;
+    return LegacyColumnFilterUtils.buildLogicalCriteria("or", OR_SEPARATOR, fieldName, trimmedValue, column);
   }
 
   private static handleAndCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
-    // Prevent ReDoS by limiting length
-    if (trimmedValue.length > 2000) return null;
+    return LegacyColumnFilterUtils.buildLogicalCriteria("and", AND_SEPARATOR, fieldName, trimmedValue, column);
+  }
 
-    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
-    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
-
-    // Split by '&' or ' and ' (case insensitive)
-    // Since whitespace is normalized, we can use a simple space check
-    const andParts = normalizedValue.split(/&| and /i);
-
-    if (andParts.length <= 1) return null;
+  /**
+   * Splits the value by the given logical separator and parses each part.
+   * Returns null when the value has a single part or no part produces a criterion.
+   */
+  private static buildLogicalCriteria(
+    operator: CompositeCriteria["operator"],
+    separator: RegExp,
+    fieldName: string,
+    trimmedValue: string,
+    column: Column
+  ): CompositeCriteria | null {
+    const parts = LegacyColumnFilterUtils.splitLogicalParts(trimmedValue, separator);
+    if (parts.length <= 1) return null;
 
     const criteriaList: BaseCriteria[] = [];
-    for (const part of andParts) {
+    for (const part of parts) {
       const parsed = LegacyColumnFilterUtils.parseLogicalFilter(fieldName, part, column);
       if (parsed) {
         criteriaList.push(parsed as unknown as BaseCriteria);
       }
     }
 
-    return criteriaList.length > 0
-      ? {
-          operator: "and",
-          criteria: criteriaList,
-        }
-      : null;
+    if (criteriaList.length === 0) return null;
+    return { operator, criteria: criteriaList };
+  }
+
+  private static splitLogicalParts(value: string, separator: RegExp): string[] {
+    // Prevent ReDoS by limiting length
+    if (value.length > MAX_LOGICAL_FILTER_LENGTH) return [value];
+
+    // Normalize whitespace to single spaces so the separators can use a simple space check
+    return value.replace(/\s+/g, " ").split(separator);
+  }
+
+  /**
+   * True when a numeric column filter uses an operator the classic UI rejects (e.g. `^100`, `~100`).
+   * The classic UI clears the filter input in that case and applies no filter.
+   */
+  static hasUnsupportedNumericOperator(value: unknown, column: Column): boolean {
+    if (typeof value !== "string" || !LegacyColumnFilterUtils.isNumericField(column)) return false;
+    return LegacyColumnFilterUtils.splitLogicalParts(value.trim(), LOGICAL_SEPARATOR).some(isUnsupportedNumericTerm);
+  }
+
+  /**
+   * True when a numeric column filter is not a valid classic expression (e.g. `100 100`, `>1x`).
+   * The classic UI rejects these values with an "Invalid filter value" message.
+   */
+  static hasInvalidNumericValue(value: unknown, column: Column): boolean {
+    if (typeof value !== "string" || !value.trim() || !LegacyColumnFilterUtils.isNumericField(column)) return false;
+    return LegacyColumnFilterUtils.splitLogicalParts(value.trim(), LOGICAL_SEPARATOR).some(
+      (part) => parseNumericTerm(column.columnName, part) === null
+    );
   }
 
   private static handleNotCondition(fieldName: string, trimmedValue: string, column: Column): BaseCriteria | null {
@@ -793,7 +822,7 @@ export class LegacyColumnFilterUtils {
 
   private static invertOperator(operator: string): string {
     const operatorMap: Record<string, string> = {
-      equals: "notEquals",
+      equals: NUMERIC_OPERATORS.NOT_EQUAL,
       iContains: "notContains",
       contains: "notContains",
       greaterThan: "lessOrEqual",
@@ -801,7 +830,7 @@ export class LegacyColumnFilterUtils {
       greaterOrEqual: "lessThan",
       lessOrEqual: "greaterThan",
     };
-    return operatorMap[operator] || "notEquals";
+    return operatorMap[operator] || NUMERIC_OPERATORS.NOT_EQUAL;
   }
 
   private static handleComparisonOperators(
@@ -892,6 +921,10 @@ export class LegacyColumnFilterUtils {
   }
 
   private static processStringValue(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    if (LegacyColumnFilterUtils.hasUnsupportedNumericOperator(value, column)) {
+      return [];
+    }
+
     const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(value, column);
 
     if (dateRange) {
