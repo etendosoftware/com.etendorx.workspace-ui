@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ImageSelector from "../ImageSelector";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useTabContext } from "@/contexts/tab";
 import { useUserStore } from "@/stores/userStore";
 import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
@@ -124,9 +124,9 @@ describe("ImageSelector", () => {
     deleteUploadedImageMock = jest.fn().mockResolvedValue(undefined);
 
     (useFormContext as jest.Mock).mockReturnValue({
-      watch: watchMock,
       setValue: setValueMock,
     });
+    (useWatch as jest.Mock).mockImplementation(({ name }: { name: string }) => watchMock(name));
 
     (useTabContext as jest.Mock).mockReturnValue({
       tab: { id: "tab-123" },

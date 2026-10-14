@@ -19,18 +19,19 @@ import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
+import { createSmartContext } from "@/utils/expressions";
 import { FormFields } from "../FormFieldsContent";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
-jest.mock("react-hook-form", () => ({
-  useFormContext: jest.fn(() => ({
-    watch: jest.fn(() => ({})),
-  })),
+jest.mock("@/hooks/evaluation/useDisplayLogicFormValues", () => ({
+  useDisplayLogicFormValues: jest.fn(() => ({})),
 }));
 
+const mockSession = {};
 jest.mock("@/stores/userStore", () => ({
-  useUserStore: (selector: any) => selector({ session: {} }),
+  useUserStore: (selector: any) => selector({ session: mockSession }),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -182,5 +183,47 @@ describe("FormFields — loading state", () => {
     render(<FormFields {...baseProps} mode={FormMode.EDIT} loading={true} />);
     // Spinner is rendered; sections are not
     expect(screen.queryByTestId("note-section")).not.toBeInTheDocument();
+  });
+});
+
+describe("FormFields — expression evaluation context", () => {
+  // The module mock returns a new object per call; here it returns the same one, like the hook between
+  // edits of unrelated fields, so the mount re-render (setHasLoadedOnce) reuses the context.
+  const stableFormValues = { a: "Y" };
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useDisplayLogicFormValues as jest.Mock).mockReturnValue(stableFormValues);
+  });
+  // clearAllMocks keeps implementations: restore the module mocks' defaults so overrides don't leak.
+  afterEach(() => {
+    (useDisplayLogicFormValues as jest.Mock).mockReset().mockImplementation(() => ({}));
+    (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
+  });
+
+  const withLogic = (hqlName: string) => makeField({ hqlName, displayLogicExpression: "@a@ = 'Y'" } as any);
+  const groups = [
+    ["main", { identifier: "Main", fields: { f1: withLogic("f1"), f2: withLogic("f2") } }],
+    ["more", { identifier: "More", fields: { f3: withLogic("f3"), f4: withLogic("f4") } }],
+  ] as typeof baseProps.groups;
+
+  it("builds the evaluation context once per render, not once per section", () => {
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("More")).toBeInTheDocument();
+    expect(createSmartContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows the display-logic fields of the tab and the record identifier", () => {
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(useDisplayLogicFormValues).toHaveBeenCalledWith(baseProps.tab.fields, ["_identifier"]);
+  });
+
+  it("still shows the sections when the context build throws", () => {
+    (createSmartContext as jest.Mock).mockImplementation(() => {
+      throw new Error("boom");
+    });
+    render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("More")).toBeInTheDocument();
   });
 });
