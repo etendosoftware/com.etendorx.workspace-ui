@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
@@ -81,7 +82,7 @@ const holdGuardTransition = () => {
   });
 };
 
-const renderFormActions = (props: ReturnType<typeof createFormActionsProps>) => {
+const renderFormActions = (props: ComponentProps<typeof FormActions>) => {
   return render(<FormActions {...props} />);
 };
 
@@ -480,21 +481,61 @@ describe("FormActions", () => {
     });
   });
 
-  it("shows error modal when required fields are missing on save", async () => {
+  /** Makes the required-field validation fail for the given fields. */
+  const mockMissingFields = (missingFields: Array<{ fieldName: string; fieldLabel: string }>) => {
     (useFormValidation as jest.Mock).mockReturnValue({
-      validateRequiredFields: jest.fn(() => ({
-        isValid: false,
-        missingFields: [{ fieldLabel: "Name" }],
-      })),
-      requiredFields: [{ hqlName: "name" }],
+      validateRequiredFields: jest.fn(() => ({ isValid: false, missingFields })),
+      requiredFields: missingFields.map(({ fieldName }) => ({ hqlName: fieldName })),
     });
+  };
+
+  const pressSaveShortcut = () => fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+  it("shows error modal when required fields are missing on save", async () => {
+    mockMissingFields([{ fieldName: "name", fieldLabel: "Name" }]);
 
     const mockShowErrorModal = jest.fn();
     renderFormActions({ ...props, showErrorModal: mockShowErrorModal });
 
-    fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+    pressSaveShortcut();
 
     await waitFor(() => expect(mockShowErrorModal).toHaveBeenCalledWith(expect.stringContaining("Name")));
+  });
+
+  describe("onFieldErrors", () => {
+    it("reports the hqlName of every missing required field when the save is blocked", async () => {
+      mockMissingFields([
+        { fieldName: "name", fieldLabel: "Name" },
+        { fieldName: "project", fieldLabel: "Project" },
+      ]);
+      const onFieldErrors = jest.fn();
+      renderFormActions({ ...props, onFieldErrors });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(onFieldErrors).toHaveBeenCalledWith(["name", "project"]));
+      expect(props.onSave).not.toHaveBeenCalled();
+    });
+
+    it("is not called when the validation passes", async () => {
+      const onFieldErrors = jest.fn();
+      renderFormActions({ ...props, onFieldErrors });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+      expect(onFieldErrors).not.toHaveBeenCalled();
+    });
+
+    it("still shows the error when no handler is provided", async () => {
+      mockMissingFields([{ fieldName: "name", fieldLabel: "Name" }]);
+      const mockShowErrorModal = jest.fn();
+      renderFormActions({ ...props, showErrorModal: mockShowErrorModal });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(mockShowErrorModal).toHaveBeenCalledTimes(1));
+    });
   });
 
   it("calls refetch and resetFormChanges on refresh action", async () => {

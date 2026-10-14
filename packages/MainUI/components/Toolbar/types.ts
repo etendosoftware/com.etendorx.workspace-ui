@@ -45,6 +45,8 @@ export interface ToolbarProps {
   isFormView?: boolean;
   /** Grid and form are on screen at once, so grid-oriented buttons stay usable. */
   isSplitView?: boolean;
+  /** The owning tab holds the keyboard focus, so tab-scoped shortcuts may fire. */
+  isFocused?: boolean;
 }
 export interface ProcessResponse {
   success: boolean;

@@ -1,0 +1,5756 @@
+{
+  "label": "etp5641-formwatch-head-cpu4x",
+  "flavor": "react",
+  "base": "http://localhost:3100",
+  "date": "2026-10-08T19:14:01.658Z",
+  "runs": 3,
+  "cpuThrottle": 4,
+  "windows": [
+    "Sales Invoice",
+    "Sales Order",
+    "Purchase Order"
+  ],
+  "totals": {
+    "visibleMs": 37780,
+    "settledMs": 38689,
+    "interactiveMs": 39061,
+    "longTasks": 125,
+    "longTaskMs": 24113,
+    "blockingMs": 17826,
+    "maxLongTaskMs": 8545,
+    "requests": 674,
+    "apiRequests": 251,
+    "bytes": 16570553,
+    "apiBytes": 11566754,
+    "apiWaitMs": 5712,
+    "failed": 6
+  },
+  "flows": {
+    "Sales Invoice / login": {
+      "visibleMs": 1282,
+      "settledMs": 1282,
+      "interactiveMs": 1282,
+      "longTasks": 2,
+      "longTaskMs": 213,
+      "blockingMs": 113,
+      "maxLongTaskMs": 157,
+      "requests": 58,
+      "apiRequests": 17,
+      "bytes": 2418378,
+      "apiBytes": 769281,
+      "apiWaitMs": 251,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 35
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 363,
+          "waitMs": 1,
+          "durMs": 3
+        },
+        "GET /api/auth/sso/config": {
+          "count": 2,
+          "bytes": 1346,
+          "waitMs": 4,
+          "durMs": 6
+        },
+        "POST /api/auth/login": {
+          "count": 1,
+          "bytes": 296502,
+          "waitMs": 51,
+          "durMs": 52
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 17,
+          "durMs": 18
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 12,
+          "durMs": 13
+        },
+        "GET /api/erp/meta/labels": {
+          "count": 1,
+          "bytes": 165261,
+          "waitMs": 30,
+          "durMs": 32
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 16,
+          "durMs": 17
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2161,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 17,
+          "durMs": 20
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 22,
+          "durMs": 24
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3229,
+          "waitMs": 50,
+          "durMs": 51
+        }
+      }
+    },
+    "Sales Invoice / open-cold": {
+      "visibleMs": 2337,
+      "settledMs": 2337,
+      "interactiveMs": 2337,
+      "longTasks": 4,
+      "longTaskMs": 941,
+      "blockingMs": 741,
+      "maxLongTaskMs": 438,
+      "requests": 35,
+      "apiRequests": 5,
+      "bytes": 3197102,
+      "apiBytes": 3184762,
+      "apiWaitMs": 307,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 3133480,
+          "waitMs": 218,
+          "durMs": 229
+        },
+        "GET /window": {
+          "count": 1,
+          "bytes": 1551,
+          "waitMs": 1,
+          "durMs": 3
+        },
+        "POST /api/erp/meta/toolbar": {
+          "count": 1,
+          "bytes": 23985,
+          "waitMs": 19,
+          "durMs": 21
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 14,
+          "durMs": 16
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 25411,
+          "waitMs": 26,
+          "durMs": 27
+        }
+      }
+    },
+    "Sales Invoice / reload-warm": {
+      "visibleMs": 2038,
+      "settledMs": 2038,
+      "interactiveMs": 2038,
+      "longTasks": 8,
+      "longTaskMs": 1128,
+      "blockingMs": 728,
+      "maxLongTaskMs": 371,
+      "requests": 85,
+      "apiRequests": 17,
+      "bytes": 339032,
+      "apiBytes": 332536,
+      "apiWaitMs": 391,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 15
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 0,
+          "durMs": 2
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 44,
+          "durMs": 45
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 19,
+          "durMs": 19
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 16,
+          "durMs": 17
+        },
+        "GET /api/auth/sso/config": {
+          "count": 1,
+          "bytes": 673,
+          "waitMs": 1,
+          "durMs": 3
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2161,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 308,
+          "waitMs": 178,
+          "durMs": 272
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 15,
+          "durMs": 18
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 17,
+          "durMs": 18
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 25401,
+          "waitMs": 19,
+          "durMs": 21
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3229,
+          "waitMs": 48,
+          "durMs": 51
+        }
+      }
+    },
+    "Sales Invoice / load-unfiltered": {
+      "visibleMs": 730,
+      "settledMs": 730,
+      "interactiveMs": 730,
+      "longTasks": 3,
+      "longTaskMs": 650,
+      "blockingMs": 496,
+      "maxLongTaskMs": 329,
+      "requests": 1,
+      "apiRequests": 1,
+      "bytes": 187334,
+      "apiBytes": 187334,
+      "apiWaitMs": 79,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 187334,
+          "waitMs": 79,
+          "durMs": 81
+        }
+      }
+    },
+    "Sales Invoice / arrow-nav-5": {
+      "visibleMs": 1415,
+      "settledMs": 1726,
+      "interactiveMs": 1726,
+      "longTasks": 7,
+      "longTaskMs": 1640,
+      "blockingMs": 1290,
+      "maxLongTaskMs": 364,
+      "requests": 6,
+      "apiRequests": 6,
+      "bytes": 35075,
+      "apiBytes": 35075,
+      "apiWaitMs": 213,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 5,
+          "bytes": 33570,
+          "waitMs": 186,
+          "durMs": 197
+        },
+        "POST /api/datasource": {
+          "count": 2,
+          "bytes": 4292,
+          "waitMs": 40,
+          "durMs": 44
+        }
+      }
+    },
+    "Sales Invoice / open-record": {
+      "visibleMs": 1031,
+      "settledMs": 1031,
+      "interactiveMs": 1031,
+      "longTasks": 2,
+      "longTaskMs": 718,
+      "blockingMs": 618,
+      "maxLongTaskMs": 383,
+      "requests": 7,
+      "apiRequests": 5,
+      "bytes": 18017,
+      "apiBytes": 18017,
+      "apiWaitMs": 87,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 275,
+          "waitMs": 29,
+          "durMs": 30
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 2153,
+          "waitMs": 20,
+          "durMs": 22
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2987,
+          "waitMs": 2,
+          "durMs": 5
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 12602,
+          "waitMs": 48,
+          "durMs": 49
+        }
+      }
+    },
+    "Sales Invoice / form-next-5": {
+      "visibleMs": 2940,
+      "settledMs": 2940,
+      "interactiveMs": 2940,
+      "longTasks": 10,
+      "longTaskMs": 2322,
+      "blockingMs": 1822,
+      "maxLongTaskMs": 441,
+      "requests": 23,
+      "apiRequests": 23,
+      "bytes": 85912,
+      "apiBytes": 85912,
+      "apiWaitMs": 430,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /window": {
+          "count": 10,
+          "bytes": 14951,
+          "waitMs": 12,
+          "durMs": 34
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 5,
+          "bytes": 63138,
+          "waitMs": 212,
+          "durMs": 225
+        },
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 5,
+          "bytes": 1375,
+          "waitMs": 137,
+          "durMs": 144
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 6438,
+          "waitMs": 67,
+          "durMs": 72
+        }
+      }
+    },
+    "Sales Invoice / type-10-chars": {
+      "visibleMs": 126,
+      "settledMs": 126,
+      "interactiveMs": 126,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Sales Invoice / new-record": {
+      "visibleMs": 1395,
+      "settledMs": 1395,
+      "interactiveMs": 1395,
+      "longTasks": 5,
+      "longTaskMs": 1225,
+      "blockingMs": 975,
+      "maxLongTaskMs": 529,
+      "requests": 10,
+      "apiRequests": 10,
+      "bytes": 45674,
+      "apiBytes": 45674,
+      "apiWaitMs": 276,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource/Invoice": {
+          "count": 1,
+          "bytes": 5417,
+          "waitMs": 32,
+          "durMs": 33
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 31085,
+          "waitMs": 164,
+          "durMs": 169
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 6248,
+          "waitMs": 77,
+          "durMs": 80
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2885,
+          "waitMs": 2,
+          "durMs": 6
+        }
+      }
+    },
+    "Sales Invoice / select-change": {
+      "visibleMs": 273,
+      "settledMs": 273,
+      "interactiveMs": 273,
+      "longTasks": 2,
+      "longTaskMs": 221,
+      "blockingMs": 121,
+      "maxLongTaskMs": 148,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Sales Order / login": {
+      "visibleMs": 1282,
+      "settledMs": 1282,
+      "interactiveMs": 1282,
+      "longTasks": 2,
+      "longTaskMs": 212,
+      "blockingMs": 112,
+      "maxLongTaskMs": 154,
+      "requests": 58,
+      "apiRequests": 17,
+      "bytes": 2418388,
+      "apiBytes": 769291,
+      "apiWaitMs": 239,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 33
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 363,
+          "waitMs": 1,
+          "durMs": 3
+        },
+        "GET /api/auth/sso/config": {
+          "count": 2,
+          "bytes": 1346,
+          "waitMs": 3,
+          "durMs": 5
+        },
+        "POST /api/auth/login": {
+          "count": 1,
+          "bytes": 296502,
+          "waitMs": 53,
+          "durMs": 54
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 16,
+          "durMs": 18
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 12,
+          "durMs": 12
+        },
+        "GET /api/erp/meta/labels": {
+          "count": 1,
+          "bytes": 165261,
+          "waitMs": 31,
+          "durMs": 33
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 16,
+          "durMs": 16
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2166,
+          "waitMs": 11,
+          "durMs": 13
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 13,
+          "durMs": 14
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 14,
+          "durMs": 17
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 20,
+          "durMs": 21
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3234,
+          "waitMs": 39,
+          "durMs": 40
+        }
+      }
+    },
+    "Sales Order / open-cold": {
+      "visibleMs": 2212,
+      "settledMs": 2212,
+      "interactiveMs": 2212,
+      "longTasks": 4,
+      "longTaskMs": 910,
+      "blockingMs": 710,
+      "maxLongTaskMs": 407,
+      "requests": 35,
+      "apiRequests": 5,
+      "bytes": 2262778,
+      "apiBytes": 2250438,
+      "apiWaitMs": 257,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 2206420,
+          "waitMs": 165,
+          "durMs": 172
+        },
+        "GET /window": {
+          "count": 1,
+          "bytes": 1555,
+          "waitMs": 2,
+          "durMs": 3
+        },
+        "POST /api/erp/meta/toolbar": {
+          "count": 1,
+          "bytes": 23985,
+          "waitMs": 19,
+          "durMs": 21
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 14,
+          "durMs": 15
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 18135,
+          "waitMs": 28,
+          "durMs": 30
+        }
+      }
+    },
+    "Sales Order / reload-warm": {
+      "visibleMs": 1944,
+      "settledMs": 1944,
+      "interactiveMs": 1944,
+      "longTasks": 8,
+      "longTaskMs": 1116,
+      "blockingMs": 716,
+      "maxLongTaskMs": 369,
+      "requests": 85,
+      "apiRequests": 17,
+      "bytes": 331776,
+      "apiBytes": 325280,
+      "apiWaitMs": 359,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 18
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 0,
+          "durMs": 2
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 31,
+          "durMs": 32
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 18,
+          "durMs": 19
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 19,
+          "durMs": 21
+        },
+        "GET /api/auth/sso/config": {
+          "count": 1,
+          "bytes": 673,
+          "waitMs": 2,
+          "durMs": 3
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2166,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 17,
+          "durMs": 17
+        },
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 308,
+          "waitMs": 148,
+          "durMs": 278
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 15,
+          "durMs": 18
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 19,
+          "durMs": 20
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 18135,
+          "waitMs": 24,
+          "durMs": 26
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3234,
+          "waitMs": 41,
+          "durMs": 42
+        }
+      }
+    },
+    "Sales Order / load-unfiltered": {
+      "visibleMs": 676,
+      "settledMs": 676,
+      "interactiveMs": 676,
+      "longTasks": 3,
+      "longTaskMs": 554,
+      "blockingMs": 436,
+      "maxLongTaskMs": 285,
+      "requests": 1,
+      "apiRequests": 1,
+      "bytes": 75573,
+      "apiBytes": 75573,
+      "apiWaitMs": 36,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 75583,
+          "waitMs": 34,
+          "durMs": 36
+        }
+      }
+    },
+    "Sales Order / arrow-nav-5": {
+      "visibleMs": 1205,
+      "settledMs": 1731,
+      "interactiveMs": 1767,
+      "longTasks": 7,
+      "longTaskMs": 1445,
+      "blockingMs": 1095,
+      "maxLongTaskMs": 320,
+      "requests": 5,
+      "apiRequests": 5,
+      "bytes": 25186,
+      "apiBytes": 25186,
+      "apiWaitMs": 168,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 3,
+          "bytes": 19673,
+          "waitMs": 103,
+          "durMs": 110
+        },
+        "POST /api/datasource": {
+          "count": 2,
+          "bytes": 5513,
+          "waitMs": 42,
+          "durMs": 44
+        }
+      }
+    },
+    "Sales Order / open-record": {
+      "visibleMs": 931,
+      "settledMs": 931,
+      "interactiveMs": 931,
+      "longTasks": 2,
+      "longTaskMs": 617,
+      "blockingMs": 517,
+      "maxLongTaskMs": 319,
+      "requests": 7,
+      "apiRequests": 5,
+      "bytes": 15057,
+      "apiBytes": 15057,
+      "apiWaitMs": 84,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 275,
+          "waitMs": 20,
+          "durMs": 22
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 2773,
+          "waitMs": 19,
+          "durMs": 20
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2986,
+          "waitMs": 2,
+          "durMs": 5
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 9024,
+          "waitMs": 43,
+          "durMs": 46
+        }
+      }
+    },
+    "Sales Order / form-next-5": {
+      "visibleMs": 2532,
+      "settledMs": 2532,
+      "interactiveMs": 2532,
+      "longTasks": 10,
+      "longTaskMs": 1847,
+      "blockingMs": 1347,
+      "maxLongTaskMs": 346,
+      "requests": 23,
+      "apiRequests": 23,
+      "bytes": 82108,
+      "apiBytes": 82108,
+      "apiWaitMs": 392,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /window": {
+          "count": 10,
+          "bytes": 14946,
+          "waitMs": 10,
+          "durMs": 31
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 5,
+          "bytes": 45119,
+          "waitMs": 189,
+          "durMs": 199
+        },
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 5,
+          "bytes": 1375,
+          "waitMs": 93,
+          "durMs": 102
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 20691,
+          "waitMs": 69,
+          "durMs": 75
+        }
+      }
+    },
+    "Sales Order / type-10-chars": {
+      "visibleMs": 124,
+      "settledMs": 124,
+      "interactiveMs": 124,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Sales Order / new-record": {
+      "visibleMs": 1201,
+      "settledMs": 1201,
+      "interactiveMs": 1201,
+      "longTasks": 5,
+      "longTaskMs": 1048,
+      "blockingMs": 798,
+      "maxLongTaskMs": 476,
+      "requests": 10,
+      "apiRequests": 10,
+      "bytes": 33751,
+      "apiBytes": 33751,
+      "apiWaitMs": 269,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource/Order": {
+          "count": 1,
+          "bytes": 3921,
+          "waitMs": 37,
+          "durMs": 38
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 22194,
+          "waitMs": 137,
+          "durMs": 143
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 4752,
+          "waitMs": 96,
+          "durMs": 99
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2884,
+          "waitMs": 2,
+          "durMs": 7
+        }
+      }
+    },
+    "Sales Order / select-change": {
+      "visibleMs": 248,
+      "settledMs": 248,
+      "interactiveMs": 248,
+      "longTasks": 2,
+      "longTaskMs": 207,
+      "blockingMs": 107,
+      "maxLongTaskMs": 132,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Purchase Order / login": {
+      "visibleMs": 1290,
+      "settledMs": 1290,
+      "interactiveMs": 1290,
+      "longTasks": 2,
+      "longTaskMs": 210,
+      "blockingMs": 110,
+      "maxLongTaskMs": 154,
+      "requests": 58,
+      "apiRequests": 17,
+      "bytes": 2418326,
+      "apiBytes": 769229,
+      "apiWaitMs": 257,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 32
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 363,
+          "waitMs": 1,
+          "durMs": 3
+        },
+        "GET /api/auth/sso/config": {
+          "count": 2,
+          "bytes": 1346,
+          "waitMs": 3,
+          "durMs": 5
+        },
+        "POST /api/auth/login": {
+          "count": 1,
+          "bytes": 296502,
+          "waitMs": 58,
+          "durMs": 59
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 17,
+          "durMs": 18
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 14,
+          "durMs": 15
+        },
+        "GET /api/erp/meta/labels": {
+          "count": 1,
+          "bytes": 165261,
+          "waitMs": 32,
+          "durMs": 34
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 16,
+          "durMs": 17
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2135,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 13,
+          "durMs": 14
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 17,
+          "durMs": 20
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 22,
+          "durMs": 24
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3203,
+          "waitMs": 44,
+          "durMs": 44
+        }
+      }
+    },
+    "Purchase Order / open-cold": {
+      "visibleMs": 2128,
+      "settledMs": 2128,
+      "interactiveMs": 2128,
+      "longTasks": 4,
+      "longTaskMs": 868,
+      "blockingMs": 668,
+      "maxLongTaskMs": 410,
+      "requests": 35,
+      "apiRequests": 5,
+      "bytes": 2058626,
+      "apiBytes": 2046286,
+      "apiWaitMs": 216,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 2013002,
+          "waitMs": 118,
+          "durMs": 122
+        },
+        "GET /window": {
+          "count": 1,
+          "bytes": 1552,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /api/erp/meta/toolbar": {
+          "count": 1,
+          "bytes": 23985,
+          "waitMs": 16,
+          "durMs": 18
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 13,
+          "durMs": 14
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 7403,
+          "waitMs": 26,
+          "durMs": 28
+        }
+      }
+    },
+    "Purchase Order / reload-warm": {
+      "visibleMs": 1954,
+      "settledMs": 1954,
+      "interactiveMs": 1954,
+      "longTasks": 8,
+      "longTaskMs": 1092,
+      "blockingMs": 692,
+      "maxLongTaskMs": 365,
+      "requests": 85,
+      "apiRequests": 17,
+      "bytes": 320982,
+      "apiBytes": 314486,
+      "apiWaitMs": 334,
+      "failed": 1,
+      "runs": 3,
+      "byEndpoint": {
+        "OPTIONS /api/auth/login": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 1,
+          "durMs": 16
+        },
+        "GET /api/config": {
+          "count": 1,
+          "bytes": 0,
+          "waitMs": 0,
+          "durMs": 2
+        },
+        "GET /api/erp/meta/session": {
+          "count": 1,
+          "bytes": 30855,
+          "waitMs": 28,
+          "durMs": 30
+        },
+        "GET /api/erp/meta/preferences": {
+          "count": 1,
+          "bytes": 8410,
+          "waitMs": 20,
+          "durMs": 21
+        },
+        "POST /api/erp/meta/menu": {
+          "count": 1,
+          "bytes": 244273,
+          "waitMs": 16,
+          "durMs": 18
+        },
+        "GET /api/auth/sso/config": {
+          "count": 1,
+          "bytes": 673,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "GET /api/erp/copilot/labels": {
+          "count": 1,
+          "bytes": 6442,
+          "waitMs": 7,
+          "durMs": 8
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 2135,
+          "waitMs": 1,
+          "durMs": 1
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+          "count": 1,
+          "bytes": 272,
+          "waitMs": 12,
+          "durMs": 13
+        },
+        "GET /api/erp/meta/window/:n": {
+          "count": 1,
+          "bytes": 308,
+          "waitMs": 137,
+          "durMs": 139
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+          "count": 1,
+          "bytes": 1177,
+          "waitMs": 14,
+          "durMs": 17
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+          "count": 1,
+          "bytes": 8990,
+          "waitMs": 17,
+          "durMs": 19
+        },
+        "GET /api/meta/saved-views": {
+          "count": 1,
+          "bytes": 335,
+          "waitMs": 11,
+          "durMs": 12
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 7423,
+          "waitMs": 21,
+          "durMs": 23
+        },
+        "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+          "count": 3,
+          "bytes": 3203,
+          "waitMs": 47,
+          "durMs": 50
+        }
+      }
+    },
+    "Purchase Order / load-unfiltered": {
+      "visibleMs": 577,
+      "settledMs": 577,
+      "interactiveMs": 577,
+      "longTasks": 2,
+      "longTaskMs": 451,
+      "blockingMs": 336,
+      "maxLongTaskMs": 240,
+      "requests": 1,
+      "apiRequests": 1,
+      "bytes": 42403,
+      "apiBytes": 42403,
+      "apiWaitMs": 32,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 42403,
+          "waitMs": 32,
+          "durMs": 33
+        }
+      }
+    },
+    "Purchase Order / arrow-nav-5": {
+      "visibleMs": 1283,
+      "settledMs": 1355,
+      "interactiveMs": 1691,
+      "longTasks": 8,
+      "longTaskMs": 1392,
+      "blockingMs": 942,
+      "maxLongTaskMs": 253,
+      "requests": 6,
+      "apiRequests": 6,
+      "bytes": 35333,
+      "apiBytes": 35333,
+      "apiWaitMs": 214,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 6,
+          "bytes": 23278,
+          "waitMs": 189,
+          "durMs": 199
+        },
+        "POST /api/datasource": {
+          "count": 2,
+          "bytes": 15301,
+          "waitMs": 48,
+          "durMs": 52
+        }
+      }
+    },
+    "Purchase Order / open-record": {
+      "visibleMs": 909,
+      "settledMs": 909,
+      "interactiveMs": 909,
+      "longTasks": 2,
+      "longTaskMs": 526,
+      "blockingMs": 426,
+      "maxLongTaskMs": 269,
+      "requests": 7,
+      "apiRequests": 5,
+      "bytes": 16957,
+      "apiBytes": 16957,
+      "apiWaitMs": 80,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 1,
+          "bytes": 275,
+          "waitMs": 20,
+          "durMs": 23
+        },
+        "POST /api/datasource": {
+          "count": 1,
+          "bytes": 5299,
+          "waitMs": 19,
+          "durMs": 21
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2995,
+          "waitMs": 2,
+          "durMs": 6
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 8388,
+          "waitMs": 47,
+          "durMs": 49
+        }
+      }
+    },
+    "Purchase Order / form-next-5": {
+      "visibleMs": 2296,
+      "settledMs": 2296,
+      "interactiveMs": 2296,
+      "longTasks": 7,
+      "longTaskMs": 1476,
+      "blockingMs": 1126,
+      "maxLongTaskMs": 318,
+      "requests": 23,
+      "apiRequests": 23,
+      "bytes": 74268,
+      "apiBytes": 74268,
+      "apiWaitMs": 431,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /window": {
+          "count": 10,
+          "bytes": 14973,
+          "waitMs": 15,
+          "durMs": 37
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 5,
+          "bytes": 42051,
+          "waitMs": 217,
+          "durMs": 229
+        },
+        "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+          "count": 5,
+          "bytes": 1375,
+          "waitMs": 110,
+          "durMs": 118
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 15889,
+          "waitMs": 109,
+          "durMs": 115
+        }
+      }
+    },
+    "Purchase Order / type-10-chars": {
+      "visibleMs": 106,
+      "settledMs": 106,
+      "interactiveMs": 106,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Purchase Order / new-record": {
+      "visibleMs": 1042,
+      "settledMs": 1042,
+      "interactiveMs": 1042,
+      "longTasks": 4,
+      "longTaskMs": 869,
+      "blockingMs": 669,
+      "maxLongTaskMs": 429,
+      "requests": 10,
+      "apiRequests": 10,
+      "bytes": 32517,
+      "apiBytes": 32517,
+      "apiWaitMs": 310,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /api/datasource/Order": {
+          "count": 1,
+          "bytes": 3810,
+          "waitMs": 34,
+          "durMs": 35
+        },
+        "POST /api/erp/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 21140,
+          "waitMs": 152,
+          "durMs": 158
+        },
+        "POST /api/datasource": {
+          "count": 3,
+          "bytes": 4641,
+          "waitMs": 121,
+          "durMs": 124
+        },
+        "GET /window": {
+          "count": 2,
+          "bytes": 2882,
+          "waitMs": 3,
+          "durMs": 8
+        }
+      }
+    },
+    "Purchase Order / select-change": {
+      "visibleMs": 273,
+      "settledMs": 273,
+      "interactiveMs": 273,
+      "longTasks": 2,
+      "longTaskMs": 215,
+      "blockingMs": 115,
+      "maxLongTaskMs": 139,
+      "requests": 0,
+      "apiRequests": 0,
+      "bytes": 0,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    }
+  },
+  "raw": {
+    "Sales Invoice / login": [
+      {
+        "name": "login",
+        "visibleMs": 1456,
+        "settledMs": 1456,
+        "interactiveMs": 1456,
+        "longTasks": 2,
+        "longTaskMs": 241,
+        "blockingMs": 141,
+        "maxLongTaskMs": 164,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418378,
+        "apiBytes": 769281,
+        "apiWaitMs": 439,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 6,
+            "durMs": 43
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 6,
+            "durMs": 8
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 56,
+            "durMs": 57
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 134,
+            "durMs": 135
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 40,
+            "durMs": 41
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 18,
+            "durMs": 21
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 24,
+            "durMs": 25
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 59,
+            "durMs": 60
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1282,
+        "settledMs": 1282,
+        "interactiveMs": 1282,
+        "longTasks": 2,
+        "longTaskMs": 213,
+        "blockingMs": 113,
+        "maxLongTaskMs": 157,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418378,
+        "apiBytes": 769281,
+        "apiWaitMs": 251,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 35
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 4,
+            "durMs": 6
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 51,
+            "durMs": 52
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 30,
+            "durMs": 32
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 17,
+            "durMs": 20
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 22,
+            "durMs": 24
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 50,
+            "durMs": 51
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1276,
+        "settledMs": 1276,
+        "interactiveMs": 1276,
+        "longTasks": 2,
+        "longTaskMs": 212,
+        "blockingMs": 112,
+        "maxLongTaskMs": 155,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418378,
+        "apiBytes": 769281,
+        "apiWaitMs": 249,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 33
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 4
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 54,
+            "durMs": 55
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 14,
+            "durMs": 16
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 32,
+            "durMs": 34
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 13,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 17,
+            "durMs": 19
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 21,
+            "durMs": 22
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 41,
+            "durMs": 42
+          }
+        }
+      }
+    ],
+    "Sales Invoice / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 2335,
+        "settledMs": 2335,
+        "interactiveMs": 2335,
+        "longTasks": 4,
+        "longTaskMs": 941,
+        "blockingMs": 741,
+        "maxLongTaskMs": 449,
+        "requests": 36,
+        "apiRequests": 5,
+        "bytes": 3197082,
+        "apiBytes": 3184742,
+        "apiWaitMs": 307,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 3133470,
+            "waitMs": 243,
+            "durMs": 252
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1551,
+            "waitMs": 4,
+            "durMs": 6
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 13,
+            "durMs": 15
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25401,
+            "waitMs": 30,
+            "durMs": 32
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 2337,
+        "settledMs": 2337,
+        "interactiveMs": 2337,
+        "longTasks": 4,
+        "longTaskMs": 946,
+        "blockingMs": 746,
+        "maxLongTaskMs": 423,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 3197102,
+        "apiBytes": 3184762,
+        "apiWaitMs": 279,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 3133480,
+            "waitMs": 218,
+            "durMs": 229
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1551,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 14,
+            "durMs": 16
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25411,
+            "waitMs": 26,
+            "durMs": 27
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 2631,
+        "settledMs": 2631,
+        "interactiveMs": 2631,
+        "longTasks": 4,
+        "longTaskMs": 936,
+        "blockingMs": 736,
+        "maxLongTaskMs": 438,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 3197114,
+        "apiBytes": 3184774,
+        "apiWaitMs": 317,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 3133480,
+            "waitMs": 260,
+            "durMs": 271
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1553,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25421,
+            "waitMs": 25,
+            "durMs": 27
+          }
+        }
+      }
+    ],
+    "Sales Invoice / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 2038,
+        "settledMs": 2038,
+        "interactiveMs": 2038,
+        "longTasks": 8,
+        "longTaskMs": 1139,
+        "blockingMs": 739,
+        "maxLongTaskMs": 371,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 339022,
+        "apiBytes": 332526,
+        "apiWaitMs": 391,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 15
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 2
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 44,
+            "durMs": 45
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 19,
+            "durMs": 19
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 178,
+            "durMs": 272
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 15,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25401,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 48,
+            "durMs": 51
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 2039,
+        "settledMs": 2039,
+        "interactiveMs": 2039,
+        "longTasks": 8,
+        "longTaskMs": 1128,
+        "blockingMs": 728,
+        "maxLongTaskMs": 393,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 339032,
+        "apiBytes": 332536,
+        "apiWaitMs": 385,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 17
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 2
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 23,
+            "durMs": 24
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 15,
+            "durMs": 16
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 193,
+            "durMs": 290
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 15,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 18,
+            "durMs": 20
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25411,
+            "waitMs": 29,
+            "durMs": 30
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 42,
+            "durMs": 43
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 2021,
+        "settledMs": 2021,
+        "interactiveMs": 2021,
+        "longTasks": 8,
+        "longTaskMs": 1114,
+        "blockingMs": 714,
+        "maxLongTaskMs": 368,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 339042,
+        "apiBytes": 332546,
+        "apiWaitMs": 429,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 17
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 3
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 26,
+            "durMs": 28
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 18,
+            "durMs": 20
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 22,
+            "durMs": 23
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 8,
+            "durMs": 10
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2161,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 223,
+            "durMs": 347
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 15,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 25421,
+            "waitMs": 24,
+            "durMs": 25
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3229,
+            "waitMs": 42,
+            "durMs": 44
+          }
+        }
+      }
+    ],
+    "Sales Invoice / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 742,
+        "settledMs": 742,
+        "interactiveMs": 742,
+        "longTasks": 3,
+        "longTaskMs": 661,
+        "blockingMs": 511,
+        "maxLongTaskMs": 345,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 187314,
+        "apiBytes": 187314,
+        "apiWaitMs": 42,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 187314,
+            "waitMs": 42,
+            "durMs": 44
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 730,
+        "settledMs": 730,
+        "interactiveMs": 730,
+        "longTasks": 4,
+        "longTaskMs": 650,
+        "blockingMs": 450,
+        "maxLongTaskMs": 323,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 187334,
+        "apiBytes": 187334,
+        "apiWaitMs": 79,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 187334,
+            "waitMs": 79,
+            "durMs": 81
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 725,
+        "settledMs": 725,
+        "interactiveMs": 725,
+        "longTasks": 3,
+        "longTaskMs": 646,
+        "blockingMs": 496,
+        "maxLongTaskMs": 329,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 187354,
+        "apiBytes": 187354,
+        "apiWaitMs": 82,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 187354,
+            "waitMs": 82,
+            "durMs": 84
+          }
+        }
+      }
+    ],
+    "Sales Invoice / arrow-nav-5": [
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1415,
+        "settledMs": 1415,
+        "interactiveMs": 1415,
+        "longTasks": 6,
+        "longTaskMs": 1327,
+        "blockingMs": 1027,
+        "maxLongTaskMs": 364,
+        "requests": 6,
+        "apiRequests": 6,
+        "bytes": 35075,
+        "apiBytes": 35075,
+        "apiWaitMs": 181,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 30783,
+            "waitMs": 144,
+            "durMs": 153
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 4292,
+            "waitMs": 37,
+            "durMs": 41
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1355,
+        "settledMs": 1911,
+        "interactiveMs": 1988,
+        "longTasks": 7,
+        "longTaskMs": 1709,
+        "blockingMs": 1359,
+        "maxLongTaskMs": 367,
+        "requests": 5,
+        "apiRequests": 5,
+        "bytes": 32288,
+        "apiBytes": 32288,
+        "apiWaitMs": 213,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 3,
+            "bytes": 27996,
+            "waitMs": 125,
+            "durMs": 132
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 4292,
+            "waitMs": 87,
+            "durMs": 91
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1726,
+        "settledMs": 1726,
+        "interactiveMs": 1726,
+        "longTasks": 7,
+        "longTaskMs": 1640,
+        "blockingMs": 1290,
+        "maxLongTaskMs": 351,
+        "requests": 7,
+        "apiRequests": 7,
+        "bytes": 37862,
+        "apiBytes": 37862,
+        "apiWaitMs": 225,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 33570,
+            "waitMs": 186,
+            "durMs": 197
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 4292,
+            "waitMs": 40,
+            "durMs": 44
+          }
+        }
+      }
+    ],
+    "Sales Invoice / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 1051,
+        "settledMs": 1051,
+        "interactiveMs": 1051,
+        "longTasks": 2,
+        "longTaskMs": 740,
+        "blockingMs": 640,
+        "maxLongTaskMs": 394,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 18020,
+        "apiBytes": 18020,
+        "apiWaitMs": 86,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 22,
+            "durMs": 24
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2153,
+            "waitMs": 19,
+            "durMs": 20
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2990,
+            "waitMs": 3,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 12602,
+            "waitMs": 42,
+            "durMs": 44
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 1029,
+        "settledMs": 1029,
+        "interactiveMs": 1029,
+        "longTasks": 2,
+        "longTaskMs": 716,
+        "blockingMs": 616,
+        "maxLongTaskMs": 383,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 18016,
+        "apiBytes": 18016,
+        "apiWaitMs": 87,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 19,
+            "durMs": 22
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2153,
+            "waitMs": 24,
+            "durMs": 26
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2986,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 12602,
+            "waitMs": 41,
+            "durMs": 43
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 1031,
+        "settledMs": 1031,
+        "interactiveMs": 1031,
+        "longTasks": 2,
+        "longTaskMs": 718,
+        "blockingMs": 618,
+        "maxLongTaskMs": 382,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 18017,
+        "apiBytes": 18017,
+        "apiWaitMs": 99,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 29,
+            "durMs": 30
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2153,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2987,
+            "waitMs": 2,
+            "durMs": 5
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 12602,
+            "waitMs": 48,
+            "durMs": 49
+          }
+        }
+      }
+    ],
+    "Sales Invoice / form-next-5": [
+      {
+        "name": "form-next-5",
+        "visibleMs": 2940,
+        "settledMs": 2940,
+        "interactiveMs": 2940,
+        "longTasks": 10,
+        "longTaskMs": 2322,
+        "blockingMs": 1822,
+        "maxLongTaskMs": 441,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 85902,
+        "apiBytes": 85902,
+        "apiWaitMs": 430,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14951,
+            "waitMs": 12,
+            "durMs": 34
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 63138,
+            "waitMs": 212,
+            "durMs": 225
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 137,
+            "durMs": 144
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6438,
+            "waitMs": 67,
+            "durMs": 72
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 3108,
+        "settledMs": 3108,
+        "interactiveMs": 3108,
+        "longTasks": 10,
+        "longTaskMs": 2447,
+        "blockingMs": 1947,
+        "maxLongTaskMs": 445,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 85912,
+        "apiBytes": 85912,
+        "apiWaitMs": 401,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14941,
+            "waitMs": 14,
+            "durMs": 36
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 63158,
+            "waitMs": 227,
+            "durMs": 241
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 101,
+            "durMs": 107
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6438,
+            "waitMs": 57,
+            "durMs": 62
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 2922,
+        "settledMs": 2922,
+        "interactiveMs": 2922,
+        "longTasks": 10,
+        "longTaskMs": 2300,
+        "blockingMs": 1800,
+        "maxLongTaskMs": 430,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 85942,
+        "apiBytes": 85942,
+        "apiWaitMs": 432,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14951,
+            "waitMs": 10,
+            "durMs": 29
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 63178,
+            "waitMs": 210,
+            "durMs": 224
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 100,
+            "durMs": 108
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6438,
+            "waitMs": 110,
+            "durMs": 116
+          }
+        }
+      }
+    ],
+    "Sales Invoice / type-10-chars": [
+      {
+        "name": "type-10-chars",
+        "visibleMs": 121,
+        "settledMs": 121,
+        "interactiveMs": 121,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 172,
+        "settledMs": 172,
+        "interactiveMs": 172,
+        "longTasks": 1,
+        "longTaskMs": 50,
+        "blockingMs": 0,
+        "maxLongTaskMs": 50,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 126,
+        "settledMs": 126,
+        "interactiveMs": 126,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Sales Invoice / new-record": [
+      {
+        "name": "new-record",
+        "visibleMs": 1395,
+        "settledMs": 1395,
+        "interactiveMs": 1395,
+        "longTasks": 5,
+        "longTaskMs": 1225,
+        "blockingMs": 975,
+        "maxLongTaskMs": 517,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 45635,
+        "apiBytes": 45635,
+        "apiWaitMs": 276,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Invoice": {
+            "count": 1,
+            "bytes": 5417,
+            "waitMs": 32,
+            "durMs": 33
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 31085,
+            "waitMs": 164,
+            "durMs": 169
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6248,
+            "waitMs": 77,
+            "durMs": 80
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2885,
+            "waitMs": 2,
+            "durMs": 6
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 1687,
+        "settledMs": 1687,
+        "interactiveMs": 1687,
+        "longTasks": 5,
+        "longTaskMs": 1500,
+        "blockingMs": 1250,
+        "maxLongTaskMs": 733,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 45674,
+        "apiBytes": 45674,
+        "apiWaitMs": 485,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Invoice": {
+            "count": 1,
+            "bytes": 5427,
+            "waitMs": 44,
+            "durMs": 46
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 31105,
+            "waitMs": 354,
+            "durMs": 361
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6258,
+            "waitMs": 81,
+            "durMs": 86
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2884,
+            "waitMs": 7,
+            "durMs": 12
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 1385,
+        "settledMs": 1385,
+        "interactiveMs": 1385,
+        "longTasks": 5,
+        "longTaskMs": 1222,
+        "blockingMs": 972,
+        "maxLongTaskMs": 529,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 45715,
+        "apiBytes": 45715,
+        "apiWaitMs": 263,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Invoice": {
+            "count": 1,
+            "bytes": 5437,
+            "waitMs": 35,
+            "durMs": 37
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 31125,
+            "waitMs": 164,
+            "durMs": 171
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 6268,
+            "waitMs": 62,
+            "durMs": 66
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2885,
+            "waitMs": 2,
+            "durMs": 6
+          }
+        }
+      }
+    ],
+    "Sales Invoice / select-change": [
+      {
+        "name": "select-change",
+        "visibleMs": 258,
+        "settledMs": 258,
+        "interactiveMs": 258,
+        "longTasks": 2,
+        "longTaskMs": 220,
+        "blockingMs": 120,
+        "maxLongTaskMs": 144,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 297,
+        "settledMs": 297,
+        "interactiveMs": 297,
+        "longTasks": 2,
+        "longTaskMs": 260,
+        "blockingMs": 160,
+        "maxLongTaskMs": 173,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 273,
+        "settledMs": 273,
+        "interactiveMs": 273,
+        "longTasks": 2,
+        "longTaskMs": 221,
+        "blockingMs": 121,
+        "maxLongTaskMs": 148,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Sales Order / login": [
+      {
+        "name": "login",
+        "visibleMs": 1282,
+        "settledMs": 1282,
+        "interactiveMs": 1282,
+        "longTasks": 2,
+        "longTaskMs": 213,
+        "blockingMs": 113,
+        "maxLongTaskMs": 155,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418388,
+        "apiBytes": 769291,
+        "apiWaitMs": 236,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 33
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 53,
+            "durMs": 54
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 12,
+            "durMs": 12
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 31,
+            "durMs": 33
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 16
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 11,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 20,
+            "durMs": 21
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 39,
+            "durMs": 40
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1300,
+        "settledMs": 1300,
+        "interactiveMs": 1300,
+        "longTasks": 2,
+        "longTaskMs": 212,
+        "blockingMs": 112,
+        "maxLongTaskMs": 154,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418388,
+        "apiBytes": 769291,
+        "apiWaitMs": 282,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 30
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 51,
+            "durMs": 52
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 25,
+            "durMs": 26
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 33,
+            "durMs": 35
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 21,
+            "durMs": 22
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 14,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 10,
+            "durMs": 11
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 24,
+            "durMs": 27
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 25,
+            "durMs": 26
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 56,
+            "durMs": 58
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1278,
+        "settledMs": 1278,
+        "interactiveMs": 1278,
+        "longTasks": 2,
+        "longTaskMs": 208,
+        "blockingMs": 108,
+        "maxLongTaskMs": 153,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418388,
+        "apiBytes": 769291,
+        "apiWaitMs": 239,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 32
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 52,
+            "durMs": 53
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 30,
+            "durMs": 33
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 15,
+            "durMs": 17
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 21,
+            "durMs": 22
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 41,
+            "durMs": 42
+          }
+        }
+      }
+    ],
+    "Sales Order / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 2212,
+        "settledMs": 2212,
+        "interactiveMs": 2212,
+        "longTasks": 4,
+        "longTaskMs": 889,
+        "blockingMs": 689,
+        "maxLongTaskMs": 404,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2262770,
+        "apiBytes": 2250430,
+        "apiWaitMs": 228,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2206420,
+            "waitMs": 165,
+            "durMs": 172
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1555,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18135,
+            "waitMs": 28,
+            "durMs": 30
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 1768,
+        "settledMs": 1768,
+        "interactiveMs": 1768,
+        "longTasks": 4,
+        "longTaskMs": 918,
+        "blockingMs": 718,
+        "maxLongTaskMs": 407,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2262778,
+        "apiBytes": 2250438,
+        "apiWaitMs": 257,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2206420,
+            "waitMs": 181,
+            "durMs": 185
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1553,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 16,
+            "durMs": 19
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 24,
+            "durMs": 25
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18145,
+            "waitMs": 35,
+            "durMs": 37
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 2232,
+        "settledMs": 2232,
+        "interactiveMs": 2232,
+        "longTasks": 4,
+        "longTaskMs": 910,
+        "blockingMs": 710,
+        "maxLongTaskMs": 412,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2262798,
+        "apiBytes": 2250458,
+        "apiWaitMs": 327,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2206428,
+            "waitMs": 169,
+            "durMs": 178
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1555,
+            "waitMs": 2,
+            "durMs": 4
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 53,
+            "durMs": 55
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 49,
+            "durMs": 51
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18155,
+            "waitMs": 54,
+            "durMs": 56
+          }
+        }
+      }
+    ],
+    "Sales Order / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 1944,
+        "settledMs": 1944,
+        "interactiveMs": 1944,
+        "longTasks": 7,
+        "longTaskMs": 1059,
+        "blockingMs": 709,
+        "maxLongTaskMs": 369,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 331766,
+        "apiBytes": 325270,
+        "apiWaitMs": 353,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 18
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 2
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 31,
+            "durMs": 32
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 17,
+            "durMs": 17
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 148,
+            "durMs": 278
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 15,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 19,
+            "durMs": 20
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18135,
+            "waitMs": 24,
+            "durMs": 26
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 41,
+            "durMs": 42
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 1937,
+        "settledMs": 1937,
+        "interactiveMs": 1937,
+        "longTasks": 8,
+        "longTaskMs": 1119,
+        "blockingMs": 719,
+        "maxLongTaskMs": 370,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 331776,
+        "apiBytes": 325280,
+        "apiWaitMs": 377,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 16
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 3
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 23,
+            "durMs": 24
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 9,
+            "durMs": 11
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 174,
+            "durMs": 273
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 16,
+            "durMs": 19
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 22,
+            "durMs": 24
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 15,
+            "durMs": 16
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18145,
+            "waitMs": 22,
+            "durMs": 23
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 40,
+            "durMs": 42
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 1956,
+        "settledMs": 1956,
+        "interactiveMs": 1956,
+        "longTasks": 8,
+        "longTaskMs": 1116,
+        "blockingMs": 716,
+        "maxLongTaskMs": 366,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 331786,
+        "apiBytes": 325290,
+        "apiWaitMs": 359,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 16
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 3
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 24,
+            "durMs": 25
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 20,
+            "durMs": 21
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2166,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 164,
+            "durMs": 285
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 18155,
+            "waitMs": 21,
+            "durMs": 24
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3234,
+            "waitMs": 47,
+            "durMs": 47
+          }
+        }
+      }
+    ],
+    "Sales Order / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 706,
+        "settledMs": 706,
+        "interactiveMs": 706,
+        "longTasks": 3,
+        "longTaskMs": 626,
+        "blockingMs": 476,
+        "maxLongTaskMs": 299,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 75563,
+        "apiBytes": 75563,
+        "apiWaitMs": 89,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 75563,
+            "waitMs": 89,
+            "durMs": 91
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 666,
+        "settledMs": 666,
+        "interactiveMs": 666,
+        "longTasks": 2,
+        "longTaskMs": 536,
+        "blockingMs": 436,
+        "maxLongTaskMs": 281,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 75573,
+        "apiBytes": 75573,
+        "apiWaitMs": 36,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 75573,
+            "waitMs": 36,
+            "durMs": 38
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 676,
+        "settledMs": 676,
+        "interactiveMs": 676,
+        "longTasks": 3,
+        "longTaskMs": 554,
+        "blockingMs": 404,
+        "maxLongTaskMs": 285,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 75583,
+        "apiBytes": 75583,
+        "apiWaitMs": 34,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 75583,
+            "waitMs": 34,
+            "durMs": 36
+          }
+        }
+      }
+    ],
+    "Sales Order / arrow-nav-5": [
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1205,
+        "settledMs": 1731,
+        "interactiveMs": 1767,
+        "longTasks": 6,
+        "longTaskMs": 1178,
+        "blockingMs": 878,
+        "maxLongTaskMs": 323,
+        "requests": 5,
+        "apiRequests": 5,
+        "bytes": 25186,
+        "apiBytes": 25186,
+        "apiWaitMs": 144,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 3,
+            "bytes": 19673,
+            "waitMs": 103,
+            "durMs": 110
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 5513,
+            "waitMs": 42,
+            "durMs": 44
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1191,
+        "settledMs": 1687,
+        "interactiveMs": 1717,
+        "longTasks": 7,
+        "longTaskMs": 1445,
+        "blockingMs": 1095,
+        "maxLongTaskMs": 320,
+        "requests": 5,
+        "apiRequests": 5,
+        "bytes": 25186,
+        "apiBytes": 25186,
+        "apiWaitMs": 168,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 3,
+            "bytes": 19673,
+            "waitMs": 121,
+            "durMs": 126
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 5513,
+            "waitMs": 47,
+            "durMs": 51
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1751,
+        "settledMs": 1751,
+        "interactiveMs": 2017,
+        "longTasks": 9,
+        "longTaskMs": 1872,
+        "blockingMs": 1422,
+        "maxLongTaskMs": 316,
+        "requests": 8,
+        "apiRequests": 8,
+        "bytes": 30322,
+        "apiBytes": 30322,
+        "apiWaitMs": 233,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 6,
+            "bytes": 24809,
+            "waitMs": 193,
+            "durMs": 205
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 5513,
+            "waitMs": 41,
+            "durMs": 44
+          }
+        }
+      }
+    ],
+    "Sales Order / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 967,
+        "settledMs": 967,
+        "interactiveMs": 967,
+        "longTasks": 2,
+        "longTaskMs": 626,
+        "blockingMs": 526,
+        "maxLongTaskMs": 319,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 15057,
+        "apiBytes": 15057,
+        "apiWaitMs": 78,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2773,
+            "waitMs": 17,
+            "durMs": 19
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2985,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 9024,
+            "waitMs": 38,
+            "durMs": 40
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 919,
+        "settledMs": 919,
+        "interactiveMs": 919,
+        "longTasks": 2,
+        "longTaskMs": 617,
+        "blockingMs": 517,
+        "maxLongTaskMs": 319,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 15055,
+        "apiBytes": 15055,
+        "apiWaitMs": 88,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 21,
+            "durMs": 23
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2773,
+            "waitMs": 17,
+            "durMs": 19
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2983,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 9024,
+            "waitMs": 47,
+            "durMs": 49
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 931,
+        "settledMs": 931,
+        "interactiveMs": 931,
+        "longTasks": 2,
+        "longTaskMs": 602,
+        "blockingMs": 502,
+        "maxLongTaskMs": 306,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 15058,
+        "apiBytes": 15058,
+        "apiWaitMs": 84,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 2773,
+            "waitMs": 19,
+            "durMs": 20
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2986,
+            "waitMs": 2,
+            "durMs": 5
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 9024,
+            "waitMs": 43,
+            "durMs": 46
+          }
+        }
+      }
+    ],
+    "Sales Order / form-next-5": [
+      {
+        "name": "form-next-5",
+        "visibleMs": 2457,
+        "settledMs": 2457,
+        "interactiveMs": 2457,
+        "longTasks": 10,
+        "longTaskMs": 1810,
+        "blockingMs": 1310,
+        "maxLongTaskMs": 325,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 82079,
+        "apiBytes": 82079,
+        "apiWaitMs": 392,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14934,
+            "waitMs": 10,
+            "durMs": 29
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 45079,
+            "waitMs": 175,
+            "durMs": 187
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 132,
+            "durMs": 137
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 20691,
+            "waitMs": 73,
+            "durMs": 79
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 2602,
+        "settledMs": 2602,
+        "interactiveMs": 2602,
+        "longTasks": 10,
+        "longTaskMs": 1847,
+        "blockingMs": 1347,
+        "maxLongTaskMs": 356,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 82108,
+        "apiBytes": 82108,
+        "apiWaitMs": 393,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14943,
+            "waitMs": 12,
+            "durMs": 35
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 45099,
+            "waitMs": 200,
+            "durMs": 212
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 111,
+            "durMs": 120
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 20691,
+            "waitMs": 69,
+            "durMs": 75
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 2532,
+        "settledMs": 2532,
+        "interactiveMs": 2532,
+        "longTasks": 10,
+        "longTaskMs": 1864,
+        "blockingMs": 1364,
+        "maxLongTaskMs": 346,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 82131,
+        "apiBytes": 82131,
+        "apiWaitMs": 364,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14946,
+            "waitMs": 10,
+            "durMs": 31
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 45119,
+            "waitMs": 189,
+            "durMs": 199
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 93,
+            "durMs": 102
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 20691,
+            "waitMs": 69,
+            "durMs": 75
+          }
+        }
+      }
+    ],
+    "Sales Order / type-10-chars": [
+      {
+        "name": "type-10-chars",
+        "visibleMs": 120,
+        "settledMs": 120,
+        "interactiveMs": 120,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 124,
+        "settledMs": 124,
+        "interactiveMs": 124,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 131,
+        "settledMs": 131,
+        "interactiveMs": 131,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Sales Order / new-record": [
+      {
+        "name": "new-record",
+        "visibleMs": 1223,
+        "settledMs": 1223,
+        "interactiveMs": 1223,
+        "longTasks": 5,
+        "longTaskMs": 1057,
+        "blockingMs": 807,
+        "maxLongTaskMs": 485,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 33712,
+        "apiBytes": 33712,
+        "apiWaitMs": 233,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3911,
+            "waitMs": 31,
+            "durMs": 33
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 22174,
+            "waitMs": 142,
+            "durMs": 148
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4742,
+            "waitMs": 58,
+            "durMs": 62
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2885,
+            "waitMs": 2,
+            "durMs": 6
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 1201,
+        "settledMs": 1201,
+        "interactiveMs": 1201,
+        "longTasks": 5,
+        "longTaskMs": 1048,
+        "blockingMs": 798,
+        "maxLongTaskMs": 476,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 33751,
+        "apiBytes": 33751,
+        "apiWaitMs": 273,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3921,
+            "waitMs": 37,
+            "durMs": 38
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 22194,
+            "waitMs": 137,
+            "durMs": 143
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4752,
+            "waitMs": 96,
+            "durMs": 99
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2884,
+            "waitMs": 2,
+            "durMs": 7
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 1182,
+        "settledMs": 1182,
+        "interactiveMs": 1182,
+        "longTasks": 5,
+        "longTaskMs": 1034,
+        "blockingMs": 784,
+        "maxLongTaskMs": 474,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 33793,
+        "apiBytes": 33793,
+        "apiWaitMs": 269,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3931,
+            "waitMs": 34,
+            "durMs": 35
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 22214,
+            "waitMs": 139,
+            "durMs": 145
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4762,
+            "waitMs": 93,
+            "durMs": 96
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2886,
+            "waitMs": 2,
+            "durMs": 6
+          }
+        }
+      }
+    ],
+    "Sales Order / select-change": [
+      {
+        "name": "select-change",
+        "visibleMs": 248,
+        "settledMs": 248,
+        "interactiveMs": 248,
+        "longTasks": 2,
+        "longTaskMs": 207,
+        "blockingMs": 107,
+        "maxLongTaskMs": 132,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 241,
+        "settledMs": 241,
+        "interactiveMs": 241,
+        "longTasks": 3,
+        "longTaskMs": 209,
+        "blockingMs": 59,
+        "maxLongTaskMs": 79,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 258,
+        "settledMs": 258,
+        "interactiveMs": 258,
+        "longTasks": 2,
+        "longTaskMs": 207,
+        "blockingMs": 107,
+        "maxLongTaskMs": 133,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Purchase Order / login": [
+      {
+        "name": "login",
+        "visibleMs": 1307,
+        "settledMs": 1307,
+        "interactiveMs": 1307,
+        "longTasks": 2,
+        "longTaskMs": 216,
+        "blockingMs": 116,
+        "maxLongTaskMs": 158,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418326,
+        "apiBytes": 769229,
+        "apiWaitMs": 268,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 33
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 6
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 52,
+            "durMs": 53
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 37,
+            "durMs": 38
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 34,
+            "durMs": 35
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 15,
+            "durMs": 16
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 6
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 11,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 20,
+            "durMs": 21
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 45,
+            "durMs": 46
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1290,
+        "settledMs": 1290,
+        "interactiveMs": 1290,
+        "longTasks": 2,
+        "longTaskMs": 209,
+        "blockingMs": 109,
+        "maxLongTaskMs": 154,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418326,
+        "apiBytes": 769229,
+        "apiWaitMs": 257,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 32
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 58,
+            "durMs": 59
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 32,
+            "durMs": 34
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 17,
+            "durMs": 20
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 22,
+            "durMs": 24
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 44,
+            "durMs": 44
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 1276,
+        "settledMs": 1276,
+        "interactiveMs": 1276,
+        "longTasks": 2,
+        "longTaskMs": 210,
+        "blockingMs": 110,
+        "maxLongTaskMs": 153,
+        "requests": 58,
+        "apiRequests": 17,
+        "bytes": 2418326,
+        "apiBytes": 769229,
+        "apiWaitMs": 239,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 34
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 363,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/auth/sso/config": {
+            "count": 2,
+            "bytes": 1346,
+            "waitMs": 2,
+            "durMs": 4
+          },
+          "POST /api/auth/login": {
+            "count": 1,
+            "bytes": 296502,
+            "waitMs": 54,
+            "durMs": 55
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "GET /api/erp/meta/labels": {
+            "count": 1,
+            "bytes": 165261,
+            "waitMs": 29,
+            "durMs": 31
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 15,
+            "durMs": 17
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 21,
+            "durMs": 22
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 45,
+            "durMs": 46
+          }
+        }
+      }
+    ],
+    "Purchase Order / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 2128,
+        "settledMs": 2128,
+        "interactiveMs": 2128,
+        "longTasks": 4,
+        "longTaskMs": 868,
+        "blockingMs": 668,
+        "maxLongTaskMs": 410,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2058617,
+        "apiBytes": 2046277,
+        "apiWaitMs": 174,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2013002,
+            "waitMs": 118,
+            "durMs": 122
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1552,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7403,
+            "waitMs": 26,
+            "durMs": 28
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 2170,
+        "settledMs": 2170,
+        "interactiveMs": 2170,
+        "longTasks": 4,
+        "longTaskMs": 850,
+        "blockingMs": 650,
+        "maxLongTaskMs": 400,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2058626,
+        "apiBytes": 2046286,
+        "apiWaitMs": 272,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2013002,
+            "waitMs": 199,
+            "durMs": 203
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1551,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 15,
+            "durMs": 17
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7413,
+            "waitMs": 37,
+            "durMs": 38
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 1738,
+        "settledMs": 1738,
+        "interactiveMs": 1738,
+        "longTasks": 4,
+        "longTaskMs": 897,
+        "blockingMs": 697,
+        "maxLongTaskMs": 424,
+        "requests": 35,
+        "apiRequests": 5,
+        "bytes": 2058637,
+        "apiBytes": 2046297,
+        "apiWaitMs": 216,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 2013002,
+            "waitMs": 163,
+            "durMs": 167
+          },
+          "GET /window": {
+            "count": 1,
+            "bytes": 1552,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "POST /api/erp/meta/toolbar": {
+            "count": 1,
+            "bytes": 23985,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 13,
+            "durMs": 15
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7423,
+            "waitMs": 22,
+            "durMs": 24
+          }
+        }
+      }
+    ],
+    "Purchase Order / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 1981,
+        "settledMs": 1981,
+        "interactiveMs": 1981,
+        "longTasks": 7,
+        "longTaskMs": 988,
+        "blockingMs": 638,
+        "maxLongTaskMs": 335,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 320972,
+        "apiBytes": 314476,
+        "apiWaitMs": 290,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 17
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 2
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 25,
+            "durMs": 27
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 15,
+            "durMs": 18
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 7,
+            "durMs": 7
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 105,
+            "durMs": 106
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 18,
+            "durMs": 23
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7403,
+            "waitMs": 21,
+            "durMs": 23
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 42,
+            "durMs": 44
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 1950,
+        "settledMs": 1950,
+        "interactiveMs": 1950,
+        "longTasks": 8,
+        "longTaskMs": 1092,
+        "blockingMs": 692,
+        "maxLongTaskMs": 370,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 320982,
+        "apiBytes": 314486,
+        "apiWaitMs": 361,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 15
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 3
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 23,
+            "durMs": 24
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 19,
+            "durMs": 20
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 1,
+            "durMs": 3
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 10,
+            "durMs": 11
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 15,
+            "durMs": 15
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 160,
+            "durMs": 161
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 16,
+            "durMs": 19
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 11,
+            "durMs": 13
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7413,
+            "waitMs": 22,
+            "durMs": 24
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 44,
+            "durMs": 47
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 1954,
+        "settledMs": 1954,
+        "interactiveMs": 1954,
+        "longTasks": 8,
+        "longTaskMs": 1092,
+        "blockingMs": 692,
+        "maxLongTaskMs": 365,
+        "requests": 85,
+        "apiRequests": 17,
+        "bytes": 320992,
+        "apiBytes": 314496,
+        "apiWaitMs": 334,
+        "failed": 1,
+        "byEndpoint": {
+          "OPTIONS /api/auth/login": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 1,
+            "durMs": 16
+          },
+          "GET /api/config": {
+            "count": 1,
+            "bytes": 0,
+            "waitMs": 0,
+            "durMs": 2
+          },
+          "GET /api/erp/meta/session": {
+            "count": 1,
+            "bytes": 30855,
+            "waitMs": 28,
+            "durMs": 30
+          },
+          "GET /api/erp/meta/preferences": {
+            "count": 1,
+            "bytes": 8410,
+            "waitMs": 20,
+            "durMs": 21
+          },
+          "POST /api/erp/meta/menu": {
+            "count": 1,
+            "bytes": 244273,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /api/auth/sso/config": {
+            "count": 1,
+            "bytes": 673,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /api/erp/copilot/labels": {
+            "count": 1,
+            "bytes": 6442,
+            "waitMs": 7,
+            "durMs": 8
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 2135,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/favorites": {
+            "count": 1,
+            "bytes": 272,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /api/erp/meta/window/:n": {
+            "count": 1,
+            "bytes": 308,
+            "waitMs": 137,
+            "durMs": 139
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/dashboard/layout": {
+            "count": 1,
+            "bytes": 1177,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/classes": {
+            "count": 1,
+            "bytes": 8990,
+            "waitMs": 17,
+            "durMs": 19
+          },
+          "GET /api/meta/saved-views": {
+            "count": 1,
+            "bytes": 335,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 7423,
+            "waitMs": 21,
+            "durMs": 23
+          },
+          "GET /api/erp/sws/com.etendoerp.metadata.meta/widget/:id/data": {
+            "count": 3,
+            "bytes": 3203,
+            "waitMs": 47,
+            "durMs": 50
+          }
+        }
+      }
+    ],
+    "Purchase Order / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 647,
+        "settledMs": 647,
+        "interactiveMs": 647,
+        "longTasks": 3,
+        "longTaskMs": 486,
+        "blockingMs": 336,
+        "maxLongTaskMs": 247,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 42393,
+        "apiBytes": 42393,
+        "apiWaitMs": 31,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 42393,
+            "waitMs": 31,
+            "durMs": 34
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 577,
+        "settledMs": 577,
+        "interactiveMs": 577,
+        "longTasks": 2,
+        "longTaskMs": 451,
+        "blockingMs": 351,
+        "maxLongTaskMs": 240,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 42403,
+        "apiBytes": 42403,
+        "apiWaitMs": 32,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 42403,
+            "waitMs": 32,
+            "durMs": 33
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 557,
+        "settledMs": 557,
+        "interactiveMs": 557,
+        "longTasks": 2,
+        "longTaskMs": 434,
+        "blockingMs": 334,
+        "maxLongTaskMs": 223,
+        "requests": 1,
+        "apiRequests": 1,
+        "bytes": 42413,
+        "apiBytes": 42413,
+        "apiWaitMs": 69,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 42413,
+            "waitMs": 69,
+            "durMs": 70
+          }
+        }
+      }
+    ],
+    "Purchase Order / arrow-nav-5": [
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1355,
+        "settledMs": 1355,
+        "interactiveMs": 1715,
+        "longTasks": 7,
+        "longTaskMs": 1500,
+        "blockingMs": 1150,
+        "maxLongTaskMs": 322,
+        "requests": 8,
+        "apiRequests": 8,
+        "bytes": 38579,
+        "apiBytes": 38579,
+        "apiWaitMs": 238,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 6,
+            "bytes": 23278,
+            "waitMs": 189,
+            "durMs": 199
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 15301,
+            "waitMs": 48,
+            "durMs": 52
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1256,
+        "settledMs": 1256,
+        "interactiveMs": 1691,
+        "longTasks": 9,
+        "longTaskMs": 1392,
+        "blockingMs": 942,
+        "maxLongTaskMs": 249,
+        "requests": 6,
+        "apiRequests": 6,
+        "bytes": 35333,
+        "apiBytes": 35333,
+        "apiWaitMs": 214,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 20032,
+            "waitMs": 136,
+            "durMs": 143
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 15301,
+            "waitMs": 78,
+            "durMs": 80
+          }
+        }
+      },
+      {
+        "name": "arrow-nav-5",
+        "visibleMs": 1283,
+        "settledMs": 1587,
+        "interactiveMs": 1587,
+        "longTasks": 8,
+        "longTaskMs": 1196,
+        "blockingMs": 796,
+        "maxLongTaskMs": 253,
+        "requests": 6,
+        "apiRequests": 6,
+        "bytes": 35333,
+        "apiBytes": 35333,
+        "apiWaitMs": 174,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 20032,
+            "waitMs": 132,
+            "durMs": 139
+          },
+          "POST /api/datasource": {
+            "count": 2,
+            "bytes": 15301,
+            "waitMs": 43,
+            "durMs": 45
+          }
+        }
+      }
+    ],
+    "Purchase Order / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 999,
+        "settledMs": 999,
+        "interactiveMs": 999,
+        "longTasks": 2,
+        "longTaskMs": 573,
+        "blockingMs": 473,
+        "maxLongTaskMs": 289,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 16957,
+        "apiBytes": 16957,
+        "apiWaitMs": 80,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 21,
+            "durMs": 23
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 5299,
+            "waitMs": 18,
+            "durMs": 20
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2995,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 8388,
+            "waitMs": 38,
+            "durMs": 40
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 761,
+        "settledMs": 761,
+        "interactiveMs": 761,
+        "longTasks": 2,
+        "longTaskMs": 505,
+        "blockingMs": 405,
+        "maxLongTaskMs": 264,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 16957,
+        "apiBytes": 16957,
+        "apiWaitMs": 79,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 5299,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2995,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 8388,
+            "waitMs": 38,
+            "durMs": 39
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 909,
+        "settledMs": 909,
+        "interactiveMs": 909,
+        "longTasks": 2,
+        "longTaskMs": 526,
+        "blockingMs": 426,
+        "maxLongTaskMs": 269,
+        "requests": 7,
+        "apiRequests": 5,
+        "bytes": 16957,
+        "apiBytes": 16957,
+        "apiWaitMs": 89,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 1,
+            "bytes": 275,
+            "waitMs": 20,
+            "durMs": 23
+          },
+          "POST /api/datasource": {
+            "count": 1,
+            "bytes": 5299,
+            "waitMs": 19,
+            "durMs": 21
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2995,
+            "waitMs": 2,
+            "durMs": 6
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 8388,
+            "waitMs": 47,
+            "durMs": 49
+          }
+        }
+      }
+    ],
+    "Purchase Order / form-next-5": [
+      {
+        "name": "form-next-5",
+        "visibleMs": 2507,
+        "settledMs": 2507,
+        "interactiveMs": 2507,
+        "longTasks": 9,
+        "longTaskMs": 1635,
+        "blockingMs": 1185,
+        "maxLongTaskMs": 318,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 74252,
+        "apiBytes": 74252,
+        "apiWaitMs": 431,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14977,
+            "waitMs": 17,
+            "durMs": 33
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 42011,
+            "waitMs": 224,
+            "durMs": 236
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 122,
+            "durMs": 131
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 15889,
+            "waitMs": 69,
+            "durMs": 75
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 2045,
+        "settledMs": 2045,
+        "interactiveMs": 2045,
+        "longTasks": 5,
+        "longTaskMs": 1238,
+        "blockingMs": 988,
+        "maxLongTaskMs": 272,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 74268,
+        "apiBytes": 74268,
+        "apiWaitMs": 363,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14973,
+            "waitMs": 10,
+            "durMs": 30
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 42031,
+            "waitMs": 176,
+            "durMs": 190
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 98,
+            "durMs": 105
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 15889,
+            "waitMs": 76,
+            "durMs": 82
+          }
+        }
+      },
+      {
+        "name": "form-next-5",
+        "visibleMs": 2296,
+        "settledMs": 2296,
+        "interactiveMs": 2296,
+        "longTasks": 7,
+        "longTaskMs": 1476,
+        "blockingMs": 1126,
+        "maxLongTaskMs": 339,
+        "requests": 23,
+        "apiRequests": 23,
+        "bytes": 74288,
+        "apiBytes": 74288,
+        "apiWaitMs": 454,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /window": {
+            "count": 10,
+            "bytes": 14973,
+            "waitMs": 15,
+            "durMs": 37
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 5,
+            "bytes": 42051,
+            "waitMs": 217,
+            "durMs": 229
+          },
+          "POST /api/erp/sws/com.etendoerp.metadata.meta/recent-documents": {
+            "count": 5,
+            "bytes": 1375,
+            "waitMs": 110,
+            "durMs": 118
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 15889,
+            "waitMs": 109,
+            "durMs": 115
+          }
+        }
+      }
+    ],
+    "Purchase Order / type-10-chars": [
+      {
+        "name": "type-10-chars",
+        "visibleMs": 106,
+        "settledMs": 106,
+        "interactiveMs": 106,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 102,
+        "settledMs": 102,
+        "interactiveMs": 102,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 106,
+        "settledMs": 106,
+        "interactiveMs": 106,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Purchase Order / new-record": [
+      {
+        "name": "new-record",
+        "visibleMs": 1042,
+        "settledMs": 1042,
+        "interactiveMs": 1042,
+        "longTasks": 4,
+        "longTaskMs": 869,
+        "blockingMs": 669,
+        "maxLongTaskMs": 429,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 32473,
+        "apiBytes": 32473,
+        "apiWaitMs": 310,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3810,
+            "waitMs": 34,
+            "durMs": 35
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 21140,
+            "waitMs": 152,
+            "durMs": 158
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4641,
+            "waitMs": 121,
+            "durMs": 124
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2882,
+            "waitMs": 3,
+            "durMs": 8
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 1207,
+        "settledMs": 1207,
+        "interactiveMs": 1207,
+        "longTasks": 4,
+        "longTaskMs": 969,
+        "blockingMs": 769,
+        "maxLongTaskMs": 488,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 32517,
+        "apiBytes": 32517,
+        "apiWaitMs": 337,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3820,
+            "waitMs": 28,
+            "durMs": 29
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 21160,
+            "waitMs": 221,
+            "durMs": 228
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4651,
+            "waitMs": 81,
+            "durMs": 85
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2886,
+            "waitMs": 7,
+            "durMs": 12
+          }
+        }
+      },
+      {
+        "name": "new-record",
+        "visibleMs": 937,
+        "settledMs": 937,
+        "interactiveMs": 937,
+        "longTasks": 4,
+        "longTaskMs": 773,
+        "blockingMs": 573,
+        "maxLongTaskMs": 375,
+        "requests": 10,
+        "apiRequests": 10,
+        "bytes": 32555,
+        "apiBytes": 32555,
+        "apiWaitMs": 251,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /api/datasource/Order": {
+            "count": 1,
+            "bytes": 3830,
+            "waitMs": 42,
+            "durMs": 44
+          },
+          "POST /api/erp/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 21180,
+            "waitMs": 148,
+            "durMs": 152
+          },
+          "POST /api/datasource": {
+            "count": 3,
+            "bytes": 4661,
+            "waitMs": 60,
+            "durMs": 63
+          },
+          "GET /window": {
+            "count": 2,
+            "bytes": 2884,
+            "waitMs": 2,
+            "durMs": 6
+          }
+        }
+      }
+    ],
+    "Purchase Order / select-change": [
+      {
+        "name": "select-change",
+        "visibleMs": 295,
+        "settledMs": 295,
+        "interactiveMs": 295,
+        "longTasks": 2,
+        "longTaskMs": 221,
+        "blockingMs": 121,
+        "maxLongTaskMs": 143,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 273,
+        "settledMs": 273,
+        "interactiveMs": 273,
+        "longTasks": 2,
+        "longTaskMs": 215,
+        "blockingMs": 115,
+        "maxLongTaskMs": 139,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "select-change",
+        "visibleMs": 233,
+        "settledMs": 233,
+        "interactiveMs": 233,
+        "longTasks": 2,
+        "longTaskMs": 199,
+        "blockingMs": 99,
+        "maxLongTaskMs": 129,
+        "requests": 0,
+        "apiRequests": 0,
+        "bytes": 0,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ]
+  }
+}

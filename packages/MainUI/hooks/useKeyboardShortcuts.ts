@@ -33,6 +33,20 @@ function normalizeKey(event: KeyboardEvent): string {
   return event.key;
 }
 
+/**
+ * Ctrl+Shift combinations are looked up as `ctrl+shift+<key>` first; when no such shortcut
+ * is mapped, the plain normalized key is used, so existing `ctrl+<key>` shortcuts keep
+ * firing when Shift is also held.
+ */
+function findShortcut(shortcuts: ShortcutMap, event: KeyboardEvent): ShortcutConfig | undefined {
+  const isCtrl = event.ctrlKey || event.metaKey;
+  if (isCtrl && event.shiftKey) {
+    const shiftConfig = shortcuts[`ctrl+shift+${event.key.toLowerCase()}`];
+    if (shiftConfig) return shiftConfig;
+  }
+  return shortcuts[normalizeKey(event)];
+}
+
 function isInputTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof Element)) return false;
   const tag = target.tagName.toLowerCase();
@@ -47,8 +61,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): vo
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      const normalizedKey = normalizeKey(event);
-      const config = shortcutsRef.current[normalizedKey];
+      const config = findShortcut(shortcutsRef.current, event);
 
       if (!config) return;
 

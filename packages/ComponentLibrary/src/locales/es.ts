@@ -144,6 +144,11 @@ const es = {
     updated: "Actualizado",
     updatedBy: "Actualizado por",
   },
+  auditTrail: {
+    selectOneRecord: "Debe seleccionar exactamente un registro para ver su historial de auditoría.",
+    popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
+    openPopup: "Abrir historial de auditoría",
+  },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
     deleteError: "Error al eliminar el registro",
@@ -284,6 +289,7 @@ const es = {
     },
     setSummaryFunction: "Establecer función de resumen",
     removeSummaryFunction: "Eliminar función de resumen",
+    invalidFilterValue: "Valor de filtro no válido",
     summary: {
       min: "Mín",
       max: "Máx",
@@ -365,6 +371,7 @@ const es = {
     manualProcessNotMigrated: "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
     popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
     openLink: "Abrir enlace",
+    reportFileFailed: "El reporte se generó pero no se pudo abrir ni descargar el archivo.",
     openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {
@@ -404,6 +411,8 @@ const es = {
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
+    externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
+    openExternalLink: "Abrir enlace",
   },
   login: {
     title: "Iniciar sesión",
@@ -835,6 +844,7 @@ const es = {
     },
     widget: {
       unavailable: "Módulo no instalado",
+      refresh: "Actualizar",
     },
     noWidgets: "No hay widgets configurados para este panel.",
     loadError: "No se pudo cargar el panel. Intente nuevamente.",

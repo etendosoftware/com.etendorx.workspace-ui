@@ -92,7 +92,7 @@ describe("useRowKeyboardNavigation", () => {
     return event;
   };
 
-  const setupHook = (initialSelection: MRT_RowSelectionState, editingRowsCount = 0) => {
+  const setupHook = (initialSelection: MRT_RowSelectionState, editingRowsCount = 0, onStep?: jest.Mock) => {
     const table = makeTable(initialSelection);
     const { result } = renderHook(() =>
       useRowKeyboardNavigation({
@@ -100,10 +100,33 @@ describe("useRowKeyboardNavigation", () => {
         effectiveRecords: records,
         containerRef,
         editingRowsCount,
+        onStep,
       })
     );
     return { result, table };
   };
+
+  it("reports every step's index right after moving the selection (keeps the row in view)", () => {
+    const onStep = jest.fn();
+    const { result, table } = setupHook({ "1": true }, 0, onStep);
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    expect(onStep).not.toHaveBeenCalled();
+    act(() => flushRaf());
+    expect(table.setRowSelection).toHaveBeenCalledWith({ "2": true });
+    expect(onStep).toHaveBeenCalledWith(1);
+
+    act(() => result.current.handleArrowUp(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(onStep).toHaveBeenLastCalledWith(0);
+  });
+
+  it("does not report a step that does not move (boundary)", () => {
+    const onStep = jest.fn();
+    const { result } = setupHook({ "3": true }, 0, onStep);
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(onStep).not.toHaveBeenCalled();
+  });
 
   it("ArrowDown selects the next record after rAF flush", () => {
     const { result, table } = setupHook({ "1": true });

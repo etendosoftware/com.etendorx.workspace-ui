@@ -22,7 +22,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "../useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import React from "react";
 
 jest.mock("@/stores/userStore");
@@ -63,7 +63,7 @@ describe("useDeleteRecord", () => {
     });
     (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
     (useTabRefreshContext as jest.Mock).mockReturnValue({ triggerParentRefreshes: mockTriggerParentRefreshes });
-    (useToolbarContext as jest.Mock).mockReturnValue({ onBack: mockOnBack });
+    (useToolbarCommands as jest.Mock).mockReturnValue({ onBack: mockOnBack });
     (buildSingleDeleteQueryString as jest.Mock).mockReturnValue("mock-query");
   });
 

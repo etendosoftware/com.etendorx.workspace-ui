@@ -20,7 +20,7 @@ import { logger } from "@/utils/logger";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 
@@ -29,11 +29,11 @@ export interface UseComboSelectParams {
 }
 
 export const useComboSelect = ({ field }: UseComboSelectParams) => {
-  const { watch, getValues } = useFormContext();
+  const { getValues } = useFormContext();
   const { tab } = useTabContext();
   const parentData = useFormParent(FieldName.INPUT_NAME);
   const windowId = tab.window;
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();

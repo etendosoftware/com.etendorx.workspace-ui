@@ -60,6 +60,7 @@ import { useFormInitialFocus } from "@/hooks/useFormInitialFocus";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
+import { useRevealFieldErrors } from "@/hooks/useRevealFieldErrors";
 import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
@@ -171,6 +172,7 @@ export function FormView({
     tabId: tab.id,
     tabLevel: tab.tabLevel ?? 0,
   });
+  const revealFieldErrors = useRevealFieldErrors({ fieldsRootRef, fields: tab.fields, setExpandedSections });
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
@@ -1257,6 +1259,7 @@ export function FormView({
               mode={currentMode}
               isFocused={isFocused}
               isDocumentProcessing={isDocumentProcessing}
+              onFieldErrors={revealFieldErrors}
               data-testid="FormActions__1a0853"
             />
           </form>

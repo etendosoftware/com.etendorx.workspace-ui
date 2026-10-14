@@ -24,6 +24,7 @@ import { useCallback } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { parseCsvIds } from "@/utils/form/selectors/multiSelectorCsv";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -84,6 +85,22 @@ export const convertParameterDateFields = (combined: Record<string, unknown>, pa
 };
 
 // ---------------------------------------------------------------------------
+// Multi-selector helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts a multi-selector form value (stored as a comma-separated id string)
+ * into the id array Classic posts (`OBMultiSelectorItem.getValue()` always
+ * returns an array, `[]` when empty). Java handlers read it with
+ * `getJSONArray` or build an `IN (...)` list from it, so a CSV string or `null`
+ * breaks them (e.g. Aging Balance's `... IN` + `null` SQL syntax error).
+ */
+export const toMultiSelectorPayloadValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.filter((id): id is string => typeof id === "string" && id.length > 0);
+  return parseCsvIds(value).filter((id) => id.length > 0);
+};
+
+// ---------------------------------------------------------------------------
 // Hook params / return types
 // ---------------------------------------------------------------------------
 
@@ -133,6 +150,10 @@ export function useProcessPayload({
 
       if ((val === "" || val === "null") && p.reference && shouldConvertEmptyToNull(p.reference)) {
         val = null;
+      }
+
+      if (p.reference === FIELD_REFERENCE_CODES.MULTI_SELECTOR.id) {
+        val = toMultiSelectorPayloadValue(val);
       }
 
       // targetKey is always defined: p.name is guaranteed truthy by the `continue` above

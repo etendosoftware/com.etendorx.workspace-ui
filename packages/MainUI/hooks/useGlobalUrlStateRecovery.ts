@@ -14,6 +14,8 @@ import { isWindowAccessDeniedError } from "@workspaceui/api-client/src/api/error
 import { buildAccessDeniedToastTexts, reportWindowsAccessDenied } from "@/utils/accessDenied";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { WindowState } from "@/utils/window/constants";
+import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
+import { recoverExternalPageWindow } from "@/utils/window/externalPageRecovery";
 
 /**
  * Global URL state recovery hook for Etendo WorkspaceUI.
@@ -109,6 +111,10 @@ export const useGlobalUrlStateRecovery = () => {
         // Each window recovery is independent and can run concurrently
         const windowPromises = recoveryDataList.map(async (info, index): Promise<WindowState | null> => {
           const windowId = getWindowIdFromIdentifier(info.windowIdentifier);
+          // In-app tabs of External menu entries have no AD window metadata to recover.
+          if (isExternalPageWindowId(windowId)) {
+            return recoverExternalPageWindow(info);
+          }
 
           try {
             // Fetch window metadata (cached if previously loaded)
