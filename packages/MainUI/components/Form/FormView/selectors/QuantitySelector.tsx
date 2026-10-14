@@ -1,6 +1,6 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useCallback, useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/language";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
@@ -14,10 +14,10 @@ interface QuantitySelectorProps {
 }
 
 export const QuantitySelector = ({ field, min, max, allowNegative = false, isReadOnly }: QuantitySelectorProps) => {
-  const { watch, setValue } = useFormContext();
+  const { setValue } = useFormContext();
   const { language } = useLanguage();
   const fieldName = field.hqlName;
-  const formValue = watch(fieldName);
+  const formValue = useWatch({ name: fieldName });
   const [localValue, setLocalValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 

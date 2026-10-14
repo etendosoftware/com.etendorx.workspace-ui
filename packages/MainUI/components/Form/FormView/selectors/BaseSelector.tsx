@@ -217,7 +217,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
-  const { watch, getValues, setValue, register, formState } = formMethods;
+  const { getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
   const { tab, record, parentRecord, parentTab, setAuxiliaryInputs } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
@@ -264,7 +264,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     changedColumnOverride: standardChangedColumn,
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const previousValue = useRef(value);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = useWatch({ name: `${field.hqlName}_data` });

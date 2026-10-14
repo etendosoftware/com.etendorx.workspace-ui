@@ -18,7 +18,7 @@
 import { useState } from "react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
-import { useFormContext, type FieldValues } from "react-hook-form";
+import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
 import { PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 
@@ -54,9 +54,9 @@ interface PasswordSelectorProps extends React.ComponentProps<typeof TextInput> {
 }
 
 export const PasswordSelector = ({ field, showToggle = true }: PasswordSelectorProps): React.ReactElement => {
-  const { register, watch, setValue } = useFormContext<FieldValues>();
+  const { register, setValue } = useFormContext<FieldValues>();
   const fieldName = field.hqlName;
-  const currentValue = watch(fieldName);
+  const currentValue = useWatch({ name: fieldName });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSetValue = (value: string): void => {

@@ -19,7 +19,8 @@
       "**/__mocks__/**",
       "**/GenericWarehouseProcess/pluginValues/**",
       "**/playwright-tests/test-results/**",
-      "**/playwright-tests/.playwright-artifacts*/**"
+      "**/playwright-tests/.playwright-artifacts*/**",
+      "**/playwright-tests/perf/results/**"
     ]
   },
   "linter": {

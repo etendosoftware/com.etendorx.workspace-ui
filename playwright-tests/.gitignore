@@ -1,3 +1,5 @@
 test-results/
 playwright-report/
 node_modules/
+perf/results/profiles/
+perf/results/compare-*
