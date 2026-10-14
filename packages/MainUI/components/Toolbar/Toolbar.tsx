@@ -55,7 +55,7 @@ import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { TAB_MODES } from "@/utils/url/constants";
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
@@ -88,6 +88,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   const getTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.form;
   }, []);
+  // Reactive: REFRESH is blocked while a record is still being created.
+  const tabFormMode = useWindowStore((s) => s.windows[windowIdentifier]?.tabs[tab?.id ?? ""]?.form?.formMode);
+  const isNewRecord = tabFormMode === FORM_MODES.NEW;
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
   const setTableFilters = useWindowStore((s) => s.setTableFilters);
   const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
@@ -126,7 +129,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   // default itself — the SAME source of truth the datasource uses. Saved views must capture
   // this, NOT the toolbar's `isImplicitFilterApplied` which is inflated by `hasIdFilter` and
   // meant only for the button's visual state (ETP-4381).
-  const defaultImplicitFilterApplied = tab ? getDefaultImplicitFilter(tab) : true;
+  // Reads the cached window metadata (a JSON.parse of the whole window): once per tab, not per render.
+  const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
@@ -508,6 +512,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       isSplitView: isSplitView,
       isTreeNodeView: isTreeNodeView,
       hasFormChanges: hasFormChanges,
+      isNewRecord: isNewRecord,
       hasParentRecordSelected: hasParentRecordSelected,
       isCopilotInstalled: isCopilotInstalled,
       saveButtonState: saveButtonState,
@@ -554,6 +559,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
     hasParentTab,
     selectedParentItems,
     hasFormChanges,
+    isNewRecord,
     saveButtonState,
     isSessionSyncLoading,
     isCopilotInstalled,

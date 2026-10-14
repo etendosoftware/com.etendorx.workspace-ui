@@ -74,6 +74,17 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     tabId: "",
   });
 
+  // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
+  useEffect(() => {
+    console.debug("[DEBUG-LINKEDITEMS] Tabs current changed", {
+      currentTabId: current.id,
+      currentTabName: current.name,
+      currentTabLevel: current.tabLevel,
+      allTabIds: tabs.map((t) => ({ id: t.id, name: t.name, level: t.tabLevel })),
+      mountedTabIds: Array.from(mountedTabIdsRef.current),
+    });
+  }, [current.id, current.name, current.tabLevel, tabs]);
+
   const collapsed = !activeLevels.includes(current.tabLevel);
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;

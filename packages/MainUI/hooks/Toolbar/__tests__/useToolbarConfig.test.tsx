@@ -16,6 +16,10 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { REFRESH_AFTER_DELETION_PREFERENCE } from "@/utils/preferences/refreshAfterDeletion";
 
 // Mock dependencies
 jest.mock("sonner", () => ({
@@ -45,7 +49,9 @@ jest.mock("@/hooks/useDeleteRecord", () => ({
 jest.mock("@/utils/logger");
 jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: jest.fn(() => "windowIdentifier1"),
+  useCurrentWindowId: jest.fn(() => "window1"),
 }));
+jest.mock("@/contexts/datasourceContext");
 
 describe("useToolbarConfig", () => {
   const mockTab = {
@@ -69,10 +75,13 @@ describe("useToolbarConfig", () => {
   const mockClearSelectedRecord = jest.fn();
   const mockOnRefresh = jest.fn();
   const mockOnShowTableAndForm = jest.fn();
+  const mockRefetchDatasource = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+    installLocalStorageMock();
 
+    (useDatasourceContext as jest.Mock).mockReturnValue({ refetchDatasource: mockRefetchDatasource });
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
     // Set Zustand store state with the active window and action spies
     useWindowStore.setState({
@@ -336,6 +345,88 @@ describe("useToolbarConfig", () => {
       });
 
       expect(toast.error).toHaveBeenCalled();
+    });
+  });
+
+  describe("refresh after deletion", () => {
+    const DELETED_RECORD_COUNT = 1;
+
+    /**
+     * Drives a successful delete to the point where the success modal has been dismissed.
+     *
+     * `useDeleteRecord` is mocked for this suite, so the hook's `onSuccess` never runs on its own:
+     * we capture the callback the hook handed to the mock, invoke it, then invoke the
+     * `onAfterClose` it passed to `showDeleteSuccessModal` — which is where the selection is
+     * cleared and the preference-gated refetch happens.
+     */
+    const runDeleteThroughModalClose = () => {
+      const showDeleteSuccessModal = jest.fn();
+      (useStatusModal as jest.Mock).mockReturnValue({
+        statusModal: { open: false },
+        showErrorModal: mockShowErrorModal,
+        showConfirmModal: jest.fn(),
+        showDeleteSuccessModal,
+      });
+
+      renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      const { onSuccess } = (useDeleteRecord as jest.Mock).mock.calls[0][0];
+      act(() => onSuccess(DELETED_RECORD_COUNT));
+
+      const { onAfterClose } = showDeleteSuccessModal.mock.calls[0][1];
+      act(() => onAfterClose());
+    };
+
+    it("refetches the grid when the preference is enabled for this window", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).toHaveBeenCalledTimes(1);
+      expect(mockRefetchDatasource).toHaveBeenCalledWith(mockTab.id);
+    });
+
+    it("refetches the grid when the preference is enabled globally", () => {
+      savePreferences({ [REFRESH_AFTER_DELETION_PREFERENCE]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).toHaveBeenCalledWith(mockTab.id);
+    });
+
+    it("does not refetch when the preference is absent", () => {
+      savePreferences({});
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("does not refetch when the preference is disabled", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "N" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("does not refetch when another window has it enabled", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_someOtherWindow`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("refetches only after the selection has been cleared", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      // The reload must see the post-delete result set, so the single-record rule can act on it.
+      expect(mockClearSelectedRecord.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRefetchDatasource.mock.invocationCallOrder[0]
+      );
     });
   });
 });

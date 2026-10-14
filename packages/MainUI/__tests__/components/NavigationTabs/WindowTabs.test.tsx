@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useWindowStore } from "@/stores/windowStore";
 import { useTabs } from "../../../contexts/tabs";
 import { useTranslation } from "../../../hooks/useTranslation";
@@ -33,8 +33,8 @@ jest.mock("@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg", (
 
 jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   __esModule: true,
-  default: ({ title, isActive, onActivate, onClose, canClose, "data-testid": testId }: any) => (
-    <div data-testid={testId} data-active={isActive} data-can-close={canClose}>
+  default: ({ title, isActive, isDirty, onActivate, onClose, canClose, "data-testid": testId }: any) => (
+    <div data-testid={testId} data-active={isActive} data-can-close={canClose} data-dirty={String(!!isDirty)}>
       <span onClick={onActivate}>{title}</span>
       <button onClick={onClose} data-testid="CloseButton">
         Close
@@ -43,14 +43,28 @@ jest.mock("@/components/NavigationTabs/WindowTab", () => ({
   ),
 }));
 
-jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
+const mockSaveWindow = jest.fn();
+const mockToastError = jest.fn();
+
+jest.mock("sonner", () => ({
+  toast: { error: (...args: unknown[]) => mockToastError(...args) },
+}));
+
+jest.mock("@/hooks/useSaveDirtyWindow", () => ({
+  useSaveDirtyWindow: () => ({ saveWindow: mockSaveWindow }),
+}));
+
+jest.mock("@/components/UnsavedChanges/SaveDiscardCancelModal", () => ({
   __esModule: true,
-  default: ({ open, confirmText, onConfirm, onCancel }: any) =>
+  default: ({ open, message, saveLabel, discardLabel, onSave, onDiscard, onCancel }: any) =>
     open ? (
       <div data-testid="ConfirmModal">
-        <span>{confirmText}</span>
-        <button onClick={onConfirm} data-testid="ConfirmButton">
-          Confirm
+        <span>{message}</span>
+        <button onClick={onSave} data-testid="SaveButton">
+          {saveLabel}
+        </button>
+        <button onClick={onDiscard} data-testid="ConfirmButton">
+          {discardLabel}
         </button>
         <button onClick={onCancel} data-testid="CancelButton">
           Cancel
@@ -429,7 +443,7 @@ describe("WindowTabs", () => {
     expect(screen.getByText("Invoice")).toBeInTheDocument();
   });
 
-  it("shows confirmation modal when closing a dirty window", () => {
+  it("marks the tab of a dirty window and leaves a clean one unmarked", () => {
     useWindowStore.setState({
       windows: {
         w1: {
@@ -441,6 +455,15 @@ describe("WindowTabs", () => {
           windowId: "w1",
           initialized: true,
         },
+        w2: {
+          windowIdentifier: "w2",
+          title: "Window 2",
+          isActive: false,
+          tabs: {},
+          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+          windowId: "w2",
+          initialized: true,
+        },
       },
       dirtyWindows: { w1: { "form:tab1": true } },
       cleanupWindow: mockCleanupWindow,
@@ -450,67 +473,92 @@ describe("WindowTabs", () => {
 
     render(<WindowTabs />);
 
-    fireEvent.click(screen.getByTestId("CloseButton"));
-
-    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
-    expect(mockCleanupWindow).not.toHaveBeenCalled();
+    const tabs = screen.getAllByTestId("WindowTab__c8117d");
+    expect(tabs[0]).toHaveAttribute("data-dirty", "true");
+    expect(tabs[1]).toHaveAttribute("data-dirty", "false");
   });
 
-  it("calls cleanupWindow when confirming dirty window close", () => {
-    useWindowStore.setState({
-      windows: {
-        w1: {
-          windowIdentifier: "w1",
-          title: "Window 1",
-          isActive: true,
-          tabs: {},
-          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
-          windowId: "w1",
-          initialized: true,
+  describe("closing a window with unsaved changes", () => {
+    /** One dirty window, which is what makes the close prompt appear. */
+    const seedDirtyWindow = () => {
+      useWindowStore.setState({
+        windows: {
+          w1: {
+            windowIdentifier: "w1",
+            title: "Window 1",
+            isActive: true,
+            tabs: {},
+            navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
+            windowId: "w1",
+            initialized: true,
+          },
         },
-      },
-      dirtyWindows: { w1: { "form:tab1": true } },
-      cleanupWindow: mockCleanupWindow,
-      setWindowActive: mockSetWindowActive,
-      setAllWindowsInactive: mockSetAllWindowsInactive,
+        dirtyWindows: { w1: { "form:tab1": true } },
+        cleanupWindow: mockCleanupWindow,
+        setWindowActive: mockSetWindowActive,
+        setAllWindowsInactive: mockSetAllWindowsInactive,
+      });
+    };
+
+    const openClosePrompt = () => {
+      seedDirtyWindow();
+      render(<WindowTabs />);
+      fireEvent.click(screen.getByTestId("CloseButton"));
+    };
+
+    it("asks instead of closing", () => {
+      openClosePrompt();
+
+      expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+      expect(mockCleanupWindow).not.toHaveBeenCalled();
     });
 
-    render(<WindowTabs />);
+    it("names both outcomes on its buttons", () => {
+      openClosePrompt();
 
-    fireEvent.click(screen.getByTestId("CloseButton"));
-    fireEvent.click(screen.getByTestId("ConfirmButton"));
-
-    expect(mockCleanupWindow).toHaveBeenCalledWith("w1");
-  });
-
-  it("keeps window visible when canceling dirty window close", () => {
-    useWindowStore.setState({
-      windows: {
-        w1: {
-          windowIdentifier: "w1",
-          title: "Window 1",
-          isActive: true,
-          tabs: {},
-          navigation: { activeLevels: [0], activeTabsByLevel: new Map(), initialized: false },
-          windowId: "w1",
-          initialized: true,
-        },
-      },
-      dirtyWindows: { w1: { "form:tab1": true } },
-      cleanupWindow: mockCleanupWindow,
-      setWindowActive: mockSetWindowActive,
-      setAllWindowsInactive: mockSetAllWindowsInactive,
+      expect(screen.getByTestId("SaveButton")).toHaveTextContent("unsavedChanges.saveChanges");
+      expect(screen.getByTestId("ConfirmButton")).toHaveTextContent("unsavedChanges.closeWindow");
     });
 
-    render(<WindowTabs />);
+    it("closes the window when the changes are discarded", () => {
+      openClosePrompt();
 
-    fireEvent.click(screen.getByTestId("CloseButton"));
-    expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId("ConfirmButton"));
 
-    fireEvent.click(screen.getByTestId("CancelButton"));
+      expect(mockCleanupWindow).toHaveBeenCalledWith("w1");
+    });
 
-    expect(screen.queryByTestId("ConfirmModal")).not.toBeInTheDocument();
-    expect(mockCleanupWindow).not.toHaveBeenCalled();
-    expect(screen.getByText("Window 1")).toBeInTheDocument();
+    it("saves the window and then closes it", async () => {
+      mockSaveWindow.mockResolvedValue(true);
+      openClosePrompt();
+
+      fireEvent.click(screen.getByTestId("SaveButton"));
+
+      await waitFor(() => expect(mockCleanupWindow).toHaveBeenCalledWith("w1"));
+      expect(mockSaveWindow).toHaveBeenCalledWith("w1");
+      expect(mockToastError).not.toHaveBeenCalled();
+    });
+
+    it("keeps the window open when the save fails", async () => {
+      mockSaveWindow.mockResolvedValue(false);
+      openClosePrompt();
+
+      fireEvent.click(screen.getByTestId("SaveButton"));
+
+      await waitFor(() => expect(mockToastError).toHaveBeenCalled());
+      expect(mockCleanupWindow).not.toHaveBeenCalled();
+      expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+    });
+
+    it("keeps the window visible when the prompt is cancelled", () => {
+      openClosePrompt();
+      expect(screen.getByTestId("ConfirmModal")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId("CancelButton"));
+
+      expect(screen.queryByTestId("ConfirmModal")).not.toBeInTheDocument();
+      expect(mockCleanupWindow).not.toHaveBeenCalled();
+      expect(screen.getByText("Window 1")).toBeInTheDocument();
+    });
   });
 });

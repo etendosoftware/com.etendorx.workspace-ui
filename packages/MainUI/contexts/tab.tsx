@@ -18,10 +18,12 @@
 import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { ToolbarProvider } from "./ToolbarContext";
+import UnsavedChangesTabGuardProvider from "./UnsavedChangesTabGuard";
 import { SearchProvider } from "./searchContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { createFormValuesStore, type FormValuesStore } from "./tabFormValuesStore";
 
 interface TabContextI {
   tab: Tab;
@@ -34,8 +36,9 @@ interface TabContextI {
   resetFormChanges: () => void;
   auxiliaryInputs: Record<string, string>;
   setAuxiliaryInputs: Dispatch<SetStateAction<Record<string, string>>>;
-  formValues: Record<string, unknown>;
-  setFormValues: Dispatch<SetStateAction<Record<string, unknown>>>;
+  /** Dirty form values, outside the context value so typing does not re-render every consumer. */
+  formValuesStore: FormValuesStore;
+  setFormValues: FormValuesStore["set"];
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -43,7 +46,7 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
   const [auxiliaryInputs, setAuxiliaryInputs] = useState<Record<string, string>>({});
-  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const [formValuesStore] = useState(createFormValuesStore);
 
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
@@ -66,8 +69,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       resetFormChanges,
       auxiliaryInputs,
       setAuxiliaryInputs,
-      formValues,
-      setFormValues,
+      formValuesStore,
+      setFormValues: formValuesStore.set,
     }),
     [
       parentRecord,
@@ -79,14 +82,16 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       markFormAsChanged,
       resetFormChanges,
       auxiliaryInputs,
-      formValues,
+      formValuesStore,
     ]
   );
 
   return (
     <TabContext.Provider value={value}>
       <ToolbarProvider data-testid="ToolbarProvider__24e3a6">
-        <SearchProvider data-testid="SearchProvider__24e3a6">{children}</SearchProvider>
+        <UnsavedChangesTabGuardProvider data-testid="UnsavedChangesTabGuardProvider__24e3a6">
+          <SearchProvider data-testid="SearchProvider__24e3a6">{children}</SearchProvider>
+        </UnsavedChangesTabGuardProvider>
       </ToolbarProvider>
     </TabContext.Provider>
   );

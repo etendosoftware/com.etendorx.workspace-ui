@@ -16,11 +16,16 @@
 
 // @data-testid-ignore
 "use client";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
 import { DEFAULT_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
+import { useDrawerHighlight } from "../DrawerHighlightContext";
+import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
+
+/** Ring painted on the entry the keyboard navigation is currently on. */
+const MENU_ITEM_HIGHLIGHT_CLASSES = "ring-2 ring-inset ring-blue-500";
 
 function getIconSrc(item: { icon?: string | null; type?: string }): string {
   if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;
@@ -83,9 +88,25 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 );
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
-  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive }) => {
+  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable }) => {
     const favoritesCtx = useFavoritesDrawer();
     const isFav = !!(favoritesCtx && item.windowId && favoritesCtx.isFavorite(item.windowId));
+    const highlightCtx = useDrawerHighlight();
+    const titleRef = useRef<HTMLDivElement>(null);
+
+    // An entry takes part in the keyboard navigation when clicking it does something:
+    // a folder that can be expanded, or a leaf that can be opened. During a search
+    // `isExpandable` is already false, so folders drop out on their own — they can
+    // neither be collapsed nor opened while the results are being shown.
+    const canToggle = Boolean(isExpandable && item.children?.length);
+    const isNavigable = canToggle || isOpenableMenuItem(item);
+    const isHighlighted = Boolean(isNavigable && highlightCtx && highlightCtx.highlightedItemId === item.id);
+    const highlightClasses = isHighlighted ? MENU_ITEM_HIGHLIGHT_CLASSES : "";
+
+    useEffect(() => {
+      if (!isHighlighted) return;
+      titleRef.current?.scrollIntoView?.({ block: "nearest" });
+    }, [isHighlighted]);
 
     const handleFavoriteClick = useCallback(
       (e: React.MouseEvent | React.KeyboardEvent) => {
@@ -112,12 +133,16 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
 
     return (
       <div
+        ref={titleRef}
         data-testid={`MenuTitle__${item.id ?? (item.name ? item.name.replace(/\s+/g, "-").toLowerCase() : "menu-title")}`}
+        {...(isNavigable ? { [MENU_ITEM_ID_ATTRIBUTE]: item.id } : {})}
+        data-highlighted={isHighlighted || undefined}
+        aria-current={isHighlighted || undefined}
         role="button"
         tabIndex={0}
         onClick={onClick}
         onKeyDown={handleTitleKeyDown}
-        className={getMenuButtonClassName(open, selected, isParentActive)}>
+        className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
             <span className="text-base">

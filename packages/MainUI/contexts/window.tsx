@@ -30,6 +30,8 @@ import {
 } from "@/utils/window/constants";
 import { buildWindowsUrlParams } from "@/utils/url/utils";
 import { useGlobalUrlStateRecovery } from "@/hooks/useGlobalUrlStateRecovery";
+import { useUnsavedChangesBeforeUnload } from "@/hooks/useUnsavedChangesBeforeUnload";
+import UnsavedChangesWindowsModal from "@/components/UnsavedChanges/UnsavedChangesWindowsModal";
 import { useWindowStore, DEFAULT_TABLE_STATE, DEFAULT_NAVIGATION_STATE } from "@/stores/windowStore";
 
 // Re-export types consumed by the rest of the codebase
@@ -48,6 +50,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery } = useGlobalUrlStateRecovery();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Native browser warning while any window holds unsaved changes. A custom modal is
+  // impossible on unload, so this is the one exit point that uses the browser dialog.
+  useUnsavedChangesBeforeUnload();
 
   // Sync hook-provided recovery values into the store on every change
   useEffect(() => {
@@ -115,7 +121,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
   }, [windows, router, searchParams, isRecoveryLoading, recoveredWindows.length]);
 
-  return <FocusProvider data-testid="FocusProvider__77fd99">{children}</FocusProvider>;
+  return (
+    <FocusProvider data-testid="FocusProvider__77fd99">
+      {children}
+      <UnsavedChangesWindowsModal data-testid="UnsavedChangesWindowsModal__77fd99" />
+    </FocusProvider>
+  );
 }
 
 // ---------------------------------------------------------------------------

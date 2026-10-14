@@ -153,6 +153,9 @@ function useWindowStoreMock<T>(selector: (state: typeof mockWindowStoreState) =>
 useWindowStoreMock.getState = () => mockWindowStoreState;
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: useWindowStoreMock,
+  // Consumed by useFormSectionsPersistenceTab as the fallback when a tab has no
+  // stored preference yet, so the mock must provide it like the real module.
+  DEFAULT_EXPANDED_SECTIONS: [],
 }));
 
 jest.mock("@/hooks/useFormFields", () => ({

@@ -18,6 +18,7 @@
 import type { CSSProperties } from "react";
 import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
 import type { SplitViewState } from "@/utils/window/constants";
+import { FORM_FIELDS_ROOT_ATTRIBUTE, findFirstFocusableFieldControl } from "@/utils/form/focus";
 
 /**
  * The four ways a tab can lay out its grid and form panes.
@@ -196,14 +197,20 @@ export const getPaneTabIndex = (mode: TabViewMode): number | undefined => {
 
 /**
  * Element that receives the DOM focus when a pane takes over the keyboard: the
- * marked descendant when the pane declares one, the pane container otherwise.
- * Focusing the container is enough for sequential navigation, since the browser
- * continues from there into the pane's first focusable descendant.
+ * marked descendant when the pane declares one (the grid), then the first
+ * editable field when the pane holds a form, and the pane container as a last
+ * resort. Focusing the container is enough for sequential navigation, since the
+ * browser continues from there into the pane's first focusable descendant.
  */
 export const resolvePaneFocusTarget = (paneElement: HTMLElement): HTMLElement => {
   const marked = paneElement.querySelector<HTMLElement>(`[${GRID_FOCUS_TARGET_ATTRIBUTE}]`);
   if (marked) {
     return marked;
+  }
+  const fieldsRoot = paneElement.querySelector<HTMLElement>(`[${FORM_FIELDS_ROOT_ATTRIBUTE}]`);
+  const firstField = findFirstFocusableFieldControl(fieldsRoot);
+  if (firstField) {
+    return firstField;
   }
   return paneElement;
 };
@@ -294,6 +301,57 @@ export const resolveSplitViewFormRecord = ({
     return undefined;
   }
   return selectedRecordId;
+};
+
+/**
+ * Whether the split-view form pane is being asked to leave a record it still has
+ * unsaved edits on, which is what `resolveSplitViewFormRecord` refuses to do silently.
+ *
+ * Kept separate from that resolver so the caller can tell "nothing to do" apart from
+ * "needs the user to decide".
+ */
+export const shouldPromptSplitViewChange = ({
+  isSplitView,
+  selectedRecordId,
+  currentRecordId,
+  isDirty,
+}: {
+  isSplitView: boolean;
+  selectedRecordId: string | undefined;
+  currentRecordId: string;
+  isDirty: boolean;
+}): boolean => {
+  if (!isSplitView || !selectedRecordId) {
+    return false;
+  }
+  if (selectedRecordId === currentRecordId) {
+    return false;
+  }
+  return isDirty;
+};
+
+/**
+ * Record the split-view form must load once the user answered the unsaved-changes prompt.
+ *
+ * The live grid selection cannot be trusted on its own: a successful save re-selects the
+ * record it just saved (`FormView.onSuccess`), which is the record the form is already
+ * showing, so following it would silently ignore the click that opened the prompt. When
+ * the selection points anywhere else the user moved it while the prompt was open, and that
+ * newer choice wins.
+ */
+export const resolveGuardedSplitTarget = ({
+  latestSelection,
+  promptedSelection,
+  formRecordId,
+}: {
+  latestSelection: string | undefined;
+  promptedSelection: string;
+  formRecordId: string | undefined;
+}): string => {
+  if (latestSelection && latestSelection !== formRecordId) {
+    return latestSelection;
+  }
+  return promptedSelection;
 };
 
 /** Inline style that seeds the grid-width CSS variable on the panes container. */

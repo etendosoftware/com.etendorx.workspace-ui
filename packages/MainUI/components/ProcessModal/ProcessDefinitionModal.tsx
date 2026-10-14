@@ -215,11 +215,22 @@ interface EvaluateWindowReferenceDisplayOptions {
   session: Record<string, unknown>;
   recordValues: Record<string, unknown>;
   parentFields?: Record<string, Field>;
+  /** AD window id, so display logic resolves window-scoped preferences. */
+  windowId?: string;
 }
 
 const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayOptions): boolean => {
-  const { parameter, logicFields, formValues, availableFormData, parameters, session, recordValues, parentFields } =
-    options;
+  const {
+    parameter,
+    logicFields,
+    formValues,
+    availableFormData,
+    parameters,
+    session,
+    recordValues,
+    parentFields,
+    windowId,
+  } = options;
   let isDisplayed = true;
   const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
 
@@ -238,9 +249,10 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
           recordValues,
           parentFields,
           session,
+          windowId,
         });
 
-        isDisplayed = toClassicBoolean(compiledExpr(smartContext, smartContext));
+        isDisplayed = toClassicBoolean(compiledExpr(smartContext, smartContext, windowId));
       } catch (error) {
         logger.warn(`Error evaluating display logic for ${parameter.name}`, error);
       }
@@ -325,8 +337,16 @@ function ProcessDefinitionModalContent({
   // Build the reusable process script context (auth-aware HTTP helpers)
   // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
   const processScriptContext = useMemo(
-    () => buildProcessScriptContext({ token: token || "", getCsrfToken, getLabel, language, user }),
-    [token, getCsrfToken, getLabel, language, user]
+    () =>
+      buildProcessScriptContext({
+        token: token || "",
+        getCsrfToken,
+        getLabel,
+        language,
+        user,
+        windowId: tab?.window,
+      }),
+    [token, getCsrfToken, getLabel, language, user, tab?.window]
   );
 
   // Shared module scope: when em_etmeta_payscript_logic holds a JS module body
@@ -669,7 +689,7 @@ function ProcessDefinitionModalContent({
         ...initialState,
         _processId: processId,
       };
-      const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+      const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined, windowId);
       Object.assign(combined, evaluatedDefaults);
       seedBooleanParameterDefaults(combined, parameters);
       seedSessionColumnDefaults(combined, parameters, session || {});
@@ -707,7 +727,7 @@ function ProcessDefinitionModalContent({
       _processId: processId,
     };
 
-    const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+    const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined, windowId);
     Object.assign(combined, evaluatedDefaults);
     seedBooleanParameterDefaults(combined, parameters);
     seedSessionColumnDefaults(combined, parameters, session || {});
@@ -799,8 +819,9 @@ function ProcessDefinitionModalContent({
       recordValues: recordValues || {},
       parentFields: tab?.fields,
       session,
+      windowId,
     });
-    return isParameterDisplayed({ parameter, logicFields, values: formValues, evaluationContext });
+    return isParameterDisplayed({ parameter, logicFields, values: formValues, evaluationContext, windowId });
   };
 
   // Imperative bridge backing the form-item API (item.setRequired / setDisabled /
@@ -1658,6 +1679,7 @@ function ProcessDefinitionModalContent({
           session,
           recordValues: recordValues || {},
           parentFields: tab?.fields,
+          windowId,
         });
       }
       return true;
@@ -1672,6 +1694,7 @@ function ProcessDefinitionModalContent({
       session,
       recordValues,
       tab?.fields,
+      windowId,
     ]
   );
 
@@ -1688,6 +1711,7 @@ function ProcessDefinitionModalContent({
       onFileChange={handleFileChange}
       values={formValues}
       processId={processId}
+      windowId={windowId}
       data-testid="ProcessParameterSelector__761503"
     />
   );

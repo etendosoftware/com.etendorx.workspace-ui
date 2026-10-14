@@ -1,0 +1,4149 @@
+{
+  "label": "local-classic-cpu1x",
+  "flavor": "classic",
+  "base": "http://localhost:8080/etendo",
+  "date": "2026-10-01T18:45:46.497Z",
+  "runs": 3,
+  "cpuThrottle": 1,
+  "windows": [
+    "Sales Order",
+    "Sales Invoice",
+    "Goods Shipment",
+    "Purchase Order"
+  ],
+  "totals": {
+    "visibleMs": 9630,
+    "settledMs": 9721,
+    "interactiveMs": 9721,
+    "longTasks": 18,
+    "longTaskMs": 2021,
+    "blockingMs": 1121,
+    "maxLongTaskMs": 2021,
+    "requests": 818,
+    "apiRequests": 128,
+    "bytes": 33724924,
+    "apiBytes": 7847306,
+    "apiWaitMs": 3352,
+    "failed": 0
+  },
+  "flows": {
+    "Sales Order / login": {
+      "visibleMs": 338,
+      "settledMs": 338,
+      "interactiveMs": 338,
+      "longTasks": 1,
+      "longTaskMs": 52,
+      "blockingMs": 2,
+      "maxLongTaskMs": 52,
+      "requests": 47,
+      "apiRequests": 10,
+      "bytes": 7239297,
+      "apiBytes": 901107,
+      "apiWaitMs": 251,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/security/Login": {
+          "count": 1,
+          "bytes": 11478,
+          "waitMs": 11,
+          "durMs": 11
+        },
+        "POST /etendo/secureApp/LoginHandler.html": {
+          "count": 1,
+          "bytes": 525,
+          "waitMs": 15,
+          "durMs": 15
+        },
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 10,
+          "durMs": 10
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 452485,
+          "waitMs": 75,
+          "durMs": 76
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 73,
+          "durMs": 75
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 56,
+          "durMs": 57
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 9394,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 2735,
+          "waitMs": 2,
+          "durMs": 3
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 93228,
+          "waitMs": 9,
+          "durMs": 11
+        }
+      }
+    },
+    "Sales Order / open-cold": {
+      "visibleMs": 548,
+      "settledMs": 548,
+      "interactiveMs": 548,
+      "longTasks": 1,
+      "longTaskMs": 147,
+      "blockingMs": 97,
+      "maxLongTaskMs": 147,
+      "requests": 50,
+      "apiRequests": 4,
+      "bytes": 435938,
+      "apiBytes": 375869,
+      "apiWaitMs": 309,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 558,
+          "waitMs": 6,
+          "durMs": 8
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 373647,
+          "waitMs": 258,
+          "durMs": 259
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 1423,
+          "waitMs": 30,
+          "durMs": 31
+        },
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 5,
+          "durMs": 6
+        }
+      }
+    },
+    "Sales Order / reload-warm": {
+      "visibleMs": 698,
+      "settledMs": 698,
+      "interactiveMs": 698,
+      "longTasks": 1,
+      "longTaskMs": 185,
+      "blockingMs": 135,
+      "maxLongTaskMs": 185,
+      "requests": 78,
+      "apiRequests": 14,
+      "bytes": 527849,
+      "apiBytes": 521405,
+      "apiWaitMs": 167,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 3,
+          "durMs": 4
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 2,
+          "durMs": 3
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 325551,
+          "waitMs": 93,
+          "durMs": 94
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 167,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 186583,
+          "waitMs": 20,
+          "durMs": 23
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 3,
+          "durMs": 3
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 2846,
+          "waitMs": 49,
+          "durMs": 50
+        },
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 13,
+          "durMs": 13
+        }
+      }
+    },
+    "Sales Order / load-unfiltered": {
+      "visibleMs": 640,
+      "settledMs": 640,
+      "interactiveMs": 640,
+      "longTasks": 1,
+      "longTaskMs": 50,
+      "blockingMs": 0,
+      "maxLongTaskMs": 50,
+      "requests": 14,
+      "apiRequests": 1,
+      "bytes": 226648,
+      "apiBytes": 196737,
+      "apiWaitMs": 50,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 196737,
+          "waitMs": 50,
+          "durMs": 51
+        }
+      }
+    },
+    "Sales Order / open-record": {
+      "visibleMs": 179,
+      "settledMs": 179,
+      "interactiveMs": 179,
+      "longTasks": 1,
+      "longTaskMs": 117,
+      "blockingMs": 67,
+      "maxLongTaskMs": 117,
+      "requests": 14,
+      "apiRequests": 3,
+      "bytes": 63535,
+      "apiBytes": 27609,
+      "apiWaitMs": 86,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 9694,
+          "waitMs": 69,
+          "durMs": 70
+        },
+        "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+          "count": 1,
+          "bytes": 17915,
+          "waitMs": 16,
+          "durMs": 17
+        }
+      }
+    },
+    "Sales Invoice / login": {
+      "visibleMs": 362,
+      "settledMs": 362,
+      "interactiveMs": 362,
+      "longTasks": 1,
+      "longTaskMs": 51,
+      "blockingMs": 1,
+      "maxLongTaskMs": 51,
+      "requests": 47,
+      "apiRequests": 10,
+      "bytes": 7239297,
+      "apiBytes": 901107,
+      "apiWaitMs": 268,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/security/Login": {
+          "count": 1,
+          "bytes": 11478,
+          "waitMs": 13,
+          "durMs": 13
+        },
+        "POST /etendo/secureApp/LoginHandler.html": {
+          "count": 1,
+          "bytes": 525,
+          "waitMs": 17,
+          "durMs": 17
+        },
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 12,
+          "durMs": 12
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 452485,
+          "waitMs": 77,
+          "durMs": 78
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 75,
+          "durMs": 77
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 59,
+          "durMs": 60
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 9394,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 2735,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 93228,
+          "waitMs": 8,
+          "durMs": 9
+        }
+      }
+    },
+    "Sales Invoice / open-cold": {
+      "visibleMs": 672,
+      "settledMs": 672,
+      "interactiveMs": 672,
+      "longTasks": 1,
+      "longTaskMs": 173,
+      "blockingMs": 123,
+      "maxLongTaskMs": 173,
+      "requests": 50,
+      "apiRequests": 4,
+      "bytes": 487571,
+      "apiBytes": 427502,
+      "apiWaitMs": 397,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 564,
+          "waitMs": 6,
+          "durMs": 7
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 425033,
+          "waitMs": 352,
+          "durMs": 353
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 1664,
+          "waitMs": 35,
+          "durMs": 35
+        },
+        "POST /etendo/org.openbravo.service.datasource/Invoice": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 5,
+          "durMs": 6
+        }
+      }
+    },
+    "Sales Invoice / reload-warm": {
+      "visibleMs": 752,
+      "settledMs": 752,
+      "interactiveMs": 752,
+      "longTasks": 1,
+      "longTaskMs": 249,
+      "blockingMs": 199,
+      "maxLongTaskMs": 249,
+      "requests": 81,
+      "apiRequests": 14,
+      "bytes": 528337,
+      "apiBytes": 521893,
+      "apiWaitMs": 157,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 3,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 5,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 3,
+          "durMs": 4
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 66,
+          "durMs": 68
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 167,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 186589,
+          "waitMs": 13,
+          "durMs": 15
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 10,
+          "durMs": 10
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 3328,
+          "waitMs": 50,
+          "durMs": 51
+        },
+        "POST /etendo/org.openbravo.service.datasource/Invoice": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 4,
+          "durMs": 5
+        }
+      }
+    },
+    "Sales Invoice / load-unfiltered": {
+      "visibleMs": 628,
+      "settledMs": 628,
+      "interactiveMs": 628,
+      "longTasks": 1,
+      "longTaskMs": 54,
+      "blockingMs": 4,
+      "maxLongTaskMs": 54,
+      "requests": 14,
+      "apiRequests": 1,
+      "bytes": 251279,
+      "apiBytes": 221368,
+      "apiWaitMs": 37,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.service.datasource/Invoice": {
+          "count": 1,
+          "bytes": 221368,
+          "waitMs": 37,
+          "durMs": 38
+        }
+      }
+    },
+    "Sales Invoice / open-record": {
+      "visibleMs": 224,
+      "settledMs": 224,
+      "interactiveMs": 224,
+      "longTasks": 1,
+      "longTaskMs": 136,
+      "blockingMs": 86,
+      "maxLongTaskMs": 136,
+      "requests": 13,
+      "apiRequests": 3,
+      "bytes": 56691,
+      "apiBytes": 28819,
+      "apiWaitMs": 84,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 13480,
+          "waitMs": 66,
+          "durMs": 68
+        },
+        "POST /etendo/org.openbravo.service.datasource/InvoiceLine": {
+          "count": 1,
+          "bytes": 15339,
+          "waitMs": 19,
+          "durMs": 20
+        }
+      }
+    },
+    "Sales Invoice / type-10-chars": {
+      "visibleMs": 52,
+      "settledMs": 52,
+      "interactiveMs": 52,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 2,
+      "apiRequests": 0,
+      "bytes": 1318,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Goods Shipment / login": {
+      "visibleMs": 366,
+      "settledMs": 366,
+      "interactiveMs": 366,
+      "longTasks": 1,
+      "longTaskMs": 51,
+      "blockingMs": 1,
+      "maxLongTaskMs": 51,
+      "requests": 47,
+      "apiRequests": 10,
+      "bytes": 7239297,
+      "apiBytes": 901107,
+      "apiWaitMs": 279,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/security/Login": {
+          "count": 1,
+          "bytes": 11478,
+          "waitMs": 10,
+          "durMs": 11
+        },
+        "POST /etendo/secureApp/LoginHandler.html": {
+          "count": 1,
+          "bytes": 525,
+          "waitMs": 15,
+          "durMs": 16
+        },
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 11,
+          "durMs": 12
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 452485,
+          "waitMs": 82,
+          "durMs": 84
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 79,
+          "durMs": 82
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 70,
+          "durMs": 71
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 9394,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 2735,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 93228,
+          "waitMs": 8,
+          "durMs": 9
+        }
+      }
+    },
+    "Goods Shipment / open-cold": {
+      "visibleMs": 419,
+      "settledMs": 419,
+      "interactiveMs": 419,
+      "longTasks": 1,
+      "longTaskMs": 106,
+      "blockingMs": 56,
+      "maxLongTaskMs": 106,
+      "requests": 49,
+      "apiRequests": 4,
+      "bytes": 235299,
+      "apiBytes": 175937,
+      "apiWaitMs": 198,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 564,
+          "waitMs": 4,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 173928,
+          "waitMs": 175,
+          "durMs": 177
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 1204,
+          "waitMs": 15,
+          "durMs": 16
+        },
+        "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 4,
+          "durMs": 5
+        }
+      }
+    },
+    "Goods Shipment / reload-warm": {
+      "visibleMs": 614,
+      "settledMs": 614,
+      "interactiveMs": 614,
+      "longTasks": 1,
+      "longTaskMs": 124,
+      "blockingMs": 74,
+      "maxLongTaskMs": 124,
+      "requests": 77,
+      "apiRequests": 14,
+      "bytes": 527417,
+      "apiBytes": 520973,
+      "apiWaitMs": 131,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 4,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 5,
+          "durMs": 6
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 3,
+          "durMs": 4
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 325959,
+          "waitMs": 64,
+          "durMs": 65
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 1,
+          "durMs": 1
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 167,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 186589,
+          "waitMs": 12,
+          "durMs": 16
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 3,
+          "durMs": 4
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 2408,
+          "waitMs": 32,
+          "durMs": 34
+        },
+        "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 4,
+          "durMs": 5
+        }
+      }
+    },
+    "Goods Shipment / load-unfiltered": {
+      "visibleMs": 624,
+      "settledMs": 624,
+      "interactiveMs": 624,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 14,
+      "apiRequests": 1,
+      "bytes": 189377,
+      "apiBytes": 159466,
+      "apiWaitMs": 39,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+          "count": 1,
+          "bytes": 159466,
+          "waitMs": 39,
+          "durMs": 41
+        }
+      }
+    },
+    "Goods Shipment / open-record": {
+      "visibleMs": 135,
+      "settledMs": 135,
+      "interactiveMs": 135,
+      "longTasks": 1,
+      "longTaskMs": 85,
+      "blockingMs": 35,
+      "maxLongTaskMs": 85,
+      "requests": 16,
+      "apiRequests": 3,
+      "bytes": 62520,
+      "apiBytes": 25011,
+      "apiWaitMs": 82,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 7069,
+          "waitMs": 41,
+          "durMs": 43
+        },
+        "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOutLine": {
+          "count": 1,
+          "bytes": 17942,
+          "waitMs": 25,
+          "durMs": 26
+        }
+      }
+    },
+    "Goods Shipment / type-10-chars": {
+      "visibleMs": 44,
+      "settledMs": 44,
+      "interactiveMs": 44,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 2,
+      "apiRequests": 0,
+      "bytes": 1318,
+      "apiBytes": 0,
+      "apiWaitMs": 0,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {}
+    },
+    "Purchase Order / login": {
+      "visibleMs": 356,
+      "settledMs": 356,
+      "interactiveMs": 356,
+      "longTasks": 1,
+      "longTaskMs": 51,
+      "blockingMs": 1,
+      "maxLongTaskMs": 51,
+      "requests": 47,
+      "apiRequests": 10,
+      "bytes": 7239297,
+      "apiBytes": 901107,
+      "apiWaitMs": 264,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/security/Login": {
+          "count": 1,
+          "bytes": 11478,
+          "waitMs": 11,
+          "durMs": 12
+        },
+        "POST /etendo/secureApp/LoginHandler.html": {
+          "count": 1,
+          "bytes": 525,
+          "waitMs": 22,
+          "durMs": 23
+        },
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 12,
+          "durMs": 13
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 452485,
+          "waitMs": 76,
+          "durMs": 77
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 73,
+          "durMs": 76
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 61,
+          "durMs": 62
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 9394,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 2735,
+          "waitMs": 1,
+          "durMs": 2
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 93228,
+          "waitMs": 9,
+          "durMs": 12
+        }
+      }
+    },
+    "Purchase Order / open-cold": {
+      "visibleMs": 534,
+      "settledMs": 534,
+      "interactiveMs": 534,
+      "longTasks": 1,
+      "longTaskMs": 123,
+      "blockingMs": 73,
+      "maxLongTaskMs": 123,
+      "requests": 50,
+      "apiRequests": 4,
+      "bytes": 389226,
+      "apiBytes": 329157,
+      "apiWaitMs": 305,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 564,
+          "waitMs": 5,
+          "durMs": 6
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 327049,
+          "waitMs": 269,
+          "durMs": 271
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 1,
+          "bytes": 1303,
+          "waitMs": 26,
+          "durMs": 27
+        },
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 5,
+          "durMs": 5
+        }
+      }
+    },
+    "Purchase Order / reload-warm": {
+      "visibleMs": 652,
+      "settledMs": 652,
+      "interactiveMs": 652,
+      "longTasks": 1,
+      "longTaskMs": 172,
+      "blockingMs": 122,
+      "maxLongTaskMs": 172,
+      "requests": 78,
+      "apiRequests": 14,
+      "bytes": 527615,
+      "apiBytes": 521171,
+      "apiWaitMs": 145,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "GET /etendo/": {
+          "count": 1,
+          "bytes": 4067,
+          "waitMs": 4,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 4,
+          "durMs": 5
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+          "count": 1,
+          "bytes": 395,
+          "waitMs": 3,
+          "durMs": 3
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+          "count": 1,
+          "bytes": 326800,
+          "waitMs": 53,
+          "durMs": 54
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 1,
+          "durMs": 1
+        },
+        "GET /etendo/utility/ShowImageLogo": {
+          "count": 1,
+          "bytes": 167,
+          "waitMs": 1,
+          "durMs": 1
+        },
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 4,
+          "bytes": 186589,
+          "waitMs": 12,
+          "durMs": 14
+        },
+        "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+          "count": 1,
+          "bytes": 102,
+          "waitMs": 2,
+          "durMs": 2
+        },
+        "GET /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 2606,
+          "waitMs": 35,
+          "durMs": 37
+        },
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 241,
+          "waitMs": 5,
+          "durMs": 5
+        }
+      }
+    },
+    "Purchase Order / load-unfiltered": {
+      "visibleMs": 625,
+      "settledMs": 625,
+      "interactiveMs": 625,
+      "longTasks": 0,
+      "longTaskMs": 0,
+      "blockingMs": 0,
+      "maxLongTaskMs": 0,
+      "requests": 14,
+      "apiRequests": 1,
+      "bytes": 203570,
+      "apiBytes": 173659,
+      "apiWaitMs": 34,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.service.datasource/Order": {
+          "count": 1,
+          "bytes": 173659,
+          "waitMs": 34,
+          "durMs": 35
+        }
+      }
+    },
+    "Purchase Order / open-record": {
+      "visibleMs": 168,
+      "settledMs": 259,
+      "interactiveMs": 259,
+      "longTasks": 1,
+      "longTaskMs": 95,
+      "blockingMs": 45,
+      "maxLongTaskMs": 95,
+      "requests": 14,
+      "apiRequests": 3,
+      "bytes": 52228,
+      "apiBytes": 16302,
+      "apiWaitMs": 69,
+      "failed": 0,
+      "runs": 3,
+      "byEndpoint": {
+        "POST /etendo/org.openbravo.client.kernel": {
+          "count": 2,
+          "bytes": 9189,
+          "waitMs": 53,
+          "durMs": 54
+        },
+        "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+          "count": 1,
+          "bytes": 7113,
+          "waitMs": 16,
+          "durMs": 17
+        }
+      }
+    }
+  },
+  "raw": {
+    "Sales Order / login": [
+      {
+        "name": "login",
+        "visibleMs": 607,
+        "settledMs": 607,
+        "interactiveMs": 607,
+        "longTasks": 1,
+        "longTaskMs": 72,
+        "blockingMs": 22,
+        "maxLongTaskMs": 72,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7238048,
+        "apiBytes": 899858,
+        "apiWaitMs": 492,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 28,
+            "durMs": 33
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 36,
+            "durMs": 37
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 21,
+            "durMs": 22
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 154,
+            "durMs": 155
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 151,
+            "durMs": 154
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325551,
+            "waitMs": 79,
+            "durMs": 80
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 3,
+            "durMs": 3
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 14,
+            "durMs": 15
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 338,
+        "settledMs": 338,
+        "interactiveMs": 338,
+        "longTasks": 1,
+        "longTaskMs": 52,
+        "blockingMs": 2,
+        "maxLongTaskMs": 52,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 251,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 11,
+            "durMs": 11
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 15,
+            "durMs": 15
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 10,
+            "durMs": 10
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 75,
+            "durMs": 76
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 73,
+            "durMs": 75
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 56,
+            "durMs": 57
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 9,
+            "durMs": 11
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 305,
+        "settledMs": 305,
+        "interactiveMs": 305,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 169,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 8,
+            "durMs": 8
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 14,
+            "durMs": 14
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 17,
+            "durMs": 17
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 30,
+            "durMs": 31
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 27,
+            "durMs": 30
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 62,
+            "durMs": 63
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 9,
+            "durMs": 12
+          }
+        }
+      }
+    ],
+    "Sales Order / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 767,
+        "settledMs": 767,
+        "interactiveMs": 767,
+        "longTasks": 1,
+        "longTaskMs": 153,
+        "blockingMs": 103,
+        "maxLongTaskMs": 153,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 435938,
+        "apiBytes": 375869,
+        "apiWaitMs": 548,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 558,
+            "waitMs": 5,
+            "durMs": 7
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 373647,
+            "waitMs": 492,
+            "durMs": 494
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1423,
+            "waitMs": 42,
+            "durMs": 42
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 8,
+            "durMs": 9
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 542,
+        "settledMs": 542,
+        "interactiveMs": 542,
+        "longTasks": 1,
+        "longTaskMs": 139,
+        "blockingMs": 89,
+        "maxLongTaskMs": 139,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 435938,
+        "apiBytes": 375869,
+        "apiWaitMs": 309,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 558,
+            "waitMs": 4,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 373647,
+            "waitMs": 273,
+            "durMs": 274
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1423,
+            "waitMs": 26,
+            "durMs": 26
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 7,
+            "durMs": 8
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 548,
+        "settledMs": 548,
+        "interactiveMs": 548,
+        "longTasks": 1,
+        "longTaskMs": 147,
+        "blockingMs": 97,
+        "maxLongTaskMs": 147,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 435938,
+        "apiBytes": 375869,
+        "apiWaitMs": 298,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 558,
+            "waitMs": 6,
+            "durMs": 8
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 373647,
+            "waitMs": 258,
+            "durMs": 259
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1423,
+            "waitMs": 30,
+            "durMs": 31
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 6
+          }
+        }
+      }
+    ],
+    "Sales Order / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 698,
+        "settledMs": 698,
+        "interactiveMs": 698,
+        "longTasks": 1,
+        "longTaskMs": 185,
+        "blockingMs": 135,
+        "maxLongTaskMs": 185,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 526600,
+        "apiBytes": 520156,
+        "apiWaitMs": 191,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325551,
+            "waitMs": 93,
+            "durMs": 94
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186583,
+            "waitMs": 20,
+            "durMs": 23
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 3,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2846,
+            "waitMs": 49,
+            "durMs": 50
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 13,
+            "durMs": 13
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 711,
+        "settledMs": 711,
+        "interactiveMs": 711,
+        "longTasks": 1,
+        "longTaskMs": 196,
+        "blockingMs": 146,
+        "maxLongTaskMs": 196,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 527849,
+        "apiBytes": 521405,
+        "apiWaitMs": 167,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 7,
+            "durMs": 8
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 8,
+            "durMs": 9
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 72,
+            "durMs": 73
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186583,
+            "waitMs": 17,
+            "durMs": 19
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 9,
+            "durMs": 9
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2846,
+            "waitMs": 41,
+            "durMs": 42
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 7,
+            "durMs": 7
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 661,
+        "settledMs": 661,
+        "interactiveMs": 661,
+        "longTasks": 1,
+        "longTaskMs": 185,
+        "blockingMs": 135,
+        "maxLongTaskMs": 185,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 527849,
+        "apiBytes": 521405,
+        "apiWaitMs": 136,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 7,
+            "durMs": 8
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 47,
+            "durMs": 48
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186583,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 4,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2846,
+            "waitMs": 45,
+            "durMs": 46
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 12,
+            "durMs": 12
+          }
+        }
+      }
+    ],
+    "Sales Order / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 666,
+        "settledMs": 666,
+        "interactiveMs": 666,
+        "longTasks": 1,
+        "longTaskMs": 50,
+        "blockingMs": 0,
+        "maxLongTaskMs": 50,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 226648,
+        "apiBytes": 196737,
+        "apiWaitMs": 74,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 196737,
+            "waitMs": 74,
+            "durMs": 75
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 640,
+        "settledMs": 640,
+        "interactiveMs": 640,
+        "longTasks": 1,
+        "longTaskMs": 53,
+        "blockingMs": 3,
+        "maxLongTaskMs": 53,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 226648,
+        "apiBytes": 196737,
+        "apiWaitMs": 50,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 196737,
+            "waitMs": 50,
+            "durMs": 51
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 626,
+        "settledMs": 626,
+        "interactiveMs": 626,
+        "longTasks": 1,
+        "longTaskMs": 50,
+        "blockingMs": 0,
+        "maxLongTaskMs": 50,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 226648,
+        "apiBytes": 196737,
+        "apiWaitMs": 43,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 196737,
+            "waitMs": 43,
+            "durMs": 44
+          }
+        }
+      }
+    ],
+    "Sales Order / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 206,
+        "settledMs": 206,
+        "interactiveMs": 206,
+        "longTasks": 1,
+        "longTaskMs": 121,
+        "blockingMs": 71,
+        "maxLongTaskMs": 121,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 63535,
+        "apiBytes": 27609,
+        "apiWaitMs": 76,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9694,
+            "waitMs": 59,
+            "durMs": 61
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 17915,
+            "waitMs": 17,
+            "durMs": 17
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 154,
+        "settledMs": 154,
+        "interactiveMs": 154,
+        "longTasks": 1,
+        "longTaskMs": 117,
+        "blockingMs": 67,
+        "maxLongTaskMs": 117,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 63535,
+        "apiBytes": 27609,
+        "apiWaitMs": 115,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9694,
+            "waitMs": 94,
+            "durMs": 96
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 17915,
+            "waitMs": 21,
+            "durMs": 22
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 179,
+        "settledMs": 179,
+        "interactiveMs": 179,
+        "longTasks": 1,
+        "longTaskMs": 108,
+        "blockingMs": 58,
+        "maxLongTaskMs": 108,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 63535,
+        "apiBytes": 27609,
+        "apiWaitMs": 86,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9694,
+            "waitMs": 69,
+            "durMs": 70
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 17915,
+            "waitMs": 16,
+            "durMs": 17
+          }
+        }
+      }
+    ],
+    "Sales Invoice / login": [
+      {
+        "name": "login",
+        "visibleMs": 346,
+        "settledMs": 346,
+        "interactiveMs": 346,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7238456,
+        "apiBytes": 900266,
+        "apiWaitMs": 268,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 8,
+            "durMs": 8
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 20,
+            "durMs": 21
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 11,
+            "durMs": 11
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 79,
+            "durMs": 80
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 77,
+            "durMs": 79
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325959,
+            "waitMs": 60,
+            "durMs": 61
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 8,
+            "durMs": 9
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 388,
+        "settledMs": 388,
+        "interactiveMs": 388,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 307,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 12,
+            "durMs": 12
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 25,
+            "durMs": 25
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 16,
+            "durMs": 16
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 85,
+            "durMs": 86
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 82,
+            "durMs": 85
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 75,
+            "durMs": 76
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 8,
+            "durMs": 10
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 362,
+        "settledMs": 362,
+        "interactiveMs": 362,
+        "longTasks": 1,
+        "longTaskMs": 52,
+        "blockingMs": 2,
+        "maxLongTaskMs": 52,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 264,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 13,
+            "durMs": 13
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 17,
+            "durMs": 17
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 12,
+            "durMs": 12
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 77,
+            "durMs": 78
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 75,
+            "durMs": 77
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 59,
+            "durMs": 60
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 8,
+            "durMs": 9
+          }
+        }
+      }
+    ],
+    "Sales Invoice / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 713,
+        "settledMs": 713,
+        "interactiveMs": 713,
+        "longTasks": 1,
+        "longTaskMs": 171,
+        "blockingMs": 121,
+        "maxLongTaskMs": 171,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 487571,
+        "apiBytes": 427502,
+        "apiWaitMs": 448,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 7,
+            "durMs": 8
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 425033,
+            "waitMs": 396,
+            "durMs": 397
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1664,
+            "waitMs": 37,
+            "durMs": 38
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 9,
+            "durMs": 10
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 672,
+        "settledMs": 672,
+        "interactiveMs": 672,
+        "longTasks": 1,
+        "longTaskMs": 173,
+        "blockingMs": 123,
+        "maxLongTaskMs": 173,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 487571,
+        "apiBytes": 427502,
+        "apiWaitMs": 397,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 425033,
+            "waitMs": 352,
+            "durMs": 353
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1664,
+            "waitMs": 35,
+            "durMs": 35
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 6
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 600,
+        "settledMs": 600,
+        "interactiveMs": 600,
+        "longTasks": 1,
+        "longTaskMs": 177,
+        "blockingMs": 127,
+        "maxLongTaskMs": 177,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 487571,
+        "apiBytes": 427502,
+        "apiWaitMs": 320,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 425033,
+            "waitMs": 279,
+            "durMs": 280
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1664,
+            "waitMs": 32,
+            "durMs": 32
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 6
+          }
+        }
+      }
+    ],
+    "Sales Invoice / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 768,
+        "settledMs": 768,
+        "interactiveMs": 768,
+        "longTasks": 1,
+        "longTaskMs": 264,
+        "blockingMs": 214,
+        "maxLongTaskMs": 264,
+        "requests": 81,
+        "apiRequests": 14,
+        "bytes": 527496,
+        "apiBytes": 521052,
+        "apiWaitMs": 185,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325959,
+            "waitMs": 79,
+            "durMs": 79
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 15,
+            "durMs": 15
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 15,
+            "durMs": 17
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 7,
+            "durMs": 7
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 3328,
+            "waitMs": 55,
+            "durMs": 55
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 6
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 752,
+        "settledMs": 752,
+        "interactiveMs": 752,
+        "longTasks": 1,
+        "longTaskMs": 249,
+        "blockingMs": 199,
+        "maxLongTaskMs": 249,
+        "requests": 81,
+        "apiRequests": 14,
+        "bytes": 528337,
+        "apiBytes": 521893,
+        "apiWaitMs": 157,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 3,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 5,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 66,
+            "durMs": 68
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 13,
+            "durMs": 15
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 10,
+            "durMs": 10
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 3328,
+            "waitMs": 50,
+            "durMs": 51
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 4,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 728,
+        "settledMs": 728,
+        "interactiveMs": 728,
+        "longTasks": 1,
+        "longTaskMs": 248,
+        "blockingMs": 198,
+        "maxLongTaskMs": 248,
+        "requests": 81,
+        "apiRequests": 14,
+        "bytes": 528337,
+        "apiBytes": 521893,
+        "apiWaitMs": 135,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 49,
+            "durMs": 50
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 14,
+            "durMs": 17
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 10,
+            "durMs": 10
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 3328,
+            "waitMs": 43,
+            "durMs": 44
+          },
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 6,
+            "durMs": 7
+          }
+        }
+      }
+    ],
+    "Sales Invoice / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 654,
+        "settledMs": 654,
+        "interactiveMs": 654,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 251279,
+        "apiBytes": 221368,
+        "apiWaitMs": 53,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 221368,
+            "waitMs": 53,
+            "durMs": 55
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 628,
+        "settledMs": 628,
+        "interactiveMs": 628,
+        "longTasks": 1,
+        "longTaskMs": 55,
+        "blockingMs": 5,
+        "maxLongTaskMs": 55,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 251279,
+        "apiBytes": 221368,
+        "apiWaitMs": 37,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 221368,
+            "waitMs": 37,
+            "durMs": 38
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 623,
+        "settledMs": 623,
+        "interactiveMs": 623,
+        "longTasks": 1,
+        "longTaskMs": 54,
+        "blockingMs": 4,
+        "maxLongTaskMs": 54,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 251279,
+        "apiBytes": 221368,
+        "apiWaitMs": 30,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Invoice": {
+            "count": 1,
+            "bytes": 221368,
+            "waitMs": 30,
+            "durMs": 31
+          }
+        }
+      }
+    ],
+    "Sales Invoice / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 224,
+        "settledMs": 224,
+        "interactiveMs": 224,
+        "longTasks": 1,
+        "longTaskMs": 136,
+        "blockingMs": 86,
+        "maxLongTaskMs": 136,
+        "requests": 13,
+        "apiRequests": 3,
+        "bytes": 56691,
+        "apiBytes": 28819,
+        "apiWaitMs": 85,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 13480,
+            "waitMs": 66,
+            "durMs": 68
+          },
+          "POST /etendo/org.openbravo.service.datasource/InvoiceLine": {
+            "count": 1,
+            "bytes": 15339,
+            "waitMs": 19,
+            "durMs": 20
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 219,
+        "settledMs": 219,
+        "interactiveMs": 219,
+        "longTasks": 1,
+        "longTaskMs": 134,
+        "blockingMs": 84,
+        "maxLongTaskMs": 134,
+        "requests": 13,
+        "apiRequests": 3,
+        "bytes": 56691,
+        "apiBytes": 28819,
+        "apiWaitMs": 84,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 13480,
+            "waitMs": 69,
+            "durMs": 70
+          },
+          "POST /etendo/org.openbravo.service.datasource/InvoiceLine": {
+            "count": 1,
+            "bytes": 15339,
+            "waitMs": 15,
+            "durMs": 16
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 232,
+        "settledMs": 232,
+        "interactiveMs": 232,
+        "longTasks": 1,
+        "longTaskMs": 144,
+        "blockingMs": 94,
+        "maxLongTaskMs": 144,
+        "requests": 13,
+        "apiRequests": 3,
+        "bytes": 56691,
+        "apiBytes": 28819,
+        "apiWaitMs": 83,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 13480,
+            "waitMs": 69,
+            "durMs": 70
+          },
+          "POST /etendo/org.openbravo.service.datasource/InvoiceLine": {
+            "count": 1,
+            "bytes": 15339,
+            "waitMs": 15,
+            "durMs": 15
+          }
+        }
+      }
+    ],
+    "Sales Invoice / type-10-chars": [
+      {
+        "name": "type-10-chars",
+        "visibleMs": 71,
+        "settledMs": 71,
+        "interactiveMs": 71,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 52,
+        "settledMs": 52,
+        "interactiveMs": 52,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 42,
+        "settledMs": 42,
+        "interactiveMs": 42,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Goods Shipment / login": [
+      {
+        "name": "login",
+        "visibleMs": 392,
+        "settledMs": 392,
+        "interactiveMs": 392,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7238456,
+        "apiBytes": 900266,
+        "apiWaitMs": 304,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 16,
+            "durMs": 17
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 79,
+            "durMs": 81
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 77,
+            "durMs": 80
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325959,
+            "waitMs": 95,
+            "durMs": 96
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 7,
+            "durMs": 9
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 366,
+        "settledMs": 366,
+        "interactiveMs": 366,
+        "longTasks": 1,
+        "longTaskMs": 52,
+        "blockingMs": 2,
+        "maxLongTaskMs": 52,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 279,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 10,
+            "durMs": 11
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 15,
+            "durMs": 16
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 82,
+            "durMs": 84
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 79,
+            "durMs": 82
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 70,
+            "durMs": 71
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 8,
+            "durMs": 9
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 352,
+        "settledMs": 352,
+        "interactiveMs": 352,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 273,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 13,
+            "durMs": 13
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 14,
+            "durMs": 15
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 77,
+            "durMs": 78
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 75,
+            "durMs": 77
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 56,
+            "durMs": 56
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 18,
+            "durMs": 19
+          }
+        }
+      }
+    ],
+    "Goods Shipment / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 479,
+        "settledMs": 479,
+        "interactiveMs": 479,
+        "longTasks": 1,
+        "longTaskMs": 108,
+        "blockingMs": 58,
+        "maxLongTaskMs": 108,
+        "requests": 49,
+        "apiRequests": 4,
+        "bytes": 235299,
+        "apiBytes": 175937,
+        "apiWaitMs": 272,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 173928,
+            "waitMs": 237,
+            "durMs": 238
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1204,
+            "waitMs": 26,
+            "durMs": 27
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 6
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 383,
+        "settledMs": 383,
+        "interactiveMs": 383,
+        "longTasks": 1,
+        "longTaskMs": 104,
+        "blockingMs": 54,
+        "maxLongTaskMs": 104,
+        "requests": 49,
+        "apiRequests": 4,
+        "bytes": 235299,
+        "apiBytes": 175937,
+        "apiWaitMs": 179,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 173928,
+            "waitMs": 147,
+            "durMs": 148
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1204,
+            "waitMs": 25,
+            "durMs": 25
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 4,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 419,
+        "settledMs": 419,
+        "interactiveMs": 419,
+        "longTasks": 1,
+        "longTaskMs": 106,
+        "blockingMs": 56,
+        "maxLongTaskMs": 106,
+        "requests": 49,
+        "apiRequests": 4,
+        "bytes": 235299,
+        "apiBytes": 175937,
+        "apiWaitMs": 198,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 173928,
+            "waitMs": 175,
+            "durMs": 177
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1204,
+            "waitMs": 15,
+            "durMs": 16
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 4,
+            "durMs": 5
+          }
+        }
+      }
+    ],
+    "Goods Shipment / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 614,
+        "settledMs": 614,
+        "interactiveMs": 614,
+        "longTasks": 1,
+        "longTaskMs": 124,
+        "blockingMs": 74,
+        "maxLongTaskMs": 124,
+        "requests": 77,
+        "apiRequests": 14,
+        "bytes": 526576,
+        "apiBytes": 520132,
+        "apiWaitMs": 131,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 325959,
+            "waitMs": 64,
+            "durMs": 65
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 12,
+            "durMs": 16
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2408,
+            "waitMs": 32,
+            "durMs": 34
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 4,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 618,
+        "settledMs": 618,
+        "interactiveMs": 618,
+        "longTasks": 1,
+        "longTaskMs": 140,
+        "blockingMs": 90,
+        "maxLongTaskMs": 140,
+        "requests": 77,
+        "apiRequests": 14,
+        "bytes": 527417,
+        "apiBytes": 520973,
+        "apiWaitMs": 124,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 7,
+            "durMs": 8
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 51,
+            "durMs": 52
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 15,
+            "durMs": 17
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 6,
+            "durMs": 7
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2408,
+            "waitMs": 27,
+            "durMs": 28
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 601,
+        "settledMs": 601,
+        "interactiveMs": 601,
+        "longTasks": 1,
+        "longTaskMs": 121,
+        "blockingMs": 71,
+        "maxLongTaskMs": 121,
+        "requests": 77,
+        "apiRequests": 14,
+        "bytes": 527417,
+        "apiBytes": 520973,
+        "apiWaitMs": 150,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 3,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 3,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 70,
+            "durMs": 71
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 16,
+            "durMs": 18
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2408,
+            "waitMs": 42,
+            "durMs": 42
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 8,
+            "durMs": 8
+          }
+        }
+      }
+    ],
+    "Goods Shipment / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 624,
+        "settledMs": 624,
+        "interactiveMs": 624,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 189377,
+        "apiBytes": 159466,
+        "apiWaitMs": 39,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 159466,
+            "waitMs": 39,
+            "durMs": 41
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 618,
+        "settledMs": 618,
+        "interactiveMs": 618,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 189377,
+        "apiBytes": 159466,
+        "apiWaitMs": 36,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 159466,
+            "waitMs": 36,
+            "durMs": 37
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 654,
+        "settledMs": 654,
+        "interactiveMs": 654,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 189377,
+        "apiBytes": 159466,
+        "apiWaitMs": 62,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOut": {
+            "count": 1,
+            "bytes": 159466,
+            "waitMs": 62,
+            "durMs": 64
+          }
+        }
+      }
+    ],
+    "Goods Shipment / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 135,
+        "settledMs": 135,
+        "interactiveMs": 135,
+        "longTasks": 1,
+        "longTaskMs": 79,
+        "blockingMs": 29,
+        "maxLongTaskMs": 79,
+        "requests": 16,
+        "apiRequests": 3,
+        "bytes": 62520,
+        "apiBytes": 25011,
+        "apiWaitMs": 67,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 7069,
+            "waitMs": 41,
+            "durMs": 43
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOutLine": {
+            "count": 1,
+            "bytes": 17942,
+            "waitMs": 25,
+            "durMs": 26
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 117,
+        "settledMs": 117,
+        "interactiveMs": 117,
+        "longTasks": 1,
+        "longTaskMs": 85,
+        "blockingMs": 35,
+        "maxLongTaskMs": 85,
+        "requests": 16,
+        "apiRequests": 3,
+        "bytes": 62520,
+        "apiBytes": 25011,
+        "apiWaitMs": 91,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 7069,
+            "waitMs": 70,
+            "durMs": 71
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOutLine": {
+            "count": 1,
+            "bytes": 17942,
+            "waitMs": 21,
+            "durMs": 21
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 155,
+        "settledMs": 255,
+        "interactiveMs": 255,
+        "longTasks": 1,
+        "longTaskMs": 92,
+        "blockingMs": 42,
+        "maxLongTaskMs": 92,
+        "requests": 16,
+        "apiRequests": 3,
+        "bytes": 62520,
+        "apiBytes": 25011,
+        "apiWaitMs": 82,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 7069,
+            "waitMs": 63,
+            "durMs": 64
+          },
+          "POST /etendo/org.openbravo.service.datasource/MaterialMgmtShipmentInOutLine": {
+            "count": 1,
+            "bytes": 17942,
+            "waitMs": 19,
+            "durMs": 20
+          }
+        }
+      }
+    ],
+    "Goods Shipment / type-10-chars": [
+      {
+        "name": "type-10-chars",
+        "visibleMs": 46,
+        "settledMs": 46,
+        "interactiveMs": 46,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 44,
+        "settledMs": 44,
+        "interactiveMs": 44,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      },
+      {
+        "name": "type-10-chars",
+        "visibleMs": 33,
+        "settledMs": 33,
+        "interactiveMs": 33,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 2,
+        "apiRequests": 0,
+        "bytes": 1318,
+        "apiBytes": 0,
+        "apiWaitMs": 0,
+        "failed": 0,
+        "byEndpoint": {}
+      }
+    ],
+    "Purchase Order / login": [
+      {
+        "name": "login",
+        "visibleMs": 305,
+        "settledMs": 305,
+        "interactiveMs": 305,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7238888,
+        "apiBytes": 900698,
+        "apiWaitMs": 154,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 8,
+            "durMs": 8
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 18,
+            "durMs": 19
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 10,
+            "durMs": 11
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 22,
+            "durMs": 23
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 20,
+            "durMs": 22
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326391,
+            "waitMs": 66,
+            "durMs": 67
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 6,
+            "durMs": 9
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 386,
+        "settledMs": 386,
+        "interactiveMs": 386,
+        "longTasks": 1,
+        "longTaskMs": 57,
+        "blockingMs": 7,
+        "maxLongTaskMs": 57,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 264,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 13,
+            "durMs": 14
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 17,
+            "durMs": 18
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 12,
+            "durMs": 12
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 81,
+            "durMs": 82
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 80,
+            "durMs": 82
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 52,
+            "durMs": 53
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 6,
+            "durMs": 8
+          }
+        }
+      },
+      {
+        "name": "login",
+        "visibleMs": 356,
+        "settledMs": 356,
+        "interactiveMs": 356,
+        "longTasks": 1,
+        "longTaskMs": 51,
+        "blockingMs": 1,
+        "maxLongTaskMs": 51,
+        "requests": 47,
+        "apiRequests": 10,
+        "bytes": 7239297,
+        "apiBytes": 901107,
+        "apiWaitMs": 268,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/security/Login": {
+            "count": 1,
+            "bytes": 11478,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "POST /etendo/secureApp/LoginHandler.html": {
+            "count": 1,
+            "bytes": 525,
+            "waitMs": 22,
+            "durMs": 23
+          },
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 12,
+            "durMs": 13
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 452485,
+            "waitMs": 76,
+            "durMs": 77
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 73,
+            "durMs": 76
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 61,
+            "durMs": 62
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 9394,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 2735,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 93228,
+            "waitMs": 9,
+            "durMs": 12
+          }
+        }
+      }
+    ],
+    "Purchase Order / open-cold": [
+      {
+        "name": "open-cold",
+        "visibleMs": 566,
+        "settledMs": 566,
+        "interactiveMs": 566,
+        "longTasks": 1,
+        "longTaskMs": 123,
+        "blockingMs": 73,
+        "maxLongTaskMs": 123,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 389226,
+        "apiBytes": 329157,
+        "apiWaitMs": 334,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 327049,
+            "waitMs": 308,
+            "durMs": 309
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1303,
+            "waitMs": 16,
+            "durMs": 16
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 6,
+            "durMs": 7
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 513,
+        "settledMs": 513,
+        "interactiveMs": 513,
+        "longTasks": 1,
+        "longTaskMs": 121,
+        "blockingMs": 71,
+        "maxLongTaskMs": 121,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 389226,
+        "apiBytes": 329157,
+        "apiWaitMs": 282,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 327049,
+            "waitMs": 253,
+            "durMs": 255
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1303,
+            "waitMs": 21,
+            "durMs": 21
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 4,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "open-cold",
+        "visibleMs": 534,
+        "settledMs": 534,
+        "interactiveMs": 534,
+        "longTasks": 1,
+        "longTaskMs": 127,
+        "blockingMs": 77,
+        "maxLongTaskMs": 127,
+        "requests": 50,
+        "apiRequests": 4,
+        "bytes": 389226,
+        "apiBytes": 329157,
+        "apiWaitMs": 305,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 564,
+            "waitMs": 5,
+            "durMs": 6
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 327049,
+            "waitMs": 269,
+            "durMs": 271
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 1,
+            "bytes": 1303,
+            "waitMs": 26,
+            "durMs": 27
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 5
+          }
+        }
+      }
+    ],
+    "Purchase Order / reload-warm": [
+      {
+        "name": "reload-warm",
+        "visibleMs": 676,
+        "settledMs": 676,
+        "interactiveMs": 676,
+        "longTasks": 1,
+        "longTaskMs": 175,
+        "blockingMs": 125,
+        "maxLongTaskMs": 175,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 527206,
+        "apiBytes": 520762,
+        "apiWaitMs": 159,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326391,
+            "waitMs": 97,
+            "durMs": 98
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 11,
+            "durMs": 12
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2606,
+            "waitMs": 37,
+            "durMs": 38
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 3,
+            "durMs": 4
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 652,
+        "settledMs": 652,
+        "interactiveMs": 652,
+        "longTasks": 1,
+        "longTaskMs": 172,
+        "blockingMs": 122,
+        "maxLongTaskMs": 172,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 527615,
+        "apiBytes": 521171,
+        "apiWaitMs": 119,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 4,
+            "durMs": 5
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 3,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 53,
+            "durMs": 54
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 1,
+            "durMs": 1
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 12,
+            "durMs": 14
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2606,
+            "waitMs": 35,
+            "durMs": 37
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 5,
+            "durMs": 5
+          }
+        }
+      },
+      {
+        "name": "reload-warm",
+        "visibleMs": 638,
+        "settledMs": 638,
+        "interactiveMs": 638,
+        "longTasks": 1,
+        "longTaskMs": 168,
+        "blockingMs": 118,
+        "maxLongTaskMs": 168,
+        "requests": 78,
+        "apiRequests": 14,
+        "bytes": 527615,
+        "apiBytes": 521171,
+        "apiWaitMs": 145,
+        "failed": 0,
+        "byEndpoint": {
+          "GET /etendo/": {
+            "count": 1,
+            "bytes": 4067,
+            "waitMs": 2,
+            "durMs": 3
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StyleSheetResources": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 4,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/StaticResources": {
+            "count": 1,
+            "bytes": 395,
+            "waitMs": 1,
+            "durMs": 2
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBCLKER_Kernel/SessionDynamic": {
+            "count": 1,
+            "bytes": 326800,
+            "waitMs": 53,
+            "durMs": 55
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/Application": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "GET /etendo/utility/ShowImageLogo": {
+            "count": 1,
+            "bytes": 167,
+            "waitMs": 2,
+            "durMs": 2
+          },
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 4,
+            "bytes": 186589,
+            "waitMs": 31,
+            "durMs": 33
+          },
+          "GET /etendo/org.openbravo.client.kernel/OBUIAPP_MainLayout/View": {
+            "count": 1,
+            "bytes": 102,
+            "waitMs": 3,
+            "durMs": 4
+          },
+          "GET /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 2606,
+            "waitMs": 37,
+            "durMs": 38
+          },
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 241,
+            "waitMs": 10,
+            "durMs": 11
+          }
+        }
+      }
+    ],
+    "Purchase Order / load-unfiltered": [
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 621,
+        "settledMs": 621,
+        "interactiveMs": 621,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 203570,
+        "apiBytes": 173659,
+        "apiWaitMs": 33,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 173659,
+            "waitMs": 33,
+            "durMs": 35
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 625,
+        "settledMs": 625,
+        "interactiveMs": 625,
+        "longTasks": 0,
+        "longTaskMs": 0,
+        "blockingMs": 0,
+        "maxLongTaskMs": 0,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 203570,
+        "apiBytes": 173659,
+        "apiWaitMs": 34,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 173659,
+            "waitMs": 34,
+            "durMs": 35
+          }
+        }
+      },
+      {
+        "name": "load-unfiltered",
+        "visibleMs": 626,
+        "settledMs": 626,
+        "interactiveMs": 626,
+        "longTasks": 1,
+        "longTaskMs": 50,
+        "blockingMs": 0,
+        "maxLongTaskMs": 50,
+        "requests": 14,
+        "apiRequests": 1,
+        "bytes": 203570,
+        "apiBytes": 173659,
+        "apiWaitMs": 43,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.service.datasource/Order": {
+            "count": 1,
+            "bytes": 173659,
+            "waitMs": 43,
+            "durMs": 45
+          }
+        }
+      }
+    ],
+    "Purchase Order / open-record": [
+      {
+        "name": "open-record",
+        "visibleMs": 168,
+        "settledMs": 269,
+        "interactiveMs": 269,
+        "longTasks": 1,
+        "longTaskMs": 101,
+        "blockingMs": 51,
+        "maxLongTaskMs": 101,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 52228,
+        "apiBytes": 16302,
+        "apiWaitMs": 69,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9189,
+            "waitMs": 53,
+            "durMs": 53
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 7113,
+            "waitMs": 17,
+            "durMs": 17
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 168,
+        "settledMs": 168,
+        "interactiveMs": 168,
+        "longTasks": 1,
+        "longTaskMs": 82,
+        "blockingMs": 32,
+        "maxLongTaskMs": 82,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 52228,
+        "apiBytes": 16302,
+        "apiWaitMs": 69,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9189,
+            "waitMs": 55,
+            "durMs": 57
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 7113,
+            "waitMs": 13,
+            "durMs": 14
+          }
+        }
+      },
+      {
+        "name": "open-record",
+        "visibleMs": 158,
+        "settledMs": 259,
+        "interactiveMs": 259,
+        "longTasks": 1,
+        "longTaskMs": 95,
+        "blockingMs": 45,
+        "maxLongTaskMs": 95,
+        "requests": 14,
+        "apiRequests": 3,
+        "bytes": 52228,
+        "apiBytes": 16302,
+        "apiWaitMs": 69,
+        "failed": 0,
+        "byEndpoint": {
+          "POST /etendo/org.openbravo.client.kernel": {
+            "count": 2,
+            "bytes": 9189,
+            "waitMs": 53,
+            "durMs": 54
+          },
+          "POST /etendo/org.openbravo.service.datasource/OrderLine": {
+            "count": 1,
+            "bytes": 7113,
+            "waitMs": 16,
+            "durMs": 17
+          }
+        }
+      }
+    ]
+  }
+}

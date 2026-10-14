@@ -29,8 +29,8 @@ import type { NavigationState } from "@/hooks/useRecordNavigation";
 interface StatusBarProps {
   fields: Record<string, Field>;
   navigationState?: NavigationState;
-  onNavigateNext?: () => Promise<void>;
-  onNavigatePrevious?: () => Promise<void>;
+  onNavigateNext?: () => void;
+  onNavigatePrevious?: () => void;
   isNavigating?: boolean;
 }
 

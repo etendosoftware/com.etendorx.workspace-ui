@@ -16,7 +16,7 @@
  */
 
 import { memo, useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { getFieldReference } from "@/utils";
@@ -26,9 +26,8 @@ import { CUSTOM_SELECTORS_IDENTIFIERS } from "@/utils/form/constants";
 import { useTabContext } from "@/contexts/tab";
 
 function LabelCmp({ field }: { field: Field }) {
-  const { watch } = useFormContext();
   const { tab } = useTabContext();
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
   const isAccessible = field.isReferencedWindowAccessible ?? false;
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();

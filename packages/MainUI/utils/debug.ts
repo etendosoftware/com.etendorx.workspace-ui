@@ -36,6 +36,11 @@ export function isDebugManualProcesses(): boolean {
   return isDebugEnabled("DEBUG_MANUAL_PROCESSES", "DEBUG_MANUAL_PROCESSES");
 }
 
+/** Traces where the form view places (or declines to place) the initial focus. */
+export function isDebugFormFocus(): boolean {
+  return isDebugEnabled("DEBUG_FORM_FOCUS", "DEBUG_FORM_FOCUS");
+}
+
 // Utility function to enable callout debugging from browser console
 export function enableCalloutDebugging(): void {
   if (typeof window !== "undefined") {

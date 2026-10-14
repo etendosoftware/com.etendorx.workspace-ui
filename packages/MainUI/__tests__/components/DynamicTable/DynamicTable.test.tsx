@@ -895,6 +895,7 @@ describe("DynamicTable", () => {
           refresh: expect.any(Function),
           filter: expect.any(Function),
           columnFilters: expect.any(Function),
+          restoreSelection: expect.any(Function),
         },
         TOOLBAR_ACTION_OWNERS.GRID
       );
@@ -1365,6 +1366,7 @@ describe("DynamicTable", () => {
           refresh: expect.any(Function),
           filter: expect.any(Function),
           columnFilters: expect.any(Function),
+          restoreSelection: expect.any(Function),
         },
         TOOLBAR_ACTION_OWNERS.GRID
       );

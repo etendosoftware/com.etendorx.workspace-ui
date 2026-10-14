@@ -51,6 +51,10 @@ interface ProcessParameterSelectorProps {
   // payload (`_processDefinitionId`, `_selectorFieldId`, raw form keys) that
   // Classic emits via `OBSelectorItem.prepareDSRequest`.
   processId?: string;
+  // AD window id of the launching tab, so display/readonly expressions resolve window-scoped
+  // preferences. Must match what `ProcessDefinitionModal` passes to `isParameterDisplayed` for
+  // the script-facing `item.isVisible()` proxy, or the two would disagree on visibility.
+  windowId?: string;
 }
 
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
@@ -98,6 +102,7 @@ const ProcessParameterSelectorImpl = ({
   onFileChange,
   values = EMPTY_VALUES,
   processId,
+  windowId,
 }: ProcessParameterSelectorProps) => {
   const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
@@ -115,14 +120,15 @@ const ProcessParameterSelectorImpl = ({
       recordValues,
       parentFields,
       session,
+      windowId,
     });
-  }, [parameters, values, recordValues, parentFields, session]);
+  }, [parameters, values, recordValues, parentFields, session, windowId]);
 
   // Evaluate display logic via the shared helper, so the script-facing
   // `item.isVisible()` proxy and the rendered field always agree on visibility.
   const isDisplayed = useMemo(
-    () => isParameterDisplayed({ parameter, logicFields, values, evaluationContext }),
-    [parameter, logicFields, values, evaluationContext]
+    () => isParameterDisplayed({ parameter, logicFields, values, evaluationContext, windowId }),
+    [parameter, logicFields, values, evaluationContext, windowId]
   );
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
@@ -150,12 +156,12 @@ const ProcessParameterSelectorImpl = ({
 
     try {
       const compiledExpr = compileExpression(readOnlyExpression);
-      return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext));
+      return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext, windowId));
     } catch (error) {
       logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
       return false; // Default to editable on error
     }
-  }, [mappedField, parameter, logicFields, values, evaluationContext]);
+  }, [mappedField, parameter, logicFields, values, evaluationContext, windowId]);
 
   // Get field type for selector routing
   const fieldType = useMemo(() => {

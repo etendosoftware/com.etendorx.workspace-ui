@@ -18,12 +18,13 @@
 import { useCallback } from "react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { UseItemActionsProps } from "./types";
+import { OPENABLE_MENU_ITEM_TYPES } from "../utils/drawerUtils";
 
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(
     (item: Menu) => {
-      const validType = ["Window", "View", "Report", "ProcessDefinition", "Form", "Process", "ProcessManual"].includes(
-        item.type || ""
+      const validType = OPENABLE_MENU_ITEM_TYPES.includes(
+        (item.type || "") as (typeof OPENABLE_MENU_ITEM_TYPES)[number]
       );
       if (!validType) {
         console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
