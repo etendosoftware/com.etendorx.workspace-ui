@@ -1,9 +1,70 @@
 # UI performance: pending work and analysis tools (handoff)
 
 - **Ticket:** ETP-5641 — first round merged in PR #955 (`main` @ `ee0e210db`, 2026-10-08)
-- **Branch for the next round:** `hotfix/ETP-5641`, rebased on `main`
+- **Branch:** `hotfix/ETP-5641` (round 2 committed on it, not pushed — see §0)
 - **Purpose:** starting point for a fresh analysis session. Everything below is measured or located in code;
   numbers are medians at `CPU_THROTTLE=4` (Chrome CPU slowed 4x, a mid/low-end machine) unless noted.
+
+## 0. Start here — round 2 status (2026-10-14)
+
+Round 2 is implemented, committed and **not pushed**; no PR is open yet.
+
+| Repo | Branch (from `main`) | Commits |
+|---|---|---|
+| `com.etendorx.workspace-ui` | `hotfix/ETP-5641` | `328275f06` metadata HTTP revalidation · `4d6ed3979` select hooks `useWatch` + bench steps + grid design · `2b0f97e73` shared evaluation context · `7e4c4f98b` toolbar commands / grid re-renders · `79d15d2ef` arrow navigation scroll |
+| `com.etendoerp.metadata` (`~/Dev/Work/etendo_26/modules/com.etendoerp.metadata`) | `hotfix/ETP-5641` | `048d107` body ETag for `GET /meta/window`, `/meta/tab` |
+
+The two PRs are independent: the UI works against an old module (GET without ETag → always 200) and the module keeps
+POST unchanged for an old UI. Ship the module first to get the 304s.
+
+What round 2 changed and measured (details in §2.0 and the "Done (round 2)" rows of §2.1–2.2):
+
+- Window/tab metadata: GET + body ETag + browser HTTP cache; in-memory definitions instead of localStorage. A reload
+  costs 308 B instead of 1–3 MB per window. In DevTools the revalidated request shows **status 200** with ~308 B
+  transferred (Chrome hands the cached copy to `fetch`); "Disable cache" must be off to see it.
+- Shared evaluation context across fields (`utils/evaluation/sharedEvaluationContext.ts`): context-build CPU −63–72 %
+  in form steps; form-next-5 blocking −13–27 %.
+- `useToolbarCommands()` + `React.memo(DynamicTable)`: hidden grid 11 → 4 renders per Next; `perf:compare` vs the
+  previous commit: total blocking CPU −17 %, total time −10 %, arrow-nav-5 −34–43 %.
+- Arrow navigation keeps the selected row in view on every step (`utils/table/scrollRowIntoContainer.ts`). MRT 2 has no
+  `table.rowVirtualizer`: use `rowVirtualizerInstanceRef` (now passed to the table).
+- Select hooks use `useWatch` (no measurable change); bench gained `new-record` and `select-change`.
+
+Verified: full MainUI Jest suite (470 suites / 6,163 tests), `tsc`, module unit tests, manual check by the user
+(toolbar, arrow navigation, selects, display logic basics). **Not yet run:** `pnpm apply:data-testid` (CI checks it),
+the Playwright e2e suites (display/read-only logic, processes, inline edit are covered there — run them in CI on the
+PR), a 4-window `perf:compare` reference.
+
+### Next steps, in suggested order
+
+1. **Open the PRs** (Git Police: titles `Hotfix ETP-5641: …`, target `main`): run `pnpm apply:data-testid` and
+   `pnpm check`, push both branches, paste a `pnpm perf:compare` report (4 windows, 3 rounds, `CPU_THROTTLE=4`) in the
+   UI PR's Performance section, then fix whatever the e2e suites report.
+2. **Menu revalidation** (§2.0 follow-ups): `/meta/menu` via GET with the body ETag (`MetadataService.writeWithETag`) +
+   add `menu` to `isRevalidatedMetadataRoute` in `app/api/erp/[...slug]/route.ts`; keep `useMenu`'s forced refresh
+   (now a 304). ~244 KB per reload. Note the existing fingerprint ETag in `MetadataServlet` for `MENU_PATH` on GET must
+   not short-circuit before the body ETag (or drop it: it misses role-access changes).
+3. **Form reset/initialization** (`FormView/index.tsx` ~580 and ~684, ≈190 ms per form step at 4x): profile
+   `new-record` / `form-next-5` again (`CALLERS_OF=components/Form/FormView/index.tsx`), look for avoidable re-renders
+   after `reset()`.
+4. **Once-per-pass evaluation contexts** (toolbar `useToolbar.ts:172` ≈36 ms per step at 4x, `useFormValidation.ts:257`,
+   `FormHeader`, `FormFields`): could reuse `getEvaluationContext` with the record as base and form values as overlay.
+5. **Grid `_selectedProperties`**: design in `2026-10-08-grid-selected-properties-design.md`, waiting for review —
+   do not start without it (rows feed ~15 backend payloads).
+6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), one FIC +
+   one recent-documents request per form Next, process modals, date formatting per cell, the three bugs in §2.3
+   (`auxiliaryInputs` never reset, `TEMP DEBUG` leftovers, select closing on re-init).
+
+### Lessons from round 2 (avoid repeating them)
+
+- **New auto-saves a dirty form.** Never click New/Next on a form a script typed into; check `max(updated)` of the
+  touched tables before/after a scripted run. (The local test records it modified are fine as they are.)
+- Production builds strip `console.*` (`removeConsole`): temporary instrumentation must write to a `window` array.
+- `useToolbarContext()` returns a new object every render — an identity change of its result is a consequence, not a
+  cause; look at the store slot it subscribes to.
+- `perf:compare` flags request-count changes in `arrow-nav-5` that are only SETSESSION debounce timing (3–7 per run on
+  both sides); check `byEndpoint` per round before treating them as regressions.
+- Jest compiles object spread to `Object.assign`, which differs from native spread for an own `__proto__` key.
 
 ## 1. What is already done (PR #955)
 
@@ -148,7 +209,9 @@ Techniques that worked (not committed as tools):
 - **Render-cause instrumentation:** a temporary `useWhyRender(name, values)` hook that logs which of the
   given values changed identity on each render, dropped into `FormView`, `FormHeader`, `Toolbar`,
   `DynamicTable`, `BaseSelector`, run against `next dev` and driven by a Playwright script that sets
-  `window.__WHY = true` right before the interaction. It found the `TabContext` and `watch()` cascades.
+  `window.__WHY = true` right before the interaction. It found the `TabContext` and `watch()` cascades (round 1)
+  and the toolbar-store re-renders of the hidden grid (round 2). Against a production build, write to a
+  `window.__WHYLOG` array instead of `console` (stripped by `removeConsole`).
 - **Reproducing CI timing locally:** in a copy of an e2e test, open a CDP session and add
   `Emulation.setCPUThrottlingRate` plus `Network.emulateNetworkConditions` (`latency: 800`); compare the
   branch build with the base build served from the `perf:compare` worktree.
