@@ -1407,6 +1407,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         tabId={tab.id}
         isFormView={shouldShowForm}
         isSplitView={isSplitView}
+        isFocused={isFocused}
         data-testid="Toolbar__5893c8"
       />
       <div

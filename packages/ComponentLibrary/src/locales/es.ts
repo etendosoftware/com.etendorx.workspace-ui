@@ -144,6 +144,11 @@ const es = {
     updated: "Actualizado",
     updatedBy: "Actualizado por",
   },
+  auditTrail: {
+    selectOneRecord: "Debe seleccionar exactamente un registro para ver su historial de auditoría.",
+    popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
+    openPopup: "Abrir historial de auditoría",
+  },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
     deleteError: "Error al eliminar el registro",
