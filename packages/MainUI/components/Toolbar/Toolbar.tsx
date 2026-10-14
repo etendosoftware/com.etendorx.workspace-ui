@@ -44,6 +44,7 @@ import {
 } from "../ProcessModal/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
+import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
 import SearchPortal from "./SearchPortal";
@@ -66,7 +67,12 @@ import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSplitView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({
+  windowId,
+  isFormView = false,
+  isSplitView = false,
+  isFocused = false,
+}) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -111,6 +117,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
+  const { openAuditTrail } = useAuditTrail({
+    tab,
+    selectedRecords,
+    isNewRecord,
+    isFocused,
+  });
   const hasParentTab = !!tab?.parentTabId;
   const {
     tableColumnFilters,
@@ -129,7 +141,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   // default itself — the SAME source of truth the datasource uses. Saved views must capture
   // this, NOT the toolbar's `isImplicitFilterApplied` which is inflated by `hasIdFilter` and
   // meant only for the button's visual state (ETP-4381).
-  const defaultImplicitFilterApplied = tab ? getDefaultImplicitFilter(tab) : true;
+  // Reads the cached window metadata (a JSON.parse of the whole window): once per tab, not per render.
+  const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
@@ -495,9 +508,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
         handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
         return;
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL) {
+        openAuditTrail();
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle]
+    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle, openAuditTrail]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -522,6 +539,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       showShareLinkTooltip: showShareLinkTooltip,
       tab: tab,
       selectedRecordsLength: selectedRecordsLength,
+      selectedRecords: selectedRecords,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
       isExporting: isExporting,

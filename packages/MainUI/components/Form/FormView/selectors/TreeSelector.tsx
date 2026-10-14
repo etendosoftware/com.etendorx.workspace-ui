@@ -17,7 +17,7 @@
 
 // @data-testid-ignore
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import ChevronRight from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
@@ -56,10 +56,10 @@ const isNodeSelectable = (node: TreeNode): boolean => !node.isCharacteristic;
 
 function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const { t } = useTranslation();
-  const { register, setValue, watch } = useFormContext();
+  const { register, setValue } = useFormContext();
   const fieldName = field.hqlName || field.columnName || field.name;
-  const selectedValue = watch(fieldName);
-  const currentIdentifier = watch(`${fieldName}$_identifier`);
+  const selectedValue = useWatch({ name: fieldName });
+  const currentIdentifier = useWatch({ name: `${fieldName}$_identifier` });
 
   // --- Data fetching (same pattern as TableDirSelector) ---
   const { records, loading, refetch } = useTableDirDatasource({ field });

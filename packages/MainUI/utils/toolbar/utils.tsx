@@ -22,9 +22,10 @@ import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon"
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
-import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, ISession, Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import { AUDIT_TRAIL_STATUS, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
 import { CircularProgress } from "@mui/material";
 
 /** Size (px) of the spinner shown in place of a toolbar button icon while its action is running */
@@ -62,6 +63,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
   [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
+  [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: "toolbar-button-show-audit-trail",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW]:
     "toolbar-button-save-view h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0",
   [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]:
@@ -121,6 +123,10 @@ export interface ToolbarButtonContext {
   isCopilotInstalled?: boolean;
 }
 
+/** Classic only offers the Audit Trail on tabs whose table is Fully Audited. */
+const isAuditTrailButtonHidden = (button: ToolbarButtonMetadata, tab?: Tab) =>
+  button.action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL && !tab?.tableFullyAudited;
+
 const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContext) => {
   if (!button.active) return false;
 
@@ -159,6 +165,7 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
     !isSaveViewButtonHidden &&
+    !isAuditTrailButtonHidden(button, tab) &&
     !isNewForSrOrEd &&
     !isWriteActionForRo &&
     !isSplitToggleForSr
@@ -201,6 +208,7 @@ export const createButtonByType = ({
   t,
   tab,
   selectedRecordsLength,
+  selectedRecords = [],
   isAdvancedFilterApplied,
   isSplitView,
   isExporting = false,
@@ -219,6 +227,7 @@ export const createButtonByType = ({
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
@@ -308,6 +317,10 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       // Busy while the export request is in flight, so it cannot be triggered twice.
       [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () => buildDisableConfig(!button.active || isExporting),
+      [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: () => {
+        const isAuditTrailReady = getAuditTrailStatus({ selectedRecords, isNewRecord }) === AUDIT_TRAIL_STATUS.READY;
+        return buildDisableConfig(!isAuditTrailReady || isDocumentProcessing);
+      },
       // Refreshing a form with pending edits would drop them without asking, so the
       // button is blocked instead — the same rule as Classic's `hasNotChanged()`, which
       // also covers a record still being created.
@@ -421,6 +434,7 @@ interface ButtonConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
@@ -450,6 +464,7 @@ const createSectionButtons = (
       t: config.t,
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
+      selectedRecords: config.selectedRecords,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
       isSplitView: config.isSplitView,
       isExporting: config.isExporting,
@@ -499,6 +514,7 @@ interface ToolbarSectionsConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
@@ -521,6 +537,7 @@ export const getToolbarSections = ({
   t,
   tab,
   selectedRecordsLength,
+  selectedRecords = [],
   isAdvancedFilterApplied = false,
   isSplitView = false,
   isExporting = false,
@@ -552,6 +569,7 @@ export const getToolbarSections = ({
     showShareLinkTooltip,
     tab,
     selectedRecordsLength,
+    selectedRecords,
     t,
     isAdvancedFilterApplied,
     isExporting,
