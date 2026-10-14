@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
@@ -16,7 +16,7 @@ export const ModalSelector = ({
   isReadOnly: boolean;
   customColumns?: any[];
 }) => {
-  const { watch, setValue, getValues } = useFormContext();
+  const { setValue, getValues } = useFormContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [isFocused, setIsFocused] = useState(false);
@@ -24,8 +24,8 @@ export const ModalSelector = ({
   const valueField = (field.selector?.valueField as string) || "id";
   const displayField = (field.selector?.displayField as string) || "_identifier";
 
-  const value = watch(field.hqlName);
-  const identifier = watch(`${field.hqlName}$_identifier`);
+  const value = useWatch({ name: field.hqlName });
+  const identifier = useWatch({ name: `${field.hqlName}$_identifier` });
 
   const containerClassNames = useMemo(() => {
     const baseClasses =

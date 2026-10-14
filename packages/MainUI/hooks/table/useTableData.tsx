@@ -33,6 +33,7 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
+import { useSettledParent } from "@/hooks/table/useSettledParent";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
@@ -179,7 +180,12 @@ export const useTableData = ({
     if (!parentTab || !windowIdentifier) return undefined;
     return s.windows[windowIdentifier]?.tabs[parentTab.id]?.selectedRecord;
   });
-  const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
+  // The parent this tab fetches with: moving fast over parent records fetches the first and the last only.
+  const {
+    parentId,
+    parentRecord: queryParentRecord,
+    isPending: isParentPending,
+  } = useSettledParent({ parentRecord, parentIdFromUrl });
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode;
   const treeEntity = (shouldUseTreeMode && treeMetadata.treeEntity) || tab.entityName;
@@ -522,7 +528,7 @@ export const useTableData = ({
       // (ob-view-grid.js:2736). The server answers @AD_Org_ID@ / @AD_Client_ID@ inside a child
       // tab's hqlwhereclause by reading exactly these params, so a missing organization leaves
       // the variable empty and AD_ISORGINCLUDED drops every row.
-      Object.assign(options, buildParentSessionContext(parentTab, parentRecord ?? graph.getSelected(parentTab)));
+      Object.assign(options, buildParentSessionContext(parentTab, queryParentRecord ?? graph.getSelected(parentTab)));
       // Keep existing format for backward compat (e.g. Process Request datasource)
       options[`@${parentTab.entityName}.id@`] = parentId;
       // OB Classic context variable format for hqlwhereclause substitution
@@ -554,7 +560,7 @@ export const useTableData = ({
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
-    parentRecord,
+    queryParentRecord,
     language,
     tableColumnSorting,
     advancedCriteria,
@@ -589,7 +595,7 @@ export const useTableData = ({
   // valid parent record ID.
   const skip = useMemo(() => {
     if (!parentTab) return false;
-    const hasParentSelection = !!parentRecord || !!parentIdFromUrl;
+    const hasParentSelection = parentId !== "";
     if (!hasParentSelection) {
       return true;
     }
@@ -598,7 +604,7 @@ export const useTableData = ({
       return true;
     }
     return false;
-  }, [parentTab, parentRecord, parentRecords, parentIdFromUrl, tab.name, parentId]);
+  }, [parentTab, parentRecords, parentId]);
 
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {
@@ -1092,12 +1098,13 @@ export const useTableData = ({
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
   // changing the parent record will reset the view to show all child records for the new parent
-  const prevParentIdRef = useRef<string | undefined>(parentRecord?.id ? String(parentRecord.id) : undefined);
+  // Uses the settled parent id, the same one the query is built with.
+  const prevParentIdRef = useRef<string | undefined>(parentId || undefined);
 
   useEffect(() => {
     // Only clear filters if the parent ID has actually CHANGED from a previous valid ID
     // This prevents clearing filters on initial load when the parent ID is first set
-    if (parentRecord?.id && prevParentIdRef.current && parentRecord.id !== prevParentIdRef.current) {
+    if (parentId && prevParentIdRef.current && parentId !== prevParentIdRef.current) {
       const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
       if (hasIdFilter) {
         setTableColumnFilters([]);
@@ -1105,8 +1112,8 @@ export const useTableData = ({
       }
     }
     // Update ref for next render
-    prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
-  }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
+    prevParentIdRef.current = parentId || undefined;
+  }, [parentId, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
   /**
    * Sync implicit filter state with toolbar context (drives the funnel's pressed/active visual).
@@ -1367,7 +1374,8 @@ export const useTableData = ({
 
     // State
     expanded,
-    loading,
+    // A held parent change shows as loading, like the fetch that follows it.
+    loading: loading || isParentPending,
     error: error || null,
 
     // Tree mode

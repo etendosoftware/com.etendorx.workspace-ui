@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import DOMPurify from "dompurify";
 
@@ -126,10 +126,10 @@ const selectClass =
 const buttonClass = "px-2 py-1 text-xs font-medium text-gray-600 rounded hover:bg-gray-200 transition-colors";
 
 const RichTextSelector = ({ field, isReadOnly }: RichTextSelectorProps) => {
-  const { setValue, getValues } = useFormContext();
+  const { setValue } = useFormContext();
   const editorRef = useRef<HTMLDivElement>(null);
   const fieldName = field.hqlName || field.columnName;
-  const currentValue = (getValues(fieldName) as string) || "";
+  const currentValue = (useWatch({ name: fieldName }) as string) || "";
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== currentValue) {

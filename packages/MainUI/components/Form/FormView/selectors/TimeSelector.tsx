@@ -16,7 +16,7 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useState, useEffect, useMemo } from "react";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { getTimeFormatters } from "@/utils/date/utils";
@@ -34,13 +34,13 @@ interface TimeSelectorProps {
 }
 
 export const TimeSelector = ({ field, isReadOnly, error, helperText, label, absolute = false }: TimeSelectorProps) => {
-  const { setValue, formState, watch } = useFormContext();
+  const { setValue, formState } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
   const fieldName = field.hqlName;
   const { toDisplay, toPayload } = useMemo(() => getTimeFormatters(absolute), [absolute]);
 
   // Watch value from form state to sync
-  const formValue = watch(fieldName);
+  const formValue = useWatch({ name: fieldName });
   const [displayValue, setDisplayValue] = useState<string>("");
 
   const fieldError = formState.errors[fieldName];

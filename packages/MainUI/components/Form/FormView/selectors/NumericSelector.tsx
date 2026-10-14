@@ -18,7 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useLanguage } from "@/contexts/language";
 import { getNumericFormatOptions } from "@/utils";
 import { TextInput } from "./components/TextInput";
@@ -36,9 +36,9 @@ interface NumericSelectorProps extends React.ComponentProps<typeof TextInput> {
 }
 
 export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
-  const { register, setValue, watch, formState } = useFormContext();
+  const { register, setValue, formState } = useFormContext();
   const { language } = useLanguage();
-  const formValue = watch(field.hqlName);
+  const formValue = useWatch({ name: field.hqlName });
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
   const isDirty = formState.isDirty;
