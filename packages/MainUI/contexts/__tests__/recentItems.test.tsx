@@ -44,6 +44,14 @@ describe("RecentItemsProvider", () => {
     expect(loadForScope).toHaveBeenCalledWith(SCOPE_KEY);
   });
 
+  it("loads an empty scope while the session is not fully known", () => {
+    setUserSession(undefined);
+
+    render(<RecentItemsProvider>{null}</RecentItemsProvider>);
+
+    expect(loadForScope).toHaveBeenCalledWith("");
+  });
+
   it("reloads the recent items when the role changes", () => {
     setUserSession(ROLE_ID);
     render(<RecentItemsProvider>{null}</RecentItemsProvider>);

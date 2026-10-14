@@ -114,4 +114,74 @@ describe("useRecentItems", () => {
 
     expect(setItems).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["there is no role", "", [storedItem]],
+    ["the list is empty", ROLE_ID, []],
+  ])("does not translate the items while %s", (_case, roleId, items) => {
+    useRecentItemsStore.setState({ items });
+    const { result } = renderRecentItems(roleId, [menuItem], translate);
+
+    act(() => result.current.updateTranslations([menuItem]));
+
+    expect(setItems).not.toHaveBeenCalled();
+  });
+
+  it("stays collapsed and reports no items while the list is empty", () => {
+    useRecentItemsStore.setState({ items: [] });
+    const { result } = renderRecentItems();
+
+    expect(result.current.hasItems).toBe(false);
+    expect(result.current.isExpanded).toBe(false);
+  });
+
+  it("only auto-expands on the first load", () => {
+    const { result } = renderRecentItems();
+    act(() => result.current.handleToggleExpand());
+
+    act(() => useRecentItemsStore.setState({ items: [buildRecentItem("b"), storedItem] }));
+
+    expect(result.current.isExpanded).toBe(false);
+  });
+
+  it("opens the menu entry without re-adding it while there is no role", () => {
+    const { result } = renderRecentItems("");
+
+    act(() => result.current.handleRecentItemClick(storedItem as unknown as Menu));
+
+    expect(onClick).toHaveBeenCalledWith(menuItem);
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  describe("translation sync with the store", () => {
+    const otherItem = buildRecentItem("b");
+    const otherMenuItem = buildMenu("b");
+
+    it("translates the stored names on mount", () => {
+      renderRecentItems(ROLE_ID, [menuItem], translate);
+
+      expect(setItems).toHaveBeenCalledWith([{ ...storedItem, name: translate(menuItem) }]);
+    });
+
+    it("does not resync while the stored windows did not change", () => {
+      renderRecentItems(ROLE_ID, [menuItem], translate);
+      setItems.mockClear();
+
+      act(() => useRecentItemsStore.setState({ items: [{ ...storedItem }] }));
+
+      expect(setItems).not.toHaveBeenCalled();
+    });
+
+    it("resyncs when a new window enters the list", () => {
+      renderRecentItems(ROLE_ID, [menuItem, otherMenuItem], translate);
+      setItems.mockClear();
+
+      act(() => useRecentItemsStore.setState({ items: [otherItem, storedItem] }));
+
+      expect(setItems).toHaveBeenCalledWith([
+        { ...otherItem, name: translate(otherMenuItem) },
+        { ...storedItem, name: translate(menuItem) },
+      ]);
+    });
+  });
 });
