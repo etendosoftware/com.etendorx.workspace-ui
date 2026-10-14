@@ -330,8 +330,68 @@ async function windowFlow(browser, winName, run) {
           )
         );
       }
-      // Typing latency: 10 keystrokes into the Description field (exists in all benchmarked headers).
-      // The text is never saved: the context is discarded without pressing Save.
+      // New record from the form (FIC in NEW mode). Runs while the form is clean: New saves a dirty form first.
+      const newButton = page.locator("button.toolbar-button-new-form").filter({ visible: true }).first();
+      if (await newButton.isVisible().catch(() => false)) {
+        steps.push(
+          await step(
+            rec,
+            "new-record",
+            () => newButton.click(),
+            () =>
+              page.waitForFunction(
+                () => {
+                  const el = [...document.querySelectorAll('textarea[name="description"]')].find(
+                    (e) => e.offsetParent !== null
+                  );
+                  return el && el.value === "";
+                },
+                null,
+                { timeout: TIMEOUT, polling: 100 }
+              ),
+            `${tag}-new-record`
+          )
+        );
+      }
+      // Select change on the new record: pick another Payment Terms value (table-dir without callout, so the
+      // step measures the re-render cost and no FIC round trip). Missing in Goods Shipment; skipped there.
+      const select = page.locator('[aria-label="Payment Terms"] > div[tabindex="0"]').filter({ visible: true }).first();
+      if (await select.isVisible().catch(() => false)) {
+        // Setup (not measured): open the list and wait until the options beyond the current value load.
+        const before = (await select.innerText()).trim();
+        await select.click();
+        const options = page.locator('[data-testid^="OptionItem__"]').filter({ visible: true });
+        await page.waitForFunction(
+          () =>
+            [...document.querySelectorAll('[data-testid^="OptionItem__"]')].filter((e) => e.offsetParent !== null)
+              .length > 1,
+          null,
+          { timeout: TIMEOUT, polling: 100 }
+        );
+        const labels = (await options.allInnerTexts()).map((t) => t.trim());
+        const index = labels.findIndex((label) => label && label !== before);
+        const picked = labels[index];
+        steps.push(
+          await step(
+            rec,
+            "select-change",
+            () => options.nth(index).click(),
+            () =>
+              page.waitForFunction(
+                ({ expected }) =>
+                  [...document.querySelectorAll('[aria-label="Payment Terms"] > div[tabindex="0"]')]
+                    .find((e) => e.offsetParent !== null)
+                    ?.textContent?.includes(expected),
+                { expected: picked },
+                { timeout: TIMEOUT, polling: 100 }
+              ),
+            `${tag}-select-change`
+          )
+        );
+      }
+      // Typing latency: 10 keystrokes into the Description field (exists in all benchmarked headers). It runs
+      // last, on the new record, so nothing saves the text: New auto-saves a dirty form, which wrote the
+      // typed text into real records while this step ran before New. The context is discarded unsaved.
       const field = page.locator('textarea[name="description"]').filter({ visible: true }).first();
       if (await field.isVisible().catch(() => false)) {
         steps.push(
@@ -355,6 +415,11 @@ async function windowFlow(browser, winName, run) {
     }
   } catch (e) {
     steps.push({ name: "error", error: String(e.message || e).slice(0, 300) });
+    if (process.env.SCREENSHOT_ON_ERROR) {
+      await page
+        .screenshot({ path: path.join(RESULTS_DIR, `error-${winName.replace(/ /g, "")}-${run}.png`) })
+        .catch(() => {});
+    }
   } finally {
     await ctx.close();
   }
@@ -482,6 +547,11 @@ async function classicWindowFlow(browser, winName, run) {
     }
   } catch (e) {
     steps.push({ name: "error", error: String(e.message || e).slice(0, 300) });
+    if (process.env.SCREENSHOT_ON_ERROR) {
+      await page
+        .screenshot({ path: path.join(RESULTS_DIR, `error-${winName.replace(/ /g, "")}-${run}.png`) })
+        .catch(() => {});
+    }
   } finally {
     await ctx.close();
   }

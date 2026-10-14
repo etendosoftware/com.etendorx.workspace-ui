@@ -145,6 +145,11 @@ const en = {
     updated: "Updated",
     updatedBy: "Updated By",
   },
+  auditTrail: {
+    selectOneRecord: "You must select exactly one record to view the audit trail for it.",
+    popupBlocked: "The browser blocked the Audit Trail window.",
+    openPopup: "Open Audit Trail",
+  },
   status: {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",
@@ -287,6 +292,7 @@ const en = {
     groupBy: "Group by {column}",
     ungroup: "Ungroup",
     maxGroupingReached: "There are more than {count} records, grouping is disabled for larger datasets.",
+    invalidFilterValue: "Invalid filter value",
     summary: {
       min: "Min",
       max: "Max",
@@ -364,6 +370,7 @@ const en = {
     manualProcessNotMigrated: "This process has logic thas has not been migrated yet. Please contact support.",
     popupBlocked: "Your browser blocked the window this process tried to open.",
     openLink: "Open link",
+    reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
   },
   processModal: {
@@ -403,6 +410,8 @@ const en = {
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
+    externalLinkPopupBlocked: "Your browser blocked the link this menu entry tried to open.",
+    openExternalLink: "Open link",
   },
   login: {
     title: "Log In",
@@ -835,6 +844,7 @@ const en = {
     },
     widget: {
       unavailable: "Module not installed",
+      refresh: "Refresh",
     },
     noWidgets: "No widgets configured for this dashboard.",
     loadError: "Could not load the dashboard. Please try again.",

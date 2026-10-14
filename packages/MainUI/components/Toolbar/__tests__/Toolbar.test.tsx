@@ -9,6 +9,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import "@testing-library/jest-dom";
+import { AUDITED_TAB, MODIFIED_RECORD } from "@/utils/toolbar/test-utils/auditTrailFixtures";
 
 // Mocks
 jest.mock("@/contexts/datasourceContext", () => ({
@@ -258,5 +259,46 @@ describe("Toolbar - Email Integration", () => {
 
     act(() => onApplyView(viewState));
     expect(getGrouping()).toEqual([]);
+  });
+});
+
+describe("Toolbar - Audit Trail", () => {
+  const auditButton = {
+    id: "audit-trail",
+    action: "SHOW_AUDIT_TRAIL",
+    name: "Audit Trail",
+    section: "center" as const,
+    buttonType: "ACTION" as const,
+    active: true,
+    windows: [],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
+    (useUserContext as jest.Mock).mockReturnValue({ token: "test-token", session: {} });
+    (useTabContext as jest.Mock).mockReturnValue({ tab: AUDITED_TAB });
+    (useSelectedRecord as jest.Mock).mockReturnValue(MODIFIED_RECORD);
+    (useSelectedRecords as jest.Mock).mockReturnValue([MODIFIED_RECORD]);
+    (useToolbar as jest.Mock).mockReturnValue({
+      buttons: [auditButton],
+      processButtons: [],
+      loading: false,
+      refetch: jest.fn(),
+    });
+  });
+
+  it("opens the audit trail popup for the selected record", () => {
+    const openSpy = jest.spyOn(window, "open").mockReturnValue({} as Window);
+    render(<Toolbar windowId="win-id" />);
+
+    fireEvent.click(screen.getByTestId("IconButton__audit-trail"));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`inpRecordId=${String(MODIFIED_RECORD.id)}`),
+      expect.any(String),
+      expect.any(String)
+    );
+    openSpy.mockRestore();
   });
 });

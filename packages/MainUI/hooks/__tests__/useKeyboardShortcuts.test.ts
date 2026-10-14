@@ -102,4 +102,48 @@ describe("useKeyboardShortcuts", () => {
 
     expect(handler).toHaveBeenCalledWith(expect.any(KeyboardEvent));
   });
+
+  describe("Shift combinations", () => {
+    const pressCtrlShift = (key: string) => fireEvent.keyDown(document, { key, ctrlKey: true, shiftKey: true });
+
+    it("fires a ctrl+shift shortcut", () => {
+      const handler = jest.fn();
+      renderHook(() => useKeyboardShortcuts({ "ctrl+shift+y": { handler } }));
+
+      pressCtrlShift("Y");
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("prefers the ctrl+shift shortcut over the plain ctrl one", () => {
+      const shiftHandler = jest.fn();
+      const ctrlHandler = jest.fn();
+      renderHook(() =>
+        useKeyboardShortcuts({ "ctrl+shift+y": { handler: shiftHandler }, "ctrl+y": { handler: ctrlHandler } })
+      );
+
+      pressCtrlShift("Y");
+
+      expect(shiftHandler).toHaveBeenCalledTimes(1);
+      expect(ctrlHandler).not.toHaveBeenCalled();
+    });
+
+    it("falls back to the plain ctrl shortcut when no ctrl+shift one is mapped", () => {
+      const handler = jest.fn();
+      renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler } }));
+
+      pressCtrlShift("S");
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("does NOT fire a ctrl+shift shortcut without Shift", () => {
+      const handler = jest.fn();
+      renderHook(() => useKeyboardShortcuts({ "ctrl+shift+y": { handler } }));
+
+      fireEvent.keyDown(document, { key: "y", ctrlKey: true });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+  });
 });

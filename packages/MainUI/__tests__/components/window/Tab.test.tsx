@@ -31,7 +31,7 @@ import { DatasourceProvider } from "@/contexts/datasourceContext";
 import WindowProvider from "@/contexts/window";
 import { Tab } from "@/components/window/Tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import DynamicTable from "@/components/Table";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
@@ -101,7 +101,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockUseTabRefreshContext = useTabRefreshContext as jest.MockedFunction<typeof useTabRefreshContext>;
-const mockUseToolbarContext = useToolbarContext as jest.MockedFunction<typeof useToolbarContext>;
+const mockUseToolbarCommands = useToolbarCommands as jest.MockedFunction<typeof useToolbarCommands>;
 
 // Helper function to render with theme and providers
 const renderWithTheme = (component: React.ReactElement) => {
@@ -151,7 +151,7 @@ describe("Tab - Refresh Registration", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       onRefresh: mockOnRefresh,
       onSave: jest.fn(),
@@ -315,7 +315,7 @@ describe("Tab - Split view", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       unregisterActions: jest.fn(),
       onRefresh: jest.fn(),

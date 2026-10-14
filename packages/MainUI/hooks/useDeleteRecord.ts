@@ -24,7 +24,7 @@ import { useTranslation } from "./useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";
 import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 
 export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
@@ -57,7 +57,7 @@ export const useDeleteRecord = ({
   const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
   const { logout } = useUserContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
-  const { onBack } = useToolbarContext();
+  const { onBack } = useToolbarCommands();
   const { t } = useTranslation();
 
   const userId = user?.id;

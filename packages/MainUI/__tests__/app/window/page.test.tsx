@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import Page from "@/app/(main)/window/page";
 import { useWindowStore } from "@/stores/windowStore";
+import { IFRAME_SANDBOX_PERMISSIVE } from "@/utils/iframeSandbox";
 
 // Mock dependencies
 jest.mock("@/stores/windowStore", () => ({
@@ -105,6 +106,30 @@ describe("Window Page", () => {
     render(<Page />);
 
     expect(screen.getByTestId("Window__123")).toBeInTheDocument();
+  });
+
+  it("embeds the URL of an External menu entry tab instead of rendering a Window", () => {
+    const externalIdentifier = "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6_1";
+    mockWindowStore({
+      windows: {
+        [externalIdentifier]: {
+          windowIdentifier: externalIdentifier,
+          title: "TEST External",
+          isActive: true,
+          externalUrl: "http://example.com",
+        },
+      },
+      isRecoveryLoading: false,
+    });
+
+    render(<Page />);
+
+    const iframe = screen.getByTestId(`ExternalPage__${externalIdentifier}`);
+    expect(iframe).toHaveAttribute("src", "http://example.com");
+    expect(iframe).toHaveAttribute("title", "TEST External");
+    expect(iframe).toHaveAttribute("sandbox", IFRAME_SANDBOX_PERMISSIVE);
+    expect(iframe).toHaveAttribute("referrerPolicy", "no-referrer");
+    expect(screen.queryByTestId(`Window__${externalIdentifier}`)).not.toBeInTheDocument();
   });
 
   it("renders WindowTabs when windows exist", () => {

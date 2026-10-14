@@ -209,6 +209,21 @@ describe("dashboardStore", () => {
 
       expect(useDashboardStore.getState().widgetErrors.w1).toBeUndefined();
     });
+
+    it("keeps the auto-refresh interval running after a manual refresh", async () => {
+      mockFetchLayout.mockResolvedValue({ widgets: [makeWidget("w1", 30)] });
+      mockFetchWidgetData.mockResolvedValue(makeData("x"));
+      await useDashboardStore.getState().loadLayout();
+
+      await useDashboardStore.getState().refreshWidget("w1");
+      mockFetchWidgetData.mockClear();
+
+      jest.advanceTimersByTime(30_000);
+      await Promise.resolve();
+
+      expect(mockFetchWidgetData).toHaveBeenCalledTimes(1);
+      expect(mockFetchWidgetData).toHaveBeenCalledWith("w1", { page: 1, pageSize: WIDGET_PAGE_SIZE });
+    });
   });
 
   describe("updateLayout", () => {

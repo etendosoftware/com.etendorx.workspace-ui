@@ -31,7 +31,7 @@ import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
-import { useToolbarContext } from "../../contexts/ToolbarContext";
+import { useToolbarCommands } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useSettledParent } from "@/hooks/table/useSettledParent";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -150,7 +150,7 @@ export const useTableData = ({
   const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
   }, []);
-  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarCommands();
   const { graph } = useSelected();
 
   const {

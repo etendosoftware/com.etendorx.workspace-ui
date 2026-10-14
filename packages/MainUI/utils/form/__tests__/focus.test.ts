@@ -22,6 +22,7 @@ import {
   findAdjacentFocusableField,
   findFieldFocusTarget,
   findFieldsRoot,
+  findFirstFieldFocusTarget,
   findFirstFocusableField,
   findFocusableFieldControls,
   findFocusableFields,
@@ -179,6 +180,43 @@ describe("form focus utils", () => {
       const root = renderFieldsRoot(readOnlyField(FIELD_NAMES.DOCUMENT_NO));
 
       expect(findFieldFocusTarget(root, FIELD_NAMES.DOCUMENT_NO)).toBeNull();
+    });
+  });
+
+  describe("findFirstFieldFocusTarget", () => {
+    it("resolves the first named field in form order, not in the order of the names", () => {
+      const root = renderFieldsRoot(textField(FIELD_NAMES.DOCUMENT_NO), comboField(FIELD_NAMES.BUSINESS_PARTNER));
+
+      expect(findFirstFieldFocusTarget(root, [FIELD_NAMES.BUSINESS_PARTNER, FIELD_NAMES.DOCUMENT_NO])).toBe(
+        controlOf(FIELD_NAMES.DOCUMENT_NO)
+      );
+    });
+
+    it("skips named fields with no focusable control", () => {
+      const root = renderFieldsRoot(readOnlyField(FIELD_NAMES.DOCUMENT_NO), textField(FIELD_NAMES.DESCRIPTION));
+
+      expect(findFirstFieldFocusTarget(root, [FIELD_NAMES.DOCUMENT_NO, FIELD_NAMES.DESCRIPTION])).toBe(
+        controlOf(FIELD_NAMES.DESCRIPTION)
+      );
+    });
+
+    it("ignores fields that are not named", () => {
+      const root = renderFieldsRoot(textField(FIELD_NAMES.DOCUMENT_NO), textField(FIELD_NAMES.DESCRIPTION));
+
+      expect(findFirstFieldFocusTarget(root, [FIELD_NAMES.DESCRIPTION])).toBe(controlOf(FIELD_NAMES.DESCRIPTION));
+    });
+
+    it("returns null when no named field is rendered", () => {
+      const root = renderFieldsRoot(textField(FIELD_NAMES.DOCUMENT_NO));
+
+      expect(findFirstFieldFocusTarget(root, [FIELD_NAMES.MISSING])).toBeNull();
+    });
+
+    it("returns null without a root or without names", () => {
+      const root = renderFieldsRoot(textField(FIELD_NAMES.DOCUMENT_NO));
+
+      expect(findFirstFieldFocusTarget(null, [FIELD_NAMES.DOCUMENT_NO])).toBeNull();
+      expect(findFirstFieldFocusTarget(root, [])).toBeNull();
     });
   });
 
