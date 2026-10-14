@@ -52,6 +52,7 @@ import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
+import { isTreeModeSupported } from "@/utils/table/treeMode";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -145,7 +146,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
-  const isTreeNodeView = tab?.tableTree ? true : undefined;
+  const isTreeNodeView = isTreeModeSupported(tab) ? true : undefined;
 
   const {
     handleAction,
