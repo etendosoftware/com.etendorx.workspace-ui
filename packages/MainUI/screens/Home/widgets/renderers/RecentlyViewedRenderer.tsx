@@ -24,23 +24,32 @@ import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { findExternalMenuEntry, isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
+import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
   const currentRole = useUserStore((s) => s.currentRole);
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const recentItems = useRecentItemsStore((s) => s.items);
+  const openExternalMenuEntry = useOpenExternalMenuEntry();
 
   const items = currentRole?.id ? recentItems : [];
 
   const handleClick = useCallback(
     (item: RecentItem) => {
+      if (isExternalMenuEntry(item)) {
+        // Prefer the live menu entry, so a URL changed since the visit is honored.
+        openExternalMenuEntry(findExternalMenuEntry(Metadata.getCachedMenu(), item.id) ?? item);
+        return;
+      }
       const windowId = item.windowId ?? item.id;
       if (!windowId) return;
       const windowIdentifier = getNewWindowIdentifier(windowId);
       setWindowActive({ windowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [setWindowActive]
+    [setWindowActive, openExternalMenuEntry]
   );
 
   if (items.length === 0) {

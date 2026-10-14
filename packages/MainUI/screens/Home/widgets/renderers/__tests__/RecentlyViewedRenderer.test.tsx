@@ -16,58 +16,93 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import RecentlyViewedRenderer from "@/screens/Home/widgets/renderers/RecentlyViewedRenderer";
 import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { useWindowStore } from "@/stores/windowStore";
-import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { buildRecentItem, ROLE_ID, setUserSession } from "@/test-utils/recentItems";
+import { ROLE_ID, setUserSession } from "@/test-utils/recentItems";
+
+const EXTERNAL_ID = "A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6";
+const WINDOW_ID = "143";
+const EMPTY_TEST_ID = "RecentlyViewedRenderer__empty";
+
+const mockOpenExternalMenuEntry = jest.fn();
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: jest.fn(),
+jest.mock("@/hooks/useOpenExternalMenuEntry", () => ({
+  useOpenExternalMenuEntry: () => mockOpenExternalMenuEntry,
 }));
 
-jest.mock("@/utils/window/utils", () => ({
-  getNewWindowIdentifier: jest.fn((windowId: string) => `${windowId}_id`),
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: { getCachedMenu: jest.fn() },
 }));
 
-const EMPTY_TEST_ID = "RecentlyViewedRenderer__empty";
-const item = buildRecentItem("a");
+const externalItem: RecentItem = {
+  id: EXTERNAL_ID,
+  name: "TEST External",
+  windowId: EXTERNAL_ID,
+  type: "External",
+  url: "old.example.com",
+  openLinkInBrowser: false,
+};
+
+const windowItem: RecentItem = { id: "MENU_WIN", name: "Sales Order", windowId: WINDOW_ID, type: "Window" };
+
+const clickItem = (id: string) => fireEvent.click(screen.getByTestId(`RecentlyViewedRenderer__item_${id}`));
 
 describe("RecentlyViewedRenderer", () => {
-  const setWindowActive = jest.fn();
-
   beforeEach(() => {
-    setWindowActive.mockClear();
-    (useWindowStore as unknown as jest.Mock).mockImplementation((selector) => selector({ setWindowActive }));
-    useRecentItemsStore.setState({ items: [item] });
+    jest.clearAllMocks();
+    useWindowStore.getState().cleanState();
+    useRecentItemsStore.setState({ items: [externalItem, windowItem] });
     setUserSession(ROLE_ID);
+    jest.mocked(Metadata.getCachedMenu).mockReturnValue([]);
   });
 
-  it("shows the empty state when there are no recent items", () => {
+  it("shows the empty message when there are no recent items", () => {
     useRecentItemsStore.setState({ items: [] });
     render(<RecentlyViewedRenderer />);
+
     expect(screen.getByTestId(EMPTY_TEST_ID)).toBeInTheDocument();
   });
 
-  it("shows the empty state while there is no role", () => {
+  it("shows the empty message while there is no role", () => {
     setUserSession(undefined);
     render(<RecentlyViewedRenderer />);
+
     expect(screen.getByTestId(EMPTY_TEST_ID)).toBeInTheDocument();
   });
 
-  it("renders the server-side recent items and opens the window on click", () => {
+  it("opens External items with the live menu entry when it is still in the menu", () => {
+    const liveEntry = { id: EXTERNAL_ID, name: "TEST External", type: "External", url: "example.com" };
+    jest.mocked(Metadata.getCachedMenu).mockReturnValue([liveEntry]);
     render(<RecentlyViewedRenderer />);
 
-    fireEvent.click(screen.getByTestId(`RecentlyViewedRenderer__item_${item.id}`));
+    clickItem(EXTERNAL_ID);
 
-    expect(getNewWindowIdentifier).toHaveBeenCalledWith(item.windowId);
-    expect(setWindowActive).toHaveBeenCalledWith({
-      windowIdentifier: `${item.windowId}_id`,
-      windowData: { title: item.name, initialized: true },
-    });
+    expect(mockOpenExternalMenuEntry).toHaveBeenCalledWith(liveEntry);
+    expect(useWindowStore.getState().windows).toEqual({});
+  });
+
+  it("falls back to the stored External item when the menu does not have it", () => {
+    render(<RecentlyViewedRenderer />);
+
+    clickItem(EXTERNAL_ID);
+
+    expect(mockOpenExternalMenuEntry).toHaveBeenCalledWith(externalItem);
+  });
+
+  it("opens the other server-side recent items as windows", () => {
+    render(<RecentlyViewedRenderer />);
+
+    clickItem("MENU_WIN");
+
+    expect(mockOpenExternalMenuEntry).not.toHaveBeenCalled();
+    const [opened] = Object.values(useWindowStore.getState().windows);
+    expect(opened).toMatchObject({ windowId: WINDOW_ID, title: "Sales Order", isActive: true });
   });
 });

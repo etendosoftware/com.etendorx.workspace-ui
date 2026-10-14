@@ -43,6 +43,8 @@ interface FormActionsProps {
   mode: FormMode;
   isFocused?: boolean;
   isDocumentProcessing?: boolean;
+  /** Receives the `hqlName` of the required fields left empty when a save is blocked. */
+  onFieldErrors?: (fieldNames: string[]) => void;
 }
 
 export function FormActions({
@@ -55,6 +57,7 @@ export function FormActions({
   mode,
   isFocused,
   isDocumentProcessing,
+  onFieldErrors,
 }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
@@ -179,6 +182,7 @@ export function FormActions({
         if (!validationResult.isValid) {
           const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
           showErrorModal(`The following required fields are missing: ${missingFields}`);
+          onFieldErrors?.(validationResult.missingFields.map((field) => field.fieldName));
           return false;
         }
 
@@ -193,7 +197,7 @@ export function FormActions({
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [onSave, showErrorModal, setSaveButtonState, validateRequiredFields]
+    [onSave, showErrorModal, onFieldErrors, setSaveButtonState, validateRequiredFields]
   );
 
   const onReset = useCallback(async () => {

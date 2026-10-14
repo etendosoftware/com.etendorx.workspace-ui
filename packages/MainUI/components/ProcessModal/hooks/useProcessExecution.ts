@@ -43,7 +43,7 @@ import { appendWindowToUrl } from "@/utils/url/utils";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
-import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
+import { shouldKeepModalOpen, shouldRefreshAfterProcess } from "../utils/processResponseFlags";
 import {
   type DispatchedAction,
   dispatchResponseActions,
@@ -104,10 +104,17 @@ const getActionExecuteJSON = (ctx: Record<string, unknown>): ActionExecuteJSON |
 
 const KERNEL_ENDPOINT = "/api/erp/org.openbravo.client.kernel";
 
-const buildKernelEndpoint = (args: {
+/** Request parameter the classic report handler (`BaseReportActionHandler`) reads the Report Definition id from. */
+export const REPORT_ID_PARAM = "reportId";
+
+/** Value Classic posts as `reportId` in multipart requests when the process is not a report. */
+const NO_REPORT_ID = "null";
+
+export const buildKernelEndpoint = (args: {
   processId?: string;
   windowId?: string | number;
   javaClassName?: string;
+  reportId?: string;
 }): string => {
   const qs = new URLSearchParams();
   if (args.processId) qs.set("processId", args.processId);
@@ -115,6 +122,7 @@ const buildKernelEndpoint = (args: {
     qs.set("windowId", String(args.windowId));
   }
   if (args.javaClassName) qs.set("_action", args.javaClassName);
+  if (args.reportId) qs.set(REPORT_ID_PARAM, args.reportId);
   return `${KERNEL_ENDPOINT}?${qs.toString()}`;
 };
 
@@ -140,6 +148,11 @@ export interface UseProcessExecutionParams {
   // Process identity
   processId: string;
   javaClassName: string | undefined;
+  /**
+   * Report Definition id of an `OBUIAPP_Report` process. Sent as the `reportId`
+   * request parameter (as Classic does); absent for every other process.
+   */
+  reportId?: string;
   windowId: string | number;
   tabId: string;
   /** Body of em_etmeta_onprocess column, evaluated as a function expression on submit. */
@@ -227,6 +240,7 @@ export interface UseProcessExecutionReturn {
 export function useProcessExecution({
   processId,
   javaClassName,
+  reportId,
   windowId,
   tabId,
   etmetaOnprocess,
@@ -492,7 +506,7 @@ export function useProcessExecution({
         formData.append(paramName, file, file.name);
       }
       formData.append("processId", processId || "");
-      formData.append("reportId", "null");
+      formData.append(REPORT_ID_PARAM, reportId ?? NO_REPORT_ID);
       formData.append("windowId", String(tab?.window || ""));
       if (payload._params) {
         for (const [paramName, file] of Object.entries(fileParams)) {
@@ -506,7 +520,7 @@ export function useProcessExecution({
         body: formData,
       };
     },
-    [fileParams, processId, tab?.window, token, getCsrfToken]
+    [fileParams, processId, reportId, tab?.window, token, getCsrfToken]
   );
 
   const buildJsonRequest = useCallback(
@@ -560,7 +574,7 @@ export function useProcessExecution({
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
       try {
-        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
+        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName, reportId });
         const hasFiles = Object.keys(fileParams).length > 0;
         const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
@@ -583,7 +597,8 @@ export function useProcessExecution({
         // retryExecution=true (e.g. to let Classic offer "create another"). A "silent" response
         // (no message at all — messageType defaults to "success" with no `data`) still retries.
         const isExplicitSuccessMessage = parsedResult.messageType === "success" && Boolean(parsedResult.data);
-        if (shouldRetryAfterProcess(resultData) && !isExplicitSuccessMessage) {
+        // Report executions stay open even on success, like the classic popup.
+        if (shouldKeepModalOpen(resultData, isExplicitSuccessMessage, Boolean(reportId))) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
           const hasRefreshGridAction = dispatchResponseActions(resultData).some((a) => a.kind === "refreshGrid");
@@ -603,6 +618,7 @@ export function useProcessExecution({
       processId,
       tab?.window,
       javaClassName,
+      reportId,
       fileParams,
       scriptContext,
       buildMultipartRequest,
@@ -745,7 +761,7 @@ export function useProcessExecution({
    */
   const runStandardExecution = useCallback(
     async (actionValue?: string): Promise<unknown> => {
-      const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName });
+      const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName, reportId });
       const resultData = await fetchAndParseJson(apiUrl, buildJsonRequest(buildStandardJavaPayload(actionValue)));
 
       const dispatchableActions = readDispatchableResponseActions(resultData);
@@ -755,7 +771,7 @@ export function useProcessExecution({
 
       return resultData;
     },
-    [processId, tab?.window, javaClassName, scriptContext, buildJsonRequest, buildStandardJavaPayload]
+    [processId, tab?.window, javaClassName, reportId, scriptContext, buildJsonRequest, buildStandardJavaPayload]
   );
 
   const extractResponseMessage = useCallback(

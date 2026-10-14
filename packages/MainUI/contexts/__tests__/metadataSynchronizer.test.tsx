@@ -105,4 +105,23 @@ describe("MetadataSynchronizer", () => {
 
     consoleSpy.mockRestore();
   });
+
+  it("does not load metadata for the in-app tabs of External menu entries", () => {
+    const externalIdentifier = "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6_1787227156318";
+    useWindowStore.setState({
+      windows: {
+        [externalIdentifier]: {
+          windowId: "external-A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+          windowIdentifier: externalIdentifier,
+          isActive: true,
+          externalUrl: "http://example.com",
+        } as never,
+      },
+    });
+
+    render(<MetadataSynchronizer />);
+
+    expect(loadWindowData).not.toHaveBeenCalled();
+    expect(cleanupWindow).not.toHaveBeenCalled();
+  });
 });
