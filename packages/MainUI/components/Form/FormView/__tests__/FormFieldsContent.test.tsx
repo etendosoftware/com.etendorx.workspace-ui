@@ -20,7 +20,7 @@ import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { FormFields } from "../FormFieldsContent";
 import { useFormViewContext } from "../contexts/FormViewContext";
 import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
@@ -66,9 +66,7 @@ jest.mock("../selectors/BaseSelector", () => ({
   compileExpression: jest.fn(() => () => true),
 }));
 
-jest.mock("@/utils/expressions", () => ({
-  createSmartContext: jest.fn(() => ({})),
-}));
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => ({ getEvaluationContext: jest.fn(() => ({})) }));
 
 jest.mock("../Sections/noteSection", () => ({
   __esModule: true,
@@ -228,7 +226,7 @@ describe("FormFields — expression evaluation context", () => {
   // clearAllMocks keeps implementations: restore the module mocks' defaults so overrides don't leak.
   afterEach(() => {
     (useDisplayLogicFormValues as jest.Mock).mockReset().mockImplementation(() => ({}));
-    (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
+    (getEvaluationContext as jest.Mock).mockReset().mockImplementation(() => ({}));
   });
 
   const withLogic = (hqlName: string) => makeField({ hqlName, displayLogicExpression: "@a@ = 'Y'" } as any);
@@ -241,7 +239,7 @@ describe("FormFields — expression evaluation context", () => {
     render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
     expect(screen.getByText("Main")).toBeInTheDocument();
     expect(screen.getByText("More")).toBeInTheDocument();
-    expect(createSmartContext).toHaveBeenCalledTimes(1);
+    expect(getEvaluationContext).toHaveBeenCalledTimes(1);
   });
 
   it("follows the display-logic fields of the tab and the record identifier", () => {
@@ -250,7 +248,7 @@ describe("FormFields — expression evaluation context", () => {
   });
 
   it("still shows the sections when the context build throws", () => {
-    (createSmartContext as jest.Mock).mockImplementation(() => {
+    (getEvaluationContext as jest.Mock).mockImplementation(() => {
       throw new Error("boom");
     });
     render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);

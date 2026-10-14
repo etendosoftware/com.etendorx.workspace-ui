@@ -23,7 +23,6 @@ import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { createSmartContext } from "@/utils/expressions";
 import { lazyContextByKey } from "@/utils/evaluation/lazyContext";
 import { collectExpressionDependencies } from "@/utils/expressions/dependencies";
 import { useTabFormValues } from "@/hooks/useTabFormValues";
@@ -41,6 +40,7 @@ import {
 } from "@/utils/hooks/useFormInitialization/utils";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 
 // NOTE: this need a fix in the future
 // Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
@@ -170,7 +170,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     // One context per selected record, built the first time a button needs it and shared by the
     // rest. Built inside each button's try below, so a failed build keeps that button's fallback.
     const contextForRecord = lazyContextByKey((record: Record<string, unknown>) =>
-      createSmartContext({
+      getEvaluationContext({
         values: { ...record, ...formValues },
         fields: tab.fields,
         auxiliaryInputs: effectiveAuxInputs,

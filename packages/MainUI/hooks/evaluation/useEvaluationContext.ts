@@ -16,15 +16,16 @@
  */
 
 import { useMemo } from "react";
-import { createSmartContext, type EvaluationContext, type EvaluationContextOptions } from "@/utils/expressions";
+import type { EvaluationContext, EvaluationContextOptions } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { logger } from "@/utils/logger";
 
 /**
  * The evaluation context for display/read-only logic, built once per change of its inputs.
  *
  * Never throws: a failed build returns `null`, and callers apply the same per-field fallback they
- * apply when an expression fails. Calls the builder as `createSmartContext` from `@/utils/expressions`
- * on purpose, so tests that mock that module keep intercepting it.
+ * apply when an expression fails. Goes through {@link getEvaluationContext}, so components that each
+ * take their own snapshot of the same form values (FormHeader, FormFields) share one context.
  *
  * Inputs are compared by identity: pass new objects when their contents change (react-hook-form's
  * watch()/getValues() already do).
@@ -46,7 +47,7 @@ export function useEvaluationContext(options: EvaluationContextOptions): Evaluat
 
   return useMemo(() => {
     try {
-      return createSmartContext({
+      return getEvaluationContext({
         values,
         fields,
         parentValues,
