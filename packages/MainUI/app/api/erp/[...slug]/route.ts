@@ -426,13 +426,13 @@ async function handleMutationRequest(
 }
 
 /**
- * Window and tab definitions are answered by com.etendoerp.metadata with an ETag computed from
+ * Window, tab and menu definitions are answered by com.etendoerp.metadata with an ETag computed from
  * the body. They skip the Next.js Data Cache (which never revalidates) and pass the conditional
  * headers through, so the browser HTTP cache revalidates them and an unchanged definition costs
  * a 304 instead of 1–3 MB.
  */
 function isRevalidatedMetadataRoute(slug: string, method: string): boolean {
-  return method === "GET" && /^meta\/(window|tab)\/[^/]+$/.test(slug);
+  return method === "GET" && /^meta\/(?:(?:window|tab)\/[^/]+|menu)$/.test(slug);
 }
 
 const REVALIDATION_RESPONSE_HEADERS = ["content-type", "etag", "cache-control"];

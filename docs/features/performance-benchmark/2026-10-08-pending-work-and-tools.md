@@ -40,10 +40,11 @@ PR), a 4-window `perf:compare` reference.
 1. **Open the PRs** (Git Police: titles `Hotfix ETP-5641: …`, target `main`): run `pnpm apply:data-testid` and
    `pnpm check`, push both branches, paste a `pnpm perf:compare` report (4 windows, 3 rounds, `CPU_THROTTLE=4`) in the
    UI PR's Performance section, then fix whatever the e2e suites report.
-2. **Menu revalidation** (§2.0 follow-ups): `/meta/menu` via GET with the body ETag (`MetadataService.writeWithETag`) +
-   add `menu` to `isRevalidatedMetadataRoute` in `app/api/erp/[...slug]/route.ts`; keep `useMenu`'s forced refresh
-   (now a 304). ~244 KB per reload. Note the existing fingerprint ETag in `MetadataServlet` for `MENU_PATH` on GET must
-   not short-circuit before the body ETag (or drop it: it misses role-access changes).
+2. ~~**Menu revalidation**~~ **Done (round 3, local, not pushed):** `/meta/menu` answers GET with the body ETag
+   (`MenuService` → `writeWithETag`); the old menu fingerprint (`HttpCacheSupport.fingerprintMenu`, missed role
+   access changes) is removed; the UI fetches the menu with GET and the proxy passes it through like window/tab.
+   A reload now costs 308 B instead of 244 KB for the menu (checked in Chromium against a production build).
+   Ship the module before the UI: with an older module the GET hits the old fingerprint ETag.
 3. **Form reset/initialization** (`FormView/index.tsx` ~580 and ~684, ≈190 ms per form step at 4x): profile
    `new-record` / `form-next-5` again (`CALLERS_OF=components/Form/FormView/index.tsx`), look for avoidable re-renders
    after `reset()`.
@@ -120,10 +121,9 @@ Locally the transfer is almost free, so time barely moves; the gain is bytes. On
 
 Follow-ups:
 
-- **Menu still re-downloaded on every reload (244 KB):** `hooks/useMenu.ts:50` forces `getMenu(true)` on
-  mount. The forced refresh keeps the menu fresh after role-access changes, which the existing menu ETag
-  (`role | language | max(ADMenu.updated)`) does not detect, so it cannot simply be removed. Option: menu via
-  GET with the same body ETag + proxy pass-through.
+- ~~**Menu still re-downloaded on every reload (244 KB)**~~ **Done (round 3):** menu via GET with the body
+  ETag + proxy pass-through; `useMenu`'s forced refresh stays and is now a 304 (308 B). The fingerprint ETag
+  (`role | language | max(ADMenu.updated)`) was dropped: it missed role access changes.
 - **Server generation is still paid on every revalidation** (~0.3–0.6 s locally per window, 7–10× on demo).
   Avoiding it needs a fingerprint ETag, which needs the legacy combo values moved out of the window
   metadata into an on-demand request (process modal change).
@@ -137,7 +137,7 @@ slower than a local Tomcat; navigation cost is ~4 s per window with either UI.
 | Item | Where | Evidence / expected gain |
 |---|---|---|
 | gzip for API JSON | infra (Apache / Next proxy `app/api/erp`, `app/api/meta`) | HTML is compressed, JSON is not; Sales Invoice metadata 3.4 MB → ~365 KB |
-| ~~Metadata cache is written but never read~~ **Done (round 2, window/tab part)** | see §2.0 | the menu part is still pending: `hooks/useMenu.ts:50` always calls `getMenu(true)` on mount, so the role check in `metadata.ts:244` never runs; see §2.0 follow-ups |
+| ~~Metadata cache is written but never read~~ **Done (round 2, window/tab part)** | see §2.0 | menu part done in round 3 (GET + body ETag, a reload revalidates it with a 304) |
 | ~~Cache stores window and tabs duplicated, overflows localStorage (5 MB)~~ **Done (round 2)** | see §2.0 | window/tab definitions now live in memory; old persisted copies are removed on start |
 | ~~`CacheStore.get` parses the whole window JSON on every call~~ **Done for window/tab (round 2)** | see §2.0 | `getCachedWindow` / `getColumns` / `getTab` read an in-memory `Map`; other `CacheStore` keys (menu, labels, toolbar) still parse on read, but they are small |
 | Grid fetches all 182 properties per row | grid datasource (`hooks/table/useTableData.tsx`, `useDatasource`) | Sales Invoice page: 506 KB; visible columns only ~66 KB (`_selectedProperties`); 37 rows measured: 187 KB / 221 ms server → 37 KB / 37 ms. Not a parameter change: grid rows are used as full records in ~15 backend payloads. Design: `2026-10-08-grid-selected-properties-design.md` |
