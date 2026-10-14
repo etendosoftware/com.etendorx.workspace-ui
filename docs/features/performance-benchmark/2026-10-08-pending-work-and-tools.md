@@ -5,7 +5,38 @@
 - **Purpose:** starting point for a fresh analysis session. Everything below is measured or located in code;
   numbers are medians at `CPU_THROTTLE=4` (Chrome CPU slowed 4x, a mid/low-end machine) unless noted.
 
-## 0. Start here — round 2 status (2026-10-14)
+## 0. Start here — round 3 status (2026-10-14)
+
+Round 2 was merged (UI #967, module #215). Round 3 is committed on `hotfix/ETP-5641` in both repos, **not pushed**:
+
+| Repo | Commits |
+|---|---|
+| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots |
+| `com.etendoerp.metadata` | `9ef6dea` menu body ETag (ship before the UI) |
+
+Measured with `perf:compare` (Sales Invoice, CPU 4x) against the previous state:
+
+- Menu: a reload costs 308 B instead of 244 KB.
+- Form Next (`perf/render-count.mjs`, one Next): FormView 12 → 6 renders. FormView subscribed to the whole toolbar
+  slot (now `useToolbarCommands` + one selector), Tab re-rendered it with the same props (now `React.memo`), and
+  `BaseSelector` called `useParams()` for a `recordId` route segment that does not exist (always undefined; it only
+  re-rendered every field on each URL change). `form-next-5` blocking −15 %, `open-record` −18 %. The ≈190 ms "form
+  reset" estimate below was wrong: `reset()` itself is ≈27 ms per Next; the cost was the re-renders.
+- Evaluation contexts: 31 builds per Next from 13 distinct inputs (each consumer took its own snapshot of the same
+  values). `getEvaluationContext` now reuses a recent record with the same content; 12 builds, none repeated.
+  CPU change within noise (≈−7 % `form-next-5`).
+
+Tried and dropped — **stable react-hook-form context** (fields re-render with every FormView render because
+`FormProvider` passes `{ ...props }`). Working version: own provider for RHF's context, `formState` readers moved to
+`useFormState`. Field renders only 348 → 318 per Next, CPU within noise, and two traps:
+`reset()` empties RHF's field registry (`_fields`, `_names.mount`), and a field registers again only when it
+re-renders — with a fully stable context, typing into a field whose value did not change across the reset (Sales
+Order description) did nothing, so the context must still change once per reset. And `NumericSelector` passes the
+RHF ref to a controlled input: `reset()` writes the raw value ("0" for "0.00") into the DOM, hidden today only by
+re-renders. Not worth the risk; the remaining field re-renders come from the form initialization context and
+TabContext.
+
+## Round 2 status (merged)
 
 Round 2 is implemented, committed and **not pushed**; no PR is open yet.
 
@@ -45,11 +76,8 @@ PR), a 4-window `perf:compare` reference.
    access changes) is removed; the UI fetches the menu with GET and the proxy passes it through like window/tab.
    A reload now costs 308 B instead of 244 KB for the menu (checked in Chromium against a production build).
    Ship the module before the UI: with an older module the GET hits the old fingerprint ETag.
-3. **Form reset/initialization** (`FormView/index.tsx` ~580 and ~684, ≈190 ms per form step at 4x): profile
-   `new-record` / `form-next-5` again (`CALLERS_OF=components/Form/FormView/index.tsx`), look for avoidable re-renders
-   after `reset()`.
-4. **Once-per-pass evaluation contexts** (toolbar `useToolbar.ts:172` ≈36 ms per step at 4x, `useFormValidation.ts:257`,
-   `FormHeader`, `FormFields`): could reuse `getEvaluationContext` with the record as base and form values as overlay.
+3. ~~**Form reset/initialization**~~ **Done (round 3):** see §0 (the cost was re-renders, not `reset()`).
+4. ~~**Once-per-pass evaluation contexts**~~ **Done (round 3):** see §0.
 5. **Grid `_selectedProperties`**: design in `2026-10-08-grid-selected-properties-design.md`, waiting for review —
    do not start without it (rows feed ~15 backend payloads).
 6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), one FIC +
