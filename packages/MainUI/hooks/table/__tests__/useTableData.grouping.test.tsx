@@ -52,7 +52,7 @@ jest.mock("../../../contexts/tab", () => ({
 }));
 jest.mock("../../../contexts/CurrentWindowContext", () => ({ useCurrentWindowIdentifier: () => "143_1" }));
 jest.mock("../../../contexts/ToolbarContext", () => ({
-  useToolbarContext: () => mockToolbar,
+  useToolbarCommands: () => mockToolbar,
 }));
 jest.mock("../../useSelected", () => ({ useSelected: () => mockSelected }));
 jest.mock("../../useTreeModeMetadata", () => ({
