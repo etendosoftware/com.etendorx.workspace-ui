@@ -1,6 +1,7 @@
 // Statistics for comparing benchmark runs of two builds measured on the same machine (perf:compare).
-// Deterministic metrics (requests, bytes) are compared directly; timing metrics only count as a
-// regression when the change is larger than the noise of the machine (bootstrap interval).
+// Every metric only counts as a regression when the change is larger than the noise of the machine
+// (bootstrap interval). Requests and bytes are usually identical in every round, so any consistent extra
+// request still shows up; on timing-dependent steps (keys 100 ms apart) they vary even in the base.
 
 export const METRICS = ["settledMs", "blockingMs", "apiRequests", "apiBytes"];
 const TIMING_THRESHOLD_PCT = 10;
@@ -42,30 +43,45 @@ export function compareMetric(metric, base, head) {
   const baseMedian = median(base);
   const headMedian = median(head);
   const changePct = baseMedian === 0 ? (headMedian === 0 ? 0 : 100) : ((headMedian - baseMedian) / baseMedian) * 100;
+  const [low] = bootstrapMedianDiff(base, head);
+  const aboveNoise = low > 0;
   let regression;
   if (metric === "apiRequests") {
-    regression = headMedian > baseMedian;
+    regression = headMedian > baseMedian && aboveNoise;
   } else if (metric === "apiBytes") {
-    regression = changePct > BYTES_THRESHOLD_PCT;
+    regression = changePct > BYTES_THRESHOLD_PCT && aboveNoise;
   } else {
-    const [low] = bootstrapMedianDiff(base, head);
     const minAbsolute = MIN_ABSOLUTE_MS[metric] ?? 0;
-    regression = changePct > TIMING_THRESHOLD_PCT && low > 0 && headMedian - baseMedian >= minAbsolute;
+    regression = changePct > TIMING_THRESHOLD_PCT && aboveNoise && headMedian - baseMedian >= minAbsolute;
   }
   return { metric, base: baseMedian, head: headMedian, changePct, regression };
 }
 
-const succeeded = (run, flow) => run.flows?.[flow] && !run.flows[flow].error;
+const hasFlow = (run, flow) => Boolean(run.flows?.[flow]);
+const succeeded = (run, flow) => !run.flows[flow].error;
+// Extra rounds only measure some windows, so each flow uses the rounds that measured it
+const runsWith = (runs, flow) => runs.filter((run) => hasFlow(run, flow));
+const comparable = (baseRuns, headRuns, flow) => {
+  const measured = [...runsWith(baseRuns, flow), ...runsWith(headRuns, flow)];
+  return (
+    runsWith(baseRuns, flow).length > 0 &&
+    runsWith(headRuns, flow).length > 0 &&
+    measured.every((run) => succeeded(run, flow))
+  );
+};
 
 /**
  * Compares bench.mjs results of the base and the head (one file per round). Only the flows that succeeded
- * in every round of both sides are compared; totals add those flows up per round.
+ * in every round that measured them, on both sides, are compared; totals add those flows up per round, over
+ * the rounds that measured all of them. `unstable` lists the flows whose requests vary between the base
+ * rounds: their request and byte counts depend on timing.
  */
 export function compareRuns(baseRuns, headRuns) {
   const allFlows = new Set([...baseRuns, ...headRuns].flatMap((run) => Object.keys(run.flows ?? {})));
-  const flows = [...allFlows].filter((flow) => [...baseRuns, ...headRuns].every((run) => succeeded(run, flow)));
+  const flows = [...allFlows].filter((flow) => comparable(baseRuns, headRuns, flow));
   const skipped = [...allFlows].filter((flow) => !flows.includes(flow));
-  const values = (runs, flow, metric) => runs.map((run) => run.flows[flow][metric] ?? 0);
+  const values = (runs, flow, metric) => runsWith(runs, flow).map((run) => run.flows[flow][metric] ?? 0);
+  const unstable = flows.filter((flow) => new Set(values(baseRuns, flow, "apiRequests")).size > 1);
 
   const rows = flows.map((flow) => ({
     flow,
@@ -76,8 +92,9 @@ export function compareRuns(baseRuns, headRuns) {
       ])
     ),
   }));
+  const complete = (runs) => runs.filter((run) => flows.every((flow) => hasFlow(run, flow)));
   const totalPerRound = (runs, metric) =>
-    runs.map((run) => flows.reduce((sum, flow) => sum + (run.flows[flow][metric] ?? 0), 0));
+    complete(runs).map((run) => flows.reduce((sum, flow) => sum + (run.flows[flow][metric] ?? 0), 0));
   const totals = Object.fromEntries(
     METRICS.map((metric) => [
       metric,
@@ -89,5 +106,8 @@ export function compareRuns(baseRuns, headRuns) {
       .filter((m) => m.regression)
       .map((m) => ({ flow: row.flow, ...m }))
   );
-  return { rows, totals, regressions, skipped };
+  return { rows, totals, regressions, skipped, unstable };
 }
+
+/** Windows that have a regression in some step ("Sales Order / open-record" -> "Sales Order"), once each. */
+export const windowsToRemeasure = (regressions) => [...new Set(regressions.map((r) => r.flow.split(" / ")[0]))];
