@@ -84,6 +84,7 @@ interface UseTableDataReturn {
   shouldUseTreeMode: boolean;
   treeEntity: string;
   referencedTableId?: string;
+  canMoveTreeNodes: boolean;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -170,7 +171,7 @@ export const useTableData = ({
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
-  const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
+  const { treeMetadata } = useTreeModeMetadata(tab);
 
   // Computed values
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
@@ -188,9 +189,9 @@ export const useTableData = ({
     isPending: isParentPending,
   } = useSettledParent({ parentRecord, parentIdFromUrl });
 
-  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
+  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode;
   const activeGroupColumnId = getActiveGroupColumnId(tableColumnGrouping, tab.window, shouldUseTreeMode);
-  const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+  const treeEntity = (shouldUseTreeMode && treeMetadata.treeEntity) || tab.entityName;
 
   // Reactive subscription — re-render when form state changes
   const tabFormState = useWindowStore((s) =>
@@ -1410,6 +1411,7 @@ export const useTableData = ({
     shouldUseTreeMode,
     treeEntity,
     referencedTableId: treeMetadata.referencedTableId,
+    canMoveTreeNodes: treeMetadata.canMoveNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,
