@@ -55,6 +55,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   cleanDistDir: false,
   output: "standalone",
+  // Opt-in browser source maps for CPU profiling of production builds (SOURCE_MAPS=true pnpm build)
+  productionBrowserSourceMaps: process.env.SOURCE_MAPS === "true",
   compiler: {
     removeConsole: !DEBUG_MODE,
   },

@@ -21,6 +21,8 @@ import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserStore } from "@/stores/userStore";
 import { createSmartContext } from "@/utils/expressions";
+import type { EvaluationContext } from "@/utils/expressions";
+import { lazyContext } from "@/utils/evaluation/lazyContext";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
@@ -83,7 +85,7 @@ export const useFormValidation = (tab: Tab) => {
    * @returns true if field should be displayed
    */
   const isFieldDisplayed = useCallback(
-    (field: Field): boolean => {
+    (field: Field, getContext?: () => EvaluationContext): boolean => {
       if (!field.displayLogicExpression) {
         return field.displayed;
       }
@@ -95,19 +97,22 @@ export const useFormValidation = (tab: Tab) => {
         }
 
         const compiledExpression = compileExpression(field.displayLogicExpression);
-        const ctx = createSmartContext({
-          values: currentValues,
-          fields: tab?.fields,
-          context: session,
-          windowId: tab?.window,
-        });
+        // A validation pass shares one context across fields; standalone calls build their own.
+        const ctx = getContext
+          ? getContext()
+          : createSmartContext({
+              values: currentValues,
+              fields: tab?.fields,
+              context: session,
+              windowId: tab?.window,
+            });
         return compiledExpression(ctx, ctx, tab?.window);
       } catch (error) {
         logger.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
         return field.displayed; // Default to displayed on error
       }
     },
-    [getValues, session]
+    [getValues, session, tab]
   );
 
   /**
@@ -248,11 +253,15 @@ export const useFormValidation = (tab: Tab) => {
    */
   const validateRequiredFields = useCallback((): FormValidationResult => {
     const formValues = getValues();
+    // Built on the first field that needs it, inside isFieldDisplayed's try; a failed build is retried.
+    const getContext = lazyContext(() =>
+      createSmartContext({ values: formValues, fields: tab?.fields, context: session, windowId: tab?.window })
+    );
     const missingFields: FieldValidationResult[] = [];
 
     for (const field of requiredFields) {
       // Skip validation for fields that are not currently displayed
-      if (!isFieldDisplayed(field)) {
+      if (!isFieldDisplayed(field, getContext)) {
         continue;
       }
 
@@ -268,7 +277,7 @@ export const useFormValidation = (tab: Tab) => {
       isValid: missingFields.length === 0,
       missingFields,
     };
-  }, [requiredFields, getValues, isFieldDisplayed, validateField]);
+  }, [requiredFields, getValues, isFieldDisplayed, validateField, tab, session]);
 
   /**
    * Get a user-friendly validation summary with formatted error message
