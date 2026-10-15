@@ -1,9 +1,9 @@
-// Render counter: which React components render during one form Next, and why. No app changes: it installs
+// Render counter: which React components render during one form Next (or one grid ArrowDown), and why. No app changes: it installs
 // a stub React DevTools hook and walks the fiber tree on every commit.
 // Run it against `next dev` (production builds minify component names):
 //   cd packages/MainUI && npx next dev -p 3400
 //   BASE_URL=http://localhost:3400 node perf/render-count.mjs
-// Env: WINDOW (default Sales Invoice), TOP (components listed, default 40), WATCH (comma list of components
+// Env: ACTION (next | arrow), WINDOW (default Sales Invoice), TOP (components listed, default 40), WATCH (comma list of components
 // counted per commit), CAUSE (comma list of components whose render causes are printed per commit:
 // changed props, changed state hooks by index, changed contexts).
 import { chromium } from "@playwright/test";
@@ -13,6 +13,7 @@ const WINDOW = process.env.WINDOW || "Sales Invoice";
 const TOP = Number(process.env.TOP ?? 40);
 const WATCH = process.env.WATCH || "FormViewComponent,BaseSelectorComp,MRT_TableBodyRow";
 const CAUSE = process.env.CAUSE || "";
+const ACTION = process.env.ACTION || "next"; // "next": one form Next; "arrow": one ArrowDown in the grid
 const USER = process.env.ETENDO_USER || "admin";
 const PASS = process.env.ETENDO_PASS || "admin";
 const FILTER_BUTTON_ID = "D73C2AD100854463B3F697F3D36CDE3E"; // implicit filter toggle, as in bench.mjs
@@ -131,35 +132,46 @@ async function main() {
     .click()
     .catch(() => {});
   await visible(page.getByText(/Showing [1-9]\d* records?/)).waitFor({ timeout: TIMEOUT });
-  await visible(page.locator("table tbody tr td").nth(3)).dblclick();
-  await page.waitForURL(/ri_\d+=/, { timeout: TIMEOUT });
+  const startCounting = () =>
+    page.evaluate(
+      ([watch, cause]) => Object.assign(window.__RC, { on: true, watch, cause, counts: {}, commits: [] }),
+      [WATCH.split(","), CAUSE.split(",").filter(Boolean)]
+    );
 
-  const position = Number.parseInt(await visible(page.getByTestId("record-position-indicator")).innerText(), 10);
-  await page.waitForFunction(
-    () => {
-      const button = [...document.querySelectorAll('[data-testid="next-record-button"]')].find((e) => e.offsetParent);
-      return button && !button.disabled;
-    },
-    null,
-    { timeout: TIMEOUT }
-  );
-  await page.waitForTimeout(2000); // let the opened record settle before counting
+  if (ACTION === "arrow") {
+    // One ArrowDown in the grid, from the second row
+    await visible(page.locator("table tbody tr").nth(1).locator("td").nth(3)).click();
+    await page.waitForTimeout(3000); // selection side effects settle (400 ms) and their fetches end
+    await startCounting();
+    await page.keyboard.press("ArrowDown");
+  } else {
+    await visible(page.locator("table tbody tr td").nth(3)).dblclick();
+    await page.waitForURL(/ri_\d+=/, { timeout: TIMEOUT });
 
-  await page.evaluate(
-    ([watch, cause]) => Object.assign(window.__RC, { on: true, watch, cause, counts: {}, commits: [] }),
-    [WATCH.split(","), CAUSE.split(",").filter(Boolean)]
-  );
-  await visible(page.getByTestId("next-record-button")).click({ timeout: TIMEOUT });
-  await page.waitForFunction(
-    (target) => {
-      const el = [...document.querySelectorAll('[data-testid="record-position-indicator"]')].find(
-        (e) => e.offsetParent
-      );
-      return Number.parseInt(el?.textContent ?? "", 10) === target;
-    },
-    position + 1,
-    { timeout: TIMEOUT }
-  );
+    const position = Number.parseInt(await visible(page.getByTestId("record-position-indicator")).innerText(), 10);
+    await page.waitForFunction(
+      () => {
+        const button = [...document.querySelectorAll('[data-testid="next-record-button"]')].find((e) => e.offsetParent);
+        return button && !button.disabled;
+      },
+      null,
+      { timeout: TIMEOUT }
+    );
+    await page.waitForTimeout(2000); // let the opened record settle before counting
+
+    await startCounting();
+    await visible(page.getByTestId("next-record-button")).click({ timeout: TIMEOUT });
+    await page.waitForFunction(
+      (target) => {
+        const el = [...document.querySelectorAll('[data-testid="record-position-indicator"]')].find(
+          (e) => e.offsetParent
+        );
+        return Number.parseInt(el?.textContent ?? "", 10) === target;
+      },
+      position + 1,
+      { timeout: TIMEOUT }
+    );
+  }
   await page.waitForTimeout(3000); // trailing commits (settled fetches, debounces)
   const rc = await page.evaluate(() => {
     window.__RC.on = false;
@@ -169,7 +181,7 @@ async function main() {
 
   const counts = Object.entries(rc.counts).sort((a, b) => b[1] - a[1]);
   console.log(
-    `${WINDOW}, one form Next: ${rc.commits.length} commits, ${counts.reduce((s, [, c]) => s + c, 0)} renders`
+    `${WINDOW}, ${ACTION === "arrow" ? "one grid ArrowDown" : "one form Next"}: ${rc.commits.length} commits, ${counts.reduce((s, [, c]) => s + c, 0)} renders`
   );
   for (const [name, count] of counts.slice(0, TOP)) console.log(String(count).padStart(7), name);
   console.log(`\nPer commit (${WATCH}${CAUSE ? `; causes of ${CAUSE}` : ""}):`);
