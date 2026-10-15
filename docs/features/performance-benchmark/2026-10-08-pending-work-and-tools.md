@@ -11,7 +11,7 @@ Round 2 was merged (UI #967, module #215). Round 3 is committed on `hotfix/ETP-5
 
 | Repo | Commits |
 |---|---|
-| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` · `4190928cf` FIC after fast navigation · `b9acb6679` recent documents dwell · `7983de9e1` URL without RSC requests |
+| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` · `4190928cf` FIC after fast navigation · `b9acb6679` recent documents dwell · `7983de9e1` URL without RSC requests · `dd1658023` TEMP DEBUG removed · `de62db830` aux inputs cleared on form close · `48b689c39` cached date formatters · `e01a5e1db` gzip for API routes |
 | `com.etendoerp.metadata` | `9ef6dea` menu body ETag (ship before the UI) |
 
 Measured with `perf:compare` (Sales Invoice, CPU 4x) against the previous state:
@@ -60,6 +60,19 @@ steps 81 → 63 (CPU unchanged locally; each request saved is a round trip on re
 - The window store → URL sync used `router.replace`, which made App Router fetch the `/window` RSC payload (the
   `GET /window` lines in `byEndpoint`: two per form Next). Once on `/window` it uses `history.replaceState`.
 
+Smaller items:
+
+- **gzip for API JSON — done in the app** (`e01a5e1db`): Next.js `compress` covers pages and RSC payloads but not
+  App Router route handlers (checked: demo serves HTML/JS/RSC gzipped, and the window metadata went raw).
+  `app/api/_utils/compression.ts` gzips `/api/erp` and `/api/datasource` responses when accepted (not SSE,
+  binary, already encoded, < 1 KB or 304). Sales Invoice metadata 3.1 MB → 274 KB; API bytes over all Sales
+  Invoice steps −83 %. Locally time +2–3 % (no network to save), within noise. A first request once answered 400
+  right after a server start and never again in later tries; watch it on the PR's e2e runs.
+- `TEMP DEBUG` logging removed, including a document-wide capture click listener (`dd1658023`).
+- `TabContext.auxiliaryInputs` cleared when the form unmounts (`de62db830`).
+- Date formatters built once (`48b689c39`): building an `Intl.DateTimeFormat` costs ~50× formatting with it.
+- Still open (not performance): a select opened while a new record is saved closes on form re-initialization.
+
 ## Round 2 status (merged)
 
 Round 2 is implemented, committed and **not pushed**; no PR is open yet.
@@ -104,9 +117,9 @@ PR), a 4-window `perf:compare` reference.
 4. ~~**Once-per-pass evaluation contexts**~~ **Done (round 3):** see §0.
 5. **Grid `_selectedProperties`**: design in `2026-10-08-grid-selected-properties-design.md`, waiting for review —
    do not start without it (rows feed ~15 backend payloads).
-6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), ~~one FIC +
-   one recent-documents request per form Next~~ (done in round 3, see §0), process modals, date formatting per cell, the three bugs in §2.3
-   (`auxiliaryInputs` never reset, `TEMP DEBUG` leftovers, select closing on re-init).
+6. Smaller items in §2.1–2.3: ~~gzip for API JSON~~, ~~one FIC + one recent-documents request per form Next~~,
+   ~~date formatting per cell~~, ~~`auxiliaryInputs` never reset~~, ~~`TEMP DEBUG` leftovers~~ (all done in round 3,
+   see §0); still open: process definitions embedded in buttons (module), process modals, select closing on re-init.
 
 ### Lessons from round 2 (avoid repeating them)
 
