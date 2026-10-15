@@ -30,19 +30,20 @@ The format stays `version: 1`: new parts are optional keys that are only written
 
 ### Grid configuration per user
 
-- Changes the user makes to visibility, order, width or pinning are stored per user, window and tab:
+- Changes the user makes to visibility, order, width, pinning or sorting are stored per user, window and tab:
   - hiding or showing a column;
   - dragging a column;
   - resizing;
-  - pin / unpin from the column menu, which also offers "Reset column size".
+  - pin / unpin from the column menu, which also offers "Reset column size";
+  - sorting from a column header. A tab without a stored sort keeps the default sort of its metadata.
 - Saves are debounced (1 s per tab), so a drag makes a single request.
-- The order MRT sets by itself when the number of columns changes is never stored. Neither is the visibility seeded from the metadata.
+- The order MRT sets by itself when the number of columns changes is never stored. Neither is the visibility seeded from the metadata, the default sort, or the sort set by grouping.
 - The configuration is restored when the window opens and survives a reload or a new session. While the window stays open, the window store is the source of truth.
 
 ### What applies when a tab opens
 
 1. **The default view, when there is one.** It takes precedence over the stored grid configuration, as in classic `getDefaultGridViewState`. It is skipped on a direct link (linked items), as before.
-2. **Otherwise, the stored grid configuration** (columns only). It also applies on a direct link, because it never filters records.
+2. **Otherwise, the stored grid configuration** (columns and sort). It also applies on a direct link, because it never filters records.
 
 Each tab is restored once per opened window. A tab that remounts while its window is open, such as a child tab after the parent record changes, keeps the columns of the session.
 
@@ -63,7 +64,7 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 - **The preference follows the user across roles and organizations** (client + user + window).
 - **Views are per tab** (`ETMETA_SAVEDVIEW`), so the layout stored in a view is the window layout at the moment that tab's view was saved.
 - **The grid + form side-by-side split is not stored**, as in classic. It stays session-only; see `SplitViewState` in `utils/window/constants.ts`.
-- **The stored grid configuration does not include sorting or grouping.** Those come from saved views.
+- **The stored grid configuration does not include grouping.** Classic stores it there too; in the new UI it comes from saved views. Sorting is stored, as in classic.
 
 ## Main files
 

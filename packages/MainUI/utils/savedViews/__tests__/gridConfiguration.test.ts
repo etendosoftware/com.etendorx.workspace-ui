@@ -25,6 +25,7 @@ const TAB_ID = "186";
 const COLUMN = "Document No.";
 const VISIBILITY = { [COLUMN]: true };
 const ORDER = [COLUMN];
+const SORTING = [{ id: COLUMN, desc: true }];
 
 const mockFetch = fetchGridConfiguration as jest.Mock;
 const mockSave = saveGridConfiguration as jest.Mock;
@@ -58,8 +59,12 @@ describe("gridConfiguration", () => {
       });
     });
 
-    it("keeps the widths and only the columns the user pinned", () => {
-      const table = makeTable({ sizing: { [COLUMN]: 150 }, pinning: { left: [...FIXED_PINNED_COLUMNS, COLUMN] } });
+    it("keeps the widths, the sorting and only the columns the user pinned", () => {
+      const table = makeTable({
+        sizing: { [COLUMN]: 150 },
+        pinning: { left: [...FIXED_PINNED_COLUMNS, COLUMN] },
+        sorting: SORTING,
+      });
 
       expect(buildColumnConfiguration(table)).toEqual({
         version: 1,
@@ -67,7 +72,14 @@ describe("gridConfiguration", () => {
         order: ORDER,
         sizing: { [COLUMN]: 150 },
         pinning: { left: [COLUMN] },
+        sorting: SORTING,
       });
+    });
+
+    it("restores the stored sorting", () => {
+      expect(
+        toColumnTableState({ version: 1, visibility: VISIBILITY, order: ORDER, sorting: SORTING }).sorting
+      ).toEqual(SORTING);
     });
 
     it("resolves a stored configuration with defaults for the missing parts", () => {

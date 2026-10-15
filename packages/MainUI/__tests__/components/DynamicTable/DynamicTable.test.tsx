@@ -1852,6 +1852,16 @@ describe("DynamicTable", () => {
       expect(scheduleGridConfigurationSave).not.toHaveBeenCalled();
     });
 
+    it("stores a sort made by the user", () => {
+      const sorting = [{ id: "name", desc: true }];
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      act(() => getOptions().onSortingChange?.(sorting));
+
+      expect(mockTableDataHook.handleMRTSortingChange).toHaveBeenCalledWith(sorting);
+      expect(scheduleGridConfigurationSave).toHaveBeenCalledWith("test-window-id_123456789", expect.any(String));
+    });
+
     it("stores a visibility change made by the user", () => {
       renderWithProviders(<DynamicTable {...defaultProps} />);
 

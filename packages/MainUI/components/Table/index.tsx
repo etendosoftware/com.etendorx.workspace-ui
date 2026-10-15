@@ -3142,8 +3142,9 @@ const DynamicTable = ({
         return;
       }
       handleMRTSortingChange(updaterOrValue);
+      scheduleColumnSave();
     },
-    [handleMRTSortingChange]
+    [handleMRTSortingChange, scheduleColumnSave]
   );
 
   const handleExpandedChange = useCallback(

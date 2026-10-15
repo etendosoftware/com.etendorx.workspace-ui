@@ -17,12 +17,17 @@
 
 /**
  * Durable, per-user column configuration of the grids (classic `OBUIAPP_GridConfiguration`):
- * visibility, order, width and pinning of each tab, stored server-side in one AD_Preference per
+ * visibility, order, width, pinning and sorting of each tab, stored server-side in one AD_Preference per
  * user and window. The window store stays the source of truth while the window is open; this
  * module only restores it when the window opens and saves it after the user changes the columns.
  */
 
-import type { MRT_ColumnPinningState, MRT_ColumnSizingState, MRT_VisibilityState } from "material-react-table";
+import type {
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_SortingState,
+  MRT_VisibilityState,
+} from "material-react-table";
 import {
   fetchGridConfiguration,
   saveGridConfiguration,
@@ -43,6 +48,8 @@ export interface ColumnConfiguration {
   sizing?: MRT_ColumnSizingState;
   /** Columns the user pinned (never the fixed ones); absent when none was pinned. */
   pinning?: MRT_ColumnPinningState;
+  /** Sorted columns (classic view state `sort`); absent when the grid is not sorted. */
+  sorting?: MRT_SortingState;
 }
 
 /** Delay before a change is stored, so a burst of changes (dragging, several clicks) makes a single request. */
@@ -57,21 +64,27 @@ const getTabKey = (windowIdentifier: string, tabId: string) => `${windowIdentifi
 export const buildColumnConfiguration = (table: TableState): ColumnConfiguration => {
   const sizing = table.sizing ?? {};
   const pinning = table.pinning ?? {};
+  const sorting = table.sorting ?? [];
   return {
     version: 1,
     visibility: table.visibility,
     order: table.order,
     ...(Object.keys(sizing).length > 0 && { sizing }),
     ...(hasUserPinnedColumns(pinning) && { pinning: getUserPinnedColumns(pinning) }),
+    ...(sorting.length > 0 && { sorting }),
   };
 };
 
-/** Table fields to apply for a stored configuration: missing parts fall back to the defaults. */
+/**
+ * Table fields to apply for a stored configuration: missing parts fall back to the defaults. The
+ * sorting is only replaced when it was stored, so the grid otherwise keeps its default sort.
+ */
 export const toColumnTableState = (configuration: ColumnConfiguration): Partial<TableState> => ({
   visibility: configuration.visibility ?? {},
   order: configuration.order ?? [],
   sizing: configuration.sizing ?? {},
   pinning: withFixedPinnedColumns(configuration.pinning ?? {}),
+  ...(configuration.sorting && { sorting: configuration.sorting }),
 });
 
 const fetchWindowConfiguration = async (windowIdentifier: string) => {
