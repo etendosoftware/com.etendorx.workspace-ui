@@ -109,6 +109,7 @@ describe("useAutoApplyDefaultView", () => {
         sorting: [{ id: "status", desc: false }],
         order: ["status"],
         implicitFilterApplied: true,
+        grouping: [],
       })
     );
   });
@@ -234,5 +235,18 @@ describe("useAutoApplyDefaultView", () => {
     await renderAndWait(onApplyView);
 
     expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ implicitFilterApplied: false }));
+  });
+
+  it("restores the grouping of a grouped default view", async () => {
+    const groupedConfig = JSON.stringify({ ...JSON.parse(VALID_GRID_CONFIG), grouping: ["status"] });
+
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord({ gridconfiguration: groupedConfig })]));
+    const onApplyView = jest.fn();
+
+    await renderAndWait(onApplyView);
+
+    expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ grouping: ["status"] }));
   });
 });

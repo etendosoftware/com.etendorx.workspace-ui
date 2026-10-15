@@ -85,6 +85,7 @@ export const useToolbarConfig = ({
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [actionModal, setActionModal] = useState<Omit<ActionModalProps, "onClose"> & { isOpen: boolean }>({
     isOpen: false,
@@ -370,6 +371,28 @@ export const useToolbarConfig = ({
     graph,
   ]);
 
+  /**
+   * Runs the CSV export keeping the toolbar trigger in a busy state for the whole request.
+   * `finally` guarantees the busy state is cleared on success, failure and fast exports alike.
+   */
+  const handleExportCSV = useCallback(async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    try {
+      await onExportCSV?.();
+    } catch (error) {
+      logger.error("Error exporting CSV:", error);
+      toast.error(t("table.exportError"), {
+        description: React.createElement(ToastContent, {
+          message: error instanceof Error ? error.message : t("table.exportError"),
+        }),
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, onExportCSV, t]);
+
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
       setIsDeleting(false);
@@ -429,8 +452,8 @@ export const useToolbarConfig = ({
           logger.info("Attachment button clicked - no action registered");
         }
       },
-      EXPORT_CSV: async () => {
-        await onExportCSV?.();
+      EXPORT_CSV: () => {
+        handleExportCSV();
       },
       SHARE_LINK: () => {
         onShareLink();
@@ -519,7 +542,7 @@ export const useToolbarConfig = ({
       onShowTableAndForm,
       handleDeleteRecord,
       attachmentAction,
-      onExportCSV,
+      handleExportCSV,
       onShareLink,
       handleCopyRecord,
       onPrintRecord,
@@ -568,6 +591,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      isExporting,
       actionHandlers,
       selectedRecord,
       selectedMultiple,
@@ -588,6 +612,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      isExporting,
       actionHandlers,
       selectedRecord,
       selectedMultiple,

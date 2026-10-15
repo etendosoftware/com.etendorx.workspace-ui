@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -6,6 +6,8 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useToolbar } from "@/hooks/Toolbar/useToolbar";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
+import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import "@testing-library/jest-dom";
 import { AUDITED_TAB, MODIFIED_RECORD } from "@/utils/toolbar/test-utils/auditTrailFixtures";
 
@@ -240,6 +242,65 @@ describe("Toolbar - Email Integration", () => {
       expect(toast.success).toHaveBeenCalledWith("email.successMessage");
       expect(screen.queryByTestId("email-modal")).not.toBeInTheDocument();
     });
+  });
+
+  it("applies the grouping of a saved view to the tab", () => {
+    render(
+      <CurrentWindowProvider windowIdentifier="win-id" windowId="win-id">
+        <Toolbar windowId="win-id" isFormView={true} />
+      </CurrentWindowProvider>
+    );
+    const { onApplyView, windowIdentifier, tabId } = (useAutoApplyDefaultView as jest.Mock).mock.calls.at(-1)[0];
+    const viewState = { filters: [], visibility: {}, sorting: [], order: [], implicitFilterApplied: false };
+    const getGrouping = () => useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table.grouping;
+
+    act(() => onApplyView({ ...viewState, grouping: ["Business Partner"] }));
+    expect(getGrouping()).toEqual(["Business Partner"]);
+
+    act(() => onApplyView(viewState));
+    expect(getGrouping()).toEqual([]);
+  });
+});
+
+describe("Toolbar - Toggle tree view button", () => {
+  const toggleTreeButton = {
+    id: "toggle-tree",
+    action: "TOGGLE_TREE_VIEW",
+    name: "Toggle Tree",
+    section: "left" as const,
+    buttonType: "ACTION" as const,
+    active: true,
+    windows: [],
+  };
+  const toggleTreeTestId = "IconButton__toggle-tree";
+
+  const renderWithTab = (tab: Record<string, unknown>) => {
+    (useTabContext as jest.Mock).mockReturnValue({ tab: { id: "tab-id", entityName: "ProductCategory", ...tab } });
+    render(<Toolbar windowId="win-id" isFormView={false} />);
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
+    (useUserContext as jest.Mock).mockReturnValue({ token: "test-token", session: {} });
+    (useSelectedRecord as jest.Mock).mockReturnValue(undefined);
+    (useSelectedRecords as jest.Mock).mockReturnValue([]);
+    (useToolbar as jest.Mock).mockReturnValue({
+      buttons: [toggleTreeButton],
+      processButtons: [],
+      loading: false,
+      refetch: jest.fn(),
+    });
+  });
+
+  it("shows the button when the adapter metadata reports a tree", () => {
+    renderWithTab({ hasTree: true, treeDatasourceId: "ds-1" });
+    expect(screen.getByTestId(toggleTreeTestId)).toBeInTheDocument();
+  });
+
+  it("hides the button when the tab has no tree metadata", () => {
+    renderWithTab({ tableTree: "tree-1" });
+    expect(screen.queryByTestId(toggleTreeTestId)).not.toBeInTheDocument();
   });
 });
 

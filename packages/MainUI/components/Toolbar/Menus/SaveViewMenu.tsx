@@ -35,6 +35,8 @@ export interface SaveViewMenuProps {
   currentVisibility: MRT_VisibilityState;
   currentSorting: MRT_SortingState;
   currentOrder: string[];
+  /** Grouped column ids of the grid (empty when ungrouped). */
+  currentGrouping?: string[];
   isImplicitFilterApplied: boolean;
   /** Metadata default implicit-filter state, used when resetting to the standard view. */
   defaultImplicitFilterApplied: boolean;
@@ -44,8 +46,11 @@ export interface SaveViewMenuProps {
     sorting: MRT_SortingState;
     order: string[];
     implicitFilterApplied: boolean;
+    grouping?: string[];
   }) => void;
 }
+
+const NO_GROUPING: string[] = [];
 
 const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   anchorEl,
@@ -55,6 +60,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentVisibility,
   currentSorting,
   currentOrder,
+  currentGrouping = NO_GROUPING,
   isImplicitFilterApplied,
   defaultImplicitFilterApplied,
   onApplyView,
@@ -123,6 +129,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         sorting: currentSorting,
         order: currentOrder,
         implicitFilterApplied: isImplicitFilterApplied,
+        grouping: currentGrouping,
       });
       setShowSaveInput(false);
       setNewViewName("");
@@ -136,6 +143,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     currentVisibility,
     currentSorting,
     currentOrder,
+    currentGrouping,
     isImplicitFilterApplied,
     saveView,
     t,
@@ -173,6 +181,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       sorting: [],
       order: [],
       implicitFilterApplied: defaultImplicitFilterApplied,
+      grouping: NO_GROUPING,
     });
     onClose();
   }, [unsetDefaultView, tabId, onApplyView, onClose, t, defaultImplicitFilterApplied]);

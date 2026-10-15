@@ -90,6 +90,17 @@ describe("useTableStatePersistenceTab", () => {
     expect(result.current.tableColumnOrder).toEqual([]);
   });
 
+  it("should default to an ungrouped table and store the grouping", () => {
+    const { result } = renderTableHook();
+    expect(result.current.tableColumnGrouping).toEqual([]);
+
+    testDirectUpdate({
+      setter: result.current.setTableColumnGrouping,
+      getter: () => result.current.tableColumnGrouping,
+      testValue: ["column1"],
+    });
+  });
+
   it("should provide setter functions", () => {
     const { result } = renderTableHook();
 

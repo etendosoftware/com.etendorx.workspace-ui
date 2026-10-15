@@ -7,6 +7,7 @@ import { logger } from "@/utils/logger";
 import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { useExpressionDependencies } from "./useExpressionDependencies";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { mergeDefinedValues } from "@/utils/expressions/mergeLiveValues";
 
 interface UseDisplayLogicProps {
   field: Field;
@@ -31,10 +32,10 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      // Filter out undefined values from formValues to avoid overriding valid record values.
+      // Undefined form values are skipped so they don't shadow valid record values (see mergeDefinedValues).
       // useWatch returns undefined for fields not yet registered or not yet initialized in RHF,
       // which would otherwise shadow the actual boolean values (false) from the record.
-      const definedFormValues = Object.fromEntries(Object.entries(formValues || {}).filter(([, v]) => v !== undefined));
+      const definedFormValues = mergeDefinedValues(undefined, formValues);
 
       // Same context as building it from { ...record, ...definedFormValues, ...values }, shared with the
       // other fields of the form that resolve to the same values.

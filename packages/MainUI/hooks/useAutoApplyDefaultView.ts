@@ -31,6 +31,7 @@ interface ApplyViewState {
   sorting: MRT_SortingState;
   order: string[];
   implicitFilterApplied: boolean;
+  grouping: string[];
 }
 
 interface UseAutoApplyDefaultViewParams {
@@ -107,6 +108,7 @@ export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }
           sorting: config.sorting,
           order: config.order,
           implicitFilterApplied: config.implicitFilterApplied,
+          grouping: config.grouping ?? [],
         });
       } catch (err) {
         logger.error("[useAutoApplyDefaultView] Failed to fetch default view:", err);

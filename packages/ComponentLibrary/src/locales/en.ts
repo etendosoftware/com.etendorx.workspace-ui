@@ -240,6 +240,7 @@ const en = {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
   },
   table: {
+    exportError: "Export failed",
     newRecord: "New Record",
     tooltips: {
       search: "Search",
@@ -290,6 +291,9 @@ const en = {
     },
     setSummaryFunction: "Set summary function",
     removeSummaryFunction: "Remove summary function",
+    groupBy: "Group by {column}",
+    ungroup: "Ungroup",
+    maxGroupingReached: "There are more than {count} records, grouping is disabled for larger datasets.",
     invalidFilterValue: "Invalid filter value",
     summary: {
       min: "Min",

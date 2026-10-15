@@ -53,6 +53,7 @@ import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
+import { isTreeModeSupported } from "@/utils/table/treeMode";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -103,6 +104,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
   const setTableSorting = useWindowStore((s) => s.setTableSorting);
   const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
@@ -129,6 +131,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     tableColumnVisibility,
     tableColumnSorting,
     tableColumnOrder,
+    tableColumnGrouping,
     activeLevels,
     activeTabsByLevel,
     isImplicitFilterApplied: storeImplicitFilterApplied,
@@ -145,7 +148,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
-  const isTreeNodeView = tab?.tableTree ? true : undefined;
+  const isTreeNodeView = isTreeModeSupported(tab) ? true : undefined;
 
   const {
     handleAction,
@@ -159,6 +162,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     handleCancelConfirm,
     actionModal,
     closeActionModal,
+    isExporting,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -256,6 +260,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       sorting: typeof tableColumnSorting;
       order: typeof tableColumnOrder;
       implicitFilterApplied: boolean;
+      grouping?: string[];
     }) => {
       if (!windowIdentifier || !tab?.id) return;
       const ti = tab.id;
@@ -264,6 +269,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       setTableSorting(windowIdentifier, ti, state.sorting);
       setTableOrder(windowIdentifier, ti, state.order);
       setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
+      setTableGrouping(windowIdentifier, ti, state.grouping ?? []);
     },
     [
       windowIdentifier,
@@ -273,6 +279,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableGrouping,
     ]
   );
 
@@ -541,6 +548,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       selectedRecords: selectedRecords,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
+      isExporting: isExporting,
     });
 
     const config = {
@@ -586,6 +594,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     showShareLinkTooltip,
     isAdvancedFilterApplied,
     isProcessRefreshing,
+    isExporting,
   ]);
 
   useToolbarShortcuts(toolbarConfig, isFocused);
@@ -606,6 +615,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
+          currentGrouping={tableColumnGrouping}
           isImplicitFilterApplied={effectiveImplicitFilterApplied}
           defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}
