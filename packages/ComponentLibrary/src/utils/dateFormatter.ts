@@ -73,6 +73,26 @@ export const parseOBDate = (value: unknown): Date | null => {
   return parsePlainDate(stringValue) || parseISODate(stringValue) || parseGeneralDate(stringValue);
 };
 
+// Building an Intl.DateTimeFormat costs far more than formatting with it, and grids format every date cell
+// on every render: build each browser-locale formatter once.
+const browserFormatters: { date?: Intl.DateTimeFormat; dateTime?: Intl.DateTimeFormat } = {};
+
+const getBrowserFormatter = (includeTime: boolean): Intl.DateTimeFormat => {
+  const key = includeTime ? "dateTime" : "date";
+  let formatter = browserFormatters[key];
+  if (!formatter) {
+    const options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit", year: "numeric" };
+    if (includeTime) {
+      options.hour = "2-digit";
+      options.minute = "2-digit";
+      options.second = "2-digit";
+    }
+    formatter = new Intl.DateTimeFormat(undefined, options);
+    browserFormatters[key] = formatter;
+  }
+  return formatter;
+};
+
 /**
  * Formats a Date object using the browser's locale
  * Replicates the behavior of Etendo Classic which reads the browser locale
@@ -85,12 +105,7 @@ export const formatBrowserDate = (date: Date | null): string => {
   if (!date || Number.isNaN(date.getTime())) return "";
 
   try {
-    const formatted = new Intl.DateTimeFormat(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date);
-    return formatted;
+    return getBrowserFormatter(false).format(date);
   } catch {
     return "";
   }
@@ -109,20 +124,7 @@ export const formatBrowserDateTime = (date: Date | null, includeTime = false): s
   if (!date || Number.isNaN(date.getTime())) return "";
 
   try {
-    const options: Intl.DateTimeFormatOptions = {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    };
-
-    if (includeTime) {
-      options.hour = "2-digit";
-      options.minute = "2-digit";
-      options.second = "2-digit";
-    }
-
-    const formatted = new Intl.DateTimeFormat(undefined, options).format(date);
-    return formatted;
+    return getBrowserFormatter(includeTime).format(date);
   } catch {
     return "";
   }

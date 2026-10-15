@@ -121,8 +121,32 @@ describe("getEvaluationContext — same context as building it per caller", () =
     const session = { "#AD_Org_ID": "0" };
     const ctx = getEvaluationContext({ values: record, context: session });
     expect(getEvaluationContext({ values: record, context: { ...session } })).not.toBe(ctx);
-    expect(getEvaluationContext({ values: { ...record }, context: session })).not.toBe(ctx);
+    expect(getEvaluationContext({ values: { docStatus: "CO" }, context: session })).not.toBe(ctx);
     expect(getEvaluationContext({ values: record, context: session, windowId: "W1" })).not.toBe(ctx);
+  });
+
+  it("shares a context between records with the same content (own snapshots of the same values)", () => {
+    const entries = ["A"];
+    const record = { docStatus: "DR", total: 5, list: entries };
+    const session = { "#AD_Org_ID": "0" };
+    const ctx = getEvaluationContext({ values: record, context: session });
+
+    expect(getEvaluationContext({ values: { ...record }, context: session })).toBe(ctx);
+    expect(getEvaluationContext({ values: { total: 5, docStatus: "DR", list: entries }, context: session })).not.toBe(
+      ctx
+    );
+    expect(getEvaluationContext({ values: { ...record, list: ["A"] }, context: session })).not.toBe(ctx);
+    expect(getEvaluationContext({ values: { ...record, extra: undefined }, context: session })).not.toBe(ctx);
+  });
+
+  it.each([4, 5])("matches a fresh build when callers pass copies of the same record (seed %i)", (seed) => {
+    const rnd = mulberry32(seed);
+    const options = genOptions(rnd, { session: 70, record: 180, aux: 15, parent: 30 });
+    for (let i = 0; i < 20; i++) {
+      const copy = { ...options, values: { ...options.values } };
+      const overlay = genOverlay(rnd, copy.values);
+      expectSameContext(getEvaluationContext(copy, overlay), fresh(copy, overlay));
+    }
   });
 
   it("drops a shared context as soon as a caller writes to it", () => {

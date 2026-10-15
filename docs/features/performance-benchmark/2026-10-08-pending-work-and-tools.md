@@ -5,7 +5,75 @@
 - **Purpose:** starting point for a fresh analysis session. Everything below is measured or located in code;
   numbers are medians at `CPU_THROTTLE=4` (Chrome CPU slowed 4x, a mid/low-end machine) unless noted.
 
-## 0. Start here — round 2 status (2026-10-14)
+## 0. Start here — round 3 status (2026-10-14)
+
+Round 2 was merged (UI #967, module #215). Round 3 is committed on `hotfix/ETP-5641` in both repos, **not pushed**:
+
+| Repo | Commits |
+|---|---|
+| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` · `4190928cf` FIC after fast navigation · `b9acb6679` recent documents dwell · `7983de9e1` URL without RSC requests · `dd1658023` TEMP DEBUG removed · `de62db830` aux inputs cleared on form close · `48b689c39` cached date formatters · `e01a5e1db` gzip for API routes |
+| `com.etendoerp.metadata` | `9ef6dea` menu body ETag (ship before the UI) |
+
+Measured with `perf:compare` (Sales Invoice, CPU 4x) against the previous state:
+
+- Menu: a reload costs 308 B instead of 244 KB.
+- Form Next (`perf/render-count.mjs`, one Next): FormView 12 → 6 renders. FormView subscribed to the whole toolbar
+  slot (now `useToolbarCommands` + one selector), Tab re-rendered it with the same props (now `React.memo`), and
+  `BaseSelector` called `useParams()` for a `recordId` route segment that does not exist (always undefined; it only
+  re-rendered every field on each URL change). `form-next-5` blocking −15 %, `open-record` −18 %. The ≈190 ms "form
+  reset" estimate below was wrong: `reset()` itself is ≈27 ms per Next; the cost was the re-renders.
+- Evaluation contexts: 31 builds per Next from 13 distinct inputs (each consumer took its own snapshot of the same
+  values). `getEvaluationContext` now reuses a recent record with the same content; 12 builds, none repeated.
+  CPU change within noise (≈−7 % `form-next-5`).
+
+Tried and dropped — **stable react-hook-form context** (fields re-render with every FormView render because
+`FormProvider` passes `{ ...props }`). Working version: own provider for RHF's context, `formState` readers moved to
+`useFormState`. Field renders only 348 → 318 per Next, CPU within noise, and two traps:
+`reset()` empties RHF's field registry (`_fields`, `_names.mount`), and a field registers again only when it
+re-renders — with a fully stable context, typing into a field whose value did not change across the reset (Sales
+Order description) did nothing, so the context must still change once per reset. And `NumericSelector` passes the
+RHF ref to a controlled input: `reset()` writes the raw value ("0" for "0.00") into the DOM, hidden today only by
+re-renders. Not worth the risk; the remaining field re-renders come from the form initialization context and
+TabContext.
+
+Grid keyboard navigation (`8f9b06042`): **MRT 2.13 rebuilds its column definitions on every render**
+(`prepareColumns` in `useMRT_TableInstance`, no memo), so every DynamicTable render hands TanStack new cells and
+repaints all visible cells — `memoMode: "cells"` (phase 4) never matches. One ArrowDown repainted ~460 cells 4–6
+times. Removed two causes: `useThrottledCallback` depended on its inline callback (the grid's columns changed every
+render), and the grid subscribed to the session (changed by every SETSESSION) although only editable cells read it.
+`arrow-nav-5` time −27 %, blocking −12 %.
+
+Tried and dropped — **pnpm patch memoizing MRT's column defs** (reuse them while the user columns and the options
+the display columns read are unchanged) plus a stable actions column: dev renders per ArrowDown 19.6k → 15.3k
+fibers and no full repaints, but two `perf:compare` runs gave `arrow-nav-5` −10 % and +12 %: within this step's
+noise (the base alone varied 724–843 ms blocking). Not worth patching a dependency. The patch is kept outside the
+repo; MRT 3 (MUI 6) may make it moot.
+
+Form Next requests (`4190928cf`, `b9acb6679`, `7983de9e1`): `form-next-5` 23 → 9 requests, all Sales Invoice
+steps 81 → 63 (CPU unchanged locally; each request saved is a round trip on remote servers).
+
+- **Bug fixed:** `useFormInitialization` ignored a params change while a FIC request was in flight and never
+  retried, so after a quick double Next on a slow server the record shown had no FIC of its own and got the
+  previous record's response (reproduced with the FIC delayed 1.5 s via `page.route`). Stale responses are now
+  dropped and the latest params fetched when a request ends; intermediate records are skipped.
+- Recent documents are tracked after the record stays open 1 s (one POST per record passed over before).
+- The window store → URL sync used `router.replace`, which made App Router fetch the `/window` RSC payload (the
+  `GET /window` lines in `byEndpoint`: two per form Next). Once on `/window` it uses `history.replaceState`.
+
+Smaller items:
+
+- **gzip for API JSON — done in the app** (`e01a5e1db`): Next.js `compress` covers pages and RSC payloads but not
+  App Router route handlers (checked: demo serves HTML/JS/RSC gzipped, and the window metadata went raw).
+  `app/api/_utils/compression.ts` gzips `/api/erp` and `/api/datasource` responses when accepted (not SSE,
+  binary, already encoded, < 1 KB or 304). Sales Invoice metadata 3.1 MB → 274 KB; API bytes over all Sales
+  Invoice steps −83 %. Locally time +2–3 % (no network to save), within noise. A first request once answered 400
+  right after a server start and never again in later tries; watch it on the PR's e2e runs.
+- `TEMP DEBUG` logging removed, including a document-wide capture click listener (`dd1658023`).
+- `TabContext.auxiliaryInputs` cleared when the form unmounts (`de62db830`).
+- Date formatters built once (`48b689c39`): building an `Intl.DateTimeFormat` costs ~50× formatting with it.
+- Still open (not performance): a select opened while a new record is saved closes on form re-initialization.
+
+## Round 2 status (merged)
 
 Round 2 is implemented, committed and **not pushed**; no PR is open yet.
 
@@ -40,20 +108,18 @@ PR), a 4-window `perf:compare` reference.
 1. **Open the PRs** (Git Police: titles `Hotfix ETP-5641: …`, target `main`): run `pnpm apply:data-testid` and
    `pnpm check`, push both branches, paste a `pnpm perf:compare` report (4 windows, 3 rounds, `CPU_THROTTLE=4`) in the
    UI PR's Performance section, then fix whatever the e2e suites report.
-2. **Menu revalidation** (§2.0 follow-ups): `/meta/menu` via GET with the body ETag (`MetadataService.writeWithETag`) +
-   add `menu` to `isRevalidatedMetadataRoute` in `app/api/erp/[...slug]/route.ts`; keep `useMenu`'s forced refresh
-   (now a 304). ~244 KB per reload. Note the existing fingerprint ETag in `MetadataServlet` for `MENU_PATH` on GET must
-   not short-circuit before the body ETag (or drop it: it misses role-access changes).
-3. **Form reset/initialization** (`FormView/index.tsx` ~580 and ~684, ≈190 ms per form step at 4x): profile
-   `new-record` / `form-next-5` again (`CALLERS_OF=components/Form/FormView/index.tsx`), look for avoidable re-renders
-   after `reset()`.
-4. **Once-per-pass evaluation contexts** (toolbar `useToolbar.ts:172` ≈36 ms per step at 4x, `useFormValidation.ts:257`,
-   `FormHeader`, `FormFields`): could reuse `getEvaluationContext` with the record as base and form values as overlay.
+2. ~~**Menu revalidation**~~ **Done (round 3, local, not pushed):** `/meta/menu` answers GET with the body ETag
+   (`MenuService` → `writeWithETag`); the old menu fingerprint (`HttpCacheSupport.fingerprintMenu`, missed role
+   access changes) is removed; the UI fetches the menu with GET and the proxy passes it through like window/tab.
+   A reload now costs 308 B instead of 244 KB for the menu (checked in Chromium against a production build).
+   Ship the module before the UI: with an older module the GET hits the old fingerprint ETag.
+3. ~~**Form reset/initialization**~~ **Done (round 3):** see §0 (the cost was re-renders, not `reset()`).
+4. ~~**Once-per-pass evaluation contexts**~~ **Done (round 3):** see §0.
 5. **Grid `_selectedProperties`**: design in `2026-10-08-grid-selected-properties-design.md`, waiting for review —
    do not start without it (rows feed ~15 backend payloads).
-6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), one FIC +
-   one recent-documents request per form Next, process modals, date formatting per cell, the three bugs in §2.3
-   (`auxiliaryInputs` never reset, `TEMP DEBUG` leftovers, select closing on re-init).
+6. Smaller items in §2.1–2.3: ~~gzip for API JSON~~, ~~one FIC + one recent-documents request per form Next~~,
+   ~~date formatting per cell~~, ~~`auxiliaryInputs` never reset~~, ~~`TEMP DEBUG` leftovers~~ (all done in round 3,
+   see §0); still open: process definitions embedded in buttons (module), process modals, select closing on re-init.
 
 ### Lessons from round 2 (avoid repeating them)
 
@@ -120,10 +186,9 @@ Locally the transfer is almost free, so time barely moves; the gain is bytes. On
 
 Follow-ups:
 
-- **Menu still re-downloaded on every reload (244 KB):** `hooks/useMenu.ts:50` forces `getMenu(true)` on
-  mount. The forced refresh keeps the menu fresh after role-access changes, which the existing menu ETag
-  (`role | language | max(ADMenu.updated)`) does not detect, so it cannot simply be removed. Option: menu via
-  GET with the same body ETag + proxy pass-through.
+- ~~**Menu still re-downloaded on every reload (244 KB)**~~ **Done (round 3):** menu via GET with the body
+  ETag + proxy pass-through; `useMenu`'s forced refresh stays and is now a 304 (308 B). The fingerprint ETag
+  (`role | language | max(ADMenu.updated)`) was dropped: it missed role access changes.
 - **Server generation is still paid on every revalidation** (~0.3–0.6 s locally per window, 7–10× on demo).
   Avoiding it needs a fingerprint ETag, which needs the legacy combo values moved out of the window
   metadata into an on-demand request (process modal change).
@@ -137,7 +202,7 @@ slower than a local Tomcat; navigation cost is ~4 s per window with either UI.
 | Item | Where | Evidence / expected gain |
 |---|---|---|
 | gzip for API JSON | infra (Apache / Next proxy `app/api/erp`, `app/api/meta`) | HTML is compressed, JSON is not; Sales Invoice metadata 3.4 MB → ~365 KB |
-| ~~Metadata cache is written but never read~~ **Done (round 2, window/tab part)** | see §2.0 | the menu part is still pending: `hooks/useMenu.ts:50` always calls `getMenu(true)` on mount, so the role check in `metadata.ts:244` never runs; see §2.0 follow-ups |
+| ~~Metadata cache is written but never read~~ **Done (round 2, window/tab part)** | see §2.0 | menu part done in round 3 (GET + body ETag, a reload revalidates it with a 304) |
 | ~~Cache stores window and tabs duplicated, overflows localStorage (5 MB)~~ **Done (round 2)** | see §2.0 | window/tab definitions now live in memory; old persisted copies are removed on start |
 | ~~`CacheStore.get` parses the whole window JSON on every call~~ **Done for window/tab (round 2)** | see §2.0 | `getCachedWindow` / `getColumns` / `getTab` read an in-memory `Map`; other `CacheStore` keys (menu, labels, toolbar) still parse on read, but they are small |
 | Grid fetches all 182 properties per row | grid datasource (`hooks/table/useTableData.tsx`, `useDatasource`) | Sales Invoice page: 506 KB; visible columns only ~66 KB (`_selectedProperties`); 37 rows measured: 187 KB / 221 ms server → 37 KB / 37 ms. Not a parameter change: grid rows are used as full records in ~15 backend payloads. Design: `2026-10-08-grid-selected-properties-design.md` |

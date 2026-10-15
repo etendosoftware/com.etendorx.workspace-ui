@@ -27,7 +27,6 @@ import { isDebugCallouts } from "@/utils/debug";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
-import { useParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Label from "../Label";
@@ -238,7 +237,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
       {} as Record<string, Field>
     );
   }, [tab.fields]);
-  const { recordId } = useParams<{ recordId: string }>();
   const session = useUserStore((s) => s.session);
   const parentData = useFormParent();
 
@@ -260,7 +258,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
 
   const executeCalloutBase = useCallout({
     field,
-    rowId: recordId,
     parentId: getParentId(),
     changedColumnOverride: standardChangedColumn,
   });
