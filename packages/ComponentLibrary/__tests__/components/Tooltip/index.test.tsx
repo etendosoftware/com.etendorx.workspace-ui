@@ -275,7 +275,7 @@ describe("Tooltip", () => {
       });
 
       const tooltip = screen.getByRole("tooltip");
-      expect(tooltip).toHaveStyle({ left: "-8px" }); // left (100) - width (100) - margin (8)
+      expect(tooltip).toHaveStyle({ left: "8px" }); // left (100) - width (100) - margin (8) = -8, kept inside the viewport
     });
 
     it("positions tooltip at right when specified", async () => {

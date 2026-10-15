@@ -128,13 +128,14 @@ describe("useKeyboardShortcuts", () => {
       expect(ctrlHandler).not.toHaveBeenCalled();
     });
 
-    it("falls back to the plain ctrl shortcut when no ctrl+shift one is mapped", () => {
+    it("does not let a plain ctrl shortcut take a ctrl+shift one (Ctrl+Shift+M is Email, not split view)", () => {
       const handler = jest.fn();
-      renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler } }));
+      renderHook(() => useKeyboardShortcuts({ "ctrl+m": { handler } }));
 
-      pressCtrlShift("S");
+      const event = pressCtrlShift("M");
 
-      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).not.toHaveBeenCalled();
+      expect(event).toBe(true);
     });
 
     it("does NOT fire a ctrl+shift shortcut without Shift", () => {

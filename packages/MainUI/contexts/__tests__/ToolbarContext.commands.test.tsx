@@ -75,6 +75,11 @@ describe("useToolbarCommands", () => {
     );
     result.current.onRestoreSelection("rec-1");
     expect(restore).toHaveBeenCalledWith("rec-1");
+
+    const saveAndClose = jest.fn().mockResolvedValue(undefined);
+    act(() => useToolbarStore.getState().registerRawActions(TAB_ID, { saveAndClose }, TOOLBAR_ACTION_OWNERS.FORM));
+    result.current.onSaveAndClose();
+    expect(saveAndClose).toHaveBeenCalledTimes(1);
   });
 
   it("saves through the wrapped save registered for the tab", async () => {

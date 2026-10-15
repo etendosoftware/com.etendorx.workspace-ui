@@ -24,6 +24,8 @@ docs/
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
+│   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
+│   │   └── README.md                # Grammar, preference source, shortcut map per surface
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)

@@ -28,6 +28,7 @@ import { act, render, screen } from "@testing-library/react";
 import type { EntityData, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import TabsContainer from "../TabsContainer";
+import { FocusProvider } from "@/contexts/focus";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
 
 const WINDOW_IDENTIFIER = "win-122";
@@ -132,7 +133,13 @@ const clearCountryValues = () =>
     useLiveTabValuesStore.getState().clearTabValues(WINDOW_IDENTIFIER, COUNTRY_TAB_ID);
   });
 
-const renderContainer = () => render(<TabsContainer windowData={windowData} />);
+// WindowProvider (mocked above) provides the focus context in the app; the tab shortcuts need it
+const renderContainer = () =>
+  render(
+    <FocusProvider>
+      <TabsContainer windowData={windowData} />
+    </FocusProvider>
+  );
 
 const levelOneNames = () => screen.getByTestId("tabs-level-1").textContent;
 

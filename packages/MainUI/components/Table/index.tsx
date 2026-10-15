@@ -49,6 +49,7 @@ import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -819,7 +820,7 @@ const DynamicTable = ({
     registerAddRecord,
     refetchDatasource,
   } = useDatasourceContext();
-  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
+  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal } =
     useToolbarCommands();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
@@ -3445,11 +3446,6 @@ const DynamicTable = ({
     [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
 
-  const handleNewWithParentGuard = useCallback(() => {
-    if (parentTab && !parentRecord) return;
-    onNew?.();
-  }, [parentTab, parentRecord, onNew]);
-
   const handleTreeArrowRight = useCallback(
     (_event: KeyboardEvent) => {
       if (!shouldUseTreeMode || !tableRef.current) return;
@@ -3488,7 +3484,6 @@ const DynamicTable = ({
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
-      "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
       ...(shouldUseTreeMode
@@ -3500,6 +3495,17 @@ const DynamicTable = ({
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
+
+  // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
+  useGridShortcuts({
+    containerRef: tableContainerRef,
+    tableRef,
+    enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
+    canAddRow: !parentTab || Boolean(parentRecord),
+    onNewRow: handleInsertRow,
+    onEditRow: handleEditRow,
+    onOpenInForm: openRecordInFormView,
+  });
 
   // When the grid becomes visible again after leaving form view, DOM focus is
   // on <body>. The row-click handler (line ~2594) focuses the table container,

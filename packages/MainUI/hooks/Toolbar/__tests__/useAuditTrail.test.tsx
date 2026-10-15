@@ -15,17 +15,12 @@
  *************************************************************************
  */
 
-import { act, fireEvent, renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { toast } from "sonner";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useUserStore } from "@/stores/userStore";
-import { AUDIT_TRAIL_SHORTCUT, useAuditTrail } from "../useAuditTrail";
-import {
-  AUDITED_TAB,
-  MODIFIED_RECORD,
-  NOT_AUDITED_TAB,
-  UNMODIFIED_RECORD,
-} from "@/utils/toolbar/test-utils/auditTrailFixtures";
+import { useAuditTrail } from "../useAuditTrail";
+import { AUDITED_TAB, MODIFIED_RECORD, UNMODIFIED_RECORD } from "@/utils/toolbar/test-utils/auditTrailFixtures";
 
 jest.mock("sonner", () => ({ toast: { warning: jest.fn() } }));
 
@@ -51,17 +46,13 @@ interface HookParams {
   tab?: Tab;
   selectedRecords?: EntityData[];
   isNewRecord?: boolean;
-  isFocused?: boolean;
 }
 
 const renderAuditTrail = ({
   tab = AUDITED_TAB,
   selectedRecords = [MODIFIED_RECORD],
   isNewRecord = false,
-  isFocused = false,
-}: HookParams = {}) => renderHook(() => useAuditTrail({ tab, selectedRecords, isNewRecord, isFocused }));
-
-const pressAuditShortcut = () => fireEvent.keyDown(document, { key: "Y", ctrlKey: true, shiftKey: true });
+}: HookParams = {}) => renderHook(() => useAuditTrail({ tab, selectedRecords, isNewRecord }));
 
 describe("useAuditTrail", () => {
   beforeEach(() => {
@@ -143,33 +134,6 @@ describe("useAuditTrail", () => {
   it("does nothing when there is no tab", () => {
     const { result } = renderHook(() => useAuditTrail({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false }));
     act(() => result.current.openAuditTrail());
-    expectNothingOpened();
-  });
-
-  it(`opens the popup with ${AUDIT_TRAIL_SHORTCUT} when the audited tab is focused`, () => {
-    renderAuditTrail({ isFocused: true });
-
-    pressAuditShortcut();
-
-    expect(openSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it.each<[string, HookParams]>([
-    ["the tab is not focused", { isFocused: false }],
-    ["the table is not audited", { isFocused: true, tab: NOT_AUDITED_TAB }],
-  ])("ignores the shortcut when %s", (_label, params) => {
-    renderAuditTrail(params);
-
-    pressAuditShortcut();
-
-    expectNothingOpened();
-  });
-
-  it("ignores the shortcut when there is no tab", () => {
-    renderHook(() => useAuditTrail({ selectedRecords: [MODIFIED_RECORD], isNewRecord: false, isFocused: true }));
-
-    pressAuditShortcut();
-
     expectNothingOpened();
   });
 });

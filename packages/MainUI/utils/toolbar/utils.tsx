@@ -26,6 +26,8 @@ import type { EntityData, ISession, Tab } from "@workspaceui/api-client/src/api/
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import { AUDIT_TRAIL_STATUS, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
+import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
+import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 import { CircularProgress } from "@mui/material";
 
 /** Size (px) of the spinner shown in place of a toolbar button icon while its action is running */
@@ -233,16 +235,19 @@ export const createButtonByType = ({
   isExporting?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
+  // Tooltip text with the keyboard shortcut of the action, e.g. `Refresh (Ctrl+Shift+R)`.
+  const buttonTooltip = withShortcutHint(button.name, getToolbarActionShortcutId(button.action));
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
+    action: button.action,
     icon:
       isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ? (
         <PlusIcon className="w-4 h-4" data-testid="PlusIcon__5aeccd" />
       ) : (
         <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />
       ),
-    tooltip: button.name,
+    tooltip: buttonTooltip,
     disabled: !button.active,
     height: IconSize,
     width: IconSize,
@@ -273,7 +278,7 @@ export const createButtonByType = ({
 
   const buildDisableConfig = (isDisabled: boolean): Partial<ToolbarButton> => ({
     disabled: isDisabled,
-    tooltip: isDisabled ? "" : button.name,
+    tooltip: isDisabled ? "" : buttonTooltip,
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {

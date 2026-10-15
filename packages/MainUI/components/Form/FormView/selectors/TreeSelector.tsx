@@ -45,7 +45,7 @@ import {
 } from "@/utils/selectorUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
-import { buildDropdownPortalSelector } from "@/utils/form/keyboard";
+import { TREE_TRIGGER_ACTIONS, buildDropdownPortalSelector, getTreeTriggerAction } from "@/utils/form/keyboard";
 
 interface TreeSelectorProps {
   field: Field;
@@ -199,6 +199,28 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
       }
     },
     [isReadOnly]
+  );
+
+  /**
+   * Keyboard on the closed field: Enter / Space toggle the tree like a click, Alt+↓ opens it and,
+   * once open, ↓ moves into it (classic `TreeItem_ShowTree` / `TreeItem_MoveToTree`).
+   */
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const action = getTreeTriggerAction(e, isOpen);
+      if (!action || isReadOnly) {
+        handleKeyboardActivation(e, () => handleClick(e as unknown as React.MouseEvent));
+        return;
+      }
+      e.preventDefault();
+      setIsOpen(true);
+      setIsFocused(true);
+      if (action === TREE_TRIGGER_ACTIONS.MOVE_TO_TREE) {
+        searchInputRef.current?.focus();
+        setHighlightedIndex(selectableIndices[0] ?? -1);
+      }
+    },
+    [isOpen, isReadOnly, handleClick, selectableIndices]
   );
 
   const handleClear = useCallback(
@@ -401,7 +423,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
         <div
           ref={triggerRef}
           onClick={handleClick}
-          onKeyDown={(e) => handleKeyboardActivation(e, () => handleClick(e as unknown as React.MouseEvent))}
+          onKeyDown={handleTriggerKeyDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onFocus={handleFocus}

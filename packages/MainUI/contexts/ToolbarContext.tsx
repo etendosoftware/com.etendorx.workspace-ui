@@ -162,6 +162,7 @@ export const useToolbarCommands = () => {
       onNew: command("new"),
       onBack: command("back"),
       onDiscard: command("discard"),
+      onSaveAndClose: command("saveAndClose"),
       onRestoreSelection: command("restoreSelection"),
       registerActions: (newActions: Partial<ToolbarActions>, owner: ToolbarActionOwner) =>
         store().registerRawActions(tabId, newActions, owner),
@@ -200,6 +201,7 @@ export const useToolbarContext = () => {
     onNew: actions.new,
     onBack: actions.back,
     onDiscard: actions.discard,
+    onSaveAndClose: actions.saveAndClose,
     onRestoreSelection: actions.restoreSelection,
     onFilter: actions.filter,
     onExportCSV: actions.exportCSV,
