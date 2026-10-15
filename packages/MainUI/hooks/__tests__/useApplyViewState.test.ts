@@ -22,7 +22,7 @@ const VIEW_STATE: AppliedViewState = {
   grouping: [],
   sizing: { [COLUMN]: 160 },
   pinning: { left: ["mrt-row-select", "actions", COLUMN], right: [] },
-  layout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
+  layout: { splitHeights: { "1": 30 }, activeLevels: [1] },
   summaries: { [COLUMN]: "count" },
   treeView: true,
 };
@@ -46,7 +46,19 @@ describe("useApplyViewState", () => {
   it("captures the current window layout", () => {
     const { result } = renderApplyViewState();
 
-    expect(result.current.currentLayout).toEqual({ splitHeights: { 1: 70 } });
+    expect(result.current.currentLayout).toEqual({ splitHeights: { 1: 70 }, activeLevels: [0, 1] });
+  });
+
+  it("reopens the child panel at the saved height when the child is collapsed", () => {
+    const { result } = renderApplyViewState();
+    useWindowStore.getState().setNavigationActiveLevels(WINDOW_IDENTIFIER, [0]);
+
+    act(() =>
+      result.current.handleApplyView({ ...VIEW_STATE, layout: { splitHeights: { "1": 30 }, activeLevels: [0, 1] } })
+    );
+
+    expect(getWindow().navigation.activeLevels).toEqual([0, 1]);
+    expect(getWindow().navigation.splitHeights).toEqual({ 1: 30 });
   });
 
   it("applies the grid state and the whole layout of a view the user picks", () => {

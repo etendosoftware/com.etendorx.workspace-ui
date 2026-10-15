@@ -376,7 +376,7 @@ describe("rawRecordToSavedView", () => {
 // ============================================================================
 
 describe("buildGridConfiguration — widths, pinning and layout", () => {
-  const LAYOUT = { splitHeights: { "1": 30 }, maximizedLevel: 1 };
+  const LAYOUT = { splitHeights: { "1": 30 }, activeLevels: [1] };
   const parse = (state: Partial<ViewStateSnapshot>) =>
     JSON.parse(buildGridConfiguration({ ...EMPTY_STATE, ...state })) as MRTViewConfig;
 

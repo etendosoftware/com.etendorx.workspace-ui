@@ -31,8 +31,11 @@ import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 export interface WindowLayout {
   /** Height of each child tab level, as a percentage of the viewport, keyed by tab level. */
   splitHeights: Record<string, number>;
-  /** The only tab level shown, when the user maximized one; absent when parent and child are both shown. */
-  maximizedLevel?: number;
+  /**
+   * Tab levels shown when the view was saved (at most two, as in classic: the parent and the child
+   * tab sets). `[parent, child]` is the split, a single level is that level maximized.
+   */
+  activeLevels?: number[];
 }
 
 /**

@@ -29,7 +29,7 @@ const COLUMN = "Document No.";
 const COLUMN_STATE = {
   currentSizing: { [COLUMN]: 150 },
   currentPinning: { left: ["mrt-row-select", "actions", COLUMN], right: [] },
-  currentLayout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
+  currentLayout: { splitHeights: { "1": 30 }, activeLevels: [1] },
   currentSummaries: { [COLUMN]: "sum" as const },
   currentTreeView: true,
 };

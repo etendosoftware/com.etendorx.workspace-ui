@@ -679,7 +679,7 @@ const EXTENDED_STATE = {
   implicitFilterApplied: true,
   sizing: { name: 180 },
   pinning: { left: ["mrt-row-select", "actions", "name"], right: [] },
-  layout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
+  layout: { splitHeights: { "1": 30 }, activeLevels: [1] },
 };
 
 /** URL and parsed body of the first request sent with the given method. */

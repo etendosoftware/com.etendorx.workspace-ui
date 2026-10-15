@@ -23,17 +23,14 @@
 import type { NavigationState } from "@/utils/window/constants";
 import type { WindowLayout } from "./types";
 
-/** Captures the parent/child split heights and the maximized tab level of a window. */
+/** Captures the parent/child split heights and the tab levels shown in a window. */
 export const captureWindowLayout = ({
   activeLevels,
   splitHeights,
-}: Pick<NavigationState, "activeLevels" | "splitHeights">): WindowLayout => {
-  const layout: WindowLayout = { splitHeights: { ...splitHeights } };
-  if (activeLevels.length === 1) {
-    layout.maximizedLevel = activeLevels[0];
-  }
-  return layout;
-};
+}: Pick<NavigationState, "activeLevels" | "splitHeights">): WindowLayout => ({
+  splitHeights: { ...splitHeights },
+  activeLevels: [...activeLevels],
+});
 
 /** Split heights to apply for a layout, keyed by tab level. A view without layout restores the default heights. */
 export const getLayoutSplitHeights = (layout?: WindowLayout): Record<number, number> => {
@@ -44,27 +41,33 @@ export const getLayoutSplitHeights = (layout?: WindowLayout): Record<number, num
   return heights;
 };
 
+const isSameLevels = (current: number[], target: number[]) =>
+  current.length === target.length && current.every((level, index) => level === target[index]);
+
+/** Without saved levels (older views), a maximized child level goes back to the parent/child split. */
+const resolveDefaultActiveLevels = (activeLevels: number[]): number[] | null => {
+  const [level] = activeLevels;
+  if (activeLevels.length === 1 && level > 0) {
+    return [level - 1, level];
+  }
+  return null;
+};
+
 /**
- * Active tab levels that apply the maximized state of a layout, or null when the current levels
- * already match it or it cannot be applied.
+ * Active tab levels to apply for a layout, or null when the current levels already match it or it
+ * cannot be applied.
  *
- * A maximized level deeper than the deepest open level is skipped: that level has no parent
- * record selected, so it cannot be shown. A layout without maximized level (or a view without
- * layout) restores a maximized child level to the parent/child split.
+ * The saved levels are only restored when their shallowest level is already open: a deeper level
+ * needs a record selected in its parent level, and showing it without one would collapse the window.
  */
 export const resolveActiveLevels = (activeLevels: number[], layout?: WindowLayout): number[] | null => {
-  const deepestLevel = activeLevels[activeLevels.length - 1];
-  const isSingleLevel = activeLevels.length === 1;
-  const maximizedLevel = layout?.maximizedLevel;
-
-  if (maximizedLevel === undefined) {
-    if (isSingleLevel && deepestLevel > 0) {
-      return [deepestLevel - 1, deepestLevel];
-    }
+  const savedLevels = layout?.activeLevels;
+  if (!savedLevels?.length) {
+    return resolveDefaultActiveLevels(activeLevels);
+  }
+  const deepestOpenLevel = Math.max(...activeLevels);
+  if (Math.min(...savedLevels) > deepestOpenLevel || isSameLevels(activeLevels, savedLevels)) {
     return null;
   }
-  if (maximizedLevel > deepestLevel || (isSingleLevel && deepestLevel === maximizedLevel)) {
-    return null;
-  }
-  return [maximizedLevel];
+  return [...savedLevels];
 };

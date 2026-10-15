@@ -13,7 +13,7 @@ Saved views store the grid and window state of a tab under a name, and the grid 
 | Grouping | `grouping` ([grid grouping](../grid-grouping.md)) | Ungrouped |
 | Column widths | `sizing` (column id → px) | Metadata widths |
 | Pinned columns | `pinning` (`left` / `right`, only the columns the user pinned) | Selection and actions columns only |
-| Window layout | `layout.splitHeights` (tab level → % of the viewport) and `layout.maximizedLevel` | 50% split, nothing maximized |
+| Window layout | `layout.splitHeights` (tab level → % of the viewport) and `layout.activeLevels` (tab levels shown) | 50% split, levels unchanged |
 | Summary functions | `summaries` (column id → `sum` / `avg` / `count` / `min` / `max`), classic `summaryFunctions` | No summaries |
 | Tree view | `treeView: true` (classic `viewMode: 'tree'`), only on tabs with a tree | Flat grid |
 
@@ -24,7 +24,7 @@ The format stays `version: 1`: new parts are optional keys that are only written
 - **Saving** captures the current state of the tab. Saving under the name of an existing view overwrites that view, as in classic, instead of creating a duplicate.
 - **Applying** a view replaces the table state of the tab. Visibility is replaced, not merged, so the columns the view does not list fall back to the metadata. It then restores:
   - the split heights;
-  - the maximized level. A level deeper than the open ones is skipped, because it has no parent record selected. A view without a maximized level brings a maximized child back to the parent/child split.
+  - the tab levels shown. As in classic, at most two levels are on screen (parent and child tab sets): `[parent, child]` is the split, a single level is that level maximized. The levels are only restored when their shallowest level is already open, because a deeper level needs a record selected in its parent level; a collapsed child panel is reopened at the saved height. A view without saved levels brings a maximized child back to the parent/child split.
 - **Standard view** (reset) does three things:
   - unsets the default view;
   - restores the metadata grid (visibility, order, widths, pinning, sorting, no grouping, no summaries, flat grid) and the default layout;
@@ -49,7 +49,7 @@ The format stays `version: 1`: new parts are optional keys that are only written
 
 Each tab is restored once per opened window. A tab that remounts while its window is open, such as a child tab after the parent record changes, keeps the columns of the session.
 
-An auto-applied default view restores the split heights but never the maximized level, because moving the active levels on open would override the navigation the user or the URL set up.
+An auto-applied default view restores the split heights but never the tab levels shown, because moving the active levels on open would override the navigation the user or the URL set up.
 
 ### Parent/child split
 
