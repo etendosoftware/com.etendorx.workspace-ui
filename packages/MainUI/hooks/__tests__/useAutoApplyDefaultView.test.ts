@@ -260,7 +260,11 @@ describe("useAutoApplyDefaultView", () => {
 
   it("does not apply view when the server answers with a non-zero status", async () => {
     jest.spyOn(global, "fetch").mockReturnValue(
-      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ response: { status: -1 } }) } as Response)
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ response: { status: -1 } }),
+      } as Response)
     );
     const onApplyView = jest.fn();
 
@@ -270,7 +274,12 @@ describe("useAutoApplyDefaultView", () => {
   });
 
   describe("stored column configuration", () => {
-    const COLUMN_CONFIGURATION = { version: 1, visibility: { status: false }, order: ["status"], sizing: { status: 80 } };
+    const COLUMN_CONFIGURATION = {
+      version: 1,
+      visibility: { status: false },
+      order: ["status"],
+      sizing: { status: 80 },
+    };
     const mockLoad = loadTabColumnConfiguration as jest.Mock;
     let windowSequence = 0;
     /** A fresh window per test: the restored tabs are tracked for the whole life of a window. */

@@ -106,7 +106,11 @@ const cancelPendingSave = (key: string) => {
   pendingSaves.delete(key);
 };
 
-const storeTabConfiguration = async (windowIdentifier: string, tabId: string, configuration: ColumnConfiguration | null) => {
+const storeTabConfiguration = async (
+  windowIdentifier: string,
+  tabId: string,
+  configuration: ColumnConfiguration | null
+) => {
   try {
     await saveGridConfiguration(getWindowIdFromIdentifier(windowIdentifier), tabId, configuration);
   } catch (error) {

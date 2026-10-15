@@ -23,7 +23,12 @@ import {
   rawRecordToSavedView,
   toAppliedViewState,
 } from "@/utils/savedViews/transform";
-import type { AppliedViewState, ParsedSavedView, RawSavedViewRecord, ViewStateSnapshot } from "@/utils/savedViews/types";
+import type {
+  AppliedViewState,
+  ParsedSavedView,
+  RawSavedViewRecord,
+  ViewStateSnapshot,
+} from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
 
 const BASE_URL = "/api/meta/saved-views";

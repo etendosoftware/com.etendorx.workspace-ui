@@ -37,7 +37,7 @@ export const renderSaveViewMenu = (overrides: Partial<SaveViewMenuProps> = {}) =
     onApplyView: jest.fn(),
     ...overrides,
   };
-  render(<SaveViewMenu {...props} />);
+  render(<SaveViewMenu {...props} data-testid="SaveViewMenu__f0b9a0" />);
   return props;
 };
 

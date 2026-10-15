@@ -31,7 +31,13 @@ import { FIXED_PINNED_COLUMNS } from "@/utils/table/columnState";
 // ============================================================================
 
 /** Empty grid state; each test overrides only the parts it checks. */
-const EMPTY_STATE: ViewStateSnapshot = { filters: [], visibility: {}, sorting: [], order: [], implicitFilterApplied: false };
+const EMPTY_STATE: ViewStateSnapshot = {
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  implicitFilterApplied: false,
+};
 
 describe("buildGridConfiguration", () => {
   it("serializes filters, visibility, sorting, and order into JSON", () => {
@@ -110,7 +116,13 @@ describe("buildGridConfiguration", () => {
   });
 
   it("round-trips implicitFilterApplied through parse/build cycle", () => {
-    const built = buildGridConfiguration({ ...EMPTY_STATE, filters: [{ id: "status", value: "A" }], visibility: { status: true }, order: ["status"], implicitFilterApplied: true });
+    const built = buildGridConfiguration({
+      ...EMPTY_STATE,
+      filters: [{ id: "status", value: "A" }],
+      visibility: { status: true },
+      order: ["status"],
+      implicitFilterApplied: true,
+    });
     const parsed = JSON.parse(built) as MRTViewConfig;
     expect(parsed.implicitFilterApplied).toBe(true);
     expect(parsed.filters).toEqual([{ id: "status", value: "A" }]);
