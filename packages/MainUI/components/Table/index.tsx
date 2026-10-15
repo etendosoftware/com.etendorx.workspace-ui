@@ -976,25 +976,31 @@ const DynamicTable = ({
     setHeaderContextMenuColumn(null);
   }, []);
 
-  const handleSetSummary = useCallback((columnId: string, type: SummaryType) => {
-    setSummaryState((prev) => ({
-      ...prev,
-      [columnId]: type,
-    }));
-  }, [setSummaryState]);
+  const handleSetSummary = useCallback(
+    (columnId: string, type: SummaryType) => {
+      setSummaryState((prev) => ({
+        ...prev,
+        [columnId]: type,
+      }));
+    },
+    [setSummaryState]
+  );
 
-  const handleRemoveSummary = useCallback((columnId: string) => {
-    setSummaryState((prev) => {
-      const newState = { ...prev };
-      delete newState[columnId];
-      return newState;
-    });
-    setSummaryResult((prev) => {
-      const newState = { ...prev };
-      delete newState[columnId];
-      return newState;
-    });
-  }, [setSummaryState]);
+  const handleRemoveSummary = useCallback(
+    (columnId: string) => {
+      setSummaryState((prev) => {
+        const newState = { ...prev };
+        delete newState[columnId];
+        return newState;
+      });
+      setSummaryResult((prev) => {
+        const newState = { ...prev };
+        delete newState[columnId];
+        return newState;
+      });
+    },
+    [setSummaryState]
+  );
 
   // Load summary when state, filters, or data change
   // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch
