@@ -16,7 +16,13 @@
  */
 
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
-import type { ClassicViewConfig, MRTViewConfig, RawSavedViewRecord, SavedView } from "./types";
+import type { ClassicViewConfig, MRTViewConfig, RawSavedViewRecord, SavedView, SavedViewScope } from "./types";
+
+const VALID_SCOPES: SavedViewScope[] = ["USER", "ROLE", "ORGANIZATION", "CLIENT", "SYSTEM"];
+
+function parseScope(raw: unknown): SavedViewScope {
+  return VALID_SCOPES.includes(raw as SavedViewScope) ? (raw as SavedViewScope) : "USER";
+}
 
 /**
  * Guards whether a parsed JSON value is a valid MRTViewConfig.
@@ -104,5 +110,7 @@ export function rawRecordToSavedView(record: RawSavedViewRecord): SavedView {
     isDefault: Boolean(record.isdefault ?? false),
     filterClause: String(record.filterclause ?? ""),
     gridConfiguration: String(record.gridconfiguration ?? ""),
+    scope: parseScope(record.scope),
+    editable: record.editable ?? true,
   };
 }

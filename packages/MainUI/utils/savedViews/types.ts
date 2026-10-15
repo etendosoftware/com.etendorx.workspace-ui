@@ -54,7 +54,15 @@ export interface ClassicViewConfig {
 }
 
 /**
- * A single saved view record from the OBUIAPP_SavedSearch entity.
+ * The visibility scope of a saved view, most specific first. USER views are private to
+ * their owner; ROLE/ORGANIZATION/CLIENT/SYSTEM views are shared defaults an administrator
+ * defined for everyone at that level. The effective default for a tab is resolved
+ * server-side with USER > ROLE > ORGANIZATION > CLIENT > SYSTEM precedence.
+ */
+export type SavedViewScope = "USER" | "ROLE" | "ORGANIZATION" | "CLIENT" | "SYSTEM";
+
+/**
+ * A single saved view record from the ETMETA_SavedView entity.
  */
 export interface SavedView {
   id: string;
@@ -63,6 +71,9 @@ export interface SavedView {
   isDefault: boolean;
   filterClause: string;
   gridConfiguration: string;
+  scope: SavedViewScope;
+  /** Whether the current user is allowed to rename/delete/re-default this view. */
+  editable: boolean;
 }
 
 /**
@@ -75,6 +86,8 @@ export interface ParsedSavedView {
   isDefault: boolean;
   filterClause: string;
   config: MRTViewConfig | null;
+  scope: SavedViewScope;
+  editable: boolean;
 }
 
 /**
@@ -86,6 +99,10 @@ export interface SavedViewPayload {
   isDefault: boolean;
   filterClause: string;
   gridConfiguration: string;
+  /** Omit for a personal (USER-scope) view — only administrators may set a shared scope. */
+  scope?: SavedViewScope;
+  /** Target role id, only used when scope is "ROLE"; defaults to the caller's current role. */
+  roleId?: string;
 }
 
 /**
@@ -96,9 +113,12 @@ export interface RawSavedViewRecord {
   tab?: string;
   tab$_identifier?: string;
   user?: string;
+  role?: string;
   name?: string;
   isdefault?: boolean;
   filterclause?: string;
   gridconfiguration?: string;
+  scope?: string;
+  editable?: boolean;
   [key: string]: unknown;
 }
