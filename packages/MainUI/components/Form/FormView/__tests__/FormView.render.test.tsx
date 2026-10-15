@@ -78,11 +78,12 @@ jest.mock("@/hooks/Toolbar/useStatusModal", () => ({
 }));
 
 const mockResetFormChanges = jest.fn();
+const mockSetAuxiliaryInputs = jest.fn();
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     resetFormChanges: mockResetFormChanges,
     parentTab: null,
-    setAuxiliaryInputs: jest.fn(),
+    setAuxiliaryInputs: mockSetAuxiliaryInputs,
     setFormValues: jest.fn(),
   }),
 }));
@@ -279,6 +280,20 @@ describe("FormView", () => {
     expect(screen.getByTestId("FormHeader-mock")).toBeInTheDocument();
     expect(screen.getByTestId("FormFields-mock")).toBeInTheDocument();
     expect(screen.getByTestId("FormActions-mock")).toBeInTheDocument();
+  });
+
+  it("publishes the record's auxiliary inputs and clears them when the form closes", () => {
+    mockUseFormInitialization.mockReturnValue({
+      formInitialization: { auxiliaryInputValues: { APRM_OrderIsPaid: { value: "Y" } } },
+      refetch: mockFormInitRefetch,
+      loading: false,
+    });
+    const { unmount } = renderFormView();
+    expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({ APRM_OrderIsPaid: "Y" });
+
+    unmount();
+    // Otherwise the grid's toolbar keeps evaluating display logic with the closed form's values
+    expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({});
   });
 
   it("renders in NEW mode", () => {

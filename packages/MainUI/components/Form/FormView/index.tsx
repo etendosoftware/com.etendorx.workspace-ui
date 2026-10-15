@@ -274,6 +274,10 @@ function FormViewComponent({
     setAuxiliaryInputs(aux);
   }, [formInitialization, setAuxiliaryInputs]);
 
+  // The values belong to the form's record: once the form closes, the grid's toolbar must evaluate display
+  // logic with the selected row's own values (it lets TabContext's override them).
+  useEffect(() => () => setAuxiliaryInputs({}), [setAuxiliaryInputs]);
+
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) {
       await refetch();
