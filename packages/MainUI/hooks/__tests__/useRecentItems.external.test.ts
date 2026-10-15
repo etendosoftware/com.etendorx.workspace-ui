@@ -17,6 +17,13 @@
 import { act, renderHook } from "@testing-library/react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useRecentItems } from "../useRecentItems";
+import { useRecentItemsStore } from "@/stores/recentItemsStore";
+import { SCOPE_KEY } from "@/test-utils/recentItems";
+
+jest.mock("@workspaceui/api-client/src/api/recentItems", () => ({
+  fetchRecentItems: jest.fn(),
+  saveRecentItems: jest.fn((items: unknown[]) => Promise.resolve({ items, size: 5 })),
+}));
 
 const ROLE_ID = "ROLE_ID";
 const EXTERNAL_ID = "A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6";
@@ -36,6 +43,8 @@ const renderRecentItems = (menuItems: Menu[], onClick = jest.fn()) =>
 describe("useRecentItems with External menu entries", () => {
   beforeEach(() => {
     localStorage.clear();
+    // The list lives in the server-backed store, which only adds items once a session scope is loaded.
+    useRecentItemsStore.setState({ scopeKey: SCOPE_KEY, items: [] });
   });
 
   it("stores the URL and the open-in-browser flag, so the stored item can be reopened", () => {

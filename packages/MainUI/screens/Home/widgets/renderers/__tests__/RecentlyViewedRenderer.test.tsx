@@ -2,7 +2,8 @@
  *************************************************************************
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -17,26 +18,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
-import RecentlyViewedRenderer from "../RecentlyViewedRenderer";
+import RecentlyViewedRenderer from "@/screens/Home/widgets/renderers/RecentlyViewedRenderer";
+import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { useWindowStore } from "@/stores/windowStore";
+import { ROLE_ID, setUserSession } from "@/test-utils/recentItems";
 
-const ROLE_ID = "ROLE_ID";
 const EXTERNAL_ID = "A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6";
 const WINDOW_ID = "143";
+const EMPTY_TEST_ID = "RecentlyViewedRenderer__empty";
 
 const mockOpenExternalMenuEntry = jest.fn();
-let mockStoredItems: Record<string, RecentItem[]> = {};
-
-jest.mock("@workspaceui/componentlibrary/src/hooks/useLocalStorage", () => ({
-  useLocalStorage: () => [mockStoredItems],
-}));
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-jest.mock("@/stores/userStore", () => ({
-  useUserStore: (selector: (state: unknown) => unknown) => selector({ currentRole: { id: "ROLE_ID" } }),
 }));
 
 jest.mock("@/hooks/useOpenExternalMenuEntry", () => ({
@@ -64,15 +58,23 @@ describe("RecentlyViewedRenderer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useWindowStore.getState().cleanState();
-    mockStoredItems = { [ROLE_ID]: [externalItem, windowItem] };
+    useRecentItemsStore.setState({ items: [externalItem, windowItem] });
+    setUserSession(ROLE_ID);
     jest.mocked(Metadata.getCachedMenu).mockReturnValue([]);
   });
 
   it("shows the empty message when there are no recent items", () => {
-    mockStoredItems = {};
+    useRecentItemsStore.setState({ items: [] });
     render(<RecentlyViewedRenderer />);
 
-    expect(screen.getByTestId("RecentlyViewedRenderer__empty")).toBeInTheDocument();
+    expect(screen.getByTestId(EMPTY_TEST_ID)).toBeInTheDocument();
+  });
+
+  it("shows the empty message while there is no role", () => {
+    setUserSession(undefined);
+    render(<RecentlyViewedRenderer />);
+
+    expect(screen.getByTestId(EMPTY_TEST_ID)).toBeInTheDocument();
   });
 
   it("opens External items with the live menu entry when it is still in the menu", () => {
@@ -94,7 +96,7 @@ describe("RecentlyViewedRenderer", () => {
     expect(mockOpenExternalMenuEntry).toHaveBeenCalledWith(externalItem);
   });
 
-  it("keeps opening the other items as windows", () => {
+  it("opens the other server-side recent items as windows", () => {
     render(<RecentlyViewedRenderer />);
 
     clickItem("MENU_WIN");
