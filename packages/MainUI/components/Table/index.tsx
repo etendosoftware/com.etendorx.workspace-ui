@@ -4003,17 +4003,6 @@ const DynamicTable = ({
       return;
     }
 
-    // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-    console.debug("[DEBUG-LINKEDITEMS] Rule A auto-select firing", {
-      windowIdentifier,
-      tabId: tab.id,
-      tabName: tab.name,
-      tabLevel: tab.tabLevel,
-      isVisible: isVisible ?? true,
-      isTabCollapsed,
-      recordId: decision.recordId,
-    });
-
     autoSelectedSingleRecordRef.current = decision.recordId;
     table.setRowSelection({ [decision.recordId]: true });
   }, [
