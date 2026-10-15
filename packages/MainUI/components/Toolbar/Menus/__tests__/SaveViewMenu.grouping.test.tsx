@@ -12,19 +12,11 @@ jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 jest.mock("@/hooks/useSavedViews", () => ({
-  useSavedViews: () => ({
-    views: [],
-    isLoading: false,
-    isSaving: false,
-    isDeleting: false,
-    isUpdatingDefault: false,
-    fetchViews: jest.fn().mockResolvedValue(undefined),
-    saveView: mockSaveView,
-    setDefaultView: jest.fn(),
-    unsetDefaultView: mockUnsetDefaultView,
-    applyView: jest.fn(),
-    deleteView: jest.fn(),
-  }),
+  useSavedViews: () =>
+    jest.requireActual("../test-utils/saveViewMenu").buildSavedViewsHookMock({
+      saveView: mockSaveView,
+      unsetDefaultView: mockUnsetDefaultView,
+    }),
 }));
 
 const TAB_ID = SAVE_VIEW_MENU_TAB_ID;

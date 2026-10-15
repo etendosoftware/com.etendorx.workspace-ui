@@ -1,7 +1,26 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { UseSavedViewsReturn } from "@/hooks/useSavedViews";
 import SaveViewMenu, { type SaveViewMenuProps } from "../SaveViewMenu";
 
 export const SAVE_VIEW_MENU_TAB_ID = "tab-1";
+
+/** `useSavedViews` result with no views and idle flags; `overrides` replaces any member. */
+export const buildSavedViewsHookMock = (overrides: Partial<UseSavedViewsReturn> = {}): UseSavedViewsReturn => ({
+  views: [],
+  isLoading: false,
+  isSaving: false,
+  isDeleting: false,
+  isUpdatingDefault: false,
+  error: null,
+  fetchViews: jest.fn().mockResolvedValue(undefined),
+  saveView: jest.fn().mockResolvedValue(undefined),
+  updateView: jest.fn().mockResolvedValue(undefined),
+  setDefaultView: jest.fn(),
+  unsetDefaultView: jest.fn().mockResolvedValue(undefined),
+  applyView: jest.fn(),
+  deleteView: jest.fn(),
+  ...overrides,
+});
 
 /** Renders the open menu with an empty table state; `overrides` replaces any prop. */
 export const renderSaveViewMenu = (overrides: Partial<SaveViewMenuProps> = {}) => {

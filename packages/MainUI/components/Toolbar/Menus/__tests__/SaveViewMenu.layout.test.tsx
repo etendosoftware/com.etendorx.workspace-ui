@@ -16,20 +16,13 @@ jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 jest.mock("@/hooks/useSavedViews", () => ({
-  useSavedViews: () => ({
-    views: [{ ...EXISTING_VIEW, filterClause: "", config: null }],
-    isLoading: false,
-    isSaving: false,
-    isDeleting: false,
-    isUpdatingDefault: false,
-    fetchViews: jest.fn().mockResolvedValue(undefined),
-    saveView: mockSaveView,
-    updateView: mockUpdateView,
-    setDefaultView: jest.fn(),
-    unsetDefaultView: mockUnsetDefaultView,
-    applyView: jest.fn(),
-    deleteView: jest.fn(),
-  }),
+  useSavedViews: () =>
+    jest.requireActual("../test-utils/saveViewMenu").buildSavedViewsHookMock({
+      views: [{ ...EXISTING_VIEW, filterClause: "", config: null }],
+      saveView: mockSaveView,
+      updateView: mockUpdateView,
+      unsetDefaultView: mockUnsetDefaultView,
+    }),
 }));
 
 const COLUMN = "Document No.";

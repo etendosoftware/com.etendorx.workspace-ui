@@ -100,7 +100,7 @@ export const useApplyViewState = ({ windowIdentifier, tabId }: UseApplyViewState
 
   const handleResetToStandard = useCallback(() => {
     if (!windowIdentifier || !tabId) return;
-    void clearGridConfiguration(windowIdentifier, tabId);
+    clearGridConfiguration(windowIdentifier, tabId);
   }, [windowIdentifier, tabId]);
 
   return {

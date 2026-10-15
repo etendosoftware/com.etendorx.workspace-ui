@@ -118,7 +118,7 @@ const flushSave = (windowIdentifier: string, tabId: string) => {
   pendingSaves.delete(getTabKey(windowIdentifier, tabId));
   const table = useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.table;
   if (!table) return;
-  void storeTabConfiguration(windowIdentifier, tabId, buildColumnConfiguration(table));
+  storeTabConfiguration(windowIdentifier, tabId, buildColumnConfiguration(table));
 };
 
 /**
