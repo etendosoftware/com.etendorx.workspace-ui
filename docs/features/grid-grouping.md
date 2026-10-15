@@ -18,7 +18,7 @@ Groups the main grid by a column, reproducing the classic UI (`ob-view-grid.js` 
 | Data loading | Fetches up to limit + 1 records | Same (`pageSize = limit + 1` while grouped) |
 | Over the limit | Ungroups and shows `OBUIAPP_MaxGroupingReached` | Same |
 | Create record in grid | Hidden while grouped | Blocked while grouped |
-| Persistence | `storeViewState` / saved views | Window store (while the window is open) + saved views (`gridConfiguration.grouping`), including the auto-applied default view |
+| Persistence | `storeViewState` / saved views | Window store (while the window is open) + saved views (`gridConfiguration.grouping`, see [saved views](saved-views/README.md)), including the auto-applied default view |
 
 Grouping is ignored in tree mode.
 
