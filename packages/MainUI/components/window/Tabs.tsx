@@ -29,6 +29,8 @@ import TabContextProvider from "@/contexts/tab";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useWindowStore } from "@/stores/windowStore";
+import { DEFAULT_SPLIT_HEIGHT } from "@/utils/window/constants";
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
 }
@@ -43,7 +45,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   mountedTabIdsRef.current.add(current.id);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(initialTab.id);
-  const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -68,6 +69,17 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
   const windowIdentifier = useCurrentWindowIdentifier();
+  // Height of this tab level, kept per level in the store so it survives switching sibling tabs and
+  // can be saved with a view. The local copy follows the pointer while dragging.
+  const storedHeight =
+    useWindowStore((s) => s.windows[windowIdentifier ?? ""]?.navigation.splitHeights?.[current.tabLevel]) ??
+    DEFAULT_SPLIT_HEIGHT;
+  const setNavigationSplitHeight = useWindowStore((s) => s.setNavigationSplitHeight);
+  const [customHeight, setCustomHeight] = useState(storedHeight);
+
+  useEffect(() => {
+    setCustomHeight(storedHeight);
+  }, [storedHeight]);
   const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -112,7 +124,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
 
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
-        setCustomHeight(50);
         setCurrent(tab);
 
         // Update the active tab mapping for this level so child tab filtering works correctly
@@ -142,6 +153,14 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const handleHeightChange = useCallback((height: number) => {
     setCustomHeight(height);
   }, []);
+
+  const handleHeightChangeEnd = useCallback(
+    (height: number) => {
+      if (!windowIdentifier) return;
+      setNavigationSplitHeight(windowIdentifier, current.tabLevel, height);
+    },
+    [windowIdentifier, current.tabLevel, setNavigationSplitHeight]
+  );
 
   const handleClose = useCallback(() => {
     setActiveLevel(current.tabLevel - 1);
@@ -173,6 +192,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           minHeight={9}
           maxOffsetRem={9}
           onHeightChange={handleHeightChange}
+          onHeightChangeEnd={handleHeightChangeEnd}
           data-testid={`ResizeHandle__${current?.id ?? activeTabId ?? "6fa401"}`}>
           {subTabsSwitch}
         </ResizeHandle>

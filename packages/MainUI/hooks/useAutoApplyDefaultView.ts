@@ -16,35 +16,80 @@
  */
 
 import { useEffect, useRef } from "react";
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
-import { parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
-import type { RawSavedViewRecord } from "@/utils/savedViews/types";
+import { loadTabColumnConfiguration, toColumnTableState } from "@/utils/savedViews/gridConfiguration";
+import { parseGridConfiguration, rawRecordToSavedView, toAppliedViewState } from "@/utils/savedViews/transform";
+import type { AppliedViewState, MRTViewConfig, RawSavedViewRecord } from "@/utils/savedViews/types";
+import type { TableState } from "@/utils/window/constants";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
 
 const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
-interface ApplyViewState {
-  filters: MRT_ColumnFiltersState;
-  visibility: MRT_VisibilityState;
-  sorting: MRT_SortingState;
-  order: string[];
-  implicitFilterApplied: boolean;
-  grouping: string[];
-}
-
 interface UseAutoApplyDefaultViewParams {
   tabId: string;
   windowIdentifier: string;
-  onApplyView: (state: ApplyViewState) => void;
+  onApplyView: (state: AppliedViewState) => void;
+  /**
+   * Applies the column configuration the user stored for the tab (visibility, order, width and
+   * pinning). Only used when the tab has no default view, which takes precedence as in classic.
+   */
+  onApplyColumnConfiguration?: (state: Partial<TableState>) => void;
+}
+
+/**
+ * Tabs whose stored column configuration was already restored. Module-level so a tab remounting
+ * while its window stays open (e.g. a child tab after the parent record changes) keeps the
+ * columns of the session instead of reloading the stored ones.
+ */
+const restoredColumnConfigurations = new Set<string>();
+
+/** Fetches the default saved view of a tab. Resolves to null when there is none or it cannot be read. */
+async function fetchDefaultViewConfig(tabId: string, token: string): Promise<MRTViewConfig | null> {
+  const url = `${SAVED_VIEWS_URL}?tab=${encodeURIComponent(tabId)}&isdefault=true`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    logger.warn("[useAutoApplyDefaultView] Failed to fetch default view for tab:", tabId, res.status);
+    return null;
+  }
+
+  const json = (await res.json()) as { response?: { status?: number; data?: unknown[] } };
+
+  if (json?.response?.status !== 0) {
+    logger.warn("[useAutoApplyDefaultView] Non-zero status fetching default view for tab:", tabId);
+    return null;
+  }
+
+  const records = (json.response?.data ?? []) as RawSavedViewRecord[];
+  if (records.length === 0) return null;
+
+  const sv = rawRecordToSavedView(records[0]);
+  const config = parseGridConfiguration(sv.gridConfiguration);
+
+  if (!config) {
+    logger.warn("[useAutoApplyDefaultView] Default view has no parseable config:", sv.name);
+  }
+  return config;
 }
 
 /**
  * Fetches the default saved view for a tab and applies it automatically,
  * once per window open session (keyed by windowIdentifier + tabId).
+ * When the tab has no default view, the column configuration the user stored is restored instead.
  */
-export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }: UseAutoApplyDefaultViewParams): void {
+export function useAutoApplyDefaultView({
+  tabId,
+  windowIdentifier,
+  onApplyView,
+  onApplyColumnConfiguration,
+}: UseAutoApplyDefaultViewParams): void {
   const token = useUserStore((s) => s.token);
   const appliedRef = useRef<Set<string>>(new Set());
 
@@ -54,43 +99,24 @@ export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }
     const key = `${windowIdentifier}_${tabId}`;
     if (appliedRef.current.has(key)) return;
 
+    const authToken = token;
     let cancelled = false;
+
+    async function restoreColumnConfiguration() {
+      if (!onApplyColumnConfiguration || restoredColumnConfigurations.has(key)) return;
+
+      const configuration = await loadTabColumnConfiguration(windowIdentifier, tabId);
+      if (cancelled || !configuration || restoredColumnConfigurations.has(key)) return;
+
+      restoredColumnConfigurations.add(key);
+      onApplyColumnConfiguration(toColumnTableState(configuration));
+    }
 
     async function fetchAndApply() {
       try {
-        const url = `${SAVED_VIEWS_URL}?tab=${encodeURIComponent(tabId)}&isdefault=true`;
-
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) {
-          logger.warn("[useAutoApplyDefaultView] Failed to fetch default view for tab:", tabId, res.status);
-          return;
-        }
-
-        const json = (await res.json()) as { response?: { status?: number; data?: unknown[] } };
+        const config = await fetchDefaultViewConfig(tabId, authToken);
 
         if (cancelled) return;
-
-        if (json?.response?.status !== 0) {
-          logger.warn("[useAutoApplyDefaultView] Non-zero status fetching default view for tab:", tabId);
-          return;
-        }
-
-        const records = (json.response?.data ?? []) as RawSavedViewRecord[];
-        if (records.length === 0) return;
-
-        const sv = rawRecordToSavedView(records[0]);
-        const config = parseGridConfiguration(sv.gridConfiguration);
-
-        if (!config) {
-          logger.warn("[useAutoApplyDefaultView] Default view has no parseable config:", sv.name);
-          return;
-        }
 
         // A linked-item navigation may have reconstructed this tab's selection (hard
         // filter to one record) between mount and this fetch resolving. The default
@@ -99,17 +125,17 @@ export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }
         // reverts to showing every record instead of the one the user navigated to.
         const isDirectLink =
           useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
-        if (isDirectLink) return;
 
-        appliedRef.current.add(key);
-        onApplyView({
-          filters: config.filters,
-          visibility: config.visibility,
-          sorting: config.sorting,
-          order: config.order,
-          implicitFilterApplied: config.implicitFilterApplied,
-          grouping: config.grouping ?? [],
-        });
+        if (config && !isDirectLink) {
+          appliedRef.current.add(key);
+          restoredColumnConfigurations.add(key);
+          onApplyView(toAppliedViewState(config));
+          return;
+        }
+
+        // No default view to apply: restore the columns the user left (they never filter
+        // records, so they are safe on a direct link too).
+        await restoreColumnConfiguration();
       } catch (err) {
         logger.error("[useAutoApplyDefaultView] Failed to fetch default view:", err);
       }
@@ -120,5 +146,5 @@ export function useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }
     return () => {
       cancelled = true;
     };
-  }, [tabId, windowIdentifier, token, onApplyView]);
+  }, [tabId, windowIdentifier, token, onApplyView, onApplyColumnConfiguration]);
 }

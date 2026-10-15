@@ -198,7 +198,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
-  const [toggle, setToggle] = useState(false);
+  // Tree view of the grid, kept in the window store so saved views can capture and restore it
+  const isTreeView = useWindowStore((s) => s.windows[windowIdentifier]?.tabs[tab.id]?.table.treeView ?? false);
+  const setTableTreeView = useWindowStore((s) => s.setTableTreeView);
   const [advancedFiltersAnchor, setAdvancedFiltersAnchor] = useState<HTMLElement | null>(null);
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
   const { t } = useTranslation();
@@ -269,11 +271,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
-  // Split view: grid and form on screen at once. `toggle` drives the tree
+  // Split view: grid and form on screen at once. `isTreeView` drives the tree
   // side-by-side layout, which split takes precedence over.
   const panesRef = useRef<HTMLDivElement>(null);
   const isSplitEnabled = splitState.enabled && isSplitViewAvailable(tab);
-  const isTreeSideBySide = toggle && shouldShowForm;
+  const isTreeSideBySide = isTreeView && shouldShowForm;
   const viewMode = getTabViewMode({ shouldShowForm, isSplitEnabled, isTreeSideBySide });
   const isSplitView = viewMode === TAB_VIEW_MODES.SPLIT;
 
@@ -496,9 +498,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
-      setToggle((prev) => !prev);
+      setTableTreeView(windowIdentifier, tab.id, !isTreeView, tab.tabLevel);
     }
-  }, [windowIdentifier]);
+  }, [windowIdentifier, tab.id, tab.tabLevel, isTreeView, setTableTreeView]);
 
   /**
    * Brings both panes on screen, never the other way round: Classic's
@@ -1423,7 +1425,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           data-testid={SPLIT_PANE_TEST_IDS.GRID}>
           <AttachmentProvider data-testid="AttachmentProvider__5893c8">
             <DynamicTable
-              isTreeMode={toggle}
+              isTreeMode={isTreeView}
               setRecordId={handleSetRecordId}
               onRecordSelection={handleRecordSelection}
               isVisible={isGridPaneVisible(viewMode)}

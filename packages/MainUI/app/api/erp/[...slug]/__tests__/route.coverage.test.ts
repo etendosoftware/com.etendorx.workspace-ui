@@ -499,17 +499,20 @@ describe("ERP slug route coverage", () => {
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
     });
 
-    it("serves meta/recent-items GET requests through the uncached mutation path", async () => {
-      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
-      clearErpSessionCookie("test-token");
-      mockFetchWithSessionCookie("JSESSIONID=RECENTITEMS123");
+    it.each(["recent-items", "grid-configuration"])(
+      "serves meta/%s GET requests through the uncached mutation path",
+      async (endpoint) => {
+        const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+        clearErpSessionCookie("test-token");
+        mockFetchWithSessionCookie(`JSESSIONID=${endpoint}`);
 
-      const req = createMockRequest("GET", "https://localhost/api/erp/meta/recent-items");
-      await GET(req, { params: Promise.resolve({ slug: ["meta", "recent-items"] }) });
+        const req = createMockRequest("GET", `https://localhost/api/erp/meta/${endpoint}`);
+        await GET(req, { params: Promise.resolve({ slug: ["meta", endpoint] }) });
 
-      // Only the uncached mutation path captures the session cookie, so this proves the
-      // per-user recent items list is never served from the Next.js Data Cache.
-      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=RECENTITEMS123");
-    });
+        // Only the uncached mutation path captures the session cookie, so this proves the
+        // per-user data is never served from the Next.js Data Cache.
+        expect(getErpSessionCookie("test-token")).toBe(`JSESSIONID=${endpoint}`);
+      }
+    );
   });
 });

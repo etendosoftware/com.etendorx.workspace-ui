@@ -107,6 +107,7 @@ import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
+import { useColumnLayout } from "./hooks/useColumnLayout";
 import { useTableGrouping } from "./hooks/useTableGrouping";
 import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
 import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
@@ -852,8 +853,10 @@ const DynamicTable = ({
     tableColumnSorting,
     tableColumnOrder,
     tableColumnGrouping,
+    tableColumnSummaries: summaryState,
     setTableColumnGrouping,
     setTableColumnSorting,
+    setTableColumnSummaries: setSummaryState,
   } = useTableStatePersistenceTab({
     windowIdentifier,
     tabId: tab.id,
@@ -940,8 +943,7 @@ const DynamicTable = ({
     setRecordId(decision.recordId);
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
-  // Summary State
-  const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
+  // Summary State (the summary functions live in the window store so saved views can capture them)
   const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
@@ -974,25 +976,31 @@ const DynamicTable = ({
     setHeaderContextMenuColumn(null);
   }, []);
 
-  const handleSetSummary = useCallback((columnId: string, type: SummaryType) => {
-    setSummaryState((prev) => ({
-      ...prev,
-      [columnId]: type,
-    }));
-  }, []);
+  const handleSetSummary = useCallback(
+    (columnId: string, type: SummaryType) => {
+      setSummaryState((prev) => ({
+        ...prev,
+        [columnId]: type,
+      }));
+    },
+    [setSummaryState]
+  );
 
-  const handleRemoveSummary = useCallback((columnId: string) => {
-    setSummaryState((prev) => {
-      const newState = { ...prev };
-      delete newState[columnId];
-      return newState;
-    });
-    setSummaryResult((prev) => {
-      const newState = { ...prev };
-      delete newState[columnId];
-      return newState;
-    });
-  }, []);
+  const handleRemoveSummary = useCallback(
+    (columnId: string) => {
+      setSummaryState((prev) => {
+        const newState = { ...prev };
+        delete newState[columnId];
+        return newState;
+      });
+      setSummaryResult((prev) => {
+        const newState = { ...prev };
+        delete newState[columnId];
+        return newState;
+      });
+    },
+    [setSummaryState]
+  );
 
   // Load summary when state, filters, or data change
   // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch
@@ -3101,6 +3109,21 @@ const DynamicTable = ({
     [handleMRTColumnFiltersChange]
   );
 
+  const {
+    columnSizing,
+    columnPinning,
+    handleColumnSizingChange,
+    handleColumnPinningChange,
+    handleColumnOrderChange,
+    scheduleColumnSave,
+  } = useColumnLayout({
+    windowIdentifier,
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+    columnOrder: tableColumnOrder,
+    onColumnOrderChange: handleMRTColumnOrderChange,
+  });
+
   const handleColumnVisibilityChange = useCallback(
     (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
       // Manage initial visibility to avoid overwriting saved state on first render
@@ -3108,10 +3131,14 @@ const DynamicTable = ({
         setHasInitialColumnVisibility(true);
         const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
         if (!isEmptyVisibility) return;
+        // MRT's first callback seeds the grid; it is not a change made by the user
+        handleMRTColumnVisibilityChange(updaterOrValue);
+        return;
       }
       handleMRTColumnVisibilityChange(updaterOrValue);
+      scheduleColumnSave();
     },
-    [hasInitialColumnVisibility, tableColumnVisibility, handleMRTColumnVisibilityChange]
+    [hasInitialColumnVisibility, tableColumnVisibility, handleMRTColumnVisibilityChange, scheduleColumnSave]
   );
 
   const handleSortingChange = useCallback(
@@ -3122,8 +3149,9 @@ const DynamicTable = ({
         return;
       }
       handleMRTSortingChange(updaterOrValue);
+      scheduleColumnSave();
     },
-    [handleMRTSortingChange]
+    [handleMRTSortingChange, scheduleColumnSave]
   );
 
   const handleExpandedChange = useCallback(
@@ -3182,6 +3210,8 @@ const DynamicTable = ({
       columnVisibility: tableColumnVisibility,
       sorting: tableColumnSorting,
       columnOrder: tableColumnOrder,
+      columnSizing,
+      columnPinning,
       grouping: activeGrouping,
       expanded: expandedState,
       showColumnFilters: true,
@@ -3193,6 +3223,8 @@ const DynamicTable = ({
       tableColumnVisibility,
       tableColumnSorting,
       tableColumnOrder,
+      columnSizing,
+      columnPinning,
       activeGrouping,
       expandedState,
       loading,
@@ -3351,17 +3383,16 @@ const DynamicTable = ({
     // expanded rows are "paginated"; the tree builds its own flat rows, so it keeps the previous value
     paginateExpandedRows: Boolean(groupedColumnId),
     getRowCanExpand: handleGetRowCanExpand,
-    initialState: {
-      ...initialState,
-      columnPinning: { left: ["mrt-row-select", COLUMN_NAMES.ACTIONS] },
-    },
+    initialState,
     renderDetailPanel: undefined,
     onExpandedChange: handleExpandedChange,
     state: tableState,
     onColumnFiltersChange: handleColumnFiltersChange,
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onSortingChange: handleSortingChange,
-    onColumnOrderChange: handleMRTColumnOrderChange,
+    onColumnOrderChange: handleColumnOrderChange,
+    onColumnSizingChange: handleColumnSizingChange,
+    onColumnPinningChange: handleColumnPinningChange,
     getRowId,
     enableColumnFilters: !areFiltersDisabled,
     enableSorting: true,

@@ -30,6 +30,8 @@ docs/
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
+│   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
+│   │   └── README.md                # Widths, pinning, window layout, ETMETA_GridConfiguration
 │   ├── dashboard-widget-refresh/     # Feature: Manual refresh of dashboard widgets
 │   │   └── README.md                # Refresh button, loading state, auto-refresh interplay
 │   ├── data-grids/                   # Feature: Data grids

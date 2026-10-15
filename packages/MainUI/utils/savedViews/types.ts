@@ -15,7 +15,28 @@
  *************************************************************************
  */
 
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_SortingState,
+  MRT_VisibilityState,
+} from "material-react-table";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
+
+/**
+ * Window layout stored with a view (classic view definition `window` entry: parent/child tab set
+ * state and height).
+ */
+export interface WindowLayout {
+  /** Height of each child tab level, as a percentage of the viewport, keyed by tab level. */
+  splitHeights: Record<string, number>;
+  /**
+   * Tab levels shown when the view was saved (at most two, as in classic: the parent and the child
+   * tab sets). `[parent, child]` is the split, a single level is that level maximized.
+   */
+  activeLevels?: number[];
+}
 
 /**
  * MRT-native grid configuration schema (workspace-ui format).
@@ -31,6 +52,40 @@ export interface MRTViewConfig {
   implicitFilterApplied: boolean;
   /** Grouped column ids; absent in views saved before grouping existed or saved ungrouped. */
   grouping?: string[];
+  /** Column widths; absent in views saved before widths were stored or without resized columns. */
+  sizing?: MRT_ColumnSizingState;
+  /** Columns the user pinned (never the fixed ones); absent when none was pinned. */
+  pinning?: MRT_ColumnPinningState;
+  /** Window layout; absent in views saved before the layout was stored. */
+  layout?: WindowLayout;
+  /** Summary function of each column (classic `summaryFunctions`); absent when there is none. */
+  summaries?: Record<string, SummaryType>;
+  /** The grid is shown as a tree (classic `viewMode: 'tree'`); absent for the flat grid. */
+  treeView?: boolean;
+}
+
+/** Grid and window state captured into a view, or applied from one. */
+export interface ViewStateSnapshot {
+  filters: MRT_ColumnFiltersState;
+  visibility: MRT_VisibilityState;
+  sorting: MRT_SortingState;
+  order: string[];
+  implicitFilterApplied: boolean;
+  grouping?: string[];
+  sizing?: MRT_ColumnSizingState;
+  pinning?: MRT_ColumnPinningState;
+  layout?: WindowLayout;
+  summaries?: Record<string, SummaryType>;
+  treeView?: boolean;
+}
+
+/** State applied from a view: every grid field resolved to a value, the layout absent when the view has none. */
+export interface AppliedViewState extends ViewStateSnapshot {
+  grouping: string[];
+  sizing: MRT_ColumnSizingState;
+  pinning: MRT_ColumnPinningState;
+  summaries: Record<string, SummaryType>;
+  treeView: boolean;
 }
 
 /**
