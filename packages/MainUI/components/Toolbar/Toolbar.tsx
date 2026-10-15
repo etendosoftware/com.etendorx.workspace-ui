@@ -130,6 +130,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     tableColumnSizing,
     tableColumnPinning,
     tableColumnSummaries,
+    tableTreeView,
     activeLevels,
     activeTabsByLevel,
     isImplicitFilterApplied: storeImplicitFilterApplied,
@@ -592,6 +593,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           currentPinning={tableColumnPinning}
           currentLayout={currentLayout}
           currentSummaries={tableColumnSummaries}
+          currentTreeView={tableTreeView}
           isImplicitFilterApplied={effectiveImplicitFilterApplied}
           defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}

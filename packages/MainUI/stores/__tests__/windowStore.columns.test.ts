@@ -32,6 +32,12 @@ describe("windowStore — column sizing, pinning and split heights", () => {
     expect(getTableState()?.summaries).toEqual({ [COLUMN]: "sum" });
   });
 
+  it("stores whether the grid of a tab is shown as a tree", () => {
+    useWindowStore.getState().setTableTreeView(WINDOW_ID, TAB_ID, true);
+
+    expect(getTableState()?.treeView).toBe(true);
+  });
+
   it("replaces the given table fields instead of merging them", () => {
     const store = useWindowStore.getState();
     store.setTableVisibility(WINDOW_ID, TAB_ID, { [COLUMN]: false });

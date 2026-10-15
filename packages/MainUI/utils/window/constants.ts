@@ -50,6 +50,8 @@ export interface TableState {
   pinning?: MRT_ColumnPinningState;
   /** Summary function of each column (classic view state `summaryFunctions`); absent when there is none. */
   summaries?: Record<string, SummaryType>;
+  /** The grid is shown as a tree (classic view definition `viewMode: 'tree'`); absent for the flat grid. */
+  treeView?: boolean;
 }
 
 /** Height of a child tab level, as a percentage of the viewport, when the user never resized it. */

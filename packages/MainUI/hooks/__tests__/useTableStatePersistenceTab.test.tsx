@@ -144,6 +144,15 @@ describe("useTableStatePersistenceTab", () => {
     expect(result.current.tableColumnSummaries).toEqual({ column1: "sum", column2: "avg" });
   });
 
+  it("should expose whether the grid is shown as a tree", () => {
+    const { result } = renderTableHook();
+    expect(result.current.tableTreeView).toBe(false);
+
+    act(() => useWindowStore.getState().setTableTreeView(windowId, tabId, true));
+
+    expect(result.current.tableTreeView).toBe(true);
+  });
+
   it("should provide setter functions", () => {
     const { result } = renderTableHook();
 

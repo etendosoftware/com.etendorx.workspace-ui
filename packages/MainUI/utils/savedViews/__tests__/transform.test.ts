@@ -386,17 +386,20 @@ describe("buildGridConfiguration — widths, pinning and layout", () => {
       pinning: { left: [...FIXED_PINNED_COLUMNS, "status"], right: [] },
       layout: LAYOUT,
       summaries: { amount: "sum" },
+      treeView: true,
     });
 
     expect(parsed.sizing).toEqual({ status: 140 });
     expect(parsed.pinning).toEqual({ left: ["status"] });
     expect(parsed.layout).toEqual(LAYOUT);
     expect(parsed.summaries).toEqual({ amount: "sum" });
+    expect(parsed.treeView).toBe(true);
   });
 
   it("omits the parts left at their defaults, keeping the previous view shape", () => {
-    const parsed = parse({ sizing: {}, pinning: { left: [...FIXED_PINNED_COLUMNS] }, summaries: {} });
+    const parsed = parse({ sizing: {}, pinning: { left: [...FIXED_PINNED_COLUMNS] }, summaries: {}, treeView: false });
 
+    expect(parsed).not.toHaveProperty("treeView");
     expect(parsed).not.toHaveProperty("summaries");
     expect(parsed).not.toHaveProperty("sizing");
     expect(parsed).not.toHaveProperty("pinning");
@@ -415,6 +418,7 @@ describe("toAppliedViewState", () => {
       pinning: { left: [...FIXED_PINNED_COLUMNS], right: [] },
       layout: undefined,
       summaries: {},
+      treeView: false,
     });
   });
 
@@ -426,6 +430,7 @@ describe("toAppliedViewState", () => {
       pinning: { right: ["status"] },
       layout,
       summaries: { amount: "avg" },
+      treeView: true,
     };
 
     const state = toAppliedViewState(config);
@@ -434,5 +439,6 @@ describe("toAppliedViewState", () => {
     expect(state.pinning).toEqual({ left: [...FIXED_PINNED_COLUMNS], right: ["status"] });
     expect(state.layout).toEqual(layout);
     expect(state.summaries).toEqual({ amount: "avg" });
+    expect(state.treeView).toBe(true);
   });
 });

@@ -54,6 +54,8 @@ export interface SaveViewMenuProps {
   currentLayout?: WindowLayout;
   /** Summary function of each column of the grid. */
   currentSummaries?: Record<string, SummaryType>;
+  /** Whether the grid is shown as a tree. */
+  currentTreeView?: boolean;
   isImplicitFilterApplied: boolean;
   /** Metadata default implicit-filter state, used when resetting to the standard view. */
   defaultImplicitFilterApplied: boolean;
@@ -75,6 +77,7 @@ const getStandardViewState = (implicitFilterApplied: boolean): AppliedViewState 
   sizing: DEFAULT_COLUMN_SIZING,
   pinning: DEFAULT_COLUMN_PINNING,
   summaries: DEFAULT_TABLE_SUMMARIES,
+  treeView: false,
 });
 
 const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
@@ -90,6 +93,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentPinning,
   currentLayout,
   currentSummaries,
+  currentTreeView,
   isImplicitFilterApplied,
   defaultImplicitFilterApplied,
   onApplyView,
@@ -162,6 +166,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       pinning: currentPinning,
       layout: currentLayout,
       summaries: currentSummaries,
+      treeView: currentTreeView,
     };
     // Saving under the name of an existing view overwrites it, as in classic
     const existingView = views.find((view) => view.name === trimmedName);
@@ -189,6 +194,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     currentPinning,
     currentLayout,
     currentSummaries,
+    currentTreeView,
     isImplicitFilterApplied,
     views,
     saveView,

@@ -24,6 +24,7 @@ const VIEW_STATE: AppliedViewState = {
   pinning: { left: ["mrt-row-select", "actions", COLUMN], right: [] },
   layout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
   summaries: { [COLUMN]: "count" },
+  treeView: true,
 };
 
 const getWindow = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER];
@@ -63,6 +64,7 @@ describe("useApplyViewState", () => {
       sizing: VIEW_STATE.sizing,
       pinning: VIEW_STATE.pinning,
       summaries: VIEW_STATE.summaries,
+      treeView: true,
     });
     expect(getWindow().navigation.splitHeights).toEqual({ 1: 30 });
     expect(getWindow().navigation.activeLevels).toEqual([1]);
@@ -105,6 +107,7 @@ describe("useApplyViewState", () => {
       sizing: undefined,
       pinning: undefined,
       summaries: undefined,
+      treeView: undefined,
     };
 
     act(() => result.current.handleApplyView(partialState as unknown as AppliedViewState));
@@ -114,6 +117,7 @@ describe("useApplyViewState", () => {
       sizing: {},
       pinning: DEFAULT_COLUMN_PINNING,
       summaries: {},
+      treeView: false,
     });
   });
 

@@ -57,6 +57,8 @@ export interface MRTViewConfig {
   layout?: WindowLayout;
   /** Summary function of each column (classic `summaryFunctions`); absent when there is none. */
   summaries?: Record<string, SummaryType>;
+  /** The grid is shown as a tree (classic `viewMode: 'tree'`); absent for the flat grid. */
+  treeView?: boolean;
 }
 
 /** Grid and window state captured into a view, or applied from one. */
@@ -71,6 +73,7 @@ export interface ViewStateSnapshot {
   pinning?: MRT_ColumnPinningState;
   layout?: WindowLayout;
   summaries?: Record<string, SummaryType>;
+  treeView?: boolean;
 }
 
 /** State applied from a view: every grid field resolved to a value, the layout absent when the view has none. */
@@ -79,6 +82,7 @@ export interface AppliedViewState extends ViewStateSnapshot {
   sizing: MRT_ColumnSizingState;
   pinning: MRT_ColumnPinningState;
   summaries: Record<string, SummaryType>;
+  treeView: boolean;
 }
 
 /**

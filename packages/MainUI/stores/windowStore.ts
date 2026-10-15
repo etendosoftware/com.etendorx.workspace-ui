@@ -179,6 +179,8 @@ export interface WindowStore {
     summaries: Record<string, SummaryType>,
     tabLevel?: number
   ) => void;
+  /** Shows the grid of a tab as a tree or as a flat grid. */
+  setTableTreeView: (windowIdentifier: string, tabId: string, treeView: boolean, tabLevel?: number) => void;
   setTableColumnPinning: (
     windowIdentifier: string,
     tabId: string,
@@ -360,6 +362,16 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setTableSummaries"
+        ),
+
+      setTableTreeView: (windowIdentifier, tabId, treeView, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.treeView = treeView;
+          },
+          false,
+          "window/setTableTreeView"
         ),
 
       setTableColumnPinning: (windowIdentifier, tabId, pinning, tabLevel = 0) =>

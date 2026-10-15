@@ -46,6 +46,8 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnSizing: MRT_ColumnSizingState;
   tableColumnPinning: MRT_ColumnPinningState;
   tableColumnSummaries: Record<string, SummaryType>;
+  /** Whether the grid is shown as a tree. */
+  tableTreeView: boolean;
   isImplicitFilterApplied: boolean | undefined;
 
   advancedCriteria?: any;
@@ -221,6 +223,7 @@ export const useTableStatePersistenceTab = ({
     tableColumnSizing: currentTableState.sizing ?? DEFAULT_COLUMN_SIZING,
     tableColumnPinning: currentTableState.pinning ?? DEFAULT_COLUMN_PINNING,
     tableColumnSummaries: currentTableState.summaries ?? DEFAULT_TABLE_SUMMARIES,
+    tableTreeView: currentTableState.treeView ?? false,
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
     advancedCriteria: currentTableState.advancedCriteria,
     activeLevels: currentNavigationState.activeLevels,
