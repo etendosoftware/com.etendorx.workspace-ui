@@ -126,6 +126,27 @@ export const mergeOptimisticRecordsWithSort = (
 };
 
 /**
+ * Drops the optimistic copies that no longer have a pending change, once fresh base records arrive.
+ * Only rows still being edited and rows not yet created keep their optimistic version; for every
+ * other row the server data wins. Otherwise a snapshot taken at save time would hide later
+ * refetches, and the next save would send a stale `updated` and hit a false concurrency conflict.
+ * @param optimisticRecords - Records with optimistic updates applied
+ * @param editingRows - Current editing state
+ * @returns The same array when nothing was dropped, so state setters can bail out
+ */
+export const pruneSettledOptimisticRecords = (
+  optimisticRecords: EntityData[],
+  editingRows: EditingRowsState
+): EntityData[] => {
+  const pending = optimisticRecords.filter((record) => {
+    const id = String(record.id);
+    return id.startsWith("new_") || Boolean(editingRows[id]);
+  });
+
+  return pending.length === optimisticRecords.length ? optimisticRecords : pending;
+};
+
+/**
  * Validates that virtual scrolling can work properly with editing rows
  * @param editingRows - Current editing rows state
  * @param totalRecords - Total number of records

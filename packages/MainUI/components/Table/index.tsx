@@ -112,6 +112,7 @@ import {
   canSortWithEditingRows,
   canFilterWithEditingRows,
   mergeOptimisticRecordsWithSort,
+  pruneSettledOptimisticRecords,
   canUseVirtualScrollingWithEditing,
 } from "./utils/tableFeatureCompatibility";
 import { createKeyboardNavigationManager, type KeyboardNavigationManager } from "./utils/keyboardNavigation";
@@ -829,7 +830,7 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
-  const { registerRefresh } = useTabRefreshContext();
+  const { registerRefresh, triggerParentRefreshes } = useTabRefreshContext();
 
   // Hook for fetching form initialization data when entering edit mode
   const { fetchInitialData } = useInlineEditInitialization({ tab });
@@ -1969,13 +1970,16 @@ const DynamicTable = ({
             .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
             .join(",");
 
+          const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+          const { invalidateAfterInlineSave } = await import("./utils/saveOperations");
+          invalidateAfterInlineSave({ tab, datasource, triggerParentRefreshes });
+
           const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
           if (!fetchId) {
             await refetch();
             return;
           }
 
-          const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
           const fullRecordResult = (await datasource.get(tab.entityName, {
             criteria: [{ fieldName: "id", operator: "equals", value: fetchId }],
             windowId: tab.window,
@@ -2016,10 +2020,25 @@ const DynamicTable = ({
       screenReaderAnnouncer,
       preserveClientSideIdentifiers,
       tab,
+      triggerParentRefreshes,
       updateRecordLocally,
       addRecordLocally,
       removeRecordLocally,
     ]
+  );
+
+  /**
+   * Reload action of the stale-object notice: drops the local edit and the optimistic copy of
+   * the row, so the refetched server version (with its current `updated`) is what the user sees
+   * and edits next. Keeping either one would make every retry fail with the same conflict.
+   */
+  const reloadStaleRow = useCallback(
+    (rowId: string) => {
+      editingRowUtils.removeEditingRow(rowId);
+      setOptimisticRecords((prev) => prev.filter((record) => String(record.id) !== rowId));
+      return refetchDatasource(tab.id);
+    },
+    [editingRowUtils, refetchDatasource, tab.id]
   );
 
   /**
@@ -2061,7 +2080,7 @@ const DynamicTable = ({
 
       if (generalError) {
         logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-        notifyStaleObjectAwareError(showErrorModal, generalError, t, () => refetchDatasource(tab.id));
+        notifyStaleObjectAwareError(showErrorModal, generalError, t, () => reloadStaleRow(rowId));
       }
 
       editingRowUtils.setRowSaving(rowId, false);
@@ -2071,7 +2090,7 @@ const DynamicTable = ({
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
       }
     },
-    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate, t, refetchDatasource, tab.id]
+    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate, t, reloadStaleRow]
   );
 
   /**
@@ -2090,7 +2109,7 @@ const DynamicTable = ({
         _general: errorMessage,
       });
 
-      notifyStaleObjectAwareError(showErrorModal, errorMessage, t, () => refetchDatasource(tab.id));
+      notifyStaleObjectAwareError(showErrorModal, errorMessage, t, () => reloadStaleRow(rowId));
 
       if (screenReaderAnnouncer) {
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
@@ -2104,8 +2123,7 @@ const DynamicTable = ({
       displayRecords,
       rollbackOptimisticUpdate,
       t,
-      refetchDatasource,
-      tab.id,
+      reloadStaleRow,
     ]
   );
 
@@ -3691,7 +3709,7 @@ const DynamicTable = ({
         return [];
       }
 
-      return currentOptimistic;
+      return pruneSettledOptimisticRecords(currentOptimistic, editingRowsRef.current);
     });
   }, [displayRecords]);
 

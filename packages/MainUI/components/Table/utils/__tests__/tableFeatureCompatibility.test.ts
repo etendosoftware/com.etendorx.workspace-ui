@@ -4,6 +4,7 @@ import {
   canSortWithEditingRows,
   canFilterWithEditingRows,
   mergeOptimisticRecordsWithSort,
+  pruneSettledOptimisticRecords,
   canUseVirtualScrollingWithEditing,
   adjustSelectionForEditing,
   shouldDisablePaginationDuringEditing,
@@ -54,6 +55,36 @@ describe("tableFeatureCompatibility", () => {
     it("should block filtering when editing rows have unsaved changes", () => {
       const state = makeEditingState({ row1: { modifiedData: { field: "val" } } });
       expect(canFilterWithEditingRows(state)).toBe(false);
+    });
+  });
+
+  describe("pruneSettledOptimisticRecords", () => {
+    const saved = { id: "1", name: "Saved", updated: "2026-09-24T10:00:00+00:00" } as EntityData;
+    const editing = { id: "2", name: "Editing" } as EntityData;
+    const created = { id: "new_1", name: "New" } as EntityData;
+
+    it("should drop optimistic copies of rows that are no longer being edited", () => {
+      const result = pruneSettledOptimisticRecords([saved, editing], makeEditingState({ "2": { modifiedData: {} } }));
+      expect(result).toEqual([editing]);
+    });
+
+    it("should keep rows that have not been created yet", () => {
+      const result = pruneSettledOptimisticRecords([created, saved], {});
+      expect(result).toEqual([created]);
+    });
+
+    it("should let refetched base records win once the save has settled", () => {
+      const refetched = { ...saved, name: "Changed by server", updated: "2026-09-24T10:05:00+00:00" } as EntityData;
+      const pruned = pruneSettledOptimisticRecords([saved], {});
+      const merged = mergeOptimisticRecordsWithSort([refetched], pruned, {});
+      expect(merged[0]).toBe(refetched);
+    });
+
+    it("should return the same array when nothing is dropped", () => {
+      const optimistic = [created, editing];
+      expect(pruneSettledOptimisticRecords(optimistic, makeEditingState({ "2": { modifiedData: {} } }))).toBe(
+        optimistic
+      );
     });
   });
 
