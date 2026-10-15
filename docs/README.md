@@ -30,6 +30,8 @@ docs/
 │   │   └── README.md                # Refresh button, loading state, auto-refresh interplay
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
+│   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
+│   │   └── README.md
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
 ├── api/                              # API documentation
