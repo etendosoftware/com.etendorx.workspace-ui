@@ -160,6 +160,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     handleCancelConfirm,
     actionModal,
     closeActionModal,
+    isExporting,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -542,6 +543,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       selectedRecords: selectedRecords,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
+      isExporting: isExporting,
     });
 
     const config = {
@@ -587,6 +589,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     showShareLinkTooltip,
     isAdvancedFilterApplied,
     isProcessRefreshing,
+    isExporting,
   ]);
 
   if (loading) {

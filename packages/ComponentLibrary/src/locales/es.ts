@@ -241,6 +241,7 @@ const es = {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",
   },
   table: {
+    exportError: "Error al exportar",
     newRecord: "Nuevo Registro",
     tooltips: {
       search: "Buscar",
