@@ -68,6 +68,7 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
+import { useApplyViewState } from "@/hooks/useApplyViewState";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({
   windowId,
@@ -100,12 +101,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const tabFormMode = useWindowStore((s) => s.windows[windowIdentifier]?.tabs[tab?.id ?? ""]?.form?.formMode);
   const isNewRecord = tabFormMode === FORM_MODES.NEW;
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
-  const setTableFilters = useWindowStore((s) => s.setTableFilters);
-  const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
-  const setTableSorting = useWindowStore((s) => s.setTableSorting);
-  const setTableOrder = useWindowStore((s) => s.setTableOrder);
-  const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
-  const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
@@ -132,6 +127,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     tableColumnSorting,
     tableColumnOrder,
     tableColumnGrouping,
+    tableColumnSizing,
+    tableColumnPinning,
     activeLevels,
     activeTabsByLevel,
     isImplicitFilterApplied: storeImplicitFilterApplied,
@@ -253,40 +250,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     setSaveViewAnchorEl(null);
   }, []);
 
-  const handleApplyView = useCallback(
-    (state: {
-      filters: typeof tableColumnFilters;
-      visibility: typeof tableColumnVisibility;
-      sorting: typeof tableColumnSorting;
-      order: typeof tableColumnOrder;
-      implicitFilterApplied: boolean;
-      grouping?: string[];
-    }) => {
-      if (!windowIdentifier || !tab?.id) return;
-      const ti = tab.id;
-      setTableFilters(windowIdentifier, ti, state.filters);
-      setTableVisibility(windowIdentifier, ti, state.visibility);
-      setTableSorting(windowIdentifier, ti, state.sorting);
-      setTableOrder(windowIdentifier, ti, state.order);
-      setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
-      setTableGrouping(windowIdentifier, ti, state.grouping ?? []);
-    },
-    [
-      windowIdentifier,
-      tab?.id,
-      setTableFilters,
-      setTableVisibility,
-      setTableSorting,
-      setTableOrder,
-      setTableImplicitFilterApplied,
-      setTableGrouping,
-    ]
-  );
+  const { currentLayout, handleApplyView, handleAutoApplyView, handleApplyColumnConfiguration, handleResetToStandard } =
+    useApplyViewState({ windowIdentifier, tabId: tab?.id ?? "" });
 
   useAutoApplyDefaultView({
     tabId: tab?.id ?? "",
     windowIdentifier,
-    onApplyView: handleApplyView,
+    onApplyView: handleAutoApplyView,
+    onApplyColumnConfiguration: handleApplyColumnConfiguration,
   });
 
   const handleProcessMenuClick = useCallback(
@@ -616,9 +587,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
           currentGrouping={tableColumnGrouping}
+          currentSizing={tableColumnSizing}
+          currentPinning={tableColumnPinning}
+          currentLayout={currentLayout}
           isImplicitFilterApplied={effectiveImplicitFilterApplied}
           defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}
+          onResetToStandard={handleResetToStandard}
           data-testid="SaveViewMenu__a2dd07"
         />
       )}

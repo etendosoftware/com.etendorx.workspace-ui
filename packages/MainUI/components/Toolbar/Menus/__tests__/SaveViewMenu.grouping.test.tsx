@@ -1,5 +1,9 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import SaveViewMenu, { type SaveViewMenuProps } from "../SaveViewMenu";
+import {
+  renderSaveViewMenu,
+  resetToStandardView,
+  SAVE_VIEW_MENU_TAB_ID,
+  saveCurrentView,
+} from "../test-utils/saveViewMenu";
 
 const mockSaveView = jest.fn().mockResolvedValue(undefined);
 const mockUnsetDefaultView = jest.fn().mockResolvedValue(undefined);
@@ -23,36 +27,9 @@ jest.mock("@/hooks/useSavedViews", () => ({
   }),
 }));
 
-const TAB_ID = "tab-1";
+const TAB_ID = SAVE_VIEW_MENU_TAB_ID;
 const GROUPED_COLUMN = "Business Partner";
-
-/** Renders the open menu with an empty table state; `overrides` replaces any prop. */
-const renderMenu = (overrides: Partial<SaveViewMenuProps> = {}) => {
-  const props: SaveViewMenuProps = {
-    anchorEl: document.body,
-    onClose: jest.fn(),
-    tabId: TAB_ID,
-    currentFilters: [],
-    currentVisibility: {},
-    currentSorting: [],
-    currentOrder: [],
-    isImplicitFilterApplied: false,
-    defaultImplicitFilterApplied: true,
-    onApplyView: jest.fn(),
-    ...overrides,
-  };
-  render(<SaveViewMenu {...props} />);
-  return props;
-};
-
-/** Saves the current view under a name through the menu form. */
-const saveCurrentView = async () => {
-  fireEvent.click(screen.getByTestId("SaveViewMenu__save-button"));
-  fireEvent.change(screen.getByTestId("SaveViewMenu__name-input"), { target: { value: "My view" } });
-  await act(async () => {
-    fireEvent.click(screen.getByTestId("SaveViewMenu__confirm-save"));
-  });
-};
+const renderMenu = renderSaveViewMenu;
 
 describe("SaveViewMenu grouping", () => {
   beforeEach(() => jest.clearAllMocks());
@@ -76,9 +53,7 @@ describe("SaveViewMenu grouping", () => {
   it("ungroups when resetting to the standard view", async () => {
     const props = renderMenu({ currentGrouping: [GROUPED_COLUMN] });
 
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("SaveViewMenu__reset-button"));
-    });
+    await resetToStandardView();
 
     expect(mockUnsetDefaultView).toHaveBeenCalledWith(TAB_ID);
     expect(props.onApplyView).toHaveBeenCalledWith(expect.objectContaining({ grouping: [] }));

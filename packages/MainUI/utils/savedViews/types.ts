@@ -15,7 +15,24 @@
  *************************************************************************
  */
 
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_SortingState,
+  MRT_VisibilityState,
+} from "material-react-table";
+
+/**
+ * Window layout stored with a view (classic view definition `window` entry: parent/child tab set
+ * state and height).
+ */
+export interface WindowLayout {
+  /** Height of each child tab level, as a percentage of the viewport, keyed by tab level. */
+  splitHeights: Record<string, number>;
+  /** The only tab level shown, when the user maximized one; absent when parent and child are both shown. */
+  maximizedLevel?: number;
+}
 
 /**
  * MRT-native grid configuration schema (workspace-ui format).
@@ -31,6 +48,32 @@ export interface MRTViewConfig {
   implicitFilterApplied: boolean;
   /** Grouped column ids; absent in views saved before grouping existed or saved ungrouped. */
   grouping?: string[];
+  /** Column widths; absent in views saved before widths were stored or without resized columns. */
+  sizing?: MRT_ColumnSizingState;
+  /** Columns the user pinned (never the fixed ones); absent when none was pinned. */
+  pinning?: MRT_ColumnPinningState;
+  /** Window layout; absent in views saved before the layout was stored. */
+  layout?: WindowLayout;
+}
+
+/** Grid and window state captured into a view, or applied from one. */
+export interface ViewStateSnapshot {
+  filters: MRT_ColumnFiltersState;
+  visibility: MRT_VisibilityState;
+  sorting: MRT_SortingState;
+  order: string[];
+  implicitFilterApplied: boolean;
+  grouping?: string[];
+  sizing?: MRT_ColumnSizingState;
+  pinning?: MRT_ColumnPinningState;
+  layout?: WindowLayout;
+}
+
+/** State applied from a view: every grid field resolved to a value, the layout absent when the view has none. */
+export interface AppliedViewState extends ViewStateSnapshot {
+  grouping: string[];
+  sizing: MRT_ColumnSizingState;
+  pinning: MRT_ColumnPinningState;
 }
 
 /**
