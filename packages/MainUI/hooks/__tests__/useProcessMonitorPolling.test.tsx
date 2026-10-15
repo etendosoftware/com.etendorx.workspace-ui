@@ -27,7 +27,9 @@ import { getNextDelay, useProcessMonitorPolling } from "../useProcessMonitorPoll
 import { useProcessMonitorStore } from "@/stores/processMonitorStore";
 import {
   CURSOR_SAFETY_MARGIN_MS,
+  INCREMENTAL_LIMIT,
   INITIAL_LIMIT,
+  MAX_PAGES_PER_POLL,
   POLL_INTERVAL_MS,
   POLL_MAX_BACKOFF_MS,
 } from "@/utils/processMonitor/constants";
@@ -106,6 +108,7 @@ describe("useProcessMonitorPolling", () => {
   });
 
   afterEach(() => {
+    setHidden(false);
     jest.useRealTimers();
   });
 
@@ -229,6 +232,57 @@ describe("useProcessMonitorPolling", () => {
     await advance(POLL_INTERVAL_MS);
     expect(fetchList).toHaveBeenCalledTimes(2);
     expect(useProcessMonitorStore.getState().hasError).toBe(false);
+  });
+
+  it("keeps retrying with backoff on 401 without toasts or hiding the monitor", async () => {
+    fetchList.mockRejectedValueOnce(new ProcessMonitorError(401, "Unauthorized")).mockResolvedValue(page([], 100));
+
+    renderHook(() => useProcessMonitorPolling(true, "r1"));
+    await flush();
+    expect(useProcessMonitorStore.getState().hasError).toBe(true);
+    expect(useProcessMonitorStore.getState().forbidden).toBe(false);
+
+    await advance(POLL_INTERVAL_MS * 2);
+    expect(fetchList).toHaveBeenCalledTimes(2);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("stops draining after MAX_PAGES_PER_POLL pages even if hasMore stays true", async () => {
+    fetchList.mockResolvedValueOnce(page([], 100));
+    let cursor = 100;
+    fetchList.mockImplementation(() => {
+      cursor += 100;
+      return Promise.resolve(page([build(`r${cursor}`, "RUNNING", cursor)], cursor, { hasMore: true }));
+    });
+
+    renderHook(() => useProcessMonitorPolling(true, "r1"));
+    await flush();
+    await advance(POLL_INTERVAL_MS);
+
+    expect(fetchList).toHaveBeenCalledTimes(1 + MAX_PAGES_PER_POLL);
+  });
+
+  it("applies the safety margin only to the first delta page of a cycle", async () => {
+    fetchList
+      .mockResolvedValueOnce(page([], 10_000))
+      .mockResolvedValueOnce(page([build("a", "RUNNING", 20_000)], 20_000, { hasMore: true }))
+      .mockResolvedValueOnce(page([], 30_000));
+
+    renderHook(() => useProcessMonitorPolling(true, "r1"));
+    await flush();
+    await advance(POLL_INTERVAL_MS);
+
+    expect(fetchList.mock.calls[1][0]).toEqual({ since: 10_000 - CURSOR_SAFETY_MARGIN_MS, limit: INCREMENTAL_LIMIT });
+    expect(fetchList.mock.calls[2][0]).toEqual({ since: 20_000, limit: INCREMENTAL_LIMIT });
+  });
+
+  it("does not drain immediately when the initial load reports hasMore", async () => {
+    fetchList.mockResolvedValue(page([], 100, { hasMore: true }));
+
+    renderHook(() => useProcessMonitorPolling(true, "r1"));
+    await flush();
+
+    expect(fetchList).toHaveBeenCalledTimes(1);
   });
 
   it("stops polling on unmount", async () => {

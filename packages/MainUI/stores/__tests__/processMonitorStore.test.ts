@@ -69,6 +69,13 @@ describe("processMonitorStore", () => {
     expect(store().cursor).toBe(6000);
   });
 
+  it("never moves the cursor backwards", () => {
+    store().applyResponse(response([], { cursor: 8000 }));
+    store().applyResponse(response([], { cursor: 7000 }));
+
+    expect(store().cursor).toBe(8000);
+  });
+
   it("returns only the failures of later polls", () => {
     store().applyResponse(response([build("a", "RUNNING"), build("b", "RUNNING")]));
 

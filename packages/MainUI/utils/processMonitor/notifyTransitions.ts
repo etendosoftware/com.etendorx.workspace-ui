@@ -32,9 +32,12 @@ interface NotifyOptions {
 export function notifyTransitions(transitions: ExecutionTransition[], { t, openDetail }: NotifyOptions): void {
   for (const { execution } of transitions) {
     const name = execution.processName || t("processMonitor.unnamedProcess");
-    toast.error(t("processMonitor.toast.failed").replace("%0", name), {
-      id: `process-monitor:${execution.id}`,
-      action: { label: t("processMonitor.viewError"), onClick: () => openDetail(execution.id) },
-    });
+    toast.error(
+      t("processMonitor.toast.failed").replace("%0", () => name),
+      {
+        id: `process-monitor:${execution.id}`,
+        action: { label: t("processMonitor.viewError"), onClick: () => openDetail(execution.id) },
+      }
+    );
   }
 }

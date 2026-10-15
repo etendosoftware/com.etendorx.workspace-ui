@@ -45,25 +45,39 @@ export interface MergeResult {
 export function mergeExecutions(prev: ExecutionMap, incoming: ProcessExecution[], notifyUnseen: boolean): MergeResult {
   const next: ExecutionMap = { ...prev };
   const transitions: ExecutionTransition[] = [];
+  let changed = false;
 
   for (const execution of incoming) {
     const stored = next[execution.id];
-    if (stored && execution.updatedMs < stored.updatedMs) {
+    if (stored && updatedOf(execution) < updatedOf(stored)) {
       continue;
     }
     const mayNotify = stored ? stored.status === "RUNNING" : notifyUnseen;
     if (mayNotify && execution.status === "FAILED") {
       transitions.push({ execution, status: "FAILED" });
     }
-    next[execution.id] = execution;
+    if (!stored || !isSameExecution(stored, execution)) {
+      next[execution.id] = execution;
+      changed = true;
+    }
   }
 
-  return { next: trimExecutions(next), transitions };
+  // Same reference when nothing changed, so subscribers do not re-render on every idle poll.
+  return { next: changed ? trimExecutions(next) : prev, transitions };
 }
+
+const updatedOf = (execution: ProcessExecution): number => execution.updatedMs ?? 0;
+
+const isSameExecution = (a: ProcessExecution, b: ProcessExecution): boolean =>
+  a.status === b.status &&
+  a.updatedMs === b.updatedMs &&
+  a.processName === b.processName &&
+  a.endTime === b.endTime &&
+  a.duration === b.duration;
 
 /** Newest first. */
 export function sortExecutions(map: ExecutionMap): ProcessExecution[] {
-  return Object.values(map).sort((a, b) => b.updatedMs - a.updatedMs);
+  return Object.values(map).sort((a, b) => updatedOf(b) - updatedOf(a));
 }
 
 /** Most recent failed executions. */

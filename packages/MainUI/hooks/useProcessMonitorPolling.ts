@@ -34,7 +34,6 @@ import {
 } from "@/utils/processMonitor/constants";
 import { notifyTransitions } from "@/utils/processMonitor/notifyTransitions";
 
-const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 
 /** Delay before the next poll: doubled after each consecutive failure, capped at {@link POLL_MAX_BACKOFF_MS}. */
@@ -50,8 +49,10 @@ export function getNextDelay(failures: number): number {
  * - Polls are strictly sequential (the next one is scheduled when the previous one settles), pause
  *   while the document is hidden (one immediate poll when it becomes visible again) and stop on
  *   unmount or when `enabled` turns false.
- * - 403 hides the monitor for the session/role (no retries, no toast); 401 stops polling (the
- *   global interceptor handles the logout); any other failure backs off exponentially.
+ * - 403 hides the monitor for the session/role (no retries, no toast). Any other failure, 401
+ *   included, backs off exponentially (capped) without toasts: `meta/process-monitor` is an
+ *   ignorable URL for the global 401/500 interceptor, so the logout is triggered by the other
+ *   requests of the app, and polling simply keeps retrying at a low rate until then.
  * - Runs that failed raise a toast (never for runs already failed on the initial load).
  *
  * @param enabled - Whether a session is active
@@ -76,23 +77,29 @@ export function useProcessMonitorPolling(enabled: boolean, roleId?: string): voi
     let failures = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const fetchPage = (): Promise<ProcessMonitorListResponse> => {
+    // The safety margin only applies to the first delta call of a cycle: follow-up pages of a
+    // `hasMore` burst continue exactly from the previous cursor.
+    const fetchPage = (page: number): Promise<ProcessMonitorListResponse> => {
       const { cursor } = useProcessMonitorStore.getState();
-      return cursor === null
-        ? fetchProcessMonitorList({ limit: INITIAL_LIMIT })
-        : fetchProcessMonitorList({ since: Math.max(0, cursor - CURSOR_SAFETY_MARGIN_MS), limit: INCREMENTAL_LIMIT });
+      if (cursor === null) {
+        return fetchProcessMonitorList({ limit: INITIAL_LIMIT });
+      }
+      const margin = page === 0 ? CURSOR_SAFETY_MARGIN_MS : 0;
+      return fetchProcessMonitorList({ since: Math.max(0, cursor - margin), limit: INCREMENTAL_LIMIT });
     };
 
     const pollOnce = async () => {
       for (let page = 0; page < MAX_PAGES_PER_POLL; page++) {
-        const response = await fetchPage();
+        const isInitialLoad = useProcessMonitorStore.getState().cursor === null;
+        const response = await fetchPage(page);
         if (cancelled) {
           return;
         }
         const store = useProcessMonitorStore.getState();
         const transitions = store.applyResponse(response);
         notifyTransitions(transitions, { t: tRef.current, openDetail: store.openDetail });
-        if (!response.hasMore) {
+        // The initial load never drains: the delta calls pick up from its cursor on the next cycle.
+        if (!response.hasMore || isInitialLoad) {
           return;
         }
       }
@@ -104,10 +111,6 @@ export function useProcessMonitorPolling(enabled: boolean, roleId?: string): voi
       if (status === HTTP_FORBIDDEN) {
         stopped = true;
         store.setForbidden();
-        return;
-      }
-      if (status === HTTP_UNAUTHORIZED) {
-        stopped = true;
         return;
       }
       failures++;

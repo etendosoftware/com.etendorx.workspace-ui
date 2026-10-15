@@ -69,7 +69,8 @@ export const useProcessMonitorStore = create<ProcessMonitorState & ProcessMonito
         const { next, transitions } = mergeExecutions(state.executions, response.executions, state.loaded);
         set({
           executions: next,
-          cursor: response.cursor ?? state.cursor ?? response.serverTime,
+          // Never moves backwards, even if a response carries an older cursor.
+          cursor: Math.max(state.cursor ?? 0, response.cursor ?? 0) || response.serverTime,
           runningCount: response.runningCount,
           loaded: true,
           hasError: false,

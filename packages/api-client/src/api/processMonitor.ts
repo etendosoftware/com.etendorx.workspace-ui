@@ -35,8 +35,9 @@ export interface ProcessExecution {
   endTime: string | null;
   durationMs: number | null;
   duration: string | null;
-  updated: string;
-  updatedMs: number;
+  /** The backend may emit null when the row has no update timestamp. */
+  updated: string | null;
+  updatedMs: number | null;
 }
 
 export interface ProcessMonitorListResponse {

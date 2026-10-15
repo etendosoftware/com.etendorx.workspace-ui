@@ -100,6 +100,20 @@ describe("mergeExecutions", () => {
     expect(transitions).toEqual([]);
   });
 
+  it("returns the same map reference when nothing changed", () => {
+    const prev = { a: build("a", "RUNNING", 1000) };
+
+    expect(mergeExecutions(prev, [build("a", "RUNNING", 1000)], true).next).toBe(prev);
+  });
+
+  it("tolerates null update timestamps", () => {
+    const nullUpdated = { ...build("a", "RUNNING"), updated: null, updatedMs: null };
+    const { next } = mergeExecutions({ a: nullUpdated }, [{ ...nullUpdated, status: "FAILED" }], false);
+
+    expect(next.a.status).toBe("FAILED");
+    expect(sortExecutions({ a: nullUpdated, b: build("b", "FAILED", 5) }).map((e) => e.id)).toEqual(["b", "a"]);
+  });
+
   it("does not mutate the previous map", () => {
     const prev = { a: build("a", "RUNNING") };
 

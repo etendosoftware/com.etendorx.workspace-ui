@@ -28,7 +28,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useProcessMonitorStore } from "@/stores/processMonitorStore";
 import { formatTimestamp } from "@/utils/processMonitor/format";
 
-type DetailState = { kind: "loading" } | { kind: "error" } | { kind: "ready"; detail: ExecutionDetail };
+type DetailState =
+  | { kind: "loading" }
+  | { kind: "error"; id: string }
+  | { kind: "ready"; id: string; detail: ExecutionDetail };
 
 const Field = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col">
@@ -57,10 +60,10 @@ const ProcessExecutionDetail: React.FC = () => {
     setState({ kind: "loading" });
     fetchProcessMonitorDetail(detailId)
       .then((detail) => {
-        if (!cancelled) setState({ kind: "ready", detail });
+        if (!cancelled) setState({ kind: "ready", id: detailId, detail });
       })
       .catch(() => {
-        if (!cancelled) setState({ kind: "error" });
+        if (!cancelled) setState({ kind: "error", id: detailId });
       });
     return () => {
       cancelled = true;
@@ -71,7 +74,9 @@ const ProcessExecutionDetail: React.FC = () => {
     return null;
   }
 
-  const detail = state.kind === "ready" ? state.detail : undefined;
+  // A state loaded for another execution is stale: show the loading state until the new one lands.
+  const current: DetailState = state.kind !== "loading" && state.id !== detailId ? { kind: "loading" } : state;
+  const detail = current.kind === "ready" ? current.detail : undefined;
   const message = detail?.errorMessage || detail?.log;
 
   return (
@@ -84,12 +89,12 @@ const ProcessExecutionDetail: React.FC = () => {
       onCancel={closeDetail}
       data-testid="process-monitor-dialog">
       <Box className="flex flex-col gap-3 p-4 max-w-full" data-testid="process-monitor-detail">
-        {state.kind === "loading" && (
+        {current.kind === "loading" && (
           <div className="flex justify-center p-4">
             <CircularProgress size={24} />
           </div>
         )}
-        {state.kind === "error" && (
+        {current.kind === "error" && (
           <p role="alert" className="text-sm text-red-700">
             {t("processMonitor.detailError")}
           </p>
