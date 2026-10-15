@@ -380,21 +380,24 @@ describe("buildGridConfiguration — widths, pinning and layout", () => {
   const parse = (state: Partial<ViewStateSnapshot>) =>
     JSON.parse(buildGridConfiguration({ ...EMPTY_STATE, ...state })) as MRTViewConfig;
 
-  it("stores the widths, the columns the user pinned and the layout", () => {
+  it("stores the widths, the columns the user pinned, the layout and the summaries", () => {
     const parsed = parse({
       sizing: { status: 140 },
       pinning: { left: [...FIXED_PINNED_COLUMNS, "status"], right: [] },
       layout: LAYOUT,
+      summaries: { amount: "sum" },
     });
 
     expect(parsed.sizing).toEqual({ status: 140 });
     expect(parsed.pinning).toEqual({ left: ["status"] });
     expect(parsed.layout).toEqual(LAYOUT);
+    expect(parsed.summaries).toEqual({ amount: "sum" });
   });
 
   it("omits the parts left at their defaults, keeping the previous view shape", () => {
-    const parsed = parse({ sizing: {}, pinning: { left: [...FIXED_PINNED_COLUMNS] } });
+    const parsed = parse({ sizing: {}, pinning: { left: [...FIXED_PINNED_COLUMNS] }, summaries: {} });
 
+    expect(parsed).not.toHaveProperty("summaries");
     expect(parsed).not.toHaveProperty("sizing");
     expect(parsed).not.toHaveProperty("pinning");
     expect(parsed).not.toHaveProperty("layout");
@@ -411,6 +414,7 @@ describe("toAppliedViewState", () => {
       sizing: {},
       pinning: { left: [...FIXED_PINNED_COLUMNS], right: [] },
       layout: undefined,
+      summaries: {},
     });
   });
 
@@ -421,6 +425,7 @@ describe("toAppliedViewState", () => {
       sizing: { status: 90 },
       pinning: { right: ["status"] },
       layout,
+      summaries: { amount: "avg" },
     };
 
     const state = toAppliedViewState(config);
@@ -428,5 +433,6 @@ describe("toAppliedViewState", () => {
     expect(state.sizing).toEqual({ status: 90 });
     expect(state.pinning).toEqual({ left: [...FIXED_PINNED_COLUMNS], right: ["status"] });
     expect(state.layout).toEqual(layout);
+    expect(state.summaries).toEqual({ amount: "avg" });
   });
 });

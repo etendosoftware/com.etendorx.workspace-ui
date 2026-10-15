@@ -14,6 +14,7 @@ Saved views store the grid and window state of a tab under a name, and the grid 
 | Column widths | `sizing` (column id → px) | Metadata widths |
 | Pinned columns | `pinning` (`left` / `right`, only the columns the user pinned) | Selection and actions columns only |
 | Window layout | `layout.splitHeights` (tab level → % of the viewport) and `layout.maximizedLevel` | 50% split, nothing maximized |
+| Summary functions | `summaries` (column id → `sum` / `avg` / `count` / `min` / `max`), classic `summaryFunctions` | No summaries |
 
 The format stays `version: 1`: new parts are optional keys that are only written when they differ from the default. Views saved before them keep applying, with the defaults above.
 
@@ -25,7 +26,7 @@ The format stays `version: 1`: new parts are optional keys that are only written
   - the maximized level. A level deeper than the open ones is skipped, because it has no parent record selected. A view without a maximized level brings a maximized child back to the parent/child split.
 - **Standard view** (reset) does three things:
   - unsets the default view;
-  - restores the metadata grid (visibility, order, widths, pinning, sorting, no grouping) and the default layout;
+  - restores the metadata grid (visibility, order, widths, pinning, sorting, no grouping, no summaries) and the default layout;
   - deletes the stored grid configuration of the tab. Classic does the same in `clearLastViewPersonalization`.
 
 ### Grid configuration per user
@@ -64,6 +65,7 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 - **The preference follows the user across roles and organizations** (client + user + window).
 - **Views are per tab** (`ETMETA_SAVEDVIEW`), so the layout stored in a view is the window layout at the moment that tab's view was saved.
 - **The grid + form side-by-side split is not stored**, as in classic. It stays session-only; see `SplitViewState` in `utils/window/constants.ts`.
+- **The stored grid configuration does not include summary functions.** As in classic, a summary survives a reload only through a saved view (classic stores `summaryFunctions` but does not save them when a summary changes). While the window is open the summaries live in the window store (`table.summaries`), so a remounted tab keeps them.
 - **The stored grid configuration does not include grouping.** Classic stores it in `OBUIAPP_GridConfiguration` but does not restore it on reload (the grouping it defers until data arrives is never reapplied), so in both UIs grouping only survives a reload through a saved view. Sorting is stored and restored, as in classic.
 
 ## Main files

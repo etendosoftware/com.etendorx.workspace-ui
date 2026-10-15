@@ -26,6 +26,12 @@ describe("windowStore — column sizing, pinning and split heights", () => {
     expect(getTableState()?.pinning).toEqual(PINNING);
   });
 
+  it("stores the summary functions of a tab", () => {
+    useWindowStore.getState().setTableSummaries(WINDOW_ID, TAB_ID, { [COLUMN]: "sum" });
+
+    expect(getTableState()?.summaries).toEqual({ [COLUMN]: "sum" });
+  });
+
   it("replaces the given table fields instead of merging them", () => {
     const store = useWindowStore.getState();
     store.setTableVisibility(WINDOW_ID, TAB_ID, { [COLUMN]: false });

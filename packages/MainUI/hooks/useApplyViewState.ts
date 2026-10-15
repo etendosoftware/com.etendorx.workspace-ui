@@ -54,6 +54,7 @@ const toTableState = (state: AppliedViewState): Partial<TableState> => ({
   grouping: state.grouping ?? [],
   sizing: state.sizing ?? {},
   pinning: state.pinning ?? DEFAULT_COLUMN_PINNING,
+  summaries: state.summaries ?? {},
 });
 
 /**

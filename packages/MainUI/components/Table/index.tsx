@@ -853,8 +853,10 @@ const DynamicTable = ({
     tableColumnSorting,
     tableColumnOrder,
     tableColumnGrouping,
+    tableColumnSummaries: summaryState,
     setTableColumnGrouping,
     setTableColumnSorting,
+    setTableColumnSummaries: setSummaryState,
   } = useTableStatePersistenceTab({
     windowIdentifier,
     tabId: tab.id,
@@ -941,8 +943,7 @@ const DynamicTable = ({
     setRecordId(decision.recordId);
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
-  // Summary State
-  const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
+  // Summary State (the summary functions live in the window store so saved views can capture them)
   const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
@@ -980,7 +981,7 @@ const DynamicTable = ({
       ...prev,
       [columnId]: type,
     }));
-  }, []);
+  }, [setSummaryState]);
 
   const handleRemoveSummary = useCallback((columnId: string) => {
     setSummaryState((prev) => {
@@ -993,7 +994,7 @@ const DynamicTable = ({
       delete newState[columnId];
       return newState;
     });
-  }, []);
+  }, [setSummaryState]);
 
   // Load summary when state, filters, or data change
   // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch

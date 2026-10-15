@@ -255,6 +255,9 @@ jest.mock("@/hooks/useTableSelection", () => ({
   default: jest.fn(),
 }));
 
+// Stable reference: a fresh object per render would re-run the summary effect forever
+const mockTableColumnSummaries = {};
+
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => ({
     tableColumnFilters: [],
@@ -263,8 +266,10 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
     tableColumnOrder: [],
     tableColumnSizing: {},
     tableColumnPinning: {},
+    tableColumnSummaries: mockTableColumnSummaries,
     setTableColumnSizing: jest.fn(),
     setTableColumnPinning: jest.fn(),
+    setTableColumnSummaries: jest.fn(),
   }),
 }));
 

@@ -23,6 +23,7 @@ const VIEW_STATE: AppliedViewState = {
   sizing: { [COLUMN]: 160 },
   pinning: { left: ["mrt-row-select", "actions", COLUMN], right: [] },
   layout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
+  summaries: { [COLUMN]: "count" },
 };
 
 const getWindow = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER];
@@ -61,6 +62,7 @@ describe("useApplyViewState", () => {
       isImplicitFilterApplied: false,
       sizing: VIEW_STATE.sizing,
       pinning: VIEW_STATE.pinning,
+      summaries: VIEW_STATE.summaries,
     });
     expect(getWindow().navigation.splitHeights).toEqual({ 1: 30 });
     expect(getWindow().navigation.activeLevels).toEqual([1]);
@@ -95,13 +97,24 @@ describe("useApplyViewState", () => {
     expect(getWindow().tabs[TAB_ID].table.sizing).toEqual(VIEW_STATE.sizing);
   });
 
-  it("falls back to the default grouping, widths and pinning", () => {
+  it("falls back to the default grouping, widths, pinning and summaries", () => {
     const { result } = renderApplyViewState();
-    const partialState = { ...VIEW_STATE, grouping: undefined, sizing: undefined, pinning: undefined };
+    const partialState = {
+      ...VIEW_STATE,
+      grouping: undefined,
+      sizing: undefined,
+      pinning: undefined,
+      summaries: undefined,
+    };
 
     act(() => result.current.handleApplyView(partialState as unknown as AppliedViewState));
 
-    expect(getWindow().tabs[TAB_ID].table).toMatchObject({ grouping: [], sizing: {}, pinning: DEFAULT_COLUMN_PINNING });
+    expect(getWindow().tabs[TAB_ID].table).toMatchObject({
+      grouping: [],
+      sizing: {},
+      pinning: DEFAULT_COLUMN_PINNING,
+      summaries: {},
+    });
   });
 
   it("applies a stored column configuration", () => {

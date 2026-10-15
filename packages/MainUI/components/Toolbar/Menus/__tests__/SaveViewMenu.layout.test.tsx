@@ -30,12 +30,13 @@ const COLUMN_STATE = {
   currentSizing: { [COLUMN]: 150 },
   currentPinning: { left: ["mrt-row-select", "actions", COLUMN], right: [] },
   currentLayout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
+  currentSummaries: { [COLUMN]: "sum" as const },
 };
 
-describe("SaveViewMenu widths, pinning and layout", () => {
+describe("SaveViewMenu widths, pinning, layout and summaries", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("saves the widths, the pinning and the window layout with a new view", async () => {
+  it("saves the widths, the pinning, the window layout and the summaries with a new view", async () => {
     renderSaveViewMenu(COLUMN_STATE);
 
     await saveCurrentView();
@@ -46,6 +47,7 @@ describe("SaveViewMenu widths, pinning and layout", () => {
         sizing: COLUMN_STATE.currentSizing,
         pinning: COLUMN_STATE.currentPinning,
         layout: COLUMN_STATE.currentLayout,
+        summaries: COLUMN_STATE.currentSummaries,
       })
     );
     expect(mockUpdateView).not.toHaveBeenCalled();
@@ -70,7 +72,7 @@ describe("SaveViewMenu widths, pinning and layout", () => {
     await resetToStandardView();
 
     const standardState = (props.onApplyView as jest.Mock).mock.calls[0][0];
-    expect(standardState).toMatchObject({ visibility: {}, sizing: {}, pinning: DEFAULT_COLUMN_PINNING });
+    expect(standardState).toMatchObject({ visibility: {}, sizing: {}, pinning: DEFAULT_COLUMN_PINNING, summaries: {} });
     expect(standardState).not.toHaveProperty("layout");
     expect(onResetToStandard).toHaveBeenCalledTimes(1);
   });

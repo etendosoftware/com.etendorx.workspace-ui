@@ -32,6 +32,7 @@ import type { TabFormState } from "@/utils/url/constants";
 import { TAB_MODES } from "@/utils/url/constants";
 import { getWindowIdFromIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { DEFAULT_SPLIT_STATE, clampSplitTableWidth } from "@/utils/window/splitView";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 
 // ---------------------------------------------------------------------------
 // Internal helper: ensures window + tab exist in the draft (immer mutates)
@@ -115,6 +116,9 @@ export const DEFAULT_EXPANDED_SECTIONS: string[] = [];
 /** Stable empty grouping returned when a tab is not grouped (same snapshot-caching reason). */
 export const DEFAULT_TABLE_GROUPING: string[] = [];
 
+/** Stable empty summaries returned when no column has a summary function (same snapshot-caching reason). */
+export const DEFAULT_TABLE_SUMMARIES: Record<string, SummaryType> = {};
+
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   activeLevels: [0],
   activeTabsByLevel: new Map(),
@@ -169,6 +173,12 @@ export interface WindowStore {
   ) => void;
   setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
   setTableSizing: (windowIdentifier: string, tabId: string, sizing: MRT_ColumnSizingState, tabLevel?: number) => void;
+  setTableSummaries: (
+    windowIdentifier: string,
+    tabId: string,
+    summaries: Record<string, SummaryType>,
+    tabLevel?: number
+  ) => void;
   setTableColumnPinning: (
     windowIdentifier: string,
     tabId: string,
@@ -340,6 +350,16 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setTableSizing"
+        ),
+
+      setTableSummaries: (windowIdentifier, tabId, summaries, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.summaries = summaries;
+          },
+          false,
+          "window/setTableSummaries"
         ),
 
       setTableColumnPinning: (windowIdentifier, tabId, pinning, tabLevel = 0) =>

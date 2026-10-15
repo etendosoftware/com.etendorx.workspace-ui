@@ -23,6 +23,7 @@ import type {
   MRT_ColumnPinningState,
 } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 
 export const WINDOW_PROPERTY_NAMES = {
   TITLE: "title",
@@ -47,6 +48,8 @@ export interface TableState {
   sizing?: MRT_ColumnSizingState;
   /** Pinned columns (classic field `frozen`), including the fixed selection and actions ones; absent by default. */
   pinning?: MRT_ColumnPinningState;
+  /** Summary function of each column (classic view state `summaryFunctions`); absent when there is none. */
+  summaries?: Record<string, SummaryType>;
 }
 
 /** Height of a child tab level, as a percentage of the viewport, when the user never resized it. */

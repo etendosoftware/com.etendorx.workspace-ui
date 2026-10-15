@@ -22,6 +22,7 @@ import type {
   MRT_SortingState,
   MRT_VisibilityState,
 } from "material-react-table";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 
 /**
  * Window layout stored with a view (classic view definition `window` entry: parent/child tab set
@@ -54,6 +55,8 @@ export interface MRTViewConfig {
   pinning?: MRT_ColumnPinningState;
   /** Window layout; absent in views saved before the layout was stored. */
   layout?: WindowLayout;
+  /** Summary function of each column (classic `summaryFunctions`); absent when there is none. */
+  summaries?: Record<string, SummaryType>;
 }
 
 /** Grid and window state captured into a view, or applied from one. */
@@ -67,6 +70,7 @@ export interface ViewStateSnapshot {
   sizing?: MRT_ColumnSizingState;
   pinning?: MRT_ColumnPinningState;
   layout?: WindowLayout;
+  summaries?: Record<string, SummaryType>;
 }
 
 /** State applied from a view: every grid field resolved to a value, the layout absent when the view has none. */
@@ -74,6 +78,7 @@ export interface AppliedViewState extends ViewStateSnapshot {
   grouping: string[];
   sizing: MRT_ColumnSizingState;
   pinning: MRT_ColumnPinningState;
+  summaries: Record<string, SummaryType>;
 }
 
 /**

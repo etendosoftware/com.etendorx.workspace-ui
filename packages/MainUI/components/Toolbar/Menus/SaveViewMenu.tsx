@@ -26,6 +26,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import type { AppliedViewState, ParsedSavedView, ViewStateSnapshot, WindowLayout } from "@/utils/savedViews/types";
 import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
+import { DEFAULT_TABLE_SUMMARIES } from "@/stores/windowStore";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 import type {
   MRT_ColumnFiltersState,
   MRT_ColumnPinningState,
@@ -50,6 +52,8 @@ export interface SaveViewMenuProps {
   currentPinning?: MRT_ColumnPinningState;
   /** Window layout (parent/child split and maximized level) to store with the view. */
   currentLayout?: WindowLayout;
+  /** Summary function of each column of the grid. */
+  currentSummaries?: Record<string, SummaryType>;
   isImplicitFilterApplied: boolean;
   /** Metadata default implicit-filter state, used when resetting to the standard view. */
   defaultImplicitFilterApplied: boolean;
@@ -70,6 +74,7 @@ const getStandardViewState = (implicitFilterApplied: boolean): AppliedViewState 
   grouping: NO_GROUPING,
   sizing: DEFAULT_COLUMN_SIZING,
   pinning: DEFAULT_COLUMN_PINNING,
+  summaries: DEFAULT_TABLE_SUMMARIES,
 });
 
 const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
@@ -84,6 +89,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentSizing,
   currentPinning,
   currentLayout,
+  currentSummaries,
   isImplicitFilterApplied,
   defaultImplicitFilterApplied,
   onApplyView,
@@ -155,6 +161,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       sizing: currentSizing,
       pinning: currentPinning,
       layout: currentLayout,
+      summaries: currentSummaries,
     };
     // Saving under the name of an existing view overwrites it, as in classic
     const existingView = views.find((view) => view.name === trimmedName);
@@ -181,6 +188,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     currentSizing,
     currentPinning,
     currentLayout,
+    currentSummaries,
     isImplicitFilterApplied,
     views,
     saveView,

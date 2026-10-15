@@ -130,6 +130,20 @@ describe("useTableStatePersistenceTab", () => {
     expect(result.current.tableColumnPinning).toEqual({ ...DEFAULT_COLUMN_PINNING, right: ["column1"] });
   });
 
+  it("should update the summary functions with a direct value and an updater function", () => {
+    const { result } = renderTableHook();
+    expect(result.current.tableColumnSummaries).toEqual({});
+
+    testDirectUpdate({
+      setter: result.current.setTableColumnSummaries,
+      getter: () => result.current.tableColumnSummaries,
+      testValue: { column1: "sum" },
+    });
+    act(() => result.current.setTableColumnSummaries((prev) => ({ ...prev, column2: "avg" })));
+
+    expect(result.current.tableColumnSummaries).toEqual({ column1: "sum", column2: "avg" });
+  });
+
   it("should provide setter functions", () => {
     const { result } = renderTableHook();
 

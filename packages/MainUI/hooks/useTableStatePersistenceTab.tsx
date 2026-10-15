@@ -29,7 +29,9 @@ import {
   DEFAULT_TABLE_STATE,
   DEFAULT_NAVIGATION_STATE,
   DEFAULT_TABLE_GROUPING,
+  DEFAULT_TABLE_SUMMARIES,
 } from "@/stores/windowStore";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
 import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING, resolveUpdater } from "@/utils/table/columnState";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -43,6 +45,7 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnGrouping: string[];
   tableColumnSizing: MRT_ColumnSizingState;
   tableColumnPinning: MRT_ColumnPinningState;
+  tableColumnSummaries: Record<string, SummaryType>;
   isImplicitFilterApplied: boolean | undefined;
 
   advancedCriteria?: any;
@@ -57,6 +60,7 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnGrouping: (grouping: string[]) => void;
   setTableColumnSizing: (updaterOrValue: MRT_Updater<MRT_ColumnSizingState>) => void;
   setTableColumnPinning: (updaterOrValue: MRT_Updater<MRT_ColumnPinningState>) => void;
+  setTableColumnSummaries: (updaterOrValue: MRT_Updater<Record<string, SummaryType>>) => void;
   setIsImplicitFilterApplied: (value: boolean) => void;
   setAdvancedCriteria: (criteria: any) => void;
   setActiveLevel: (level: number, expand?: boolean) => void;
@@ -80,6 +84,7 @@ export const useTableStatePersistenceTab = ({
   const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
   const setTableSizing = useWindowStore((s) => s.setTableSizing);
   const setTablePinning = useWindowStore((s) => s.setTableColumnPinning);
+  const setTableSummaries = useWindowStore((s) => s.setTableSummaries);
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
   const setNavigationActiveLevels = useWindowStore((s) => s.setNavigationActiveLevels);
@@ -162,6 +167,14 @@ export const useTableStatePersistenceTab = ({
     [windowIdentifier, tabId, tabLevel, getTableState, setTablePinning]
   );
 
+  const setTableColumnSummaries = useCallback(
+    (updaterOrValue: MRT_Updater<Record<string, SummaryType>>) => {
+      const current = getTableState(windowIdentifier, tabId).summaries ?? DEFAULT_TABLE_SUMMARIES;
+      setTableSummaries(windowIdentifier, tabId, resolveUpdater(updaterOrValue, current), tabLevel);
+    },
+    [windowIdentifier, tabId, tabLevel, getTableState, setTableSummaries]
+  );
+
   const setIsImplicitFilterApplied = useCallback(
     (value: boolean) => {
       setTableImplicitFilterApplied(windowIdentifier, tabId, value, tabLevel);
@@ -207,6 +220,7 @@ export const useTableStatePersistenceTab = ({
     tableColumnGrouping: currentTableState.grouping ?? DEFAULT_TABLE_GROUPING,
     tableColumnSizing: currentTableState.sizing ?? DEFAULT_COLUMN_SIZING,
     tableColumnPinning: currentTableState.pinning ?? DEFAULT_COLUMN_PINNING,
+    tableColumnSummaries: currentTableState.summaries ?? DEFAULT_TABLE_SUMMARIES,
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
     advancedCriteria: currentTableState.advancedCriteria,
     activeLevels: currentNavigationState.activeLevels,
@@ -220,6 +234,7 @@ export const useTableStatePersistenceTab = ({
     setTableColumnGrouping,
     setTableColumnSizing,
     setTableColumnPinning,
+    setTableColumnSummaries,
     setIsImplicitFilterApplied,
     setAdvancedCriteria,
     setActiveLevel,

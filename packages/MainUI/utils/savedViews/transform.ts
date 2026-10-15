@@ -71,6 +71,7 @@ export function buildGridConfiguration({
   sizing = {},
   pinning = {},
   layout,
+  summaries = {},
 }: ViewStateSnapshot): string {
   const config: MRTViewConfig = {
     version: 1,
@@ -84,13 +85,14 @@ export function buildGridConfiguration({
     ...(Object.keys(sizing).length > 0 && { sizing }),
     ...(hasUserPinnedColumns(pinning) && { pinning: getUserPinnedColumns(pinning) }),
     ...(layout && { layout }),
+    ...(Object.keys(summaries).length > 0 && { summaries }),
   };
   return JSON.stringify(config);
 }
 
 /**
  * Resolves a stored view into the state to apply: parts missing in older views fall back to the
- * defaults (ungrouped, default widths, only the fixed pinned columns).
+ * defaults (ungrouped, default widths, only the fixed pinned columns, no summaries).
  */
 export function toAppliedViewState(config: MRTViewConfig): AppliedViewState {
   return {
@@ -103,6 +105,7 @@ export function toAppliedViewState(config: MRTViewConfig): AppliedViewState {
     sizing: config.sizing ?? {},
     pinning: withFixedPinnedColumns(config.pinning ?? {}),
     layout: config.layout,
+    summaries: config.summaries ?? {},
   };
 }
 
