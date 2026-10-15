@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import TabsComponent from "./Tabs";
 import WindowProvider from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 
 /**
  * Test helpers
@@ -20,6 +21,10 @@ const createMockRouter = () => ({
 });
 
 const mockRouter = createMockRouter();
+
+const WINDOW_IDENTIFIER = "window1";
+/** Height the mocked resize handle reports when a drag ends (double click in the mock). */
+const DRAGGED_HEIGHT = 30;
 
 const createMockTabs = (count = 2) =>
   Array.from({ length: count }, (_, i) => ({
@@ -61,7 +66,11 @@ jest.mock("@/components/window/SubTabsSwitch", () => ({
 }));
 
 jest.mock("@/components/window/TabContainer", () => ({
-  TabContainer: ({ children }: any) => <div data-testid="tab-container">{children}</div>,
+  TabContainer: ({ children, customHeight }: any) => (
+    <div data-testid="tab-container" data-height={customHeight}>
+      {children}
+    </div>
+  ),
 }));
 
 jest.mock("@/components/window/Tab", () => ({
@@ -75,7 +84,15 @@ jest.mock("@/contexts/tab", () => ({
 
 jest.mock("@workspaceui/componentlibrary/src/components/ResizeHandle", () => ({
   __esModule: true,
-  default: ({ children, "data-testid": testId }: any) => <div data-testid={testId}>{children}</div>,
+  default: ({ children, "data-testid": testId, onHeightChangeEnd }: any) => (
+    <div data-testid={testId} onDoubleClick={() => onHeightChangeEnd?.(DRAGGED_HEIGHT)}>
+      {children}
+    </div>
+  ),
+}));
+
+jest.mock("@/contexts/CurrentWindowContext", () => ({
+  useCurrentWindowIdentifier: () => WINDOW_IDENTIFIER,
 }));
 
 jest.mock("@/hooks/useSelected", () => ({
@@ -143,5 +160,54 @@ describe("Tabs - data-testid verification", () => {
 
     const tabId = tabs[0].id;
     expect(screen.getByTestId(`SubTabsSwitch__${tabId}`)).toBeInTheDocument();
+  });
+});
+
+describe("Tabs - parent/child split height", () => {
+  const tabs = createMockTabs();
+  const getHeight = () => screen.getByTestId("tab-container").getAttribute("data-height");
+
+  beforeEach(() => {
+    const { useTransition } = jest.requireMock("react");
+    (useTransition as jest.Mock).mockReturnValue([false, (cb: () => void) => cb()]);
+    clearSearchParams();
+    setupWindowParams();
+    useWindowStore.getState().cleanState();
+    useWindowStore.getState().setNavigationActiveLevels(WINDOW_IDENTIFIER, [1]);
+  });
+
+  it("starts at the default height", () => {
+    renderTabsComponent(tabs);
+
+    expect(getHeight()).toBe("50");
+  });
+
+  it("uses the height stored for the tab level", () => {
+    useWindowStore.getState().setNavigationSplitHeight(WINDOW_IDENTIFIER, 1, 40);
+
+    renderTabsComponent(tabs);
+
+    expect(getHeight()).toBe("40");
+  });
+
+  it("stores the height once the user finishes resizing", () => {
+    renderTabsComponent(tabs);
+
+    fireEvent.doubleClick(screen.getByTestId(`ResizeHandle__${tabs[0].id}`));
+
+    expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].navigation.splitHeights).toEqual({ 1: DRAGGED_HEIGHT });
+    expect(getHeight()).toBe(String(DRAGGED_HEIGHT));
+  });
+
+  it("keeps the height when switching to a sibling tab", () => {
+    const siblingTabs = createMockTabs().map((tab) => ({ ...tab, tabLevel: 1 }));
+    useWindowStore.getState().setNavigationSplitHeight(WINDOW_IDENTIFIER, 1, 40);
+    renderTabsComponent(siblingTabs);
+
+    fireEvent.click(screen.getByTestId(`SubTabsSwitch__${siblingTabs[0].id}`));
+
+    expect(screen.getByTestId(`SubTabsSwitch__${siblingTabs[1].id}`)).toBeInTheDocument();
+
+    expect(getHeight()).toBe("40");
   });
 });

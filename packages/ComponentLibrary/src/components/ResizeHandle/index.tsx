@@ -291,6 +291,13 @@ const ResizeHandle = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Follow a height set from outside (e.g. a restored window layout), never in the middle of a drag.
+  useEffect(() => {
+    if (!isDragging) {
+      setCurrentHeight(initialHeight);
+    }
+  }, [initialHeight, isDragging]);
+
   useEffect(() => {
     window.addEventListener("resize", throttledWindowResize);
     return () => window.removeEventListener("resize", throttledWindowResize);
