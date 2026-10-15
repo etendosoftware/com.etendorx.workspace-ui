@@ -17,7 +17,12 @@
 
 import { useCallback } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
-import { useWindowStore, DEFAULT_TABLE_STATE, DEFAULT_NAVIGATION_STATE } from "@/stores/windowStore";
+import {
+  useWindowStore,
+  DEFAULT_TABLE_STATE,
+  DEFAULT_NAVIGATION_STATE,
+  DEFAULT_TABLE_GROUPING,
+} from "@/stores/windowStore";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
@@ -27,6 +32,7 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnVisibility: MRT_VisibilityState;
   tableColumnSorting: MRT_SortingState;
   tableColumnOrder: string[];
+  tableColumnGrouping: string[];
   isImplicitFilterApplied: boolean | undefined;
 
   advancedCriteria?: any;
@@ -38,6 +44,7 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
   setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
+  setTableColumnGrouping: (grouping: string[]) => void;
   setIsImplicitFilterApplied: (value: boolean) => void;
   setAdvancedCriteria: (criteria: any) => void;
   setActiveLevel: (level: number, expand?: boolean) => void;
@@ -58,6 +65,7 @@ export const useTableStatePersistenceTab = ({
   const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
   const setTableSorting = useWindowStore((s) => s.setTableSorting);
   const setTableOrder = useWindowStore((s) => s.setTableOrder);
+  const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
   const setNavigationActiveLevels = useWindowStore((s) => s.setNavigationActiveLevels);
@@ -117,6 +125,13 @@ export const useTableStatePersistenceTab = ({
     [windowIdentifier, tabId, tabLevel, getTableState, setTableOrder]
   );
 
+  const setTableColumnGrouping = useCallback(
+    (grouping: string[]) => {
+      setTableGrouping(windowIdentifier, tabId, grouping, tabLevel);
+    },
+    [windowIdentifier, tabId, tabLevel, setTableGrouping]
+  );
+
   const setIsImplicitFilterApplied = useCallback(
     (value: boolean) => {
       setTableImplicitFilterApplied(windowIdentifier, tabId, value, tabLevel);
@@ -159,6 +174,7 @@ export const useTableStatePersistenceTab = ({
     tableColumnVisibility: currentTableState.visibility,
     tableColumnSorting: currentTableState.sorting,
     tableColumnOrder: currentTableState.order,
+    tableColumnGrouping: currentTableState.grouping ?? DEFAULT_TABLE_GROUPING,
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
     advancedCriteria: currentTableState.advancedCriteria,
     activeLevels: currentNavigationState.activeLevels,
@@ -169,6 +185,7 @@ export const useTableStatePersistenceTab = ({
     setTableColumnVisibility,
     setTableColumnSorting,
     setTableColumnOrder,
+    setTableColumnGrouping,
     setIsImplicitFilterApplied,
     setAdvancedCriteria,
     setActiveLevel,

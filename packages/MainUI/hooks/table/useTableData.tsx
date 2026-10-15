@@ -52,6 +52,7 @@ import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/sr
 import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import { buildGroupedSortBy, getActiveGroupColumnId, getGroupingMaxRecords } from "@/utils/table/grouping";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
@@ -163,6 +164,7 @@ export const useTableData = ({
     setTableColumnOrder,
     setIsImplicitFilterApplied,
     tableColumnSorting,
+    tableColumnGrouping,
     advancedCriteria,
   } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -188,6 +190,7 @@ export const useTableData = ({
   } = useSettledParent({ parentRecord, parentIdFromUrl });
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode;
+  const activeGroupColumnId = getActiveGroupColumnId(tableColumnGrouping, tab.window, shouldUseTreeMode);
   const treeEntity = (shouldUseTreeMode && treeMetadata.treeEntity) || tab.entityName;
 
   // Reactive subscription — re-render when form state changes
@@ -456,18 +459,40 @@ export const useTableData = ({
     return { fieldName, directReference: true };
   }, [tab, parentTab]);
 
+  // Helper to resolve a column id to the property the datasource sorts by
+  const resolveSortField = useCallback(
+    (columnId: string) => {
+      const field = Object.values(tab.fields).find((f) => f.name === columnId);
+      return field?.hqlName || columnId;
+    },
+    [tab.fields]
+  );
+
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
       if (!sort) return;
 
-      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
-      const sortField = field?.hqlName || sort.id;
+      const sortField = resolveSortField(sort.id);
 
       options.sortBy = sort.desc ? `-${sortField}` : sortField;
       options.isSorting = true;
     },
-    [tab.fields]
+    [resolveSortField]
+  );
+
+  // Helper to apply grouping to query: as classic, a grouped grid loads up to the
+  // grouping limit + 1 records at once (to detect an oversized dataset), sorted by
+  // the grouped column first and by the current sort inside each group.
+  const applyGroupingToOptions = useCallback(
+    (options: DatasourceOptions, groupColumnId: string, sort: ReturnType<typeof getDefaultSort>) => {
+      const userSort = sort ? { id: resolveSortField(sort.id), desc: sort.desc } : null;
+
+      options.pageSize = getGroupingMaxRecords(tab.window) + 1;
+      options.sortBy = buildGroupedSortBy(resolveSortField(groupColumnId), userSort);
+      options.isSorting = true;
+    },
+    [resolveSortField, tab.window]
   );
 
   const query: DatasourceOptions = useMemo(() => {
@@ -548,14 +573,18 @@ export const useTableData = ({
     }
 
     // Apply sorting
-    if (tableColumnSorting?.length > 0) {
-      applySortToOptions(options, tableColumnSorting[0]);
-    } else {
-      applySortToOptions(options, getDefaultSort());
+    const currentSort = tableColumnSorting.length > 0 ? tableColumnSorting[0] : getDefaultSort();
+    applySortToOptions(options, currentSort);
+
+    // Apply grouping (overrides page size and sort while the grid is grouped)
+    if (activeGroupColumnId) {
+      applyGroupingToOptions(options, activeGroupColumnId, currentSort);
     }
 
     return options;
   }, [
+    activeGroupColumnId,
+    applyGroupingToOptions,
     tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
