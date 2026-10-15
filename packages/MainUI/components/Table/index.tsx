@@ -239,6 +239,9 @@ interface EditableCellContentProps extends CellEditingContextProps {
  * Editable cell content component
  * Extracted from inline Cell definition to reduce cognitive complexity
  */
+/** The session prop of cells while no row is being edited (only editable cells read it). */
+const NO_EDITING_SESSION: Record<string, unknown> = {};
+
 const EditableCellContent: React.FC<EditableCellContentProps> = ({
   rowId,
   fieldKey,
@@ -763,7 +766,6 @@ const DynamicTable = ({
   const { t } = useTranslation();
   const { graph } = useSelected();
   const user = useUserStore((s) => s.user);
-  const session = useUserStore((s) => s.session);
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
@@ -1040,6 +1042,11 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
+  // Only editable cells read the session while rendering (their read-only logic), so the grid subscribes to it
+  // only while a row is being edited: otherwise every SETSESSION answer after a selection change repainted
+  // all visible cells. Handlers read the current session when they run.
+  const hasEditingRows = Object.keys(editingRows).length > 0;
+  const editingSession = useUserStore((s) => (hasEditingRows ? s.session : NO_EDITING_SESSION));
 
   // Grid grouping (classic "Group by" / "Ungroup"); regrouping is blocked like sorting while rows are being edited
   const canChangeGrouping = useCallback(() => canSortWithEditingRows(editingRowsRef.current), []);
@@ -1122,6 +1129,7 @@ const DynamicTable = ({
 
     setIsUploading(true);
     try {
+      const session = useUserStore.getState().session;
       const orgId = session["#AD_Org_ID"] || session.adOrgId;
 
       if (!orgId) {
@@ -1539,6 +1547,7 @@ const DynamicTable = ({
 
         const payload = buildPayloadByInputName(filteredRowData, fieldsByHqlName);
         const entityKeyColumn = tab.fields.id.columnName;
+        const session = useUserStore.getState().session;
         const calloutData = {
           ...session,
           ...payload,
@@ -1662,7 +1671,7 @@ const DynamicTable = ({
         logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
       }
     },
-    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow]
+    [tab, parentRecord, editingRowUtils, applyCalloutValuesToRow]
   );
 
   const toggleColumnsDropdown = useCallback(
@@ -2534,7 +2543,7 @@ const DynamicTable = ({
           editingRowUtils={editingRowUtils}
           columnFieldMappings={columnFieldMappings}
           initialFocusCell={initialFocusCellRef.current}
-          session={session}
+          session={editingSession}
           keyboardNavigationManager={keyboardNavigationManager}
           handleCellValueChange={handleCellValueChange}
           validateFieldOnBlur={validateFieldOnBlur}
@@ -2562,7 +2571,7 @@ const DynamicTable = ({
     [
       editingRowUtils,
       columnFieldMappings,
-      session,
+      editingSession,
       keyboardNavigationManager,
       handleCellValueChange,
       validateFieldOnBlur,
