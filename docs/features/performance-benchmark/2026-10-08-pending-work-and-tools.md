@@ -11,7 +11,7 @@ Round 2 was merged (UI #967, module #215). Round 3 is committed on `hotfix/ETP-5
 
 | Repo | Commits |
 |---|---|
-| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots |
+| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` |
 | `com.etendoerp.metadata` | `9ef6dea` menu body ETag (ship before the UI) |
 
 Measured with `perf:compare` (Sales Invoice, CPU 4x) against the previous state:
@@ -35,6 +35,19 @@ Order description) did nothing, so the context must still change once per reset.
 RHF ref to a controlled input: `reset()` writes the raw value ("0" for "0.00") into the DOM, hidden today only by
 re-renders. Not worth the risk; the remaining field re-renders come from the form initialization context and
 TabContext.
+
+Grid keyboard navigation (`8f9b06042`): **MRT 2.13 rebuilds its column definitions on every render**
+(`prepareColumns` in `useMRT_TableInstance`, no memo), so every DynamicTable render hands TanStack new cells and
+repaints all visible cells — `memoMode: "cells"` (phase 4) never matches. One ArrowDown repainted ~460 cells 4–6
+times. Removed two causes: `useThrottledCallback` depended on its inline callback (the grid's columns changed every
+render), and the grid subscribed to the session (changed by every SETSESSION) although only editable cells read it.
+`arrow-nav-5` time −27 %, blocking −12 %.
+
+Tried and dropped — **pnpm patch memoizing MRT's column defs** (reuse them while the user columns and the options
+the display columns read are unchanged) plus a stable actions column: dev renders per ArrowDown 19.6k → 15.3k
+fibers and no full repaints, but two `perf:compare` runs gave `arrow-nav-5` −10 % and +12 %: within this step's
+noise (the base alone varied 724–843 ms blocking). Not worth patching a dependency. The patch is kept outside the
+repo; MRT 3 (MUI 6) may make it moot.
 
 ## Round 2 status (merged)
 
