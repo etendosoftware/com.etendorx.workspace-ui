@@ -11,7 +11,7 @@ Round 2 was merged (UI #967, module #215). Round 3 is committed on `hotfix/ETP-5
 
 | Repo | Commits |
 |---|---|
-| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` |
+| `com.etendorx.workspace-ui` | `66a228c86` menu revalidation · `f4eb90882` form re-renders on Next · `2ed686be8` render counter tool · `692449025` evaluation contexts shared between equal snapshots · `8f9b06042` grid repaints per keyboard step · `77007caa9` render counter `ACTION=arrow` · `4190928cf` FIC after fast navigation · `b9acb6679` recent documents dwell · `7983de9e1` URL without RSC requests |
 | `com.etendoerp.metadata` | `9ef6dea` menu body ETag (ship before the UI) |
 
 Measured with `perf:compare` (Sales Invoice, CPU 4x) against the previous state:
@@ -48,6 +48,17 @@ the display columns read are unchanged) plus a stable actions column: dev render
 fibers and no full repaints, but two `perf:compare` runs gave `arrow-nav-5` −10 % and +12 %: within this step's
 noise (the base alone varied 724–843 ms blocking). Not worth patching a dependency. The patch is kept outside the
 repo; MRT 3 (MUI 6) may make it moot.
+
+Form Next requests (`4190928cf`, `b9acb6679`, `7983de9e1`): `form-next-5` 23 → 9 requests, all Sales Invoice
+steps 81 → 63 (CPU unchanged locally; each request saved is a round trip on remote servers).
+
+- **Bug fixed:** `useFormInitialization` ignored a params change while a FIC request was in flight and never
+  retried, so after a quick double Next on a slow server the record shown had no FIC of its own and got the
+  previous record's response (reproduced with the FIC delayed 1.5 s via `page.route`). Stale responses are now
+  dropped and the latest params fetched when a request ends; intermediate records are skipped.
+- Recent documents are tracked after the record stays open 1 s (one POST per record passed over before).
+- The window store → URL sync used `router.replace`, which made App Router fetch the `/window` RSC payload (the
+  `GET /window` lines in `byEndpoint`: two per form Next). Once on `/window` it uses `history.replaceState`.
 
 ## Round 2 status (merged)
 
@@ -93,8 +104,8 @@ PR), a 4-window `perf:compare` reference.
 4. ~~**Once-per-pass evaluation contexts**~~ **Done (round 3):** see §0.
 5. **Grid `_selectedProperties`**: design in `2026-10-08-grid-selected-properties-design.md`, waiting for review —
    do not start without it (rows feed ~15 backend payloads).
-6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), one FIC +
-   one recent-documents request per form Next, process modals, date formatting per cell, the three bugs in §2.3
+6. Smaller items in §2.1–2.3: gzip for API JSON (infra), process definitions embedded in buttons (module), ~~one FIC +
+   one recent-documents request per form Next~~ (done in round 3, see §0), process modals, date formatting per cell, the three bugs in §2.3
    (`auxiliaryInputs` never reset, `TEMP DEBUG` leftovers, select closing on re-init).
 
 ### Lessons from round 2 (avoid repeating them)
