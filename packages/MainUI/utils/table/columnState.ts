@@ -20,7 +20,7 @@
  * Everything here is pure so the grid and its hooks only wire state around it.
  */
 
-import type { MRT_ColumnPinningState, MRT_ColumnSizingState } from "material-react-table";
+import type { MRT_ColumnPinningState, MRT_ColumnSizingState, MRT_Updater } from "material-react-table";
 import { COLUMN_NAMES } from "@/components/Table/constants";
 
 /** Columns always pinned to the left, in this order, whatever the user pins (selection checkbox and actions). */
@@ -31,6 +31,10 @@ export const DEFAULT_COLUMN_SIZING: MRT_ColumnSizingState = {};
 
 /** Pinning of a grid the user never customized. Stable reference for the same snapshot-caching reason. */
 export const DEFAULT_COLUMN_PINNING: MRT_ColumnPinningState = { left: [...FIXED_PINNED_COLUMNS], right: [] };
+
+/** Resolves a React-style "value or updater function" against the current value. */
+export const resolveUpdater = <T>(updaterOrValue: MRT_Updater<T>, current: T): T =>
+  typeof updaterOrValue === "function" ? (updaterOrValue as (previous: T) => T)(current) : updaterOrValue;
 
 const isUserColumn = (columnId: string) => !FIXED_PINNED_COLUMNS.includes(columnId);
 

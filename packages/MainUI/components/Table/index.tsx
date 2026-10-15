@@ -107,6 +107,7 @@ import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
+import { useColumnLayout } from "./hooks/useColumnLayout";
 import { useTableGrouping } from "./hooks/useTableGrouping";
 import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
 import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
@@ -3101,6 +3102,21 @@ const DynamicTable = ({
     [handleMRTColumnFiltersChange]
   );
 
+  const {
+    columnSizing,
+    columnPinning,
+    handleColumnSizingChange,
+    handleColumnPinningChange,
+    handleColumnOrderChange,
+    scheduleColumnSave,
+  } = useColumnLayout({
+    windowIdentifier,
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+    columnOrder: tableColumnOrder,
+    onColumnOrderChange: handleMRTColumnOrderChange,
+  });
+
   const handleColumnVisibilityChange = useCallback(
     (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
       // Manage initial visibility to avoid overwriting saved state on first render
@@ -3108,10 +3124,14 @@ const DynamicTable = ({
         setHasInitialColumnVisibility(true);
         const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
         if (!isEmptyVisibility) return;
+        // MRT's first callback seeds the grid; it is not a change made by the user
+        handleMRTColumnVisibilityChange(updaterOrValue);
+        return;
       }
       handleMRTColumnVisibilityChange(updaterOrValue);
+      scheduleColumnSave();
     },
-    [hasInitialColumnVisibility, tableColumnVisibility, handleMRTColumnVisibilityChange]
+    [hasInitialColumnVisibility, tableColumnVisibility, handleMRTColumnVisibilityChange, scheduleColumnSave]
   );
 
   const handleSortingChange = useCallback(
@@ -3182,6 +3202,8 @@ const DynamicTable = ({
       columnVisibility: tableColumnVisibility,
       sorting: tableColumnSorting,
       columnOrder: tableColumnOrder,
+      columnSizing,
+      columnPinning,
       grouping: activeGrouping,
       expanded: expandedState,
       showColumnFilters: true,
@@ -3193,6 +3215,8 @@ const DynamicTable = ({
       tableColumnVisibility,
       tableColumnSorting,
       tableColumnOrder,
+      columnSizing,
+      columnPinning,
       activeGrouping,
       expandedState,
       loading,
@@ -3351,17 +3375,16 @@ const DynamicTable = ({
     // expanded rows are "paginated"; the tree builds its own flat rows, so it keeps the previous value
     paginateExpandedRows: Boolean(groupedColumnId),
     getRowCanExpand: handleGetRowCanExpand,
-    initialState: {
-      ...initialState,
-      columnPinning: { left: ["mrt-row-select", COLUMN_NAMES.ACTIONS] },
-    },
+    initialState,
     renderDetailPanel: undefined,
     onExpandedChange: handleExpandedChange,
     state: tableState,
     onColumnFiltersChange: handleColumnFiltersChange,
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onSortingChange: handleSortingChange,
-    onColumnOrderChange: handleMRTColumnOrderChange,
+    onColumnOrderChange: handleColumnOrderChange,
+    onColumnSizingChange: handleColumnSizingChange,
+    onColumnPinningChange: handleColumnPinningChange,
     getRowId,
     enableColumnFilters: !areFiltersDisabled,
     enableSorting: true,

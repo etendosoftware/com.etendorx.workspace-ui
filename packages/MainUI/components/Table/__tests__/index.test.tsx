@@ -261,6 +261,10 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
     tableColumnVisibility: {},
     tableColumnSorting: [],
     tableColumnOrder: [],
+    tableColumnSizing: {},
+    tableColumnPinning: {},
+    setTableColumnSizing: jest.fn(),
+    setTableColumnPinning: jest.fn(),
   }),
 }));
 

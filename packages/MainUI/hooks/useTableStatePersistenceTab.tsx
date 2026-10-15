@@ -31,12 +31,8 @@ import {
   DEFAULT_TABLE_GROUPING,
 } from "@/stores/windowStore";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
-import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
+import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING, resolveUpdater } from "@/utils/table/columnState";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-
-/** Resolves a React-style "value or updater function" against the current value. */
-const resolveUpdater = <T,>(updaterOrValue: MRT_Updater<T>, current: T): T =>
-  typeof updaterOrValue === "function" ? (updaterOrValue as (previous: T) => T)(current) : updaterOrValue;
 
 interface UseTableStatePersistenceTabReturn {
   // State getters
