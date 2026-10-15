@@ -91,8 +91,9 @@ jest.mock("@workspaceui/componentlibrary/src/components/ResizeHandle", () => ({
   ),
 }));
 
+const mockUseCurrentWindowIdentifier = jest.fn(() => WINDOW_IDENTIFIER);
 jest.mock("@/contexts/CurrentWindowContext", () => ({
-  useCurrentWindowIdentifier: () => WINDOW_IDENTIFIER,
+  useCurrentWindowIdentifier: () => mockUseCurrentWindowIdentifier(),
 }));
 
 jest.mock("@/hooks/useSelected", () => ({
@@ -197,6 +198,16 @@ describe("Tabs - parent/child split height", () => {
 
     expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].navigation.splitHeights).toEqual({ 1: DRAGGED_HEIGHT });
     expect(getHeight()).toBe(String(DRAGGED_HEIGHT));
+  });
+
+  it("does not store the height outside a window", () => {
+    mockUseCurrentWindowIdentifier.mockReturnValue("");
+    renderTabsComponent(tabs);
+
+    fireEvent.doubleClick(screen.getByTestId(`ResizeHandle__${tabs[0].id}`));
+
+    expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER].navigation.splitHeights).toBeUndefined();
+    mockUseCurrentWindowIdentifier.mockReturnValue(WINDOW_IDENTIFIER);
   });
 
   it("keeps the height when switching to a sibling tab", () => {

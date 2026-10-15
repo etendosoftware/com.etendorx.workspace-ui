@@ -235,6 +235,7 @@ const mockUserContext = {
 };
 
 // Mock Next.js server dependencies
+import { scheduleGridConfigurationSave } from "@/utils/savedViews/gridConfiguration";
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
   revalidateTag: jest.fn(),
@@ -306,6 +307,10 @@ jest.mock("@/hooks/useSelected", () => ({
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => mockMultiWindowURL,
+}));
+
+jest.mock("@/utils/savedViews/gridConfiguration", () => ({
+  scheduleGridConfigurationSave: jest.fn(),
 }));
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({
@@ -1809,6 +1814,51 @@ describe("DynamicTable", () => {
       });
 
       expect(logger.warn).toHaveBeenCalledWith("[InlineEditing] Insert blocked while the grid is grouped");
+    });
+  });
+
+  describe("Column layout", () => {
+    const VISIBILITY = { name: false };
+    const getOptions = () => tableOptions as MRT_TableOptions<EntityData>;
+    const changeVisibility = () => act(() => getOptions().onColumnVisibilityChange?.(VISIBILITY));
+
+    beforeEach(() => {
+      (scheduleGridConfigurationSave as jest.Mock).mockClear();
+    });
+
+    it("controls the column widths and keeps the fixed columns pinned", () => {
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      expect(getOptions().state?.columnSizing).toEqual({});
+      expect(getOptions().state?.columnPinning).toEqual({ left: ["mrt-row-select", "actions"], right: [] });
+    });
+
+    it("lets MRT seed an empty visibility without storing it for the user", () => {
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      changeVisibility();
+
+      expect(mockTableDataHook.handleMRTColumnVisibilityChange).toHaveBeenCalledWith(VISIBILITY);
+      expect(scheduleGridConfigurationSave).not.toHaveBeenCalled();
+    });
+
+    it("ignores the first MRT callback when the visibility is already stored", () => {
+      mockTableStatePersistenceTab.tableColumnVisibility = { name: true };
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      changeVisibility();
+
+      expect(mockTableDataHook.handleMRTColumnVisibilityChange).not.toHaveBeenCalled();
+      expect(scheduleGridConfigurationSave).not.toHaveBeenCalled();
+    });
+
+    it("stores a visibility change made by the user", () => {
+      renderWithProviders(<DynamicTable {...defaultProps} />);
+
+      changeVisibility();
+      changeVisibility();
+
+      expect(scheduleGridConfigurationSave).toHaveBeenCalledWith("test-window-id_123456789", expect.any(String));
     });
   });
 });

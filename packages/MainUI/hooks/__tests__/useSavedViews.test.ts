@@ -682,10 +682,16 @@ const EXTENDED_STATE = {
   layout: { splitHeights: { "1": 30 }, maximizedLevel: 1 },
 };
 
+/** URL and parsed body of the first request sent with the given method. */
+function getSentRequest(spy: jest.SpyInstance, method: string) {
+  const call = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === method);
+  if (!call) throw new Error(`No ${method} request was sent`);
+  return { url: call[0] as string, body: JSON.parse((call[1] as RequestInit).body as string) };
+}
+
 /** Grid configuration sent in the body of the first request with the given method. */
 function getSentGridConfiguration(spy: jest.SpyInstance, method: string) {
-  const call = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === method);
-  return JSON.parse(JSON.parse((call![1] as RequestInit).body as string).gridconfiguration);
+  return JSON.parse(getSentRequest(spy, method).body.gridconfiguration);
 }
 
 describe("useSavedViews — widths, pinning and layout", () => {
@@ -747,9 +753,8 @@ describe("useSavedViews — updateView", () => {
       await result.current.updateView("view-001", EXTENDED_STATE);
     });
 
-    const putCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "PUT");
-    const body = JSON.parse((putCall![1] as RequestInit).body as string);
-    expect(putCall![0]).toContain("view-001");
+    const { url, body } = getSentRequest(spy, "PUT");
+    expect(url).toContain("view-001");
     expect(body).toMatchObject({ name: "Sales Orders", tab: "tab-abc", isdefault: true });
     expect(getSentGridConfiguration(spy, "PUT").sizing).toEqual({ name: 180 });
     expect(result.current.isSaving).toBe(false);

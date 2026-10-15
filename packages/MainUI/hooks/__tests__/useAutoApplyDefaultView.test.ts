@@ -258,6 +258,17 @@ describe("useAutoApplyDefaultView", () => {
     expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ grouping: ["status"] }));
   });
 
+  it("does not apply view when the server answers with a non-zero status", async () => {
+    jest.spyOn(global, "fetch").mockReturnValue(
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ response: { status: -1 } }) } as Response)
+    );
+    const onApplyView = jest.fn();
+
+    await renderAndWait(onApplyView);
+
+    expect(onApplyView).not.toHaveBeenCalled();
+  });
+
   describe("stored column configuration", () => {
     const COLUMN_CONFIGURATION = { version: 1, visibility: { status: false }, order: ["status"], sizing: { status: 80 } };
     const mockLoad = loadTabColumnConfiguration as jest.Mock;
