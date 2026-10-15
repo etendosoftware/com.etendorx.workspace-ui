@@ -22,6 +22,7 @@ export * from "./api/types";
 export * from "./api/linkedItems";
 export * from "./api/getPreferences";
 export * from "./api/dashboard";
+export * from "./api/processMonitor";
 
 // Export column filter utilities and hooks
 export * from "./utils/column-filter-utils";
