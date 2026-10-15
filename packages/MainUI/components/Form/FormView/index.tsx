@@ -124,6 +124,9 @@ const processFormData = (
   return processedData;
 };
 
+/** How long a record must stay open in the form to count as a recently viewed document. */
+const RECENT_DOCUMENT_DWELL_MS = 1000;
+
 function FormViewComponent({
   window: windowMetadata,
   tab,
@@ -446,17 +449,22 @@ function FormViewComponent({
 
   const { addRecentDocument } = useRecentDocuments();
 
+  // Track a record as recently viewed once the user stays on it: paging through records with Next sent one
+  // request per record passed over, and filled the recent documents with them.
   useEffect(() => {
     const identifier = record?._identifier;
     if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
-    addRecentDocument({
-      recordId: currentRecordId,
-      identifier: String(identifier),
-      windowId: windowMetadata.id,
-      windowTitle: windowMetadata.name,
-      tabId: tab.id,
-      tabLevel: tab.tabLevel ?? 0,
-    });
+    const timer = setTimeout(() => {
+      addRecentDocument({
+        recordId: currentRecordId,
+        identifier: String(identifier),
+        windowId: windowMetadata.id,
+        windowTitle: windowMetadata.name,
+        tabId: tab.id,
+        tabLevel: tab.tabLevel ?? 0,
+      });
+    }, RECENT_DOCUMENT_DWELL_MS);
+    return () => clearTimeout(timer);
   }, [record?._identifier, currentRecordId, windowMetadata, tab.id, tab.tabLevel, addRecentDocument]);
 
   /**
