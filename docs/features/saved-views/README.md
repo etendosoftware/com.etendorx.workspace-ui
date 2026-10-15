@@ -64,7 +64,7 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 - **The preference follows the user across roles and organizations** (client + user + window).
 - **Views are per tab** (`ETMETA_SAVEDVIEW`), so the layout stored in a view is the window layout at the moment that tab's view was saved.
 - **The grid + form side-by-side split is not stored**, as in classic. It stays session-only; see `SplitViewState` in `utils/window/constants.ts`.
-- **The stored grid configuration does not include grouping.** Classic stores it there too; in the new UI it comes from saved views. Sorting is stored, as in classic.
+- **The stored grid configuration does not include grouping.** Classic stores it in `OBUIAPP_GridConfiguration` but does not restore it on reload (the grouping it defers until data arrives is never reapplied), so in both UIs grouping only survives a reload through a saved view. Sorting is stored and restored, as in classic.
 
 ## Main files
 
