@@ -145,6 +145,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     // Recent items are rewritten on every menu access and shared across devices — a cached GET would
     // keep serving the list as it was at login for the whole life of the token.
     slug.includes("meta/recent-items") ||
+    // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
+    // reorders a column; a cached GET would restore the layout as it was at login.
+    slug.includes("meta/grid-configuration") ||
     // The session payload reflects mutations that do not change the token (and therefore not the
     // cache key), such as a password change clearing the expired flag. Caching it would keep serving
     // the pre-mutation state indefinitely — the cache has no revalidation window.
