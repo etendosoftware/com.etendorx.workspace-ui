@@ -11,6 +11,7 @@ import {
   rewriteHtmlResourceUrls,
   buildErpErrorCodeHeaders,
 } from "./route.helpers";
+import { withCompression } from "../../_utils/compression";
 
 type RequestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
@@ -729,21 +730,21 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "GET");
+  return withCompression(request, await handleERPRequest(request, context.params, "GET"));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "POST");
+  return withCompression(request, await handleERPRequest(request, context.params, "POST"));
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PUT");
+  return withCompression(request, await handleERPRequest(request, context.params, "PUT"));
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "DELETE");
+  return withCompression(request, await handleERPRequest(request, context.params, "DELETE"));
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PATCH");
+  return withCompression(request, await handleERPRequest(request, context.params, "PATCH"));
 }
