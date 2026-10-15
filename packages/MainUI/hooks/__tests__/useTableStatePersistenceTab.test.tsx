@@ -21,6 +21,7 @@ import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useWindowStore } from "@/stores/windowStore";
 import type React from "react";
 import { setupNextNavigationMocks } from "@/utils/tests/mockHelpers";
+import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
 
 // Mock Next.js navigation hooks
 const { mockReplace, mockSearchParams } = setupNextNavigationMocks();
@@ -99,6 +100,34 @@ describe("useTableStatePersistenceTab", () => {
       getter: () => result.current.tableColumnGrouping,
       testValue: ["column1"],
     });
+  });
+
+  it("should default to no column widths and the fixed pinned columns", () => {
+    const { result } = renderTableHook();
+
+    expect(result.current.tableColumnSizing).toEqual(DEFAULT_COLUMN_SIZING);
+    expect(result.current.tableColumnPinning).toEqual(DEFAULT_COLUMN_PINNING);
+  });
+
+  it("should update column sizing with a direct value and an updater function", () => {
+    const { result } = renderTableHook();
+
+    testDirectUpdate({
+      setter: result.current.setTableColumnSizing,
+      getter: () => result.current.tableColumnSizing,
+      testValue: { column1: 120 },
+    });
+    act(() => result.current.setTableColumnSizing((prev) => ({ ...prev, column2: 80 })));
+
+    expect(result.current.tableColumnSizing).toEqual({ column1: 120, column2: 80 });
+  });
+
+  it("should update column pinning with an updater function over the default pinning", () => {
+    const { result } = renderTableHook();
+
+    act(() => result.current.setTableColumnPinning((prev) => ({ ...prev, right: ["column1"] })));
+
+    expect(result.current.tableColumnPinning).toEqual({ ...DEFAULT_COLUMN_PINNING, right: ["column1"] });
   });
 
   it("should provide setter functions", () => {

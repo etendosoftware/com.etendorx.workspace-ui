@@ -15,7 +15,13 @@
  *************************************************************************
  */
 
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
+import type {
+  MRT_VisibilityState,
+  MRT_ColumnFiltersState,
+  MRT_SortingState,
+  MRT_ColumnSizingState,
+  MRT_ColumnPinningState,
+} from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
 
 export const WINDOW_PROPERTY_NAMES = {
@@ -37,12 +43,24 @@ export interface TableState {
   advancedCriteria?: any;
   /** Column ids the grid is grouped by (classic `groupByFields`); absent or empty when ungrouped. */
   grouping?: string[];
+  /** Column widths the user set, keyed by column id (classic field `width`); absent when none was resized. */
+  sizing?: MRT_ColumnSizingState;
+  /** Pinned columns (classic field `frozen`), including the fixed selection and actions ones; absent by default. */
+  pinning?: MRT_ColumnPinningState;
 }
+
+/** Height of a child tab level, as a percentage of the viewport, when the user never resized it. */
+export const DEFAULT_SPLIT_HEIGHT = 50;
 
 export interface NavigationState {
   activeLevels: number[];
   activeTabsByLevel: Map<number, string>;
   initialized: boolean;
+  /**
+   * Height of each child tab level (the parent/child split), as a percentage of the viewport and
+   * keyed by tab level. A level without entry uses DEFAULT_SPLIT_HEIGHT.
+   */
+  splitHeights?: Record<number, number>;
 }
 
 /**

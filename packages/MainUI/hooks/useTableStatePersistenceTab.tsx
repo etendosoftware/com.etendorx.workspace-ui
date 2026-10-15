@@ -16,7 +16,14 @@
  */
 
 import { useCallback } from "react";
-import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_VisibilityState,
+  MRT_SortingState,
+  MRT_ColumnSizingState,
+  MRT_ColumnPinningState,
+  MRT_Updater,
+} from "material-react-table";
 import {
   useWindowStore,
   DEFAULT_TABLE_STATE,
@@ -24,7 +31,12 @@ import {
   DEFAULT_TABLE_GROUPING,
 } from "@/stores/windowStore";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
+import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+
+/** Resolves a React-style "value or updater function" against the current value. */
+const resolveUpdater = <T,>(updaterOrValue: MRT_Updater<T>, current: T): T =>
+  typeof updaterOrValue === "function" ? (updaterOrValue as (previous: T) => T)(current) : updaterOrValue;
 
 interface UseTableStatePersistenceTabReturn {
   // State getters
@@ -33,6 +45,8 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnSorting: MRT_SortingState;
   tableColumnOrder: string[];
   tableColumnGrouping: string[];
+  tableColumnSizing: MRT_ColumnSizingState;
+  tableColumnPinning: MRT_ColumnPinningState;
   isImplicitFilterApplied: boolean | undefined;
 
   advancedCriteria?: any;
@@ -45,6 +59,8 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
   setTableColumnGrouping: (grouping: string[]) => void;
+  setTableColumnSizing: (updaterOrValue: MRT_Updater<MRT_ColumnSizingState>) => void;
+  setTableColumnPinning: (updaterOrValue: MRT_Updater<MRT_ColumnPinningState>) => void;
   setIsImplicitFilterApplied: (value: boolean) => void;
   setAdvancedCriteria: (criteria: any) => void;
   setActiveLevel: (level: number, expand?: boolean) => void;
@@ -66,6 +82,8 @@ export const useTableStatePersistenceTab = ({
   const setTableSorting = useWindowStore((s) => s.setTableSorting);
   const setTableOrder = useWindowStore((s) => s.setTableOrder);
   const setTableGrouping = useWindowStore((s) => s.setTableGrouping);
+  const setTableSizing = useWindowStore((s) => s.setTableSizing);
+  const setTablePinning = useWindowStore((s) => s.setTableColumnPinning);
   const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const setTableAdvancedCriteria = useWindowStore((s) => s.setTableAdvancedCriteria);
   const setNavigationActiveLevels = useWindowStore((s) => s.setNavigationActiveLevels);
@@ -132,6 +150,22 @@ export const useTableStatePersistenceTab = ({
     [windowIdentifier, tabId, tabLevel, setTableGrouping]
   );
 
+  const setTableColumnSizing = useCallback(
+    (updaterOrValue: MRT_Updater<MRT_ColumnSizingState>) => {
+      const current = getTableState(windowIdentifier, tabId).sizing ?? DEFAULT_COLUMN_SIZING;
+      setTableSizing(windowIdentifier, tabId, resolveUpdater(updaterOrValue, current), tabLevel);
+    },
+    [windowIdentifier, tabId, tabLevel, getTableState, setTableSizing]
+  );
+
+  const setTableColumnPinning = useCallback(
+    (updaterOrValue: MRT_Updater<MRT_ColumnPinningState>) => {
+      const current = getTableState(windowIdentifier, tabId).pinning ?? DEFAULT_COLUMN_PINNING;
+      setTablePinning(windowIdentifier, tabId, resolveUpdater(updaterOrValue, current), tabLevel);
+    },
+    [windowIdentifier, tabId, tabLevel, getTableState, setTablePinning]
+  );
+
   const setIsImplicitFilterApplied = useCallback(
     (value: boolean) => {
       setTableImplicitFilterApplied(windowIdentifier, tabId, value, tabLevel);
@@ -175,6 +209,8 @@ export const useTableStatePersistenceTab = ({
     tableColumnSorting: currentTableState.sorting,
     tableColumnOrder: currentTableState.order,
     tableColumnGrouping: currentTableState.grouping ?? DEFAULT_TABLE_GROUPING,
+    tableColumnSizing: currentTableState.sizing ?? DEFAULT_COLUMN_SIZING,
+    tableColumnPinning: currentTableState.pinning ?? DEFAULT_COLUMN_PINNING,
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
     advancedCriteria: currentTableState.advancedCriteria,
     activeLevels: currentNavigationState.activeLevels,
@@ -186,6 +222,8 @@ export const useTableStatePersistenceTab = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setTableColumnGrouping,
+    setTableColumnSizing,
+    setTableColumnPinning,
     setIsImplicitFilterApplied,
     setAdvancedCriteria,
     setActiveLevel,
