@@ -35,7 +35,8 @@ const DEFAULT_PASSWORD = process.env.CYPRESS_PASSWORD || "admin";
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
-  reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  // flaky-summary lists the tests that passed only after a retry (test-results/flaky-tests.json).
+  reporter: [["html", { outputFolder: "playwright-report" }], ["list"], ["./reporters/flaky-summary.mjs"]],
 
   // All tests share a single Etendo instance. Suites run group-by-group via
   // project dependencies so no two groups overlap. Within each group, up to 3
@@ -46,7 +47,8 @@ export default defineConfig({
   // load, API responses that are normally instant can exceed a helper's timeout
   // once, and the Chromium launch can SIGSEGV in the container (see --no-zygote
   // note below) on a random spec. A retry clears both; real regressions fail all
-  // attempts. 0 locally so flakes surface during development.
+  // attempts. 0 locally so flakes surface during development. Tests that pass
+  // only after a retry are listed by the flaky-summary reporter.
   retries: process.env.CI ? 2 : 0,
 
   use: {
