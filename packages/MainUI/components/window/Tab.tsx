@@ -1401,7 +1401,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     <div
       className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
         collapsed ? "hidden" : "flex-1 h-full"
-      }`}>
+      }`}
+      data-testid={`Tab__${tab.id}`}>
       <Toolbar
         windowId={windowIdentifier || tab.window}
         tabId={tab.id}
