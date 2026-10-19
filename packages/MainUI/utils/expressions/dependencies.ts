@@ -94,3 +94,21 @@ export const extractDependenciesFromExpression = (expression?: string, fields?: 
 
   return Array.from(finalDependencies);
 };
+
+/**
+ * Form values a set of expressions reads, plus each one's `$_identifier`: the evaluation context treats a
+ * foreign key whose identifier is "" as cleared, so an identifier change can change a result on its own.
+ */
+export const collectExpressionDependencies = (
+  expressions: Iterable<string | undefined>,
+  fields?: Record<string, Field>
+): string[] => {
+  const names = new Set<string>();
+  for (const expression of expressions) {
+    for (const name of extractDependenciesFromExpression(expression, fields)) {
+      names.add(name);
+      names.add(`${name}$_identifier`);
+    }
+  }
+  return Array.from(names);
+};

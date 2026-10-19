@@ -15,15 +15,15 @@
  *************************************************************************
  */
 
-import { useFormContext } from "react-hook-form";
 import { useUserStore } from "@/stores/userStore";
 import { FormMode, type Field, type Tab } from "@workspaceui/api-client/src/api/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
-import { createSmartContext } from "@/utils/expressions";
-import { useRef, useEffect, useState } from "react";
+import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
+import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
+import { useCallback, useRef, useEffect, useState, type RefObject } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
@@ -32,6 +32,11 @@ import AttachmentSection from "./Sections/AttachmentSection";
 import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import { useTranslation } from "@/hooks/useTranslation";
 import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
+import { FORM_FIELDS_ROOT_ATTRIBUTE } from "@/utils/form/focus";
+import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
+
+// Besides display logic, the form follows the record identifier (attachments section).
+const RECORD_IDENTIFIER_NAMES = ["_identifier"];
 
 interface FormFieldsProps {
   tab: Tab;
@@ -47,6 +52,11 @@ interface FormFieldsProps {
   openAttachmentModal?: boolean;
   onAttachmentModalClose?: () => void;
   isReadOnly?: boolean;
+  /**
+   * Receives the sections container so the form can resolve its tab sequence
+   * (see `utils/form/focus.ts`).
+   */
+  fieldsRootRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function FormFields({
@@ -63,8 +73,8 @@ export function FormFields({
   openAttachmentModal = false,
   onAttachmentModalClose,
   isReadOnly,
+  fieldsRootRef,
 }: FormFieldsProps) {
-  const { watch } = useFormContext();
   const session = useUserStore((s) => s.session);
   const [noteCount, setNoteCount] = useState(initialNoteCount);
   const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
@@ -72,11 +82,32 @@ export function FormFields({
     useFormViewContext();
   const { t } = useTranslation();
 
-  // Get record identifier from form data
-  const formData = watch();
+  // Form values for section display logic; re-renders only when a field that logic reads changes.
+  const formData = useDisplayLogicFormValues(tab.fields, RECORD_IDENTIFIER_NAMES);
   const recordIdentifier = formData?._identifier as string | undefined;
 
+  // Built once per render and shared by every section's visibility check below.
+  // Must stay above the `loading` early return (rules of hooks).
+  const sectionContext = useEvaluationContext({
+    values: formData,
+    fields: tab.fields,
+    context: session,
+    windowId: tab.window,
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // The container is both scrolled from here and read by the form to resolve its
+  // tab sequence, so the node is handed to the two refs that need it.
+  const setContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+      if (fieldsRootRef) {
+        fieldsRootRef.current = node;
+      }
+    },
+    [fieldsRootRef]
+  );
 
   // Track whether sections have been displayed at least once.
   // After the first successful load, data refreshes (e.g. post-save refetches)
@@ -158,7 +189,10 @@ export function FormFields({
   }
 
   return (
-    <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
+    <div
+      className="flex flex-col gap-2 flex-grow overflow-auto"
+      ref={setContainerRef}
+      {...{ [FORM_FIELDS_ROOT_ATTRIBUTE]: "" }}>
       {groups.map(([id, group]) => {
         const sectionId = String(id || "_main");
 
@@ -171,8 +205,9 @@ export function FormFields({
             // Use SmartContext to normalize boolean values (false → 'N', true → 'Y') so that
             // displayLogicExpressions comparing against 'N'/'Y' (after parseDynamicExpression
             // transforms === false → === 'N') evaluate correctly against raw RHF form data.
-            const sectionCtx = createSmartContext({ values: formData, fields: tab.fields, context: session });
-            return compiledExpr(sectionCtx, sectionCtx);
+            // A failed context build shows the section, like a failed expression always has.
+            if (!sectionContext) return true;
+            return compiledExpr(sectionContext, sectionContext, tab.window);
           } catch (error) {
             console.warn("Error executing expression:", field.displayLogicExpression, error);
             return true;
@@ -271,18 +306,19 @@ export function FormFields({
       )}
       {/* Linked Items Section — only visible in EDIT/VIEW mode, not during record creation */}
       {mode !== FormMode.NEW && (
-        <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+        <div ref={handleSectionRef(LINKED_ITEMS_SECTION_ID)} data-section-id={LINKED_ITEMS_SECTION_ID}>
           <Collapsible
             title={t("forms.sections.linkedItems")}
-            isExpanded={isSectionExpanded("linked-items")}
-            sectionId="linked-items"
+            isExpanded={isSectionExpanded(LINKED_ITEMS_SECTION_ID)}
+            sectionId={LINKED_ITEMS_SECTION_ID}
             icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-            onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
+            onToggle={(isOpen: boolean) => handleAccordionChange(LINKED_ITEMS_SECTION_ID, isOpen)}
             data-testid="Collapsible__linkeditems">
             <LinkedItemsSection
               tabId={tab.id}
               entityName={tab.entityName}
               recordId={recordId}
+              isSectionExpanded={isSectionExpanded(LINKED_ITEMS_SECTION_ID)}
               data-testid="LinkedItemsSection__38e4a6"
             />
           </Collapsible>

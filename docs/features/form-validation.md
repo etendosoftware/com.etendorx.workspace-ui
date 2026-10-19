@@ -69,6 +69,51 @@ const isFieldDisplayed = (field: Field): boolean => {
 - **Modal**: Uses existing `showErrorModal` function
 - **User-Friendly**: Field labels instead of internal names
 - **Actionable**: Clear indication of what needs to be filled
+- **Revealed**: The missing fields are made visible and focused (see below)
+
+### Revealing Missing Fields in Collapsed Sections
+A required field can live in a section (AD_FieldGroup) that is collapsed, so the error
+message alone is not enough to find it. When `FormActions.handleSave` blocks a save, it
+shows the error and then calls the optional `onFieldErrors` prop with the `hqlName` of
+every missing field. `FormView` wires it to `useRevealFieldErrors`, which:
+
+1. Resolves the section of each field with `resolveFieldSectionId` (`field.fieldGroup`,
+   or `MAIN_SECTION_ID` — the same rule `useFormFields` uses to build the sections).
+2. Expands every collapsed section involved through `setExpandedSections` and
+   `addSectionsToExpand`. Sections that are already expanded are left untouched, and
+   when nothing has to be expanded the expansion state is not written at all.
+3. Moves the focus to the first missing field **in form order** (not in the order the
+   errors were reported) with `findFirstFieldFocusTarget`, and scrolls it to the
+   center of the form. When a section had to be expanded, the focus waits
+   `SECTION_TRANSITION_MS` (the `Collapsible` animation) because the fields of a
+   collapsed section are not focusable until it opens.
+
+A successful save never calls `onFieldErrors`, so it leaves the expansion state as it is.
+
+**Decisions**
+- Only the client-side required-field validation triggers it; server-side field errors
+  keep their current handling in `useFormAction`.
+- The focus moves even when every involved section was already expanded, matching
+  Classic's `OBViewForm.setFocusInErrorField`.
+- The sections are expanded with `setExpandedSections` instead of
+  `handleAccordionChange`, which would also change `selectedTab` and scroll to the
+  last expanded section instead of the field.
+- Fields that are not rendered in the sections (e.g. status-bar fields) are skipped.
+
+**Differences with Classic**
+- Classic (`OBViewForm.handleFieldErrors`) focuses `getFirstErrorItem()` and keeps no
+  per-tab section preference; here the expansion goes through the per-tab persisted preference
+  (`useFormSectionsPersistenceTab`), so the section stays expanded on the next opening,
+  as if the user had expanded it.
+- The focused field is smoothly scrolled to the center of the form.
+
+**Files**
+- `hooks/useRevealFieldErrors.ts` — expansion and focus orchestration
+- `utils/form/expandedSections.ts` — `resolveFieldSectionId`, `addSectionsToExpand`, `SECTION_TRANSITION_MS`
+- `utils/form/focus.ts` — `findFirstFieldFocusTarget` (see the
+  [form keyboard navigation](./form-keyboard-navigation/README.md) docs for the focus contract)
+- `components/Form/FormView/FormActions.tsx` — `onFieldErrors` prop
+- `components/Form/FormView/index.tsx` — wiring
 
 ## Usage Examples
 

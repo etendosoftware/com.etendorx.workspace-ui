@@ -16,7 +16,11 @@
  */
 
 import type React from "react";
+import { useEffect, useId, useRef } from "react";
 import type { ActionModalProps } from "./types";
+import { findFirstEnabledButton, handleDialogKeyDown } from "./dialogKeyboard";
+
+const FOCUS_RING = "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-etendo-main)]";
 
 const ActionModal: React.FC<ActionModalProps> = ({
   isOpen,
@@ -27,18 +31,34 @@ const ActionModal: React.FC<ActionModalProps> = ({
   isLoading = false,
   t,
 }) => {
+  const titleId = useId();
+  const footerRef = useRef<HTMLDivElement>(null);
+
+  // Like a classic confirm dialog, the first action is focused, so Enter runs it.
+  useEffect(() => {
+    if (isOpen) findFirstEnabledButton(footerRef.current)?.focus();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
-      <div className="relative flex w-[500px] flex-col rounded-xl border-4 border-gray-300 bg-white shadow-lg">
+      {/* biome-ignore lint/a11y/useSemanticElements: plain overlay; a native <dialog> would need showModal() and its own styling */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onKeyDown={(event) => handleDialogKeyDown(event, onClose, !isLoading)}
+        className="relative flex w-[500px] flex-col rounded-xl border-4 border-gray-300 bg-white shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-[var(--color-baseline-10)] p-4">
-          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+          <h2 id={titleId} className="text-lg font-semibold text-gray-800">
+            {title}
+          </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            className={`rounded text-gray-500 hover:text-gray-700 focus:outline-none ${FOCUS_RING}`}
             disabled={isLoading}
             aria-label={t("common.close")}>
             <svg
@@ -59,7 +79,9 @@ const ActionModal: React.FC<ActionModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 rounded-b-xl border-t border-gray-200 bg-[var(--color-baseline-10)] p-4">
+        <div
+          ref={footerRef}
+          className="flex justify-end gap-3 rounded-b-xl border-t border-gray-200 bg-[var(--color-baseline-10)] p-4">
           {buttons.map((button) => {
             const getButtonClass = () => {
               switch (button.variant) {
@@ -78,7 +100,7 @@ const ActionModal: React.FC<ActionModalProps> = ({
                 type="button"
                 onClick={button.onClick}
                 disabled={button.disabled || isLoading}
-                className={`rounded px-4 py-2 font-medium focus:outline-none disabled:opacity-50 ${getButtonClass()}`}>
+                className={`rounded px-4 py-2 font-medium focus:outline-none ${FOCUS_RING} disabled:opacity-50 ${getButtonClass()}`}>
                 {button.label}
               </button>
             );

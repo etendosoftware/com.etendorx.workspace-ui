@@ -1,6 +1,9 @@
 import type React from "react";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { DrawerSection } from "./index";
+import { DrawerHighlightContext } from "../DrawerHighlightContext";
+import { MENU_COLLAPSED_ATTRIBUTE, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
 
 describe("DrawerSection - optimistic selection (pendingWindowId)", () => {
   const baseItem = {
@@ -130,5 +133,84 @@ describe("DrawerSection - collapsed flyout scroll & hover", () => {
       jest.advanceTimersByTime(200);
     });
     expect(screen.getByText("Child 1")).toBeInTheDocument();
+  });
+});
+
+describe("DrawerSection - keyboard navigation markers", () => {
+  const parentItem = {
+    id: "folder-1",
+    name: "Sales",
+    type: "Summary",
+    children: [{ id: "win-1", name: "Sales Order", type: "Window", windowId: "W-1", children: [] }],
+  } as unknown as Menu;
+
+  const renderParent = (override?: Partial<React.ComponentProps<typeof DrawerSection>>) =>
+    render(
+      <DrawerSection
+        item={parentItem}
+        onClick={jest.fn()}
+        open
+        isSearchActive={false}
+        onToggleExpand={jest.fn()}
+        hasChildren
+        isExpandable
+        windowId={undefined}
+        isExpanded={false}
+        {...override}
+      />
+    );
+
+  const childrenContainer = () => screen.getByText("Sales Order").closest(`[${MENU_COLLAPSED_ATTRIBUTE}]`);
+
+  it("marks the children container while the section is collapsed", () => {
+    renderParent();
+
+    expect(childrenContainer()).toBeInTheDocument();
+  });
+
+  it("drops the marker once the section is expanded", () => {
+    renderParent({ isExpanded: true });
+
+    expect(childrenContainer()).toBeNull();
+  });
+
+  it("marks an expandable folder as navigable, so the arrows can reach and open it", () => {
+    renderParent();
+
+    expect(screen.getByTestId("MenuTitle__folder-1")).toHaveAttribute(MENU_ITEM_ID_ATTRIBUTE, "folder-1");
+  });
+
+  // During a search a folder can neither be collapsed nor opened, so it is not a stop.
+  it("leaves a folder out of the navigation while a search is active", () => {
+    renderParent({ isSearchActive: true, isExpandable: false });
+
+    expect(screen.getByTestId("MenuTitle__folder-1")).not.toHaveAttribute(MENU_ITEM_ID_ATTRIBUTE);
+  });
+
+  it("does not highlight anything outside the highlight provider", () => {
+    renderParent();
+
+    expect(screen.getByTestId("MenuTitle__folder-1")).not.toHaveAttribute("data-highlighted");
+  });
+
+  it("highlights only the entry the provider points at", () => {
+    render(
+      <DrawerHighlightContext.Provider value={{ highlightedItemId: "folder-1" }}>
+        <DrawerSection
+          item={parentItem}
+          onClick={jest.fn()}
+          open
+          isSearchActive={false}
+          onToggleExpand={jest.fn()}
+          hasChildren
+          isExpandable
+          isExpanded
+          windowId={undefined}
+        />
+      </DrawerHighlightContext.Provider>
+    );
+
+    expect(screen.getByTestId("MenuTitle__folder-1")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("MenuTitle__win-1")).not.toHaveAttribute("data-highlighted");
   });
 });

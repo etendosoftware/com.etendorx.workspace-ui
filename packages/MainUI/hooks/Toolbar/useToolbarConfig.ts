@@ -33,7 +33,9 @@ import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import { useWindowStore } from "@/stores/windowStore";
-import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useCurrentWindowId, useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { isRefreshAfterDeletionEnabled } from "@/utils/preferences/refreshAfterDeletion";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
 import { getNewTabFormState } from "@/utils/window/utils";
@@ -83,6 +85,7 @@ export const useToolbarConfig = ({
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [actionModal, setActionModal] = useState<Omit<ActionModalProps, "onClose"> & { isOpen: boolean }>({
     isOpen: false,
@@ -101,6 +104,13 @@ export const useToolbarConfig = ({
   const { tab } = useTabContext();
 
   const windowIdentifier = useCurrentWindowIdentifier();
+  // AD window id (not the window *instance* key that windowIdentifier holds): this is what scopes
+  // a preference lookup, so it is what the refresh-after-deletion gate needs.
+  const currentWindowId = useCurrentWindowId();
+  // The grid refetch must come from the datasource registry, which is keyed by tabId. The toolbar's
+  // own onRefresh resolves by action owner (FORM outranks GRID), so deleting from a form would run
+  // the form's reset instead of refetching the grid.
+  const { refetchDatasource } = useDatasourceContext();
 
   // Zustand store — stable action references
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
@@ -165,6 +175,15 @@ export const useToolbarConfig = ({
             clearSelectedRecord(windowIdentifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
+          }
+
+          // Classic refreshes the grid after a successful delete only when the
+          // OBUIAPP_RefreshAfterDeletion preference is enabled for this window; otherwise the
+          // client-side row removal above is the whole behaviour. Runs after the selection is
+          // cleared so the reload is evaluated against the post-delete result set — which is what
+          // lets the single-record rule select the survivor when one record is left.
+          if (tab && isRefreshAfterDeletionEnabled(currentWindowId)) {
+            refetchDatasource(tab.id);
           }
         },
       });
@@ -352,6 +371,28 @@ export const useToolbarConfig = ({
     graph,
   ]);
 
+  /**
+   * Runs the CSV export keeping the toolbar trigger in a busy state for the whole request.
+   * `finally` guarantees the busy state is cleared on success, failure and fast exports alike.
+   */
+  const handleExportCSV = useCallback(async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    try {
+      await onExportCSV?.();
+    } catch (error) {
+      logger.error("Error exporting CSV:", error);
+      toast.error(t("table.exportError"), {
+        description: React.createElement(ToastContent, {
+          message: error instanceof Error ? error.message : t("table.exportError"),
+        }),
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, onExportCSV, t]);
+
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
       setIsDeleting(false);
@@ -411,8 +452,8 @@ export const useToolbarConfig = ({
           logger.info("Attachment button clicked - no action registered");
         }
       },
-      EXPORT_CSV: async () => {
-        await onExportCSV?.();
+      EXPORT_CSV: () => {
+        handleExportCSV();
       },
       SHARE_LINK: () => {
         onShareLink();
@@ -501,7 +542,7 @@ export const useToolbarConfig = ({
       onShowTableAndForm,
       handleDeleteRecord,
       attachmentAction,
-      onExportCSV,
+      handleExportCSV,
       onShareLink,
       handleCopyRecord,
       onPrintRecord,
@@ -550,6 +591,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      isExporting,
       actionHandlers,
       selectedRecord,
       selectedMultiple,
@@ -570,6 +612,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      isExporting,
       actionHandlers,
       selectedRecord,
       selectedMultiple,

@@ -6,7 +6,9 @@ import {
   PerformanceMonitor,
   calculateVisibleRange,
   MemoryManager,
+  useThrottledCallback,
 } from "../performanceOptimizations";
+import { renderHook } from "@testing-library/react";
 
 jest.mock("@/utils/logger", () => ({
   logger: { debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
@@ -87,6 +89,41 @@ describe("throttle", () => {
     jest.advanceTimersByTime(110);
     throttled();
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("useThrottledCallback", () => {
+  it("keeps its identity when the caller passes a new function each render, and calls the latest one", () => {
+    const first = jest.fn();
+    const second = jest.fn();
+    const { result, rerender } = renderHook(({ fn }) => useThrottledCallback(fn, 100), {
+      initialProps: { fn: first },
+    });
+    const throttled = result.current;
+
+    rerender({ fn: second });
+    expect(result.current).toBe(throttled);
+
+    result.current("a");
+    expect(second).toHaveBeenCalledWith("a");
+    expect(first).not.toHaveBeenCalled();
+  });
+
+  it("delays a call inside the interval and runs it with the latest function", () => {
+    const first = jest.fn();
+    const second = jest.fn();
+    const { result, rerender } = renderHook(({ fn }) => useThrottledCallback(fn, 100), {
+      initialProps: { fn: first },
+    });
+
+    result.current(1);
+    result.current(2);
+    rerender({ fn: second });
+    jest.advanceTimersByTime(100);
+
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledWith(1);
+    expect(second).toHaveBeenCalledWith(2);
   });
 });
 

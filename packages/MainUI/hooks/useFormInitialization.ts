@@ -108,6 +108,10 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const parentId = parent?.id?.toString();
   const fetchInProgressRef = useRef(false);
   const lastFetchParamsRef = useRef<string | null>(null);
+  // Params of the record the form shows now. A response for other params is stale (the user moved on while
+  // it was in flight) and is dropped; when a fetch ends, the latest params are fetched if they were not.
+  const latestParamsKeyRef = useRef<string | null>(null);
+  const [pendingFetchTick, retryLatestParams] = useReducer((tick: number) => tick + 1, 0);
 
   const { record, loading: recordLoading } = useCurrentRecord({
     tab: tab,
@@ -118,6 +122,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     const result = tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null;
     return result;
   }, [tab, mode, recordId, parentId]);
+  latestParamsKeyRef.current = params ? params.toString() : null;
 
   useEffect(() => {
     if (recordId === "new") {
@@ -143,6 +148,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    */
   const fetch = useCallback(async () => {
     if (!params) return;
+    const requestKey = params.toString();
+    const isStale = () => requestKey !== latestParamsKeyRef.current;
 
     try {
       setSessionSyncLoading(true);
@@ -161,6 +168,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       }
 
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
+      if (isStale()) return;
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
@@ -173,6 +181,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       lastFetchParamsRef.current = params.toString();
     } catch (err) {
       logger.warn(err);
+      if (isStale()) return;
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
     } finally {
       setSessionSyncLoading(false);
@@ -275,10 +284,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       dispatch({ type: "FETCH_START" });
       fetch().finally(() => {
         fetchInProgressRef.current = false;
+        // Params changed while this fetch was in flight (fast record navigation): the effect skipped them
+        // above, so fetch the latest ones now. Intermediate records are never fetched.
+        if (latestParamsKeyRef.current !== paramsKey) retryLatestParams();
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, recordLoading]);
+  }, [params, recordLoading, pendingFetchTick]);
 
   /**
    * Refetch function to manually trigger form initialization
@@ -296,11 +308,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     lastFetchParamsRef.current = null;
     fetchInProgressRef.current = true;
 
+    const paramsKey = params.toString();
     dispatch({ type: "FETCH_START" });
     try {
       await fetch();
     } finally {
       fetchInProgressRef.current = false;
+      if (latestParamsKeyRef.current !== paramsKey) retryLatestParams();
     }
   }, [params, fetch]);
 

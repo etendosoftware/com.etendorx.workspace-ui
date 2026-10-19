@@ -20,6 +20,7 @@ import { DateInput } from "../components/DateInput";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { autocompleteDate } from "@/utils/dateAutocomplete";
 import { MOCK_ISO_DATE, MOCK_PLACEHOLDER, mockDateField, expectedDisplay } from "../test-utils/dateInputHelpers";
+import { findFocusableFields } from "@/utils/form/focus";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@workspaceui/componentlibrary/src/utils/dateFormatter", () => ({
@@ -242,6 +243,30 @@ describe("DateInput", () => {
     it("disables the hidden date input", () => {
       const { getHiddenInput } = renderDateInput({ currentValue: MOCK_ISO_DATE, isReadOnly: true });
       expect(getHiddenInput()).toBeDisabled();
+    });
+
+    // Classic renders a read-only form item as disabled, so Tab skips it.
+    it("disables the visible input so the field leaves the tab sequence", () => {
+      const { getVisibleInput } = renderDateInput({ currentValue: MOCK_ISO_DATE, isReadOnly: true });
+      expect(getVisibleInput()).toBeDisabled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Tab sequence
+  // -------------------------------------------------------------------------
+  describe("tab sequence", () => {
+    it("keeps the calendar button out of the tab sequence", () => {
+      const { container } = renderDateInput({ currentValue: MOCK_ISO_DATE });
+      const calendarButton = container.querySelector("button") as HTMLButtonElement;
+
+      expect(calendarButton).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("leaves the editable input as the only tab stop of the field", () => {
+      const { container, getVisibleInput } = renderDateInput({ currentValue: MOCK_ISO_DATE });
+
+      expect(findFocusableFields(container)).toEqual([getVisibleInput()]);
     });
   });
 });

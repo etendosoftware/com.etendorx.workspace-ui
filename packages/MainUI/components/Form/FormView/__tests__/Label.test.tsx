@@ -24,7 +24,7 @@ const mockHandleClickRedirect = jest.fn();
 const mockHandleKeyDownRedirect = jest.fn();
 
 jest.mock("react-hook-form", () => ({
-  useFormContext: () => ({ watch: mockWatch }),
+  useWatch: ({ name }: { name: string }) => mockWatch(name),
 }));
 
 jest.mock("@/contexts/tab", () => ({
@@ -124,6 +124,13 @@ describe("Label", () => {
         referencedLinkContext: undefined,
       })
     );
+  });
+
+  it("keeps the redirect link out of the tab sequence, as Classic does", () => {
+    mockWatch.mockReturnValue("record-123");
+    render(<Label field={buildField()} />);
+
+    expect(screen.getByRole("button", { name: REDIRECT_LINK_ROLE_NAME })).toHaveAttribute("tabindex", "-1");
   });
 
   it("triggers handleKeyDownRedirect on keydown even when the field is empty", () => {

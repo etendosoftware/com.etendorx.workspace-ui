@@ -105,6 +105,26 @@ describe("ColumnVisibilityMenu", () => {
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
   });
 
+  it("should not offer to hide a locked column such as the grouped one", () => {
+    mockTable.getAllLeafColumns.mockReturnValue([
+      {
+        id: "grouped",
+        columnDef: { enableHiding: false, header: "Grouped Column" },
+        getIsVisible: () => true,
+      },
+      {
+        id: "col1",
+        columnDef: { header: "Real Column" },
+        getIsVisible: () => true,
+      },
+    ]);
+
+    render(<ColumnVisibilityMenu anchorEl={document.createElement("div")} onClose={jest.fn()} table={mockTable} />);
+
+    expect(screen.queryByTestId("item-grouped")).not.toBeInTheDocument();
+    expect(screen.getByTestId("item-col1")).toBeInTheDocument();
+  });
+
   it("should include audit fields and shownInStatusBar columns, and exclude displayed=false columns", () => {
     mockTable.getAllLeafColumns.mockReturnValue([
       {

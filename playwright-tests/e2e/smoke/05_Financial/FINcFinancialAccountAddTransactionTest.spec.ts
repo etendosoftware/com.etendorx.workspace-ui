@@ -49,15 +49,24 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
       await vendorOption.waitFor({ state: "visible", timeout: 10_000 });
       await vendorOption.click({ force: true });
 
-      // Save header
+      // Save header. Wait for the save and the form's re-initialization to finish: a dropdown opened
+      // while they are in flight is closed when the form re-renders the saved record.
       await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
+      await page.waitForLoadState("networkidle", { timeout: 30_000 });
       await closeToastIfPresent(page);
 
       // ── Step 3: Change Payment Method to PM 4 Spain ───────────────────────────
-      await page.locator('[data-testid="ChevronDown__830698140BCD4AC3E040007F01000289"]').click({ force: true });
-      await page.waitForTimeout(500);
-      await page.locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]').scrollIntoViewIfNeeded();
-      await page.locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]').click({ force: true });
+      // The form may still re-render the saved record and close the dropdown: reopen it until the
+      // option can be picked.
+      const paymentMethodChevron = page.locator('[data-testid="ChevronDown__830698140BCD4AC3E040007F01000289"]');
+      const pm4Spain = page.locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]');
+      await expect(async () => {
+        if (!(await pm4Spain.isVisible())) {
+          await paymentMethodChevron.click({ force: true });
+        }
+        await pm4Spain.scrollIntoViewIfNeeded({ timeout: 2_000 });
+        await pm4Spain.click({ force: true, timeout: 2_000 });
+      }).toPass({ timeout: 30_000 });
       await page.waitForTimeout(500);
 
       // Save with payment method

@@ -17,30 +17,30 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
+import ExternalLinkIcon from "@workspaceui/componentlibrary/src/assets/icons/external-link.svg";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowStore } from "@/stores/windowStore";
 import type { WindowState } from "@/utils/window/constants";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
-import { getWindowIdFromIdentifier } from "@/utils/window/utils";
-import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
+import { isWindowDirty } from "@/utils/window/dirtyState";
+import { getTitleForWindow } from "@/utils/window/windowTitle";
+import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
+import { useWindowTabShortcuts } from "@/hooks/navigation/useWindowTabShortcuts";
+import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
 
-const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, any>) => {
-  const windowTitle = window.title;
-  if (windowTitle) return windowTitle;
-  const windowId = getWindowIdFromIdentifier(window.windowIdentifier);
-  const metadata = windowsMetadata[windowId];
-  if (metadata?.name) {
-    return metadata.name;
-  }
-  return "Untitled Window";
+/** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
+const getIconForWindow = (window: WindowState) => {
+  if (!window.externalUrl) return undefined;
+  return <ExternalLinkIcon className="fill-black" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
 };
 
 export default function WindowTabs() {
@@ -68,6 +68,8 @@ export default function WindowTabs() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [closingWindowIds, setClosingWindowIds] = useState<Set<string>>(new Set());
   const [pendingCloseWindow, setPendingCloseWindow] = useState<WindowState | null>(null);
+  const [isSavingBeforeClose, setIsSavingBeforeClose] = useState(false);
+  const { saveWindow } = useSaveDirtyWindow();
 
   const handleTabMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -86,8 +88,7 @@ export default function WindowTabs() {
 
   const handleCloseWindow = useCallback(
     (window: WindowState) => {
-      const isDirty = Object.values(dirtyWindows[window.windowIdentifier] ?? {}).some(Boolean);
-      if (isDirty) {
+      if (isWindowDirty(dirtyWindows, window.windowIdentifier)) {
         setPendingCloseWindow(window);
         return;
       }
@@ -98,6 +99,7 @@ export default function WindowTabs() {
     [cleanupWindow, dirtyWindows]
   );
 
+  /** Closes the window awaiting confirmation, dropping whatever it still had unsaved. */
   const handleConfirmClose = useCallback(() => {
     if (pendingCloseWindow) {
       setClosingWindowIds((prev) => new Set(prev).add(pendingCloseWindow.windowIdentifier));
@@ -105,6 +107,27 @@ export default function WindowTabs() {
       setPendingCloseWindow(null);
     }
   }, [pendingCloseWindow, cleanupWindow]);
+
+  /**
+   * Saves the window before closing it. A failed save keeps the window open and the prompt
+   * on screen: the form shows its own error once the user looks at it.
+   */
+  const handleSaveAndClose = useCallback(async () => {
+    if (!pendingCloseWindow) {
+      return;
+    }
+    setIsSavingBeforeClose(true);
+    try {
+      const succeeded = await saveWindow(pendingCloseWindow.windowIdentifier);
+      if (!succeeded) {
+        toast.error(`${t("unsavedChanges.saveFailed")} ${getTitleForWindow(pendingCloseWindow, windowsData)}`);
+        return;
+      }
+      handleConfirmClose();
+    } finally {
+      setIsSavingBeforeClose(false);
+    }
+  }, [pendingCloseWindow, saveWindow, handleConfirmClose, t, windowsData]);
 
   const handleCancelClose = useCallback(() => {
     setPendingCloseWindow(null);
@@ -114,6 +137,15 @@ export default function WindowTabs() {
     () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
     [windows, closingWindowIds]
   );
+
+  useWindowTabShortcuts({
+    windows: visibleWindows,
+    onSelectWindow: handleSelectWindow,
+    onCloseWindow: handleCloseWindow,
+    onSelectWorkspace: setAllWindowsInactive,
+    // While the close prompt is open its own buttons decide; shortcuts would act behind it.
+    enabled: !pendingCloseWindow,
+  });
 
   // Clear any optimistic closing ids that no longer exist in windows
   useEffect(() => {
@@ -167,7 +199,9 @@ export default function WindowTabs() {
               }}>
               <WindowTab
                 title={title}
+                icon={getIconForWindow(window)}
                 isActive={isActive}
+                isDirty={isWindowDirty(dirtyWindows, window.windowIdentifier)}
                 onActivate={() => {
                   handleSelectWindow(window.windowIdentifier);
                 }}
@@ -208,17 +242,17 @@ export default function WindowTabs() {
         onSelect={handleSelectWindow}
         data-testid="MenuTabs__c8117d"
       />
-      <ConfirmModal
+      <SaveDiscardCancelModal
         open={pendingCloseWindow !== null}
-        confirmText={
-          t("common.unsavedChangesCloseMessage") ||
-          "You have unsaved changes that will be lost. Are you sure you want to close this window?"
-        }
-        saveLabel={t("common.close") || "Close"}
-        secondaryButtonLabel={t("common.cancel") || "Cancel"}
-        onConfirm={handleConfirmClose}
+        title={t("unsavedChanges.closeWindowTitle")}
+        message={t("common.unsavedChangesCloseMessage")}
+        saveLabel={t("unsavedChanges.saveChanges")}
+        discardLabel={t("unsavedChanges.closeWindow")}
+        isSaving={isSavingBeforeClose}
+        onSave={handleSaveAndClose}
+        onDiscard={handleConfirmClose}
         onCancel={handleCancelClose}
-        data-testid="ConfirmModal__c8117d"
+        data-testid="SaveDiscardCancelModal__windowClose"
       />
     </div>
   );

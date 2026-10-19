@@ -25,6 +25,7 @@ import { useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useExpandedOnce } from "@/hooks/useExpandedOnce";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
 
@@ -32,9 +33,14 @@ interface LinkedItemsSectionProps {
   tabId: string;
   entityName: string;
   recordId: string;
+  /**
+   * Linked items are only fetched once their section has been opened for the
+   * current record, as in Classic. Defaults to true to preserve existing behavior.
+   */
+  isSectionExpanded?: boolean;
 }
 
-export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
+export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded = true }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,7 +57,10 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
   // "Session attribute required". Gate the fetch until both signals settle.
   const { isFormInitializing } = useFormInitializationContext();
   const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
-  const ready = !isFormInitializing && !isSessionSyncLoading;
+  // Like the classic UI, categories are only requested once the section has been
+  // expanded for the current record; collapsing it again keeps the loaded data.
+  const hasBeenExpanded = useExpandedOnce(isSectionExpanded, recordId);
+  const ready = !isFormInitializing && !isSessionSyncLoading && hasBeenExpanded;
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -114,6 +123,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
 
       // Update URL to trigger recovery
       const newUrl = `window?${newUrlParams}`;
+
       router.replace(newUrl);
 
       // Note: Recovery system will handle:
@@ -139,6 +149,7 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
       loadingText={t("common.loading")}
       noCategoriesText={t("forms.sections.noCategories")}
       noSelectedCategoryText={t("forms.sections.selectCategory")}
+      noItemsText={t("forms.sections.noLinkedItems")}
       data-testid="LinkedItems__92af80"
     />
   );

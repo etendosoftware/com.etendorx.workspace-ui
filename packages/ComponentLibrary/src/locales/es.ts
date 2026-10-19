@@ -54,6 +54,25 @@ const es = {
     change: "Cambiar",
     logout: "Cerrar sesión",
   },
+  unsavedChanges: {
+    promptTitle: "Cambios sin guardar",
+    windowsTitle: "Cambios sin guardar",
+    windowsDescription: "Estas ventanas tienen cambios que todavía no fueron guardados.",
+    allResolved: "No queda nada por guardar ni descartar. Puede continuar.",
+    gridEditingLabel: "Filas en edición",
+    discardAllAndContinue: "Descartar todo y continuar",
+    saveAllAndContinue: "Guardar todo y continuar",
+    continue: "Continuar",
+    discard: "Descartar",
+    saveChanges: "Guardar cambios",
+    discardChanges: "Descartar cambios",
+    closeWindowTitle: "Cerrar ventana",
+    closeWindow: "Cerrar ventana",
+    transitionMessage: "Este registro tiene cambios sin guardar. ¿Qué desea hacer?",
+    saveFailed: "No se pudieron guardar los cambios en",
+    rowSaveFailed: "No se pudieron guardar los cambios. Abra la ventana para revisar los errores.",
+    openWindow: "Abrir ventana",
+  },
   forms: {
     sections: {
       main: "Sección Principal",
@@ -63,6 +82,8 @@ const es = {
       moreInformation: "Más Información",
       noCategories: "No hay categorias disponibles",
       selectCategory: "Por favor selecciona una categoría",
+      noLinkedItems:
+        "No hay artículos asociados, haga clic en una categoría de la izquierda para mostrar los artículos asociados de esa categoría",
     },
     notes: {
       title: "Notas",
@@ -124,6 +145,11 @@ const es = {
     createdBy: "Creado por",
     updated: "Actualizado",
     updatedBy: "Actualizado por",
+  },
+  auditTrail: {
+    selectOneRecord: "Debe seleccionar exactamente un registro para ver su historial de auditoría.",
+    popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
+    openPopup: "Abrir historial de auditoría",
   },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
@@ -215,6 +241,7 @@ const es = {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",
   },
   table: {
+    exportError: "Error al exportar",
     newRecord: "Nuevo Registro",
     tooltips: {
       search: "Buscar",
@@ -265,6 +292,11 @@ const es = {
     },
     setSummaryFunction: "Establecer función de resumen",
     removeSummaryFunction: "Eliminar función de resumen",
+    groupBy: "Agrupar por {column}",
+    ungroup: "Desagrupar",
+    maxGroupingReached:
+      "Hay más de {count} registros, la agrupación está deshabilitada para grandes conjuntos de datos.",
+    invalidFilterValue: "Valor de filtro no válido",
     summary: {
       min: "Mín",
       max: "Máx",
@@ -346,6 +378,7 @@ const es = {
     manualProcessNotMigrated: "El proceso tiene logica que todavía no fue migrada. Contactarse con soporte.",
     popupBlocked: "El navegador bloqueó la ventana que este proceso intentó abrir.",
     openLink: "Abrir enlace",
+    reportFileFailed: "El reporte se generó pero no se pudo abrir ni descargar el archivo.",
     openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
   },
   processModal: {
@@ -385,6 +418,8 @@ const es = {
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
+    externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
+    openExternalLink: "Abrir enlace",
   },
   login: {
     title: "Iniciar sesión",
@@ -823,6 +858,7 @@ const es = {
     },
     widget: {
       unavailable: "Módulo no instalado",
+      refresh: "Actualizar",
     },
     noWidgets: "No hay widgets configurados para este panel.",
     loadError: "No se pudo cargar el panel. Intente nuevamente.",

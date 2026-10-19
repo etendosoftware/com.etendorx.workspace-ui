@@ -22,12 +22,11 @@ import { useUserStore } from "@/stores/userStore";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { isDebugCallouts } from "@/utils/debug";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
-import { useParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Label from "../Label";
@@ -38,6 +37,8 @@ import { useFormInitializationContext } from "@/contexts/FormInitializationConte
 import useFormParent from "@/hooks/useFormParent";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
+import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
+import { handleFieldLinkOutShortcut } from "@/utils/form/keyboard";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
@@ -68,15 +69,20 @@ export const compileExpression = (expression: string) => {
         PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
         getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
-          get: (key) => {
+          get: (key, keyWindowId) => {
             // 1. Check context (session attributes with #/$ prefixes)
             // Note: the SmartContext Proxy returns "" for unknown keys (not undefined/null),
             // so we must also skip "" to allow the localStorage fallback to work.
             const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
             if (fromContext !== undefined && fromContext !== null && fromContext !== '') return normalize(fromContext);
-            // 2. Check preferences loaded from backend (stored in localStorage at login)
+            // 2. Check preferences loaded from backend (stored in localStorage at login).
+            // The window-scoped key wins over the global one, and an explicit windowId argument
+            // wins over the one the caller compiled this expression with — same resolution order
+            // as classic OB.PropertyStore.get(propertyName, windowId).
+            const wid = keyWindowId || windowId;
             try {
               const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
+              if (wid && prefs[key + '_' + wid]) return normalize(prefs[key + '_' + wid]);
               if (prefs[key] !== undefined) return normalize(prefs[key]);
               // Case-insensitive fallback
               const lowerKey = key.toLowerCase();
@@ -114,10 +120,13 @@ export const compileExpression = (expression: string) => {
 
     // This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    // `windowId` is a parameter rather than baked into the body so the cache can stay keyed by
+    // the expression alone: the same expression is evaluated from several windows.
     const compiled = new Function(
       // NOSONAR typescript:S1523
       "context",
       "currentValues",
+      "windowId",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
     );
     compiledExpressionCache.set(expression, compiled);
@@ -208,7 +217,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
-  const { watch, getValues, setValue, register, formState } = formMethods;
+  const { getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
   const { tab, record, parentRecord, parentTab, setAuxiliaryInputs } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
@@ -228,7 +237,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
       {} as Record<string, Field>
     );
   }, [tab.fields]);
-  const { recordId } = useParams<{ recordId: string }>();
   const session = useUserStore((s) => s.session);
   const parentData = useFormParent();
 
@@ -250,12 +258,11 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
 
   const executeCalloutBase = useCallout({
     field,
-    rowId: recordId,
     parentId: getParentId(),
     changedColumnOverride: standardChangedColumn,
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const previousValue = useRef(value);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = useWatch({ name: `${field.hqlName}_data` });
@@ -291,14 +298,19 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
     try {
-      const smartContext = createSmartContext({
-        values: { ...record, ...readOnlyValues },
-        fields: tab.fields,
-        parentValues: parentRecord || undefined,
-        parentFields: parentTab?.fields,
-        context: session,
-      });
-      return toClassicBoolean(compiledExpr(smartContext, smartContext));
+      // Same context as building it from { ...record, ...readOnlyValues }, shared with the other fields
+      const smartContext = getEvaluationContext(
+        {
+          values: record || undefined,
+          fields: tab.fields,
+          parentValues: parentRecord || undefined,
+          parentFields: parentTab?.fields,
+          context: session,
+          windowId: tab.window,
+        },
+        readOnlyValues
+      );
+      return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
@@ -569,13 +581,15 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     return (
       <div
         className={[containerClasses, layoutClasses].filter(Boolean).join(" ")}
+        {...{ [FORM_FIELD_NAME_ATTRIBUTE]: field.hqlName }}
         title={field.helpComment || ""}
         aria-describedby={field.helpComment ? `${field.name}-help` : ""}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) {
             runCallout(true);
           }
-        }}>
+        }}
+        onKeyDown={handleFieldLinkOutShortcut}>
         <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (

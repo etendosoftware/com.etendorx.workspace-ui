@@ -115,3 +115,6 @@ traffic, so background requests — the Copilot SSE stream, dashboard widget aut
 polling, the health check, alerts polling — are structurally incapable of extending the window. This
 is the same guarantee Classic gets from `ignoreForSessionTimeout`, obtained by construction instead of
 by remembering to flag each caller.
+
+The alerts indicator is documented in [alerts-indicator.md](./alerts-indicator.md); it still sends
+`IsAjaxCall=1&ignoreForSessionTimeout=1` so the Classic session is not extended either.

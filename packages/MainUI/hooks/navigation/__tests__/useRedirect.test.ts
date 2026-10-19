@@ -330,18 +330,21 @@ describe("useRedirect", () => {
 
   describe("handleKeyDownRedirect", () => {
     describe("event handling", () => {
-      it("should always stop propagation", () => {
+      it.each(["Enter", " "])("should stop propagation and prevent default for the '%s' activation key", (key) => {
         const { result } = renderHook(() => useRedirect());
-        const event = createKeyboardEvent("Tab");
+        const event = createKeyboardEvent(key);
 
         act(() => {
           result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
         });
 
         expect(event.stopPropagation).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
       });
 
-      it("should always prevent default", () => {
+      // Cancelling every key also cancelled Tab, which trapped the keyboard focus
+      // on the label of a reference field.
+      it("should let non-activation keys through so Tab keeps moving the focus", () => {
         const { result } = renderHook(() => useRedirect());
         const event = createKeyboardEvent("Tab");
 
@@ -349,7 +352,8 @@ describe("useRedirect", () => {
           result.current.handleKeyDownRedirect({ e: event, ...defaultParams });
         });
 
-        expect(event.preventDefault).toHaveBeenCalled();
+        expect(event.stopPropagation).not.toHaveBeenCalled();
+        expect(event.preventDefault).not.toHaveBeenCalled();
       });
     });
 

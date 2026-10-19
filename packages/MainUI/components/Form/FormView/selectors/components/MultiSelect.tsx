@@ -32,6 +32,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
 import SearchInput from "./Select/SearchInput";
 import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
@@ -338,7 +339,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     <div
       ref={wrapperRef}
       className={`relative w-full font-['Inter'] ${isReadOnly ? "pointer-events-none" : ""}`}
-      tabIndex={-1}>
+      tabIndex={NOT_TABBABLE}>
       <div
         onClick={handleClick}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
@@ -354,7 +355,11 @@ const MultiSelect = memo(function MultiSelectCmp({
         </div>
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
-            <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
+            <button
+              type="button"
+              onClick={handleClear}
+              tabIndex={NOT_TABBABLE}
+              className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
               <CloseIcon className="w-4 h-4" data-testid="CloseIcon__cb81f7" />
             </button>
           )}

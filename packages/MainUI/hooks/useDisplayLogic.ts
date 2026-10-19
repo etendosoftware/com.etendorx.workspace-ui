@@ -4,9 +4,10 @@ import { useTabContext } from "@/contexts/tab";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { useExpressionDependencies } from "./useExpressionDependencies";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { mergeDefinedValues } from "@/utils/expressions/mergeLiveValues";
 
 interface UseDisplayLogicProps {
   field: Field;
@@ -31,22 +32,27 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      // Filter out undefined values from formValues to avoid overriding valid record values.
+      // Undefined form values are skipped so they don't shadow valid record values (see mergeDefinedValues).
       // useWatch returns undefined for fields not yet registered or not yet initialized in RHF,
       // which would otherwise shadow the actual boolean values (false) from the record.
-      const definedFormValues = Object.fromEntries(Object.entries(formValues || {}).filter(([, v]) => v !== undefined));
-      const currentValues = { ...record, ...definedFormValues, ...values };
+      const definedFormValues = mergeDefinedValues(undefined, formValues);
 
-      const smartContext = createSmartContext({
-        values: currentValues,
-        fields: tab.fields,
-        auxiliaryInputs,
-        parentValues: parentRecord || undefined,
-        parentFields: parentTab?.fields,
-        context: session,
-      });
+      // Same context as building it from { ...record, ...definedFormValues, ...values }, shared with the
+      // other fields of the form that resolve to the same values.
+      const smartContext = getEvaluationContext(
+        {
+          values: record || undefined,
+          fields: tab.fields,
+          auxiliaryInputs,
+          parentValues: parentRecord || undefined,
+          parentFields: parentTab?.fields,
+          context: session,
+          windowId: tab.window,
+        },
+        { ...definedFormValues, ...values }
+      );
 
-      return toClassicBoolean(compiledExpr(smartContext, smartContext));
+      return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       logger.error("Unexpected error", error);

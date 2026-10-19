@@ -16,7 +16,14 @@
  */
 
 import { installLocalStorageMock } from "../testUtils/localStorageMock";
-import { savePreferences, clearPreferences, getStoredPreferences, setStoredPreference } from "../propertyStore";
+import {
+  savePreferences,
+  clearPreferences,
+  getStoredPreferences,
+  setStoredPreference,
+  resolvePreference,
+  getStoredPreference,
+} from "../propertyStore";
 
 describe("propertyStore", () => {
   const originalLocalStorage = global.window?.localStorage;
@@ -116,6 +123,82 @@ describe("propertyStore", () => {
       setStoredPreference("theme", "light");
 
       expect(getStoredPreferences().theme).toBe("light");
+    });
+  });
+
+  describe("resolvePreference", () => {
+    const KEY = "OBUIAPP_RefreshAfterDeletion";
+    const WINDOW_ID = "129";
+    const SCOPED_KEY = `${KEY}_${WINDOW_ID}`;
+
+    it("should prefer the window-scoped key over the global one", () => {
+      savePreferences({ [KEY]: "N", [SCOPED_KEY]: "Y" });
+
+      expect(resolvePreference(KEY, WINDOW_ID)).toBe("Y");
+    });
+
+    it("should fall back to the global key when no window-scoped entry exists", () => {
+      savePreferences({ [KEY]: "Y" });
+
+      expect(resolvePreference(KEY, WINDOW_ID)).toBe("Y");
+    });
+
+    it("should fall back to the global key when the window-scoped entry is empty", () => {
+      savePreferences({ [KEY]: "Y", [SCOPED_KEY]: "" });
+
+      expect(resolvePreference(KEY, WINDOW_ID)).toBe("Y");
+    });
+
+    it("should ignore window-scoped entries when no window id is given", () => {
+      savePreferences({ [SCOPED_KEY]: "Y" });
+
+      expect(resolvePreference(KEY)).toBeUndefined();
+    });
+
+    it("should match keys case-insensitively", () => {
+      savePreferences({ UomManagement: "Y" });
+
+      expect(resolvePreference("uommanagement")).toBe("Y");
+    });
+
+    it("should match window-scoped keys case-insensitively", () => {
+      savePreferences({ [SCOPED_KEY]: "Y" });
+
+      expect(resolvePreference(KEY.toLowerCase(), WINDOW_ID)).toBe("Y");
+    });
+
+    it("should return undefined when the preference is absent", () => {
+      savePreferences({});
+
+      expect(resolvePreference(KEY, WINDOW_ID)).toBeUndefined();
+    });
+
+    it("should return the raw stored value without coercing it", () => {
+      // The expression engine normalizes booleans to 'Y'/'N' itself, so the resolver must not
+      // stringify them first.
+      savePreferences({ someFlag: true });
+
+      expect(resolvePreference("someFlag")).toBe(true);
+    });
+  });
+
+  describe("getStoredPreference", () => {
+    it("should coerce the resolved value to a string", () => {
+      savePreferences({ someFlag: true });
+
+      expect(getStoredPreference("someFlag")).toBe("true");
+    });
+
+    it("should return undefined when the preference is absent", () => {
+      savePreferences({});
+
+      expect(getStoredPreference("missing")).toBeUndefined();
+    });
+
+    it("should resolve the window-scoped key", () => {
+      savePreferences({ Pref: "global", Pref_129: "scoped" });
+
+      expect(getStoredPreference("Pref", "129")).toBe("scoped");
     });
   });
 });

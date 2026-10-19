@@ -36,6 +36,7 @@ import { buildContextString } from "@/utils/contextUtils";
 import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
 import HelpAccess from "./Header/HelpAccess";
+import AlertsButton from "./Header/AlertsButton";
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -210,6 +211,7 @@ const Navigation: React.FC = () => {
   return (
     <>
       <Nav data-testid="Nav__120cc9">
+        <AlertsButton data-testid="AlertsButton__120cc9" />
         {isCopilotInstalled && (
           <CopilotButton
             onClick={handleCopilotOpen}

@@ -36,4 +36,16 @@ describe("locales/index", () => {
     expect(translations.en_US).toBeDefined();
     expect(typeof translations.en_US).toBe("object");
   });
+
+  it.each(["en_US", "es_ES"] as const)("should translate the linked items empty message in %s", (language) => {
+    expect(translations[language].forms.sections.noLinkedItems).toEqual(expect.any(String));
+    expect(translations[language].forms.sections.noLinkedItems).not.toHaveLength(0);
+  });
+
+  it("should define the same auditTrail keys in every language", () => {
+    const sortedKeys = (section: object) => Object.keys(section).sort((a, b) => a.localeCompare(b));
+    const enKeys = sortedKeys(translations.en_US.auditTrail);
+    expect(enKeys).toEqual(["openPopup", "popupBlocked", "selectOneRecord"]);
+    expect(sortedKeys(translations.es_ES.auditTrail)).toEqual(enKeys);
+  });
 });

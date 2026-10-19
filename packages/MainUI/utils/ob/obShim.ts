@@ -17,7 +17,7 @@
 
 import { IDENTIFIER_KEY } from "@/utils/columnsConstants";
 import { MESSAGE_BAR_TYPES } from "@/utils/processes/definition/messageBarStore";
-import { getStoredPreferences, setStoredPreference } from "@/utils/propertyStore";
+import { getStoredPreference, setStoredPreference } from "@/utils/propertyStore";
 import { createAction } from "./action";
 import { createDatasourceManager } from "./datasource";
 import { createFormat } from "./format";
@@ -32,21 +32,17 @@ import { generateRandomString } from "./utilities";
 const FIELD_SEPARATOR = "$";
 
 /**
- * Builds the `OB.PropertyStore` namespace. `get` reads a preference (with a
- * case-insensitive fallback); `set` merges a single key into the stored
+ * Builds the `OB.PropertyStore` namespace. `get` reads a preference the way classic
+ * `OB.PropertyStore.get(propertyName, windowId)` does — window-scoped key first, then the
+ * global one — falling back to `shimWindowId` when the caller passes no window id, which is
+ * what classic scripts relied on the view for. `set` merges a single key into the stored
  * preferences.
+ *
+ * @param shimWindowId - AD window id the shim is scoped to
  */
-function createPropertyStore(): OBPropertyStore {
+function createPropertyStore(shimWindowId?: string): OBPropertyStore {
   return {
-    get: (key: string): string | undefined => {
-      const prefs = getStoredPreferences();
-      if (prefs[key] !== undefined) return String(prefs[key]);
-      const lowerKey = key.toLowerCase();
-      for (const storedKey of Object.keys(prefs)) {
-        if (storedKey.toLowerCase() === lowerKey) return String(prefs[storedKey]);
-      }
-      return undefined;
-    },
+    get: (key: string, windowId?: string): string | undefined => getStoredPreference(key, windowId ?? shimWindowId),
     set: (key: string, value: unknown): void => {
       setStoredPreference(key, value);
     },
@@ -83,7 +79,7 @@ function createUser(user?: OBShimDeps["user"]): OBUser {
  */
 export function createOBShim(deps: OBShimDeps = {}): OBShim {
   return {
-    PropertyStore: createPropertyStore(),
+    PropertyStore: createPropertyStore(deps.windowId),
     I18N: createI18N(deps),
     Format: createFormat(deps.language),
     Utilities: {

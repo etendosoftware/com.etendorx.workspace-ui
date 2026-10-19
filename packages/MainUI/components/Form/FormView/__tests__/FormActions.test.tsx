@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
@@ -59,6 +60,8 @@ const createFormActionsProps = (tab: Tab, overrides = {}) => ({
 });
 
 const mockMarkFormAsChanged = jest.fn();
+/** `hasFormChanges` reported by the tab context; reset before every test. */
+let mockHasFormChanges = false;
 const mockResetFormChanges = jest.fn();
 const mockRegisterActions = jest.fn();
 const mockUnregisterActions = jest.fn();
@@ -68,7 +71,20 @@ const mockReset = jest.fn();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockUseToolbarContext = jest.fn();
 
-const renderFormActions = (props: ReturnType<typeof createFormActionsProps>) => {
+/** Transitions the guard captured instead of running, i.e. the prompt is open. */
+const heldTransitions: Array<() => void | Promise<void>> = [];
+/** Default behaviour: nothing unsaved, so the transition runs immediately. */
+const mockGuardTransition = jest.fn((transition: () => void | Promise<void>) => {
+  transition();
+});
+/** Switches the guard to "asking the user": the transition is held back. */
+const holdGuardTransition = () => {
+  mockGuardTransition.mockImplementation((transition: () => void | Promise<void>) => {
+    heldTransitions.push(transition);
+  });
+};
+
+const renderFormActions = (props: ComponentProps<typeof FormActions>) => {
   return render(<FormActions {...props} />);
 };
 
@@ -96,6 +112,7 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     markFormAsChanged: mockMarkFormAsChanged,
     resetFormChanges: mockResetFormChanges,
+    hasFormChanges: mockHasFormChanges,
   }),
 }));
 
@@ -120,6 +137,12 @@ jest.mock("@/stores/windowStore", () => ({
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: jest.fn(() => "WIN1"),
+}));
+
+// The guard is exercised through this mock so both branches (let through / ask the user)
+// can be asserted without mounting the whole provider tree.
+jest.mock("@/contexts/UnsavedChangesTabGuard", () => ({
+  useUnsavedChangesTabGuard: () => ({ guardTransition: mockGuardTransition }),
 }));
 
 jest.mock("@/hooks/useFormValidation", () => ({
@@ -150,6 +173,10 @@ describe("FormActions", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    heldTransitions.length = 0;
+    mockGuardTransition.mockImplementation((transition: () => void | Promise<void>) => {
+      transition();
+    });
     setupSearchParams("WIN1");
     // Default toolbar context — not busy, no errors
     // biome-ignore lint/suspicious/noExplicitAny: jest require
@@ -188,6 +215,8 @@ describe("FormActions", () => {
         refresh: expect.any(Function),
         back: expect.any(Function),
         new: expect.any(Function),
+        discard: expect.any(Function),
+        saveAndClose: expect.any(Function),
       },
       TOOLBAR_ACTION_OWNERS.FORM
     );
@@ -350,46 +379,163 @@ describe("FormActions", () => {
       expect(mockOnSave).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+N calls onNew", () => {
+    /** Runs the `new` action FormActions registers for the toolbar NEW button (Ctrl+D). */
+    const runRegisteredNew = async () => {
+      const registeredActions = mockRegisterActions.mock.calls.at(-1)[0];
+      await registeredActions.new();
+    };
+
+    it("Ctrl+N no longer creates a record: New is the toolbar's Ctrl+D", async () => {
       const mockOnNew = jest.fn();
       renderFormActions({ ...props, onNew: mockOnNew });
 
       fireEvent.keyDown(document, { key: "n", ctrlKey: true });
 
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnNew).not.toHaveBeenCalled();
+    });
+
+    it("New calls onNew without saving when the form is clean", async () => {
+      const mockOnNew = jest.fn();
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onNew: mockOnNew, onSave: mockOnSave });
+
+      await runRegisteredNew();
+
+      expect(mockOnNew).toHaveBeenCalledTimes(1);
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+
+    it("New autosaves the dirty record before creating a new one", async () => {
+      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+      const mockOnNew = jest.fn();
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onNew: mockOnNew, onSave: mockOnSave });
+
+      await runRegisteredNew();
+
+      expect(mockOnSave).toHaveBeenCalledWith({ showModal: true });
       expect(mockOnNew).toHaveBeenCalledTimes(1);
     });
 
-    it("Escape with clean form calls back (clearTabFormState) without saving", async () => {
+    it("New does NOT create a new record when the autosave fails", async () => {
+      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+      const mockOnNew = jest.fn();
+      const mockOnSave = jest.fn().mockResolvedValue(false);
+      renderFormActions({ ...props, onNew: mockOnNew, onSave: mockOnSave });
+
+      await runRegisteredNew();
+
+      expect(mockOnSave).toHaveBeenCalled();
+      expect(mockOnNew).not.toHaveBeenCalled();
+    });
+
+    describe("Ctrl+Shift+X (save and close)", () => {
+      const pressSaveAndClose = (target: EventTarget = document) =>
+        fireEvent.keyDown(target, { key: "X", code: "KeyX", ctrlKey: true, shiftKey: true });
+
+      afterEach(() => {
+        mockHasFormChanges = false;
+      });
+
+      it("returns to the grid without saving when there is nothing to save", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        pressSaveAndClose();
+
+        await waitFor(() => expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1"));
+        expect(mockOnSave).not.toHaveBeenCalled();
+      });
+
+      it("saves the changes and then returns to the grid, even from a text field", async () => {
+        mockHasFormChanges = true;
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        const { container } = renderFormActions({ ...props, onSave: mockOnSave });
+        const input = document.createElement("input");
+        container.appendChild(input);
+
+        pressSaveAndClose(input);
+
+        await waitFor(() => expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1"));
+        expect(mockOnSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
+      });
+
+      it("is the action the status bar close button runs", async () => {
+        mockHasFormChanges = true;
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        await mockRegisterActions.mock.calls.at(-1)[0].saveAndClose();
+
+        expect(mockOnSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
+        expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
+      });
+
+      it("keeps the form open when the save fails", async () => {
+        mockHasFormChanges = true;
+        const mockOnSave = jest.fn().mockResolvedValue(false);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        pressSaveAndClose();
+
+        await waitFor(() => expect(mockOnSave).toHaveBeenCalled());
+        expect(mockClearTabFormState).not.toHaveBeenCalled();
+      });
+
+      it("is a no-op while saving", async () => {
+        toolbarContextMock().mockReturnValue({
+          registerActions: mockRegisterActions,
+          unregisterActions: mockUnregisterActions,
+          setSaveButtonState: mockSetSaveButtonState,
+          saveButtonState: {
+            isSaving: true,
+            isCalloutLoading: false,
+            hasValidationErrors: false,
+            validationErrors: [],
+          },
+        });
+        renderFormActions(props);
+
+        pressSaveAndClose();
+
+        await new Promise((r) => setTimeout(r, 0));
+        expect(mockClearTabFormState).not.toHaveBeenCalled();
+      });
+    });
+
+    it("Escape goes back through the guard, without saving on its own", async () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
       renderFormActions({ ...props, onSave: mockOnSave });
 
       fireEvent.keyDown(document, { key: "Escape" });
 
       await new Promise((r) => setTimeout(r, 0));
+      expect(mockGuardTransition).toHaveBeenCalledTimes(1);
       expect(mockOnSave).not.toHaveBeenCalled();
       expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
     });
 
-    it("Escape with dirty form saves then calls back", async () => {
-      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
-      const mockOnSave = jest.fn().mockResolvedValue(true);
-      renderFormActions({ ...props, onSave: mockOnSave });
+    it("Escape does NOT go back while the guard is asking the user", async () => {
+      holdGuardTransition();
+      renderFormActions(props);
 
       fireEvent.keyDown(document, { key: "Escape" });
 
-      await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: false }));
-      expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockGuardTransition).toHaveBeenCalledTimes(1);
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
     });
 
-    it("Escape with dirty form does NOT call back when save returns false", async () => {
-      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
-      const mockOnSave = jest.fn().mockResolvedValue(false);
-      renderFormActions({ ...props, onSave: mockOnSave });
+    it("Escape goes back once the held transition is released", async () => {
+      holdGuardTransition();
+      renderFormActions(props);
 
       fireEvent.keyDown(document, { key: "Escape" });
+      await new Promise((r) => setTimeout(r, 0));
+      await heldTransitions[0]();
 
-      await waitFor(() => expect(mockOnSave).toHaveBeenCalled());
-      expect(mockClearTabFormState).not.toHaveBeenCalled();
+      expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
     });
 
     it("Escape is a no-op when isSaving is true", async () => {
@@ -405,6 +551,7 @@ describe("FormActions", () => {
       fireEvent.keyDown(document, { key: "Escape" });
 
       await new Promise((r) => setTimeout(r, 0));
+      expect(mockGuardTransition).not.toHaveBeenCalled();
       expect(mockOnSave).not.toHaveBeenCalled();
       expect(mockClearTabFormState).not.toHaveBeenCalled();
     });
@@ -422,26 +569,67 @@ describe("FormActions", () => {
       fireEvent.keyDown(document, { key: "Escape" });
 
       await new Promise((r) => setTimeout(r, 0));
+      expect(mockGuardTransition).not.toHaveBeenCalled();
       expect(mockOnSave).not.toHaveBeenCalled();
       expect(mockClearTabFormState).not.toHaveBeenCalled();
     });
   });
 
-  it("shows error modal when required fields are missing on save", async () => {
+  /** Makes the required-field validation fail for the given fields. */
+  const mockMissingFields = (missingFields: Array<{ fieldName: string; fieldLabel: string }>) => {
     (useFormValidation as jest.Mock).mockReturnValue({
-      validateRequiredFields: jest.fn(() => ({
-        isValid: false,
-        missingFields: [{ fieldLabel: "Name" }],
-      })),
-      requiredFields: [{ hqlName: "name" }],
+      validateRequiredFields: jest.fn(() => ({ isValid: false, missingFields })),
+      requiredFields: missingFields.map(({ fieldName }) => ({ hqlName: fieldName })),
     });
+  };
+
+  const pressSaveShortcut = () => fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+  it("shows error modal when required fields are missing on save", async () => {
+    mockMissingFields([{ fieldName: "name", fieldLabel: "Name" }]);
 
     const mockShowErrorModal = jest.fn();
     renderFormActions({ ...props, showErrorModal: mockShowErrorModal });
 
-    fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+    pressSaveShortcut();
 
     await waitFor(() => expect(mockShowErrorModal).toHaveBeenCalledWith(expect.stringContaining("Name")));
+  });
+
+  describe("onFieldErrors", () => {
+    it("reports the hqlName of every missing required field when the save is blocked", async () => {
+      mockMissingFields([
+        { fieldName: "name", fieldLabel: "Name" },
+        { fieldName: "project", fieldLabel: "Project" },
+      ]);
+      const onFieldErrors = jest.fn();
+      renderFormActions({ ...props, onFieldErrors });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(onFieldErrors).toHaveBeenCalledWith(["name", "project"]));
+      expect(props.onSave).not.toHaveBeenCalled();
+    });
+
+    it("is not called when the validation passes", async () => {
+      const onFieldErrors = jest.fn();
+      renderFormActions({ ...props, onFieldErrors });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+      expect(onFieldErrors).not.toHaveBeenCalled();
+    });
+
+    it("still shows the error when no handler is provided", async () => {
+      mockMissingFields([{ fieldName: "name", fieldLabel: "Name" }]);
+      const mockShowErrorModal = jest.fn();
+      renderFormActions({ ...props, showErrorModal: mockShowErrorModal });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(mockShowErrorModal).toHaveBeenCalledTimes(1));
+    });
   });
 
   it("calls refetch and resetFormChanges on refresh action", async () => {

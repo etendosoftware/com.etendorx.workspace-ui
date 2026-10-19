@@ -97,6 +97,26 @@ export class CacheStore {
   }
 
   /**
+   * Deletes the stored values whose identifier (without the prefix) matches the predicate.
+   * @param predicate - Receives each identifier under this store's prefix.
+   */
+  public deleteWhere(predicate: (id: string) => boolean): void {
+    if (!this.storage) return;
+
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < this.storage.length; i++) {
+      const key = this.storage.key(i);
+      if (key?.startsWith(this.prefix) && predicate(key.slice(this.prefix.length))) {
+        keysToRemove.push(key);
+      }
+    }
+
+    for (const key of keysToRemove) {
+      this.storage.removeItem(key);
+    }
+  }
+
+  /**
    * Clears all values from the storage that match the prefix.
    */
   public clear(): void {

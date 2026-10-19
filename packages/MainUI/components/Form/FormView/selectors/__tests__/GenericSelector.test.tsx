@@ -1,7 +1,8 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { GenericSelector } from "../GenericSelector";
 import { useFormContext } from "react-hook-form";
 import { FIELD_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
+import { DROPDOWN_PORTAL_ATTRIBUTE } from "@/utils/form/keyboard";
 
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
@@ -273,5 +274,69 @@ describe("GenericSelector", () => {
 
     const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(getByTestId("StringSelector")).toBeInTheDocument();
+  });
+
+  describe("record picker shortcut", () => {
+    const SEARCHABLE_FIELD = {
+      id: "field-search",
+      hqlName: "businessPartner",
+      name: "Business Partner",
+      column: { reference: "UNKNOWN" },
+      selector: { hasTableRelated: true, datasourceName: "TestEntity" },
+    } as any;
+
+    const renderSearchableField = (isReadOnly = false) => {
+      const view = render(<GenericSelector field={SEARCHABLE_FIELD} isReadOnly={isReadOnly} />);
+      return { ...view, field: view.getByTestId("StringSelector").closest("div")?.parentElement as HTMLElement };
+    };
+
+    const pressSelectorShortcut = (target: HTMLElement) => {
+      fireEvent.keyDown(target, { key: "Enter", ctrlKey: true });
+    };
+
+    it("keeps the magnifier out of the tab sequence", () => {
+      const { getByTestId } = renderSearchableField();
+
+      expect(getByTestId("icon-button")).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("opens the record picker with Ctrl+Enter", () => {
+      const { field, queryByTestId } = renderSearchableField();
+      expect(queryByTestId("SelectorModal")).not.toBeInTheDocument();
+
+      pressSelectorShortcut(field);
+
+      expect(queryByTestId("SelectorModal")).toBeInTheDocument();
+    });
+
+    it("ignores the shortcut on a read-only field", () => {
+      const { field, queryByTestId } = renderSearchableField(true);
+
+      pressSelectorShortcut(field);
+
+      expect(queryByTestId("SelectorModal")).not.toBeInTheDocument();
+    });
+
+    it("ignores a shortcut coming from an open dropdown, which shares this React tree", () => {
+      const { field, queryByTestId } = renderSearchableField();
+
+      const portal = document.createElement("div");
+      portal.setAttribute(DROPDOWN_PORTAL_ATTRIBUTE, "dropdown-businessPartner");
+      const portalInput = document.createElement("input");
+      portal.appendChild(portalInput);
+      field.appendChild(portal);
+
+      pressSelectorShortcut(portalInput);
+
+      expect(queryByTestId("SelectorModal")).not.toBeInTheDocument();
+    });
+
+    it("ignores a plain Enter", () => {
+      const { field, queryByTestId } = renderSearchableField();
+
+      fireEvent.keyDown(field, { key: "Enter" });
+
+      expect(queryByTestId("SelectorModal")).not.toBeInTheDocument();
+    });
   });
 });

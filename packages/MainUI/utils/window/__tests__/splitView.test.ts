@@ -24,9 +24,12 @@ import {
   isGridPaneVisible,
   isPaneFocused,
   isSplitViewAvailable,
+  resolveGuardedSplitTarget,
   resolveSplitViewFormRecord,
+  shouldPromptSplitViewChange,
   resolvePaneFocusTarget,
 } from "../splitView";
+import { FORM_FIELDS_ROOT_ATTRIBUTE, FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
 
 const FOCUS_BORDER = "border-l-transparent";
 const DUAL_PANE_MODES: TabViewMode[] = [TAB_VIEW_MODES.SPLIT, TAB_VIEW_MODES.TREE_SIDE_BY_SIDE];
@@ -174,6 +177,17 @@ describe("getPaneTabIndex", () => {
   });
 });
 
+/** One field as the form renders it: a named wrapper around its control. */
+const buildFieldMarkup = (fieldName: string, control: string) =>
+  `<div ${FORM_FIELD_NAME_ATTRIBUTE}="${fieldName}">${control}</div>`;
+
+const buildFieldsRoot = (...content: string[]): HTMLElement => {
+  const root = document.createElement("div");
+  root.setAttribute(FORM_FIELDS_ROOT_ATTRIBUTE, "");
+  root.innerHTML = content.join("");
+  return root;
+};
+
 describe("resolvePaneFocusTarget", () => {
   it("prefers the marked descendant", () => {
     const pane = document.createElement("div");
@@ -184,9 +198,31 @@ describe("resolvePaneFocusTarget", () => {
     expect(resolvePaneFocusTarget(pane)).toBe(target);
   });
 
+  it("hands the keyboard to the first editable field of a form pane", () => {
+    const pane = document.createElement("div");
+    // The record navigation buttons of the form header precede the fields.
+    pane.appendChild(document.createElement("button"));
+    const fieldsRoot = buildFieldsRoot(
+      // A section header, whose decorative icons come before every field.
+      "<div><button type='button'>section icon</button></div>",
+      buildFieldMarkup("documentNo", "<input disabled />"),
+      buildFieldMarkup("businessPartner", "<input id='editable-field' />")
+    );
+    pane.appendChild(fieldsRoot);
+
+    expect(resolvePaneFocusTarget(pane)).toBe(fieldsRoot.querySelector("#editable-field"));
+  });
+
   it("falls back to the pane itself when nothing is marked", () => {
     const pane = document.createElement("div");
     pane.appendChild(document.createElement("input"));
+
+    expect(resolvePaneFocusTarget(pane)).toBe(pane);
+  });
+
+  it("falls back to the pane itself when a form pane has no editable field", () => {
+    const pane = document.createElement("div");
+    pane.appendChild(buildFieldsRoot(buildFieldMarkup("documentNo", "<input disabled />")));
 
     expect(resolvePaneFocusTarget(pane)).toBe(pane);
   });
@@ -298,5 +334,74 @@ describe("resolveSplitViewFormRecord", () => {
 
   it("never discards a record being created", () => {
     expect(resolve({ isNewRecord: true })).toBeUndefined();
+  });
+});
+
+describe("shouldPromptSplitViewChange", () => {
+  const CURRENT_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+
+  const shouldPrompt = (overrides: Record<string, unknown> = {}) =>
+    shouldPromptSplitViewChange({
+      isSplitView: true,
+      selectedRecordId: CLICKED_RECORD,
+      currentRecordId: CURRENT_RECORD,
+      isDirty: true,
+      ...overrides,
+    });
+
+  it("asks before leaving a record with unsaved changes", () => {
+    expect(shouldPrompt()).toBe(true);
+  });
+
+  it("does not ask when the form is clean", () => {
+    expect(shouldPrompt({ isDirty: false })).toBe(false);
+  });
+
+  it("does not ask outside split view", () => {
+    expect(shouldPrompt({ isSplitView: false })).toBe(false);
+  });
+
+  it("does not ask when nothing is selected", () => {
+    expect(shouldPrompt({ selectedRecordId: undefined })).toBe(false);
+  });
+
+  it("does not ask when the form already shows the selected record", () => {
+    expect(shouldPrompt({ selectedRecordId: CURRENT_RECORD })).toBe(false);
+  });
+});
+
+describe("resolveGuardedSplitTarget", () => {
+  const FORM_RECORD = "record-1";
+  const CLICKED_RECORD = "record-2";
+  const NEWER_RECORD = "record-3";
+
+  const resolveTarget = (overrides: Record<string, unknown> = {}) =>
+    resolveGuardedSplitTarget({
+      latestSelection: CLICKED_RECORD,
+      promptedSelection: CLICKED_RECORD,
+      formRecordId: FORM_RECORD,
+      ...overrides,
+    });
+
+  it("keeps the clicked record when the grid did not move", () => {
+    expect(resolveTarget()).toBe(CLICKED_RECORD);
+  });
+
+  it("follows a row selected while the prompt was open", () => {
+    expect(resolveTarget({ latestSelection: NEWER_RECORD })).toBe(NEWER_RECORD);
+  });
+
+  // Saving re-selects the record it saved, which is the one the form already shows.
+  it("ignores a selection that points back at the form record", () => {
+    expect(resolveTarget({ latestSelection: FORM_RECORD })).toBe(CLICKED_RECORD);
+  });
+
+  it("falls back to the clicked record when nothing is selected", () => {
+    expect(resolveTarget({ latestSelection: undefined })).toBe(CLICKED_RECORD);
+  });
+
+  it("keeps the clicked record when the form holds no record yet", () => {
+    expect(resolveTarget({ formRecordId: undefined })).toBe(CLICKED_RECORD);
   });
 });

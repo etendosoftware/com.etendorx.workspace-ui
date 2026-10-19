@@ -75,6 +75,48 @@ describe("createOBShim", () => {
     expect(ob.PropertyStore.get(PREF_KEY)).toBe("Y");
   });
 
+  describe("PropertyStore window scoping", () => {
+    const WINDOW_ID = "86F0B1EB";
+    const SCOPED_KEY = `${PREF_KEY}_${WINDOW_ID}`;
+
+    it("resolves the window-scoped key when a window id is passed to get", () => {
+      const ob = createOBShim();
+      ob.PropertyStore.set(PREF_KEY, "N");
+      ob.PropertyStore.set(SCOPED_KEY, "Y");
+
+      expect(ob.PropertyStore.get(PREF_KEY, WINDOW_ID)).toBe("Y");
+    });
+
+    it("uses the shim's own window id when get receives none", () => {
+      const ob = createOBShim({ windowId: WINDOW_ID });
+      ob.PropertyStore.set(PREF_KEY, "N");
+      ob.PropertyStore.set(SCOPED_KEY, "Y");
+
+      expect(ob.PropertyStore.get(PREF_KEY)).toBe("Y");
+    });
+
+    it("lets an explicit window id override the shim's own", () => {
+      const ob = createOBShim({ windowId: "otherWindow" });
+      ob.PropertyStore.set(SCOPED_KEY, "Y");
+
+      expect(ob.PropertyStore.get(PREF_KEY, WINDOW_ID)).toBe("Y");
+    });
+
+    it("falls back to the global key when no window-scoped entry exists", () => {
+      const ob = createOBShim({ windowId: WINDOW_ID });
+      ob.PropertyStore.set(PREF_KEY, "Y");
+
+      expect(ob.PropertyStore.get(PREF_KEY)).toBe("Y");
+    });
+
+    it("reads only the global key when neither the shim nor the call carries a window id", () => {
+      const ob = createOBShim();
+      ob.PropertyStore.set(SCOPED_KEY, "Y");
+
+      expect(ob.PropertyStore.get(PREF_KEY)).toBeUndefined();
+    });
+  });
+
   it("shares the action registry across calls on the same instance", () => {
     const ob = createOBShim();
     ob.Utilities.Action.set("a", () => "done");

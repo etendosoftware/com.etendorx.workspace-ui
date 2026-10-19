@@ -31,8 +31,9 @@ import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext";
-import { useToolbarContext } from "../../contexts/ToolbarContext";
+import { useToolbarCommands } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
+import { useSettledParent } from "@/hooks/table/useSettledParent";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
@@ -51,6 +52,7 @@ import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/sr
 import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import { buildGroupedSortBy, getActiveGroupColumnId, getGroupingMaxRecords } from "@/utils/table/grouping";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
@@ -82,6 +84,7 @@ interface UseTableDataReturn {
   shouldUseTreeMode: boolean;
   treeEntity: string;
   referencedTableId?: string;
+  canMoveTreeNodes: boolean;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -148,7 +151,7 @@ export const useTableData = ({
   const getTabInitializedWithDirectLink = useCallback((windowIdentifier: string, tabId: string): boolean => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.initializedWithDirectLink ?? false;
   }, []);
-  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarCommands();
   const { graph } = useSelected();
 
   const {
@@ -161,13 +164,14 @@ export const useTableData = ({
     setTableColumnOrder,
     setIsImplicitFilterApplied,
     tableColumnSorting,
+    tableColumnGrouping,
     advancedCriteria,
   } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
-  const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
+  const { treeMetadata } = useTreeModeMetadata(tab);
 
   // Computed values
   // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
@@ -178,10 +182,16 @@ export const useTableData = ({
     if (!parentTab || !windowIdentifier) return undefined;
     return s.windows[windowIdentifier]?.tabs[parentTab.id]?.selectedRecord;
   });
-  const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
+  // The parent this tab fetches with: moving fast over parent records fetches the first and the last only.
+  const {
+    parentId,
+    parentRecord: queryParentRecord,
+    isPending: isParentPending,
+  } = useSettledParent({ parentRecord, parentIdFromUrl });
 
-  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
-  const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode;
+  const activeGroupColumnId = getActiveGroupColumnId(tableColumnGrouping, tab.window, shouldUseTreeMode);
+  const treeEntity = (shouldUseTreeMode && treeMetadata.treeEntity) || tab.entityName;
 
   // Reactive subscription — re-render when form state changes
   const tabFormState = useWindowStore((s) =>
@@ -449,18 +459,40 @@ export const useTableData = ({
     return { fieldName, directReference: true };
   }, [tab, parentTab]);
 
+  // Helper to resolve a column id to the property the datasource sorts by
+  const resolveSortField = useCallback(
+    (columnId: string) => {
+      const field = Object.values(tab.fields).find((f) => f.name === columnId);
+      return field?.hqlName || columnId;
+    },
+    [tab.fields]
+  );
+
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
       if (!sort) return;
 
-      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
-      const sortField = field?.hqlName || sort.id;
+      const sortField = resolveSortField(sort.id);
 
       options.sortBy = sort.desc ? `-${sortField}` : sortField;
       options.isSorting = true;
     },
-    [tab.fields]
+    [resolveSortField]
+  );
+
+  // Helper to apply grouping to query: as classic, a grouped grid loads up to the
+  // grouping limit + 1 records at once (to detect an oversized dataset), sorted by
+  // the grouped column first and by the current sort inside each group.
+  const applyGroupingToOptions = useCallback(
+    (options: DatasourceOptions, groupColumnId: string, sort: ReturnType<typeof getDefaultSort>) => {
+      const userSort = sort ? { id: resolveSortField(sort.id), desc: sort.desc } : null;
+
+      options.pageSize = getGroupingMaxRecords(tab.window) + 1;
+      options.sortBy = buildGroupedSortBy(resolveSortField(groupColumnId), userSort);
+      options.isSorting = true;
+    },
+    [resolveSortField, tab.window]
   );
 
   const query: DatasourceOptions = useMemo(() => {
@@ -521,7 +553,7 @@ export const useTableData = ({
       // (ob-view-grid.js:2736). The server answers @AD_Org_ID@ / @AD_Client_ID@ inside a child
       // tab's hqlwhereclause by reading exactly these params, so a missing organization leaves
       // the variable empty and AD_ISORGINCLUDED drops every row.
-      Object.assign(options, buildParentSessionContext(parentTab, parentRecord ?? graph.getSelected(parentTab)));
+      Object.assign(options, buildParentSessionContext(parentTab, queryParentRecord ?? graph.getSelected(parentTab)));
       // Keep existing format for backward compat (e.g. Process Request datasource)
       options[`@${parentTab.entityName}.id@`] = parentId;
       // OB Classic context variable format for hqlwhereclause substitution
@@ -541,19 +573,23 @@ export const useTableData = ({
     }
 
     // Apply sorting
-    if (tableColumnSorting?.length > 0) {
-      applySortToOptions(options, tableColumnSorting[0]);
-    } else {
-      applySortToOptions(options, getDefaultSort());
+    const currentSort = tableColumnSorting.length > 0 ? tableColumnSorting[0] : getDefaultSort();
+    applySortToOptions(options, currentSort);
+
+    // Apply grouping (overrides page size and sort while the grid is grouped)
+    if (activeGroupColumnId) {
+      applyGroupingToOptions(options, activeGroupColumnId, currentSort);
     }
 
     return options;
   }, [
+    activeGroupColumnId,
+    applyGroupingToOptions,
     tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
-    parentRecord,
+    queryParentRecord,
     language,
     tableColumnSorting,
     advancedCriteria,
@@ -588,7 +624,7 @@ export const useTableData = ({
   // valid parent record ID.
   const skip = useMemo(() => {
     if (!parentTab) return false;
-    const hasParentSelection = !!parentRecord || !!parentIdFromUrl;
+    const hasParentSelection = parentId !== "";
     if (!hasParentSelection) {
       return true;
     }
@@ -597,7 +633,7 @@ export const useTableData = ({
       return true;
     }
     return false;
-  }, [parentTab, parentRecord, parentRecords, parentIdFromUrl, tab.name, parentId]);
+  }, [parentTab, parentRecords, parentId]);
 
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {
@@ -1091,12 +1127,13 @@ export const useTableData = ({
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
   // changing the parent record will reset the view to show all child records for the new parent
-  const prevParentIdRef = useRef<string | undefined>(parentRecord?.id ? String(parentRecord.id) : undefined);
+  // Uses the settled parent id, the same one the query is built with.
+  const prevParentIdRef = useRef<string | undefined>(parentId || undefined);
 
   useEffect(() => {
     // Only clear filters if the parent ID has actually CHANGED from a previous valid ID
     // This prevents clearing filters on initial load when the parent ID is first set
-    if (parentRecord?.id && prevParentIdRef.current && parentRecord.id !== prevParentIdRef.current) {
+    if (parentId && prevParentIdRef.current && parentId !== prevParentIdRef.current) {
       const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
       if (hasIdFilter) {
         setTableColumnFilters([]);
@@ -1104,8 +1141,8 @@ export const useTableData = ({
       }
     }
     // Update ref for next render
-    prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
-  }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
+    prevParentIdRef.current = parentId || undefined;
+  }, [parentId, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
   /**
    * Sync implicit filter state with toolbar context (drives the funnel's pressed/active visual).
@@ -1366,13 +1403,15 @@ export const useTableData = ({
 
     // State
     expanded,
-    loading,
+    // A held parent change shows as loading, like the fetch that follows it.
+    loading: loading || isParentPending,
     error: error || null,
 
     // Tree mode
     shouldUseTreeMode,
     treeEntity,
     referencedTableId: treeMetadata.referencedTableId,
+    canMoveTreeNodes: treeMetadata.canMoveNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,

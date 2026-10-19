@@ -100,4 +100,53 @@ describe("BasicModal", () => {
 
     fireEvent.click(fullscreenButton!);
   });
+
+  describe("keyboard", () => {
+    const SaveIcon = (props: object) => <svg data-testid="save-icon" {...props} />;
+    const documentListener = jest.fn();
+
+    const renderConfirm = (autoFocusSave?: boolean) =>
+      render(
+        <Modal
+          open
+          saveButtonLabel="Confirm"
+          secondaryButtonLabel="Cancel"
+          SaveIcon={SaveIcon}
+          autoFocusSave={autoFocusSave}>
+          <input aria-label="field" />
+        </Modal>
+      );
+
+    beforeEach(() => document.addEventListener("keydown", documentListener));
+    afterEach(() => {
+      document.removeEventListener("keydown", documentListener);
+      documentListener.mockClear();
+    });
+
+    it("focuses the save button only when asked", () => {
+      const { unmount } = renderConfirm(true);
+      expect(screen.getByRole("button", { name: /Confirm/ })).toHaveFocus();
+      unmount();
+
+      renderConfirm();
+      expect(screen.getByRole("button", { name: /Confirm/ })).not.toHaveFocus();
+    });
+
+    it("keeps Enter on a modal button away from the page shortcuts", () => {
+      renderConfirm(true);
+
+      fireEvent.keyDown(screen.getByRole("button", { name: /Confirm/ }), { key: "Enter" });
+
+      expect(documentListener).not.toHaveBeenCalled();
+    });
+
+    it("lets other keys and Enter outside buttons through", () => {
+      renderConfirm(true);
+
+      fireEvent.keyDown(screen.getByRole("button", { name: /Confirm/ }), { key: "Tab" });
+      fireEvent.keyDown(screen.getByRole("textbox", { name: "field" }), { key: "Enter" });
+
+      expect(documentListener).toHaveBeenCalledTimes(2);
+    });
+  });
 });
