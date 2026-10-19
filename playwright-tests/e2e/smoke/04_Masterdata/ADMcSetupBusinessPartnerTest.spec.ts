@@ -7,6 +7,7 @@ import {
   clickNewRecord,
   closeToastIfPresent,
 } from "../../helpers/etendo.helpers";
+import { uniqueValue } from "../../support/registry/data";
 
 test.describe("Master Data - Business Partner Setup @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -30,6 +31,16 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
       await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible > span').click();
     };
 
+    // Records created by this test get unique keys so it can run on a reused database
+    const paymentTermKey = uniqueValue("60d/10");
+    const paymentTermName = uniqueValue("60 days");
+    const paymentTermLongKey = uniqueValue("120d");
+    const paymentTermLongName = uniqueValue("120 days");
+    const scheduleName = uniqueValue("Schedule Weekly");
+    const categoryKey = uniqueValue("WHS");
+    const categoryName = uniqueValue("Wholesale");
+    const businessPartnerKey = uniqueValue("Golden House");
+
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await page.waitForTimeout(500);
@@ -43,9 +54,9 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     // First payment term: 60d/10
     await clickNewRecord(page);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", "60d/10");
+    await fillByAriaLabel("Search Key", paymentTermKey);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", "60 days");
+    await fillByAriaLabel("Name", paymentTermName);
     await page.waitForTimeout(500);
     await fillByAriaLabel("Offset Month Due", "2");
     await page.waitForTimeout(500);
@@ -67,9 +78,9 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     // Second payment term: 120d
     await clickNewRecord(page);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", "120d");
+    await fillByAriaLabel("Search Key", paymentTermLongKey);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", "120 days");
+    await fillByAriaLabel("Name", paymentTermLongName);
     await page.waitForTimeout(500);
     await fillByAriaLabel("Offset Month Due", "04");
     await page.waitForTimeout(500);
@@ -85,7 +96,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible').first().click();
     await page.waitForTimeout(500);
 
-    await fillByAriaLabel("Name", "Schedule Weekly");
+    await fillByAriaLabel("Name", scheduleName);
     await page.waitForTimeout(500);
 
     // Invoice Frequency = W (Weekly)
@@ -111,9 +122,9 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
 
     await clickNewRecord(page);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", "WHS");
+    await fillByAriaLabel("Search Key", categoryKey);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", "Wholesale");
+    await fillByAriaLabel("Name", categoryName);
     await page.waitForTimeout(500);
     await clickSaveHeader();
     await page.waitForTimeout(500);
@@ -126,7 +137,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
 
     await clickNewRecord(page);
     await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", "Golden House");
+    await fillByAriaLabel("Search Key", businessPartnerKey);
     await page.waitForTimeout(500);
     await fillByAriaLabel("Commercial Name", "Oragadam Gold House");
     await page.waitForTimeout(500);
@@ -137,7 +148,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     const categorySearch = page.locator(".fixed > div.p-2 > .w-full").first();
     await categorySearch.waitFor({ state: "visible", timeout: 10_000 });
     await categorySearch.clear();
-    await categorySearch.fill("wholesale");
+    await categorySearch.fill(categoryName);
     await categorySearch.press("Enter");
     await page.waitForTimeout(500);
 
