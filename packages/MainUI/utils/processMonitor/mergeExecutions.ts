@@ -80,10 +80,22 @@ export function sortExecutions(map: ExecutionMap): ProcessExecution[] {
   return Object.values(map).sort((a, b) => updatedOf(b) - updatedOf(a));
 }
 
-/** Most recent failed executions. */
-export function recentFailures(map: ExecutionMap, limit: number): ProcessExecution[] {
+/** Status code of a run that did not fire when scheduled (normalized as OTHER). */
+export const MISFIRED_STATUS_CODE = "MIS";
+
+export const isMisfired = (execution: ProcessExecution): boolean => execution.statusCode === MISFIRED_STATUS_CODE;
+
+/** Most recent failed or misfired executions (only FAILED ones raise a toast). */
+export function recentFailures(map: ExecutionMap, limit = Number.POSITIVE_INFINITY): ProcessExecution[] {
   return sortExecutions(map)
-    .filter((execution) => execution.status === "FAILED")
+    .filter((execution) => execution.status === "FAILED" || isMisfired(execution))
+    .slice(0, limit);
+}
+
+/** Most recently updated executions that are still running. */
+export function runningExecutions(map: ExecutionMap, limit = Number.POSITIVE_INFINITY): ProcessExecution[] {
+  return sortExecutions(map)
+    .filter((execution) => execution.status === "RUNNING")
     .slice(0, limit);
 }
 

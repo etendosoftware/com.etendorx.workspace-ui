@@ -41,6 +41,3 @@ export const MAX_PAGES_PER_POLL = 5;
 
 /** Executions kept in memory (running ones are never evicted). */
 export const MAX_KEPT_EXECUTIONS = 200;
-
-/** Failed executions listed in the indicator popover. */
-export const MAX_FAILURES_SHOWN = 5;

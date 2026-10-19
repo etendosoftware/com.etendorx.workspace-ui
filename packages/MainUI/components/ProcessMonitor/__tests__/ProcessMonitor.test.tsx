@@ -32,6 +32,11 @@ import { PROCESS_MONITOR_WINDOW_ID, PROCESS_REQUEST_WINDOW_ID } from "@/utils/pr
 jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () =>
   jest.requireActual("@workspaceui/componentlibrary/src/components/IconButton")
 );
+// The real Menu stays hidden until it measures its position.
+jest.mock("@workspaceui/componentlibrary/src/components/Menu", () => ({
+  __esModule: true,
+  default: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
 jest.mock("@workspaceui/componentlibrary/src/components/BasicModal", () => ({
   __esModule: true,
   default: ({ tittleHeader, children }: { tittleHeader?: string; children: React.ReactNode }) => (
@@ -128,6 +133,42 @@ describe("ProcessMonitorButton", () => {
 
     fireEvent.click(screen.getByText("Process a"));
     expect(useProcessMonitorStore.getState().detailId).toBe("a");
+  });
+
+  it("lists the misfired runs with the failures, without treating them as failed", () => {
+    useProcessMonitorStore.setState({
+      executions: {
+        m: { ...build("m", "OTHER", 2), statusCode: "MIS" },
+        k: { ...build("k", "OTHER", 3), statusCode: "KIL" },
+      },
+    });
+    render(<ProcessMonitorButton />);
+    fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
+
+    expect(screen.getByText(/Process m/)).toHaveTextContent("processMonitor.misfired");
+    expect(screen.queryByText(/Process k/)).toBeNull();
+  });
+
+  it("lists the running executions in their own section and opens the detail on click", () => {
+    mockFetchDetail.mockReturnValue(new Promise(() => {}));
+    useProcessMonitorStore.setState({
+      executions: { r: build("r", "RUNNING", 2), a: build("a", "FAILED", 1) },
+    });
+    render(<ProcessMonitorButton />);
+    fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
+
+    const section = screen.getByTestId("process-monitor-running");
+    expect(section).toHaveTextContent("Process r");
+    expect(section).not.toHaveTextContent("Process a");
+
+    fireEvent.click(screen.getByText("Process r"));
+    expect(useProcessMonitorStore.getState().detailId).toBe("r");
+  });
+
+  it("hides the running section when nothing is running", () => {
+    render(<ProcessMonitorButton />);
+    fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
+    expect(screen.queryByTestId("process-monitor-running")).toBeNull();
   });
 
   it("shows the empty state and the stale warning", () => {

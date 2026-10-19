@@ -20,6 +20,7 @@
 import { useEffect, useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
+import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
 import {
   fetchProcessMonitorDetail,
   type ProcessExecutionDetail as ExecutionDetail,
@@ -83,12 +84,13 @@ const ProcessExecutionDetail: React.FC = () => {
     <Modal
       open
       showHeader
+      HeaderIcon={ActivityIcon}
       tittleHeader={detail?.processName || name || t("processMonitor.unnamedProcess")}
-      width="40rem"
+      width={640}
       onClose={closeDetail}
       onCancel={closeDetail}
       data-testid="process-monitor-dialog">
-      <Box className="flex flex-col gap-3 p-4 max-w-full" data-testid="process-monitor-detail">
+      <Box className="flex flex-col gap-4 max-w-full" data-testid="process-monitor-detail">
         {current.kind === "loading" && (
           <div className="flex justify-center p-4">
             <CircularProgress size={24} />
@@ -101,7 +103,7 @@ const ProcessExecutionDetail: React.FC = () => {
         )}
         {detail && (
           <>
-            <dl className="grid grid-cols-3 gap-3">
+            <dl className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
               <Field label={t("processMonitor.started")} value={formatTimestamp(detail.startTime)} />
               <Field label={t("processMonitor.ended")} value={formatTimestamp(detail.endTime)} />
               <Field label={t("processMonitor.duration")} value={detail.duration} />

@@ -18,8 +18,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Popover } from "@mui/material";
 import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
+import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProcessMonitorPolling } from "@/hooks/useProcessMonitorPolling";
@@ -28,12 +28,8 @@ import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import {
-  PROCESS_MONITOR_WINDOW_ID,
-  PROCESS_REQUEST_WINDOW_ID,
-  MAX_FAILURES_SHOWN,
-} from "@/utils/processMonitor/constants";
-import { recentFailures } from "@/utils/processMonitor/mergeExecutions";
+import { PROCESS_MONITOR_WINDOW_ID, PROCESS_REQUEST_WINDOW_ID } from "@/utils/processMonitor/constants";
+import { isMisfired, recentFailures, runningExecutions } from "@/utils/processMonitor/mergeExecutions";
 import { formatTimestamp } from "@/utils/processMonitor/format";
 import ProcessExecutionDetail from "./ProcessExecutionDetail";
 
@@ -60,7 +56,8 @@ const ProcessMonitorButton: React.FC = () => {
 
   useProcessMonitorPolling(Boolean(token && roleId && !passwordExpired), roleId);
 
-  const failures = useMemo(() => recentFailures(executions, MAX_FAILURES_SHOWN), [executions]);
+  const failures = useMemo(() => recentFailures(executions), [executions]);
+  const running = useMemo(() => runningExecutions(executions), [executions]);
 
   // Same way the sidebar opens a window entry.
   const openWindow = useCallback(
@@ -104,59 +101,88 @@ const ProcessMonitorButton: React.FC = () => {
           </span>
         )}
       </div>
-      <Popover
-        open={open}
-        anchorEl={anchorRef.current}
-        onClose={() => setOpen(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}>
-        <div className="w-80 max-w-[calc(100vw-2rem)] p-3 flex flex-col gap-3" data-testid="process-monitor-popover">
-          <h2 className="text-sm font-semibold text-gray-900">{label}</h2>
-          {hasError && (
-            <output className="block text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
-              {t("processMonitor.staleWarning")}
-            </output>
-          )}
-          <section>
-            <h3 className="text-xs font-medium text-gray-500 mb-1">{t("processMonitor.recentFailures")}</h3>
-            {failures.length === 0 ? (
-              <p className="text-sm text-gray-500">{t("processMonitor.noFailures")}</p>
-            ) : (
-              <ul className="divide-y divide-gray-100">
-                {failures.map((execution) => (
-                  <li key={execution.id}>
-                    <button
-                      type="button"
-                      onClick={() => openDetail(execution.id)}
-                      className="w-full text-left py-2 hover:bg-gray-50 flex flex-col">
-                      <span className="text-sm font-medium text-red-700 break-words">
-                        {execution.processName || t("processMonitor.unnamedProcess")}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatTimestamp(execution.endTime ?? execution.startTime)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+      {open && (
+        <Menu anchorEl={anchorRef.current} onClose={() => setOpen(false)} className="w-[20.75rem]" offsetY={4}>
+          <div className="flex flex-col font-inter" data-testid="process-monitor-popover">
+            <div className="px-4 pt-4 pb-2">
+              <h2 className="text-base font-semibold text-(--color-baseline-100)">{label}</h2>
+            </div>
+            {hasError && (
+              <output className="block mx-3 mb-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                {t("processMonitor.staleWarning")}
+              </output>
             )}
-          </section>
-          <div className="flex flex-col gap-1 border-t border-gray-200 pt-2">
-            <button
-              type="button"
-              onClick={() => openWindow(PROCESS_REQUEST_WINDOW_ID, t("processMonitor.requestWindow"))}
-              className="text-left text-sm text-(--color-dynamic-main) hover:underline">
-              {t("processMonitor.requestWindow")}
-            </button>
-            <button
-              type="button"
-              onClick={() => openWindow(PROCESS_MONITOR_WINDOW_ID, t("processMonitor.monitorWindow"))}
-              className="text-left text-sm text-(--color-dynamic-main) hover:underline">
-              {t("processMonitor.monitorWindow")}
-            </button>
+            {running.length > 0 && (
+              <section className="px-3 pb-2" data-testid="process-monitor-running">
+                <h3 className="px-1 pb-1 text-xs font-medium text-(--color-transparent-neutral-70)">
+                  {t("processMonitor.running")}
+                </h3>
+                <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {running.map((execution) => (
+                    <li key={execution.id}>
+                      <button
+                        type="button"
+                        onClick={() => openDetail(execution.id)}
+                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
+                        <span className="text-sm font-medium text-green-700 break-words">
+                          {execution.processName || t("processMonitor.unnamedProcess")}
+                        </span>
+                        <span className="text-xs text-(--color-transparent-neutral-70)">
+                          {formatTimestamp(execution.startTime)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            <section className="px-3 pb-3">
+              <h3 className="px-1 pb-1 text-xs font-medium text-(--color-transparent-neutral-70)">
+                {t("processMonitor.recentFailures")}
+              </h3>
+              {failures.length === 0 ? (
+                <p className="px-1 py-2 text-sm text-(--color-transparent-neutral-70)">
+                  {t("processMonitor.noFailures")}
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {failures.map((execution) => (
+                    <li key={execution.id}>
+                      <button
+                        type="button"
+                        onClick={() => openDetail(execution.id)}
+                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
+                        <span
+                          className={`text-sm font-medium break-words ${isMisfired(execution) ? "text-amber-700" : "text-red-700"}`}>
+                          {execution.processName || t("processMonitor.unnamedProcess")}
+                          {isMisfired(execution) && ` (${t("processMonitor.misfired")})`}
+                        </span>
+                        <span className="text-xs text-(--color-transparent-neutral-70)">
+                          {formatTimestamp(execution.endTime ?? execution.startTime)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <div className="flex flex-col gap-1 border-t border-(--color-transparent-neutral-10) p-3">
+              {[
+                [PROCESS_REQUEST_WINDOW_ID, t("processMonitor.requestWindow")],
+                [PROCESS_MONITOR_WINDOW_ID, t("processMonitor.monitorWindow")],
+              ].map(([windowId, title]) => (
+                <button
+                  key={windowId}
+                  type="button"
+                  onClick={() => openWindow(windowId, title)}
+                  className="text-left text-sm font-medium px-3 py-2 rounded-xl text-(--color-dynamic-main) hover:bg-(--color-dynamic-light) transition-colors">
+                  {title}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </Popover>
+        </Menu>
+      )}
       <ProcessExecutionDetail />
     </>
   );

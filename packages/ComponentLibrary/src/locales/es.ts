@@ -935,6 +935,8 @@ const es = {
     buttonLabel: "Procesos en segundo plano",
     buttonLabelRunning: "Procesos en segundo plano (%0 en ejecución)",
     recentFailures: "Errores recientes",
+    running: "En ejecución",
+    misfired: "No se ejecutó",
     noFailures: "No hay errores recientes",
     requestWindow: "Procesamiento de Peticiones",
     monitorWindow: "Monitor de Procesos",
