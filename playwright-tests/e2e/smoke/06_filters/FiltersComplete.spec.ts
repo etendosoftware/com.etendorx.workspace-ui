@@ -1,15 +1,12 @@
-import { test, expect } from "@playwright/test";
-import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch } from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
 
 test.describe("Advanced Filters - Complete Test @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
-
-  test("should test all advanced filter functionalities", async ({ page }) => {
+  test("should test all advanced filter functionalities", async ({ app, page }) => {
     // ── Local helpers ────────────────────────────────────────────────────────
+    const advancedFiltersButton = page.locator("button.toolbar-button-advanced-filters").first();
+
     const openAdvancedFilters = async () => {
-      await page.locator("button.toolbar-button-advanced-filters").first().click();
+      await advancedFiltersButton.click();
       await expect(
         page
           .locator("div")
@@ -59,17 +56,8 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
       expect(await page.locator("table tbody tr").count()).toBeGreaterThan(0);
     };
 
-    // ── Login + navigate to Sales Order ──────────────────────────────────────
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
-
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await typeInGlobalSearch(page, "sales");
-    await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page
-      .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-      .catch(() => null);
-    await page.locator('[data-testid="MenuTitle__129"]').evaluate((el) => (el as HTMLElement).click());
+    // ── Navigate to Sales Order ──────────────────────────────────────────────
+    await app.sidebar.navigateTo("salesOrder");
 
     await expect(page.locator("table").first()).toBeVisible({ timeout: 15_000 });
 
@@ -84,7 +72,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await openAdvancedFilters();
 
     await clickTabIndexZeroWithText("Column");
-    await page.locator("span.text-gray-700").filter({ hasText: "Organization" }).first().click();
+    await clickOptionButton("Organization");
 
     await page.locator("div[tabindex]").filter({ hasText: "Condition" }).first().click();
     await clickOptionButton("=");
@@ -119,7 +107,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await clickOptionButton("Add condition");
 
     await clickTabIndexZeroWithText("Column", "last");
-    await page.locator("span.text-gray-700").filter({ hasText: "Document No." }).first().click();
+    await clickOptionButton("Document No.");
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/contains/i);
@@ -144,14 +132,12 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await openAdvancedFilters();
 
     await clickOptionButton("Clear all");
-    await page.waitForTimeout(500);
     await clickOptionButton("Apply filters");
-    await page.waitForTimeout(1_000);
 
     await expectAdvancedFiltersClosed();
     await expectRows();
 
-    await expect(page.locator("button.toolbar-button-advanced-filters").first()).toBeVisible();
+    await expect(advancedFiltersButton).toBeVisible();
     console.log("TEST 3: All filters cleared successfully");
 
     // =========================================================================
@@ -162,7 +148,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await openAdvancedFilters();
 
     await clickTabIndexZeroWithText("Column");
-    await page.locator("span.text-gray-700").filter({ hasText: "Document No." }).first().click();
+    await clickOptionButton("Document No.");
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/contains/i);
@@ -182,7 +168,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await orSpan.click();
 
     await clickTabIndexZeroWithText("Column", "last");
-    await page.locator("span.text-gray-700").filter({ hasText: "Total Gross Amount" }).first().click();
+    await clickOptionButton("Total Gross Amount");
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/greater than/i);
