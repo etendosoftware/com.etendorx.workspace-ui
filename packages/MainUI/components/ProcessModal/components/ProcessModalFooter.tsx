@@ -163,7 +163,7 @@ export const ProcessModalFooter = ({
                   onClick={() => runFooterButtonAction(scriptButtonState.actionValues, btn.value, onExecute)}
                   disabled={Boolean(isActionButtonDisabled) || Boolean(scriptButtonState.disabledValues[btn.value])}
                   className="w-49"
-                  data-testid={`ExecuteButton_${btn.value}__761503`}>
+                  data-testid={`process-modal-execute-button-${btn.value}`}>
                   {btn.label}
                 </Button>
               ))
@@ -175,7 +175,7 @@ export const ProcessModalFooter = ({
                 disabled={Boolean(isActionButtonDisabled)}
                 startIcon={getActionButtonContent().icon}
                 className="w-49"
-                data-testid="ExecuteButton__761503">
+                data-testid="process-modal-execute-button">
                 {getActionButtonContent().text}
               </Button>
             ))}

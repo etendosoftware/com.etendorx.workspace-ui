@@ -1922,7 +1922,9 @@ function ProcessDefinitionModalContent({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-bold">{button.name}</h3>
+                <h3 className="text-lg font-bold" data-testid="process-modal-title">
+                  {button.name}
+                </h3>
                 {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
               </div>
               {!scriptButtonState.closeHidden && (
@@ -1930,7 +1932,8 @@ function ProcessDefinitionModalContent({
                   type="button"
                   onClick={handleClose}
                   className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                  disabled={isPending}>
+                  disabled={isPending}
+                  data-testid="process-modal-close-button">
                   <CloseIcon data-testid="CloseIcon__761503" />
                 </button>
               )}
