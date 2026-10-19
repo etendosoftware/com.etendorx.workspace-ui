@@ -187,12 +187,14 @@ record in `registry/data.ts` (look its id up in `referencedata/sampledata/QA_Tes
 pnpm pw:run                                    # whole suite, projects in order
 pnpm pw:one e2e/smoke/03_Procurement/PROa      # one spec, without the project dependencies
 cd playwright-tests && pnpm exec playwright test <spec> --no-deps --repeat-each=5 --retries=0  # stability
+cd playwright-tests && pnpm exec playwright test <spec> --no-deps --workers=1 --headed  # watch it in a browser
 pnpm pw:typecheck                              # tsc --noEmit
 pnpm check:e2e                                 # convention ratchet
 pnpm test:e2e-tooling                          # unit tests of the ratchet and the reporter
 ```
 
-Locally the suite needs the new UI on `http://localhost:3000` (`PLAYWRIGHT_BASE_URL` to change it) built from
+Locally the suite needs the new UI on `http://localhost:3000` (`PLAYWRIGHT_BASE_URL` to change it;
+`PLAYWRIGHT_IFRAME_URL`, `PLAYWRIGHT_USER` and `PLAYWRIGHT_PASSWORD` also exist) built from
 the branch under test, and Etendo Classic with the QA_Testing sample data and no extra modules (the layout
 of some processes changes with other dependencies). CI installs that environment from scratch on every run.
 

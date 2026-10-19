@@ -58,11 +58,13 @@ Only `data-testid` attributes, plus two application fixes found while unblocking
 
 - Local run: new UI on `http://localhost:3000` (`PLAYWRIGHT_BASE_URL` to change it) built from the branch under
   test, Etendo Classic with the QA_Testing sample data and without extra modules (some process layouts change
-  with other dependencies). Credentials `admin`/`admin` unless `CYPRESS_USER`/`CYPRESS_PASSWORD` are set.
+  with other dependencies). Credentials `admin`/`admin`.
+- Environment variables (all optional): `PLAYWRIGHT_BASE_URL` (new UI), `PLAYWRIGHT_IFRAME_URL` (Classic host),
+  `PLAYWRIGHT_USER`, `PLAYWRIGHT_PASSWORD`. The former `CYPRESS_*` names are still read as fallbacks.
 - CI: `com.etendoerp.jenkins.pipelines/playwright-automation/Jenkinsfile`. The static checks stage runs a script
   only when the branch's `playwright-tests/package.json` defines it, so older branches keep working.
 
-## Differences with the Cypress suite / Classic
+## Differences with the former Cypress suite / Classic
 
 - The three smoke flows skipped since the Cypress migration now run:
   - **SALa** (order → shipment → invoice → post): Classic's "Create Lines From" of a Goods Shipment needs the
@@ -84,4 +86,4 @@ Only `data-testid` attributes, plus two application fixes found while unblocking
 | `playwright-tests/e2e/support/registry/` | Windows, tabs, sample data, field ids |
 | `playwright-tests/scripts/check-e2e.mjs` | Ratchet (`pnpm check:e2e`) |
 | `playwright-tests/reporters/flaky-summary.mjs` | Flaky test summary |
-| `playwright-tests/MIGRATION_REPORT.md` | Cypress migration notes and status of the formerly skipped specs |
+| `playwright-tests/MIGRATION_REPORT.md` | Cypress migration notes and status of the formerly skipped specs (the Cypress suite was removed in ETP-5798; see the git history) |

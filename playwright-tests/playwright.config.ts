@@ -1,36 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
-import { resolve } from "node:path";
-import { readFileSync } from "node:fs";
 
-// Load .env from cypress-tests (same env vars)
-// NOTE: disabled — cypress-tests/.env may have stale credentials that differ
-// from the current backend. Values are set via PLAYWRIGHT_BASE_URL /
-// CYPRESS_BASE_URL / CYPRESS_IFRAME_URL env vars or use the defaults below.
-const loadEnv = () => {
-  try {
-    const envFile = resolve(process.cwd(), "../cypress-tests/.env");
-    const content = readFileSync(envFile, "utf8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("#")) {
-        const [key, ...rest] = trimmed.split("=");
-        // Only load non-credential env vars to avoid stale password overrides
-        if (key && !process.env[key] && key !== "CYPRESS_PASSWORD" && key !== "CYPRESS_USER") {
-          process.env[key] = rest.join("=");
-        }
-      }
-    }
-  } catch {
-    // no .env file
-  }
-};
+/**
+ * First environment variable set among `names`, otherwise `fallback`. The CYPRESS_* names are kept
+ * as fallbacks for environments that still export them.
+ */
+const envOr = (names: string[], fallback: string): string =>
+  names.map((name) => process.env[name]).find((value) => value) ?? fallback;
 
-loadEnv();
-
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.CYPRESS_BASE_URL || "http://localhost:3000";
-const IFRAME_URL = process.env.CYPRESS_IFRAME_URL || "localhost:8080";
-const DEFAULT_USER = process.env.CYPRESS_USER || "admin";
-const DEFAULT_PASSWORD = process.env.CYPRESS_PASSWORD || "admin";
+const BASE_URL = envOr(["PLAYWRIGHT_BASE_URL", "CYPRESS_BASE_URL"], "http://localhost:3000");
+const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "localhost:8080");
+const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
+const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
 export default defineConfig({
   testDir: "./e2e",
