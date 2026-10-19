@@ -1,8 +1,8 @@
 {
-  "waitForTimeout": 186,
-  "forceTrue": 79,
-  "swallowedCatch": 94,
-  "hashTestId": 23,
-  "cssChainSelector": 118,
-  "nativeValueSetter": 13
+  "waitForTimeout": 6,
+  "forceTrue": 6,
+  "swallowedCatch": 2,
+  "hashTestId": 0,
+  "cssChainSelector": 0,
+  "nativeValueSetter": 0
 }
