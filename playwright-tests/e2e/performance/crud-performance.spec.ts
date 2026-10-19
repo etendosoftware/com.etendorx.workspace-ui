@@ -1,5 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginToEtendo, closeToastIfPresent } from "../helpers/etendo.helpers";
+import { Auth } from "../support/components/Auth";
+import { Toast } from "../support/components/Toast";
+import { Sidebar } from "../support/components/Sidebar";
+
+const MENU_TITLE_PREFIX = "MenuTitle__";
 
 // ─── Thresholds ───────────────────────────────────────────────────────────────
 // Industry benchmarks: SAP <2s dialog, Odoo <2-3s lists, Nielsen 1s/10s limits.
@@ -48,23 +52,7 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
 // Without it the function returns immediately after the evaluate() click, which
 // bypasses Playwright's navigation tracking and can cause setup timeouts in CI.
 async function openWindowBySearch(page: Page, searchText: string, menuTestId: string, readyLocator?: string) {
-  const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-
-  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-  }
-
-  await drawerInput.click({ force: true });
-  // keyboard.type() writes into the focused element without actionability pre-checks.
-  await page.keyboard.type(searchText);
-  await page.locator(`[data-testid="${menuTestId}"]`).waitFor({ state: "visible", timeout: 10_000 });
-  await page
-    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-    .catch(() => null);
-  await page
-    .locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`)
-    .evaluate((el) => (el as HTMLElement).click());
+  await new Sidebar(page).openMenuEntry(searchText, menuTestId.replace(MENU_TITLE_PREFIX, ""));
 
   if (readyLocator) {
     await page.locator(readyLocator).first().waitFor({ state: "visible", timeout: 30_000 });
@@ -75,7 +63,7 @@ async function openWindowBySearch(page: Page, searchText: string, menuTestId: st
 
 test.describe("CRUD Performance Tests", () => {
   test.beforeEach(async ({ page }) => {
-    await loginToEtendo(page);
+    await new Auth(page).login();
   });
 
   // ── Window Open Performance ────────────────────────────────────────────────
@@ -98,13 +86,7 @@ test.describe("CRUD Performance Tests", () => {
     });
 
     test.skip("should open Business Partner window within acceptable time", async ({ page }) => {
-      const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-      if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-        await page.locator(".h-14 > div > .transition > svg").click();
-        await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-      }
-      await drawerInput.click({ force: true });
-      await page.keyboard.type("business");
+      await new Sidebar(page).search("business");
       await page
         .locator('[data-testid^="MenuTitle"]')
         .filter({ hasText: "Business Partner" })
@@ -169,7 +151,7 @@ test.describe("CRUD Performance Tests", () => {
       await page.locator("[data-sonner-toast]").waitFor({ state: "visible", timeout: 30_000 });
       assertPerformance(Date.now() - start, "Sales Order save", THRESHOLDS.saveRecordComplex);
 
-      await closeToastIfPresent(page);
+      await new Toast(page).closeAll();
     });
 
     test.skip("should save a Product record within acceptable time", async ({ page }) => {
@@ -191,7 +173,7 @@ test.describe("CRUD Performance Tests", () => {
       await page.locator("[data-sonner-toast]").waitFor({ state: "visible", timeout: 30_000 });
       assertPerformance(Date.now() - start, "Product save", THRESHOLDS.saveRecord);
 
-      await closeToastIfPresent(page);
+      await new Toast(page).closeAll();
     });
   });
 
@@ -308,7 +290,7 @@ test.describe("CRUD Performance Tests", () => {
 
         await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
         await page.locator("[data-sonner-toast]").waitFor({ state: "visible", timeout: 30_000 });
-        await closeToastIfPresent(page);
+        await new Toast(page).closeAll();
         await page.waitForTimeout(1_000);
       }
 
