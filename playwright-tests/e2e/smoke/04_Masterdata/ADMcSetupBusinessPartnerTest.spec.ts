@@ -1,159 +1,79 @@
-import { test } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  navigateByMenuTestId,
-  clickNewRecord,
-  closeToastIfPresent,
-} from "../../helpers/etendo.helpers";
-import { uniqueValue } from "../../support/registry/data";
+import { test } from "../../support/fixtures";
+
+/** Toolbar "new" button of the Invoice Schedule window (AD toolbar button key). */
+const NEW_BUTTON_KEY = "33864F5267194AB99C14BD0CE9884FF5";
 
 test.describe("Master Data - Business Partner Setup @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
-
-  test("Create payment terms, invoice schedule and configure customer", async ({ page }) => {
-    // ── Local helpers ────────────────────────────────────────────────────────
-    const fillByAriaLabel = async (label: string, value: string) => {
-      const input = page.locator(`[aria-label="${label}"]:visible`).first();
-      await input.waitFor({ state: "visible", timeout: 15_000 });
-      await input.clear();
-      await input.fill(value);
-    };
-
-    const clickByAriaLabel = async (label: string) => {
-      await page.locator(`[aria-label="${label}"]:visible`).first().click();
-    };
-
-    const clickSaveHeader = async () => {
-      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible > span').click();
-    };
-
+  test("Create payment terms, invoice schedule and configure customer", async ({ app, data, page }) => {
     // Records created by this test get unique keys so it can run on a reused database
-    const paymentTermKey = uniqueValue("60d/10");
-    const paymentTermName = uniqueValue("60 days");
-    const paymentTermLongKey = uniqueValue("120d");
-    const paymentTermLongName = uniqueValue("120 days");
-    const scheduleName = uniqueValue("Schedule Weekly");
-    const categoryKey = uniqueValue("WHS");
-    const categoryName = uniqueValue("Wholesale");
-    const businessPartnerKey = uniqueValue("Golden House");
-
-    // ── Login ────────────────────────────────────────────────────────────────
-    await loginToEtendo(page);
-    await page.waitForTimeout(500);
-
-    await selectRoleOrgWarehouse(page);
+    const paymentTermKey = data.uniqueValue("60d/10");
+    const paymentTermName = data.uniqueValue("60 days");
+    const paymentTermLongKey = data.uniqueValue("120d");
+    const paymentTermLongName = data.uniqueValue("120 days");
+    const scheduleName = data.uniqueValue("Schedule Weekly");
+    const categoryKey = data.uniqueValue("WHS");
+    const categoryName = data.uniqueValue("Wholesale");
+    const businessPartnerKey = data.uniqueValue("Golden House");
 
     // ── Payment Terms window ─────────────────────────────────────────────────
-    await navigateByMenuTestId(page, "paym", "MenuTitle__127");
-    await page.waitForTimeout(500);
+    await app.sidebar.navigateTo("paymentTerm");
 
     // First payment term: 60d/10
-    await clickNewRecord(page);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", paymentTermKey);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", paymentTermName);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Offset Month Due", "2");
-    await page.waitForTimeout(500);
-    await clickByAriaLabel("Overdue Payment Days Rule");
-    await page.waitForTimeout(500);
-    await clickByAriaLabel("Fixed Due Date");
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Maturity Date 1", "10");
-    await page.waitForTimeout(500);
-    await clickSaveHeader();
-    await page.waitForTimeout(500);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(500);
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", paymentTermKey);
+    await app.field.fill("Name", paymentTermName);
+    await app.field.fill("Offset Month Due", "2");
+    await page.locator('[aria-label="Overdue Payment Days Rule"]:visible').first().click();
+    await page.locator('[aria-label="Fixed Due Date"]:visible').first().click();
+    await app.field.fill("Maturity Date 1", "10");
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // Close the record view
-    await page.locator('[data-testid="CloseIcon__cfc328"]').click();
-    await page.waitForTimeout(500);
+    await app.page.getByTestId("status-bar-container").getByTestId("icon-button").click();
 
     // Second payment term: 120d
-    await clickNewRecord(page);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", paymentTermLongKey);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", paymentTermLongName);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Offset Month Due", "04");
-    await page.waitForTimeout(500);
-    await clickSaveHeader();
-    await page.waitForTimeout(500);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(500);
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", paymentTermLongKey);
+    await app.field.fill("Name", paymentTermLongName);
+    await app.field.fill("Offset Month Due", "04");
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Invoice Schedule window ──────────────────────────────────────────────
-    await navigateByMenuTestId(page, "invoi", "MenuTitle__133");
-    await page.waitForTimeout(500);
+    await app.sidebar.navigateTo("invoiceSchedule");
+    await page.getByTestId(`IconButtonWithText__${NEW_BUTTON_KEY}`).filter({ visible: true }).first().click();
+    await app.field.fill("Name", scheduleName);
 
-    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible').first().click();
-    await page.waitForTimeout(500);
+    // Invoice Frequency = W (Weekly), Day of the Week Cut-off = 1
+    await app.field.selectById("Invoice Frequency", "W");
+    await app.field.selectById("Day of the Week Cut-off", "1");
 
-    await fillByAriaLabel("Name", scheduleName);
-    await page.waitForTimeout(500);
-
-    // Invoice Frequency = W (Weekly)
-    await page.locator('[aria-label="Invoice Frequency"] > div[tabindex="0"]').click();
-    await page.waitForTimeout(500);
-    await page.locator('[data-testid="OptionItem__W"]').first().click();
-    await page.waitForTimeout(500);
-
-    // Day of the Week Cut-off = 1
-    await page.locator('[aria-label="Day of the Week Cut-off"] > div[tabindex="0"]').click();
-    await page.waitForTimeout(500);
-    await page.locator('[data-testid="OptionItem__1"]').first().click();
-    await page.waitForTimeout(500);
-
-    await clickSaveHeader();
-    await page.waitForTimeout(500);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(500);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Business Partner Category window ─────────────────────────────────────
-    await navigateByMenuTestId(page, "busine", "MenuTitle__232");
-    await page.waitForTimeout(500);
-
-    await clickNewRecord(page);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", categoryKey);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Name", categoryName);
-    await page.waitForTimeout(500);
-    await clickSaveHeader();
-    await page.waitForTimeout(500);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(500);
+    await app.sidebar.navigateTo("businessPartnerCategory");
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", categoryKey);
+    await app.field.fill("Name", categoryName);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Business Partner window ──────────────────────────────────────────────
-    await navigateByMenuTestId(page, "busi", "MenuTitle__110");
-    await page.waitForTimeout(500);
+    await app.sidebar.navigateTo("businessPartner");
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", businessPartnerKey);
+    await app.field.fill("Commercial Name", "Oragadam Gold House");
 
-    await clickNewRecord(page);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Search Key", businessPartnerKey);
-    await page.waitForTimeout(500);
-    await fillByAriaLabel("Commercial Name", "Oragadam Gold House");
-    await page.waitForTimeout(500);
-
-    // Business Partner Category — autocomplete with typeahead + Enter
-    await page.locator('[aria-label="Business Partner Category"] > div[tabindex="0"]').click();
-    await page.waitForTimeout(500);
-    const categorySearch = page.locator(".fixed > div.p-2 > .w-full").first();
+    // Business Partner Category — typeahead + Enter
+    await app.field.selector("Business Partner Category").click();
+    const categorySearch = page.locator('input[aria-label="Search options"]:visible').first();
     await categorySearch.waitFor({ state: "visible", timeout: 10_000 });
-    await categorySearch.clear();
     await categorySearch.fill(categoryName);
     await categorySearch.press("Enter");
-    await page.waitForTimeout(500);
 
-    await clickSaveHeader();
-    await page.waitForTimeout(500);
-    await closeToastIfPresent(page);
+    await app.toolbar.save();
+    await app.toast.closeAll();
   });
 });
