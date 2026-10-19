@@ -48,7 +48,9 @@
     "pw:ui": "cd playwright-tests && pnpm pw:ui",
     "pw:report": "cd playwright-tests && pnpm pw:report",
     "pw:one": "cd playwright-tests && pnpm pw:one",
-    "pw:typecheck": "cd playwright-tests && pnpm typecheck"
+    "pw:typecheck": "cd playwright-tests && pnpm typecheck",
+    "check:e2e": "cd playwright-tests && pnpm check:e2e",
+    "test:e2e-tooling": "cd playwright-tests && pnpm test:tooling"
   },
   "keywords": [],
   "author": "",
