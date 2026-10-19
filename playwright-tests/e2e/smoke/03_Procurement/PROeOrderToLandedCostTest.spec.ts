@@ -102,16 +102,20 @@ test.describe("Purchase Order to Landed Cost flow @smoke", () => {
     }
 
     await app.tabs.open("Process Monitor");
-    const successfulRuns = page
-      .getByTestId(`Tab__${TABS.PROCESS_REQUEST_MONITOR}`)
-      .locator("tbody tr")
-      .filter({ hasText: SUCCESS_STATUS });
-    const runsBefore = await successfulRuns.count();
+    // The monitor lists the newest run first and renders only the first rows, so compare the newest
+    // run before and after scheduling instead of counting rows. A reused request has run before.
+    const newestRun = page.getByTestId(`Tab__${TABS.PROCESS_REQUEST_MONITOR}`).locator("tbody tr").first();
+    let newestRunBefore = "";
+    if (requestExists) {
+      await newestRun.waitFor({ state: "visible", timeout: 20_000 });
+      newestRunBefore = await newestRun.innerText();
+    }
     await app.toolbar.process(requestExists ? RESCHEDULE_PROCESS : SCHEDULE_PROCESS);
     await app.toast.closeAll();
     await expect(async () => {
       await app.toolbar.inTab(TABS.PROCESS_REQUEST_MONITOR).button("refresh").click();
-      expect(await successfulRuns.count()).toBeGreaterThan(runsBefore);
+      await expect(newestRun).not.toHaveText(newestRunBefore, { timeout: 2_000 });
+      await expect(newestRun).toContainText(SUCCESS_STATUS, { timeout: 2_000 });
     }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
 
     // ── Step 13: New Landed Cost ──────────────────────────────────────────────
