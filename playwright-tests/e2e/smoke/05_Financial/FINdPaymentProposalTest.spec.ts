@@ -17,7 +17,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
 
   test(
     "Creates two Purchase Invoices, completes them, selects both in one go and generates payment",
-    { timeout: 360_000 },
     async ({ page }) => {
       // This test creates 2 invoices + a Payment Proposal — allow extra time
 

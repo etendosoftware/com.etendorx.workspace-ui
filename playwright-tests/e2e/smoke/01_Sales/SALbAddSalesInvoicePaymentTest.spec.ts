@@ -13,7 +13,7 @@ test.describe("Sales Invoice - Add Payment", () => {
     await cleanupEtendo(page);
   });
 
-  test("should create a sales invoice, complete it and add payment", { timeout: 300_000 }, async ({ page }) => {
+  test("should create a sales invoice, complete it and add payment", async ({ page }) => {
     // ── Login & role ──────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);

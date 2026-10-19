@@ -19,7 +19,6 @@ test.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
 
   test(
     "should create a sales order with lines, create goods shipment, complete lines from order, create invoice, complete lines from order and post",
-    { timeout: 360_000 },
     async ({ page }) => {
       // ── Login ────────────────────────────────────────────────────────────────
       await loginToEtendo(page);

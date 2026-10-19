@@ -19,7 +19,6 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
   test(
     "Navigates to Sales Order, Goods Shipment and Purchase Invoice, verifying LinkedItems navigation",
-    { timeout: 360_000 },
     async ({ page }) => {
       await loginToEtendo(page);
       await selectRoleOrgWarehouse(page);

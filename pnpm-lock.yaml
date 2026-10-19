@@ -471,6 +471,12 @@ importers:
       '@playwright/test':
         specifier: 1.59.1
         version: 1.59.1
+      '@types/node':
+        specifier: ^22.7.8
+        version: 22.17.0
+      typescript:
+        specifier: ^5.2.2
+        version: 5.9.2
 
 packages:
 

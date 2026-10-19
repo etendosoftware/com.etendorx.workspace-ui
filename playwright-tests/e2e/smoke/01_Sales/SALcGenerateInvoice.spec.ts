@@ -15,7 +15,6 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
 
   test(
     "Generates invoices from processed sales orders and shipments for multiple customers",
-    { timeout: 720_000 },
     async ({ page }) => {
       // ── Login & role ──────────────────────────────────────────────────────────
       await loginToEtendo(page);

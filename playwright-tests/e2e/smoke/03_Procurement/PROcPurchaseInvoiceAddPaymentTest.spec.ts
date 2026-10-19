@@ -15,7 +15,6 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
 
   test(
     "Completes a Purchase Invoice, adds payment and validates payment details",
-    { timeout: 360_000 },
     async ({ page }) => {
       // ── Login ────────────────────────────────────────────────────────────────
       await loginToEtendo(page);

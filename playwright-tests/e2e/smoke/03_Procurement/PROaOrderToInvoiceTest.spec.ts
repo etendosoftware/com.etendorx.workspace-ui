@@ -19,7 +19,6 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
   test(
     "Completes Purchase Order, Goods Receipt and posts the Vendor Invoice",
-    { timeout: 360_000 },
     async ({ page }) => {
       // ── Login ────────────────────────────────────────────────────────────────
       await loginToEtendo(page);

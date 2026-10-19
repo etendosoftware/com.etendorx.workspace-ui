@@ -47,7 +47,8 @@
     "pw:run:smoke": "cd playwright-tests && pnpm pw:run:smoke",
     "pw:ui": "cd playwright-tests && pnpm pw:ui",
     "pw:report": "cd playwright-tests && pnpm pw:report",
-    "pw:one": "cd playwright-tests && pnpm pw:one"
+    "pw:one": "cd playwright-tests && pnpm pw:one",
+    "pw:typecheck": "cd playwright-tests && pnpm typecheck"
   },
   "keywords": [],
   "author": "",

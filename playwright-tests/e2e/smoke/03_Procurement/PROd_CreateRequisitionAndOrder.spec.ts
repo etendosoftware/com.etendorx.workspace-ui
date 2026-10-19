@@ -18,7 +18,6 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
 
   test(
     "Processes a requisition and creates a Purchase Order from Manage Requisitions",
-    { timeout: 360_000 },
     async ({ page }) => {
       // ── Login ────────────────────────────────────────────────────────────────
       await loginToEtendo(page);

@@ -13,7 +13,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await cleanupEtendo(page);
   });
 
-  test("Create payment terms, invoice schedule and configure customer", { timeout: 360_000 }, async ({ page }) => {
+  test("Create payment terms, invoice schedule and configure customer", async ({ page }) => {
     // ── Local helpers ────────────────────────────────────────────────────────
     const fillByAriaLabel = async (label: string, value: string) => {
       const input = page.locator(`[aria-label="${label}"]:visible`).first();

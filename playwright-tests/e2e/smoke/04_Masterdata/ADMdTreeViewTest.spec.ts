@@ -11,7 +11,7 @@ test.describe("Master Data - Hierarchical Tree View @smoke", () => {
     await cleanupEtendo(page);
   });
 
-  test("Product Categories shows tree toggle and activates tree mode", { timeout: 120_000 }, async ({ page }) => {
+  test("Product Categories shows tree toggle and activates tree mode", async ({ page }) => {
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
 

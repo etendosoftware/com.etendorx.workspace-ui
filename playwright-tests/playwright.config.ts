@@ -42,15 +42,11 @@ export default defineConfig({
   // workers run spec files in parallel.
   workers: 2,
   fullyParallel: false,
-  // Jenkins shares the CI box across jobs; under load, API responses that are
-  // normally instant can exceed a helper's fixed timeout once. Retrying lets
-  // a transient slow response self-heal instead of failing the whole suite.
-  retries: process.env.CI ? 2 : 0,
-
-  // Retry transient failures. On CI the Chromium launch can SIGSEGV in the
-  // container (see --no-zygote note below), and it lands on a random spec each
-  // run — a retry clears it. Real regressions fail all attempts. 0 locally so
-  // flakes surface during development.
+  // Retry transient failures on CI. Jenkins shares the CI box across jobs: under
+  // load, API responses that are normally instant can exceed a helper's timeout
+  // once, and the Chromium launch can SIGSEGV in the container (see --no-zygote
+  // note below) on a random spec. A retry clears both; real regressions fail all
+  // attempts. 0 locally so flakes surface during development.
   retries: process.env.CI ? 2 : 0,
 
   use: {

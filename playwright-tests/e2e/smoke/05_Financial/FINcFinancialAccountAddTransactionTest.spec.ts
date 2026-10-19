@@ -17,7 +17,6 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
 
   test(
     "Creates Purchase Invoice, completes it, verifies Payment Out Plan and adds Financial Account transaction",
-    { timeout: 360_000 },
     async ({ page }) => {
       // ── Login ────────────────────────────────────────────────────────────────
       await loginToEtendo(page);

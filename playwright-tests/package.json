@@ -8,9 +8,12 @@
     "pw:run:smoke": "playwright test --grep @smoke",
     "pw:ui": "playwright test --ui",
     "pw:report": "playwright show-report",
-    "pw:one": "playwright test --no-deps"
+    "pw:one": "playwright test --no-deps",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@playwright/test": "1.59.1"
+    "@playwright/test": "1.59.1",
+    "@types/node": "^22.7.8",
+    "typescript": "^5.2.2"
   }
 }
