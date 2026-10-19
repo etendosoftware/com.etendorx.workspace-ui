@@ -33,7 +33,7 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
     console.log(
       `⚠️  ${label}: ${elapsed}ms (WARNING — exceeds industry standard of ${warning}ms, max tolerable: ${failure}ms)`
     );
-    console.log(`⚠️  INDUSTRY BENCHMARK: SAP < 2s, Odoo < 2-3s, Nielsen limit: 1s flow / 10s attention`);
+    console.log("⚠️  INDUSTRY BENCHMARK: SAP < 2s, Odoo < 2-3s, Nielsen limit: 1s flow / 10s attention");
   }
   expect(elapsed, `${label} must be under ${failure}ms (max tolerable)`).toBeLessThan(failure);
 }

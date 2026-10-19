@@ -18,6 +18,10 @@ const THRESHOLDS = {
 };
 
 type Threshold = { warning: number; failure: number };
+/** Window with the Web Vitals the init scripts collect. */
+type VitalsWindow = Window & { __LCP__?: number; __CLS__?: number };
+/** Layout shift entry (not in the TypeScript DOM library). */
+type LayoutShift = PerformanceEntry & { hadRecentInput: boolean; value: number };
 
 // ─── Performance assertion ────────────────────────────────────────────────────
 
@@ -74,8 +78,7 @@ test.describe("Rendering Performance Tests", () => {
       // addInitScript runs before the page loads on every subsequent navigation,
       // so the PerformanceObserver is active from the very first paint event.
       await page.addInitScript(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const w = window as any;
+        const w = window as VitalsWindow;
         w.__LCP__ = 0;
         const observer = new PerformanceObserver((list) => {
           const entries = list.getEntries();
@@ -91,22 +94,19 @@ test.describe("Rendering Performance Tests", () => {
       // Allow 3s for LCP to stabilise (late image loads, lazy components).
       await page.waitForTimeout(3_000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lcp = await page.evaluate(() => ((window as any).__LCP__ as number) || 0);
+      const lcp = await page.evaluate(() => (window as VitalsWindow).__LCP__ || 0);
       console.log(`LCP: ${lcp.toFixed(2)}ms`);
       assertPerformance(lcp, "Largest Contentful Paint (LCP)", THRESHOLDS.lcp);
     });
 
     test("should have acceptable Cumulative Layout Shift (CLS)", async ({ page }) => {
       await page.addInitScript(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const w = window as any;
+        const w = window as VitalsWindow;
         w.__CLS__ = 0;
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const e = entry as any;
-            if (!e.hadRecentInput) w.__CLS__ += e.value;
+            const e = entry as LayoutShift;
+            if (!e.hadRecentInput) w.__CLS__ = (w.__CLS__ ?? 0) + e.value;
           }
         });
         observer.observe({ type: "layout-shift", buffered: true });
@@ -118,8 +118,7 @@ test.describe("Rendering Performance Tests", () => {
       // Allow 5s for layout shifts to accumulate and settle.
       await page.waitForTimeout(5_000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cls = await page.evaluate(() => ((window as any).__CLS__ as number) || 0);
+      const cls = await page.evaluate(() => (window as VitalsWindow).__CLS__ || 0);
       console.log(`CLS Score: ${cls.toFixed(4)}`);
       // CLS is a unitless ratio — threshold is 0.25 (Google Web Vitals "poor" boundary).
       expect(cls, "CLS must be under 0.25 (Google Web Vitals threshold)").toBeLessThan(0.25);

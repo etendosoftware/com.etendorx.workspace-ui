@@ -3,6 +3,9 @@ import { Auth } from "../support/components/Auth";
 import { SIDEBAR_TEST_IDS } from "../support/components";
 import { Sidebar } from "../support/components/Sidebar";
 
+/** `performance.memory` is a non-standard Chrome-only API. */
+type ChromePerformance = Performance & { memory?: { usedJSHeapSize: number } };
+
 // ─── Drawer helper ────────────────────────────────────────────────────────────
 // Opens the sidebar drawer if it is not already open.
 
@@ -143,8 +146,7 @@ test.describe("Stress Tests", () => {
       await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
 
       // performance.memory is a non-standard Chrome-only API — skip gracefully in other browsers.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const initialMemory = await page.evaluate(() => (performance as any).memory ?? null);
+      const initialMemory = await page.evaluate(() => (performance as ChromePerformance).memory ?? null);
       if (!initialMemory) {
         console.log("Performance.memory API not available (non-Chrome browser), skipping");
         return;
@@ -159,8 +161,7 @@ test.describe("Stress Tests", () => {
         await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const finalMemory = await page.evaluate(() => (performance as any).memory ?? null);
+      const finalMemory = await page.evaluate(() => (performance as ChromePerformance).memory ?? null);
       if (finalMemory) {
         const finalHeap = finalMemory.usedJSHeapSize as number;
         const growthMB = (finalHeap - initialHeap) / 1024 / 1024;
