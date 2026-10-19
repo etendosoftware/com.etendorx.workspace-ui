@@ -12,7 +12,7 @@ import {
   captureDocumentNumber,
 } from "../../helpers/etendo.helpers";
 
-test.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
+test.skip("Sales Orders - Create, Complete Shipment and Invoice @smoke", () => {
   test.beforeEach(async ({ page }) => {
     await cleanupEtendo(page);
   });

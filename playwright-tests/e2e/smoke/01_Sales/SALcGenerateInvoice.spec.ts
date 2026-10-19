@@ -8,7 +8,7 @@ import {
   expectSuccessToast,
 } from "../../helpers/etendo.helpers";
 
-test.describe("Sales flow - Generate invoices from multiple sales orders", () => {
+test.describe("Sales flow - Generate invoices from multiple sales orders @smoke", () => {
   test.beforeEach(async ({ page }) => {
     await cleanupEtendo(page);
   });

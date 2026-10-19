@@ -8,7 +8,7 @@ import {
   navigateToSalesInvoice,
 } from "../../helpers/etendo.helpers";
 
-test.describe("Sales Invoice - Add Payment", () => {
+test.describe("Sales Invoice - Add Payment @smoke", () => {
   test.beforeEach(async ({ page }) => {
     await cleanupEtendo(page);
   });

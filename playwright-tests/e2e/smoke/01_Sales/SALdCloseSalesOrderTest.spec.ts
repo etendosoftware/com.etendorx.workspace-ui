@@ -7,7 +7,7 @@ import {
   closeToastIfPresent,
 } from "../../helpers/etendo.helpers";
 
-test.describe("Sales Orders - Create, Complete and Close", () => {
+test.describe("Sales Orders - Create, Complete and Close @smoke", () => {
   test.beforeEach(async ({ page }) => {
     await cleanupEtendo(page);
   });
