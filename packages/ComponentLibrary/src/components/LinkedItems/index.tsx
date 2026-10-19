@@ -208,6 +208,7 @@ export const LinkedItems = memo(
           {items.map((item) => (
             <div
               key={item.id}
+              data-testid={`LinkedItem__${item.id}`}
               onClick={() => handleItemClick(item)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
