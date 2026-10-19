@@ -11,7 +11,17 @@ export function atLevel(locator: Locator, level: TabLevel): Locator {
   return level === "header" ? locator.first() : locator.last();
 }
 
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 /** Builds a regular expression that matches `text` exactly, escaping its special characters. */
 export function exactText(text: string): RegExp {
-  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+  return new RegExp(`^${escapeRegExp(text)}$`);
+}
+
+/**
+ * Builds a regular expression that finds `text` inside a longer text, but not as the tail of a
+ * longer value: "1 (Spain)" is found in "Payment Method 1 (Spain)", not in "2.1 (Spain)".
+ */
+export function standaloneText(text: string): RegExp {
+  return new RegExp(`(?<![\\w.])${escapeRegExp(text)}`);
 }

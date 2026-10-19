@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { SampleRecord } from "../registry/data";
 import { runAndWaitForFormInitialization } from "../wait";
-import { atLevel, exactText, type TabLevel } from "./level";
+import { atLevel, exactText, standaloneText, type TabLevel } from "./level";
 
 const FIELD_TIMEOUT = 15_000;
 const CALLOUT_TIMEOUT = 60_000;
@@ -9,7 +9,8 @@ const VERIFY_TIMEOUT = 2_000;
 const RETRY_TIMEOUT = 30_000;
 /** Search box shown inside the dropdown of selectors with many options (list or table selectors). */
 const OPTION_SEARCH = 'input[aria-label="Search options"]:visible, input[placeholder="Search..."]:visible';
-const OPTION_ITEMS = '[data-testid^="OptionItem__"]';
+const OPTION_ITEM_PREFIX = "OptionItem__";
+const OPTION_ITEMS = `[data-testid^="${OPTION_ITEM_PREFIX}"]`;
 
 /** Options to locate a field when the header and a child tab are both on screen. */
 export interface FieldOptions {
@@ -101,23 +102,28 @@ export class FormField {
   async selectById(label: string, optionId: string, options: SelectOptions = {}): Promise<void> {
     await this.openSelector(label, options);
     await this.typeInOptionSearch(options.search);
-    await this.clickOption(this.page.getByTestId(`OptionItem__${optionId}`), options.callout);
+    await this.clickOption(this.page.getByTestId(`${OPTION_ITEM_PREFIX}${optionId}`), options.callout);
   }
 
   /**
-   * Picks an option with the keyboard: searches, waits for the option and presses ArrowDown +
-   * Enter in the search box. Use it where the search box overlaps the options, so a pointer
-   * click would not reach the option (product selectors). With `callout`, waits for the
-   * FormInitialization response the selection fires (e.g. the product price), listening from
-   * right before the key press so an earlier response is not taken for it.
+   * Picks an option with the keyboard: searches, waits for the option, moves down to it with
+   * ArrowDown and presses Enter. The dropdown highlights its first option when it opens, and the
+   * search can match several options ("1 (Spain)" also matches "2.1 (Spain)"), so the option is
+   * reached by its position among the matches. Use
+   * it where the search box overlaps the options, so a pointer click would not reach the option
+   * (product selectors). With `callout`, waits for the FormInitialization response the selection
+   * fires (e.g. the product price), listening from right before the key press so an earlier
+   * response is not taken for it.
    */
   async pickWithKeyboard(label: string, optionId: string, options: KeyboardPickOptions): Promise<void> {
     await this.openSelector(label, options);
     await this.typeInOptionSearch(options.search);
-    await this.page.getByTestId(`OptionItem__${optionId}`).waitFor({ state: "visible", timeout: FIELD_TIMEOUT });
+    const position = await this.visibleOptionIndex(optionId);
     const search = this.page.locator(OPTION_SEARCH).first();
     const select = async () => {
-      await search.press("ArrowDown");
+      for (let press = 0; press < position; press++) {
+        await search.press("ArrowDown");
+      }
       await this.page.keyboard.press("Enter");
     };
     if (options.callout) {
@@ -135,14 +141,14 @@ export class FormField {
   async pickWithKeyboardAndVerify(label: string, record: SampleRecord, options: FieldOptions = {}): Promise<void> {
     await expect(async () => {
       await this.pickWithKeyboard(label, record.id, { ...options, search: record.name });
-      await this.expectToContain(label, record.name, { ...options, timeout: VERIFY_TIMEOUT });
+      await this.expectToContain(label, standaloneText(record.name), { ...options, timeout: VERIFY_TIMEOUT });
     }).toPass({ timeout: RETRY_TIMEOUT });
   }
 
   /** Asserts the text shown by a field (selected option or input value). */
   async expectToContain(
     label: string,
-    text: string,
+    text: string | RegExp,
     { level = "header", timeout }: FieldOptions & { timeout?: number } = {}
   ): Promise<void> {
     await expect(atLevel(this.page.locator(`[aria-label="${label}"]:visible`), level)).toContainText(text, {
@@ -159,6 +165,17 @@ export class FormField {
       ? this.page.getByTestId(`ChevronDown__${options.fieldId}`)
       : this.selector(label, options);
     await trigger.first().click({ timeout: FIELD_TIMEOUT });
+  }
+
+  /** Position of an option among the visible ones, once it is shown. */
+  private async visibleOptionIndex(optionId: string): Promise<number> {
+    const testId = `${OPTION_ITEM_PREFIX}${optionId}`;
+    await this.page.getByTestId(testId).waitFor({ state: "visible", timeout: FIELD_TIMEOUT });
+    const shown = await this.page
+      .locator(OPTION_ITEMS)
+      .filter({ visible: true })
+      .evaluateAll((items) => items.map((item) => item.getAttribute("data-testid")));
+    return shown.indexOf(testId);
   }
 
   private async typeInOptionSearch(search: string | undefined): Promise<void> {

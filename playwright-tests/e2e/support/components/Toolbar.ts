@@ -1,5 +1,5 @@
-import type { Locator, Page } from "@playwright/test";
-import { runAndWaitForDatasource } from "../wait";
+import { expect, type Locator, type Page, type Response } from "@playwright/test";
+import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
 import { atLevel, exactText, type TabLevel } from "./level";
 
 /** Toolbar actions; each button carries the semantic class `toolbar-button-<action>`. */
@@ -20,6 +20,16 @@ const NEW_RECORD_KEY = "33864F5267194AB99C14BD0CE9884FF5";
 const PROCESS_MENU_ITEMS = '[data-testid^="ProcessMenuItem__"]:visible';
 const BUTTON_TIMEOUT = 15_000;
 const SAVE_TIMEOUT = 60_000;
+/** The request a form save sends: `_operationType=add` for a new record, `update` otherwise. */
+const SAVE_REQUEST = /\/api\/datasource\/.*_operationType=(add|update)/;
+const NEW_RECORD_SAVE = "_operationType=add";
+/** After saving a new record the form reloads it: a FormInitialization request with its id. */
+const FORM_INITIALIZATION = "FormInitializationComponent";
+const WITH_RECORD_ID = /[?&]ROW_ID=(?!null&|null$)/;
+
+function isSavedRecordReload(url: string): boolean {
+  return url.includes(FORM_INITIALIZATION) && WITH_RECORD_ID.test(url);
+}
 
 /** Toolbar of a tab: record actions and the process menu. */
 export class Toolbar {
@@ -64,11 +74,27 @@ export class Toolbar {
     await this.scope.getByTestId(`IconButton__${NEW_RECORD_KEY}`).filter({ visible: true }).first().click();
   }
 
-  /** Saves the current record once the save button is enabled. */
+  /**
+   * Saves the current record once the save button is enabled, and waits until it is saved. A new
+   * record is then reloaded into the form: the reload overwrites any field changed meanwhile, so
+   * it is awaited too.
+   */
   async save(level: TabLevel = "header"): Promise<void> {
     const button = atLevel(this.scope.locator("button.toolbar-button-save:visible:not([disabled])"), level);
     await button.waitFor({ state: "visible", timeout: SAVE_TIMEOUT });
-    await button.click();
+    let reloaded = false;
+    const onResponse = (response: Response) => {
+      reloaded ||= isSavedRecordReload(response.url());
+    };
+    this.page.on("response", onResponse);
+    try {
+      const saved = await runAndWaitForResponse(this.page, SAVE_REQUEST, () => button.click(), SAVE_TIMEOUT);
+      if (saved.url().includes(NEW_RECORD_SAVE)) {
+        await expect.poll(() => reloaded, { timeout: SAVE_TIMEOUT }).toBe(true);
+      }
+    } finally {
+      this.page.off("response", onResponse);
+    }
   }
 
   /** Opens the process menu of the tab. */

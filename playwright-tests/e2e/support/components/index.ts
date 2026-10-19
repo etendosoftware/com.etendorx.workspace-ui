@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { AttributeSelector } from "./AttributeSelector";
 import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CreateLinesFrom } from "./CreateLinesFrom";
@@ -12,6 +13,7 @@ import { Tabs } from "./Tabs";
 import { Toast } from "./Toast";
 import { Toolbar } from "./Toolbar";
 
+export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
 export { PROCESS_MODAL_TEST_IDS } from "./ProcessModal";
 export { SIDEBAR_TEST_IDS } from "./Sidebar";
@@ -33,6 +35,7 @@ export class App {
   readonly processModal: ProcessModal;
   readonly legacy: LegacyFrame;
   readonly createLinesFrom: CreateLinesFrom;
+  readonly attributeSelector: AttributeSelector;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -46,6 +49,7 @@ export class App {
     this.processModal = new ProcessModal(page);
     this.legacy = new LegacyFrame(page);
     this.createLinesFrom = new CreateLinesFrom(page);
+    this.attributeSelector = new AttributeSelector(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */
