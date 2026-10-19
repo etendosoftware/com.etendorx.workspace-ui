@@ -1,32 +1,20 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  navigateByMenuTestId,
-} from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
+
+const HIERARCHY_ICON = '[data-testid^="HierarchyIcon__"]';
 
 test.describe("Master Data - Hierarchical Tree View @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
-
-  test("Product Categories shows tree toggle and activates tree mode", async ({ page }) => {
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
-
+  test("Product Categories shows tree toggle and activates tree mode", async ({ app, page }) => {
     // Navigate to Product Categories — supports tree mode (category pattern)
-    await navigateByMenuTestId(page, "produc", "MenuTitle__130");
+    await app.sidebar.navigateTo("productCategory");
 
     // Tree toggle button appears in the toolbar for tree-capable windows
-    const treeToggleBtn = page.locator("button.toolbar-button-toggle-tree-view").first();
+    const treeToggleBtn = app.toolbar.button("toggle-tree-view");
     await treeToggleBtn.waitFor({ state: "visible", timeout: 15_000 });
 
     // Activate tree mode
     await treeToggleBtn.click();
 
     // At least one hierarchy icon must be visible in the table rows
-    const hierarchyIcon = page.locator('[data-testid="HierarchyIcon__8ca888"]').first();
-    await expect(hierarchyIcon).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(HIERARCHY_ICON).first()).toBeVisible({ timeout: 15_000 });
   });
 });
