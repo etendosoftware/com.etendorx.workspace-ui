@@ -1,134 +1,49 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  clickOkInLegacyPopup,
-  closeToastIfPresent,
-} from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
+
+const PROCESS_ORDER = "Process Order";
 
 test.describe("Sales Orders - Create, Complete and Close @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
-
-  test("should create a sales order, add lines, complete and close it", async ({ page }) => {
-    // ── Login & role ──────────────────────────────────────────────────────────
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
-    await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
-
+  test("should create a sales order, add lines, complete and close it", async ({ app, data }) => {
     // ── Step 1: Navigate to Sales Order ──────────────────────────────────────
-    const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-    if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-      await page.locator(".h-14 > div > .transition > svg").click();
-      await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-    }
-    await drawerInput.click({ force: true });
-    await page.keyboard.type("sales");
-    await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page
-      .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
-      .evaluate((el) => (el as HTMLElement).click());
-    await page
-      .locator('nav[aria-label="breadcrumb"]:visible')
-      .getByText(/Sales Order/i)
-      .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
+    await app.sidebar.navigateTo("salesOrder");
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────
-    await page
-      .locator("button.toolbar-button-new:not([disabled])")
-      .filter({ hasText: "New Record" })
-      .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
-    await page
-      .locator('[aria-label="Business Partner"] > div[tabindex="0"]')
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await app.toolbar.newRecord();
 
     // ── Step 3: Fill header ───────────────────────────────────────────────────
-    await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').click();
-    await page
-      .locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate')
-      .waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').first().click();
-    await closeToastIfPresent(page);
+    await app.field.selectById("Business Partner", data.BUSINESS_PARTNER.CUSTOMER_BARCELONA.id);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Step 4: Add order line ────────────────────────────────────────────────
-    await page.locator('button[aria-label="Lines"]').click();
+    await app.tabs.open("Lines");
+    await app.toolbar.newRecord("child");
+    await app.field.selectById("Product", data.PRODUCT.DISTRIBUTION_GOOD_A.id, { level: "child" });
+    await app.field.fillById(data.FIELD.SALES_ORDER_LINE_QUANTITY, "11");
 
-    const linesNewBtn = page
-      .locator("button.toolbar-button-new:not([disabled])")
-      .filter({ hasText: "New Record" })
-      .last();
-    await linesNewBtn.waitFor({ state: "visible", timeout: 20_000 });
-    await linesNewBtn.click({ force: true });
-
-    await page.locator('[aria-label="Product"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('[aria-label="Product"] > div[tabindex="0"]').click();
-    await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"]').click({ force: true });
-    await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible", timeout: 30_000 });
-
-    // Set quantity — use native value setter to bypass React's synthetic event handling
-    await page.evaluate(() => {
-      const input = document.querySelector('[data-testid="TextInput__1130"]') as HTMLInputElement;
-      if (!input) return;
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-      nativeSetter?.call(input, "11");
-      input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-    });
-    await page.waitForTimeout(1_000);
-
-    // Save line (index 1 = save button inside the Lines tab toolbar)
-    await page.locator("button.toolbar-button-save").last().click();
-    await closeToastIfPresent(page);
+    // Save line
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible').first().click();
-    await page.locator(".rounded-2xl > :nth-child(1):visible").click();
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
-      timeout: 10_000,
-    });
+    await app.toolbar.process("Book");
+    await expect(app.processModal.legacyTitle).toHaveText(PROCESS_ORDER, { timeout: 10_000 });
+    await app.processModal.confirm();
 
-    await clickOkInLegacyPopup(page);
-
-    // Assert the process completed successfully — fails immediately with a clear error if not found
-    await expect(page.locator(".mb-1").filter({ hasText: "Process completed successfully" })).toBeVisible({
-      timeout: 60_000,
-    });
-    await page.locator('[data-testid="close-button"]').click();
-    await closeToastIfPresent(page);
+    // Assert the process completed successfully — fails with a clear error if not shown
+    await app.processModal.expectSuccess(60_000);
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
     // ── Step 6: Close the Order ───────────────────────────────────────────────
     // We are already on the booked record — no need to navigate away and re-find it.
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible > span').first().click();
+    await app.toolbar.process("Close");
+    await expect(app.processModal.legacyTitle).toHaveText(PROCESS_ORDER, { timeout: 10_000 });
+    await app.processModal.confirm();
 
-    // Use text matching instead of positional :nth-child — "Close" is not always the first item
-    await page
-      .locator(".rounded-2xl div:visible")
-      .filter({ hasText: /^Close$/ })
-      .first()
-      .click();
-
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
-      timeout: 10_000,
-    });
-
-    await clickOkInLegacyPopup(page);
-
-    // Assert the process completed successfully — fails immediately with a clear error if not found
-    await expect(page.locator(".mb-1").filter({ hasText: "Process completed successfully" })).toBeVisible({
-      timeout: 60_000,
-    });
-    await page.locator('[data-testid="close-button"]').click();
-    await closeToastIfPresent(page);
+    // Assert the process completed successfully — fails with a clear error if not shown
+    await app.processModal.expectSuccess(60_000);
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
   });
 });
