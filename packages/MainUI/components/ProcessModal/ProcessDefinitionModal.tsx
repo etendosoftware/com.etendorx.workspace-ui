@@ -1918,7 +1918,9 @@ function ProcessDefinitionModalContent({
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+          <div
+            className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col"
+            data-testid="process-modal">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
