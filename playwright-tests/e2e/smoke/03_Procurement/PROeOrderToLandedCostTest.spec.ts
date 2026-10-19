@@ -1,291 +1,165 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  clickOkInLegacyPopup,
-  closeToastIfPresent,
-  captureDocumentNumber,
-  fillCreateLinesFromPopup,
-  navigateToPurchaseOrder,
-  navigateToGoodsReceipt,
-  navigateToLandedCost,
-  navigateToProcessScheduler,
-} from "../../helpers/etendo.helpers";
+import { ATTRIBUTE } from "../../support/components";
+import { expect, test } from "../../support/fixtures";
+import { TABS } from "../../support/registry/windows";
 
-test.describe.skip("Purchase Order to Landed Cost flow @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
+const COSTING_BACKGROUND_PROCESS = "Costing Background process";
+const RUN_IMMEDIATELY = "Run Immediately";
+const SCHEDULE_PROCESS = "Schedule Process";
+const RESCHEDULE_PROCESS = "Reschedule Process";
+const SUCCESS_STATUS = "Success";
 
-  test("Processes Landed Cost from Goods Receipt and validates cost distribution", async ({ page }) => {
-    // ── Login ────────────────────────────────────────────────────────────────
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
+test.describe("Purchase Order to Landed Cost flow @smoke", () => {
+  test("Processes Landed Cost from Goods Receipt and validates cost distribution", async ({ app, data, page }) => {
+    const vendor = data.BUSINESS_PARTNER.VENDOR_A;
+    const mainSection = page.getByRole("tab", { name: "Main Section" });
 
     // ── Step 1: Navigate to Purchase Order ───────────────────────────────────
-    await navigateToPurchaseOrder(page);
+    await app.sidebar.navigateTo("purchaseOrder");
 
     // ── Step 2: New Purchase Order ───────────────────────────────────────────
-    const newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await app.toolbar.newRecord();
+    await expect(mainSection).toBeVisible({ timeout: 10_000 });
 
     // ── Step 3: Fill Business Partner ────────────────────────────────────────
-    await page.locator('[aria-label="Business Partner"]').locator('div[tabindex="0"]').click();
-    const bpSearch1 = page.locator('input[aria-label="Search options"]');
-    if (await bpSearch1.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await bpSearch1.fill("Vendor A");
-    }
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Vendor A$/ })
-      .first()
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Vendor A$/ })
-      .first()
-      .click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await closeToastIfPresent(page);
+    await app.field.select("Business Partner", vendor.name, { search: vendor.name });
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Step 4: Add Order Line ────────────────────────────────────────────────
-    await page.locator('button[aria-label="Lines"]').click();
-    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByRole("button", { name: "New Record" }).last().click();
+    await app.tabs.open("Lines");
+    await app.toolbar.newRecord("child");
 
-    await page
-      .locator('[aria-label="Product"]')
-      .locator('div[tabindex="0"]')
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
-    // Search for "Raw material A" — a product with an attribute set (required for Landed Cost flow)
-    const productSearch = page.locator('input[aria-label="Search options"]');
-    if (await productSearch.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await productSearch.fill("Raw material A");
-    }
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Raw material A$/ })
-      .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Raw material A$/ })
-      .first()
-      .click({ force: true });
+    // "Raw material A" has an attribute set (serial number): its value is set on the receipt line
+    const product = data.PRODUCT.RAW_MATERIAL_A;
+    await app.field.select("Product", product.name, { search: product.name, callout: true, level: "child" });
 
-    // If the product has an attribute set, the "Attribute Set Value" field appears
-    // right after product selection. Set it before saving the line.
-    const attrContainer = page.locator('[aria-describedby="Attribute Set Value-help"]');
-    if (await attrContainer.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await attrContainer.locator("button").last().click();
-      await page.getByText("Attribute Selector").waitFor({ state: "visible", timeout: 10_000 });
-      const lotNameInput = page.getByLabel("Lot Name");
-      await lotNameInput.waitFor({ state: "visible", timeout: 5_000 });
-      await lotNameInput.clear();
-      await lotNameInput.fill("Test");
-      await page.waitForTimeout(500);
-      await page.getByRole("button", { name: "OK" }).click();
-      await page
-        .getByText("Attribute Selector")
-        .waitFor({ state: "hidden", timeout: 10_000 })
-        .catch(() => null);
-    }
-
-    // Set Quantity (use evaluate to bypass React-controlled input)
-    await page.locator('[data-testid="TextInput__3389"]').waitFor({ state: "visible" });
-    await page.evaluate(() => {
-      const input = document.querySelector('[data-testid="TextInput__3389"]') as HTMLInputElement;
-      if (!input) return;
-      input.disabled = false;
-      input.readOnly = false;
-      input.focus();
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-      nativeSetter?.call(input, "10");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await page.waitForTimeout(500);
-
-    // Save line
-    await page.locator("button.toolbar-button-save").last().click();
-    await closeToastIfPresent(page);
+    await app.field.fillById(data.FIELD.PURCHASE_ORDER_LINE_QUANTITY, "10");
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
     // ── Step 5: Book Purchase Order ───────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
-    await page.locator(".rounded-2xl").getByText("Book", { exact: true }).click();
+    await app.toolbar.process("Book");
+    await app.processModal.confirm();
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
-    await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
-    await closeToastIfPresent(page);
+    const purchaseOrderNumber = await app.breadcrumb.documentNumber();
 
-    const purchaseOrderNumber = await captureDocumentNumber(page);
-
-    // ── Step 6: Navigate to Goods Receipt ────────────────────────────────────
-    await navigateToGoodsReceipt(page);
-
-    const newGoodsBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newGoodsBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newGoodsBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    // ── Step 6: New Goods Receipt ─────────────────────────────────────────────
+    await app.sidebar.navigateTo("goodsReceipt");
+    await app.toolbar.newRecord();
+    await expect(mainSection).toBeVisible({ timeout: 10_000 });
 
     // ── Step 7: Fill Business Partner on Goods Receipt ───────────────────────
-    await page
-      .locator('[aria-describedby="Business Partner-help"]')
-      .locator('div[tabindex="0"]')
-      .scrollIntoViewIfNeeded();
-    await page
-      .locator('[aria-describedby="Business Partner-help"]')
-      .locator('div[tabindex="0"]')
-      .click({ force: true });
-    const bpSearch2 = page.locator('input[aria-label="Search options"]');
-    if (await bpSearch2.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await bpSearch2.fill("Vendor A");
-    }
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Vendor A$/ })
-      .first()
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: /^Vendor A$/ })
-      .first()
-      .click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await closeToastIfPresent(page);
+    await app.field.select("Business Partner", vendor.name, { search: vendor.name });
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Step 8: Create Lines From Purchase Order (legacy iframe popup) ────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    await page.locator(".rounded-2xl > :nth-child(1)").click();
-
-    await fillCreateLinesFromPopup(page, { locatorValue: "RN-2-0-0", orderDocNumber: purchaseOrderNumber });
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
-    await closeToastIfPresent(page);
+    await app.toolbar.process("Create Lines From");
+    await app.createLinesFrom.fill({ locator: data.LOCATOR.L01, orderDocNumber: purchaseOrderNumber });
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
     // ── Step 9: Capture Goods Receipt Document Number ─────────────────────────
-    const goodsReceiptNumber = await captureDocumentNumber(page);
+    const goodsReceiptNumber = await app.breadcrumb.documentNumber();
+
+    // ── Step 10: Set the serial number of the receipt line ───────────────────
+    // As in Classic, the order line does not ask for it (the product callout clears the attribute
+    // set the field's display logic reads); the receipt line does, and Complete requires it.
+    await app.tabs.open("Lines");
+    await app.grid.openForm(product.name);
+    await app.attributeSelector.open(data.FIELD.GOODS_RECEIPT_LINE_ATTRIBUTE_SET_VALUE);
+    await app.attributeSelector.fill(ATTRIBUTE.SERIAL_NUMBER, data.uniqueValue("PROe"));
+    await app.attributeSelector.confirm();
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
     // ── Step 11: Complete Goods Receipt ──────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
-    await page.locator(".rounded-2xl").getByText("Complete", { exact: true }).click();
+    await app.toolbar.process("Complete");
+    await app.processModal.confirm();
+    await app.processModal.expectSuccess();
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
-    await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
-    await closeToastIfPresent(page);
+    // ── Step 12: Run the "Costing Background" process for this client ─────────
+    // The Landed Cost process needs the receipt costed. The sample data only schedules the
+    // costing process for another client, so run it for QA Testing: reuse the request a previous
+    // run created, otherwise create one that runs immediately. Then wait for one more
+    // successful run in its Process Monitor, which costs the receipt.
+    await app.sidebar.navigateTo("processRequest");
+    // The list is short (the system processes plus this client's): wait for it and look for the row
+    await page.locator("tbody tr:visible").first().waitFor({ state: "visible", timeout: 20_000 });
+    const requestExists = await app.grid.row(COSTING_BACKGROUND_PROCESS).isVisible();
+    if (requestExists) {
+      await app.grid.openForm(COSTING_BACKGROUND_PROCESS);
+    } else {
+      await app.toolbar.newRecord();
+      await app.field.select("Process", COSTING_BACKGROUND_PROCESS, { search: COSTING_BACKGROUND_PROCESS });
+      await app.field.select("Timing", RUN_IMMEDIATELY);
+      await app.toolbar.save();
+      await app.toast.closeAll();
+    }
 
-    // ── Step 12: Reschedule "Costing Background Process" in Process Request ─────
-    await navigateToProcessScheduler(page);
-
-    // Find the "Costing Background" row directly by text (no filter needed)
-    const costingRow = page
+    await app.tabs.open("Process Monitor");
+    const successfulRuns = page
+      .getByTestId(`Tab__${TABS.PROCESS_REQUEST_MONITOR}`)
       .locator("tbody tr")
-      .filter({ hasText: /Costing Background/i })
-      .first();
-    await costingRow.waitFor({ state: "attached", timeout: 10_000 });
-    await costingRow.locator('input[type="checkbox"]').check({ force: true });
-    await page.waitForTimeout(500);
+      .filter({ hasText: SUCCESS_STATUS });
+    const runsBefore = await successfulRuns.count();
+    await app.toolbar.process(requestExists ? RESCHEDULE_PROCESS : SCHEDULE_PROCESS);
+    await app.toast.closeAll();
+    await expect(async () => {
+      await app.toolbar.inTab(TABS.PROCESS_REQUEST_MONITOR).button("refresh").click();
+      expect(await successfulRuns.count()).toBeGreaterThan(runsBefore);
+    }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
 
-    // Available Process > Reschedule Process
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
-    await page.waitForTimeout(1_000);
-    await page.getByText("Reschedule Process", { exact: true }).click();
-    await closeToastIfPresent(page);
+    // ── Step 13: New Landed Cost ──────────────────────────────────────────────
+    await app.sidebar.navigateTo("landedCost");
+    await app.toolbar.newRecord();
+    await expect(mainSection).toBeVisible({ timeout: 10_000 });
 
-    // ── Step 13: Navigate to Landed Cost ─────────────────────────────────────
-    await navigateToLandedCost(page);
+    // ── Step 14: Save Landed Cost header ─────────────────────────────────────
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
-    // ── Step 14: New Landed Cost ──────────────────────────────────────────────
-    const newLCBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newLCBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newLCBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    // ── Step 15: Add Cost Line ─────────────────────────────────────────────────
+    await app.tabs.open("Cost");
+    await app.toolbar.newRecord("child");
+    await app.field.fillById(data.FIELD.LANDED_COST_AMOUNT, "1");
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
-    // ── Step 15: Save Landed Cost header ─────────────────────────────────────
-    await page.locator("button.toolbar-button-save").first().click();
-    await closeToastIfPresent(page);
+    // ── Step 16: Add Receipt Line ─────────────────────────────────────────────
+    await app.tabs.open("Receipt");
+    await app.toolbar.newRecord("child");
 
-    // ── Step 16: Add Cost Line ─────────────────────────────────────────────────
-    await page.locator('button[aria-label="Cost"]').click();
-    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByRole("button", { name: "New Record" }).last().click();
-
-    const costAmountInput = page.locator('[data-testid="TextInput__0056819E516C679FE050007F01000569"]');
-    await costAmountInput.waitFor({ state: "visible", timeout: 10_000 });
-    await costAmountInput.clear();
-    await costAmountInput.fill("1");
-
-    await page.locator("button.toolbar-button-save").last().click();
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
-
-    // ── Step 17: Add Receipt Line ─────────────────────────────────────────────
-    await page.locator('button[aria-label="Receipt"]').click();
-    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByRole("button", { name: "New Record" }).last().click();
-
-    // Click the Goods Receipt lookup trigger
-    const grLookup = page.locator('[aria-describedby="Goods Receipt-help"]').locator('[tabindex="-1"]');
-    await grLookup.waitFor({ state: "visible", timeout: 10_000 });
-    await grLookup.click();
-    await page.waitForTimeout(1_000);
-
-    // Search for the Goods Receipt by document number
-    const grSearch = page.locator('input[placeholder="Search..."]');
-    await grSearch.waitFor({ state: "visible", timeout: 10_000 });
-    await grSearch.clear();
-    await grSearch.fill(goodsReceiptNumber);
-    await page.waitForTimeout(3_000);
-
-    await page.locator(`text=${goodsReceiptNumber}`).first().waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator(`text=${goodsReceiptNumber}`).first().click();
+    // Pick the Goods Receipt, searching it by document number
+    await app.field.select("Goods Receipt", goodsReceiptNumber, {
+      search: goodsReceiptNumber,
+      exact: false,
+      fieldId: data.FIELD.LANDED_COST_RECEIPT_GOODS_RECEIPT,
+    });
 
     // Save receipt line
-    await page
-      .locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]')
-      .last()
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').last().click();
-    await closeToastIfPresent(page);
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
-    // ── Step 18: Process Landed Cost ─────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    await page.locator(".rounded-2xl > .cursor-pointer").first().click();
+    // ── Step 17: Process Landed Cost ─────────────────────────────────────────
+    await app.toolbar.process("Process");
+    await app.processModal.executeButton().waitFor({ state: "visible", timeout: 10_000 });
+    await app.processModal.execute();
 
-    await page
-      .locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]')
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
-
-    // ── Step 19: Verify completion ────────────────────────────────────────────
-    await expect(page.getByText(/Process completed success/i).first()).toBeVisible({ timeout: 30_000 });
+    // ── Step 18: Verify completion ────────────────────────────────────────────
+    // Visible text only: the Process Request tab left open behind keeps its monitor log, which
+    // repeats the same message, in the DOM
+    await expect(
+      page
+        .getByText(/Process completed success/i)
+        .filter({ visible: true })
+        .first()
+    ).toBeVisible({
+      timeout: 30_000,
+    });
   });
 });
