@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
-import { resolve } from "path";
-import { readFileSync } from "fs";
+import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
 
 // Load .env from cypress-tests (same env vars)
 // NOTE: disabled — cypress-tests/.env may have stale credentials that differ
@@ -69,10 +69,17 @@ export default defineConfig({
   },
 
   projects: [
+    // Unit tests of the support layer (registries and pure helpers): no browser, run first
+    {
+      name: "support-unit",
+      testMatch: ["**/support/__tests__/**"],
+    },
+
     // Group 1 — Performance (runs first, alone — stress tests can saturate the server)
     {
       name: "suite-00-performance",
       testMatch: ["**/performance/**"],
+      dependencies: ["support-unit"],
       use: { ...devices["Desktop Chrome"] },
     },
 

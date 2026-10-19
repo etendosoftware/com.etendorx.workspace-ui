@@ -3,7 +3,15 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { RULES, compareWithBaseline, countAll, countViolations, formatIncreases, listSourceFiles, run } from "../check-e2e.mjs";
+import {
+  RULES,
+  compareWithBaseline,
+  countAll,
+  countViolations,
+  formatIncreases,
+  listSourceFiles,
+  run,
+} from "../check-e2e.mjs";
 
 const SPEC_FILE = "a.spec.ts";
 const ZERO_COUNTS = Object.fromEntries(RULES.map((rule) => [rule.id, 0]));
