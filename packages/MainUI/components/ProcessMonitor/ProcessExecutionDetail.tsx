@@ -93,7 +93,7 @@ const ProcessExecutionDetail: React.FC = () => {
       <Box className="flex flex-col gap-4 max-w-full" data-testid="process-monitor-detail">
         {current.kind === "loading" && (
           <div className="flex justify-center p-4">
-            <CircularProgress size={24} />
+            <CircularProgress size={24} data-testid="CircularProgress__72bd63" />
           </div>
         )}
         {current.kind === "error" && (
@@ -104,9 +104,17 @@ const ProcessExecutionDetail: React.FC = () => {
         {detail && (
           <>
             <dl className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-              <Field label={t("processMonitor.started")} value={formatTimestamp(detail.startTime)} />
-              <Field label={t("processMonitor.ended")} value={formatTimestamp(detail.endTime)} />
-              <Field label={t("processMonitor.duration")} value={detail.duration} />
+              <Field
+                label={t("processMonitor.started")}
+                value={formatTimestamp(detail.startTime)}
+                data-testid="Field__72bd63"
+              />
+              <Field
+                label={t("processMonitor.ended")}
+                value={formatTimestamp(detail.endTime)}
+                data-testid="Field__72bd63"
+              />
+              <Field label={t("processMonitor.duration")} value={detail.duration} data-testid="Field__72bd63" />
             </dl>
             <section>
               <h4 className="text-sm font-semibold text-red-700 mb-1">{t("processMonitor.errorLog")}</h4>

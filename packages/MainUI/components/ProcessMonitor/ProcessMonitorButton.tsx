@@ -102,7 +102,12 @@ const ProcessMonitorButton: React.FC = () => {
         )}
       </div>
       {open && (
-        <Menu anchorEl={anchorRef.current} onClose={() => setOpen(false)} className="w-[20.75rem]" offsetY={4}>
+        <Menu
+          anchorEl={anchorRef.current}
+          onClose={() => setOpen(false)}
+          className="w-[20.75rem]"
+          offsetY={4}
+          data-testid="Menu__ca468f">
           <div className="flex flex-col font-inter" data-testid="process-monitor-popover">
             <div className="px-4 pt-4 pb-2">
               <h2 className="text-base font-semibold text-(--color-baseline-100)">{label}</h2>
@@ -183,7 +188,7 @@ const ProcessMonitorButton: React.FC = () => {
           </div>
         </Menu>
       )}
-      <ProcessExecutionDetail />
+      <ProcessExecutionDetail data-testid="ProcessExecutionDetail__ca468f" />
     </>
   );
 };
