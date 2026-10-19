@@ -117,7 +117,14 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     const newParams = buildWindowsUrlParams(windows);
     if (newParams !== currentParams) {
       const newUrl = newParams ? `window?${newParams}` : "window";
-      router.replace(newUrl);
+      // Already on /window, the URL only mirrors the window store: the native history API updates
+      // useSearchParams without the RSC round trip router.replace makes (two per form Next, one per
+      // selection). Entering /window from another route still goes through the router.
+      if (window.location.pathname.endsWith("/window")) {
+        window.history.replaceState(null, "", newUrl);
+      } else {
+        router.replace(newUrl);
+      }
     }
   }, [windows, router, searchParams, isRecoveryLoading, recoveredWindows.length]);
 

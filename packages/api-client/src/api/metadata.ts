@@ -264,7 +264,8 @@ export class Metadata {
 
     Metadata.pendingMenuRequest = (async () => {
       try {
-        const { data } = await Metadata.client.post("meta/menu", { role: currentRoleId });
+        // GET so the browser HTTP cache revalidates it: an unchanged menu costs a 304 (body ETag).
+        const { data } = await Metadata.client.request("meta/menu");
         const menu = data.menu;
         Metadata.cache.set("OBMenu", menu);
         Metadata.currentRoleId = currentRoleId;

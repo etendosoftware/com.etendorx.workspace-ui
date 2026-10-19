@@ -109,6 +109,10 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 ): ((...args: Parameters<T>) => void) => {
   const lastExecutionRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Callers pass an inline function: keep the latest one in a ref so the throttled function keeps its
+  // identity (the grid's columns depend on it; a new one re-rendered every cell on each selection change).
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
 
   return useCallback(
     (...args: Parameters<T>) => {
@@ -116,19 +120,19 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 
       if (now - lastExecutionRef.current >= interval) {
         lastExecutionRef.current = now;
-        callback(...args);
+        callbackRef.current(...args);
       } else if (!timeoutRef.current) {
         timeoutRef.current = setTimeout(
           () => {
             lastExecutionRef.current = Date.now();
             timeoutRef.current = null;
-            callback(...args);
+            callbackRef.current(...args);
           },
           interval - (now - lastExecutionRef.current)
         );
       }
     },
-    [callback, interval]
+    [interval]
   );
 };
 

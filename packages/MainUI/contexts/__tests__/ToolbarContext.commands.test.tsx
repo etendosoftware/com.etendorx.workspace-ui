@@ -95,15 +95,18 @@ describe("useToolbarCommands", () => {
   it("writes registrations and flags to the tab's store slot", () => {
     const { result } = renderHook(() => useToolbarCommands());
     const refresh = jest.fn();
+    const formRefetch = jest.fn(async () => {});
 
     act(() => {
       result.current.registerActions({ refresh }, TOOLBAR_ACTION_OWNERS.TAB);
+      result.current.registerFormViewRefetch(formRefetch);
       result.current.setIsAdvancedFilterApplied(true);
       result.current.setShouldOpenAttachmentModal(true);
     });
 
     const slot = useToolbarStore.getState().byTabId[TAB_ID];
     expect(slot?.actionsByOwner[TOOLBAR_ACTION_OWNERS.TAB].refresh).toBe(refresh);
+    expect(slot?.formViewRefetch).toBe(formRefetch);
     expect(slot?.isAdvancedFilterApplied).toBe(true);
     expect(slot?.shouldOpenAttachmentModal).toBe(true);
 

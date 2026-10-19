@@ -33,9 +33,9 @@ import { useLiveTabRecord } from "@/hooks/useLiveTabRecord";
 import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { useTabLevelShortcuts, useWindowActivationFocus } from "@/hooks/navigation/useTabLevelShortcuts";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 
 const NO_TABS: Tab[] = [];
 
@@ -94,8 +94,8 @@ const TabsGroupRenderer = ({
     const expression = getTabDisplayLogic(activeParentTab);
     if (!expression) return true;
 
-    // Use createSmartContext for robust evaluation
-    const context = createSmartContext({
+    // Shared with any other caller that evaluates against the same values
+    const context = getEvaluationContext({
       values: grandParentValues,
       fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
       context: session,
@@ -125,7 +125,7 @@ const TabsGroupRenderer = ({
     // Every tab in this container belongs to the same window, so one window id scopes them all.
     const contextWindowId = activeParentTab?.window ?? tabs[0]?.window;
 
-    const context = createSmartContext({
+    const context = getEvaluationContext({
       values: parentValues,
       fields: activeParentTab?.fields,
       context: session,

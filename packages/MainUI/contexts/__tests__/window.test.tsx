@@ -107,6 +107,32 @@ describe("WindowProvider", () => {
     expect(mockRouter.replace).toHaveBeenCalledWith(expect.stringContaining("window?mock-params"));
   });
 
+  it("mirrors the windows into the URL with the history API, without the router, once on /window", async () => {
+    window.history.replaceState(null, "", "/window");
+    const replaceState = jest.spyOn(window.history, "replaceState");
+    (useGlobalUrlStateRecovery as jest.Mock).mockReturnValue({
+      recoveredWindows: [{ windowIdentifier: "143_1", windowId: "143", isActive: true, tabs: {} }],
+      isRecoveryLoading: false,
+      recoveryError: null,
+      triggerRecovery: jest.fn(),
+    });
+
+    try {
+      render(
+        <WindowProvider>
+          <TestComponent onResult={() => {}} />
+        </WindowProvider>
+      );
+      await act(async () => {});
+
+      expect(replaceState).toHaveBeenCalledWith(null, "", "window?mock-params");
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+    } finally {
+      replaceState.mockRestore();
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
   it("should not sync to URL if isRecoveryLoading is true", async () => {
     (useGlobalUrlStateRecovery as jest.Mock).mockReturnValue({
       recoveredWindows: [{ windowIdentifier: "143_1" }],

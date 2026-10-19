@@ -31,6 +31,10 @@ import {
  * `buildEvaluationContext({ ...options, values: { ...options.values, ...overlay } })`, sharing it between
  * callers:
  * - Inputs are compared by identity (`values` is the record; the other options are compared one by one).
+ *   A record not seen before shares the contexts of a recent record with the same content (same keys in
+ *   the same order, `Object.is` values): callers that each take their own snapshot of the same form values
+ *   (getValues(), `{ ...record, ...formValues }`) built up to 31 contexts per form Next from 13 inputs.
+ *   The build copies the values, so the context depends only on that content.
  * - When every overlay key is an own key of the record with the same value (`Object.is`), the merged
  *   values equal the record, key order included, so the record's context is returned.
  * - Otherwise the context for that overlay is shared when all overlay values are primitives (keyed by
@@ -67,18 +71,45 @@ interface Entry {
 const EMPTY_RECORD: Record<string, unknown> = {};
 const MAX_ENTRIES_PER_RECORD = 4;
 const MAX_OVERLAYS_PER_ENTRY = 256;
+const MAX_RECENT_RECORDS = 8;
 
 const entriesByRecord = new WeakMap<object, Entry[]>();
+/** Records last looked up, most recent first, to find one with the same content. */
+const recentRecords: Record<string, unknown>[] = [];
+
+/** Same own keys in the same order, with `Object.is` values. */
+const sameContent = (a: Record<string, unknown>, b: Record<string, unknown>) => {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (let i = 0; i < keysA.length; i++) {
+    const key = keysA[i];
+    if (key !== keysB[i] || !Object.is(a[key], b[key])) return false;
+  }
+  return true;
+};
+
+const entriesFor = (record: Record<string, unknown>): Entry[] => {
+  let entries = entriesByRecord.get(record);
+  if (!entries) {
+    const twin = recentRecords.find((recent) => sameContent(recent, record));
+    entries = (twin && entriesByRecord.get(twin)) || [];
+    entriesByRecord.set(record, entries);
+  }
+  const index = recentRecords.indexOf(record);
+  if (index !== 0) {
+    if (index > 0) recentRecords.splice(index, 1);
+    recentRecords.unshift(record);
+    if (recentRecords.length > MAX_RECENT_RECORDS) recentRecords.pop();
+  }
+  return entries;
+};
 
 const sameOptions = (a: EvaluationContextOptions, b: EvaluationContextOptions) =>
   IDENTITY_OPTIONS.every((key) => Object.is(a[key], b[key]));
 
 const getEntry = (record: Record<string, unknown>, options: EvaluationContextOptions): Entry => {
-  let entries = entriesByRecord.get(record);
-  if (!entries) {
-    entries = [];
-    entriesByRecord.set(record, entries);
-  }
+  const entries = entriesFor(record);
   const found = entries.find((entry) => sameOptions(entry.options, options));
   if (found) return found;
 

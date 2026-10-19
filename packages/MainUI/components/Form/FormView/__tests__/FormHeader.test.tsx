@@ -17,7 +17,7 @@
 
 import { render, screen } from "@testing-library/react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { FormHeader } from "../FormHeader";
 
 jest.mock("@mui/material", () => ({
@@ -49,7 +49,7 @@ jest.mock("@workspaceui/componentlibrary/src/components/PrimaryTab", () => ({
   ),
 }));
 jest.mock("../selectors/BaseSelector", () => ({ compileExpression: jest.fn(() => () => true) }));
-jest.mock("@/utils/expressions", () => ({ createSmartContext: jest.fn(() => ({})) }));
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => ({ getEvaluationContext: jest.fn(() => ({})) }));
 
 const fieldWithLogic = (hqlName: string) =>
   ({ hqlName, displayed: true, displayLogicExpression: "@docStatus@ = 'CO'" }) as unknown as Field;
@@ -76,7 +76,7 @@ describe("FormHeader section tabs", () => {
   beforeEach(() => jest.clearAllMocks());
   // clearAllMocks keeps implementations: restore the module mock's default so overrides don't leak.
   afterEach(() => {
-    (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
+    (getEvaluationContext as jest.Mock).mockReset().mockImplementation(() => ({}));
   });
 
   it("builds the evaluation context once per render, not once per field", () => {
@@ -84,11 +84,11 @@ describe("FormHeader section tabs", () => {
     expect(screen.getByText("Main")).toBeInTheDocument();
     expect(screen.getByText("Dimensions")).toBeInTheDocument();
     // 6 fields with display logic: the old code built 2+ contexts (one per field evaluated).
-    expect(createSmartContext).toHaveBeenCalledTimes(1);
+    expect(getEvaluationContext).toHaveBeenCalledTimes(1);
   });
 
   it("still shows the sections when the context build throws", () => {
-    (createSmartContext as jest.Mock).mockImplementation(() => {
+    (getEvaluationContext as jest.Mock).mockImplementation(() => {
       throw new Error("boom");
     });
     renderHeader();

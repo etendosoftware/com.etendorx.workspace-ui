@@ -116,6 +116,19 @@ describe("API: /api/erp/[...slug] window and tab revalidation", () => {
     expect(response.status).toBe(304);
   });
 
+  it("handles the menu the same way", async () => {
+    mockFetch.mockResolvedValueOnce(erpResponse(304, null, { ETag: ETAG }));
+
+    const response = await GET(
+      createRequest("http://localhost:3000/api/erp/meta/menu", "GET", { "If-None-Match": ETAG }),
+      params("meta", "menu")
+    );
+
+    expect(mockFetch.mock.calls[0][0]).toBe("http://erp.example/sws/com.etendoerp.metadata.meta/menu");
+    expect(mockFetch.mock.calls[0][1].headers["If-None-Match"]).toBe(ETAG);
+    expect(response.status).toBe(304);
+  });
+
   it("keeps the ERP error status so the client can tell access denied apart", async () => {
     mockFetch.mockResolvedValueOnce(erpResponse(401, "denied"));
 
