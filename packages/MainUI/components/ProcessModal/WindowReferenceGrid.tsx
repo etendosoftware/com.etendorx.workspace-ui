@@ -1105,6 +1105,22 @@ export const decideDatasourceSync = (
   return { shouldSync: signature !== lastSignature, signature };
 };
 
+// Makes freshly delivered rows the grid's read store right away, before the
+// `dataArrived` subscribers and `onGridLoad` run. The render-time reassignment of
+// `gridApiRef.current.rows` only happens on the next commit, so a script reacting
+// to the delivery (possibly deferred, e.g. `fireOnPause`) would otherwise read and
+// write the PREVIOUS rows — and its `setLocalRecords` would put them back over the
+// new ones (a filtered refetch would keep showing the unfiltered rows). Classic
+// fires dataArrived once the grid already holds the new data.
+export const publishDeliveredRows = (
+  readStore: { current: { rows: EntityData[] } },
+  localRecordsRef: { current: EntityData[] },
+  rows: EntityData[]
+): void => {
+  readStore.current.rows = rows;
+  localRecordsRef.current = rows;
+};
+
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
@@ -2383,6 +2399,7 @@ const WindowReferenceGrid = ({
       record?.obSelected ? buildSelectedRecord(record) : record
     );
     setLocalRecords(prepared);
+    publishDeliveredRows(gridApiRef, localRecordsRef, prepared);
 
     // Notify any script-registered `grid.dataArrived` subscribers (mirrors the
     // classic grid lifecycle hook), independently of whether an onGridLoad body
