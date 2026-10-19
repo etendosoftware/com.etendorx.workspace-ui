@@ -56,7 +56,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
           tooltip={t("common.logout")}
           onClick={handleSignOff}
           className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4"
-          data-testid="IconButton__d71b83">
+          data-testid="profile-logout-button">
           <LogoutIcon data-testid="LogoutIcon__d71b83" />
         </IconButton>
       </div>
