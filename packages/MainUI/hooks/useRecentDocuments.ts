@@ -1,8 +1,8 @@
 /*
  *************************************************************************
  * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
+ * (the "License"), you may not use this file except in compliance
+ * with the License.
  * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
@@ -15,51 +15,14 @@
  *************************************************************************
  */
 
-import { useCallback } from "react";
-import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
-import { useUserStore } from "@/stores/userStore";
+import { useRecentDocumentsContext } from "@/contexts/recentDocuments";
 
-export interface RecentDocument {
-  id: string;
-  identifier: string;
-  windowId: string;
-  windowTitle: string;
-  tabId: string;
-  tabLevel: number;
-  viewedAt: number;
-}
+export type { RecentDocumentItem as RecentDocument } from "@workspaceui/api-client/src/api/dashboard";
 
-const RECENT_DOCUMENTS_KEY = "recentDocuments";
-const MAX_RECENT_DOCUMENTS = 10;
-
+/**
+ * Backend-persisted (per user + role) list of recently viewed records.
+ * See RecentDocumentsProvider for the role-scoped fetch and recentDocumentsStore for the state.
+ */
 export function useRecentDocuments() {
-  const currentRole = useUserStore((s) => s.currentRole);
-  const roleId = currentRole?.id ?? "";
-
-  const [stored, setStored] = useLocalStorage<Record<string, RecentDocument[]>>(RECENT_DOCUMENTS_KEY, {});
-
-  const documents: RecentDocument[] = roleId ? (stored[roleId] ?? []) : [];
-
-  const addRecentDocument = useCallback(
-    (doc: Omit<RecentDocument, "viewedAt">) => {
-      if (!roleId || !doc.id || !doc.windowId) return;
-
-      setStored((prev) => {
-        const current = prev[roleId] ?? [];
-
-        // Remove existing entry for same record (same id + windowId + tabId)
-        const filtered = current.filter(
-          (d) => !(d.id === doc.id && d.windowId === doc.windowId && d.tabId === doc.tabId)
-        );
-
-        // Prepend new entry (most recent first)
-        const updated = [{ ...doc, viewedAt: Date.now() }, ...filtered].slice(0, MAX_RECENT_DOCUMENTS);
-
-        return { ...prev, [roleId]: updated };
-      });
-    },
-    [roleId, setStored]
-  );
-
-  return { documents, addRecentDocument };
+  return useRecentDocumentsContext();
 }

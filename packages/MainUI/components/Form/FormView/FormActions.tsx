@@ -16,7 +16,8 @@
  */
 
 import { useCallback, useEffect, useRef, useMemo } from "react";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useShortcutBindings } from "@/hooks/useShortcutBindings";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
@@ -30,6 +31,8 @@ import { useWindowStore } from "@/stores/windowStore";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
+import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
 
 interface FormActionsProps {
   tab: Tab;
@@ -41,6 +44,8 @@ interface FormActionsProps {
   mode: FormMode;
   isFocused?: boolean;
   isDocumentProcessing?: boolean;
+  /** Receives the `hqlName` of the required fields left empty when a save is blocked. */
+  onFieldErrors?: (fieldNames: string[]) => void;
 }
 
 export function FormActions({
@@ -53,6 +58,7 @@ export function FormActions({
   mode,
   isFocused,
   isDocumentProcessing,
+  onFieldErrors,
 }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
@@ -61,7 +67,8 @@ export function FormActions({
   const clearTabFormState = useWindowStore((s) => s.clearTabFormState);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { registerActions, unregisterActions, setSaveButtonState, saveButtonState } = useToolbarContext();
-  const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { markFormAsChanged, resetFormChanges, hasFormChanges } = useTabContext();
+  const { guardTransition } = useUnsavedChangesTabGuard();
 
   useEffect(() => {
     setSaveButtonState((prev) => ({ ...prev, isDocumentProcessing: isDocumentProcessing ?? false }));
@@ -108,14 +115,15 @@ export function FormActions({
     }
   }, [isDirty, markFormAsChanged, resetFormChanges]);
 
-  // Report form dirty state to windowStore for tab-close confirmation
+  // Report form dirty state to windowStore — read by every unsaved-changes guard
   useEffect(() => {
+    const sourceKey = buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, tab.id);
     if (windowIdentifier) {
-      setWindowDirtySource(windowIdentifier, `form:${tab.id}`, isDirty);
+      setWindowDirtySource(windowIdentifier, sourceKey, isDirty);
     }
     return () => {
       if (windowIdentifier) {
-        setWindowDirtySource(windowIdentifier, `form:${tab.id}`, false);
+        setWindowDirtySource(windowIdentifier, sourceKey, false);
       }
     };
   }, [isDirty, windowIdentifier, tab.id, setWindowDirtySource]);
@@ -175,6 +183,7 @@ export function FormActions({
         if (!validationResult.isValid) {
           const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
           showErrorModal(`The following required fields are missing: ${missingFields}`);
+          onFieldErrors?.(validationResult.missingFields.map((field) => field.fieldName));
           return false;
         }
 
@@ -189,7 +198,7 @@ export function FormActions({
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [onSave, showErrorModal, setSaveButtonState, validateRequiredFields]
+    [onSave, showErrorModal, onFieldErrors, setSaveButtonState, validateRequiredFields]
   );
 
   const onReset = useCallback(async () => {
@@ -215,29 +224,49 @@ export function FormActions({
     navigateBack();
   }, [isDirty, discardChanges, navigateBack]);
 
-  const handleNew = useCallback(() => {
+  /**
+   * New autosaves the record being edited before clearing the form, the way Classic's
+   * `newDocument` routes through `doActionAfterAutoSave`. A failed save aborts the
+   * creation: its own message is already on screen.
+   */
+  const handleNew = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (isDirty) {
+      const saved = await handleSave({ showModal: true });
+      if (!saved) return;
+    }
     onNew();
-  }, [onNew]);
+  }, [isDirty, handleSave, onNew, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
   const handleKeyboardSave = useCallback(async () => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
     await handleSave({ showModal: true });
   }, [handleSave, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
-  const handleKeyboardEscape = useCallback(async () => {
+  const handleKeyboardEscape = useCallback(() => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
-    if (isDirty) {
-      const saved = await handleSave({ showModal: false });
+    guardTransition(navigateBack);
+  }, [guardTransition, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  /**
+   * Classic `ToolBar_SaveClose`, shared by `Ctrl+Shift+X` and the status bar close button: saves the
+   * pending changes and returns to the grid. A failed save keeps the form open.
+   */
+  const handleSaveAndClose = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (hasFormChanges) {
+      const saved = await handleSave({ skipFormStateUpdate: true });
       if (!saved) return;
     }
     navigateBack();
-  }, [isDirty, handleSave, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+  }, [handleSave, hasFormChanges, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
-  useKeyboardShortcuts(
+  // New (Ctrl+D) is bound by the toolbar, whose NEW button resolves to `handleNew` while the form is open.
+  useShortcutBindings(
     {
-      "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
-      "ctrl+n": { handler: handleNew, allowInInputs: true },
-      Escape: { handler: handleKeyboardEscape },
+      [SHORTCUT_IDS.TOOLBAR_SAVE]: { handler: handleKeyboardSave, allowInInputs: true },
+      [SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE]: { handler: handleSaveAndClose, allowInInputs: true },
+      [SHORTCUT_IDS.STATUS_BAR_CLOSE]: { handler: handleKeyboardEscape },
     },
     isFocused ?? true
   );
@@ -249,13 +278,24 @@ export function FormActions({
       refresh: onReset,
       back: handleBack,
       new: handleNew,
+      discard: discardChanges,
+      saveAndClose: handleSaveAndClose,
     };
 
     registerActions(actions, TOOLBAR_ACTION_OWNERS.FORM);
     // Releasing the bucket on unmount is what makes CANCEL fall back to the
     // tab's own handler once the form pane is gone.
     return () => unregisterActions(TOOLBAR_ACTION_OWNERS.FORM);
-  }, [registerActions, unregisterActions, handleSave, onReset, handleBack, handleNew]);
+  }, [
+    registerActions,
+    unregisterActions,
+    handleSave,
+    onReset,
+    handleBack,
+    handleNew,
+    discardChanges,
+    handleSaveAndClose,
+  ]);
 
   return null;
 }

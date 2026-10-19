@@ -3,7 +3,7 @@ import { Chip } from "@mui/material";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import { useCallback, useMemo, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { parseCsvIds, parseCsvIdentifiers, toCsv, toCsvIdentifiers } from "@/utils/form/selectors/multiSelectorCsv";
 import SelectorModal from "./SelectorModal";
 
@@ -28,14 +28,14 @@ const IDENTIFIER_SUFFIX = "$_identifier";
  * fetch is intentionally out of scope here.
  */
 const MultiRecordSelector = ({ field, isReadOnly = false }: MultiRecordSelectorProps) => {
-  const { watch, setValue } = useFormContext();
+  const { setValue } = useFormContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fieldName = field.hqlName;
   const identifierFieldName = `${fieldName}${IDENTIFIER_SUFFIX}`;
 
-  const idsCsv = watch(fieldName) as string | undefined;
-  const labelsCsv = watch(identifierFieldName) as string | undefined;
+  const idsCsv = useWatch({ name: fieldName }) as string | undefined;
+  const labelsCsv = useWatch({ name: identifierFieldName }) as string | undefined;
 
   const items = useMemo<ChipItem[]>(() => {
     const ids = parseCsvIds(idsCsv);

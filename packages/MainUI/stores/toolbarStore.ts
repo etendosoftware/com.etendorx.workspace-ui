@@ -35,6 +35,12 @@ export type ToolbarActions = {
   refresh: () => Promise<void>;
   new: () => void;
   back: () => void;
+  /** Rolls the form back to its last-loaded values without leaving the form view. */
+  discard: () => void;
+  /** Saves the pending form changes and returns to the grid; a failed save keeps the form open. */
+  saveAndClose: () => Promise<void>;
+  /** Re-highlights `recordId` in the grid, undoing a selection change the user backed out of. */
+  restoreSelection: (recordId: string) => void;
   filter: () => void;
   treeView: () => void;
   showTableAndForm: () => void;
@@ -50,6 +56,9 @@ export const defaultActions: ToolbarActions = {
   refresh: async () => {},
   new: () => {},
   back: () => {},
+  discard: () => {},
+  saveAndClose: async () => {},
+  restoreSelection: () => {},
   filter: () => {},
   treeView: () => {},
   showTableAndForm: () => {},

@@ -32,6 +32,8 @@ import WindowProvider from "@/contexts/window";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import { PreferencesProvider } from "@/contexts/preferences";
 import { FavoritesProvider } from "@/contexts/favorites";
+import { RecentDocumentsProvider } from "@/contexts/recentDocuments";
+import { RecentItemsProvider } from "@/contexts/recentItems";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 import { Toaster } from "@/components/Toaster";
@@ -93,8 +95,12 @@ export default async function RootLayout({
                       <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
                         <WindowProvider data-testid="WindowProvider__ba7569">
                           <FavoritesProvider data-testid="FavoritesProvider__ba7569">
-                            <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
-                            <Layout data-testid="Layout__ba7569">{children}</Layout>
+                            <RecentDocumentsProvider data-testid="RecentDocumentsProvider__ba7569">
+                              <RecentItemsProvider data-testid="RecentItemsProvider__ba7569">
+                                <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
+                                <Layout data-testid="Layout__ba7569">{children}</Layout>
+                              </RecentItemsProvider>
+                            </RecentDocumentsProvider>
                           </FavoritesProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>

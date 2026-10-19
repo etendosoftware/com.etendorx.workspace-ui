@@ -46,6 +46,14 @@ describe("ERP route helper functions", () => {
       expect(isBinaryContentType("application/pdf")).toBe(true);
     });
 
+    it.each([
+      "application/xls",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ])("should detect the report spreadsheet type %s as binary", (contentType) => {
+      expect(isBinaryContentType(contentType)).toBe(true);
+    });
+
     it("should not detect text as binary", () => {
       expect(isBinaryContentType("text/html")).toBe(false);
       expect(isBinaryContentType("application/json")).toBe(false);
@@ -67,6 +75,21 @@ describe("ERP route helper functions", () => {
       });
       const response = createHtmlResponse("<html>rewritten</html>", original);
       expect(response.headers.get("X-Custom")).toBe("test");
+    });
+
+    it("should strip content-encoding/content-length/transfer-encoding, since the body was already decoded by fetch", () => {
+      const original = new Response("<html></html>", {
+        headers: {
+          "Content-Type": "text/html",
+          "Content-Encoding": "gzip",
+          "Content-Length": "1234",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+      const response = createHtmlResponse("<html>rewritten</html>", original);
+      expect(response.headers.get("Content-Encoding")).toBeNull();
+      expect(response.headers.get("Content-Length")).toBeNull();
+      expect(response.headers.get("Transfer-Encoding")).toBeNull();
     });
   });
 

@@ -16,6 +16,10 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { REFRESH_AFTER_DELETION_PREFERENCE } from "@/utils/preferences/refreshAfterDeletion";
 
 // Mock dependencies
 jest.mock("sonner", () => ({
@@ -45,7 +49,9 @@ jest.mock("@/hooks/useDeleteRecord", () => ({
 jest.mock("@/utils/logger");
 jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: jest.fn(() => "windowIdentifier1"),
+  useCurrentWindowId: jest.fn(() => "window1"),
 }));
+jest.mock("@/contexts/datasourceContext");
 
 describe("useToolbarConfig", () => {
   const mockTab = {
@@ -69,10 +75,13 @@ describe("useToolbarConfig", () => {
   const mockClearSelectedRecord = jest.fn();
   const mockOnRefresh = jest.fn();
   const mockOnShowTableAndForm = jest.fn();
+  const mockRefetchDatasource = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+    installLocalStorageMock();
 
+    (useDatasourceContext as jest.Mock).mockReturnValue({ refetchDatasource: mockRefetchDatasource });
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
     // Set Zustand store state with the active window and action spies
     useWindowStore.setState({
@@ -286,6 +295,122 @@ describe("useToolbarConfig", () => {
     });
   });
 
+  describe("EXPORT_CSV", () => {
+    const EXPORT_ERROR_KEY = "table.exportError";
+
+    /** Builds a promise whose settlement is controlled by the test. */
+    const createDeferred = () => {
+      let resolve: () => void = () => {};
+      let reject: (reason?: unknown) => void = () => {};
+      const promise = new Promise<void>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise, resolve, reject };
+    };
+
+    /** Renders the hook with the given export action registered in the toolbar context. */
+    const renderWithExport = (onExportCSV: jest.Mock) => {
+      (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh, onExportCSV });
+      return renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+    };
+
+    /** Triggers the export through the toolbar handler without waiting for it to finish. */
+    const triggerExport = (result: { current: ReturnType<typeof useToolbarConfig> }) => {
+      act(() => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+    };
+
+    it("starts idle", () => {
+      const { result } = renderWithExport(jest.fn());
+      expect(result.current.isExporting).toBe(false);
+    });
+
+    it("keeps the busy state while the export is in progress and clears it on completion", async () => {
+      const deferred = createDeferred();
+      const onExportCSV = jest.fn(() => deferred.promise);
+      const { result } = renderWithExport(onExportCSV);
+
+      triggerExport(result);
+      expect(result.current.isExporting).toBe(true);
+
+      await act(async () => {
+        deferred.resolve();
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(onExportCSV).toHaveBeenCalledTimes(1);
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("clears the busy state and shows the error message when the export fails", async () => {
+      const deferred = createDeferred();
+      const { result } = renderWithExport(jest.fn(() => deferred.promise));
+
+      triggerExport(result);
+      await act(async () => {
+        deferred.reject(new Error("CSV Export failed: boom"));
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(toast.error).toHaveBeenCalledWith(
+        EXPORT_ERROR_KEY,
+        expect.objectContaining({ description: expect.anything() })
+      );
+      const { description } = (toast.error as jest.Mock).mock.calls[0][1];
+      expect(description.props.message).toBe("CSV Export failed: boom");
+    });
+
+    it("falls back to the translated message when the failure is not an Error", async () => {
+      const { result } = renderWithExport(jest.fn(() => Promise.reject("unexpected")));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      const { description } = (toast.error as jest.Mock).mock.calls[0][1];
+      expect(description.props.message).toBe(EXPORT_ERROR_KEY);
+    });
+
+    it("does not leave the busy state hanging after a fast export", async () => {
+      const { result } = renderWithExport(jest.fn(() => Promise.resolve()));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+    });
+
+    it("ignores new triggers while an export is already running", async () => {
+      const deferred = createDeferred();
+      const onExportCSV = jest.fn(() => deferred.promise);
+      const { result } = renderWithExport(onExportCSV);
+
+      triggerExport(result);
+      triggerExport(result);
+      await act(async () => {
+        deferred.resolve();
+      });
+
+      expect(onExportCSV).toHaveBeenCalledTimes(1);
+    });
+
+    it("clears the busy state when no export action is registered", async () => {
+      (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      await act(async () => {
+        result.current.handleAction("EXPORT_CSV");
+      });
+
+      expect(result.current.isExporting).toBe(false);
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+  });
+
   describe("INITIALIZE_RX_SERVICES", () => {
     beforeEach(() => {
       global.fetch = jest.fn();
@@ -336,6 +461,88 @@ describe("useToolbarConfig", () => {
       });
 
       expect(toast.error).toHaveBeenCalled();
+    });
+  });
+
+  describe("refresh after deletion", () => {
+    const DELETED_RECORD_COUNT = 1;
+
+    /**
+     * Drives a successful delete to the point where the success modal has been dismissed.
+     *
+     * `useDeleteRecord` is mocked for this suite, so the hook's `onSuccess` never runs on its own:
+     * we capture the callback the hook handed to the mock, invoke it, then invoke the
+     * `onAfterClose` it passed to `showDeleteSuccessModal` — which is where the selection is
+     * cleared and the preference-gated refetch happens.
+     */
+    const runDeleteThroughModalClose = () => {
+      const showDeleteSuccessModal = jest.fn();
+      (useStatusModal as jest.Mock).mockReturnValue({
+        statusModal: { open: false },
+        showErrorModal: mockShowErrorModal,
+        showConfirmModal: jest.fn(),
+        showDeleteSuccessModal,
+      });
+
+      renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      const { onSuccess } = (useDeleteRecord as jest.Mock).mock.calls[0][0];
+      act(() => onSuccess(DELETED_RECORD_COUNT));
+
+      const { onAfterClose } = showDeleteSuccessModal.mock.calls[0][1];
+      act(() => onAfterClose());
+    };
+
+    it("refetches the grid when the preference is enabled for this window", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).toHaveBeenCalledTimes(1);
+      expect(mockRefetchDatasource).toHaveBeenCalledWith(mockTab.id);
+    });
+
+    it("refetches the grid when the preference is enabled globally", () => {
+      savePreferences({ [REFRESH_AFTER_DELETION_PREFERENCE]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).toHaveBeenCalledWith(mockTab.id);
+    });
+
+    it("does not refetch when the preference is absent", () => {
+      savePreferences({});
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("does not refetch when the preference is disabled", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "N" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("does not refetch when another window has it enabled", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_someOtherWindow`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      expect(mockRefetchDatasource).not.toHaveBeenCalled();
+    });
+
+    it("refetches only after the selection has been cleared", () => {
+      savePreferences({ [`${REFRESH_AFTER_DELETION_PREFERENCE}_${mockActiveWindow.windowId}`]: "Y" });
+
+      runDeleteThroughModalClose();
+
+      // The reload must see the post-delete result set, so the single-record rule can act on it.
+      expect(mockClearSelectedRecord.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRefetchDatasource.mock.invocationCallOrder[0]
+      );
     });
   });
 });

@@ -45,10 +45,10 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
                 leftIcon={icon}
                 text={iconText}
                 onClick={(e) => {
-                  console.log("onClick");
                   onClick(e);
                 }}
                 disabled={disabled}
+                title={tooltip}
                 customContainerStyles={className}
                 data-testid={`IconButtonWithText__${key ?? "2bded0"}`}
               />

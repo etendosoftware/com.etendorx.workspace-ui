@@ -17,7 +17,7 @@
 
 import type React from "react";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
@@ -29,6 +29,7 @@ import { TextInput } from "./components/TextInput";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useLocation } from "@/hooks/useLocation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { LocationData, CountryOption, RegionOption } from "./LocationSelector/types";
 
@@ -84,9 +85,9 @@ const generateDisplayValue = (
 };
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }) => {
-  const { watch, setValue } = useFormContext();
+  const { setValue, getValues } = useFormContext();
   const { t } = useTranslation();
-  const value = watch(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previousLocationData, setPreviousLocationData] = useState<LocationData | null>(null);
@@ -105,7 +106,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
   });
 
   const [displayValue, setDisplayValue] = useState<string>("");
-  const identifier = watch(`${field.hqlName}$_identifier`);
+  const identifier = useWatch({ name: `${field.hqlName}$_identifier` });
 
   useEffect(() => {
     if (!value && !identifier) return;
@@ -177,8 +178,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
   const handleOpenModal = useCallback(() => {
     if (isReadOnly) return;
 
-    const existingData = watch(`${field.hqlName}`);
-    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
+    const existingData = getValues(`${field.hqlName}`);
+    const existingIdentifier = getValues(`${field.hqlName}$_identifier`);
 
     let newLocationData: LocationData;
 
@@ -208,7 +209,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     setPreviousLocationData(newLocationData);
     setLocationData(newLocationData);
     setIsModalOpen(true);
-  }, [isReadOnly, field.hqlName, watch, displayValue, countries, regions, locationData]);
+  }, [isReadOnly, field.hqlName, getValues, displayValue, countries, regions, locationData]);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
@@ -382,7 +383,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             isReadOnly ? "bg-gray-100 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer border-gray-300"
           }`}
           onClick={handleOpenModal}
-          tabIndex={isReadOnly ? -1 : 0}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           onKeyDown={(e) => {
             if ((e.key === "Enter" || e.key === " ") && !isReadOnly) {
               e.preventDefault();

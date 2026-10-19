@@ -35,6 +35,8 @@ export interface TableState {
   order: string[];
   isImplicitFilterApplied: boolean | undefined;
   advancedCriteria?: any;
+  /** Column ids the grid is grouped by (classic `groupByFields`); absent or empty when ungrouped. */
+  grouping?: string[];
 }
 
 export interface NavigationState {
@@ -84,6 +86,8 @@ export interface WindowState {
   tabs: {
     [tabId: string]: TabState;
   };
+  /** Set only on the in-app tabs that embed an External menu entry: the URL they show. */
+  externalUrl?: string;
 }
 
 export interface WindowContextState {

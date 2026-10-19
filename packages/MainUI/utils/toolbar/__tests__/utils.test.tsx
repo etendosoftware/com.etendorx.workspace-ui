@@ -3,6 +3,12 @@ import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "../constants";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
+import { AUDITED_TAB, MODIFIED_RECORD, NOT_AUDITED_TAB, UNMODIFIED_RECORD } from "../test-utils/auditTrailFixtures";
+import { CircularProgress } from "@mui/material";
+import type React from "react";
+
+/** Whether the toolbar button icon is the busy spinner */
+const isSpinnerIcon = (icon: React.ReactNode) => (icon as React.ReactElement)?.type === CircularProgress;
 
 const makeButtonMetadata = (action: string): ToolbarButtonMetadata =>
   ({
@@ -360,6 +366,70 @@ describe("createButtonByType - extended", () => {
     selectedRecordsLength: 1,
   };
 
+  describe("EXPORT_CSV busy state", () => {
+    const exportButton = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, name: "Export CSV" });
+
+    it("is enabled and keeps its icon when no export is running", () => {
+      const result = createButtonByType({ ...defaultProps, button: exportButton });
+      expect(result.disabled).toBe(false);
+      expect(result.tooltip).toBe("Export CSV (Ctrl+Shift+E)");
+      expect(isSpinnerIcon(result.icon)).toBe(false);
+    });
+
+    it("is disabled and shows a spinner while exporting", () => {
+      const result = createButtonByType({ ...defaultProps, button: exportButton, isExporting: true });
+      expect(result.disabled).toBe(true);
+      expect(isSpinnerIcon(result.icon)).toBe(true);
+    });
+
+    it("stays disabled when the button is inactive", () => {
+      const result = createButtonByType({ ...defaultProps, button: { ...exportButton, active: false } });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("does not affect other buttons while exporting", () => {
+      const result = createButtonByType({ ...defaultProps, button: makeButton(), isExporting: true });
+      expect(result.disabled).toBe(false);
+      expect(isSpinnerIcon(result.icon)).toBe(false);
+    });
+  });
+
+  describe("REFRESH", () => {
+    const refreshProps = {
+      ...defaultProps,
+      button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.REFRESH }),
+    };
+
+    it("is disabled in form view while the form has unsaved changes", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true, hasFormChanges: true });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("is disabled in form view while the record is still being created", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true, isNewRecord: true });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("is enabled in form view on a clean saved record", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: true });
+      expect(result.disabled).toBe(false);
+    });
+
+    it("stays enabled in the grid even with a dirty form elsewhere", () => {
+      const result = createButtonByType({ ...refreshProps, isFormView: false, hasFormChanges: true });
+      expect(result.disabled).toBe(false);
+    });
+
+    it("is disabled while the document is being processed", () => {
+      const result = createButtonByType({
+        ...refreshProps,
+        isFormView: true,
+        saveButtonState: { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true },
+      });
+      expect(result.disabled).toBe(true);
+    });
+  });
+
   it("should disable DELETE when no record is selected", () => {
     const result = createButtonByType({
       ...defaultProps,
@@ -560,6 +630,32 @@ describe("createButtonByType - extended", () => {
     expect(result.isPressed).toBe(true);
   });
 
+  describe("keyboard shortcut hint", () => {
+    it("adds the classic shortcut to the tooltip of the action", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, name: "Export" }),
+      });
+      expect(result.tooltip).toBe("Export (Ctrl+Shift+E)");
+    });
+
+    it("keeps the plain name for actions without a shortcut", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.FIND, name: "Find" }),
+      });
+      expect(result.tooltip).toBe("Find");
+    });
+
+    it("exposes the action so a shortcut can press the button", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.REFRESH }),
+      });
+      expect(result.action).toBe(TOOLBAR_BUTTONS_ACTIONS.REFRESH);
+    });
+  });
+
   it("should set filter tooltip when showFilterTooltip is true", () => {
     const t = jest.fn().mockReturnValue("Filter active");
     const result = createButtonByType({
@@ -711,6 +807,21 @@ describe("getToolbarSections", () => {
     expect(result.rightSection.style).toBeDefined();
   });
 
+  it("should propagate the exporting state to the EXPORT_CSV button", () => {
+    const result = getToolbarSections({
+      buttons: [makeBtn(TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, "right")],
+      onAction,
+      isFormView: false,
+      tab: defaultTab,
+      selectedRecordsLength: 0,
+      isExporting: true,
+    });
+
+    const [exportButton] = result.rightSection.buttons;
+    expect(exportButton.disabled).toBe(true);
+    expect(isSpinnerIcon(exportButton.icon)).toBe(true);
+  });
+
   it("should apply button styles when available", () => {
     const buttons = [makeBtn(TOOLBAR_BUTTONS_ACTIONS.NEW, "left")];
 
@@ -753,5 +864,66 @@ describe("getToolbarSections", () => {
     });
 
     expect(result.rightSection.buttons[0].badgeContent).toBeUndefined();
+  });
+});
+
+describe("SHOW_AUDIT_TRAIL button", () => {
+  const auditButton = { ...makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL), section: "center" };
+
+  const auditProps = {
+    button: auditButton,
+    onAction: jest.fn(),
+    isFormView: false,
+    hasFormChanges: false,
+    hasParentRecordSelected: true,
+    tab: AUDITED_TAB,
+    selectedRecordsLength: 1,
+    selectedRecords: [MODIFIED_RECORD],
+  };
+
+  it.each([
+    [AUDITED_TAB, 1],
+    [NOT_AUDITED_TAB, 0],
+  ])("is shown only when the tab table is fully audited (%#)", (tab, expectedCount) => {
+    const result = organizeButtonsBySection([auditButton], { isFormView: false, tab });
+    expect(result.center).toHaveLength(expectedCount);
+  });
+
+  it.each([
+    ["a single modified record", {}],
+    ["no selection, as in Classic", { selectedRecords: undefined, selectedRecordsLength: 0 }],
+  ])("is enabled with %s", (_label, overrides) => {
+    expect(createButtonByType({ ...auditProps, ...overrides }).disabled).toBe(false);
+  });
+
+  it.each([
+    [
+      "several records are selected",
+      { selectedRecords: [MODIFIED_RECORD, UNMODIFIED_RECORD], selectedRecordsLength: 2 },
+    ],
+    ["the record is new", { isNewRecord: true }],
+    ["the record was never modified", { selectedRecords: [UNMODIFIED_RECORD] }],
+    [
+      "a document is processing",
+      { saveButtonState: { isSaving: false, isCalloutLoading: false, isDocumentProcessing: true } },
+    ],
+  ])("is disabled when %s", (_label, overrides) => {
+    expect(createButtonByType({ ...auditProps, ...overrides }).disabled).toBe(true);
+  });
+
+  it("receives the selected records from getToolbarSections", () => {
+    const sections = getToolbarSections({
+      buttons: [auditButton],
+      onAction: jest.fn(),
+      isFormView: false,
+      tab: AUDITED_TAB,
+      selectedRecordsLength: 1,
+      selectedRecords: [MODIFIED_RECORD],
+    });
+    expect(sections.centerSection.buttons[0].disabled).toBe(false);
+  });
+
+  it("applies its button style", () => {
+    expect(getButtonStyles(auditButton, false)).toContain("toolbar-button-show-audit-trail");
   });
 });

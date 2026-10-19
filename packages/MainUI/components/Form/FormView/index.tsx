@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, type SetValueConfig, type KeepStateOptions, useForm } from "react-hook-form";
 import { useTheme } from "@mui/material";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
@@ -38,6 +38,7 @@ import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import LiveTabValuesPublisher from "./LiveTabValuesPublisher";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { useFormAction, buildReloadModalOptions, type OnErrorOptions } from "@/hooks/useFormAction";
@@ -50,16 +51,21 @@ import { FormFields } from "./FormFieldsContent";
 import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
+import { useRecordNavigationShortcuts } from "@/hooks/useRecordNavigationShortcuts";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
+import { useFormInitialFocus } from "@/hooks/useFormInitialFocus";
+import { useToolbarStore } from "@/stores/toolbarStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
+import { useRevealFieldErrors } from "@/hooks/useRevealFieldErrors";
 import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
@@ -118,7 +124,10 @@ const processFormData = (
   return processedData;
 };
 
-export function FormView({
+/** How long a record must stay open in the form to count as a recently viewed document. */
+const RECENT_DOCUMENT_DWELL_MS = 1000;
+
+function FormViewComponent({
   window: windowMetadata,
   tab,
   mode,
@@ -127,6 +136,7 @@ export function FormView({
   uIPattern,
   isFocused,
   onFocusAcquire,
+  canAutoFocus = true,
 }: FormViewProps) {
   const theme = useTheme();
 
@@ -143,6 +153,7 @@ export function FormView({
   const [formInstanceKey, setFormInstanceKey] = useState(0);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const fieldsRootRef = useRef<HTMLDivElement | null>(null);
   const lastSelectedRecordRef = useRef<string | null>(null);
   // Set to true in onSuccess when saving a NEW record so the first re-initialization
   // triggered by the NEW→EDIT transition is treated as a data refresh (uses setValue
@@ -166,13 +177,19 @@ export function FormView({
     tabId: tab.id,
     tabLevel: tab.tabLevel ?? 0,
   });
+  const revealFieldErrors = useRevealFieldErrors({ fieldsRootRef, fields: tab.fields, setExpandedSections });
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
-  const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
-    useToolbarContext();
+  // Commands only, plus the one toolbar value the form reads: subscribing to the whole toolbar slot
+  // (useToolbarContext) re-rendered the form and all its fields on every save button state change.
+  const { registerFormViewRefetch, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarCommands();
+  const shouldOpenAttachmentModal = useToolbarStore(
+    (state) => state.byTabId[tab.id]?.shouldOpenAttachmentModal ?? false
+  );
   const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
+  const { guardTransition } = useUnsavedChangesTabGuard();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
   useEffect(() => {
@@ -256,6 +273,10 @@ export function FormView({
     }
     setAuxiliaryInputs(aux);
   }, [formInitialization, setAuxiliaryInputs]);
+
+  // The values belong to the form's record: once the form closes, the grid's toolbar must evaluate display
+  // logic with the selected row's own values (it lets TabContext's override them).
+  useEffect(() => () => setAuxiliaryInputs({}), [setAuxiliaryInputs]);
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) {
@@ -432,17 +453,22 @@ export function FormView({
 
   const { addRecentDocument } = useRecentDocuments();
 
+  // Track a record as recently viewed once the user stays on it: paging through records with Next sent one
+  // request per record passed over, and filled the recent documents with them.
   useEffect(() => {
     const identifier = record?._identifier;
     if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
-    addRecentDocument({
-      id: currentRecordId,
-      identifier: String(identifier),
-      windowId: windowMetadata.id,
-      windowTitle: windowMetadata.name,
-      tabId: tab.id,
-      tabLevel: tab.tabLevel ?? 0,
-    });
+    const timer = setTimeout(() => {
+      addRecentDocument({
+        recordId: currentRecordId,
+        identifier: String(identifier),
+        windowId: windowMetadata.id,
+        windowTitle: windowMetadata.name,
+        tabId: tab.id,
+        tabLevel: tab.tabLevel ?? 0,
+      });
+    }, RECENT_DOCUMENT_DWELL_MS);
+    return () => clearTimeout(timer);
   }, [record?._identifier, currentRecordId, windowMetadata, tab.id, tab.tabLevel, addRecentDocument]);
 
   /**
@@ -478,6 +504,34 @@ export function FormView({
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
+
+  /**
+   * Field the application dictionary marks as the entry point of the form
+   * (AD_Field.ISFIRSTFOCUSEDFIELD), the first rule of Classic's
+   * `OBViewForm.computeFocusItem`.
+   */
+  const firstFocusedFieldName = useMemo(() => {
+    const flaggedField = Object.values(tab.fields ?? {}).find((field) => field.isFirstFocusedField && field.displayed);
+    return flaggedField?.hqlName;
+  }, [tab.fields]);
+
+  // A new key means "this is a different record or a different form", which is
+  // exactly when Classic re-places the focus. Post-save refreshes keep the key.
+  const initialFocusKey = `${formInstanceKey}:${currentRecordId}:${currentMode}`;
+
+  // Sections start collapsed until the metadata-driven preference is seeded, and a
+  // collapsed section holds no focusable field, so the focus attempt has to be
+  // retried once the expansion state settles.
+  const focusLayoutToken = expandedSections.join("|");
+
+  useFormInitialFocus({
+    fieldsRootRef,
+    enabled: Boolean(canAutoFocus),
+    isReady: !loadingFormInitialization,
+    focusKey: initialFocusKey,
+    layoutToken: focusLayoutToken,
+    firstFocusedFieldName,
+  });
 
   // Seed the collapsed/expanded state from the fieldGroupCollapsed metadata only the
   // first time this tab's form is opened. Every later opening reuses the preference
@@ -1066,17 +1120,22 @@ export function FormView({
 
   /**
    * Record navigation integration
-   * Provides next/previous navigation with autosave functionality
+   * Provides next/previous navigation, asking what to do with unsaved changes first
    */
   const { navigationState, navigateToNext, navigateToPrevious, isNavigating } = useRecordNavigation({
     currentRecordId: recordId,
     records: navigationRecords,
     onNavigate: handleNavigateToRecord,
-    formState,
-    handleSave,
+    guardTransition,
     showErrorModal,
     hasMoreRecords,
     fetchMore,
+  });
+
+  useRecordNavigationShortcuts({
+    onPrevious: navigateToPrevious,
+    onNext: navigateToNext,
+    enabled: isFocused ?? true,
   });
 
   const handleNewRecord = useCallback(() => {
@@ -1204,7 +1263,14 @@ export function FormView({
               openAttachmentModal={openAttachmentModal}
               onAttachmentModalClose={() => setOpenAttachmentModal(false)}
               isReadOnly={isReadOnly}
+              fieldsRootRef={fieldsRootRef}
               data-testid="FormFields__1a0853"
+            />
+
+            <LiveTabValuesPublisher
+              tab={tab}
+              windowTabs={windowMetadata?.tabs}
+              data-testid="LiveTabValuesPublisher__1a0853"
             />
 
             <FormActions
@@ -1217,6 +1283,7 @@ export function FormView({
               mode={currentMode}
               isFocused={isFocused}
               isDocumentProcessing={isDocumentProcessing}
+              onFieldErrors={revealFieldErrors}
               data-testid="FormActions__1a0853"
             />
           </form>
@@ -1225,5 +1292,9 @@ export function FormView({
     </FormInitializationProvider>
   );
 }
+
+// Tab re-renders it with the same props several times per record Next; each render rebuilt the
+// react-hook-form context and re-rendered every field.
+export const FormView = memo(FormViewComponent);
 
 export default FormView;

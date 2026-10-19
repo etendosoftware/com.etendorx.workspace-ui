@@ -72,6 +72,7 @@ interface DashboardGridProps {
   onRemove: (instanceId: string) => void;
   onEditParams?: (instanceId: string) => void;
   onFetchPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
+  onRefresh?: (instanceId: string) => Promise<void>;
   onUpdateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
 }
 
@@ -85,6 +86,7 @@ export default function DashboardGrid({
   onRemove,
   onEditParams,
   onFetchPage,
+  onRefresh,
   onUpdateLayout,
 }: DashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,6 +154,7 @@ export default function DashboardGrid({
               onRemove={onRemove}
               onEditParams={onEditParams}
               onFetchPage={(page, pageSize) => onFetchPage(instance.instanceId, page, pageSize)}
+              onRefresh={onRefresh}
               data-testid="WidgetCard__e6b441"
             />
           </div>

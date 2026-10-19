@@ -17,7 +17,7 @@
 
 // @data-testid-ignore
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import ChevronRight from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
@@ -44,6 +44,8 @@ import {
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
+import { TREE_TRIGGER_ACTIONS, buildDropdownPortalSelector, getTreeTriggerAction } from "@/utils/form/keyboard";
 
 interface TreeSelectorProps {
   field: Field;
@@ -54,10 +56,10 @@ const isNodeSelectable = (node: TreeNode): boolean => !node.isCharacteristic;
 
 function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const { t } = useTranslation();
-  const { register, setValue, watch } = useFormContext();
+  const { register, setValue } = useFormContext();
   const fieldName = field.hqlName || field.columnName || field.name;
-  const selectedValue = watch(fieldName);
-  const currentIdentifier = watch(`${fieldName}$_identifier`);
+  const selectedValue = useWatch({ name: fieldName });
+  const currentIdentifier = useWatch({ name: `${fieldName}$_identifier` });
 
   // --- Data fetching (same pattern as TableDirSelector) ---
   const { records, loading, refetch } = useTableDirDatasource({ field });
@@ -199,6 +201,28 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     [isReadOnly]
   );
 
+  /**
+   * Keyboard on the closed field: Enter / Space toggle the tree like a click, Alt+↓ opens it and,
+   * once open, ↓ moves into it (classic `TreeItem_ShowTree` / `TreeItem_MoveToTree`).
+   */
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const action = getTreeTriggerAction(e, isOpen);
+      if (!action || isReadOnly) {
+        handleKeyboardActivation(e, () => handleClick(e as unknown as React.MouseEvent));
+        return;
+      }
+      e.preventDefault();
+      setIsOpen(true);
+      setIsFocused(true);
+      if (action === TREE_TRIGGER_ACTIONS.MOVE_TO_TREE) {
+        searchInputRef.current?.focus();
+        setHighlightedIndex(selectableIndices[0] ?? -1);
+      }
+    },
+    [isOpen, isReadOnly, handleClick, selectableIndices]
+  );
+
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -214,10 +238,10 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
       const relatedTarget = e.relatedTarget as Element | null;
-      if (relatedTarget?.closest(`[data-dropdown-portal="${dropdownId}"]`)) return;
+      if (relatedTarget?.closest(buildDropdownPortalSelector(dropdownId))) return;
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) closeDropdown();
       }, 150);
@@ -231,7 +255,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
       if (wrapperRef.current?.contains(relatedTarget)) return;
       setTimeout(() => {
         const activeElement = document.activeElement;
-        const isInPortal = activeElement?.closest(`[data-dropdown-portal="${dropdownId}"]`);
+        const isInPortal = activeElement?.closest(buildDropdownPortalSelector(dropdownId));
         const isInWrapper = wrapperRef.current?.contains(activeElement);
         if (!isInPortal && !isInWrapper) closeDropdown();
       }, 150);
@@ -244,7 +268,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       const isInWrapper = wrapperRef.current?.contains(target);
-      const isInPortal = target.closest(`[data-dropdown-portal="${dropdownId}"]`);
+      const isInPortal = target.closest(buildDropdownPortalSelector(dropdownId));
       if (!isInWrapper && !isInPortal) closeDropdown();
     };
     const timeoutId = setTimeout(() => {
@@ -394,16 +418,16 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
         aria-required={field.isMandatory}
         aria-disabled={isReadOnly}
         aria-details={field.helpComment}
-        tabIndex={-1}>
+        tabIndex={NOT_TABBABLE}>
         <input {...register(fieldName)} type="hidden" readOnly={isReadOnly} />
         <div
           ref={triggerRef}
           onClick={handleClick}
-          onKeyDown={(e) => handleKeyboardActivation(e, () => handleClick(e as unknown as React.MouseEvent))}
+          onKeyDown={handleTriggerKeyDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onFocus={handleFocus}
-          tabIndex={isReadOnly ? -1 : 0}
+          tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}
           className={mainDivClassNames}>
           <span className={labelClassNames}>{selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}</span>
           <div className="flex items-center flex-shrink-0 ml-2">
@@ -415,6 +439,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
                 className={`mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded ${
                   isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
                 }`}
+                tabIndex={NOT_TABBABLE}
                 aria-label="Clear selection">
                 <XIcon />
               </button>

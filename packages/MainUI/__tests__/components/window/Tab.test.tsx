@@ -31,7 +31,7 @@ import { DatasourceProvider } from "@/contexts/datasourceContext";
 import WindowProvider from "@/contexts/window";
 import { Tab } from "@/components/window/Tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import DynamicTable from "@/components/Table";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
@@ -40,6 +40,7 @@ import { FocusProvider } from "@/contexts/focus";
 import { useWindowStore } from "@/stores/windowStore";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { SPLIT_PANE_TEST_IDS, getFocusBorderColor } from "@/utils/window/splitView";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 
 // Mock other dependencies
 jest.mock("next/cache", () => ({
@@ -68,6 +69,25 @@ jest.mock("@/components/Form/FormView", () => ({
   FormView: jest.fn(() => null),
 }));
 
+// The split-view prompt is driven from the test: `mockGuardTransition` either lets the
+// transition through (clean tab) or captures it and its cancel callback (dirty tab).
+const heldGuardCalls: Array<{ run: () => void | Promise<void>; onCancel?: () => void }> = [];
+const mockGuardTransition = jest.fn((run: () => void | Promise<void>) => {
+  void run();
+});
+const holdGuardTransition = () => {
+  mockGuardTransition.mockImplementation((run: () => void | Promise<void>, onCancel?: () => void) => {
+    heldGuardCalls.push({ run, onCancel });
+  });
+};
+const mockOnRestoreSelection = jest.fn();
+
+jest.mock("@/contexts/UnsavedChangesTabGuard", () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => children,
+  useUnsavedChangesTabGuard: () => ({ guardTransition: mockGuardTransition }),
+}));
+
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
@@ -81,7 +101,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockUseTabRefreshContext = useTabRefreshContext as jest.MockedFunction<typeof useTabRefreshContext>;
-const mockUseToolbarContext = useToolbarContext as jest.MockedFunction<typeof useToolbarContext>;
+const mockUseToolbarCommands = useToolbarCommands as jest.MockedFunction<typeof useToolbarCommands>;
 
 // Helper function to render with theme and providers
 const renderWithTheme = (component: React.ReactElement) => {
@@ -131,7 +151,7 @@ describe("Tab - Refresh Registration", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       onRefresh: mockOnRefresh,
       onSave: jest.fn(),
@@ -283,6 +303,10 @@ describe("Tab - Split view", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    heldGuardCalls.length = 0;
+    mockGuardTransition.mockImplementation((run: () => void | Promise<void>) => {
+      void run();
+    });
     useWindowStore.getState().cleanState();
 
     mockUseTabRefreshContext.mockReturnValue({
@@ -291,13 +315,15 @@ describe("Tab - Split view", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       unregisterActions: jest.fn(),
       onRefresh: jest.fn(),
       onSave: jest.fn(),
       onNew: jest.fn(),
       onBack: jest.fn(),
+      onDiscard: jest.fn(),
+      onRestoreSelection: mockOnRestoreSelection,
       onFilter: jest.fn(),
       onToggleTreeView: jest.fn(),
       onShowTableAndForm: jest.fn(),
@@ -493,15 +519,102 @@ describe("Tab - Split view", () => {
       expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
     });
 
-    it("does not change the form record when there are unsaved changes", () => {
+    /** Puts the tab in "dirty" state — store registry included — and holds the prompt open. */
+    const openSplitWithPendingChanges = () => {
       require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({ tab: splitTab, hasFormChanges: true });
+      holdGuardTransition();
       renderSplitTab();
       openForm();
       pressShowTableAndForm();
+      act(() => {
+        useWindowStore
+          .getState()
+          .setWindowDirtySource(WINDOW_IDENTIFIER, buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, splitTab.id), true);
+      });
+    };
+
+    it("asks before changing the form record when there are unsaved changes", () => {
+      openSplitWithPendingChanges();
 
       selectRow(OTHER_RECORD_ID);
 
+      expect(mockGuardTransition).toHaveBeenCalledTimes(1);
       expect(getForm()).toMatchObject({ recordId: RECORD_ID });
+    });
+
+    it("loads the selected record once the prompt is resolved", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
+    });
+
+    /** Selection the grid ends up with after a successful save: the record just saved. */
+    const simulateSaveReselection = () => selectRow(RECORD_ID);
+
+    it("loads the clicked record even when saving re-selected the previous one", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      simulateSaveReselection();
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(getForm()).toMatchObject({ recordId: OTHER_RECORD_ID });
+    });
+
+    it("leaves the grid selection on the record it loads", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      simulateSaveReselection();
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.selectedRecord).toBe(
+        OTHER_RECORD_ID
+      );
+    });
+
+    it("follows a newer row selected while the prompt was open", () => {
+      const THIRD_RECORD_ID = "record-3";
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+      selectRow(THIRD_RECORD_ID);
+
+      act(() => {
+        void heldGuardCalls[0].run();
+      });
+
+      expect(getForm()).toMatchObject({ recordId: THIRD_RECORD_ID });
+    });
+
+    it("puts the grid selection back on the form record when the prompt is cancelled", () => {
+      openSplitWithPendingChanges();
+      selectRow(OTHER_RECORD_ID);
+
+      act(() => {
+        heldGuardCalls[0].onCancel?.();
+      });
+
+      expect(mockOnRestoreSelection).toHaveBeenCalledWith(RECORD_ID);
+      expect(getForm()).toMatchObject({ recordId: RECORD_ID });
+    });
+
+    // Holding an arrow key in the grid must not stack one prompt per row.
+    it("asks only once while the same row stays selected", () => {
+      openSplitWithPendingChanges();
+
+      selectRow(OTHER_RECORD_ID);
+      selectRow(OTHER_RECORD_ID);
+
+      expect(mockGuardTransition).toHaveBeenCalledTimes(1);
     });
 
     it("does not open the form on selection outside split view", () => {

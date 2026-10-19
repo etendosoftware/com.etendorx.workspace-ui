@@ -20,6 +20,7 @@ import {
   MRT_ToggleDensePaddingButton,
   MRT_ToggleFullScreenButton,
   type MRT_Row,
+  type MRT_RowVirtualizer,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
@@ -44,10 +45,11 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -57,7 +59,7 @@ import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
-import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
@@ -69,6 +71,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
+import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserStore } from "@/stores/userStore";
 import {
@@ -78,6 +81,7 @@ import {
   getCellTitle,
 } from "@/utils/table/utils";
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
+import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
 import {
   ACTION_FORM_INITIALIZATION,
@@ -102,12 +106,16 @@ import type {
   SaveResult,
   ValidationError,
 } from "./types/inlineEditing";
-import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
+import { createEditingRowStateUtils, getMergedRowData, hasRowsWithUnsavedChanges } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
+import { useTableGrouping } from "./hooks/useTableGrouping";
+import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
+import { getGroupRowProps, getGroupingColumnProps } from "./utils/groupingColumns";
+import { isGroupRow } from "@/utils/table/grouping";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
 import {
@@ -125,6 +133,7 @@ import {
 } from "./utils/performanceOptimizations";
 import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/accessibilityUtils";
 import { GRID_FOCUS_TARGET_ATTRIBUTE } from "@/utils/window/splitView";
+import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
@@ -135,6 +144,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
+import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 
@@ -197,6 +207,8 @@ const createFieldWithData = (
 interface CellEditingContextProps {
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
+  /** AD window id, so inline-edit readonly logic resolves window-scoped preferences. */
+  windowId?: string;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -232,6 +244,9 @@ interface EditableCellContentProps extends CellEditingContextProps {
  * Editable cell content component
  * Extracted from inline Cell definition to reduce cognitive complexity
  */
+/** The session prop of cells while no row is being edited (only editable cells read it). */
+const NO_EDITING_SESSION: Record<string, unknown> = {};
+
 const EditableCellContent: React.FC<EditableCellContentProps> = ({
   rowId,
   fieldKey,
@@ -247,6 +262,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   setInitialFocusCell,
   loadTableDirOptions,
   isLoadingTableDirOptions,
+  windowId,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -254,7 +270,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
   const isNewRow = editingData.isNew || false;
   const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
-  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
+  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session, windowId);
 
   const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
   const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
@@ -395,6 +411,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   setInitialFocusCell,
   loadTableDirOptions,
   isLoadingTableDirOptions,
+  windowId,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -424,6 +441,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         setInitialFocusCell={setInitialFocusCell}
         loadTableDirOptions={loadTableDirOptions}
         isLoadingTableDirOptions={isLoadingTableDirOptions}
+        windowId={windowId}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -488,7 +506,8 @@ const isFieldReadOnly = (
   field: Field,
   isNewRow = false,
   rowValues?: Record<string, unknown>,
-  session?: Record<string, unknown>
+  session?: Record<string, unknown>,
+  windowId?: string
 ): boolean => {
   // Field explicitly marked as readonly
   if (field.isReadOnly) return true;
@@ -500,7 +519,7 @@ const isFieldReadOnly = (
   if (field.readOnlyLogicExpression && rowValues) {
     try {
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);
-      const result = compiledExpr(session || {}, rowValues);
+      const result = compiledExpr(session || {}, rowValues, windowId);
       return Boolean(result);
     } catch (error) {
       logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
@@ -650,6 +669,12 @@ interface DynamicTableProps {
    * primary in split view, where the form pane owns the user's attention.
    */
   isPrimaryView?: boolean;
+  /**
+   * True when the whole tab is collapsed, i.e. its level is not expanded and `Tab` renders it
+   * inside a `hidden` container. Distinct from `isVisible`, which only tells grid pane from form
+   * pane *within* this tab and therefore stays true for a tab the user cannot see at all.
+   */
+  isTabCollapsed?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
@@ -736,6 +761,7 @@ const DynamicTable = ({
   isTreeMode = true,
   isVisible = true,
   isPrimaryView = true,
+  isTabCollapsed = false,
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
@@ -745,7 +771,6 @@ const DynamicTable = ({
   const { t } = useTranslation();
   const { graph } = useSelected();
   const user = useUserStore((s) => s.user);
-  const session = useUserStore((s) => s.session);
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
@@ -789,7 +814,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { showErrorModal, showSuccessModal, showStatusModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal, showStatusModal, showWarningModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -802,8 +827,8 @@ const DynamicTable = ({
     registerAddRecord,
     refetchDatasource,
   } = useDatasourceContext();
-  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } =
-    useToolbarContext();
+  const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal } =
+    useToolbarCommands();
   const windowIdentifier = useCurrentWindowIdentifier();
   const windowId = useCurrentWindowId();
 
@@ -828,14 +853,22 @@ const DynamicTable = ({
     tab: tab,
   });
 
-  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({
-      windowIdentifier,
-      tabId: tab.id,
-      tabLevel: tab.tabLevel,
-    });
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    tableColumnSorting,
+    tableColumnOrder,
+    tableColumnGrouping,
+    setTableColumnGrouping,
+    setTableColumnSorting,
+  } = useTableStatePersistenceTab({
+    windowIdentifier,
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+  });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizerInstanceRef = useRef<MRT_RowVirtualizer | null>(null);
 
   // Hook for drag & drop file attachments on table rows
   const handleFileDrop = useCallback((files: File[], record: EntityData) => {
@@ -860,6 +893,10 @@ const DynamicTable = ({
   // Tracks the last parent record id for which the logical-SR auto-open has
   // fired, so closing the form does not re-trigger for the same parent.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
+  // Tracks the record id the single-record rule last auto-selected, so deselecting it by hand is
+  // not immediately undone. Reset whenever the result set stops holding exactly one record, which
+  // is what lets the rule fire again after filtering back down to a single result.
+  const autoSelectedSingleRecordRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -872,6 +909,7 @@ const DynamicTable = ({
     shouldUseTreeMode,
     treeEntity,
     referencedTableId,
+    canMoveTreeNodes,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -1009,19 +1047,53 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
-
-  // Report table dirty state to windowStore for tab-close confirmation
+  // Only editable cells read the session while rendering (their read-only logic), so the grid subscribes to it
+  // only while a row is being edited: otherwise every SETSESSION answer after a selection change repainted
+  // all visible cells. Handlers read the current session when they run.
   const hasEditingRows = Object.keys(editingRows).length > 0;
+  const editingSession = useUserStore((s) => (hasEditingRows ? s.session : NO_EDITING_SESSION));
+
+  // Grid grouping (classic "Group by" / "Ungroup"); regrouping is blocked like sorting while rows are being edited
+  const canChangeGrouping = useCallback(() => canSortWithEditingRows(editingRowsRef.current), []);
+  const showGroupingWarning = useCallback((message: string) => showWarningModal(message), [showWarningModal]);
+  const {
+    groupedColumnId,
+    activeGrouping,
+    isGroupingAvailable,
+    groupExpanded,
+    handleGroupExpandedChange,
+    groupBy,
+    ungroup,
+    getGroupByLabel,
+    getUngroupLabel,
+  } = useTableGrouping({
+    windowId: tab.window,
+    columns: baseColumns,
+    grouping: tableColumnGrouping,
+    setGrouping: setTableColumnGrouping,
+    setSorting: setTableColumnSorting,
+    records: displayRecords,
+    loading,
+    shouldUseTreeMode,
+    canChangeGrouping,
+    showWarning: showGroupingWarning,
+  });
+
+  // Report table dirty state to windowStore — read by every unsaved-changes guard.
+  // Keyed on real edits, not on merely having a row open for editing: opening the editor
+  // and touching nothing must not make the whole window look unsaved.
+  const hasDirtyRows = useMemo(() => hasRowsWithUnsavedChanges(editingRows), [editingRows]);
   useEffect(() => {
+    const sourceKey = buildDirtySourceKey(DIRTY_SOURCE_KINDS.TABLE, tab.id);
     if (windowIdentifier) {
-      setWindowDirtySource(windowIdentifier, `table:${tab.id}`, hasEditingRows);
+      setWindowDirtySource(windowIdentifier, sourceKey, hasDirtyRows);
     }
     return () => {
       if (windowIdentifier) {
-        setWindowDirtySource(windowIdentifier, `table:${tab.id}`, false);
+        setWindowDirtySource(windowIdentifier, sourceKey, false);
       }
     };
-  }, [hasEditingRows, windowIdentifier, tab.id, setWindowDirtySource]);
+  }, [hasDirtyRows, windowIdentifier, tab.id, setWindowDirtySource]);
 
   // Focus management for inline editing - stored in a ref so that changing the focus target
   // does not invalidate renderDataColumnCell or the columns useMemo (which would rebuild all
@@ -1062,6 +1134,7 @@ const DynamicTable = ({
 
     setIsUploading(true);
     try {
+      const session = useUserStore.getState().session;
       const orgId = session["#AD_Org_ID"] || session.adOrgId;
 
       if (!orgId) {
@@ -1127,8 +1200,11 @@ const DynamicTable = ({
     onDragStateChange: setDropTargetState,
   });
 
+  // Read-only trees cannot move nodes, as in the Classic UI (canReorderRecords)
+  const isTreeNodeDragEnabled = shouldUseTreeMode && canMoveTreeNodes;
+
   const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
-    shouldUseTreeMode,
+    shouldUseTreeMode: isTreeNodeDragEnabled,
     treeEntity,
     referencedTableId,
     tabId: tab.id,
@@ -1476,6 +1552,7 @@ const DynamicTable = ({
 
         const payload = buildPayloadByInputName(filteredRowData, fieldsByHqlName);
         const entityKeyColumn = tab.fields.id.columnName;
+        const session = useUserStore.getState().session;
         const calloutData = {
           ...session,
           ...payload,
@@ -1608,7 +1685,7 @@ const DynamicTable = ({
         logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
       }
     },
-    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
+    [tab, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
   );
 
   const toggleColumnsDropdown = useCallback(
@@ -1774,6 +1851,12 @@ const DynamicTable = ({
       return;
     }
 
+    // Classic hides "create record in grid" while the grid is grouped
+    if (groupedColumnId) {
+      logger.warn("[InlineEditing] Insert blocked while the grid is grouped");
+      return;
+    }
+
     // Import utility functions for new row creation
     const { generateNewRowId, createEmptyRowData, insertNewRowAtTop } = await import("./utils/editingRowUtils");
 
@@ -1832,6 +1915,7 @@ const DynamicTable = ({
     displayRecords,
     setInitialFocusCell,
     setOptimisticRecords,
+    groupedColumnId,
   ]);
 
   // Validate an entire row before saving
@@ -2473,13 +2557,14 @@ const DynamicTable = ({
           editingRowUtils={editingRowUtils}
           columnFieldMappings={columnFieldMappings}
           initialFocusCell={initialFocusCellRef.current}
-          session={session}
+          session={editingSession}
           keyboardNavigationManager={keyboardNavigationManager}
           handleCellValueChange={handleCellValueChange}
           validateFieldOnBlur={validateFieldOnBlur}
           setInitialFocusCell={setInitialFocusCell}
           loadTableDirOptions={loadTableDirOptions}
           isLoadingTableDirOptions={isLoadingTableDirOptions}
+          windowId={tab.window}
           data-testid="DataColumnCell__8ca888"
         />
       );
@@ -2500,13 +2585,14 @@ const DynamicTable = ({
     [
       editingRowUtils,
       columnFieldMappings,
-      session,
+      editingSession,
       keyboardNavigationManager,
       handleCellValueChange,
       validateFieldOnBlur,
       loadTableDirOptions,
       isLoadingTableDirOptions,
       renderFirstColumnCell,
+      tab.window,
     ]
   );
 
@@ -2543,6 +2629,9 @@ const DynamicTable = ({
 
       // Use stable callback reference instead of inline function
       column.Cell = renderDataColumnCell;
+
+      // Group header rendering, locking of the grouped column and group subtotals
+      Object.assign(column, getGroupingColumnProps(col, { groupedColumnId, summaryType: summaryState[col.id] }));
 
       // Tree reference columns get a tree-aware dropdown filter instead of text
       const ref = col.column?.reference;
@@ -2632,6 +2721,8 @@ const DynamicTable = ({
     tab.entityName,
     tab.id,
     handleMRTColumnFiltersChange,
+    groupedColumnId,
+    summaryState,
   ]);
 
   // Helper function to check if a row is being edited
@@ -2705,7 +2796,7 @@ const DynamicTable = ({
     [onRecordSelection, tab.id]
   );
 
-  const rowProps = useCallback<RowProps>(
+  const recordRowProps = useCallback<RowProps>(
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
@@ -2840,7 +2931,7 @@ const DynamicTable = ({
           const nodeDrop = getNodeDropProps(record as EntityData);
           return {
             // Make rows draggable in tree mode for node reordering/reparenting
-            draggable: shouldUseTreeMode,
+            draggable: isTreeNodeDragEnabled,
             onDragStart: nodeDrag.onDragStart,
             onDragEnd: nodeDrag.onDragEnd,
             // File drop uses onDragEnter; tree drop does not need it
@@ -2907,7 +2998,7 @@ const DynamicTable = ({
       sx.rowSelected,
       editingRowUtils,
       getRowDropZoneProps,
-      shouldUseTreeMode,
+      isTreeNodeDragEnabled,
       draggingRowId,
       dropTarget,
       getNodeDragProps,
@@ -2915,6 +3006,12 @@ const DynamicTable = ({
       uIPattern,
       handleSaveRow,
     ]
+  );
+
+  // Group header rows only expand/collapse: their `original` is the group's first record
+  const rowProps = useCallback<RowProps>(
+    (props) => (isGroupRow(props.row) ? getGroupRowProps(props.row, props.table) : recordRowProps(props)),
+    [recordRowProps]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -3054,9 +3151,13 @@ const DynamicTable = ({
 
   const handleExpandedChange = useCallback(
     (newExpanded: Updater<ExpandedState>) => {
+      if (groupedColumnId) {
+        handleGroupExpandedChange(newExpanded);
+        return;
+      }
       handleMRTExpandChange({ newExpanded });
     },
-    [handleMRTExpandChange]
+    [handleMRTExpandChange, groupedColumnId, handleGroupExpandedChange]
   );
 
   const handleGetRowCanExpand = useCallback(
@@ -3066,10 +3167,36 @@ const DynamicTable = ({
     [shouldUseTreeMode]
   );
 
+  // Group header rows cannot be selected (classic draws no checkbox on them)
+  const isSelectableRow = useCallback((row: MRT_Row<EntityData>) => !isGroupRow(row), []);
+
+  // Grouping actions of the column actions menu
+  const groupingMenuActions = useMemo(
+    () =>
+      isGroupingAvailable
+        ? { groupedColumnId, getGroupByLabel, getUngroupLabel, onGroupBy: groupBy, onUngroup: ungroup }
+        : undefined,
+    [isGroupingAvailable, groupedColumnId, getGroupByLabel, getUngroupLabel, groupBy, ungroup]
+  );
+
+  // Column actions ("3 dots") menu: MRT's items plus the summary (as in the header context menu) and grouping actions
+  const renderColumnActionsMenuItems = useCallback(
+    (args: ColumnActionsMenuArgs) =>
+      buildColumnActionsMenuItems(args, {
+        activeSummary: summaryState,
+        onSetSummary: handleSetSummary,
+        onRemoveSummary: handleRemoveSummary,
+        grouping: groupingMenuActions,
+      }),
+    [summaryState, handleSetSummary, handleRemoveSummary, groupingMenuActions]
+  );
+
   // Memoize the expanded state to avoid creating new empty objects
   const expandedState = useMemo(() => {
-    return shouldUseTreeMode ? expanded : {};
-  }, [shouldUseTreeMode, expanded]);
+    if (shouldUseTreeMode) return expanded;
+    if (groupedColumnId) return groupExpanded;
+    return {};
+  }, [shouldUseTreeMode, expanded, groupedColumnId, groupExpanded]);
 
   // Memoize the entire state object to prevent unnecessary re-renders
   const tableState = useMemo(
@@ -3078,12 +3205,21 @@ const DynamicTable = ({
       columnVisibility: tableColumnVisibility,
       sorting: tableColumnSorting,
       columnOrder: tableColumnOrder,
+      grouping: activeGrouping,
       expanded: expandedState,
       showColumnFilters: true,
       showProgressBars: loading,
       isLoading: loading,
     }),
-    [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
+    [
+      tableColumnFilters,
+      tableColumnVisibility,
+      tableColumnSorting,
+      tableColumnOrder,
+      activeGrouping,
+      expandedState,
+      loading,
+    ]
   );
 
   // Memoize initialState to avoid creating new objects
@@ -3109,6 +3245,7 @@ const DynamicTable = ({
           row: props.row,
         }),
         onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
+          if (isGroupRow(props.row)) return;
           handleCellContextMenu(event, props.cell, props.row);
         },
         title: currentTitle,
@@ -3136,7 +3273,7 @@ const DynamicTable = ({
     enableGlobalFilter: false,
     columns,
     data: effectiveRecords,
-    enableRowSelection: true,
+    enableRowSelection: isSelectableRow,
     enableMultiRowSelection: true,
     muiSelectAllCheckboxProps,
     positionToolbarAlertBanner: "none",
@@ -3147,6 +3284,12 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
+    // MRT 2 exposes the row virtualizer only through this ref (the table instance has no `rowVirtualizer`)
+    rowVirtualizerInstanceRef,
+    // Data cells re-render only when their cell changes, so a selection change repaints the rows, not
+    // every cell in them. Inline editing (our own state, not MRT's) and tree expansion change what a
+    // cell shows without changing the cell, so cells are not memoized while either is in use.
+    memoMode: editingRowsCount === 0 && !shouldUseTreeMode ? "cells" : undefined,
     enableTopToolbar: true,
     renderTopToolbar: ({ table: mrtTable }) => {
       const isFullScreen = mrtTable.getState().isFullScreen;
@@ -3224,7 +3367,12 @@ const DynamicTable = ({
     },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
-    paginateExpandedRows: false,
+    enableGrouping: isGroupingAvailable,
+    groupedColumnMode: "reorder",
+    enableExpandAll: false,
+    // Without a pagination row model, TanStack only inserts the sub rows of expanded groups when
+    // expanded rows are "paginated"; the tree builds its own flat rows, so it keeps the previous value
+    paginateExpandedRows: Boolean(groupedColumnId),
     getRowCanExpand: handleGetRowCanExpand,
     initialState: {
       ...initialState,
@@ -3242,6 +3390,7 @@ const DynamicTable = ({
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
+    renderColumnActionsMenuItems,
     manualFiltering: true,
     manualSorting: true,
     enableColumnOrdering: true,
@@ -3256,29 +3405,47 @@ const DynamicTable = ({
   const tableRef = useRef(table);
   tableRef.current = table;
 
+  /**
+   * Keeps the row at `index` in view on every keyboard step: no movement while it is visible, otherwise
+   * the least scroll that shows it below the sticky header. A row the virtualizer has not rendered (a jump
+   * far away) is first brought near with the virtualizer, then aligned on the next frame.
+   */
+  const keepRowInView = useCallback((index: number) => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    const findRow = () => container.querySelector<HTMLElement>(`tbody tr[data-index="${index}"]`);
+    try {
+      const row = findRow();
+      if (row) {
+        scrollRowIntoContainer(container, row);
+        return;
+      }
+      rowVirtualizerInstanceRef.current?.scrollToIndex(index, { align: "center" });
+      requestAnimationFrame(() => {
+        const rendered = findRow();
+        if (rendered) scrollRowIntoContainer(container, rendered);
+      });
+    } catch (error) {
+      logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
+    }
+  }, []);
+
   const { handleArrowUp, handleArrowDown, isKeyboardNavigationSource } = useRowKeyboardNavigation({
     table,
     effectiveRecords,
     containerRef: tableContainerRef,
     editingRowsCount,
+    onStep: keepRowInView,
   });
 
+  // After keyboard navigation settles: a no-op when every step already kept the row in view, a safety net
+  // otherwise (e.g. the records changed while the keys were held).
   const handleStableKeyboardSelection = useCallback(
     (recordId: string) => {
-      if (!tableContainerRef.current) return;
       const index = effectiveRecords.findIndex((r) => String(r.id) === recordId);
-      if (index < 0) return;
-      try {
-        // @ts-ignore - rowVirtualizer is available at runtime but missing from MRT types
-        const virtualizer = tableRef.current.rowVirtualizer;
-        if (virtualizer && typeof virtualizer.scrollToIndex === "function") {
-          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
-        }
-      } catch (error) {
-        logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
-      }
+      if (index >= 0) keepRowInView(index);
     },
-    [effectiveRecords]
+    [effectiveRecords, keepRowInView]
   );
 
   useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
@@ -3301,11 +3468,6 @@ const DynamicTable = ({
     },
     [effectiveRecords, tableContainerRef, openRecordInFormView]
   );
-
-  const handleNewWithParentGuard = useCallback(() => {
-    if (parentTab && !parentRecord) return;
-    onNew?.();
-  }, [parentTab, parentRecord, onNew]);
 
   const handleTreeArrowRight = useCallback(
     (_event: KeyboardEvent) => {
@@ -3345,7 +3507,6 @@ const DynamicTable = ({
   useKeyboardShortcuts(
     {
       Enter: { handler: handleEnter },
-      "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
       ArrowUp: { handler: handleArrowUp },
       ArrowDown: { handler: handleArrowDown },
       ...(shouldUseTreeMode
@@ -3357,6 +3518,17 @@ const DynamicTable = ({
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
+
+  // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
+  useGridShortcuts({
+    containerRef: tableContainerRef,
+    tableRef,
+    enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
+    canAddRow: !parentTab || Boolean(parentRecord),
+    onNewRow: handleInsertRow,
+    onEditRow: handleEditRow,
+    onOpenInForm: openRecordInFormView,
+  });
 
   // When the grid becomes visible again after leaving form view, DOM focus is
   // on <body>. The row-click handler (line ~2594) focuses the table container,
@@ -3416,6 +3588,11 @@ const DynamicTable = ({
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
+    // While hidden behind the form the grid's rows are not rendered (useFrozenWhileHidden), so a scroll
+    // now would be clamped to an empty container. Wait until the grid is shown again.
+    if (!isVisible) {
+      return;
+    }
 
     const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
@@ -3427,19 +3604,20 @@ const DynamicTable = ({
 
       try {
         // Use the virtualizer to scroll to the index - this handles variable row heights and prevents drift
-        // @ts-ignore - rowVirtualizer is available in the table instance but might be missing from types
-        if (table.rowVirtualizer) {
-          // @ts-ignore
-          table.rowVirtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        const virtualizer = rowVirtualizerInstanceRef.current;
+        if (virtualizer) {
+          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
         } else {
           // Fallback for when virtualizer is not ready (should be rare)
           const containerElement = tableContainerRef.current;
           const estimatedRowHeight = 40; // Approximate row height
           const headerHeight = 75; // Approximate header height
-          const scrollTop = index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+          const scrollTop = Math.max(0, index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight);
 
+          // Keeps the scroll restore that runs when the grid is shown again from undoing this scroll
+          savedScrollTop.current = scrollTop;
           containerElement.scrollTo({
-            top: Math.max(0, scrollTop),
+            top: scrollTop,
             behavior: "smooth",
           });
         }
@@ -3459,7 +3637,7 @@ const DynamicTable = ({
         scrollToIndex(selectedIndex);
       }
     }
-  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+  }, [windowId, windowIdentifier, getSelectedRecord, tab.id, tab.window, displayRecords, table, isVisible]);
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state
@@ -3727,6 +3905,16 @@ const DynamicTable = ({
     fetchMore,
   ]);
 
+  /**
+   * Re-highlights a row after the user backed out of a selection change, e.g. cancelling
+   * the split-view unsaved-changes prompt. Writing MRT's selection is what the store→grid
+   * sync effects cannot do on their own, and it feeds the store back through
+   * useTableSelection.
+   */
+  const handleRestoreSelection = useCallback((recordId: string) => {
+    tableRef.current.setRowSelection({ [recordId]: true });
+  }, []);
+
   // The grid never registers `save`: the no-op default already covers grid-only
   // mode, and registering one here used to clobber the form's real save.
   useEffect(() => {
@@ -3736,11 +3924,20 @@ const DynamicTable = ({
         refresh: refetch,
         filter: toggleImplicitFilters,
         columnFilters: toggleColumnsDropdown,
+        restoreSelection: handleRestoreSelection,
       },
       TOOLBAR_ACTION_OWNERS.GRID
     );
     return () => unregisterActions(TOOLBAR_ACTION_OWNERS.GRID);
-  }, [refetch, registerActions, unregisterActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
+  }, [
+    refetch,
+    registerActions,
+    unregisterActions,
+    toggleImplicitFilters,
+    toggleColumnsDropdown,
+    handleRestoreSelection,
+    isVisible,
+  ]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView
@@ -3794,6 +3991,60 @@ const DynamicTable = ({
     }
   }, [pendingSelectionId, table, loading, isUploading]);
 
+  // A settled load that yielded exactly one record selects it — classic's OBViewGrid.dataArrived
+  // single-record branch. Declared last of the selection effects so any earlier branch (deep link,
+  // SR auto-open, new-record mode) has already written its own decision for this render.
+  // Writing MRT's rowSelection is all that is needed: useTableSelection propagates it to the window
+  // store, the selection graph, the server session and the child tabs, exactly as a row click does.
+  useEffect(() => {
+    if (!windowIdentifier) return;
+
+    const decision = getSingleRecordAutoSelectDecision({
+      loading,
+      isVisible: isVisible ?? true,
+      isTabCollapsed,
+      records,
+      hasMoreRecords,
+      storedSelectedId: getSelectedRecord(windowIdentifier, tab.id),
+      srAutoOpens: getSrAutoOpenDecision({ uIPattern, tab, loading, displayRecords, parentTab, parentRecord }).open,
+      isNewRecordMode: getTabFormState(windowIdentifier, tab.id)?.formMode === FORM_MODES.NEW,
+      hasEditingRows: editingRowsCount > 0,
+      lastAutoSelectedId: autoSelectedSingleRecordRef.current,
+    });
+
+    if (!decision.select) {
+      if (records.length !== 1) autoSelectedSingleRecordRef.current = undefined;
+      return;
+    }
+
+    autoSelectedSingleRecordRef.current = decision.recordId;
+    table.setRowSelection({ [decision.recordId]: true });
+  }, [
+    windowIdentifier,
+    tab,
+    loading,
+    isVisible,
+    isTabCollapsed,
+    records,
+    hasMoreRecords,
+    displayRecords,
+    parentTab,
+    parentRecord,
+    uIPattern,
+    editingRowsCount,
+    getSelectedRecord,
+    getTabFormState,
+    table,
+  ]);
+
+  // Hidden behind the form, the grid skips re-renders that change nothing it shows (cells, date
+  // formatting, row measurement); its rows and selection still update while hidden.
+  const tableElement = useFrozenWhileHidden(
+    isVisible,
+    <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
+    [effectiveRecords, table.getState().rowSelection]
+  );
+
   if (error) {
     return <TableErrorDisplay error={error} onRetry={refetch} data-testid="TableErrorDisplay__8ca888" />;
   }
@@ -3816,7 +4067,7 @@ const DynamicTable = ({
       }`}
       onClick={onFocusAcquire}>
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
-        <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+        {tableElement}
       </div>
       <SummaryRow
         table={table}
@@ -3908,4 +4159,6 @@ const DynamicTable = ({
   );
 };
 
-export default DynamicTable;
+// Memoized: Tab re-renders several times per form navigation with the same props, and the grid body (MRT
+// instance, columns) is expensive even while hidden behind the form. Context and store updates still apply.
+export default React.memo(DynamicTable);

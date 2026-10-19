@@ -15,10 +15,11 @@
  *************************************************************************
  */
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { NOT_TABBABLE } from "@/utils/form/focus";
 
 interface DatetimeSelectorProps {
   field: Field;
@@ -62,11 +63,11 @@ function formatDateForInputSafe(value: string): string {
 }
 
 export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
-  const { register, getValues, formState } = useFormContext();
+  const { register, formState } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
   const [displayValue, setDisplayValue] = useState<string>("");
   const hiddenDatetimeInputRef = useRef<HTMLInputElement | null>(null);
-  const value = getValues(field.hqlName);
+  const value = useWatch({ name: field.hqlName });
   const fieldError = formState.errors[field.hqlName];
   const hasError = error || !!fieldError;
 
@@ -158,6 +159,9 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           id={field.hqlName}
           value={displayValue}
           readOnly
+          // Disabled — not merely read-only — so the field leaves the tab
+          // sequence, matching how Classic renders a read-only form item.
+          disabled={isReadOnly}
           className={getInputClass()}
           onFocus={handleDisplayInputFocus}
           onBlur={handleBlur}
@@ -176,7 +180,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           onFocus={handleFocus}
           onBlur={handleBlur}
           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-          tabIndex={-1}
+          tabIndex={NOT_TABBABLE}
           readOnly={isReadOnly}
           disabled={isReadOnly}
           value={value ? formatDateForInputSafe(value) : ""}

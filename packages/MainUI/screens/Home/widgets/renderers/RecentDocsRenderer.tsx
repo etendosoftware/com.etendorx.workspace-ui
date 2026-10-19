@@ -1,8 +1,8 @@
 /*
  *************************************************************************
  * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
+ * (the "License"), you may not use this file except in compliance
+ * with the License.
  * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
@@ -20,29 +20,25 @@
 import { useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
-import { useWindowStore } from "@/stores/windowStore";
-import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { TAB_MODES, FORM_MODES } from "@/utils/url/constants";
+import { useRedirect } from "@/hooks/navigation/useRedirect";
 
 export default function RecentDocsRenderer() {
   const { t } = useTranslation();
   const { documents } = useRecentDocuments();
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
-  const setTabFormState = useWindowStore((s) => s.setTabFormState);
-  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const { handleClickRedirect } = useRedirect();
 
   const handleClick = useCallback(
-    (doc: (typeof documents)[number]) => {
-      const windowIdentifier = getNewWindowIdentifier(doc.windowId);
-      setWindowActive({ windowIdentifier, windowData: { title: doc.windowTitle, initialized: true } });
-      setSelectedRecord(windowIdentifier, doc.tabId, doc.id, doc.tabLevel);
-      setTabFormState(windowIdentifier, doc.tabId, {
-        recordId: doc.id,
-        mode: TAB_MODES.FORM,
-        formMode: FORM_MODES.EDIT,
+    (e: React.MouseEvent, doc: (typeof documents)[number]) => {
+      handleClickRedirect({
+        e,
+        windowId: doc.windowId,
+        windowTitle: doc.windowTitle,
+        referencedTabId: doc.tabId,
+        selectedRecordId: doc.recordId,
+        tabLevel: doc.tabLevel,
       });
     },
-    [setWindowActive, setTabFormState, setSelectedRecord]
+    [handleClickRedirect]
   );
 
   if (documents.length === 0) {
@@ -57,11 +53,11 @@ export default function RecentDocsRenderer() {
     <div className="flex flex-wrap gap-2" data-testid="RecentDocsRenderer__list">
       {documents.map((doc) => (
         <button
-          key={`${doc.windowId}-${doc.id}`}
+          key={`${doc.windowId}-${doc.recordId}`}
           type="button"
-          onClick={() => handleClick(doc)}
+          onClick={(e) => handleClick(e, doc)}
           className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
-          data-testid={`RecentDocsRenderer__item_${doc.windowId}_${doc.id}`}>
+          data-testid={`RecentDocsRenderer__item_${doc.windowId}_${doc.recordId}`}>
           {doc.identifier}
         </button>
       ))}
