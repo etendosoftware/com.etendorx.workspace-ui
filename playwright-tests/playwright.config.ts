@@ -1,56 +1,35 @@
 import { defineConfig, devices } from "@playwright/test";
-import { resolve } from "path";
-import { readFileSync } from "fs";
 
-// Load .env from cypress-tests (same env vars)
-// NOTE: disabled — cypress-tests/.env may have stale credentials that differ
-// from the current backend. Values are set via PLAYWRIGHT_BASE_URL /
-// CYPRESS_BASE_URL / CYPRESS_IFRAME_URL env vars or use the defaults below.
-const loadEnv = () => {
-  try {
-    const envFile = resolve(process.cwd(), "../cypress-tests/.env");
-    const content = readFileSync(envFile, "utf8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("#")) {
-        const [key, ...rest] = trimmed.split("=");
-        // Only load non-credential env vars to avoid stale password overrides
-        if (key && !process.env[key] && key !== "CYPRESS_PASSWORD" && key !== "CYPRESS_USER") {
-          process.env[key] = rest.join("=");
-        }
-      }
-    }
-  } catch {
-    // no .env file
-  }
-};
+/**
+ * First environment variable set among `names`, otherwise `fallback`. The CYPRESS_* names are kept
+ * as fallbacks for environments that still export them.
+ */
+const envOr = (names: string[], fallback: string): string =>
+  names.map((name) => process.env[name]).find((value) => value) ?? fallback;
 
-loadEnv();
-
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.CYPRESS_BASE_URL || "http://localhost:3000";
-const IFRAME_URL = process.env.CYPRESS_IFRAME_URL || "localhost:8080";
-const DEFAULT_USER = process.env.CYPRESS_USER || "admin";
-const DEFAULT_PASSWORD = process.env.CYPRESS_PASSWORD || "admin";
+const BASE_URL = envOr(["PLAYWRIGHT_BASE_URL", "CYPRESS_BASE_URL"], "http://localhost:3000");
+const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "localhost:8080");
+const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
+const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
-  reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  // flaky-summary lists the tests that passed only after a retry (test-results/flaky-tests.json).
+  reporter: [["html", { outputFolder: "playwright-report" }], ["list"], ["./reporters/flaky-summary.mjs"]],
 
   // All tests share a single Etendo instance. Suites run group-by-group via
-  // project dependencies so no two groups overlap. Within each group, up to 3
-  // workers run spec files in parallel.
-  workers: 2,
+  // project dependencies so no two groups overlap. Within each group, the
+  // project's `workers` sets how many spec files run in parallel: only specs
+  // that never touch each other's data share a group. This is the total limit.
+  workers: 3,
   fullyParallel: false,
-  // Jenkins shares the CI box across jobs; under load, API responses that are
-  // normally instant can exceed a helper's fixed timeout once. Retrying lets
-  // a transient slow response self-heal instead of failing the whole suite.
-  retries: process.env.CI ? 2 : 0,
-
-  // Retry transient failures. On CI the Chromium launch can SIGSEGV in the
-  // container (see --no-zygote note below), and it lands on a random spec each
-  // run — a retry clears it. Real regressions fail all attempts. 0 locally so
-  // flakes surface during development.
+  // Retry transient failures on CI. Jenkins shares the CI box across jobs: under
+  // load, API responses that are normally instant can exceed a helper's timeout
+  // once, and the Chromium launch can SIGSEGV in the container (see --no-zygote
+  // note below) on a random spec. A retry clears both; real regressions fail all
+  // attempts. 0 locally so flakes surface during development. Tests that pass
+  // only after a retry are listed by the flaky-summary reporter.
   retries: process.env.CI ? 2 : 0,
 
   use: {
@@ -71,14 +50,23 @@ export default defineConfig({
   },
 
   projects: [
+    // Unit tests of the support layer (registries and pure helpers): no browser, run first
+    {
+      name: "support-unit",
+      testMatch: ["**/support/__tests__/**"],
+    },
+
     // Group 1 — Performance (runs first, alone — stress tests can saturate the server)
     {
       name: "suite-00-performance",
       testMatch: ["**/performance/**"],
+      dependencies: ["support-unit"],
+      workers: 2,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state)
+    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state).
+    // Read-only specs or records with unique names: safe in parallel.
     {
       name: "suite-01-base",
       testMatch: [
@@ -90,33 +78,39 @@ export default defineConfig({
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 3 — Sales (starts only after Group 2 finishes)
+    // Group 3 — Sales (starts only after Group 2 finishes). Each spec selects only its own documents:
+    // SALc ships only its orders, SALa invoices only its shipment.
     {
       name: "suite-02-sales",
       testMatch: ["**/01_Sales/**"],
       dependencies: ["suite-01-base"],
       timeout: 720_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 4 — Procurement (starts only after Sales finishes)
+    // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
+    // document numbers; PROe runs the client-wide costing process, harmless to the others.
     {
       name: "suite-03-procurement",
       testMatch: ["**/03_Procurement/**"],
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 5 — Financial (most fragile — runs last, alone)
+    // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments.
     {
       name: "suite-04-financial",
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
   ],

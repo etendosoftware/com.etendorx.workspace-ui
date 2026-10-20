@@ -135,7 +135,7 @@ export default function Login({ title, onSubmit }: LoginProps) {
             className="mt-6"
             size="large"
             disabled={!username || !password || isLoading}
-            data-testid="Button__602739">
+            data-testid="login-submit-button">
             {isLoading ? (
               <Spinner size={20} color="inherit" data-testid="Spinner__602739" />
             ) : (

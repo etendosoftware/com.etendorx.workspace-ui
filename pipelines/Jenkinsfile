@@ -1,3 +1,40 @@
+/**
+ * Rethrows a build abort or a timeout instead of treating it as a failed request.
+ */
+def rethrowIfInterrupted(Exception e) {
+  if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException || e instanceof InterruptedException) {
+    throw e
+  }
+}
+
+/**
+ * Branch the given branch merges into, to compare coverage with: the base of its open pull
+ * request, otherwise the Git Police convention (feature/* and epic/* into develop, the rest into main).
+ */
+def resolveTargetBranch(String branch) {
+  if (env.CHANGE_TARGET) {
+    return env.CHANGE_TARGET
+  }
+  try {
+    def head = URLEncoder.encode("${env.OWNER_REPOSITORY}:${branch}", 'UTF-8')
+    def pulls = withEnv(["PULLS_URL=https://api.github.com/repos/${env.OWNER_REPOSITORY}/${env.REPOSITORY_NAME}/pulls?state=open&head=${head}"]) {
+      readJSON(text: sh(
+        script: 'curl -sS -f -H "Authorization: token $ACCESS_TOKEN" -H "Accept: application/vnd.github+json" "$PULLS_URL"',
+        returnStdout: true
+      ).trim())
+    }
+    if (pulls && pulls[0]?.base?.ref) {
+      echo "Open pull request #${pulls[0].number} of ${branch} targets ${pulls[0].base.ref}"
+      return pulls[0].base.ref
+    }
+    echo "No open pull request for ${branch}"
+  } catch (Exception e) {
+    rethrowIfInterrupted(e)
+    echo "Could not look up the pull request of ${branch}: ${e.getMessage()}"
+  }
+  return (branch.startsWith('feature/') || branch.startsWith('epic/')) ? 'develop' : env.MAIN_BRANCH
+}
+
 pipeline {
 
   environment { // MARK: Environment Variables
@@ -23,6 +60,7 @@ pipeline {
     NODE_VERSION = "22"
 
     REPOSITORY_NAME = "com.etendorx.workspace-ui"
+    MAIN_BRANCH = "main"
   }
 
   agent { // MARK: Agent
@@ -123,7 +161,6 @@ spec:
 
                 cd ${REPOSITORY_NAME}
                 pnpm install
-                pnpm add -D -w istanbul-lib-coverage istanbul-lib-report istanbul-reports
               """
               echo "-------------------------- Building Project --------------------------"
               sh """
@@ -177,6 +214,7 @@ spec:
                 nvm use ${NODE_VERSION}
 
                 cd ${REPOSITORY_NAME}
+                pnpm typecheck:api-client
                 pnpm test:mainui:coverage
                 pnpm test:api-client:coverage
                 pnpm test:component-library:coverage
@@ -375,44 +413,46 @@ exit 0
               def sonarPropertiesFile = "${REPOSITORY_NAME}/sonar-project.properties"
               def sonarProjectKey = sh(script: "grep 'sonar.projectKey' ${sonarPropertiesFile} | cut -d '=' -f2", returnStdout: true).trim()
               echo "SonarQube Project Key: ${sonarProjectKey}"
-              def branchCurrent = URLEncoder.encode(GIT_BRANCH, 'UTF-8') 
+              def branchCurrent = URLEncoder.encode(GIT_BRANCH, 'UTF-8')
               def projectUrl = "${SONAR_SERVER}/dashboard?id=${sonarProjectKey}&branch=${branchCurrent}"
               echo "Project URL: ${projectUrl}"
-              def branchMain = "main"
 
               def rootDir = pwd()
               def sonarUtils = load "${rootDir}/pipelines/utils/sonarUtils.groovy"
 
-              def checkCommitCurrent = GIT_BRANCH.startsWith('feature/') || GIT_BRANCH.startsWith('hotfix/') || GIT_BRANCH.startsWith('epic/')
-              echo "Check commit for current branch (${GIT_BRANCH}): ${checkCommitCurrent}"
-              def coverageCurrent = sonarUtils.getCoverageWithRetry(
-                GIT_BRANCH,
-                checkCommitCurrent,
-                sonarProjectKey,
-                SONAR_TOKEN,
-                SONAR_SERVER,
-                GIT_COMMIT
-              )
-              def coverageMain = sonarUtils.getCoverageWithRetry(
-                branchMain,
-                false,
-                sonarProjectKey,
-                SONAR_TOKEN,
-                SONAR_SERVER,
-                null
-              )
-
-              echo "Current branch coverage: ${coverageCurrent}%"
-              echo "Main branch coverage: ${coverageMain}%"
-
-              if (coverageCurrent < coverageMain) {
-                env.ERROR_MESSAGE = "Coverage (${coverageCurrent}%) is lower than main branch (${coverageMain}%)"
-                echo "-------------------------- ${env.ERROR_MESSAGE} --------------------------"
-                currentBuild.result = FAILED
-                error(env.ERROR_MESSAGE)
+              def targetBranch = resolveTargetBranch(GIT_BRANCH)
+              echo "Target branch: ${targetBranch}"
+              if (targetBranch == GIT_BRANCH) {
+                echo "-------------------------- ${GIT_BRANCH} is its own target, nothing to compare --------------------------"
               } else {
-                echo "-------------------------- Coverage is OK --------------------------"
-                currentBuild.result = SUCCESS
+                // Coverage of the analysis this build uploaded, read as soon as SonarQube processes it
+                def analysisId = sonarUtils.waitForAnalysis("${REPOSITORY_NAME}/.scannerwork/report-task.txt", SONAR_TOKEN, SONAR_SERVER)
+                def coverageCurrent = sonarUtils.getAnalysisCoverage(GIT_BRANCH, analysisId, sonarProjectKey, SONAR_TOKEN, SONAR_SERVER)
+
+                def comparedBranch = targetBranch
+                def coverageTarget = sonarUtils.getLatestCoverage(targetBranch, sonarProjectKey, SONAR_TOKEN, SONAR_SERVER)
+                if (coverageTarget == null && targetBranch != MAIN_BRANCH) {
+                  echo "No coverage measured for ${targetBranch}, comparing with ${MAIN_BRANCH}"
+                  comparedBranch = MAIN_BRANCH
+                  coverageTarget = sonarUtils.getLatestCoverage(MAIN_BRANCH, sonarProjectKey, SONAR_TOKEN, SONAR_SERVER)
+                }
+                if (coverageTarget == null) {
+                  echo "No coverage measured for ${comparedBranch}, the coverage cannot be lower"
+                  coverageTarget = 0
+                }
+
+                echo "Current branch coverage: ${coverageCurrent}%"
+                echo "${comparedBranch} branch coverage: ${coverageTarget}%"
+
+                if (coverageCurrent < coverageTarget) {
+                  env.ERROR_MESSAGE = "Coverage (${coverageCurrent}%) is lower than ${comparedBranch} branch (${coverageTarget}%)"
+                  echo "-------------------------- ${env.ERROR_MESSAGE} --------------------------"
+                  currentBuild.result = FAILED
+                  error(env.ERROR_MESSAGE)
+                } else {
+                  echo "-------------------------- Coverage is OK --------------------------"
+                  currentBuild.result = SUCCESS
+                }
               }
             } catch (Exception e) {
               env.MAIL_SUBJECT = "Coverage comparison failed"

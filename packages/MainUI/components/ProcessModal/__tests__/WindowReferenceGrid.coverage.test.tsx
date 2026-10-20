@@ -32,6 +32,7 @@ import {
   shouldRunColumnValidators,
   applyButtonOwnerViewTabId,
   decideDatasourceSync,
+  publishDeliveredRows,
   syncGridSelectionToLocalRecords,
   shouldDeferInitialZeroing,
   syncPersistentSelection,
@@ -512,6 +513,20 @@ describe("applyButtonOwnerViewTabId", () => {
     const options: Record<string, unknown> = {};
     applyButtonOwnerViewTabId(options, tab(""));
     expect(options).not.toHaveProperty("buttonOwnerViewTabId");
+  });
+});
+
+describe("publishDeliveredRows", () => {
+  it("makes the delivered rows the read store before any script reacts to them", () => {
+    const previous = [{ id: "old-1" }, { id: "old-2" }] as EntityData[];
+    const delivered = [{ id: "new-1" }] as EntityData[];
+    const readStore = { current: { rows: previous } };
+    const localRecordsRef = { current: previous };
+
+    publishDeliveredRows(readStore, localRecordsRef, delivered);
+
+    expect(readStore.current.rows).toBe(delivered);
+    expect(localRecordsRef.current).toBe(delivered);
   });
 });
 

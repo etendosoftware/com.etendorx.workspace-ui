@@ -1,212 +1,94 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  clickOkInLegacyPopup,
-  closeToastIfPresent,
-  captureDocumentNumber,
-  navigateToPurchaseOrder,
-  navigateToPurchaseInvoice,
-  navigateToPaymentOut,
-} from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
 
-test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
-
-  test("Processes advance payment and validates Purchase Invoice payments", async ({ page }) => {
-    // ── Login ────────────────────────────────────────────────────────────────
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
+test.describe("Purchase Order with advance payment flow @smoke", () => {
+  test("Processes advance payment and validates Purchase Invoice payments", async ({ app, data, page }) => {
+    const vendor = data.BUSINESS_PARTNER.VENDOR_A;
+    const mainSection = page.getByRole("tab", { name: "Main Section" });
 
     // ── Step 1: Navigate to Purchase Order ───────────────────────────────────
-    await navigateToPurchaseOrder(page);
+    await app.sidebar.navigateTo("purchaseOrder");
 
     // ── Step 2: New Purchase Order ───────────────────────────────────────────
-    const newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await app.toolbar.newRecord();
+    await expect(mainSection).toBeVisible({ timeout: 10_000 });
 
     // ── Step 3: Fill Business Partner ────────────────────────────────────────
-    await page.locator('[aria-label="Business Partner"]').locator('div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await closeToastIfPresent(page);
+    await app.field.selectById("Business Partner", vendor.id);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Step 4: Add Order Line ────────────────────────────────────────────────
-    await page.locator('button[aria-label="Lines"]').click();
-    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByRole("button", { name: "New Record" }).last().click();
-
-    await page
-      .locator('[aria-label="Product"]')
-      .locator('div[tabindex="0"]')
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
-    const productSearch = page.locator('input[aria-label="Search options"]');
-    if (await productSearch.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await productSearch.fill("Raw material");
-      await page.waitForTimeout(500);
-    }
-    await page
-      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]')
-      .waitFor({ state: "visible", timeout: 15_000 });
-    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
-    await page
-      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate')
-      .click({ force: true });
-    await formInitDone;
-
-    // Set Quantity (use evaluate to bypass React-controlled input)
-    await page.locator('[data-testid="TextInput__3389"]').waitFor({ state: "visible" });
-    await page.evaluate(() => {
-      const input = document.querySelector('[data-testid="TextInput__3389"]') as HTMLInputElement;
-      if (!input) return;
-      input.disabled = false;
-      input.readOnly = false;
-      input.focus();
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-      nativeSetter?.call(input, "11,2");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+    await app.tabs.open("Lines");
+    await app.toolbar.newRecord("child");
+    await app.field.pickWithKeyboard("Product", data.PRODUCT.RAW_MATERIAL_A.id, {
+      search: "Raw material",
+      callout: true,
     });
-    await page.waitForTimeout(500);
-
-    // Save line
-    await page.locator("button.toolbar-button-save").last().click();
-    await closeToastIfPresent(page);
+    await app.field.fillById(data.FIELD.PURCHASE_ORDER_LINE_QUANTITY, "11,2");
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
     // ── Step 5: Capture Document Number ──────────────────────────────────────
-    const orderNumber = await captureDocumentNumber(page);
+    const orderNumber = await app.breadcrumb.documentNumber();
 
     // ── Step 6: Book Purchase Order ───────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
-    await page.locator(".rounded-2xl").getByText("Book", { exact: true }).click();
-
-    await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
-    await closeToastIfPresent(page);
+    await app.toolbar.process("Book");
+    await app.processModal.confirm();
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
     // ── Step 7: Navigate to Payment Out ──────────────────────────────────────
-    await navigateToPaymentOut(page);
+    await app.sidebar.navigateTo("paymentOut");
 
     // ── Step 8: New Payment Out with Business Partner ─────────────────────────
-    const newPaymentBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newPaymentBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newPaymentBtn.click();
+    await app.toolbar.newRecord();
+    await app.field.selectById("Paying To", vendor.id);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
-    await page.locator('[aria-label="Paying To"]').locator('div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await closeToastIfPresent(page);
-
-    // ── Step 9: Add Document — select Purchase Order from popup ───────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    await page.locator(".rounded-2xl > .cursor-pointer").first().click();
-
-    // Filter by Order No. and select the row
-    const orderFilterInput = page.locator('input[placeholder="Filter by Order No."]');
-    await orderFilterInput.waitFor({ state: "visible", timeout: 10_000 });
-    await orderFilterInput.clear();
-    await orderFilterInput.fill(orderNumber);
-    await page.waitForTimeout(1_000);
-    await page.locator("tbody tr").first().waitFor({ state: "visible", timeout: 10_000 });
-    await page.waitForTimeout(500);
-    await page.locator(".MuiTableCell-root").filter({ hasText: orderNumber }).first().click({ force: true });
-    await page.waitForTimeout(500);
+    // ── Step 9: Add Details — select the Purchase Order ───────────────────────
+    await app.toolbar.process("Add Details");
+    // List orders (the default lists invoices only), then filter by the order number
+    await app.field.select("Transaction Type", "Orders");
+    await app.grid.filter("Order No.", orderNumber);
+    const orderRow = await app.grid.waitForRow(orderNumber);
+    await orderRow.getByRole("cell", { name: orderNumber }).first().click();
+    await expect(orderRow.getByRole("checkbox").first()).toBeChecked({ timeout: 10_000 });
 
     // ── Step 10: Select Action "Process Made Payment(s)" ─────────────────────
-    const actionDropdown = page.locator('[aria-label="Action Regarding Document"]').locator('div[tabindex="0"]');
-    await actionDropdown.waitFor({ state: "visible", timeout: 15_000 });
-    await actionDropdown.click();
-    await page
-      .locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]')
-      .waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]').click();
+    await app.field.selectById("Action Regarding Document", data.LIST_VALUE.PROCESS_MADE_PAYMENTS.id);
 
-    // ── Step 11: Execute payment ──────────────────────────────────────────────
-    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
-    await page.waitForTimeout(2_000);
-
-    // Close result
-    const closeResultBtn = page.locator('[data-testid="CloseResultButton__761503"]');
-    await closeResultBtn.waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await closeResultBtn.click({ force: true }).catch(async () => {
-      // Fallback to generic close button
-      await page
-        .locator('[data-testid="close-button"]')
-        .click({ force: true })
-        .catch(() => null);
-    });
-    await page
-      .locator(".fixed.inset-0")
-      .waitFor({ state: "hidden", timeout: 15_000 })
-      .catch(() => null);
+    // ── Step 11: Execute payment; the modal closes once the payment is made ───
+    await app.processModal.execute();
+    await app.processModal.waitForClose();
 
     // ── Step 12: Navigate to Purchase Invoice ─────────────────────────────────
-    await navigateToPurchaseInvoice(page);
+    await app.sidebar.navigateTo("purchaseInvoice");
 
     // ── Step 13: New Purchase Invoice ─────────────────────────────────────────
-    const newInvoiceBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newInvoiceBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newInvoiceBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await app.toolbar.newRecord();
+    await expect(mainSection).toBeVisible({ timeout: 10_000 });
 
     // ── Step 14: Fill Business Partner ────────────────────────────────────────
-    await page.locator('[aria-label="Business Partner"]').locator('div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
-
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await closeToastIfPresent(page);
+    await app.field.selectById("Business Partner", vendor.id);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Step 15: Create Lines From Order ──────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    await page.locator(".rounded-2xl > :nth-child(2)").click();
+    await app.toolbar.process("Create Lines From Order");
+    await app.grid.filter("Document No.", orderNumber);
+    await app.grid.selectRow(orderNumber);
+    await app.processModal.execute();
+    await app.processModal.waitForClose();
 
-    const docFilterInput = page.locator('input[placeholder="Filter Document No...."]').last();
-    await docFilterInput.waitFor({ state: "visible", timeout: 15_000 });
-    const datasourceDone = page.waitForResponse(/api\/datasource/, { timeout: 30_000 }).catch(() => null);
-    await docFilterInput.clear();
-    await docFilterInput.fill(orderNumber);
-    await docFilterInput.press("Enter");
-    await datasourceDone;
+    // ── Step 16: Complete Purchase Invoice ────────────────────────────────────
+    await app.toolbar.process("Complete");
+    await app.processModal.confirm();
+    await app.processModal.closeResult();
+    await app.toast.closeAll();
 
-    await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 20_000 });
-    await page.locator("tr").filter({ hasText: orderNumber }).locator('input[type="checkbox"]').check();
-
-    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
-    await page
-      .locator(".fixed.inset-0")
-      .waitFor({ state: "hidden", timeout: 15_000 })
-      .catch(() => null);
-
-    // ── Step 16: Book Purchase Invoice ────────────────────────────────────────
-    await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    await page.locator(".rounded-2xl > :nth-child(1)").click();
-
-    await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
-    await closeToastIfPresent(page);
+    // The invoice is completed against the order paid in advance
+    await app.toolbar.button("refresh").click();
+    await expect(page.getByText("Completed", { exact: true }).first()).toBeAttached({ timeout: 20_000 });
   });
 });

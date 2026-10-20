@@ -113,9 +113,9 @@ export type UseDatasourceOptions = {
   setIsImplicitFilterApplied?: (value: boolean) => void;
   /**
    * Optional override for the refetch-trigger key. When provided, after the
-   * first successful fetch the hook only refetches when this string changes;
-   * `params` is still read fresh on every render so the request body always
-   * reflects the latest values. Use to fold rapidly-changing context into
+   * first successful fetch the hook only refetches automatically when this
+   * string changes; every request (automatic, paginated or an explicit
+   * `refetch`) still sends the latest `params`. Use to fold rapidly-changing context into
    * the payload (e.g. payscript-driven form values) without triggering a
    * refetch on every change. Until the first fetch completes (`loaded`),
    * the hook falls back to hashing the full `params` so initialization
@@ -133,6 +133,78 @@ export type UseDatasourceOptions = {
    */
   enableDirectNavigation?: boolean;
 };
+
+/** The `criteria` request param: omitted when empty, a single criterion unwrapped. */
+function criteriaParam(criteria: unknown[]): { criteria?: unknown } {
+  if (criteria.length === 0) {
+    return {};
+  }
+  return { criteria: criteria.length === 1 ? criteria[0] : criteria };
+}
+
+/** Values besides the caller params that shape a datasource request. */
+interface QueryContext {
+  searchQuery?: string;
+  columns?: Column[];
+  columnFilterCriteria: unknown[];
+  idColumnFilter?: { value?: unknown };
+  hasIdColumn: boolean;
+  isImplicitFilterApplied?: boolean;
+  enableDirectNavigation?: boolean;
+}
+
+/**
+ * Builds the datasource request params: the caller params plus the search, column filter
+ * and id-navigation criteria.
+ */
+function buildQueryParams(baseParams: DatasourceOptions, context: QueryContext): DatasourceOptions {
+  const {
+    searchQuery,
+    columns,
+    columnFilterCriteria,
+    idColumnFilter,
+    hasIdColumn,
+    isImplicitFilterApplied,
+    enableDirectNavigation,
+  } = context;
+  const rawCriteria = baseParams.criteria;
+  const baseCriteria = [rawCriteria].flat().filter(Boolean);
+  const searchCriteriaArray: unknown[] =
+    searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : [];
+
+  let allCriteria: unknown[] = [...baseCriteria];
+
+  if (searchCriteriaArray.length > 0) {
+    allCriteria = [...allCriteria, ...searchCriteriaArray];
+  }
+
+  if (columnFilterCriteria.length > 0) {
+    allCriteria = [...allCriteria, ...columnFilterCriteria];
+  }
+
+  // A real Column for "id" means createColumnFilterCriteria above already resolved
+  // this filter correctly (via filterFieldName) — don't also inject a raw equality
+  // on top of it, and don't treat it as an id-navigation filter below.
+  const missingIdColumn = Boolean(idColumnFilter) && !hasIdColumn;
+  if (missingIdColumn) {
+    allCriteria = [...allCriteria, { fieldName: "id", operator: "equals", value: idColumnFilter?.value }];
+  }
+  const hasIdFilter = missingIdColumn;
+  // Only position-navigate when enabled (form mode). In grid mode the retained
+  // `id` criterion (added above) hard-filters to the single record instead.
+  const idParams =
+    hasIdFilter && enableDirectNavigation ? { targetRecordId: idColumnFilter?.value, directNavigation: true } : {};
+
+  const finalParams = {
+    ...baseParams,
+    ...idParams,
+    ...criteriaParam(allCriteria),
+    isImplicitFilterApplied: isImplicitFilterApplied,
+    noActiveFilter: true,
+  };
+
+  return finalParams as DatasourceOptions;
+}
 
 export function useDatasource({
   entity,
@@ -270,52 +342,7 @@ export function useDatasource({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableParams = useMemo(() => params, [stableParamsTriggerKey]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const queryParams = useMemo(() => {
-    const rawCriteria = stableParams.criteria;
-    const baseCriteria = [rawCriteria].flat().filter(Boolean);
-    const searchCriteriaArray = (
-      searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
-    ) as any[];
-
-    let allCriteria: any[] = [...baseCriteria];
-
-    if (searchCriteriaArray.length > 0) {
-      allCriteria = [...allCriteria, ...searchCriteriaArray];
-    }
-
-    if (columnFilterCriteria.length > 0) {
-      allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
-    }
-
-    // A real Column for "id" means createColumnFilterCriteria above already resolved
-    // this filter correctly (via filterFieldName) — don't also inject a raw equality
-    // on top of it, and don't treat it as an id-navigation filter below.
-    const missingIdColumn = Boolean(idColumnFilter) && !hasIdColumn;
-    if (missingIdColumn) {
-      allCriteria = [...allCriteria, { fieldName: "id", operator: "equals", value: idColumnFilter?.value }];
-    }
-    const hasIdFilter = missingIdColumn;
-    // Only position-navigate when enabled (form mode). In grid mode the retained
-    // `id` criterion (added above) hard-filters to the single record instead.
-    const idParams =
-      hasIdFilter && enableDirectNavigation ? { targetRecordId: idColumnFilter?.value, directNavigation: true } : {};
-
-    const finalParams: any = {
-      ...stableParams,
-      ...idParams,
-      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
-      isImplicitFilterApplied: isImplicitFilterApplied,
-      noActiveFilter: true,
-    };
-
-    return finalParams;
-    // activeColumnFilters is intentionally omitted: it's already captured by
-    // columnFilterCriteria and idColumnFilter, both listed above and changing
-    // whenever filters do.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    stableParams,
+  const queryContext: QueryContext = {
     searchQuery,
     columns,
     columnFilterCriteria,
@@ -323,8 +350,39 @@ export function useDatasource({
     hasIdColumn,
     isImplicitFilterApplied,
     enableDirectNavigation,
-  ]);
+  };
 
+  // Decides WHEN to fetch: the effect below re-fires when this changes, which (with a
+  // `refetchKey`) ignores rapidly-changing form values after the first fetch.
+  const queryParams = useMemo(
+    () => buildQueryParams(stableParams, queryContext),
+    // queryContext is rebuilt every render; its members are the real dependencies.
+    // activeColumnFilters is intentionally omitted: it's already captured by
+    // columnFilterCriteria and idColumnFilter, both listed here and changing
+    // whenever filters do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      stableParams,
+      searchQuery,
+      columns,
+      columnFilterCriteria,
+      idColumnFilter,
+      hasIdColumn,
+      isImplicitFilterApplied,
+      enableDirectNavigation,
+    ]
+  );
+
+  // Decides WHAT to send: every request carries the latest `params`, also when an explicit
+  // refetch (e.g. a process script invalidating its grid after a parameter change) runs
+  // while `refetchKey` is unchanged. Classic Pick & Execute grids read the parameter values
+  // on every request too.
+  const requestParamsRef = useRef(queryParams);
+  requestParamsRef.current = stableParams === params ? queryParams : buildQueryParams(params, queryContext);
+
+  // queryParams is kept as a dependency although the body reads requestParamsRef: it is what
+  // makes fetchData (and the effect that calls it) change when a refetch is due.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: queryParams marks when to refetch
   const fetchData = useCallback(
     async (targetPage: number = page) => {
       // Prevent duplicate fetches. If another fetch is already running, remember
@@ -343,7 +401,7 @@ export function useDatasource({
           entity,
           targetPage,
           safePageSize,
-          queryParams,
+          requestParamsRef.current,
           memoizedTreeOptions,
           isFiltering
         )) as {
@@ -385,7 +443,7 @@ export function useDatasource({
         setLoading(false);
         fetchInProgressRef.current = false;
         // If a fetch was requested while this one was in flight, run it now with
-        // the latest closure (current queryParams), so the most recent query wins.
+        // the latest closure (current request params), so the most recent query wins.
         if (pendingFetchRef.current !== null) {
           const nextPage = pendingFetchRef.current;
           pendingFetchRef.current = null;
