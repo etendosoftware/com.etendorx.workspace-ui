@@ -12,6 +12,7 @@ import { Sidebar } from "./Sidebar";
 import { Tabs } from "./Tabs";
 import { Toast } from "./Toast";
 import { Toolbar } from "./Toolbar";
+import { WindowTabs } from "./WindowTabs";
 
 export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
@@ -36,6 +37,7 @@ export class App {
   readonly legacy: LegacyFrame;
   readonly createLinesFrom: CreateLinesFrom;
   readonly attributeSelector: AttributeSelector;
+  readonly windows: WindowTabs;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -50,6 +52,7 @@ export class App {
     this.legacy = new LegacyFrame(page);
     this.createLinesFrom = new CreateLinesFrom(page);
     this.attributeSelector = new AttributeSelector(page);
+    this.windows = new WindowTabs(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */
