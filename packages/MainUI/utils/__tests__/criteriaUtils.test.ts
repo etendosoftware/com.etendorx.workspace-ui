@@ -1,5 +1,5 @@
 import { buildBaseCriteria, resolveParentFieldName } from "../criteriaUtils";
-import { UIPattern } from "@workspaceui/api-client/src/api/types";
+import { type Tab, UIPattern } from "@workspaceui/api-client/src/api/types";
 
 describe("criteriaUtils", () => {
   describe("buildBaseCriteria", () => {
@@ -147,6 +147,33 @@ describe("criteriaUtils", () => {
     it("keeps the parentColumns heuristic when the backend does not send parentProperty", () => {
       const tab: any = { parentColumns: ["parent_id"], fields: {} };
       expect(resolveParentFieldName(tab, parentTab)).toBe("parent_id");
+    });
+
+    it.each([
+      ["no parentColumns", { fields: {} }, "id"],
+      [
+        "the column whose field references the parent entity",
+        { parentColumns: ["lineRef", "header"], fields: { header: { referencedEntity: "ParentEntity" } } },
+        "header",
+      ],
+      [
+        "the column named exactly as the parent entity among several name matches",
+        { parentColumns: ["parentEntityLine", "parentEntity"], fields: {} },
+        "parentEntity",
+      ],
+      [
+        "the first column containing the parent entity name when none matches exactly",
+        { parentColumns: ["oldParentEntity", "parentEntityLine"], fields: {} },
+        "oldParentEntity",
+      ],
+      [
+        "a tab field named as the parent entity when no parent column matches",
+        { parentColumns: ["unrelated"], fields: { parentEntity: {} } },
+        "parentEntity",
+      ],
+      ["the first parent column as last resort", { parentColumns: ["unrelated"], fields: {} }, "unrelated"],
+    ])("falls back to %s", (_case, tab, expected) => {
+      expect(resolveParentFieldName(tab as unknown as Tab, parentTab)).toBe(expected);
     });
   });
 });

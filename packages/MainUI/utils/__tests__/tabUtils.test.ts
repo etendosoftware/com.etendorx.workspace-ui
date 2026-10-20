@@ -16,7 +16,7 @@
  *************************************************************************
  */
 
-import { shouldShowTab } from "../tabUtils";
+import { shouldShowTab, type TabWithParentInfo } from "../tabUtils";
 
 describe("tabUtils", () => {
   describe("shouldShowTab", () => {
@@ -61,6 +61,14 @@ describe("tabUtils", () => {
           custom_field: { referencedEntity: "Order" },
         },
       } as any;
+      expect(shouldShowTab(tab, parentTab)).toBe(true);
+    });
+
+    it.each([
+      ["leading underscores", "__order_id"],
+      ["trailing underscores", "order___id"],
+    ])("should match a parent column with %s after normalizing it", (_case, parentColumn) => {
+      const tab = { tabLevel: 1, parentColumns: [parentColumn], fields: {} } as unknown as TabWithParentInfo;
       expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
 
