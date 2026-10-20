@@ -524,5 +524,18 @@ describe("ERP slug route coverage", () => {
       // executions are never served from the Next.js Data Cache.
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=PROCMON123");
     });
+
+    it("serves meta/instance-purpose GET requests through the uncached mutation path", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+      mockFetchWithSessionCookie("JSESSIONID=INSTPURPOSE123");
+
+      const req = createMockRequest("GET", "https://localhost/api/erp/meta/instance-purpose?language=en_US");
+      await GET(req, { params: Promise.resolve({ slug: ["meta", "instance-purpose"] }) });
+
+      // Only the uncached mutation path captures the session cookie, so this proves the configured
+      // purpose is never served from the Next.js Data Cache.
+      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=INSTPURPOSE123");
+    });
   });
 });

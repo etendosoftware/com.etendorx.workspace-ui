@@ -20,18 +20,23 @@ jest.mock("@workspaceui/componentlibrary/src/components/BasicModal", () => ({
     onSave,
     onClose,
     saveButtonLabel,
+    SaveIcon,
   }: {
     tittleHeader?: string;
     children: React.ReactNode;
     onSave?: () => void;
     onClose?: () => void;
     saveButtonLabel?: string;
+    SaveIcon?: React.ElementType;
   }) => (
     <dialog open aria-label={tittleHeader}>
       {children}
-      <button type="button" onClick={onSave}>
-        {saveButtonLabel}
-      </button>
+      {/* Like the real modal, the footer button needs both a label and an icon to be drawn. */}
+      {saveButtonLabel && SaveIcon && (
+        <button type="button" onClick={onSave}>
+          {saveButtonLabel}
+        </button>
+      )}
       <button type="button" onClick={onClose}>
         close
       </button>

@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
+import CheckCircleIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle.svg";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
@@ -121,6 +122,7 @@ const InstancePurposeModal: React.FC = () => {
       tittleHeader={t("instancePurpose.title")}
       width={MODAL_WIDTH}
       saveButtonLabel={t("instancePurpose.continue")}
+      SaveIcon={CheckCircleIcon}
       onSave={saving ? undefined : handleSave}
       onClose={handleClose}
       onCancel={handleClose}

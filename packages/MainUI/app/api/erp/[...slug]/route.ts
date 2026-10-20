@@ -148,6 +148,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes("meta/recent-items") ||
     // Process monitor polls must always reach the backend: a cached GET would freeze the executions.
     slug.includes("meta/process-monitor") ||
+    // The instance purpose is global and changes once it is configured: a cached GET would keep telling
+    // the session it still has to configure it, since the Data Cache never revalidates.
+    slug.includes("meta/instance-purpose") ||
     // The session payload reflects mutations that do not change the token (and therefore not the
     // cache key), such as a password change clearing the expired flag. Caching it would keep serving
     // the pre-mutation state indefinitely — the cache has no revalidation window.
