@@ -315,6 +315,14 @@ describe("organizeButtonsBySection", () => {
       expect(result.left).toHaveLength(1);
     });
 
+    it("shows PERSONALIZE_FORM wherever a form is on screen, and hides it in the grid", () => {
+      const button = makeBtn(TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM, "right");
+
+      expect(organizeButtonsBySection([button], { isFormView: true, isSplitView: false }).right).toHaveLength(1);
+      expect(organizeButtonsBySection([button], { isFormView: true, isSplitView: true }).right).toHaveLength(1);
+      expect(organizeButtonsBySection([button], { isFormView: false }).right).toHaveLength(0);
+    });
+
     it("still hides FIND while browsing a tree node, even in split view", () => {
       const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.FIND, "left")], {
         isFormView: true,
