@@ -854,6 +854,8 @@ const en = {
     widget: {
       unavailable: "Module not installed",
       refresh: "Refresh",
+      collapse: "Collapse",
+      expand: "Expand",
     },
     noWidgets: "No widgets configured for this dashboard.",
     loadError: "Could not load the dashboard. Please try again.",

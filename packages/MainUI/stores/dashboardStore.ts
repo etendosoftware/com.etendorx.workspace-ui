@@ -80,6 +80,8 @@ interface DashboardStore {
   refreshWidget: (instanceId: string) => Promise<void>;
   fetchWidgetPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
   updateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
+  /** Collapses/expands a widget and persists it; expanding reloads its data. */
+  toggleCollapsed: (instanceId: string) => Promise<void>;
   addWidget: (payload: AddWidgetRequest) => Promise<void>;
   removeWidget: (instanceId: string) => Promise<void>;
   updateParams: (instanceId: string, parameters: Record<string, string>) => Promise<void>;
@@ -108,6 +110,13 @@ export const useDashboardStore = create<DashboardStore>()(
           logger.warn(`[dashboardStore] Failed to fetch data for widget ${instanceId}:`, message);
           set((s) => ({ widgetErrors: { ...s.widgetErrors, [instanceId]: message } }));
         }
+      };
+
+      const isCollapsed = (instanceId: string) => get().layout.some((w) => w.instanceId === instanceId && w.collapsed);
+
+      // Collapsed widgets fire no data requests until expanded (initial load, layout refresh, auto-refresh).
+      const fetchUnlessCollapsed = async (instanceId: string): Promise<void> => {
+        if (!isCollapsed(instanceId)) await fetchOneWidgetData(instanceId);
       };
 
       return {
@@ -144,8 +153,8 @@ export const useDashboardStore = create<DashboardStore>()(
           try {
             const response = await fetchDashboardLayout();
             set({ layout: response.widgets });
-            await Promise.allSettled(response.widgets.map((w) => fetchOneWidgetData(w.instanceId)));
-            setupAutoRefresh(response.widgets, fetchOneWidgetData);
+            await Promise.allSettled(response.widgets.map((w) => fetchUnlessCollapsed(w.instanceId)));
+            setupAutoRefresh(response.widgets, fetchUnlessCollapsed);
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             logger.warn("[dashboardStore] Failed to load dashboard layout:", message);
@@ -160,8 +169,8 @@ export const useDashboardStore = create<DashboardStore>()(
           try {
             const response = await fetchDashboardLayout();
             set({ layout: response.widgets });
-            await Promise.allSettled(response.widgets.map((w) => fetchOneWidgetData(w.instanceId)));
-            setupAutoRefresh(response.widgets, fetchOneWidgetData);
+            await Promise.allSettled(response.widgets.map((w) => fetchUnlessCollapsed(w.instanceId)));
+            setupAutoRefresh(response.widgets, fetchUnlessCollapsed);
           } catch (err) {
             logger.warn("[dashboardStore] Failed to silently refresh layout:", err);
           }
@@ -182,7 +191,7 @@ export const useDashboardStore = create<DashboardStore>()(
         },
 
         refreshWidget: async (instanceId) => {
-          await fetchOneWidgetData(instanceId);
+          await fetchUnlessCollapsed(instanceId);
         },
 
         fetchWidgetPage: async (instanceId, page, pageSize) => {
@@ -199,6 +208,7 @@ export const useDashboardStore = create<DashboardStore>()(
               return {
                 ...instance,
                 position: { col: update.col, row: update.row, width: update.width, height: update.height },
+                collapsed: update.isCollapsed,
               };
             }),
           }));
@@ -213,6 +223,24 @@ export const useDashboardStore = create<DashboardStore>()(
             // a better UX than reverting to a potentially stale server state.
             logger.warn("[dashboardStore] Failed to persist layout update:", err);
           }
+        },
+
+        toggleCollapsed: async (instanceId) => {
+          const instance = get().layout.find((w) => w.instanceId === instanceId);
+          if (!instance) return;
+          const collapsed = !instance.collapsed;
+          await get().updateLayout([
+            {
+              instanceId,
+              col: instance.position.col,
+              row: instance.position.row,
+              width: instance.position.width,
+              height: instance.position.height,
+              isVisible: true,
+              isCollapsed: collapsed,
+            },
+          ]);
+          if (!collapsed) await fetchOneWidgetData(instanceId);
         },
 
         addWidget: async (payload) => {

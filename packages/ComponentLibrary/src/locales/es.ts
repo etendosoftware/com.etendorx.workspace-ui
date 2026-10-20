@@ -859,6 +859,8 @@ const es = {
     widget: {
       unavailable: "Módulo no instalado",
       refresh: "Actualizar",
+      collapse: "Contraer",
+      expand: "Expandir",
     },
     noWidgets: "No hay widgets configurados para este panel.",
     loadError: "No se pudo cargar el panel. Intente nuevamente.",
