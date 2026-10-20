@@ -77,9 +77,12 @@ test.describe("Grid - delete records and unsaved changes guard @smoke @grid", ()
     await expect(page.locator(CLOSE_WINDOW)).toHaveCount(0);
 
     // Reopened within the response cache lifetime: the deleted records must not come back
+    // (no wait for the datasource here: a cached response answers without any request)
     await app.sidebar.navigateTo("businessPartnerCategory");
-    await app.grid.filter("Name", prefix);
-    await expect(app.grid.rows()).toHaveCount(1);
+    const filter = app.grid.filterInput("Name");
+    await filter.fill(prefix);
+    await filter.press("Enter");
+    await expect(app.grid.rows(), "deleted records came back after reopening the window").toHaveCount(1);
     await expect(app.grid.rowWithCell(guarded)).toBeVisible();
     await expect(app.grid.rowWithCell(guarded + EDITED_NAME_SUFFIX)).toBeHidden();
   });

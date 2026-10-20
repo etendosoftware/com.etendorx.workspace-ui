@@ -30,7 +30,7 @@ test.describe("Navigation - deep link, reload recovery and open windows @smoke @
     const deepLink = app.page.url();
 
     await app.page.reload();
-    await app.breadcrumb.waitFor(order);
+    await expect(app.breadcrumb.root, "the reload did not restore the record of the URL").toContainText(order);
     await expect(app.field.byName("documentNo")).toBeVisible();
 
     // A deep link opened in a new browser session, after logging in
@@ -39,7 +39,7 @@ test.describe("Navigation - deep link, reload recovery and open windows @smoke @
       const fresh = new App(await context.newPage());
       await fresh.auth.login();
       await fresh.page.goto(deepLink);
-      await fresh.breadcrumb.waitFor(order);
+      await expect(fresh.breadcrumb.root, "the deep link did not open its record").toContainText(order);
     } finally {
       await context.close();
     }

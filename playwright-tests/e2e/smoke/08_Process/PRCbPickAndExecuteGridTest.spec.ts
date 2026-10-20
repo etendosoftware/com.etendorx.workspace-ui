@@ -1,3 +1,4 @@
+import type { Locator } from "@playwright/test";
 import { expect, test } from "../../support/fixtures";
 import { blockRequests } from "../../support/network";
 import { overrideProcessDefinition } from "../../support/processOverrides";
@@ -12,6 +13,12 @@ const PAYMENT_AMOUNT = "100";
 const EDITED_AMOUNT = "60";
 const ALLOCATED_TOTAL = 'input[aria-label="Amount on Invoices and/or Orders"]';
 const LINE_AMOUNT = 'input[aria-label="Amount"]';
+
+/** Types an amount in the cell editor of a selected row and leaves the cell. */
+async function editLineAmount(cell: Locator, amount: string): Promise<void> {
+  await cell.fill(amount);
+  await cell.press("Tab");
+}
 
 /**
  * Pick-and-Execute grid of a process modal: the amount follows the row selection, a numeric cell
@@ -45,19 +52,20 @@ test.describe("Pick and Execute grid - selection, cell edit and onProcess abort 
     const lineAmount = invoice.locator(LINE_AMOUNT);
     const allocated = modal.locator(ALLOCATED_TOTAL);
 
-    // Selecting allocates the payment amount; deselecting gives it back
+    // Selecting allocates the payment amount, and the amount cell is editable
     await app.grid.setRowSelected(invoice, true);
     await expect(lineAmount).toHaveValue(PAYMENT_AMOUNT);
     await expect(allocated).toHaveValue("100.00");
+    await editLineAmount(lineAmount, EDITED_AMOUNT);
+    await expect(allocated).toHaveValue("60.00");
+
+    // Deselecting zeroes the line amount: selected again, it gets the default, not the edited one
     await app.grid.setRowSelected(invoice, false);
     await expect(lineAmount).toBeHidden();
     await expect(allocated).toHaveValue("0.00");
-
-    // Selected again, the amount cell is editable and the total follows it
     await app.grid.setRowSelected(invoice, true);
-    await expect(lineAmount).toHaveValue(PAYMENT_AMOUNT);
-    await lineAmount.fill(EDITED_AMOUNT);
-    await lineAmount.press("Tab");
+    await expect(lineAmount, "the deselected invoice kept its edited amount").toHaveValue(PAYMENT_AMOUNT);
+    await editLineAmount(lineAmount, EDITED_AMOUNT);
     await expect(allocated).toHaveValue("60.00");
 
     await app.field.selector("Action Regarding Document").click();
