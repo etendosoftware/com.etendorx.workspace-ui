@@ -12,6 +12,9 @@ const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "local
 const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
+/** SALc: its own project, see suite-02b-sales-shipments. */
+const SALES_SHIPMENTS_SPEC = "**/01_Sales/SALcGenerateInvoice.spec.ts";
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
@@ -19,9 +22,10 @@ export default defineConfig({
   reporter: [["html", { outputFolder: "playwright-report" }], ["list"], ["./reporters/flaky-summary.mjs"]],
 
   // All tests share a single Etendo instance. Suites run group-by-group via
-  // project dependencies so no two groups overlap. Within each group, up to 3
-  // workers run spec files in parallel.
-  workers: 2,
+  // project dependencies so no two groups overlap. Within each group, the
+  // project's `workers` sets how many spec files run in parallel: only specs
+  // that never touch each other's data share a group. This is the total limit.
+  workers: 3,
   fullyParallel: false,
   // Retry transient failures on CI. Jenkins shares the CI box across jobs: under
   // load, API responses that are normally instant can exceed a helper's timeout
@@ -60,10 +64,12 @@ export default defineConfig({
       name: "suite-00-performance",
       testMatch: ["**/performance/**"],
       dependencies: ["support-unit"],
+      workers: 2,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state)
+    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state).
+    // Read-only specs or records with unique names: safe in parallel.
     {
       name: "suite-01-base",
       testMatch: [
@@ -75,33 +81,50 @@ export default defineConfig({
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 3 — Sales (starts only after Group 2 finishes)
+    // Group 3 — Sales (starts only after Group 2 finishes). Each spec works on its own documents.
     {
       name: "suite-02-sales",
       testMatch: ["**/01_Sales/**"],
+      testIgnore: [SALES_SHIPMENTS_SPEC],
       dependencies: ["suite-01-base"],
       timeout: 720_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 4 — Procurement (starts only after Sales finishes)
+    // Group 3b — "Create Shipments from Orders" ships every booked sales order of the day, those of
+    // the other sales specs included: it runs alone, after them.
+    {
+      name: "suite-02b-sales-shipments",
+      testMatch: [SALES_SHIPMENTS_SPEC],
+      dependencies: ["suite-02-sales"],
+      timeout: 720_000,
+      workers: 1,
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
+    // document numbers; PROe runs the client-wide costing process, harmless to the others.
     {
       name: "suite-03-procurement",
       testMatch: ["**/03_Procurement/**"],
-      dependencies: ["suite-02-sales"],
+      dependencies: ["suite-02b-sales-shipments"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 5 — Financial (most fragile — runs last, alone)
+    // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments.
     {
       name: "suite-04-financial",
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
       timeout: 360_000,
+      workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
   ],

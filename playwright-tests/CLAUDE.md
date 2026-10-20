@@ -51,6 +51,9 @@ test.describe("Purchase Order - Book @smoke", () => {
 - Records the test creates get keys from `data.uniqueValue("base")`: the local database is reused and
   `--repeat-each` runs a spec several times. Sample records (vendors, products…) come from `data.*`.
 - Never remove or weaken an assertion when migrating a spec; change only the interactions.
+- Specs of the same project run in parallel (the project's `workers` in `playwright.config.ts`): select and process
+  only records the spec created — filter by its own document number, never "the first row" or "all rows". A spec
+  that processes every pending document (SALc, "Create Shipments from Orders") goes in a project with `workers: 1`.
 
 ## Selector policy
 

@@ -13,7 +13,11 @@ _Last updated: 2026-10-19 (ETP-5798)._
 ## Behavior
 
 - **Projects run in order** through `dependencies`: `support-unit` (registry/helper unit tests, no browser) →
-  performance → base (login, master data, filters, linked items) → sales → procurement → financial.
+  performance → base (login, master data, filters, linked items) → sales → sales shipments (SALc) → procurement →
+  financial.
+- **Spec files of a project run in parallel**, up to the project's `workers` (3 for the smoke projects, 2 for
+  performance; 3 is also the global limit). SALc runs alone: "Create Shipments from Orders" ships every booked
+  sales order of the day, those of the other sales specs included.
 - **Every test starts logged out** and logs in through the UI with role "QA Testing Admin" / organization "Spain"
   (the `app` fixture). No session is shared between tests.
 - **Specs combine support components** (`e2e/support`): sidebar navigation through a window registry, toolbar
@@ -37,6 +41,7 @@ _Last updated: 2026-10-19 (ETP-5798)._
 | Stable `data-testid` only where no role/label exists | Codemod hash IDs change when a component file moves; Tailwind/MUI classes change with styling. |
 | `toolbar.save()` waits for the save and, for a new record, for its reload | The form reloads a new record right after saving it; a field changed in between (e.g. the payment method right after saving a header) was overwritten and the next save found nothing to save. |
 | Keyboard picks reach the option by its position | A search can match several options ("1 (Spain)" also matches "2.1 (Spain)"); pressing ArrowDown once picked the second match. |
+| Parallelism inside a project, projects still in sequence; 3 workers at most | Specs of a project only touch the documents they create (they filter by their own document numbers), so they can overlap; different projects share business partners and credits. The browsers run in the same CI pod as the UI and the ERP (4 CPUs), so more workers would slow the server down and turn waits into timeouts. |
 | Retries kept, flakiness made visible | Removing retries or failing on flaky tests would block PRs on infrastructure noise; the summary keeps it visible. |
 
 ## Production changes made for the suite
