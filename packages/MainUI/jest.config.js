@@ -95,4 +95,10 @@ export default {
   },
 
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
+
+  // A jsdom worker grows to ~2 GB over this suite. Restarting a worker after a test file once it
+  // holds more than 1 GB halved the peak memory of the CI run (2 workers: 6.4 GB -> 3.1 GB, the
+  // CI pod allows 7 GB) at about the same speed. Half the cores when run without --maxWorkers.
+  maxWorkers: "50%",
+  workerIdleMemoryLimit: "1GB",
 };
