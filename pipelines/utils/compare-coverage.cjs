@@ -19,9 +19,13 @@ const REPORT_TASK_FILE = ".scannerwork/report-task.txt";
 const SONAR_PROPERTIES_FILE = "sonar-project.properties";
 const TASK_TIMEOUT_SECONDS = 15 * 60;
 const TASK_POLL_SECONDS = 10;
+const TASK_MAX_CONSECUTIVE_ERRORS = 6;
+const REQUEST_TIMEOUT_MS = 30 * 1000;
 
-const { SONAR_HOST_URL, SONAR_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY, BRANCH, GITHUB_BASE_REF } = process.env;
+const { SONAR_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY, BRANCH, GITHUB_BASE_REF } = process.env;
 const MAIN_BRANCH = process.env.MAIN_BRANCH || "main";
+// A trailing slash makes "//api/..." paths, which SonarQube answers with its web UI instead of the API
+const SONAR_HOST_URL = (process.env.SONAR_HOST_URL || "").replace(/\/+$/, "");
 
 const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
@@ -33,9 +37,14 @@ const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds 
 async function sonarGet(path) {
   const response = await fetch(`${SONAR_HOST_URL}${path}`, {
     headers: { Authorization: `Basic ${Buffer.from(`${SONAR_TOKEN}:`).toString("base64")}` },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`GET ${path} returned ${response.status}`);
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(`GET ${path} returned ${contentType || "no content type"} instead of JSON, check SONAR_HOST_URL`);
   }
   return response.json();
 }
@@ -66,6 +75,7 @@ async function resolveTargetBranch(branch) {
     const head = encodeURIComponent(`${owner}:${branch}`);
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&head=${head}`, {
       headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
       throw new Error(`GitHub API returned ${response.status}`);
@@ -97,17 +107,25 @@ async function waitForAnalysis() {
     throw new Error(`No ceTaskId in ${REPORT_TASK_FILE}`);
   }
 
+  let consecutiveErrors = 0;
   for (let waited = 0; waited < TASK_TIMEOUT_SECONDS; waited += TASK_POLL_SECONDS) {
     let status = "UNKNOWN";
     try {
       const { task } = await sonarGet(`/api/ce/task?id=${taskId}`);
       status = task?.status ?? "UNKNOWN";
+      consecutiveErrors = 0;
       if (status === "SUCCESS") {
         console.log(`✅ SonarQube processed task ${taskId}: analysis ${task.analysisId}`);
         return task.analysisId;
       }
     } catch (e) {
       console.log(`⚠️ Could not read SonarQube task ${taskId}: ${e.message}`);
+      consecutiveErrors++;
+      if (consecutiveErrors >= TASK_MAX_CONSECUTIVE_ERRORS) {
+        throw new Error(
+          `Could not read SonarQube task ${taskId} in ${consecutiveErrors} attempts in a row: ${e.message}`
+        );
+      }
     }
     if (status === "FAILED" || status === "CANCELED") {
       throw new Error(`SonarQube task ${taskId} ended with status ${status}`);
