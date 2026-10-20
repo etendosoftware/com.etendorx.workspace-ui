@@ -932,6 +932,20 @@ const en = {
     successMessage: "Email sent successfully",
     errorMessage: "Failed to send email",
   },
+  instancePurpose: {
+    title: "Instance Purpose Configuration",
+    welcome:
+      "Welcome to Etendo! Thank you for downloading and supporting our ERP. Since this is the first time that you log in, please select the purpose of this instance.",
+    label: "Instance purpose",
+    placeholder: "Select the purpose",
+    production: "Production",
+    development: "Development",
+    testing: "Testing",
+    evaluation: "Evaluation",
+    continue: "Continue",
+    required: "Select the purpose of the instance to continue",
+    error: "The instance purpose could not be saved",
+  },
   processMonitor: {
     buttonLabel: "Background processes",
     buttonLabelRunning: "Background processes (%0 running)",
