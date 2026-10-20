@@ -127,7 +127,7 @@ const InstancePurposeModal: React.FC = () => {
       onClose={handleClose}
       onCancel={handleClose}
       data-testid="instance-purpose-dialog">
-      <Box className="flex flex-col gap-4" data-testid="instance-purpose-content">
+      <Box className="flex flex-col gap-4 pb-6" data-testid="instance-purpose-content">
         <Typography variant="body2" data-testid="Typography__71e02f">
           {t("instancePurpose.welcome")}
         </Typography>
