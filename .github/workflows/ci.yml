@@ -110,7 +110,8 @@ jobs:
         if: github.ref_name != env.MAIN_BRANCH
         run: node pipelines/utils/compare-coverage.cjs
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          # User token: the analysis token in SONAR_TOKEN cannot read the coverage history
+          SONAR_TOKEN: ${{ secrets.SONAR_API_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.ref_name }}
