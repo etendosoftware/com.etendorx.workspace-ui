@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: "22"
+  MAIN_BRANCH: main
+
+jobs:
+  tests:
+    name: New UI Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so SonarQube can blame lines and detect new code
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        # Version taken from the packageManager field of package.json
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run tests
+        run: |
+          pnpm typecheck:api-client
+          pnpm test:mainui:coverage
+          pnpm test:api-client:coverage
+          pnpm test:component-library:coverage
+
+      - name: Merge coverage
+        run: node pipelines/utils/merge-coverage.cjs
+
+      - name: Check data-testid and formatting
+        run: |
+          pnpm run apply:data-testid || echo "❌ Codemod application failed, continuing..."
+          pnpm run format:fix || echo "❌ Formatting failed, continuing..."
+
+          # Paths changed by the build or the coverage merge, not by the checks
+          OMIT_PATTERNS=(
+            "package.json"
+            "pnpm-lock.yaml"
+            "coverage-merged/"
+            "packages/MainUI/next-env.d.ts"
+          )
+          OMIT_REGEX=$(printf "%s|" "${OMIT_PATTERNS[@]}" | sed 's/|$//')
+          FILTERED=$(git status --porcelain | grep -Ev "(^[[:space:]]*[AM][[:space:]]+(${OMIT_REGEX})$|^[[:space:]]*\?\?[[:space:]]+(${OMIT_REGEX}))" || true)
+
+          if [ -n "$FILTERED" ]; then
+            echo "::error::Uncommitted changes detected after applying the data-testid codemod and formatting"
+            printf "%s\n" "$FILTERED"
+            {
+              echo "## 🚨 data-testid / formatting check failed"
+              echo
+              echo "The codemod or the formatter changed these files:"
+              echo '```'
+              printf "%s\n" "$FILTERED"
+              echo '```'
+              echo "Fix it locally and commit the result:"
+              echo '```bash'
+              echo "pnpm run apply:data-testid"
+              echo "pnpm run format:fix"
+              echo '```'
+              echo "See [docs/data-testid-check.md](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/docs/data-testid-check.md)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "✅ data-testid check and formatting are clean"
+
+      - name: SonarQube analysis
+        uses: sonarsource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_SCANNER_OPTS: "-Xmx4096m"
+        with:
+          args: >
+            -Dsonar.branch.name=${{ github.ref_name }}
+            -Dsonar.projectVersion=${{ github.sha }}
+            -Dsonar.scm.revision=${{ github.sha }}
+            -Dsonar.javascript.lcov.reportPaths=coverage-merged/lcov.info
+
+      - name: Compare coverage with target branch
+        if: github.ref_name != env.MAIN_BRANCH
+        run: node pipelines/utils/compare-coverage.cjs
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
