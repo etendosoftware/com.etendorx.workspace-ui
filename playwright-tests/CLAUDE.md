@@ -54,7 +54,9 @@ test.describe("Purchase Order - Book @smoke", () => {
 - Specs of the same project run in parallel (the project's `workers` in `playwright.config.ts`): select and process
   only records the spec created — filter by its own document number, never "the first row" or "all rows" (SALc
   checks only its own orders in "Create Shipments from Orders", SALa filters "Create Lines From Shipment" by its
-  shipment). A spec that must process every pending document goes in a project with `workers: 1`.
+  shipment). A spec that must process every pending document goes in a project with `workers: 1`. Which project
+  a spec belongs to and why there are 3 workers:
+  [Grouping and parallelism](../docs/testing/playwright-e2e/README.md#grouping-and-parallelism).
 
 ## Selector policy
 
