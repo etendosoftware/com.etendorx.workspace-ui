@@ -54,6 +54,11 @@ export const PAYMENT_METHOD = {
   SPAIN_4: { id: "BC79E3E914CF471C91AE183FC5311BE7", name: "4 (Spain)" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Discount/promotion types (M_Offer_Type) of the core. */
+export const OFFER_TYPE = {
+  PRICE_ADJUSTMENT: { id: "5D4BAF6BB86D4D2C9ED3D5A6FC051579", name: "Price Adjustment" },
+} as const satisfies Record<string, SampleRecord>;
+
 export const DOCUMENT_TYPE = {
   STANDARD_ORDER: { id: "FF8080812C2ABFC6012C2B3BDF4D005A", name: "Standard Order" },
 } as const satisfies Record<string, SampleRecord>;

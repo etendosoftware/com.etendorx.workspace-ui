@@ -48,6 +48,9 @@ export const WINDOWS = {
   manageRequisitions: { search: "requi", menuId: "1004400000", breadcrumb: /Manage Requisitions/i, landing: "grid" },
   landedCost: { search: "lande", menuId: "D0EB635DAB004B16B636122FEA516898", breadcrumb: /Landed Cost/i },
 
+  // ── Pricing ──────────────────────────────────────────────────────────────
+  discountsAndPromotions: { search: "discoun", menuId: "800117", breadcrumb: /Discounts and Promotions/i },
+
   // ── Financial ────────────────────────────────────────────────────────────
   paymentIn: { search: "payment", menuId: "DB84EB9507F34D9B802DDA0B1041B602", breadcrumb: /Payment In/i },
   paymentOut: { search: "payment", menuId: "C3BEE7BF3F5B44C3A24D24E3DC4870EC", breadcrumb: /Payment Out/i },
