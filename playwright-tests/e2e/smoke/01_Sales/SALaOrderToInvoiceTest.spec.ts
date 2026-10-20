@@ -63,6 +63,13 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
     await app.toolbar.save();
     await app.toast.closeAll();
 
+    // The invoice takes its lines from this shipment: the customer has shipments of other specs too
+    let shipmentNumber = "";
+    await expect(async () => {
+      shipmentNumber = await app.breadcrumb.documentNumber();
+      expect(shipmentNumber).not.toBe(salesOrderNumber);
+    }).toPass({ timeout: 20_000 });
+
     // ── Step 7: Add lines from Sales Order (legacy iframe popup) ──────────────
     await app.toolbar.process("Create Lines From");
     await app.createLinesFrom.fill({ locator: data.LOCATOR.L01, orderDocNumber: salesOrderNumber });
@@ -88,10 +95,12 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
 
     // ── Step 10: Add lines from Goods Shipment ────────────────────────────────
     await app.toolbar.process("Create Lines From Shipment");
+    await app.grid.filter("Document No.", shipmentNumber);
 
-    // Select the first line, toggle select-all to verify it, then re-select the line (scoped to
-    // the modal: the invoice grid behind it renders rows too)
+    // Select the line of this test's shipment, toggle select-all to verify it, then re-select the
+    // line (scoped to the modal: the invoice grid behind it renders rows too)
     const modal = app.processModal.root;
+    await expect(modal.locator("tbody tr").first()).toContainText(shipmentNumber, { timeout: 15_000 });
     const firstLine = modal.locator("tbody tr").first().getByRole("checkbox");
     const selectAll = modal.getByRole("checkbox", { name: "Toggle select all" }).first();
     await firstLine.check();
