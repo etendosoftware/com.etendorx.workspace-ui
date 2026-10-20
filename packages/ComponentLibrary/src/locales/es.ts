@@ -940,6 +940,20 @@ const es = {
     successMessage: "Email enviado correctamente",
     errorMessage: "Error al enviar el email",
   },
+  instancePurpose: {
+    title: "Configuración del propósito de la instancia",
+    welcome:
+      "¡Bienvenido a Etendo! Gracias por descargar y apoyar nuestro ERP. Como es la primera vez que ingresás, seleccioná el propósito de esta instancia.",
+    label: "Propósito de la instancia",
+    placeholder: "Seleccioná el propósito",
+    production: "Producción",
+    development: "Desarrollo",
+    testing: "Pruebas",
+    evaluation: "Evaluación",
+    continue: "Continuar",
+    required: "Seleccioná el propósito de la instancia para continuar",
+    error: "No se pudo guardar el propósito de la instancia",
+  },
   processMonitor: {
     buttonLabel: "Procesos en segundo plano",
     buttonLabelRunning: "Procesos en segundo plano (%0 en ejecución)",

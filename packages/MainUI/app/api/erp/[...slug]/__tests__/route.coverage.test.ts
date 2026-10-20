@@ -499,30 +499,31 @@ describe("ERP slug route coverage", () => {
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
     });
 
-    it("serves meta/recent-items GET requests through the uncached mutation path", async () => {
+    // Only the uncached mutation path captures the session cookie, so each case proves its data (per-user
+    // recent items, polled executions, the configured instance purpose) is never served from the Next.js
+    // Data Cache, which never revalidates.
+    it.each([
+      ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
+      [
+        "meta/process-monitor",
+        "https://localhost/api/erp/meta/process-monitor?since=1",
+        ["meta", "process-monitor"],
+        "PROCMON123",
+      ],
+      [
+        "meta/instance-purpose",
+        "https://localhost/api/erp/meta/instance-purpose?language=en_US",
+        ["meta", "instance-purpose"],
+        "INSTPURPOSE123",
+      ],
+    ])("serves %s GET requests through the uncached mutation path", async (_name, url, slug, sessionId) => {
       const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
       clearErpSessionCookie("test-token");
-      mockFetchWithSessionCookie("JSESSIONID=RECENTITEMS123");
+      mockFetchWithSessionCookie(`JSESSIONID=${sessionId}`);
 
-      const req = createMockRequest("GET", "https://localhost/api/erp/meta/recent-items");
-      await GET(req, { params: Promise.resolve({ slug: ["meta", "recent-items"] }) });
+      await GET(createMockRequest("GET", url), { params: Promise.resolve({ slug }) });
 
-      // Only the uncached mutation path captures the session cookie, so this proves the
-      // per-user recent items list is never served from the Next.js Data Cache.
-      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=RECENTITEMS123");
-    });
-
-    it("serves meta/process-monitor GET requests through the uncached mutation path", async () => {
-      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
-      clearErpSessionCookie("test-token");
-      mockFetchWithSessionCookie("JSESSIONID=PROCMON123");
-
-      const req = createMockRequest("GET", "https://localhost/api/erp/meta/process-monitor?since=1");
-      await GET(req, { params: Promise.resolve({ slug: ["meta", "process-monitor"] }) });
-
-      // Only the uncached mutation path captures the session cookie, so this proves the polled
-      // executions are never served from the Next.js Data Cache.
-      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=PROCMON123");
+      expect(getErpSessionCookie("test-token")).toBe(`JSESSIONID=${sessionId}`);
     });
   });
 });
