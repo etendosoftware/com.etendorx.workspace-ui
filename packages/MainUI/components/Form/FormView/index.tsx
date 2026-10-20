@@ -34,6 +34,7 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
+import { usePersonalizedTab } from "@/hooks/usePersonalizedTab";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
@@ -503,7 +504,10 @@ function FormViewComponent({
     return formattedResult;
   }, [record, initialState, currentRecordId]);
 
-  const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
+  // The tab as the session's form personalization lays it out (order, visibility, sections, columns,
+  // status bar and initial focus); the dictionary's tab while there is none.
+  const personalizedTab = usePersonalizedTab(tab);
+  const { fields, groups } = useFormFields(personalizedTab, currentRecordId, currentMode, true, availableFormData);
 
   /**
    * Field the application dictionary marks as the entry point of the form
@@ -511,9 +515,11 @@ function FormViewComponent({
    * `OBViewForm.computeFocusItem`.
    */
   const firstFocusedFieldName = useMemo(() => {
-    const flaggedField = Object.values(tab.fields ?? {}).find((field) => field.isFirstFocusedField && field.displayed);
+    const flaggedField = Object.values(personalizedTab.fields ?? {}).find(
+      (field) => field.isFirstFocusedField && field.displayed
+    );
     return flaggedField?.hqlName;
-  }, [tab.fields]);
+  }, [personalizedTab.fields]);
 
   // A new key means "this is a different record or a different form", which is
   // exactly when Classic re-places the focus. Post-save refreshes keep the key.

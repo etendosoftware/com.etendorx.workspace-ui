@@ -516,6 +516,12 @@ describe("ERP slug route coverage", () => {
         ["meta", "instance-purpose"],
         "INSTPURPOSE123",
       ],
+      [
+        "meta/form-personalization",
+        "https://localhost/api/erp/meta/form-personalization?tab=T1",
+        ["meta", "form-personalization"],
+        "FORMPERS123",
+      ],
     ])("serves %s GET requests through the uncached mutation path", async (_name, url, slug, sessionId) => {
       const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
       clearErpSessionCookie("test-token");

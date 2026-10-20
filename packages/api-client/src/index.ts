@@ -24,6 +24,7 @@ export * from "./api/getPreferences";
 export * from "./api/dashboard";
 export * from "./api/processMonitor";
 export * from "./api/instancePurpose";
+export * from "./api/formPersonalization";
 
 // Export column filter utilities and hooks
 export * from "./utils/column-filter-utils";
