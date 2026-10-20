@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import * as data from "../registry/data";
+import { DATASOURCE } from "../registry/datasources";
 import { TABS, WINDOWS } from "../registry/windows";
 
 const RECORD_ID = /^[0-9A-F]{32}$/;
@@ -53,6 +54,16 @@ test.describe("tab registry", () => {
   test("every tab id is an AD_Tab_ID", () => {
     for (const tabId of Object.values(TABS)) {
       expect(tabId).toMatch(AD_ID);
+    }
+  });
+});
+
+test.describe("datasource registry", () => {
+  test("every datasource names its entity, window and tab", () => {
+    for (const target of Object.values(DATASOURCE)) {
+      expect(target.entity).toMatch(/^[A-Z]\w+$/);
+      expect(target.windowId).toMatch(AD_ID);
+      expect(target.tabId).toMatch(AD_ID);
     }
   });
 });
