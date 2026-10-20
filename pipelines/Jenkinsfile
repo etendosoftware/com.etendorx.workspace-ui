@@ -176,6 +176,7 @@ spec:
                 nvm use ${NODE_VERSION}
 
                 cd ${REPOSITORY_NAME}
+                pnpm typecheck:api-client
                 pnpm test:mainui:coverage
                 pnpm test:api-client:coverage
                 pnpm test:component-library:coverage

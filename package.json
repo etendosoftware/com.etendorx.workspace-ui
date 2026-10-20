@@ -37,6 +37,7 @@
     "test:component-library:watch": "jest --selectProjects ComponentLibrary --watch",
     "test:mainui:coverage": "cd packages/MainUI && npx jest --coverage --maxWorkers=2 --passWithNoTests --collectCoverageFrom='app/**/*.{ts,tsx}' --collectCoverageFrom='components/**/*.{ts,tsx}' --collectCoverageFrom='hooks/**/*.{ts,tsx}' --collectCoverageFrom='contexts/**/*.{ts,tsx}' --collectCoverageFrom='utils/**/*.{ts,tsx}' --collectCoverageFrom='screens/**/*.{ts,tsx}' --collectCoverageFrom='!**/*.test.{ts,tsx}' --collectCoverageFrom='!**/__tests__/**'",
     "test:api-client:coverage": "cd packages/api-client && npx jest --coverage --maxWorkers=2 --passWithNoTests --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'",
+    "typecheck:api-client": "tsc --noEmit -p packages/api-client/tsconfig.json",
     "test:component-library:coverage": "cd packages/ComponentLibrary && npx jest --coverage --maxWorkers=2 --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'",
     "pw:run": "cd playwright-tests && pnpm pw:run",
     "pw:run:smoke": "cd playwright-tests && pnpm pw:run:smoke",
