@@ -80,6 +80,9 @@ export default defineConfig({
         "**/08_Process/PRCb*",
         "**/09_Form/**",
         "**/10_Grid/**",
+        "**/11_Navigation/**",
+        // SESa never ticks "Save as default": the defaults other specs start from stay as they are
+        "**/12_Session/**",
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
