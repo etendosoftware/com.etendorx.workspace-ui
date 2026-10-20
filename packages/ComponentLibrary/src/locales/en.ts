@@ -932,6 +932,28 @@ const en = {
     successMessage: "Email sent successfully",
     errorMessage: "Failed to send email",
   },
+  processMonitor: {
+    buttonLabel: "Background processes",
+    buttonLabelRunning: "Background processes (%0 running)",
+    recentFailures: "Recent failures",
+    running: "Running",
+    misfired: "Misfired",
+    noFailures: "No recent failures",
+    requestWindow: "Process Request",
+    monitorWindow: "Process Monitor",
+    staleWarning: "The data could not be refreshed. Retrying...",
+    unnamedProcess: "Unnamed process",
+    viewError: "View error",
+    detailError: "The execution details could not be loaded",
+    started: "Started",
+    ended: "Ended",
+    duration: "Duration",
+    errorLog: "Error log",
+    noLog: "This execution has no log",
+    toast: {
+      failed: 'Process "%0" failed',
+    },
+  },
 };
 
 export default en;
