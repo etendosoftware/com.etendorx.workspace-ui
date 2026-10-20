@@ -13,11 +13,11 @@ _Last updated: 2026-10-19 (ETP-5798)._
 ## Behavior
 
 - **Projects run in order** through `dependencies`: `support-unit` (registry/helper unit tests, no browser) →
-  performance → base (login, master data, filters, linked items) → sales → sales shipments (SALc) → procurement →
-  financial.
+  performance → base (login, master data, filters, linked items) → sales → procurement → financial.
 - **Spec files of a project run in parallel**, up to the project's `workers` (3 for the smoke projects, 2 for
-  performance; 3 is also the global limit). SALc runs alone: "Create Shipments from Orders" ships every booked
-  sales order of the day, those of the other sales specs included.
+  performance; 3 is also the global limit). Each spec selects only the documents it created: SALc ships only its
+  own orders in "Create Shipments from Orders" (the form lists the booked orders of every spec), SALa invoices only
+  its own shipment.
 - **Every test starts logged out** and logs in through the UI with role "QA Testing Admin" / organization "Spain"
   (the `app` fixture). No session is shared between tests.
 - **Specs combine support components** (`e2e/support`): sidebar navigation through a window registry, toolbar

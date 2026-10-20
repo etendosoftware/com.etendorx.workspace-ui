@@ -12,9 +12,6 @@ const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "local
 const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
-/** SALc: its own project, see suite-02b-sales-shipments. */
-const SALES_SHIPMENTS_SPEC = "**/01_Sales/SALcGenerateInvoice.spec.ts";
-
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
@@ -85,25 +82,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 3 — Sales (starts only after Group 2 finishes). Each spec works on its own documents.
+    // Group 3 — Sales (starts only after Group 2 finishes). Each spec selects only its own documents:
+    // SALc ships only its orders, SALa invoices only its shipment.
     {
       name: "suite-02-sales",
       testMatch: ["**/01_Sales/**"],
-      testIgnore: [SALES_SHIPMENTS_SPEC],
       dependencies: ["suite-01-base"],
       timeout: 720_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
-    },
-
-    // Group 3b — "Create Shipments from Orders" ships every booked sales order of the day, those of
-    // the other sales specs included: it runs alone, after them.
-    {
-      name: "suite-02b-sales-shipments",
-      testMatch: [SALES_SHIPMENTS_SPEC],
-      dependencies: ["suite-02-sales"],
-      timeout: 720_000,
-      workers: 1,
       use: { ...devices["Desktop Chrome"] },
     },
 
@@ -112,7 +98,7 @@ export default defineConfig({
     {
       name: "suite-03-procurement",
       testMatch: ["**/03_Procurement/**"],
-      dependencies: ["suite-02b-sales-shipments"],
+      dependencies: ["suite-02-sales"],
       timeout: 360_000,
       workers: 3,
       use: { ...devices["Desktop Chrome"] },
