@@ -1,10 +1,15 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { runAndWaitForDatasource } from "../wait";
+import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
 import { exactText } from "./level";
 
 const ROW_TIMEOUT = 20_000;
 const CHECK_TIMEOUT = 10_000;
 const VISIBLE_ROWS = "tr:visible";
+/** Inline editing actions of a row (actions column): `edit-button-<id>`, `save-button-<id>`. */
+const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
+const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
+/** The datasource request that saves an inline edit. */
+const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
 
@@ -43,6 +48,44 @@ export class Grid {
       .locator("tbody tr")
       .filter({ has: this.page.locator("td").filter({ hasText: exactText(cellText) }) })
       .first();
+  }
+
+  /**
+   * Clicks the sort button of a column header and waits for the data sorted by it (sorting is
+   * done by the backend). Each click toggles the direction.
+   */
+  async sortBy(column: string): Promise<void> {
+    // The header text also shows a filter count, so the button is found by its label:
+    // "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending"
+    const button = this.page
+      .locator(`thead:visible [aria-label^="Sort by ${column} "], thead:visible [aria-label^="Sorted by ${column} "]`)
+      .first();
+    await runAndWaitForDatasource(this.page, () => button.click());
+  }
+
+  /** Visible data rows of the grid in `scope`, in display order. */
+  rows(scope: Locator | Page = this.page): Locator {
+    return scope.locator("tbody tr:visible");
+  }
+
+  /** Trimmed texts of the cells of `row`, to assert exact values ("100" but not "1,100"). */
+  cellTexts(row: Locator): Promise<string[]> {
+    return row.locator("td").evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim() ?? ""));
+  }
+
+  /** Starts editing `row` in the grid (actions column "Edit in grid"). */
+  async editRow(row: Locator): Promise<void> {
+    await row.locator(EDIT_ROW_BUTTON).click();
+  }
+
+  /** Input of a cell of a row being edited, by property name (`data-column-id`). */
+  cellEditor(row: Locator, hqlName: string): Locator {
+    return row.locator(`input[data-column-id="${hqlName}"]`);
+  }
+
+  /** Saves the inline edit of `row` and waits until the backend saved it. */
+  async saveRow(row: Locator): Promise<void> {
+    await runAndWaitForResponse(this.page, ROW_SAVE_REQUEST, () => row.locator(SAVE_ROW_BUTTON).click());
   }
 
   /** Checks or unchecks the selection checkbox of `row` and waits until it shows that state. */

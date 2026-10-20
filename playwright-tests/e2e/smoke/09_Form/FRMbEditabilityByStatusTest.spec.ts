@@ -33,10 +33,10 @@ test.describe("Form - field editability by document status @smoke @form", () => 
     await expectHeaderReadOnly(app, false);
     await app.toolbar.openProcessMenu();
     await expect(page.locator(PROCESS_MENU_ITEMS).filter({ hasText: COPY_LINES })).toBeVisible();
+    // Escape closes the menu and leaves the form for the grid
     await page.keyboard.press("Escape");
     await expect(page.locator(PROCESS_MENU_ITEMS)).toHaveCount(0);
-
-    await app.breadcrumb.openWindowGrid();
+    await expect(app.grid.filterInput("Document No.")).toBeVisible();
     await openSampleOrder(app, data.SAMPLE_DOCUMENT.SALES_ORDER_COMPLETED);
     await expectHeaderReadOnly(app, true);
     await app.toolbar.openProcessMenu();

@@ -79,6 +79,7 @@ export default defineConfig({
         // PRCb never executes the payment: its onProcess aborts and the request is blocked
         "**/08_Process/PRCb*",
         "**/09_Form/**",
+        "**/10_Grid/**",
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,

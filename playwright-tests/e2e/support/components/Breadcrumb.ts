@@ -31,11 +31,6 @@ export class Breadcrumb {
     return documentNumber as string;
   }
 
-  /** Goes back from a record to the grid of its window by clicking the window name (first item). */
-  async openWindowGrid(): Promise<void> {
-    await this.root.getByRole("listitem").first().click();
-  }
-
   /** Waits until the active breadcrumb shows `text`. */
   async waitFor(text: string | RegExp, timeout = DEFAULT_TIMEOUT): Promise<void> {
     await this.root.getByText(text).first().waitFor({ state: "visible", timeout });

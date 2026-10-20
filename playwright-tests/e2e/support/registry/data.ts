@@ -86,6 +86,10 @@ export const PROCESS = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Sales order in Draft with four lines; specs clone it instead of changing it. */
+  SALES_ORDER_DRAFT_WITH_LINES: "50014",
+  /** Sales order in Draft with six lines (one of them "Transportation"). */
+  SALES_ORDER_DRAFT_WITH_MORE_LINES: "50013",
   /** Sales order in Draft (two lines). */
   SALES_ORDER_DRAFT: "50015",
   /** Booked (Completed) sales order. */
