@@ -50,6 +50,10 @@ const CHOICE_BASE =
   "appearance-none h-4 w-4 shrink-0 cursor-pointer border border-(--color-transparent-neutral-30) bg-white checked:border-(--color-etendo-main) checked:bg-(--color-etendo-main) disabled:opacity-40 disabled:cursor-default";
 const CHECKBOX_CLASS = `${CHOICE_BASE} rounded checked:shadow-[inset_0_0_0_3px_white]`;
 const RADIO_CLASS = `${CHOICE_BASE} rounded-full checked:shadow-[inset_0_0_0_3px_white]`;
+const CELL_VISIBLE = "w-12 flex justify-center";
+const CELL_COLUMNS = "w-16 flex justify-center";
+const CELL_NEW_ROW = "w-16 flex justify-center";
+const CELL_FOCUS = "w-14 flex justify-center";
 const COLUMN_OPTIONS = Array.from({ length: MAX_COL_SPAN - MIN_COL_SPAN + 1 }, (_, i) => MIN_COL_SPAN + i);
 const SCOPE_LABEL_KEYS = {
   USER: "formPersonalization.scope.USER",
@@ -209,67 +213,80 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
           {field.title}
           {field.mandatory && <span className="ml-1 text-red-600">*</span>}
         </span>
-        <button
-          type="button"
-          disabled={hideDisabled}
-          className="flex items-center text-(--color-transparent-neutral-70) hover:text-(--color-baseline-100) disabled:opacity-40"
-          title={
-            hideDisabled
-              ? t("formPersonalization.mandatoryNotHideable")
-              : field.hidden
-                ? t("formPersonalization.show")
-                : t("formPersonalization.hide")
-          }
-          aria-label={field.hidden ? t("formPersonalization.show") : t("formPersonalization.hide")}
-          onClick={() => change(updateEditorItem<EditorField>(items, field.id, { hidden: !field.hidden }))}>
-          {field.hidden ? (
-            <EyeOffIcon width={18} height={18} className={ICON_FILL} data-testid={`EyeOffIcon__${field.id}`} />
-          ) : (
-            <EyeIcon width={18} height={18} className={ICON_FILL} data-testid={`EyeIcon__${field.id}`} />
-          )}
-        </button>
-        {!inStatusBar && (
+        <div className={CELL_VISIBLE}>
+          <button
+            type="button"
+            disabled={hideDisabled}
+            className="flex items-center text-(--color-transparent-neutral-70) hover:text-(--color-baseline-100) disabled:opacity-40"
+            title={
+              hideDisabled
+                ? t("formPersonalization.mandatoryNotHideable")
+                : field.hidden
+                  ? t("formPersonalization.show")
+                  : t("formPersonalization.hide")
+            }
+            aria-label={field.hidden ? t("formPersonalization.show") : t("formPersonalization.hide")}
+            onClick={() => change(updateEditorItem<EditorField>(items, field.id, { hidden: !field.hidden }))}>
+            {field.hidden ? (
+              <EyeOffIcon width={18} height={18} className={ICON_FILL} data-testid={`EyeOffIcon__${field.id}`} />
+            ) : (
+              <EyeIcon width={18} height={18} className={ICON_FILL} data-testid={`EyeIcon__${field.id}`} />
+            )}
+          </button>
+        </div>
+        {inStatusBar ? (
           <>
-            <select
-              className="text-xs border border-(--color-transparent-neutral-20) rounded px-1 py-0.5"
-              value={field.colSpan}
-              aria-label={t("formPersonalization.columns")}
-              title={t("formPersonalization.columns")}
-              onChange={(e) =>
-                change(updateEditorItem<EditorField>(items, field.id, { colSpan: Number(e.target.value) }))
-              }>
-              {COLUMN_OPTIONS.map((columns) => (
-                <option key={columns} value={columns}>
-                  {columns}
-                </option>
-              ))}
-            </select>
-            <input
-              type="checkbox"
-              className={CHECKBOX_CLASS}
-              checked={field.startRow}
-              aria-label={t("formPersonalization.startRow")}
-              title={t("formPersonalization.startRow")}
-              onChange={(e) => change(updateEditorItem<EditorField>(items, field.id, { startRow: e.target.checked }))}
-            />
+            <span className={CELL_COLUMNS} />
+            <span className={CELL_NEW_ROW} />
+          </>
+        ) : (
+          <>
+            <div className={CELL_COLUMNS}>
+              <select
+                className="text-xs border border-(--color-transparent-neutral-20) rounded px-1 py-0.5"
+                value={field.colSpan}
+                aria-label={t("formPersonalization.columns")}
+                title={t("formPersonalization.columns")}
+                onChange={(e) =>
+                  change(updateEditorItem<EditorField>(items, field.id, { colSpan: Number(e.target.value) }))
+                }>
+                {COLUMN_OPTIONS.map((columns) => (
+                  <option key={columns} value={columns}>
+                    {columns}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={CELL_NEW_ROW}>
+              <input
+                type="checkbox"
+                className={CHECKBOX_CLASS}
+                checked={field.startRow}
+                aria-label={t("formPersonalization.startRow")}
+                title={t("formPersonalization.startRow")}
+                onChange={(e) => change(updateEditorItem<EditorField>(items, field.id, { startRow: e.target.checked }))}
+              />
+            </div>
           </>
         )}
-        <input
-          type="radio"
-          className={RADIO_CLASS}
-          name="personalize-initial-focus"
-          checked={field.firstFocus}
-          disabled={field.hidden}
-          aria-label={t("formPersonalization.initialFocus")}
-          title={t("formPersonalization.initialFocus")}
-          onChange={() => change(setFirstFocus(items, field.id))}
-        />
+        <div className={CELL_FOCUS}>
+          <input
+            type="radio"
+            className={RADIO_CLASS}
+            name="personalize-initial-focus"
+            checked={field.firstFocus}
+            disabled={field.hidden}
+            aria-label={t("formPersonalization.initialFocus")}
+            title={t("formPersonalization.initialFocus")}
+            onChange={() => change(setFirstFocus(items, field.id))}
+          />
+        </div>
       </div>
     );
   };
 
   const buttons = (
-    <div className="flex w-full items-center gap-2">
+    <div className="flex w-full items-center gap-6 pt-4 pb-2">
       {canDiscard && !confirmingReset && (
         <div className="w-auto">
           <Button
@@ -382,12 +399,25 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
             {t("formPersonalization.sharedReadOnly")}
           </p>
         )}
+        <div
+          className="flex items-center gap-3 px-2 text-xs font-medium text-(--color-transparent-neutral-70)"
+          data-testid="personalize-form-column-headers">
+          <span className="w-4" />
+          <span className="flex-1" />
+          <span className={CELL_VISIBLE}>{t("formPersonalization.headerVisible")}</span>
+          <span className={CELL_COLUMNS}>{t("formPersonalization.headerColumns")}</span>
+          <span className={CELL_NEW_ROW}>{t("formPersonalization.headerNewRow")}</span>
+          <span className={CELL_FOCUS}>{t("formPersonalization.headerFocus")}</span>
+        </div>
         <div className="max-h-[50vh] overflow-y-auto pr-1">
           {statusBarHeader?.kind === "section" && (
             <div
               className="flex items-center gap-2 px-2 py-2 rounded-lg bg-(--color-transparent-neutral-5)"
               data-testid="personalize-section-status-bar">
-              <span className="flex-1 text-sm font-semibold">{statusBarHeader.title}</span>
+              <span className="text-sm font-semibold">{statusBarHeader.title}</span>
+              <span className="flex-1 text-xs text-(--color-transparent-neutral-70)">
+                {t("formPersonalization.statusBarHint")}
+              </span>
             </div>
           )}
           <SortableList
