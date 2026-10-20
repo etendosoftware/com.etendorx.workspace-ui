@@ -51,6 +51,29 @@ export class FormField {
     return this.page.locator(`[aria-describedby="${name}-help"]`);
   }
 
+  /**
+   * Field wrapper by property name (`data-form-field-name="<hqlName>"`). A field hidden by its
+   * display logic is unmounted, so `toBeHidden()` on it proves the logic hid it.
+   */
+  byName(hqlName: string): Locator {
+    return this.page.locator(`[data-form-field-name="${hqlName}"]`);
+  }
+
+  /** Yes/No field (rendered as a switch) by label. */
+  switch(label: string, { level = "header" }: FieldOptions = {}): Locator {
+    return atLevel(this.page.getByRole("switch", { name: label, exact: true }).filter({ visible: true }), level);
+  }
+
+  /** Turns a Yes/No field on or off, waiting until it shows that state. */
+  async setSwitch(label: string, on: boolean, options?: FieldOptions): Promise<void> {
+    const control = this.switch(label, options);
+    const checked = String(on);
+    if ((await control.getAttribute("aria-checked")) !== checked) {
+      await control.click();
+    }
+    await expect(control).toHaveAttribute("aria-checked", checked);
+  }
+
   /** The `<label>` element of a field. */
   label(name: string): Locator {
     return this.container(name).locator("label");
