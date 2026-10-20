@@ -65,7 +65,8 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
 
-    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state).
+    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state) and the feature
+    // probes that only read sample data or change records they created themselves.
     // Read-only specs or records with unique names: safe in parallel.
     {
       name: "suite-01-base",
@@ -75,6 +76,8 @@ export default defineConfig({
         "**/06_filters/**",
         "**/07_LinkedItems/**",
         "**/PurchaseOrderDisplayLogicTest*",
+        // PRCb never executes the payment: its onProcess aborts and the request is blocked
+        "**/08_Process/PRCb*",
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,

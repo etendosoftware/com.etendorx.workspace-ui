@@ -1,9 +1,12 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { runAndWaitForDatasource } from "../wait";
+import { exactText } from "./level";
 
 const ROW_TIMEOUT = 20_000;
 const CHECK_TIMEOUT = 10_000;
 const VISIBLE_ROWS = "tr:visible";
+/** Accessible name of the selection checkbox of a grid row. */
+const ROW_SELECTION_LABEL = "Toggle select row";
 
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
@@ -28,6 +31,25 @@ export class Grid {
   /** First visible row containing `text`. */
   row(text: string | RegExp): Locator {
     return this.page.locator(VISIBLE_ROWS).filter({ hasText: text }).first();
+  }
+
+  /**
+   * Row with a cell showing exactly `cellText`, for values that are the prefix of others (the
+   * document number "I/25" is contained in "I/250"). Pass `scope` (e.g. the process modal) when
+   * another grid on the page can show the same value.
+   */
+  rowWithCell(cellText: string, scope: Locator | Page = this.page): Locator {
+    return scope
+      .locator("tbody tr")
+      .filter({ has: this.page.locator("td").filter({ hasText: exactText(cellText) }) })
+      .first();
+  }
+
+  /** Checks or unchecks the selection checkbox of `row` and waits until it shows that state. */
+  async setRowSelected(row: Locator, selected: boolean): Promise<void> {
+    const checkbox = row.getByRole("checkbox", { name: ROW_SELECTION_LABEL });
+    await checkbox.setChecked(selected, { timeout: ROW_TIMEOUT });
+    await expect(checkbox).toBeChecked({ checked: selected, timeout: CHECK_TIMEOUT });
   }
 
   /** Waits for a row containing `text`. */

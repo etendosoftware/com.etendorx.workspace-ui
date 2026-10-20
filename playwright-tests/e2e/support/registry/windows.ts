@@ -69,6 +69,11 @@ export const WINDOWS = {
 
 export type WindowKey = keyof typeof WINDOWS;
 
+/** AD_Window_ID of the windows whose metadata a spec intercepts (`support/processOverrides.ts`). */
+export const WINDOW_IDS = {
+  PAYMENT_IN: "E547CE89D4C04429B6340FFA44E70716",
+} as const;
+
 /**
  * AD_Tab_ID of the tabs the specs scope their toolbar to (`toolbar.inTab`), where a header and
  * a child tab are on screen at once.

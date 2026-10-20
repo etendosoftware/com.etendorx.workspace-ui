@@ -69,6 +69,20 @@ export const LIST_VALUE = {
   PROCESS_RECEIVED_PAYMENTS: { id: "7AC4F4FF644247B7BD320BBF67C4F066", name: "Process Received Payment(s)" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Process definitions (OBUIAPP_Process_ID) whose definition a spec overrides. */
+export const PROCESS = {
+  ADD_PAYMENT: "9BED7889E1034FE68BD85D5D16857320",
+} as const;
+
+/**
+ * Documents of the sample data a spec only reads, by document number. Each one stays in the
+ * state described in every freshly installed database: no spec processes it.
+ */
+export const SAMPLE_DOCUMENT = {
+  /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
+  SALES_INVOICE_PENDING: "I/25",
+} as const;
+
 export const ORGANIZATION = {
   SPAIN: "Spain",
 } as const;
