@@ -100,6 +100,11 @@ export const ORGANIZATION = {
   SPAIN: "Spain",
 } as const;
 
+/** AD_Org_ID of the sample organizations, for records the `api` fixture creates. */
+export const ORGANIZATION_ID = {
+  SPAIN: "357947E87C284935AD1D783CF6F099A1",
+} as const;
+
 /** A storage bin (locator): `id` is the M_Locator_ID, `value` its search key. */
 export interface StorageBin {
   readonly id: string;
