@@ -511,5 +511,18 @@ describe("ERP slug route coverage", () => {
       // per-user recent items list is never served from the Next.js Data Cache.
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=RECENTITEMS123");
     });
+
+    it("serves meta/process-monitor GET requests through the uncached mutation path", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+      mockFetchWithSessionCookie("JSESSIONID=PROCMON123");
+
+      const req = createMockRequest("GET", "https://localhost/api/erp/meta/process-monitor?since=1");
+      await GET(req, { params: Promise.resolve({ slug: ["meta", "process-monitor"] }) });
+
+      // Only the uncached mutation path captures the session cookie, so this proves the polled
+      // executions are never served from the Next.js Data Cache.
+      expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=PROCMON123");
+    });
   });
 });

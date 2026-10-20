@@ -37,6 +37,7 @@ import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
 import HelpAccess from "./Header/HelpAccess";
 import AlertsButton from "./Header/AlertsButton";
+import ProcessMonitorButton from "./ProcessMonitor/ProcessMonitorButton";
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -212,6 +213,7 @@ const Navigation: React.FC = () => {
     <>
       <Nav data-testid="Nav__120cc9">
         <AlertsButton data-testid="AlertsButton__120cc9" />
+        <ProcessMonitorButton data-testid="ProcessMonitorButton__120cc9" />
         {isCopilotInstalled && (
           <CopilotButton
             onClick={handleCopilotOpen}

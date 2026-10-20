@@ -938,6 +938,28 @@ const es = {
     successMessage: "Email enviado correctamente",
     errorMessage: "Error al enviar el email",
   },
+  processMonitor: {
+    buttonLabel: "Procesos en segundo plano",
+    buttonLabelRunning: "Procesos en segundo plano (%0 en ejecución)",
+    recentFailures: "Errores recientes",
+    running: "En ejecución",
+    misfired: "No se ejecutó",
+    noFailures: "No hay errores recientes",
+    requestWindow: "Procesamiento de Peticiones",
+    monitorWindow: "Monitor de Procesos",
+    staleWarning: "No se pudieron actualizar los datos. Reintentando...",
+    unnamedProcess: "Proceso sin nombre",
+    viewError: "Ver error",
+    detailError: "No se pudieron cargar los detalles de la ejecución",
+    started: "Inicio",
+    ended: "Fin",
+    duration: "Duración",
+    errorLog: "Registro de errores",
+    noLog: "Esta ejecución no tiene registro",
+    toast: {
+      failed: 'El proceso "%0" terminó con error',
+    },
+  },
 };
 
 export default es;

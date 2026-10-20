@@ -414,6 +414,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           response.url.includes("meta/labels") ||
           response.url.includes("utility/ReferencedLink") ||
           response.url.includes("meta/widget") ||
+          response.url.includes("meta/process-monitor") ||
           response.url.includes("meta/dashboard"));
 
       if (
