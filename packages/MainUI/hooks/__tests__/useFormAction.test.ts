@@ -1,6 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { buildReloadModalOptions, extractServerErrorMessage, useFormAction } from "../useFormAction";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
@@ -130,6 +131,20 @@ describe("useFormAction execute", () => {
 
     expect(onError).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith({ id: "1" }, {});
+  });
+
+  it.each([
+    ["a successful save", { ok: true, status: 200, data: { response: { status: 0, data: [{ id: "1" }] } } }, 1],
+    ["a rejected save", { ok: false, status: 200, data: { response: { status: -4, error: { message: "x" } } } }, 0],
+  ])("evicts the cached responses of the entity only after %s", async (_case, response, evictions) => {
+    const clearCacheForEntity = jest.spyOn(datasource, "clearCacheForEntity");
+
+    await saveAndGetCallbacks(response);
+
+    expect(clearCacheForEntity).toHaveBeenCalledTimes(evictions);
+    if (evictions > 0) {
+      expect(clearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
+    }
   });
 });
 

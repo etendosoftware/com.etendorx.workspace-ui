@@ -18,6 +18,7 @@
 import type { EntityData, Tab, WindowMetadata, Column } from "@workspaceui/api-client/src/api/types";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
@@ -572,7 +573,12 @@ export async function saveRecord({
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
-    return handleSaveResponse({ data, status }, saveOperation);
+    const result = handleSaveResponse({ data, status }, saveOperation);
+    if (result.success) {
+      // Cached responses of the entity still hold the record as it was before the save
+      datasource.clearCacheForEntity(tab.entityName);
+    }
+    return result;
   } catch (error) {
     return handleSaveError(saveOperation, error);
   }
