@@ -11,6 +11,8 @@ const RETRY_TIMEOUT = 30_000;
 const OPTION_SEARCH = 'input[aria-label="Search options"]:visible, input[placeholder="Search..."]:visible';
 const OPTION_ITEM_PREFIX = "OptionItem__";
 const OPTION_ITEMS = `[data-testid^="${OPTION_ITEM_PREFIX}"]`;
+/** Controls of a read-only field: disabled inputs and buttons, and selectors marked aria-disabled. */
+const DISABLED_CONTROLS = 'input:disabled:not([type="hidden"]), button:disabled, [aria-disabled="true"]';
 
 /** Options to locate a field when the header and a child tab are both on screen. */
 export interface FieldOptions {
@@ -57,6 +59,21 @@ export class FormField {
    */
   byName(hqlName: string): Locator {
     return this.page.locator(`[data-form-field-name="${hqlName}"]`);
+  }
+
+  /**
+   * Asserts whether a field (by property name) is read-only. Read-only controls render disabled:
+   * inputs and switches with `disabled`, selectors with `aria-disabled="true"`.
+   */
+  async expectReadOnly(hqlName: string, readOnly: boolean): Promise<void> {
+    const field = this.byName(hqlName);
+    await expect(field, `field ${hqlName} is not shown`).toBeVisible({ timeout: FIELD_TIMEOUT });
+    const disabledControls = field.locator(DISABLED_CONTROLS);
+    if (readOnly) {
+      await expect(disabledControls.first(), `field ${hqlName} should be read-only`).toBeAttached();
+    } else {
+      await expect(disabledControls, `field ${hqlName} should be editable`).toHaveCount(0);
+    }
   }
 
   /** Yes/No field (rendered as a switch) by label. */

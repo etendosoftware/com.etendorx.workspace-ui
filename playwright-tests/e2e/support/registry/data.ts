@@ -81,6 +81,10 @@ export const PROCESS = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Sales order in Draft (two lines). */
+  SALES_ORDER_DRAFT: "50015",
+  /** Booked (Completed) sales order. */
+  SALES_ORDER_COMPLETED: "50017",
 } as const;
 
 export const ORGANIZATION = {

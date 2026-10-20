@@ -105,8 +105,13 @@ export class Grid {
 
   /** Opens the form view of a row through its actions column button. */
   async openForm(text: string | RegExp): Promise<void> {
+    await this.openRowForm(this.row(text));
+  }
+
+  /** Opens the form view of a row (e.g. {@link rowWithCell}) through its actions column button. */
+  async openRowForm(row: Locator): Promise<void> {
     await expect(async () => {
-      const button = this.row(text).locator('button[data-testid^="form-button-"]');
+      const button = row.locator('button[data-testid^="form-button-"]');
       await button.scrollIntoViewIfNeeded();
       await button.click();
     }).toPass({ intervals: [500, 1_000, 2_000], timeout: ROW_TIMEOUT });
