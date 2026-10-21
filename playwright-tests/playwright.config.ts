@@ -121,6 +121,25 @@ export default defineConfig({
       workers: 3,
       use: { ...devices["Desktop Chrome"] },
     },
+
+    // Drift guard of the mocked-backend recordings: requests them again from the real backend.
+    {
+      name: "mock-drift",
+      testMatch: ["**/drift/**/*.spec.ts"],
+      dependencies: ["suite-04-financial"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    // Mocked-backend specs: the UI against recorded `/api/**` responses, no ERP needed. Last in the
+    // chain so it does not compete with the timed suites; run it alone with
+    // `--project=mocked --no-deps` (recordings: `pnpm pw:record`).
+    {
+      name: "mocked",
+      testMatch: ["**/mocked/**/*.spec.ts"],
+      dependencies: ["suite-04-financial"],
+      fullyParallel: true,
+      use: { ...devices["Desktop Chrome"] },
+    },
   ],
 
   // Global test timeout for suite-00-performance. Smoke suites set their own
