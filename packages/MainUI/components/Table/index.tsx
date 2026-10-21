@@ -493,6 +493,109 @@ const getRowId = (row: EntityData) => String(row.id);
 const fieldTypeCache = new Map<string, FieldType>();
 const MAX_CACHE_SIZE = 100;
 
+// Type for product option data from datasource
+interface ProductOptionData {
+  cCurrencyId?: string;
+  currency?: string;
+  currency$id?: string;
+  product$currency$id?: string;
+  cUomId?: string;
+  uOM?: string;
+  uOM$id?: string;
+  product$uOM$id?: string;
+  standardPrice?: number;
+  netListPrice?: number;
+  listPrice?: number;
+  priceLimit?: number;
+  limitPrice?: number;
+}
+
+/**
+ * Row values sent to a callout: fields of the tab (by hqlName, inputName or columnName) and their
+ * identifier, entries and _data companions. Grid-only keys such as column labels are left out.
+ */
+const filterCalloutRowData = (rowData: Record<string, unknown>, fields: Record<string, Field>) => {
+  const validFieldNames = new Set([
+    ...Object.keys(fields),
+    ...Object.values(fields).map((f) => f.inputName),
+    ...Object.values(fields).map((f) => f.columnName),
+  ]);
+  const isCompanionKey = (key: string) =>
+    key.endsWith("$_identifier") || key.endsWith("$_entries") || key.endsWith("_data");
+
+  return Object.fromEntries(
+    Object.entries(rowData).filter(([key]) => {
+      const baseFieldName = key.replace(/(\$_identifier|\$_entries|_data)$/, "");
+      return validFieldNames.has(key) || validFieldNames.has(baseFieldName) || isCompanionKey(key);
+    })
+  );
+};
+
+/**
+ * Legacy fallback for product selectors without out-field metadata: the order, price list, currency,
+ * UOM and prices the product callout needs. It only fills the inputs the out-fields did not set.
+ */
+const addLegacyProductCalloutInputs = (
+  calloutData: Record<string, unknown>,
+  optionData: Record<string, unknown>,
+  parentRecord: EntityData | null | undefined,
+  session: Record<string, unknown>
+): void => {
+  const outFieldInputs = { ...calloutData };
+  const productOption = optionData as ProductOptionData;
+  const parentData = parentRecord;
+
+  // CRITICAL: Add parent order ID to payload
+  // The product callout needs this to query order data (date, isCashVAT, etc.) for tax calculation
+  if (parentData?.id) {
+    calloutData.inpcOrderId = String(parentData.id);
+  }
+
+  // Get priceList from parentRecord (order header)
+  const priceListFromParent = parentData?.priceList || parentData?.mPricelistId;
+  if (priceListFromParent) {
+    calloutData.inpmPricelistId = priceListFromParent;
+  }
+
+  // Try multiple possible field names for currency (from datasource response)
+  calloutData.inpmProductId_CURR =
+    productOption.cCurrencyId ||
+    productOption.currency ||
+    productOption.currency$id ||
+    productOption.product$currency$id ||
+    parentData?.currency ||
+    parentData?.cCurrencyId ||
+    session.$C_Currency_ID;
+
+  // Try multiple possible field names for UOM (from datasource response)
+  calloutData.inpmProductId_UOM =
+    productOption.cUomId ||
+    productOption.uOM ||
+    productOption.uOM$id ||
+    productOption.product$uOM$id ||
+    session["#C_UOM_ID"] ||
+    "";
+
+  // Try multiple possible field names for prices (from datasource response)
+  calloutData.inpmProductId_PSTD = String(
+    productOption.standardPrice || productOption.netListPrice || productOption.listPrice || 0
+  );
+  calloutData.inpmProductId_PLIST = String(productOption.netListPrice || productOption.listPrice || 0);
+  calloutData.inpmProductId_PLIM = String(productOption.priceLimit || productOption.limitPrice || 0);
+
+  // Add complete product_data object for backend callout (needed for tax calculation)
+  calloutData.product_data = optionData;
+
+  // Set default quantity if not present in current row data
+  if (!calloutData.inpqtyordered) {
+    calloutData.inpqtyordered = "1";
+  }
+
+  for (const [key, value] of Object.entries(outFieldInputs)) {
+    if (key.startsWith("inpmProductId_") && value !== "") calloutData[key] = value;
+  }
+};
+
 /** Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. */
 const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"]';
 
@@ -1510,23 +1613,6 @@ const DynamicTable = ({
     [tab, editingRowUtils, cancelPendingDebouncedValidations]
   );
 
-  // Type for product option data from datasource
-  interface ProductOptionData {
-    cCurrencyId?: string;
-    currency?: string;
-    currency$id?: string;
-    product$currency$id?: string;
-    cUomId?: string;
-    uOM?: string;
-    uOM$id?: string;
-    product$uOM$id?: string;
-    standardPrice?: number;
-    netListPrice?: number;
-    listPrice?: number;
-    priceLimit?: number;
-    limitPrice?: number;
-  }
-
   // Execute inline callout for a field
   const executeInlineCallout = useCallback(
     async (rowId: string, field: Field, newValue: unknown, optionData?: Record<string, unknown>) => {
@@ -1554,36 +1640,7 @@ const DynamicTable = ({
         const fieldsByColumnName = getFieldsByColumnName(tab);
         const currentRowData = getMergedRowData(editingData);
 
-        // Filter out fields that don't have metadata definitions
-        // This removes display names like "Tax", "Alternate Taxable Amount", etc.
-        // and grid-specific field names that aren't in the field definitions
-        const validFieldNames = new Set([
-          ...Object.keys(fieldsByHqlName),
-          ...Object.values(fieldsByHqlName).map((f) => f.inputName),
-          ...Object.values(fieldsByHqlName).map((f) => f.columnName),
-        ]);
-
-        const filteredRowData = Object.entries(currentRowData).reduce(
-          (acc, [key, value]) => {
-            // Keep the field if:
-            // 1. It's a known field name (hqlName, inputName, or columnName)
-            // 2. It's an identifier field (ends with $_identifier)
-            // 3. It's an entries field (ends with $_entries)
-            // 4. It's a data field (ends with _data)
-            const baseFieldName = key.replace(/(\$_identifier|\$_entries|_data)$/, "");
-            if (
-              validFieldNames.has(key) ||
-              validFieldNames.has(baseFieldName) ||
-              key.endsWith("$_identifier") ||
-              key.endsWith("$_entries") ||
-              key.endsWith("_data")
-            ) {
-              acc[key] = value;
-            }
-            return acc;
-          },
-          {} as Record<string, unknown>
-        );
+        const filteredRowData = filterCalloutRowData(currentRowData, fieldsByHqlName);
 
         // A new row's temporary id ("new_<uuid>") is not a record id: send no key value, as the form does
         const { id: _temporaryId, ...rowDataWithoutId } = filteredRowData;
@@ -1626,62 +1683,7 @@ const DynamicTable = ({
         );
 
         if (field.inputName === "inpmProductId" && newValue && optionData) {
-          // Legacy fallback for product selectors without out-field metadata: it only fills the inputs
-          // the out-fields above did not set.
-          const outFieldInputs = { ...calloutData };
-          // Cast to typed interfaces
-          const productOption = optionData as ProductOptionData;
-          const parentData = parentRecord;
-
-          // CRITICAL: Add parent order ID to payload
-          // The product callout needs this to query order data (date, isCashVAT, etc.) for tax calculation
-          if (parentData?.id) {
-            calloutData.inpcOrderId = String(parentData.id);
-          }
-
-          // Get priceList from parentRecord (order header)
-          const priceListFromParent = parentData?.priceList || parentData?.mPricelistId;
-          if (priceListFromParent) {
-            calloutData.inpmPricelistId = priceListFromParent;
-          }
-
-          // Try multiple possible field names for currency (from datasource response)
-          calloutData.inpmProductId_CURR =
-            productOption.cCurrencyId ||
-            productOption.currency ||
-            productOption.currency$id ||
-            productOption.product$currency$id ||
-            parentData?.currency ||
-            parentData?.cCurrencyId ||
-            session.$C_Currency_ID;
-
-          // Try multiple possible field names for UOM (from datasource response)
-          calloutData.inpmProductId_UOM =
-            productOption.cUomId ||
-            productOption.uOM ||
-            productOption.uOM$id ||
-            productOption.product$uOM$id ||
-            session["#C_UOM_ID"] ||
-            "";
-
-          // Try multiple possible field names for prices (from datasource response)
-          calloutData.inpmProductId_PSTD = String(
-            productOption.standardPrice || productOption.netListPrice || productOption.listPrice || 0
-          );
-          calloutData.inpmProductId_PLIST = String(productOption.netListPrice || productOption.listPrice || 0);
-          calloutData.inpmProductId_PLIM = String(productOption.priceLimit || productOption.limitPrice || 0);
-
-          // Add complete product_data object for backend callout (needed for tax calculation)
-          calloutData.product_data = optionData;
-
-          // Set default quantity if not present in current row data
-          if (!calloutData.inpqtyordered) {
-            calloutData.inpqtyordered = "1";
-          }
-
-          for (const [key, value] of Object.entries(outFieldInputs)) {
-            if (key.startsWith(`${field.inputName}_`) && value !== "") calloutData[key] = value;
-          }
+          addLegacyProductCalloutInputs(calloutData, optionData, parentRecord, session);
         }
 
         // Execute through global manager

@@ -121,6 +121,12 @@ interface SaveErrorHandlers {
  * stale-object conflict surfaces the specific reload-aware notice, and everything else falls
  * back to the generic {@code onError}.
  */
+/** Login message (login.errors.<key>) for each save error that means the session is no longer valid */
+const SESSION_ERROR_MESSAGE_KEYS: Record<string, "csrfToken" | "noAccessTableNoView"> = {
+  [DEFAULT_CSRF_TOKEN_ERROR]: "csrfToken",
+  [DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR]: "noAccessTableNoView",
+};
+
 /**
  * Logs the user out with the matching login message when a save failed because of the session
  * (CSRF token, no access to the table). Shared with the grid's inline save.
@@ -130,12 +136,7 @@ export function logoutOnSessionSaveError(
   errorMessage: string,
   handlers: Pick<SaveErrorHandlers, "logout" | "setLoginErrorText" | "setLoginErrorDescription" | "t">
 ): boolean {
-  const messageKey =
-    errorMessage === DEFAULT_CSRF_TOKEN_ERROR
-      ? "csrfToken"
-      : errorMessage === DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR
-        ? "noAccessTableNoView"
-        : null;
+  const messageKey = SESSION_ERROR_MESSAGE_KEYS[errorMessage];
   if (!messageKey) return false;
   handlers.logout();
   handlers.setLoginErrorText(handlers.t(`login.errors.${messageKey}.title`));
