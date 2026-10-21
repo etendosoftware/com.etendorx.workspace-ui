@@ -74,6 +74,8 @@ import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserStore } from "@/stores/userStore";
+import { useUserContext } from "@/hooks/useUserContext";
+import { logoutOnSessionSaveError } from "@/hooks/useFormAction";
 import {
   getDisplayColumnDefOptions,
   getMUITableBodyCellProps,
@@ -111,6 +113,8 @@ import { ActionsColumn } from "./ActionsColumn";
 import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
+import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
+import { applyOutFields, buildGridVisibleProperties } from "@/utils/callouts/calloutPayload";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useTableGrouping } from "./hooks/useTableGrouping";
 import { type ColumnActionsMenuArgs, buildColumnActionsMenuItems } from "./ColumnActionsMenuItems";
@@ -166,9 +170,11 @@ const getFieldIdentifier = (
   fieldInputName: string,
   fieldHqlName: string
 ): unknown => {
+  // hqlName first: initialization, selections and callouts all store it there; an inputName key
+  // can only be a leftover and showed the label from before a callout changed the value.
   const identifierKeyFromInput = `${fieldInputName}$_identifier`;
   const identifierKeyFromHql = `${fieldHqlName}$_identifier`;
-  return rowValues[identifierKeyFromInput] || rowValues[identifierKeyFromHql];
+  return rowValues[identifierKeyFromHql] || rowValues[identifierKeyFromInput];
 };
 
 /**
@@ -178,7 +184,7 @@ const getFieldIdentifier = (
 const getFieldEntries = (rowValues: Record<string, unknown>, fieldInputName: string, fieldHqlName: string): unknown => {
   const entriesKeyFromInput = `${fieldInputName}$_entries`;
   const entriesKeyFromHql = `${fieldHqlName}$_entries`;
-  return rowValues[entriesKeyFromInput] || rowValues[entriesKeyFromHql];
+  return rowValues[entriesKeyFromHql] || rowValues[entriesKeyFromInput];
 };
 
 /**
@@ -504,6 +510,26 @@ interface ExtendedColumn extends Column {
   isAuditField?: boolean;
 }
 
+/**
+ * Whether the field's display logic hides it for these row values. A hidden field is neither
+ * editable nor required in the grid, as in the form view. An expression that fails to evaluate
+ * keeps the field visible.
+ */
+const isHiddenByDisplayLogic = (
+  field: Pick<Field, "displayLogicExpression" | "name">,
+  rowValues: Record<string, unknown>,
+  session?: Record<string, unknown>,
+  windowId?: string
+): boolean => {
+  if (!field.displayLogicExpression) return false;
+  try {
+    return !compileExpression(field.displayLogicExpression)(session || {}, rowValues, windowId);
+  } catch (error) {
+    logger.warn(`Error evaluating displayLogicExpression for field ${field.name}:`, error);
+    return false;
+  }
+};
+
 // Helper function to determine if a field should be readonly in inline editing
 const isFieldReadOnly = (
   field: Field,
@@ -517,6 +543,8 @@ const isFieldReadOnly = (
 
   // Field not updatable (readonly except for new rows)
   if (!field.isUpdatable && !isNewRow) return true;
+
+  if (rowValues && isHiddenByDisplayLogic(field, rowValues, session, windowId)) return true;
 
   // Evaluate readOnlyLogicExpression if present
   if (field.readOnlyLogicExpression && rowValues) {
@@ -844,7 +872,10 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
-  const { registerRefresh } = useTabRefreshContext();
+  const { registerRefresh, triggerParentRefreshes } = useTabRefreshContext();
+  const { logout } = useUserContext();
+  const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
+  const setLoginErrorDescription = useUserStore((s) => s.setLoginErrorDescription);
 
   // Hook for fetching form initialization data when entering edit mode
   const { fetchInitialData } = useInlineEditInitialization({ tab });
@@ -1262,6 +1293,7 @@ const DynamicTable = ({
       // Use the correct inputName and hqlName from the original field
       field.inputName = originalField.inputName;
       field.hqlName = originalField.hqlName;
+      field.displayLogicExpression = originalField.displayLogicExpression;
 
       return field;
     },
@@ -1553,7 +1585,26 @@ const DynamicTable = ({
           {} as Record<string, unknown>
         );
 
-        const payload = buildPayloadByInputName(filteredRowData, fieldsByHqlName);
+        // A new row's temporary id ("new_<uuid>") is not a record id: send no key value, as the form does
+        const { id: _temporaryId, ...rowDataWithoutId } = filteredRowData;
+        const rowDataForPayload = rowId.startsWith("new_") ? rowDataWithoutId : filteredRowData;
+
+        const payload = buildPayloadByInputName(rowDataForPayload, fieldsByHqlName) as Record<string, unknown>;
+        // The changed value in the same format as the rest of the payload (dates dd-MM-yyyy, booleans Y/N)
+        payload[field.inputName] = buildPayloadByInputName(
+          { [field.hqlName]: newValue } as EntityData,
+          fieldsByHqlName
+        )?.[field.inputName];
+
+        // Extension-module fields (inpem*) run the standard callout chain, as in the form view: the changed
+        // column is the standard one and it carries the extension value when the standard field is empty.
+        // The grid's field carries the hqlName as columnName; the DB column comes from the tab metadata
+        const dbColumnName = tab.fields[field.hqlName]?.columnName ?? field.columnName ?? "";
+        const standardChangedColumn = deriveStandardInputName(field.inputName, dbColumnName);
+        if (standardChangedColumn && !payload[standardChangedColumn]) {
+          payload[standardChangedColumn] = payload[field.inputName];
+        }
+
         const entityKeyColumn = tab.fields.id.columnName;
         const session = useUserStore.getState().session;
         const calloutData = {
@@ -1566,13 +1617,18 @@ const DynamicTable = ({
           keyColumnName: entityKeyColumn,
           _entityName: tab.entityName,
           inpwindowId: tab.window,
+          _gridVisibleProperties: buildGridVisibleProperties(tab),
         } as Record<string, unknown>;
 
-        // CRITICAL FIX: For product field, use the actual product ID, not the datasource compound ID
-        // The datasource returns a compound ID (warehouse + product), but backend expects just the product ID
-        calloutData[field.inputName] = newValue;
+        // Selector out-fields (hidden callout inputs and target fields), the same as the form view
+        applyOutFields(field, optionData, calloutData, (name, value) =>
+          editingRowUtils.updateCellValue(rowId, name, value)
+        );
 
         if (field.inputName === "inpmProductId" && newValue && optionData) {
+          // Legacy fallback for product selectors without out-field metadata: it only fills the inputs
+          // the out-fields above did not set.
+          const outFieldInputs = { ...calloutData };
           // Cast to typed interfaces
           const productOption = optionData as ProductOptionData;
           const parentData = parentRecord;
@@ -1622,11 +1678,17 @@ const DynamicTable = ({
           if (!calloutData.inpqtyordered) {
             calloutData.inpqtyordered = "1";
           }
+
+          for (const [key, value] of Object.entries(outFieldInputs)) {
+            if (key.startsWith(`${field.inputName}_`) && value !== "") calloutData[key] = value;
+          }
         }
 
         // Execute through global manager
 
-        await globalCalloutManager.executeCallout(field.hqlName, async () => {
+        // Keyed by row and field: the queue keeps one pending call per key, so a key per field let one
+        // row's callout replace another row's for the same field.
+        await globalCalloutManager.executeCallout(`${rowId}:${field.hqlName}`, async () => {
           // For new records (rowId starts with "new_"), send ROW_ID=null
           const isNewRecord = rowId.startsWith("new_");
           const rowIdForBackend = isNewRecord ? "null" : rowId;
@@ -1637,7 +1699,7 @@ const DynamicTable = ({
             _action: ACTION_FORM_INITIALIZATION,
             MODE: MODE_CHANGE,
             TAB_ID: tab.id,
-            CHANGED_COLUMN: field.inputName,
+            CHANGED_COLUMN: standardChangedColumn || field.inputName,
             ROW_ID: rowIdForBackend,
             PARENT_ID: String(parentRecord?.id || "null"),
           });
@@ -1812,23 +1874,18 @@ const DynamicTable = ({
 
       // Fetch initialized data in background to get proper values for selectors and other fields
       try {
-        const initializedData = await fetchInitialData(rowId, false);
+        const initializedData = await fetchInitialData(rowId, false, row.original);
         if (initializedData) {
           // Check if user hasn't made any modifications yet
           const editingData = editingRowUtils.getEditingRowData(rowId);
           if (editingData && Object.keys(editingData.modifiedData).length === 0) {
-            // Merge initialized data with original data, prioritizing initialized values
-            // This ensures selectors show correct values and identifiers
+            // The record's own values win, as in the form view: the FIC only fills what the grid row
+            // lacks (session and auxiliary values, entries, property fields). Its datetimes come back
+            // as local time marked "Z", and overwriting the row with them shifted untouched dates.
             const mergedData = {
-              ...row.original,
               ...initializedData,
-              // Always keep the original ID
-              id: row.original.id,
+              ...row.original,
             };
-
-            // Check which column names match with initialized data
-            const _columnNames = baseColumns.map((col: Column) => col.name);
-            const _initializedFieldNames = Object.keys(initializedData);
 
             // Update the editing row with enriched data
             editingRowUtils.addEditingRow(rowId, mergedData, false);
@@ -1943,16 +2000,20 @@ const DynamicTable = ({
       // Use tab.fields instead of baseColumns for validation
       // Fields have hqlName which matches how data is stored in rowData
       const fieldsArray = tab.fields ? Object.values(tab.fields) : [];
+      const session = useUserStore.getState().session;
+      const isHidden = (field: Field | Column) =>
+        "displayLogicExpression" in field && isHiddenByDisplayLogic(field, currentData, session, tab.window);
 
       if (editingRowData.isNew) {
         // Use stricter validation for new rows
-        validationResult = validateNewRowForSave(fieldsArray, currentData);
+        validationResult = validateNewRowForSave(fieldsArray, currentData, isHidden);
       } else {
         // Use less strict validation for existing rows
         validationResult = validateExistingRowForSave(
           fieldsArray,
           currentData,
-          editingRowData.originalData as EntityData
+          editingRowData.originalData as EntityData,
+          isHidden
         );
       }
 
@@ -2005,6 +2066,19 @@ const DynamicTable = ({
   }, []);
 
   /**
+   * Drops rows from the optimistic snapshot once the base records hold their current version.
+   * Insert, save and cancel copy every displayed row into the snapshot, and the snapshot hides newer
+   * base rows (a refetch, a save from the form view), so it is discarded as soon as no row is edited.
+   */
+  const releaseOptimisticRows = useCallback(
+    (...rowIds: string[]) => {
+      const othersEditing = editingRowUtils.getEditingRowIds().some((id) => !rowIds.includes(id));
+      setOptimisticRecords((prev) => (othersEditing ? prev.filter((r) => !rowIds.includes(String(r.id))) : []));
+    },
+    [editingRowUtils]
+  );
+
+  /**
    * Handle successful save operation
    */
   const handleSaveSuccess = useCallback(
@@ -2025,6 +2099,11 @@ const DynamicTable = ({
 
       editingRowUtils.removeEditingRow(rowId);
 
+      // A child row changes its parent (totals, status): refresh the parent levels, as the form's save does
+      if (tab.tabLevel > 0) {
+        triggerParentRefreshes(tab.tabLevel);
+      }
+
       const successMessage = editingRowData.isNew ? "Created" : "Saved";
       showSuccessModal(successMessage);
 
@@ -2043,6 +2122,7 @@ const DynamicTable = ({
           const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
           if (!fetchId) {
             await refetch();
+            releaseOptimisticRows(rowId);
             return;
           }
 
@@ -2072,17 +2152,16 @@ const DynamicTable = ({
               updateRecordLocally?.(rowId, completeRecord);
             }
 
-            setOptimisticRecords((prev) =>
-              prev.map((r) =>
-                String(r.id) === rowId || String(r.id) === String(completeRecord.id) ? completeRecord : r
-              )
-            );
+            // The base records now hold the saved version
+            releaseOptimisticRows(rowId, String(completeRecord.id));
           } else {
             await refetch();
+            releaseOptimisticRows(rowId);
           }
         } catch (error: unknown) {
           logger.warn("[InlineEditing] Failed to fetch updated record after save:", error);
           await refetch();
+          releaseOptimisticRows(rowId);
         }
       })();
     },
@@ -2094,6 +2173,8 @@ const DynamicTable = ({
       preserveClientSideIdentifiers,
       tab,
       parentTab,
+      releaseOptimisticRows,
+      triggerParentRefreshes,
       updateRecordLocally,
       addRecordLocally,
       removeRecordLocally,
@@ -2139,7 +2220,10 @@ const DynamicTable = ({
 
       if (generalError) {
         logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-        notifyStaleObjectAwareError(showErrorModal, generalError, t, () => refetchDatasource(tab.id));
+        const sessionHandlers = { logout, setLoginErrorText, setLoginErrorDescription, t };
+        if (!logoutOnSessionSaveError(generalError, sessionHandlers)) {
+          notifyStaleObjectAwareError(showErrorModal, generalError, t, () => refetchDatasource(tab.id));
+        }
       }
 
       editingRowUtils.setRowSaving(rowId, false);
@@ -2149,7 +2233,18 @@ const DynamicTable = ({
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
       }
     },
-    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate, t, refetchDatasource, tab.id]
+    [
+      editingRowUtils,
+      showErrorModal,
+      screenReaderAnnouncer,
+      rollbackOptimisticUpdate,
+      t,
+      refetchDatasource,
+      tab.id,
+      logout,
+      setLoginErrorText,
+      setLoginErrorDescription,
+    ]
   );
 
   /**
@@ -2276,7 +2371,13 @@ const DynamicTable = ({
       if (!editingRowData || savingRowIdsRef.current.has(rowId)) return;
       savingRowIdsRef.current.add(rowId);
       try {
-        await saveRowOnce(rowId, editingRowData);
+        // Like the form view, let pending callouts finish first: a save right after picking a product
+        // went out without the price, tax and UOM its callout sets.
+        const calloutState = globalCalloutManager.getState();
+        if (calloutState.isRunning || calloutState.pendingCount > 0 || calloutState.queueLength > 0) {
+          await globalCalloutManager.waitForIdle();
+        }
+        await saveRowOnce(rowId, editingRowUtils.getEditingRowData(rowId) ?? editingRowData);
       } finally {
         savingRowIdsRef.current.delete(rowId);
       }
@@ -2296,34 +2397,14 @@ const DynamicTable = ({
         try {
           // Import cancel operations and utility functions dynamically
           const { handleCancelOperation } = await import("./utils/cancelOperations");
-          const { removeNewRowFromRecords } = await import("./utils/editingRowUtils");
 
           await handleCancelOperation({
             rowId,
             editingRowData,
             removeEditingRow: editingRowUtils.removeEditingRow,
             showConfirmation: false, // We handle confirmation ourselves
-            onConfirm: () => {
-              // Remove from optimistic records when canceling
-              const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
-              if (editingRowData.isNew) {
-                // For new rows, remove from optimistic records using utility function
-                const updatedRecords = removeNewRowFromRecords(currentRecords, rowId);
-                setOptimisticRecords(updatedRecords);
-              } else {
-                // For existing rows, restore original data if it was modified
-                const hasOptimisticChanges = currentRecords.some(
-                  (record: EntityData) => String(record.id) === rowId && record !== editingRowData.originalData
-                );
-
-                if (hasOptimisticChanges) {
-                  const updatedRecords = currentRecords.map((record: EntityData) =>
-                    String(record.id) === rowId ? editingRowData.originalData : record
-                  );
-                  setOptimisticRecords(updatedRecords);
-                }
-              }
-            },
+            // A cancelled row falls back to its base record (a new row has none and disappears)
+            onConfirm: () => releaseOptimisticRows(rowId),
           });
         } catch (error) {
           // Error occurred during cancel operation
@@ -2340,7 +2421,7 @@ const DynamicTable = ({
         hasUnsavedChanges
       );
     },
-    [editingRowUtils, optimisticRecords, displayRecords, confirmDiscardChanges]
+    [editingRowUtils, releaseOptimisticRows, confirmDiscardChanges]
   );
 
   // Applied on every change, never throttled: a throttle dropped the last keystrokes (a barcode
@@ -3584,12 +3665,18 @@ const DynamicTable = ({
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
+  // The manager is created once: it calls the current save/cancel through these refs, not the ones
+  // of the first render (which saved with stale records and columns).
+  const handleSaveRowRef = useRef(handleSaveRow);
+  handleSaveRowRef.current = handleSaveRow;
+  const handleCancelRowRef = useRef(handleCancelRow);
+  handleCancelRowRef.current = handleCancelRow;
 
   useEffect(() => {
     if (!keyboardManagerRef.current && table) {
       const manager = createKeyboardNavigationManager({
-        onSaveRow: handleSaveRow,
-        onCancelRow: handleCancelRow,
+        onSaveRow: (rowId) => handleSaveRowRef.current(rowId),
+        onCancelRow: (rowId) => handleCancelRowRef.current(rowId),
         isRowEditing: editingRowUtils.isRowEditing,
         getEditingRowIds: editingRowUtils.getEditingRowIds,
         table: table,
@@ -3871,8 +3958,14 @@ const DynamicTable = ({
     const handleKeyDown = async (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
+        // Only an Escape inside this grid that nothing else handled cancels its edit: closing a dropdown or
+        // a dialog, or an editor that already cancelled (it prevents the default), must not cancel it again,
+        // and other grids on screen are not affected.
+        const isOwnEscape =
+          !event.defaultPrevented && Boolean(tableContainerRef.current?.contains(event.target as Node));
 
         if (editingRowIds.length > 0) {
+          if (!isOwnEscape) return;
           const rowId = editingRowIds[0];
           await handleCancelRow(rowId);
         } else if (table.getState().isFullScreen) {

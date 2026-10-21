@@ -18,7 +18,7 @@
 import type { EntityData, Tab, WindowMetadata, Column } from "@workspaceui/api-client/src/api/types";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { buildQueryString } from "@/utils";
+import { buildFormPayload, buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { getPasswordFieldNames, shouldExcludePasswordField, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
@@ -70,6 +70,10 @@ export function notifyStaleObjectAwareError(
   const { message, options } = getStaleObjectErrorNotification(errorMessage, t, onReload);
   showErrorModal(message, options);
 }
+
+/** Local calendar date as yyyy-MM-dd, the format the datasource parses for date properties. */
+const toLocalDateString = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 /**
  * Builds the payload for saving a record via the datasource servlet
@@ -168,7 +172,10 @@ export function buildSavePayload({
     operationType: mode === FormMode.NEW ? "add" : "update",
     componentId: "isc_OBViewForm_0",
     data: {
-      accountingDate: new Date(),
+      // Today, for entities whose tab has no accounting date field (Copy from Orders, Landed Cost).
+      // Sent as a date string: a Date object went through normalizeDates as {}, which the server
+      // cannot convert. A tab with the field sends its own value, which wins.
+      accountingDate: toLocalDateString(new Date()),
       ...filteredValues,
     },
     csrfToken,
@@ -406,7 +413,8 @@ export async function saveRecord({
     const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
     const { values, oldValues } = prepareSaveData(saveOperation, tab, mode);
 
-    const body = buildSavePayload({
+    // Same body as the form view, including the extension-module (em_*) to standard column mapping
+    const body = buildFormPayload({
       values,
       oldValues,
       mode,

@@ -121,19 +121,32 @@ interface SaveErrorHandlers {
  * stale-object conflict surfaces the specific reload-aware notice, and everything else falls
  * back to the generic {@code onError}.
  */
+/**
+ * Logs the user out with the matching login message when a save failed because of the session
+ * (CSRF token, no access to the table). Shared with the grid's inline save.
+ * @returns whether the error was a session error and was handled
+ */
+export function logoutOnSessionSaveError(
+  errorMessage: string,
+  handlers: Pick<SaveErrorHandlers, "logout" | "setLoginErrorText" | "setLoginErrorDescription" | "t">
+): boolean {
+  const messageKey =
+    errorMessage === DEFAULT_CSRF_TOKEN_ERROR
+      ? "csrfToken"
+      : errorMessage === DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR
+        ? "noAccessTableNoView"
+        : null;
+  if (!messageKey) return false;
+  handlers.logout();
+  handlers.setLoginErrorText(handlers.t(`login.errors.${messageKey}.title`));
+  handlers.setLoginErrorDescription(handlers.t(`login.errors.${messageKey}.description`));
+  return true;
+}
+
 function handleSaveError(err: unknown, handlers: SaveErrorHandlers): void {
   const errorMessage = err instanceof Error ? err.message : String(err);
 
-  if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
-    handlers.logout();
-    handlers.setLoginErrorText(handlers.t("login.errors.csrfToken.title"));
-    handlers.setLoginErrorDescription(handlers.t("login.errors.csrfToken.description"));
-    return;
-  }
-  if (errorMessage === DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR) {
-    handlers.logout();
-    handlers.setLoginErrorText(handlers.t("login.errors.noAccessTableNoView.title"));
-    handlers.setLoginErrorDescription(handlers.t("login.errors.noAccessTableNoView.description"));
+  if (logoutOnSessionSaveError(errorMessage, handlers)) {
     return;
   }
   if (isStaleObjectError(errorMessage)) {
