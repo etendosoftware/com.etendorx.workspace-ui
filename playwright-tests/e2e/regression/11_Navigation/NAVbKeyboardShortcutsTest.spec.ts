@@ -1,6 +1,6 @@
 import { expect, test } from "../../support/fixtures";
 import { createCategories } from "../../support/flows/records";
-import { runAndWaitForDatasource, runAndWaitForResponse } from "../../support/wait";
+import { runAndWaitForDatasource, runAndWaitForFormInitialization, runAndWaitForResponse } from "../../support/wait";
 
 /** Default key combinations of the core OBUIAPP_KeyboardShortcuts preference. */
 const SHORTCUT = {
@@ -46,7 +46,8 @@ test.describe("Navigation - keyboard shortcuts @regression @nav", () => {
     await expect(name).toHaveValue(names[1]);
 
     const created = `${prefix}-new`;
-    await page.keyboard.press(SHORTCUT.NEW_DOCUMENT);
+    // The defaults of the new record arrive with its form initialization: values typed before it are reset
+    await runAndWaitForFormInitialization(page, () => page.keyboard.press(SHORTCUT.NEW_DOCUMENT));
     await expect(name).toHaveValue("");
     await app.field.fill("Search Key", created);
     await name.fill(created);

@@ -3,6 +3,7 @@ import { expect, test } from "../../support/fixtures";
 import { blockRequests } from "../../support/network";
 import { overrideProcessDefinition } from "../../support/processOverrides";
 import { WINDOW_IDS } from "../../support/registry/windows";
+import { runAndWaitForFormInitialization } from "../../support/wait";
 
 const ABORT_MESSAGE = "Aborted by the E2E onProcess";
 /** A migrated onProcess (`em_etmeta_onprocess`) whose validation always fails: `{ severity, text }`. */
@@ -35,7 +36,8 @@ test.describe("Pick and Execute grid - selection, cell edit and onProcess abort 
     const customer = data.BUSINESS_PARTNER.CUSTOMER_A;
 
     await app.sidebar.navigateTo("paymentIn");
-    await app.toolbar.newRecord();
+    // The new record's form initialization re-renders the form: a dropdown opened before it is closed
+    await runAndWaitForFormInitialization(page, () => app.toolbar.newRecord());
     await app.field.select("Received From", customer.name, { search: customer.name });
     await app.toolbar.save();
     await app.toast.closeAll();
