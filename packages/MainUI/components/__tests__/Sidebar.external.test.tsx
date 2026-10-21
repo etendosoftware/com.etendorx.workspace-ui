@@ -138,6 +138,70 @@ describe("Sidebar menu click dispatch", () => {
     });
   });
 
+  describe("Classic Form entries", () => {
+    let openSpy: jest.SpyInstance;
+    const formItem: Menu = {
+      id: "MENU_FORM",
+      name: "Form",
+      type: "Form",
+      formId: "F1",
+      formUrl: "/ad_forms/Form.html",
+    };
+    const processItem: Menu = { id: "MENU_PROC", name: "Process", type: "Process", processId: "P1" };
+
+    beforeEach(() => {
+      openSpy = jest.spyOn(window, "open").mockReturnValue({ closed: false } as Window);
+    });
+
+    afterEach(() => {
+      openSpy.mockRestore();
+    });
+
+    it("opens a form in its popup, without any notice, when popups are allowed", () => {
+      clickMenuItem(formItem);
+
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/ad_forms/Form.html"),
+        "Test",
+        "width=950,height=700"
+      );
+      expect(notifyReportPopupBlocked).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["no window is returned", null],
+      ["the window is closed at once", { closed: true } as Window],
+    ])("shows the popup blocked notice when %s", (_label, popup) => {
+      openSpy.mockReturnValue(popup);
+
+      clickMenuItem(formItem);
+
+      expect(notifyReportPopupBlocked).toHaveBeenCalledWith(expect.any(Function), {
+        title: "drawer.legacyWindowPopupBlocked",
+        openLabel: "drawer.openLegacyWindow",
+      });
+    });
+
+    it("opens the same form again from the manual action", () => {
+      openSpy.mockReturnValueOnce(null);
+
+      clickMenuItem(formItem);
+      const firstUrl = openSpy.mock.calls[0][0];
+      retryBlockedPopup();
+
+      expect(openSpy).toHaveBeenCalledTimes(2);
+      expect(openSpy.mock.calls[1]).toEqual([firstUrl, "Test", "width=950,height=700"]);
+    });
+
+    it("leaves Report and Process entries to their own modal", () => {
+      clickMenuItem(processItem);
+
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(notifyReportPopupBlocked).not.toHaveBeenCalled();
+    });
+  });
+
   it("keeps opening Window entries as windows", () => {
     clickMenuItem({ id: "MENU_WIN", name: "Sales Order", type: "Window", windowId: "143" });
 
