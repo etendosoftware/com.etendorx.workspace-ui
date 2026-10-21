@@ -8,7 +8,7 @@ import { TextCellEditor } from "../CellEditors/TextCellEditor";
 import { SelectCellEditor } from "../CellEditors/SelectCellEditor";
 import { DateCellEditor } from "../CellEditors/DateCellEditor";
 import { BooleanCellEditor } from "../CellEditors/BooleanCellEditor";
-import { NumericCellEditor } from "../CellEditors/NumericCellEditor";
+import { NumericCellEditor, getDecimalSeparator, normalizeNumericInput } from "../CellEditors/NumericCellEditor";
 
 // Mock field definitions
 const createMockField = (overrides: Partial<Field> = {}): Field => ({
@@ -686,6 +686,21 @@ describe("Cell Editor Components", () => {
       await user.keyboard("{ArrowUp}");
 
       expect(mockOnChange).toHaveBeenCalledWith(11);
+    });
+  });
+
+  describe("normalizeNumericInput", () => {
+    it("reads a comma as the decimal separator in languages that use it", () => {
+      const separator = getDecimalSeparator("es_ES");
+      expect(separator).toBe(",");
+      expect(Number(normalizeNumericInput("1,5", separator))).toBe(1.5);
+      expect(Number(normalizeNumericInput("1.234,56", separator))).toBe(1234.56);
+    });
+
+    it("drops comma thousand separators in dot-decimal languages", () => {
+      const separator = getDecimalSeparator("en_US");
+      expect(separator).toBe(".");
+      expect(Number(normalizeNumericInput("1,234.5", separator))).toBe(1234.5);
     });
   });
 });

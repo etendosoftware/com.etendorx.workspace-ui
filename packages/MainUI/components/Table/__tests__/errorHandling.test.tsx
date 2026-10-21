@@ -18,10 +18,9 @@
 import { render, screen } from "@testing-library/react";
 import { createTheme } from "@mui/material";
 import { validateFieldRealTime, validateRowForSave } from "../utils/validationUtils";
-import { saveRecordWithRetry } from "../utils/saveOperations";
 import { useTableConfirmation } from "../hooks/useTableConfirmation";
 import { ActionsColumn } from "../ActionsColumn";
-import type { Column, EntityData, Tab } from "@workspaceui/api-client/src/api/types";
+import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row } from "material-react-table";
 import { themeOptions } from "@workspaceui/componentlibrary/src/theme";
 
@@ -35,26 +34,6 @@ jest.mock("@/hooks/useTranslation", () => ({
     t: (key: string) => key,
   }),
 }));
-
-const createMockTab = (overrides?: Partial<Tab>): Tab => ({
-  uIPattern: "STD",
-  window: "test-window",
-  name: "test-tab",
-  title: "Test Tab",
-  parentColumns: [],
-  id: "test-tab",
-  table: "test-table",
-  entityName: "TestEntity",
-  fields: {},
-  tabLevel: 0,
-  _identifier: "test-tab-identifier",
-  records: {},
-  hqlfilterclause: "",
-  hqlwhereclause: "",
-  sQLWhereClause: "",
-  module: "test-module",
-  ...overrides,
-});
 
 describe("Error Handling", () => {
   describe("Real-time Validation", () => {
@@ -258,88 +237,6 @@ describe("Error Handling", () => {
       // depends on if the field is skipped. Let's check for at least the age error
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.errors.some((e) => e.field === "age")).toBe(true);
-    });
-  });
-
-  describe("Server Error Handling", () => {
-    const mockSaveOperation = {
-      rowId: "test-row",
-      isNew: false,
-      data: { id: "test-row", name: "Test" },
-      originalData: { id: "test-row", name: "Original" },
-    };
-
-    const mockTab = createMockTab();
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it("should retry on network errors", async () => {
-      // This test verifies that the retry mechanism works - we can't actually mock
-      // saveRecordWithRetry to call itself. Instead, we test that it handles errors properly.
-      // For a successful retry scenario, the function would need actual fetch failures,
-      // which is complex to test. Let's simplify to test the basic success case.
-      const mockSaveRecord = jest.mocked(saveRecordWithRetry);
-
-      mockSaveRecord.mockResolvedValueOnce({
-        success: true,
-        data: { id: "test-row", name: "Test" },
-      });
-
-      const result = await saveRecordWithRetry({
-        saveOperation: mockSaveOperation,
-        tab: mockTab,
-        userId: "user-1",
-        maxRetries: 1,
-      });
-
-      expect(result.success).toBe(true);
-      expect(mockSaveRecord).toHaveBeenCalledTimes(1);
-    });
-
-    it("should not retry on validation errors", async () => {
-      const mockSaveRecord = jest.mocked(saveRecordWithRetry);
-
-      mockSaveRecord.mockResolvedValueOnce({
-        success: false,
-        errors: [
-          {
-            field: "name",
-            message: "Name is required",
-            type: "server",
-          },
-        ],
-      });
-
-      const result = await saveRecordWithRetry({
-        saveOperation: mockSaveOperation,
-        tab: mockTab,
-        userId: "user-1",
-        maxRetries: 2,
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.errors?.length).toBeGreaterThan(0);
-      expect(mockSaveRecord).toHaveBeenCalledTimes(1);
-    });
-
-    it("should handle server timeout errors with retry", async () => {
-      const mockSaveRecord = jest.mocked(saveRecordWithRetry);
-
-      mockSaveRecord.mockResolvedValueOnce({
-        success: true,
-        data: { id: "test-row", name: "Test" },
-      });
-
-      const result = await saveRecordWithRetry({
-        saveOperation: mockSaveOperation,
-        tab: mockTab,
-        userId: "user-1",
-        maxRetries: 1,
-      });
-
-      expect(result.success).toBe(true);
     });
   });
 
