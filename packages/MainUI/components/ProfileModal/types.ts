@@ -79,6 +79,8 @@ export interface BaseProfileModalProps {
 export interface SelectionProps {
   saveAsDefault: boolean;
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Called once a profile change is applied, so the host unticks "Save as default" (see useSaveAsDefault). */
+  onProfileApplied?: () => void;
 }
 
 export interface ActionProps {

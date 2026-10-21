@@ -26,6 +26,7 @@ import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg"
 import { CopilotButton, CopilotPopup } from "@workspaceui/componentlibrary/src/components";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useSaveAsDefault } from "@/components/ProfileModal/useSaveAsDefault";
 import { sections } from "../mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
@@ -51,7 +52,7 @@ const Navigation: React.FC = () => {
   const languages = useUserStore((s) => s.languages);
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
   const token = useUserStore((s) => s.token);
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const { saveAsDefault, onSaveAsDefaultChange, onProfileApplied } = useSaveAsDefault();
   const { language, setLanguage, getFlag } = useLanguage();
 
   const [copilotOpen, setCopilotOpen] = useState(false);
@@ -70,10 +71,6 @@ const Navigation: React.FC = () => {
     isLoading: isLoadingAssistants,
   } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
-
-  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setSaveAsDefault(event.target.checked);
-  }, []);
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
@@ -236,7 +233,8 @@ const Navigation: React.FC = () => {
           currentOrganization={currentOrganization}
           roles={roles}
           saveAsDefault={saveAsDefault}
-          onSaveAsDefaultChange={handleSaveAsDefaultChange}
+          onSaveAsDefaultChange={onSaveAsDefaultChange}
+          onProfileApplied={onProfileApplied}
           onLanguageChange={setLanguage}
           language={language}
           languagesFlags={flagString}
