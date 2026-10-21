@@ -116,4 +116,44 @@ test.describe("Master Data - Inline grid editing @smoke", () => {
       current = next;
     }
   });
+
+  test("Escape closes a new row's dropdown without discarding the row", async ({ app, data, page }) => {
+    const name = data.uniqueValue("PW escape");
+    await app.sidebar.navigateTo("title");
+    const row = await app.grid.insertRow();
+    await row.getByPlaceholder("Enter Name...").fill(name);
+
+    await row.locator('[data-column-id="organization"]').click();
+    const search = page.getByPlaceholder("Search Organization...");
+    await search.click();
+    await search.press("Escape");
+
+    await expect(search).toBeHidden();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(row.getByPlaceholder("Enter Name...")).toHaveValue(name);
+  });
+
+  test("a line created inline in a child tab is saved under its header", async ({ app, data, page }) => {
+    const key = data.uniqueValue("PWPT");
+    await app.sidebar.navigateTo("paymentTerm");
+    const header = await app.grid.insertRow();
+    await header.getByPlaceholder("Enter Search Key...").fill(key);
+    await header.getByPlaceholder("Enter Name...").fill(key);
+    const headerSave = await runAndWaitForResponse(page, SAVE_URL, () =>
+      header.locator('[data-testid^="save-button-new_"]').click()
+    );
+    const headerId = (await headerSave.json()).response.data[0].id;
+    await expect(page.locator('[data-testid^="save-button-new_"]')).toHaveCount(0);
+
+    await app.grid.selectRow(key);
+    await app.tabs.open("Lines");
+    const line = await app.grid.insertRowInEmptyGrid();
+    await line.locator('input[data-column-id="lineNo"]').fill("10");
+    const lineSave = await runAndWaitForResponse(page, SAVE_URL, () =>
+      line.locator('[data-testid^="save-button-new_"]').click()
+    );
+
+    expect((await lineSave.json()).response?.status).toBe(0);
+    expect(sentData(lineSave.request()).paymentTerms).toBe(headerId);
+  });
 });

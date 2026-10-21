@@ -41,6 +41,9 @@ const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 // Mock the utility functions
 jest.mock("@/utils", () => ({
   buildQueryString: jest.fn(() => "mocked-query-string"),
+  // The grid saves with the form's builder, which wraps buildSavePayload
+  buildFormPayload: (args: Parameters<typeof import("../utils/saveOperations").buildSavePayload>[0]) =>
+    jest.requireActual("../utils/saveOperations").buildSavePayload(args),
 }));
 
 jest.mock("@/utils/form/entityConfig", () => ({

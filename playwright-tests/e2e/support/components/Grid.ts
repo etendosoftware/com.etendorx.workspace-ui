@@ -97,6 +97,22 @@ export class Grid {
     return row;
   }
 
+  /**
+   * Inserts an inline row in an empty grid through its "Create record in grid" button. The last
+   * visible one is taken: a child tab's grid is below its parent's.
+   */
+  async insertRowInEmptyGrid(): Promise<Locator> {
+    const button = this.page
+      .getByRole("button", { name: /in grid/i })
+      .filter({ visible: true })
+      .last();
+    await button.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    await button.click();
+    const row = this.editingRow();
+    await row.locator('[data-testid^="save-button-new_"]').waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return row;
+  }
+
   /** Starts editing a row inline through its actions column button. */
   async editRow(text: string | RegExp): Promise<Locator> {
     await this.row(text).locator('button[data-testid^="edit-button-"]').click();

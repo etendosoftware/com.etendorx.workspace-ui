@@ -117,6 +117,10 @@ jest.mock("@/stores/userStore", () => ({
     }),
 }));
 
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: () => ({ logout: jest.fn() }),
+}));
+
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => ({
     activeWindow: {
