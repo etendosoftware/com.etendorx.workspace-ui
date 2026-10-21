@@ -70,6 +70,8 @@ export const WINDOWS = {
   },
 
   // ── General setup ────────────────────────────────────────────────────────
+  currency: { search: "currency", menuId: "102", breadcrumb: /Currency/i },
+  countryAndRegion: { search: "country", menuId: "109", breadcrumb: /Country and Region/i },
   processRequest: {
     search: "Process",
     menuId: "BE86736DF4AB4568A316A3922E6D6B7B",

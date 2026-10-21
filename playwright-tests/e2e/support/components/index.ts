@@ -8,6 +8,7 @@ import { InstancePurpose } from "./InstancePurpose";
 import { Grid } from "./Grid";
 import { LegacyFrame } from "./LegacyFrame";
 import { ProcessModal } from "./ProcessModal";
+import { SavedViews } from "./SavedViews";
 import { SelectorModal } from "./SelectorModal";
 import { Sidebar } from "./Sidebar";
 import { Tabs } from "./Tabs";
@@ -40,6 +41,7 @@ export class App {
   readonly attributeSelector: AttributeSelector;
   readonly windows: WindowTabs;
   readonly instancePurpose: InstancePurpose;
+  readonly savedViews: SavedViews;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -56,6 +58,7 @@ export class App {
     this.attributeSelector = new AttributeSelector(page);
     this.windows = new WindowTabs(page);
     this.instancePurpose = new InstancePurpose(page);
+    this.savedViews = new SavedViews(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */
