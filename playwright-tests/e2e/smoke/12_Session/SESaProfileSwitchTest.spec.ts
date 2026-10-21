@@ -23,7 +23,8 @@ test.describe("Session - role, organization and warehouse switch @smoke @session
     await app.toolbar.newRecord();
     await app.field.expectToContain("Organization", USA.organization);
 
-    await app.auth.switchProfile({ roleName: SYSTEM_ADMINISTRATOR });
+    // A system role on an instance without purpose (a fresh database) is asked for it: closed
+    await app.instancePurpose.runAndDismiss(() => app.auth.switchProfile({ roleName: SYSTEM_ADMINISTRATOR }));
     await app.sidebar.search(TABLES_AND_COLUMNS.search);
     await expect(adMenuEntry).toBeVisible();
 

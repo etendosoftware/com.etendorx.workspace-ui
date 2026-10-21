@@ -4,6 +4,7 @@ import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CreateLinesFrom } from "./CreateLinesFrom";
 import { FormField } from "./FormField";
+import { InstancePurpose } from "./InstancePurpose";
 import { Grid } from "./Grid";
 import { LegacyFrame } from "./LegacyFrame";
 import { ProcessModal } from "./ProcessModal";
@@ -38,6 +39,7 @@ export class App {
   readonly createLinesFrom: CreateLinesFrom;
   readonly attributeSelector: AttributeSelector;
   readonly windows: WindowTabs;
+  readonly instancePurpose: InstancePurpose;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -53,6 +55,7 @@ export class App {
     this.createLinesFrom = new CreateLinesFrom(page);
     this.attributeSelector = new AttributeSelector(page);
     this.windows = new WindowTabs(page);
+    this.instancePurpose = new InstancePurpose(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */
