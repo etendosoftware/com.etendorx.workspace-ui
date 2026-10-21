@@ -21,6 +21,7 @@ import Sidebar from "./Sidebar";
 import GlobalLoading from "./Layout/GlobalLoading";
 import ProcessStackHost from "./ProcessModal/ProcessStackHost";
 import HelpDrawer from "./HelpDrawer/HelpDrawer";
+import InstancePurposeModal from "./InstancePurpose/InstancePurposeModal";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
@@ -36,6 +37,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <HelpDrawer data-testid="HelpDrawer__519d5c" />
       {/* Host for nested process modals opened via view.openProcess. */}
       <ProcessStackHost data-testid="ProcessStackHost__519d5c" />
+      {/* First-login modal asking system administrators for the purpose of the instance. */}
+      <InstancePurposeModal data-testid="InstancePurposeModal__519d5c" />
     </div>
   );
 }
