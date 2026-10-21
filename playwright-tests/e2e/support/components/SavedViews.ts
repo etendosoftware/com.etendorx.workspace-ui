@@ -3,6 +3,7 @@ import { runAndWaitForResponse } from "../wait";
 import { Toolbar } from "./Toolbar";
 
 const SAVED_VIEWS_REQUEST = /\/api\/meta\/saved-views/;
+const READ_METHOD = "GET";
 const ACTION_TIMEOUT = 5_000;
 const MENU_TIMEOUT = 30_000;
 const TEST_IDS = {
@@ -57,7 +58,7 @@ export class SavedViews {
   async saveCurrent(name: string): Promise<string> {
     await this.inOpenMenu(() => this.page.getByTestId(TEST_IDS.save).click({ timeout: ACTION_TIMEOUT }));
     await this.page.getByTestId(TEST_IDS.name).fill(name);
-    const saved = await runAndWaitForResponse(this.page, SAVED_VIEWS_REQUEST, () =>
+    const saved = await runAndWaitForResponse(this.page, isSavedViewWrite, () =>
       this.page.getByTestId(TEST_IDS.confirmSave).click()
     );
     await this.close();
@@ -73,7 +74,7 @@ export class SavedViews {
   /** Makes a saved view the default of the tab. */
   async setDefault(name: string): Promise<void> {
     await this.inOpenMenu(() =>
-      runAndWaitForResponse(this.page, SAVED_VIEWS_REQUEST, () =>
+      runAndWaitForResponse(this.page, isSavedViewWrite, () =>
         this.view(name).getByTestId(TEST_IDS.setDefault).click({ timeout: ACTION_TIMEOUT })
       )
     );
@@ -103,6 +104,14 @@ export class SavedViews {
     });
     expect(response.ok(), `saved view ${id} was not deleted: ${response.status()} ${await response.text()}`).toBe(true);
   }
+}
+
+/**
+ * A request that changes the saved views. The menu also reads the list of views with the same URL
+ * (a GET after every change), whose answer has no id and comes before the change is stored.
+ */
+function isSavedViewWrite(response: Response): boolean {
+  return SAVED_VIEWS_REQUEST.test(response.url()) && response.request().method() !== READ_METHOD;
 }
 
 /** The id of the view a save request created: `{ response: { status, data: { id } } }`. */

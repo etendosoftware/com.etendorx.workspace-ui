@@ -20,12 +20,12 @@ export async function waitForNoOverlay(page: Page, timeout = OVERLAY_TIMEOUT): P
 }
 
 /**
- * Runs `action` and waits for the first response whose URL matches `url`.
+ * Runs `action` and waits for the first response whose URL matches `url` (or that `url` accepts).
  * The listener is registered before the action, so a fast response is never missed.
  */
 export async function runAndWaitForResponse(
   page: Page,
-  url: RegExp,
+  url: RegExp | ((response: Response) => boolean),
   action: () => Promise<unknown>,
   timeout = DEFAULT_RESPONSE_TIMEOUT
 ): Promise<Response> {
