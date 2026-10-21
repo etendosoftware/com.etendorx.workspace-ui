@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { datasourceWriteBody, datasourceWriteUrl, savedRecordFrom } from "../api/ApiData";
+import { assertRemoved, datasourceAddBody, datasourceWriteUrl, savedRecordFrom } from "../api/ApiData";
 import { DATASOURCE } from "../registry/datasources";
 
 const TARGET = DATASOURCE.BUSINESS_PARTNER_CATEGORY;
@@ -27,17 +27,12 @@ test.describe("datasourceWriteUrl", () => {
   });
 });
 
-test.describe("datasourceWriteBody", () => {
-  for (const [operation, componentId] of [
-    ["add", "isc_OBViewForm_0"],
-    ["remove", "isc_OBViewGrid_0"],
-  ] as const) {
-    test(`builds the ${operation} body the UI sends`, () => {
-      const body = datasourceWriteBody(operation, { name: "x" });
-      expect(body).toMatchObject({ operationType: operation, componentId, data: { name: "x" } });
-      expect(body.csrfToken).toBeTruthy();
-    });
-  }
+test.describe("datasourceAddBody", () => {
+  test("builds the body the UI sends to save a new record", () => {
+    const body = datasourceAddBody({ name: "x" });
+    expect(body).toMatchObject({ operationType: "add", componentId: "isc_OBViewForm_0", data: { name: "x" } });
+    expect(body.csrfToken).toBeTruthy();
+  });
 });
 
 test.describe("savedRecordFrom", () => {
@@ -52,7 +47,7 @@ test.describe("savedRecordFrom", () => {
       body: { response: { status: -4, error: { message: "InvalidCSRFToken" } } },
       message: /BusinessPartnerCategory.*InvalidCSRFToken/,
     },
-    { name: "a success without record", body: { response: { status: 0, data: [] } }, message: /"status":0/ },
+    { name: "a success without record", body: { response: { status: 0, data: [] } }, message: /without a record/ },
     { name: "an unexpected body", body: { error: "Unauthorized" }, message: /Unauthorized/ },
   ];
 
@@ -61,4 +56,16 @@ test.describe("savedRecordFrom", () => {
       expect(() => savedRecordFrom(body, TARGET.entity)).toThrow(message);
     });
   }
+});
+
+test.describe("assertRemoved", () => {
+  test("accepts a deletion the backend confirmed", () => {
+    expect(() => assertRemoved({ response: { status: 0 } }, TARGET.entity)).not.toThrow();
+  });
+
+  test("throws on a rejected deletion, with the backend message", () => {
+    expect(() => assertRemoved({ response: { status: -1, error: { message: "In use" } } }, TARGET.entity)).toThrow(
+      /BusinessPartnerCategory.*In use/
+    );
+  });
 });

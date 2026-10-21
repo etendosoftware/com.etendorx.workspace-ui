@@ -13,10 +13,9 @@ export type WriteOperation = "add" | "remove";
 
 const DATASOURCE_PATH = "/api/datasource";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
-const COMPONENT_BY_OPERATION: Record<WriteOperation, string> = {
-  add: "isc_OBViewForm_0",
-  remove: "isc_OBViewGrid_0",
-};
+const ADD: WriteOperation = "add";
+const REMOVE: WriteOperation = "remove";
+const FORM_COMPONENT = "isc_OBViewForm_0";
 /** The Next.js route replaces it with the CSRF token of the server-side session. */
 const CSRF_PLACEHOLDER = "e2e";
 const TOKEN_STORAGE_KEY = "token";
@@ -43,30 +42,50 @@ export function datasourceWriteUrl(target: DatasourceTarget, operation: WriteOpe
   return `${DATASOURCE_PATH}/${target.entity}?${params.toString()}`;
 }
 
-/** Body of a datasource write, as the UI sends it. */
-export function datasourceWriteBody(operation: WriteOperation, data: RecordValues): RecordValues {
+/** Body of a datasource record creation, as the UI sends it when it saves a new record. */
+export function datasourceAddBody(data: RecordValues): RecordValues {
   return {
     dataSource: DATA_SOURCE,
-    operationType: operation,
-    componentId: COMPONENT_BY_OPERATION[operation],
+    operationType: ADD,
+    componentId: FORM_COMPONENT,
     data,
     csrfToken: CSRF_PLACEHOLDER,
   };
 }
 
+type WriteResponse = { status?: number; data?: SavedRecord[]; error?: { message?: string } };
+
 /**
- * The record of a datasource write response (`{ response: { status, data: [record] } }`).
+ * The `response` of a datasource write (`{ response: { status, data } }`).
  * @throws when the backend rejected the write, with its message.
  */
-export function savedRecordFrom(body: unknown, entity: string): SavedRecord {
-  const response = (body as { response?: { status?: number; data?: SavedRecord[]; error?: { message?: string } } })
-    ?.response;
-  const record = response?.data?.[0];
-  if (response?.status !== SUCCESS_STATUS || !record?.id) {
+function acceptedResponse(body: unknown, entity: string): WriteResponse {
+  const response = (body as { response?: WriteResponse })?.response;
+  if (response?.status !== SUCCESS_STATUS) {
     const reason = response?.error?.message ?? JSON.stringify(body);
     throw new Error(`Writing ${entity} through the datasource failed: ${reason}`);
   }
+  return response;
+}
+
+/**
+ * The record a datasource creation answered with.
+ * @throws when the backend rejected it or answered without a record.
+ */
+export function savedRecordFrom(body: unknown, entity: string): SavedRecord {
+  const record = acceptedResponse(body, entity).data?.[0];
+  if (!record?.id) {
+    throw new Error(`Writing ${entity} through the datasource answered without a record: ${JSON.stringify(body)}`);
+  }
   return record;
+}
+
+/**
+ * Checks the answer of a datasource deletion.
+ * @throws when the backend rejected it, with its message.
+ */
+export function assertRemoved(body: unknown, entity: string): void {
+  acceptedResponse(body, entity);
 }
 
 /**
@@ -79,28 +98,26 @@ export class ApiData {
 
   /** Creates a record and returns it as saved (with its id and the defaults the backend set). */
   async add(target: DatasourceTarget, values: RecordValues): Promise<SavedRecord> {
-    return this.write(target, "add", values);
+    const response = await this.page.request.post(datasourceWriteUrl(target, ADD), {
+      headers: await this.authHeaders(),
+      data: datasourceAddBody(values),
+    });
+    return savedRecordFrom(await response.json(), target.entity);
   }
 
-  /** Deletes a record by id. */
+  /** Deletes a record by id, with the DELETE request the UI sends (a POST "remove" deletes nothing). */
   async remove(target: DatasourceTarget, id: string): Promise<void> {
-    await this.write(target, "remove", { id }, id);
+    const response = await this.page.request.delete(datasourceWriteUrl(target, REMOVE, id), {
+      headers: await this.authHeaders(),
+    });
+    assertRemoved(await response.json(), target.entity);
   }
 
-  private async write(
-    target: DatasourceTarget,
-    operation: WriteOperation,
-    data: RecordValues,
-    recordId?: string
-  ): Promise<SavedRecord> {
+  private async authHeaders(): Promise<Record<string, string>> {
     const token = await this.page.evaluate((key) => localStorage.getItem(key), TOKEN_STORAGE_KEY);
     if (!token) {
       throw new Error("The api fixture needs a logged-in page: no token in localStorage");
     }
-    const response = await this.page.request.post(datasourceWriteUrl(target, operation, recordId), {
-      headers: { Authorization: `Bearer ${token}` },
-      data: datasourceWriteBody(operation, data),
-    });
-    return savedRecordFrom(await response.json(), target.entity);
+    return { Authorization: `Bearer ${token}` };
   }
 }
