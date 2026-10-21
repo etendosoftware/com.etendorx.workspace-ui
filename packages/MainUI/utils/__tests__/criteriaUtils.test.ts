@@ -133,6 +133,8 @@ describe("criteriaUtils", () => {
 
   describe("resolveParentFieldName", () => {
     const parentTab: any = { entityName: "ParentEntity", id: "parent-tab-id" };
+    /** A property named exactly as the parent entity (case-insensitive). */
+    const PARENT_NAMED_FIELD = "parentEntity";
 
     it("prefers the backend-resolved parentProperty", () => {
       const tab: any = { parentColumns: ["businessPartner"], parentProperty: "invoice", fields: {} };
@@ -158,8 +160,8 @@ describe("criteriaUtils", () => {
       ],
       [
         "the column named exactly as the parent entity among several name matches",
-        { parentColumns: ["parentEntityLine", "parentEntity"], fields: {} },
-        "parentEntity",
+        { parentColumns: ["parentEntityLine", PARENT_NAMED_FIELD], fields: {} },
+        PARENT_NAMED_FIELD,
       ],
       [
         "the first column containing the parent entity name when none matches exactly",
@@ -168,8 +170,8 @@ describe("criteriaUtils", () => {
       ],
       [
         "a tab field named as the parent entity when no parent column matches",
-        { parentColumns: ["unrelated"], fields: { parentEntity: {} } },
-        "parentEntity",
+        { parentColumns: ["unrelated"], fields: { [PARENT_NAMED_FIELD]: {} } },
+        PARENT_NAMED_FIELD,
       ],
       ["the first parent column as last resort", { parentColumns: ["unrelated"], fields: {} }, "unrelated"],
     ])("falls back to %s", (_case, tab, expected) => {

@@ -7,6 +7,7 @@ import { maskBody, sanitizeFiles, sanitizeHar } from "../sanitize-har.mjs";
 
 const JWT = "eyJhbGciOiJIUzI1NiJ9.e30.signature";
 const LOGIN_BODY = JSON.stringify({ username: "admin", password: "admin" });
+const JSON_TYPE = "application/json";
 
 /** A HAR with one login entry carrying every kind of credential. */
 function loginHar() {
@@ -20,16 +21,16 @@ function loginHar() {
             url: "http://localhost:3000/api/auth/login",
             headers: [
               { name: "Authorization", value: `Bearer ${JWT}` },
-              { name: "Content-Type", value: "application/json" },
+              { name: "Content-Type", value: JSON_TYPE },
             ],
             cookies: [{ name: "JSESSIONID", value: "abc" }],
-            postData: { mimeType: "application/json", text: LOGIN_BODY },
+            postData: { mimeType: JSON_TYPE, text: LOGIN_BODY },
           },
           response: {
             status: 200,
             headers: [{ name: "Set-Cookie", value: "JSESSIONID=abc" }],
             cookies: [{ name: "JSESSIONID", value: "abc" }],
-            content: { mimeType: "application/json", text: JSON.stringify({ token: JWT, user: { name: "Admin" } }) },
+            content: { mimeType: JSON_TYPE, text: JSON.stringify({ token: JWT, user: { name: "Admin" } }) },
           },
         },
       ],
@@ -39,7 +40,7 @@ function loginHar() {
 
 test("removes auth and cookie headers and cookies, keeping the rest", () => {
   const [entry] = sanitizeHar(loginHar()).log.entries;
-  assert.deepEqual(entry.request.headers, [{ name: "Content-Type", value: "application/json" }]);
+  assert.deepEqual(entry.request.headers, [{ name: "Content-Type", value: JSON_TYPE }]);
   assert.deepEqual(entry.response.headers, []);
   assert.deepEqual(entry.request.cookies, []);
   assert.deepEqual(entry.response.cookies, []);

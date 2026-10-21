@@ -2,8 +2,9 @@ import type { App } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
 
 const PRODUCT_TYPE = "Product Type";
+/** The Yes/No field and the child tab it shows share their label. */
 const BOM_FIELD = "Bill of Materials";
-const BOM_TAB = "Bill of Materials";
+const BOM_TAB = BOM_FIELD;
 /** Property names (`hqlName`) of the fields whose display logic depends on other fields. */
 const STOCKED = "stocked";
 const BILL_OF_MATERIALS = "billOfMaterials";

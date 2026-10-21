@@ -7,6 +7,9 @@ import { gunzipSync } from "node:zlib";
 import { compactDirectory, compactEntries, groupRecordings } from "../compact-har.mjs";
 
 const WINDOW_URL = "http://localhost:3000/api/erp/meta/window/143";
+const RAW_CONTEXT_0 = "NAVa.0.har";
+const RAW_CONTEXT_1 = "NAVa.1.har";
+const COMPACTED = "NAVa.har.gz";
 
 /** A HAR entry answering `url` with `text`. */
 const entry = (url, text) => ({ request: { method: "GET", url }, response: { status: 200, content: { text } } });
@@ -22,11 +25,11 @@ test("keeps a changed response and the ones after it, so the replay order is unc
 });
 
 test("groups the raw recordings of each spec in context order, ignoring other files", () => {
-  const groups = groupRecordings(["NAVa.1.har", "NAVa.0.har", "Other.0.har", "NAVa.har.gz", "notes.md"]);
+  const groups = groupRecordings([RAW_CONTEXT_1, RAW_CONTEXT_0, "Other.0.har", COMPACTED, "notes.md"]);
   assert.deepEqual(
     [...groups],
     [
-      ["NAVa", ["NAVa.0.har", "NAVa.1.har"]],
+      ["NAVa", [RAW_CONTEXT_0, RAW_CONTEXT_1]],
       ["Other", ["Other.0.har"]],
     ]
   );
@@ -35,14 +38,14 @@ test("groups the raw recordings of each spec in context order, ignoring other fi
 test("writes one gzipped HAR per spec and removes the raw recordings", () => {
   const dir = mkdtempSync(join(tmpdir(), "compact-har-"));
   const har = (entries) => JSON.stringify({ log: { version: "1.2", entries } });
-  writeFileSync(join(dir, "NAVa.0.har"), har([entry(WINDOW_URL, "A")]));
-  writeFileSync(join(dir, "NAVa.1.har"), har([entry(WINDOW_URL, "A"), entry(`${WINDOW_URL}0`, "B")]));
+  writeFileSync(join(dir, RAW_CONTEXT_0), har([entry(WINDOW_URL, "A")]));
+  writeFileSync(join(dir, RAW_CONTEXT_1), har([entry(WINDOW_URL, "A"), entry(`${WINDOW_URL}0`, "B")]));
 
-  assert.deepEqual(compactDirectory(dir), [join(dir, "NAVa.har.gz")]);
+  assert.deepEqual(compactDirectory(dir), [join(dir, COMPACTED)]);
 
-  const merged = JSON.parse(gunzipSync(readFileSync(join(dir, "NAVa.har.gz"))).toString());
+  const merged = JSON.parse(gunzipSync(readFileSync(join(dir, COMPACTED))).toString());
   assert.equal(merged.log.version, "1.2");
   assert.equal(merged.log.entries.length, 2);
-  assert.ok(!existsSync(join(dir, "NAVa.0.har")));
-  assert.ok(!existsSync(join(dir, "NAVa.1.har")));
+  assert.ok(!existsSync(join(dir, RAW_CONTEXT_0)));
+  assert.ok(!existsSync(join(dir, RAW_CONTEXT_1)));
 });

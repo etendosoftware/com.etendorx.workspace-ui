@@ -12,6 +12,10 @@ const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "local
 const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
+const DESKTOP_CHROME = { ...devices["Desktop Chrome"] };
+/** Last project of the smoke chain: the regression, drift and mocked projects run after it. */
+const LAST_SMOKE_PROJECT = "suite-04-financial";
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
@@ -62,7 +66,7 @@ export default defineConfig({
       testMatch: ["**/performance/**"],
       dependencies: ["support-unit"],
       workers: 2,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state) and the feature
@@ -87,7 +91,7 @@ export default defineConfig({
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 3 — Sales (starts only after Group 2 finishes). Each spec selects only its own documents:
@@ -98,7 +102,7 @@ export default defineConfig({
       dependencies: ["suite-01-base"],
       timeout: 720_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
@@ -109,17 +113,17 @@ export default defineConfig({
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments.
     {
-      name: "suite-04-financial",
+      name: LAST_SMOKE_PROJECT,
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 6 — Regression probes (@regression): slower or rarer feature checks. A leaf of the chain (no
@@ -128,18 +132,18 @@ export default defineConfig({
     {
       name: "suite-05-regression",
       testMatch: ["**/regression/**/*.spec.ts"],
-      dependencies: ["suite-04-financial"],
+      dependencies: [LAST_SMOKE_PROJECT],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Drift guard of the mocked-backend recordings: requests them again from the real backend.
     {
       name: "mock-drift",
       testMatch: ["**/drift/**/*.spec.ts"],
-      dependencies: ["suite-04-financial"],
-      use: { ...devices["Desktop Chrome"] },
+      dependencies: [LAST_SMOKE_PROJECT],
+      use: DESKTOP_CHROME,
     },
 
     // Mocked-backend specs: the UI against recorded `/api/**` responses, no ERP needed. Last in the
@@ -148,9 +152,9 @@ export default defineConfig({
     {
       name: "mocked",
       testMatch: ["**/mocked/**/*.spec.ts"],
-      dependencies: ["suite-04-financial"],
+      dependencies: [LAST_SMOKE_PROJECT],
       fullyParallel: true,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
   ],
 
