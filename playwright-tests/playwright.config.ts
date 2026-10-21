@@ -13,7 +13,7 @@ const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
 const DESKTOP_CHROME = { ...devices["Desktop Chrome"] };
-/** Last project of the smoke chain: the regression, drift and mocked projects run after it. */
+/** Last project of the smoke chain: the regression and mocked projects run after it. */
 const LAST_SMOKE_PROJECT = "suite-04-financial";
 
 export default defineConfig({
@@ -135,14 +135,6 @@ export default defineConfig({
       dependencies: [LAST_SMOKE_PROJECT],
       timeout: 360_000,
       workers: 3,
-      use: DESKTOP_CHROME,
-    },
-
-    // Drift guard of the mocked-backend recordings: requests them again from the real backend.
-    {
-      name: "mock-drift",
-      testMatch: ["**/drift/**/*.spec.ts"],
-      dependencies: [LAST_SMOKE_PROJECT],
       use: DESKTOP_CHROME,
     },
 

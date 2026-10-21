@@ -13,7 +13,6 @@ playwright-tests/
     smoke/<NN_Area>/*.spec.ts  business flows (01–07) and feature probes (08_Process … 12_Session), tagged @smoke
     regression/<NN_Area>/      slower or rarer feature probes, tagged @regression (leaf project suite-05-regression)
     mocked/                    specs on recorded /api responses (no ERP) and their recordings/<spec>.har.gz
-    drift/                     drift guard: the recordings must still match the real backend
     performance/*.spec.ts      timing budgets (warning/failure thresholds)
     support/                   everything specs reuse — never write selectors in a spec if a piece exists here
       fixtures/index.ts        `test` / `expect` to import; `app`, `data`, `session` fixtures
@@ -24,7 +23,7 @@ playwright-tests/
       registry/datasources.ts  entity, window and tab of what the `api` fixture writes
       api/ApiData.ts           `api` fixture: create/delete records through the datasource
       flows/                   flows shared by several specs (navigation state, own categories)
-      mock/                    mocked-backend layer: request keys, replay, JSON shapes, drift, its fixture
+      mock/                    mocked-backend layer: request keys, replay, its fixture
       processOverrides.ts      override a process definition in the metadata the UI loads
       network.ts               block a request and record that it was attempted
       tags.ts                  tier and area tags
@@ -262,11 +261,11 @@ cd playwright-tests && pnpm pw:mocked          # mocked specs only, no ERP neede
 cd playwright-tests && pnpm pw:record          # regenerate the mocked recordings (backend running)
 ```
 
-A red "Playwright Tests" check from a tag rule, the mocked specs or the drift guard: see
+A red "Playwright Tests" check from a tag rule or the mocked specs: see
 [When the Playwright check fails](../docs/testing/playwright-e2e/README.md#when-the-playwright-check-fails).
 
 `--grep` does not filter projects other projects depend on (Playwright runs them in full): only the leaf projects
-(`suite-05-regression`, `mocked`, `mock-drift`) can be left out by tag.
+(`suite-05-regression`, `mocked`) can be left out by tag.
 
 Locally the suite needs the new UI on `http://localhost:3000` (`PLAYWRIGHT_BASE_URL` to change it;
 `PLAYWRIGHT_IFRAME_URL`, `PLAYWRIGHT_USER` and `PLAYWRIGHT_PASSWORD` also exist) built from

@@ -14,7 +14,7 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
 
 - **Projects run in order** through `dependencies`: `support-unit` (registry/helper unit tests, no browser) →
   performance → base (login, master data, filters, linked items, feature probes) → sales → procurement →
-  financial → then, side by side, `suite-05-regression`, `mock-drift` and `mocked`.
+  financial → then, side by side, `suite-05-regression` and `mocked`.
 - **Two tiers, tagged in the `describe` title**: `@smoke` (every PR) and `@regression` (slower or rarer checks).
   Feature probes also carry one area tag: `@process`, `@form`, `@grid`, `@nav` or `@session`
   (`e2e/support/tags.ts`; `support/__tests__/tags.spec.ts` fails when a spec misses the tags of its folder). See
@@ -71,7 +71,6 @@ inside a project, spec files run in parallel up to the project's `workers`.
 | `suite-03-procurement` | PROa–PROe | 3 | Vendor A; each spec filters by its own document numbers. PROe runs the client-wide "Costing Background" process, which does not change the others' documents. |
 | `suite-04-financial` | FINb–FINd | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. |
 | `suite-05-regression` | `regression/` | 3 | `@regression` probes, each on its own records or on a window no other spec uses (Currency for saved views, Country and Region for grouping). |
-| `mock-drift` | `drift/` | default | Requests the mocked-backend recordings again from the real backend (read-only requests only). |
 | `mocked` | `mocked/` | default | Recorded responses only: no ERP needed. Run it alone with `pnpm pw:mocked`. |
 
 **Why projects stay in sequence.** Different projects share business partners and their pending documents and
@@ -152,13 +151,11 @@ answer those requests from recordings, so the real UI runs in a real browser wit
   browser context, then `scripts/sanitize-har.mjs` (no auth headers, cookies, passwords or session tokens) and
   `scripts/compact-har.mjs` (one gzipped HAR per spec, responses equal to the previous one for the same request
   dropped) into `e2e/mocked/recordings/<spec>.har.gz`. Regenerate after a change of `com.etendoerp.metadata` responses
-  (the drift guard reports it) or of the flow a mocked spec runs.
+  or of the flow a mocked spec runs.
 - **Replay** (`support/mock/`): requests are keyed by method, path, sorted query and canonical JSON body, without
   volatile values (`language`, `_noCache`, `csrfToken`, `password`, `recordTime`). A key asked more times than recorded
   repeats its last response. A request with no recording gets a 404 and fails the test, except the background
   polling (alerts, process monitor).
-- **Drift guard** (`mock-drift`, real backend): every side-effect-free JSON response of the recordings is requested
-  again and its shape (keys and types, not values) must match; a mismatch is reported with its JSON path.
 - **Pilot**: `mocked/NAVaMockedTest` runs the NAVa flow (`support/flows/navigation.ts`, shared with the real spec).
 
 | Pilot measure | Value |
@@ -166,7 +163,6 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | Runtime | 16.4 s (real NAVa ~20 s); ×5 in 42.7 s with 3 workers |
 | Without an ERP | Passes against a UI whose ERP URL is unreachable (a real login fails there) |
 | Recording | 21 s; 12 MB raw → 744 KB compacted (window metadata is most of it) |
-| Drift guard | 7.3 s; reports a changed recorded response with its path |
 
 **Classification of the specs**
 
@@ -204,10 +200,10 @@ Local full runs, test stage only (3 workers, same machine, no retries):
 |---|---|---|---|---|
 | Before ETP-5832 (`main`) | 436 s | 412 s | 427 s | 425 s |
 | `@smoke` probes (SESa excluded) | 438 s | 472 s | 448 s | 452 s (+27 s) |
-| Everything: smoke probes, regression tier, mocked and drift | 533 s | 532 s | 530 s | 532 s (+107 s) |
+| Everything: smoke probes, regression tier, mocked pilot and a drift guard (since removed) | 533 s | 532 s | 530 s | 532 s (+107 s) |
 
-In the final runs `suite-01-base` takes ~151 s (was ~93 s); the three leaf projects run side by side after
-`suite-04-financial` (`suite-05-regression` ~36 s, `mocked` ~16 s, `mock-drift` ~9 s); the other projects did not
+In the final runs `suite-01-base` takes ~151 s (was ~93 s); the leaf projects run side by side after
+`suite-04-financial` (`suite-05-regression` ~36 s, `mocked` ~16 s); the other projects did not
 change. 142 tests passed in every run, none flaky. The budget for a PR is ~2 minutes more, so the CI job still runs
 everything; leaving the regression tier out of PRs would save ~36 s (see [Keeping the PR time](#keeping-the-pr-time)).
 
@@ -231,12 +227,11 @@ Apply in order, and stop as soon as the budget is met. Every pipeline change mus
 |---|---|---|
 | `support-unit` › `spec tags`: "must have exactly one tier/area tag" | A spec under `smoke/` or `regression/` misses the tags of its folder (or has two) | Put `@smoke`/`@regression` and, in a probe folder, its area tag in the `describe` title ([Tiers and tags](#tiers-and-tags)) |
 | `mocked` › "requests without a recording: run pnpm pw:record" | The UI sends a request the recordings do not have: the flow of a mocked spec changed, or a new volatile value (a timestamp) is in the request | A changed flow: `pnpm pw:record` and commit `e2e/mocked/recordings/<spec>.har.gz`. A volatile value: add its key to `VOLATILE_KEYS` (`support/mock/normalize.ts`) |
-| `mock-drift` › "recordings no longer match the backend", with the JSON paths | The backend now answers a recorded request with another shape (keys or types; changed values never fail it) | If the change is intended, `pnpm pw:record` and commit the recordings in the same PR |
 
 **Metadata PRs.** The CI job clones `com.etendoerp.metadata` from the branch with the same name as the UI branch, or
 else from one with the same task key (then the base branch). A metadata change that alters a recorded response
-therefore makes `mock-drift` fail in the UI PR of that task: regenerate the recordings locally with that metadata
-branch deployed (backend running, UI on `:3000`) and commit them to the UI branch before pushing.
+does not fail any check: the mocked specs keep answering with the old response. Regenerate the recordings locally
+with that metadata branch deployed (backend running, UI on `:3000`) and commit them to the UI branch of the task.
 
 ## Known issues
 
@@ -320,8 +315,8 @@ Fixes for bugs the ETP-5832 probes found (each with unit tests):
 | `playwright-tests/e2e/support/api/ApiData.ts` | `api` fixture: records created and deleted through the datasource |
 | `playwright-tests/e2e/support/processOverrides.ts`, `network.ts` | Process definition overrides in the metadata; blocked requests |
 | `playwright-tests/e2e/support/flows/` | Flows shared by several specs (navigation, own records) |
-| `playwright-tests/e2e/support/mock/` | Request keys, replay, JSON shapes, drift, mocked fixture |
+| `playwright-tests/e2e/support/mock/` | Request keys, replay, mocked fixture |
 | `playwright-tests/scripts/sanitize-har.mjs`, `compact-har.mjs` | Recording post-processing (`pnpm pw:record`) |
 | `playwright-tests/e2e/smoke/08_Process` … `12_Session`, `e2e/regression/` | Feature probes |
-| `playwright-tests/e2e/mocked/`, `e2e/drift/` | Mocked-backend pilot and its recordings; drift guard |
+| `playwright-tests/e2e/mocked/` | Mocked-backend pilot and its recordings |
 | `playwright-tests/MIGRATION_REPORT.md` | Cypress migration notes and status of the formerly skipped specs (the Cypress suite was removed in ETP-5798; see the git history) |

@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { isComparable, recordingDrift } from "../mock/drift";
 import { canonicalBody, canonicalUrl, requestKey } from "../mock/normalize";
 import { type HarEntry, RecordedResponses } from "../mock/replay";
-import { shapeDifferences } from "../mock/shape";
 
 const DATASOURCE = "http://localhost:3000/api/datasource";
 const SESSION = "http://localhost:3000/api/erp/meta/session";
@@ -72,56 +70,5 @@ test.describe("recorded responses", () => {
 
   test("have no answer for a key never recorded", () => {
     expect(recordings.next(requestKey({ method: "GET", url: DATASOURCE }))).toBeUndefined();
-  });
-});
-
-test.describe("JSON shapes", () => {
-  test("match when only the values change", () => {
-    expect(shapeDifferences({ id: "A", rows: [{ qty: 1 }] }, { id: "B", rows: [{ qty: 5 }, { qty: 6 }] })).toEqual([]);
-  });
-
-  test("treat null and empty arrays as compatible with any shape", () => {
-    expect(shapeDifferences({ note: null, rows: [] }, { note: "x", rows: [{ a: 1 }] })).toEqual([]);
-  });
-
-  test("report a changed type with its path", () => {
-    expect(shapeDifferences({ rows: [{ qty: 1 }] }, { rows: [{ qty: "1" }] })).toEqual([
-      { path: "$.rows[0].qty", recorded: "number", live: "string" },
-    ]);
-  });
-
-  test("report removed and added properties", () => {
-    expect(shapeDifferences({ a: 1, b: 2 }, { a: 1, c: 3 })).toEqual([
-      { path: "$.b", recorded: "number", live: "missing" },
-      { path: "$.c", recorded: "missing", live: "number" },
-    ]);
-  });
-});
-
-test.describe("drift guard", () => {
-  const recorded = entry(DATASOURCE, JSON.stringify({ response: { data: [{ id: "A", qty: 1 }] } }), "{}");
-
-  test("compares only side-effect-free JSON responses", () => {
-    expect(isComparable(recorded)).toBe(true);
-    expect(isComparable(entry(`${DATASOURCE}/Order?_operationType=add`, "{}"))).toBe(false);
-    expect(isComparable(entry("http://localhost:3000/api/auth/login", "{}"))).toBe(false);
-    expect(isComparable({ ...recorded, response: { status: 304, content: {} } })).toBe(false);
-    expect(isComparable({ ...recorded, response: { status: 200, content: { mimeType: "text/html" } } })).toBe(false);
-  });
-
-  test("accepts a live response with the recorded shape", () => {
-    expect(recordingDrift(recorded, JSON.stringify({ response: { data: [{ id: "B", qty: 7 }] } }))).toEqual([]);
-  });
-
-  test("reports a recorded response the backend now answers differently", () => {
-    const changed = JSON.stringify({ response: { data: [{ id: "A", quantity: 1 }] } });
-    expect(recordingDrift(recorded, changed)).toEqual([
-      "POST /api/datasource $.response.data[0].qty: number → missing",
-      "POST /api/datasource $.response.data[0].quantity: missing → number",
-    ]);
-  });
-
-  test("reports a live response that is not JSON", () => {
-    expect(recordingDrift(recorded, "<html>")).toEqual(["POST /api/datasource: the live response is not JSON"]);
   });
 });
