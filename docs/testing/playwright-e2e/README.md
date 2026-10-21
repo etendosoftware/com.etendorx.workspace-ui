@@ -150,8 +150,10 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 - **Record**: `pnpm pw:record` runs the mocked specs against a running backend (`PW_MOCK_RECORD=1`): one HAR per
   browser context, then `scripts/sanitize-har.mjs` (no auth headers, cookies, passwords or session tokens) and
   `scripts/compact-har.mjs` (one gzipped HAR per spec, responses equal to the previous one for the same request
-  dropped) into `e2e/mocked/recordings/<spec>.har.gz`. Regenerate after a change of `com.etendoerp.metadata` responses
-  or of the flow a mocked spec runs.
+  dropped, and requests a reload aborted in flight dropped too: the replay would answer them with an empty body)
+  into `e2e/mocked/recordings/<spec>.har.gz`. Regenerate after a change of `com.etendoerp.metadata` responses or of
+  the flow a mocked spec runs, or when a merge brings UI requests the recording does not have (the `mocked` project
+  reports them).
 - **Replay** (`support/mock/`): requests are keyed by method, path, sorted query and canonical JSON body, without
   volatile values (`language`, `_noCache`, `csrfToken`, `password`, `recordTime`). A key asked more times than recorded
   repeats its last response. A request with no recording gets a 404 and fails the test, except the background

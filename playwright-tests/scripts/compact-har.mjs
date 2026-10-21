@@ -4,7 +4,8 @@
  * (`<spec>.<n>.har`) become one gzipped HAR (`<spec>.har.gz`) without repeated responses. A
  * response equal to the previous one for the same request is dropped: the replay answers a
  * request asked more times than recorded with its last response, so nothing changes. Window
- * metadata, fetched again on every reload, is most of the size.
+ * metadata, fetched again on every reload, is most of the size. Requests a reload cut off while in
+ * flight are dropped too: their response never arrived, so the replay would answer them empty.
  *
  * Usage:
  *   node scripts/compact-har.mjs <recordings dir>   compacts every spec, removing the raw files
@@ -17,13 +18,26 @@ import { gzipSync } from "node:zlib";
 /** `<spec>.<n>.har`: one raw recording per browser context. */
 const RAW_RECORDING = /^(.+)\.(\d+)\.har$/;
 const COMPACT_EXTENSION = ".har.gz";
+/** CORS preflight: answered without a body. */
+const PREFLIGHT_METHOD = "OPTIONS";
 
 const requestSignature = ({ request }) => `${request.method} ${request.url} ${request.postData?.text ?? ""}`;
 
-/** Entries without the responses that repeat the previous response of the same exact request. */
+/**
+ * Whether the response body of an entry was received: a reload aborts the requests in flight, and
+ * the HAR keeps them without a body (`content.text`). A preflight never has one.
+ */
+export function isReceived(entry) {
+  return entry.request.method === PREFLIGHT_METHOD || entry.response.content?.text !== undefined;
+}
+
+/**
+ * Entries without the aborted requests and without the responses that repeat the previous
+ * response of the same exact request.
+ */
 export function compactEntries(entries) {
   const lastResponse = new Map();
-  return entries.filter((entry) => {
+  return entries.filter(isReceived).filter((entry) => {
     const signature = requestSignature(entry);
     const response = entry.response.content?.text ?? "";
     const repeated = lastResponse.get(signature) === response;

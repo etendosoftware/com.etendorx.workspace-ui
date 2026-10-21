@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { compactDirectory, compactEntries, groupRecordings } from "../compact-har.mjs";
+import { compactDirectory, compactEntries, groupRecordings, isReceived } from "../compact-har.mjs";
 
 const WINDOW_URL = "http://localhost:3000/api/erp/meta/window/143";
 const RAW_CONTEXT_0 = "NAVa.0.har";
@@ -22,6 +22,17 @@ test("drops a response equal to the previous one for the same request", () => {
 test("keeps a changed response and the ones after it, so the replay order is unchanged", () => {
   const entries = [entry(WINDOW_URL, "A"), entry(WINDOW_URL, "B"), entry(WINDOW_URL, "A")];
   assert.deepEqual(compactEntries(entries), entries);
+});
+
+test("drops the requests aborted in flight, whose response body never arrived", () => {
+  const withoutBody = (method, status) => ({ request: { method, url: WINDOW_URL }, response: { status, content: {} } });
+  const aborted = withoutBody("GET", -1);
+  const cutOff = withoutBody("GET", 200);
+  const preflight = withoutBody("OPTIONS", 200);
+  const received = entry(WINDOW_URL, "A");
+  assert.equal(isReceived(aborted), false);
+  assert.equal(isReceived(entry(WINDOW_URL, "")), true);
+  assert.deepEqual(compactEntries([aborted, cutOff, preflight, received]), [preflight, received]);
 });
 
 test("groups the raw recordings of each spec in context order, ignoring other files", () => {
