@@ -6,7 +6,16 @@ import {
   saveCurrentView,
 } from "../test-utils/saveViewMenu";
 
-const EXISTING_VIEW = { id: "view-1", name: "Wide columns", tabId: SAVE_VIEW_MENU_TAB_ID, isDefault: false };
+const EXISTING_VIEW = {
+  id: "view-1",
+  name: "Wide columns",
+  tabId: SAVE_VIEW_MENU_TAB_ID,
+  isDefault: false,
+  scope: "USER" as const,
+  editable: true,
+};
+const SHARED_VIEW = { ...EXISTING_VIEW, id: "view-2", name: "Team columns", scope: "ROLE" as const, editable: false };
+const OTHER_SCOPE_VIEW = { ...SHARED_VIEW, id: "view-3", name: "Role columns", editable: true };
 
 const mockSaveView = jest.fn().mockResolvedValue(undefined);
 const mockUpdateView = jest.fn().mockResolvedValue(undefined);
@@ -18,7 +27,11 @@ jest.mock("@/hooks/useTranslation", () => ({
 jest.mock("@/hooks/useSavedViews", () => ({
   useSavedViews: () =>
     jest.requireActual("../test-utils/saveViewMenu").buildSavedViewsHookMock({
-      views: [{ ...EXISTING_VIEW, filterClause: "", config: null }],
+      views: [EXISTING_VIEW, SHARED_VIEW, OTHER_SCOPE_VIEW].map((view) => ({
+        ...view,
+        filterClause: "",
+        config: null,
+      })),
       saveView: mockSaveView,
       updateView: mockUpdateView,
       unsetDefaultView: mockUnsetDefaultView,
@@ -65,6 +78,18 @@ describe("SaveViewMenu widths, pinning, layout and summaries", () => {
       expect.objectContaining({ sizing: COLUMN_STATE.currentSizing, layout: COLUMN_STATE.currentLayout })
     );
     expect(mockSaveView).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a shared view the user cannot edit", SHARED_VIEW.name],
+    ["a view of another scope", OTHER_SCOPE_VIEW.name],
+  ])("creates a new view instead of overwriting %s", async (_case, name) => {
+    renderSaveViewMenu(COLUMN_STATE);
+
+    await saveCurrentView(name);
+
+    expect(mockSaveView).toHaveBeenCalledWith(expect.objectContaining({ name, scope: undefined }));
+    expect(mockUpdateView).not.toHaveBeenCalled();
   });
 
   it("restores the default widths, pinning and layout and clears the stored columns on reset", async () => {

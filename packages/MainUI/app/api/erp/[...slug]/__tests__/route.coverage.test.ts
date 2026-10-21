@@ -499,20 +499,37 @@ describe("ERP slug route coverage", () => {
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
     });
 
-    it.each(["recent-items", "grid-configuration"])(
-      "serves meta/%s GET requests through the uncached mutation path",
-      async (endpoint) => {
-        const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
-        clearErpSessionCookie("test-token");
-        mockFetchWithSessionCookie(`JSESSIONID=${endpoint}`);
+    // Only the uncached mutation path captures the session cookie, so each case proves its data (per-user
+    // recent items and grid configuration, polled executions, the configured instance purpose) is never
+    // served from the Next.js Data Cache, which never revalidates.
+    it.each([
+      ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
+      [
+        "meta/grid-configuration",
+        "https://localhost/api/erp/meta/grid-configuration?windowId=143",
+        ["meta", "grid-configuration"],
+        "GRIDCONFIG123",
+      ],
+      [
+        "meta/process-monitor",
+        "https://localhost/api/erp/meta/process-monitor?since=1",
+        ["meta", "process-monitor"],
+        "PROCMON123",
+      ],
+      [
+        "meta/instance-purpose",
+        "https://localhost/api/erp/meta/instance-purpose?language=en_US",
+        ["meta", "instance-purpose"],
+        "INSTPURPOSE123",
+      ],
+    ])("serves %s GET requests through the uncached mutation path", async (_name, url, slug, sessionId) => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+      mockFetchWithSessionCookie(`JSESSIONID=${sessionId}`);
 
-        const req = createMockRequest("GET", `https://localhost/api/erp/meta/${endpoint}`);
-        await GET(req, { params: Promise.resolve({ slug: ["meta", endpoint] }) });
+      await GET(createMockRequest("GET", url), { params: Promise.resolve({ slug }) });
 
-        // Only the uncached mutation path captures the session cookie, so this proves the
-        // per-user data is never served from the Next.js Data Cache.
-        expect(getErpSessionCookie("test-token")).toBe(`JSESSIONID=${endpoint}`);
-      }
-    );
+      expect(getErpSessionCookie("test-token")).toBe(`JSESSIONID=${sessionId}`);
+    });
   });
 });

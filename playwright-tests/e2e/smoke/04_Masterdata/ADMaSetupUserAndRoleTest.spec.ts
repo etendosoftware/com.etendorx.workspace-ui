@@ -1,17 +1,11 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  navigateByMenuTestId,
-  clickNewRecord,
-  closeToastIfPresent,
-  openSidebarAndGetSearch,
-} from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
+import { runAndWaitForFormInitialization } from "../../support/wait";
+
+/** "Sales Management" menu folder: only shown to roles with sales access. */
+const SALES_MANAGEMENT_MENU = { id: "166", name: "Sales Management" };
 
 test.describe("User Management - Create user and assign role @smoke", () => {
   test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
     // Ignore hydration errors — same behaviour as cy.on("uncaught:exception", ...)
     page.on("pageerror", (err) => {
       if (!/Hydration failed/i.test(err.message)) {
@@ -20,36 +14,24 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     });
   });
 
-  test("Create user, assign role and verify login access", async ({ page }) => {
+  test("Create user, assign role and verify login access", async ({ app, data, page }) => {
     const pwd = "1234567Ag!";
-    const username = `qa_${Date.now()}`;
+    const username = data.uniqueValue("qa");
     const name = username;
 
-    await loginToEtendo(page);
-    await page.waitForTimeout(1_000);
+    // Navigate to Users window
+    await app.sidebar.navigateTo("user");
+    await app.toolbar.newRecord();
 
-    // Switch to QA role
-    await selectRoleOrgWarehouse(page);
-
-    // Open drawer + navigate to Users window (MenuTitle__147)
-    await navigateByMenuTestId(page, "us", "MenuTitle__147");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await page.waitForTimeout(1_000);
-
-    // Fill Name + trigger blur to run callout that auto-fills username
+    // Fill Name + blur to run the callout that auto-fills the username
     const nameInput = page.locator('input[name="name"]');
     await nameInput.waitFor({ state: "visible", timeout: 10_000 });
-    await nameInput.clear();
     await nameInput.fill(name);
-    await nameInput.blur();
-    await page.waitForTimeout(1_000);
+    await runAndWaitForFormInitialization(page, () => nameInput.blur());
 
     // Username (may be auto-filled; we overwrite just like Cypress does)
     const usernameInput = page.locator('input[name="username"]');
     await usernameInput.waitFor({ state: "visible", timeout: 10_000 });
-    await usernameInput.clear();
     await usernameInput.fill(username);
 
     // Password — type character by character with delay (preserved from Cypress
@@ -62,46 +44,26 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     await passwordInput.blur();
 
     // Save header
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
-
-    // Open "User Roles" tab
-    await page.locator('button[aria-label="User Roles"]').click();
-    await page.waitForTimeout(1_000);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // New User Role
-    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
-    await page.waitForTimeout(1_000);
+    await app.tabs.open("User Roles");
+    await app.toolbar.newRecord("child");
+    await app.field.selectById("Role", data.ROLE.QA_TESTING_SALES_ADMIN.id);
 
-    // Select Role
-    await page.locator('[aria-label="Role"] > div[tabindex="0"]').click();
-    await page.waitForTimeout(1_000);
-    await page.locator('[data-testid="OptionItem__FA057013C10148828D2430F66F42EF1A"] > .truncate').click();
-    await page.waitForTimeout(1_000);
+    // Save line
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
-    // Save line (second save button = line level)
-    await page.locator("button.toolbar-button-save").nth(1).click();
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
+    // Login with the newly created user
+    await app.auth.logout();
+    await app.auth.login(username, pwd);
 
-    // Logout
-    await page.locator('[data-testid="PersonIcon__120cc9"]').click();
-    await page.waitForTimeout(1_000);
-    await page.locator('[data-testid="IconButton__d71b83"]').click();
-    await page.waitForTimeout(1_000);
-
-    // Login with newly created user
-    await loginToEtendo(page, username, pwd);
-    await page.waitForTimeout(1_000);
-
-    // Ensure drawer is open so MenuTitle__166 becomes visible
-    await openSidebarAndGetSearch(page);
-
+    // The new role gives access to Sales Management
+    await app.sidebar.open();
     await expect(
-      page.locator('[data-testid="MenuTitle__166"] > .flex.overflow-hidden > .relative > .ml-2').first()
+      app.sidebar.menuEntry(SALES_MANAGEMENT_MENU.id).getByText(SALES_MANAGEMENT_MENU.name, { exact: true })
     ).toBeVisible({ timeout: 15_000 });
   });
 });

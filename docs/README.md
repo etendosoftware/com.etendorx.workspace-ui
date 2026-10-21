@@ -47,6 +47,10 @@ docs/
 ├── contexts/                         # Context documentation
 │   ├── user-context.md             # User authentication and session
 │   └── table-state-persistence.md  # Table state persistence context
+├── testing/                          # Testing strategy
+│   ├── session-sync-test-strategy.md
+│   └── playwright-e2e/               # Playwright E2E suite: behavior, decisions, CI checks
+│       └── README.md
 ├── patterns/                         # Patterns and conventions
 │   ├── react-patterns.md           # React patterns including state persistence
 │   ├── state-management.md

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, type SetValueConfig, type KeepStateOptions, useForm } from "react-hook-form";
 import { useTheme } from "@mui/material";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
@@ -51,13 +51,14 @@ import { FormFields } from "./FormFieldsContent";
 import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useRecordNavigationShortcuts } from "@/hooks/useRecordNavigationShortcuts";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useFormInitialFocus } from "@/hooks/useFormInitialFocus";
+import { useToolbarStore } from "@/stores/toolbarStore";
 import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
@@ -123,7 +124,10 @@ const processFormData = (
   return processedData;
 };
 
-export function FormView({
+/** How long a record must stay open in the form to count as a recently viewed document. */
+const RECENT_DOCUMENT_DWELL_MS = 1000;
+
+function FormViewComponent({
   window: windowMetadata,
   tab,
   mode,
@@ -177,8 +181,12 @@ export function FormView({
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
-  const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
-    useToolbarContext();
+  // Commands only, plus the one toolbar value the form reads: subscribing to the whole toolbar slot
+  // (useToolbarContext) re-rendered the form and all its fields on every save button state change.
+  const { registerFormViewRefetch, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarCommands();
+  const shouldOpenAttachmentModal = useToolbarStore(
+    (state) => state.byTabId[tab.id]?.shouldOpenAttachmentModal ?? false
+  );
   const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
   const { guardTransition } = useUnsavedChangesTabGuard();
@@ -265,6 +273,10 @@ export function FormView({
     }
     setAuxiliaryInputs(aux);
   }, [formInitialization, setAuxiliaryInputs]);
+
+  // The values belong to the form's record: once the form closes, the grid's toolbar must evaluate display
+  // logic with the selected row's own values (it lets TabContext's override them).
+  useEffect(() => () => setAuxiliaryInputs({}), [setAuxiliaryInputs]);
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) {
@@ -441,17 +453,22 @@ export function FormView({
 
   const { addRecentDocument } = useRecentDocuments();
 
+  // Track a record as recently viewed once the user stays on it: paging through records with Next sent one
+  // request per record passed over, and filled the recent documents with them.
   useEffect(() => {
     const identifier = record?._identifier;
     if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
-    addRecentDocument({
-      recordId: currentRecordId,
-      identifier: String(identifier),
-      windowId: windowMetadata.id,
-      windowTitle: windowMetadata.name,
-      tabId: tab.id,
-      tabLevel: tab.tabLevel ?? 0,
-    });
+    const timer = setTimeout(() => {
+      addRecentDocument({
+        recordId: currentRecordId,
+        identifier: String(identifier),
+        windowId: windowMetadata.id,
+        windowTitle: windowMetadata.name,
+        tabId: tab.id,
+        tabLevel: tab.tabLevel ?? 0,
+      });
+    }, RECENT_DOCUMENT_DWELL_MS);
+    return () => clearTimeout(timer);
   }, [record?._identifier, currentRecordId, windowMetadata, tab.id, tab.tabLevel, addRecentDocument]);
 
   /**
@@ -1275,5 +1292,9 @@ export function FormView({
     </FormInitializationProvider>
   );
 }
+
+// Tab re-renders it with the same props several times per record Next; each render rebuilt the
+// react-hook-form context and re-rendered every field.
+export const FormView = memo(FormViewComponent);
 
 export default FormView;

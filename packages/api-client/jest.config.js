@@ -32,6 +32,9 @@ export default {
       "ts-jest",
       {
         useESM: true,
+        // Transpile only, as MainUI and ComponentLibrary do (their tsconfig sets isolatedModules):
+        // types are checked once by `pnpm typecheck:api-client` instead of per test file.
+        tsconfig: { isolatedModules: true },
       },
     ],
   },

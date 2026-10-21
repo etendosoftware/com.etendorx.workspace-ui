@@ -27,6 +27,7 @@ import type {
   AppliedViewState,
   ParsedSavedView,
   RawSavedViewRecord,
+  SavedViewScope,
   ViewStateSnapshot,
 } from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
@@ -65,6 +66,10 @@ export interface SaveViewParams extends ViewStateSnapshot {
   tabId: string;
   name: string;
   isDefault?: boolean;
+  /** Omit for a personal (USER-scope) view — only administrators may set a shared scope. */
+  scope?: SavedViewScope;
+  /** Target role id, only used when scope is "ROLE". */
+  roleId?: string;
 }
 
 export interface UseSavedViewsReturn {
@@ -130,7 +135,7 @@ export function useSavedViews(): UseSavedViewsReturn {
   );
 
   const saveView = useCallback(
-    async ({ tabId, name, isDefault = false, ...state }: SaveViewParams): Promise<void> => {
+    async ({ tabId, name, isDefault = false, scope, roleId, ...state }: SaveViewParams): Promise<void> => {
       if (!token) throw new Error("Not authenticated");
 
       setIsSaving(true);
@@ -139,17 +144,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         const gridConfiguration = buildGridConfiguration(state);
 
-        // If saving as default, clear isDefault on existing default view first
-        if (isDefault) {
-          const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId);
-          if (currentDefault) {
-            await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
-              method: "PUT",
-              body: buildUpdateBody(currentDefault, false),
-            });
-          }
-        }
-
+        // The backend atomically clears any other default sharing this view's (tab, scope)
+        // target before persisting isdefault=true — no separate clear-then-set round trip.
         await apiFetch(BASE_URL, token, {
           method: "POST",
           body: JSON.stringify({
@@ -158,6 +154,8 @@ export function useSavedViews(): UseSavedViewsReturn {
             isdefault: isDefault,
             filterclause: "",
             gridconfiguration: gridConfiguration,
+            ...(scope ? { scope } : {}),
+            ...(roleId ? { role: roleId } : {}),
           }),
         });
 
@@ -172,7 +170,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsSaving(false);
       }
     },
-    [token, views, fetchViews]
+    [token, fetchViews]
   );
 
   const setDefaultView = useCallback(
@@ -188,15 +186,8 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         const tabId = targetView.tabId;
 
-        // Clear current default if different from target
-        const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId && v.id !== viewId);
-        if (currentDefault) {
-          await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
-            method: "PUT",
-            body: buildUpdateBody(currentDefault, false),
-          });
-        }
-
+        // The backend atomically clears any sibling default for this view's (tab, scope)
+        // target before persisting isdefault=true.
         await apiFetch(`${BASE_URL}/${viewId}`, token, {
           method: "PUT",
           body: buildUpdateBody(targetView, true),

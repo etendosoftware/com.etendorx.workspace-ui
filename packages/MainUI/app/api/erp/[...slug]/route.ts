@@ -11,6 +11,7 @@ import {
   rewriteHtmlResourceUrls,
   buildErpErrorCodeHeaders,
 } from "./route.helpers";
+import { withCompression } from "../../_utils/compression";
 
 type RequestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
@@ -148,6 +149,11 @@ function isMutationRoute(slug: string, method: string): boolean {
     // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
     // reorders a column; a cached GET would restore the layout as it was at login.
     slug.includes("meta/grid-configuration") ||
+    // Process monitor polls must always reach the backend: a cached GET would freeze the executions.
+    slug.includes("meta/process-monitor") ||
+    // The instance purpose is global and changes once it is configured: a cached GET would keep telling
+    // the session it still has to configure it, since the Data Cache never revalidates.
+    slug.includes("meta/instance-purpose") ||
     // The session payload reflects mutations that do not change the token (and therefore not the
     // cache key), such as a password change clearing the expired flag. Caching it would keep serving
     // the pre-mutation state indefinitely — the cache has no revalidation window.
@@ -429,13 +435,13 @@ async function handleMutationRequest(
 }
 
 /**
- * Window and tab definitions are answered by com.etendoerp.metadata with an ETag computed from
+ * Window, tab and menu definitions are answered by com.etendoerp.metadata with an ETag computed from
  * the body. They skip the Next.js Data Cache (which never revalidates) and pass the conditional
  * headers through, so the browser HTTP cache revalidates them and an unchanged definition costs
  * a 304 instead of 1–3 MB.
  */
 function isRevalidatedMetadataRoute(slug: string, method: string): boolean {
-  return method === "GET" && /^meta\/(window|tab)\/[^/]+$/.test(slug);
+  return method === "GET" && /^meta\/(?:(?:window|tab)\/[^/]+|menu)$/.test(slug);
 }
 
 const REVALIDATION_RESPONSE_HEADERS = ["content-type", "etag", "cache-control"];
@@ -732,21 +738,21 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "GET");
+  return withCompression(request, await handleERPRequest(request, context.params, "GET"));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "POST");
+  return withCompression(request, await handleERPRequest(request, context.params, "POST"));
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PUT");
+  return withCompression(request, await handleERPRequest(request, context.params, "PUT"));
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "DELETE");
+  return withCompression(request, await handleERPRequest(request, context.params, "DELETE"));
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PATCH");
+  return withCompression(request, await handleERPRequest(request, context.params, "PATCH"));
 }

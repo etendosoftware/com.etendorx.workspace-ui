@@ -1,0 +1,63 @@
+Listing tests:
+  [suite-00-performance] › performance/crud-performance.spec.ts:84:10 › CRUD Performance Tests › Window Open Performance › should open Sales Order window within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:92:10 › CRUD Performance Tests › Window Open Performance › should open Product window within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:100:10 › CRUD Performance Tests › Window Open Performance › should open Business Partner window within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:124:10 › CRUD Performance Tests › New Record Performance › should open new Sales Order form within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:134:10 › CRUD Performance Tests › New Record Performance › should open new Product form within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:152:10 › CRUD Performance Tests › Save Record Performance › should save a Sales Order header within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:175:10 › CRUD Performance Tests › Save Record Performance › should save a Product record within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:201:10 › CRUD Performance Tests › Table Load Performance › should load Sales Order table with data within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:209:10 › CRUD Performance Tests › Table Load Performance › should load Product table with data within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:221:10 › CRUD Performance Tests › Tab Navigation Performance › should switch to Lines tab within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:247:5 › CRUD Performance Tests › Search and Filter Performance › should filter table results within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:269:10 › CRUD Performance Tests › Search and Filter Performance › should open dropdown options within acceptable time
+  [suite-00-performance] › performance/crud-performance.spec.ts:288:10 › CRUD Performance Tests › Consecutive CRUD Operations Performance › should handle multiple record creations without degradation
+  [suite-00-performance] › performance/rendering.spec.ts:53:5 › Rendering Performance Tests › Page Load Performance › should load the login page within acceptable time
+  [suite-00-performance] › performance/rendering.spec.ts:63:5 › Rendering Performance Tests › Page Load Performance › should load the main dashboard within acceptable time after login
+  [suite-00-performance] › performance/rendering.spec.ts:75:5 › Rendering Performance Tests › Web Vitals Metrics › should have acceptable Largest Contentful Paint (LCP)
+  [suite-00-performance] › performance/rendering.spec.ts:102:5 › Rendering Performance Tests › Web Vitals Metrics › should have acceptable Cumulative Layout Shift (CLS)
+  [suite-00-performance] › performance/rendering.spec.ts:130:5 › Rendering Performance Tests › Web Vitals Metrics › should have acceptable First Input Delay (FID) simulation
+  [suite-00-performance] › performance/rendering.spec.ts:151:5 › Rendering Performance Tests › Navigation Timing › should have acceptable time to interactive
+  [suite-00-performance] › performance/rendering.spec.ts:168:5 › Rendering Performance Tests › Navigation Timing › should have acceptable DOM content loaded time
+  [suite-00-performance] › performance/rendering.spec.ts:184:5 › Rendering Performance Tests › Navigation Timing › should complete full page load within threshold
+  [suite-00-performance] › performance/rendering.spec.ts:205:5 › Rendering Performance Tests › Resource Loading › should not load excessive resources
+  [suite-00-performance] › performance/rendering.spec.ts:215:5 › Rendering Performance Tests › Resource Loading › should not have individual resources exceeding duration threshold
+  [suite-00-performance] › performance/rendering.spec.ts:237:5 › Rendering Performance Tests › Component Rendering › should render the menu search input promptly after login
+  [suite-00-performance] › performance/rendering.spec.ts:247:5 › Rendering Performance Tests › Component Rendering › should render menu search results without excessive delay
+  [suite-00-performance] › performance/stress.spec.ts:25:10 › Stress Tests › Rapid Navigation Stress › should handle rapid sequential page visits without crashing
+  [suite-00-performance] › performance/stress.spec.ts:35:5 › Stress Tests › Rapid Navigation Stress › should handle rapid menu search interactions
+  [suite-00-performance] › performance/stress.spec.ts:73:5 › Stress Tests › Form Interaction Stress › should handle rapid input field interactions on login page
+  [suite-00-performance] › performance/stress.spec.ts:91:5 › Stress Tests › Form Interaction Stress › should handle rapid click events without freezing
+  [suite-00-performance] › performance/stress.spec.ts:109:5 › Stress Tests › Session Stress › should handle multiple login/logout cycles
+  [suite-00-performance] › performance/stress.spec.ts:118:5 › Stress Tests › Session Stress › should handle repeated failed login attempts gracefully
+  [suite-00-performance] › performance/stress.spec.ts:142:10 › Stress Tests › Memory and Resource Stress › should not exhibit excessive memory growth during navigation
+  [suite-00-performance] › performance/stress.spec.ts:175:5 › Stress Tests › Memory and Resource Stress › should handle many DOM queries without degradation
+  [suite-00-performance] › performance/stress.spec.ts:197:5 › Stress Tests › Concurrent Actions Stress › should handle search while page is still rendering
+  [suite-00-performance] › performance/stress.spec.ts:220:5 › Stress Tests › Concurrent Actions Stress › should handle rapid keyboard events
+  [suite-00-performance] › performance/stress.spec.ts:245:5 › Stress Tests › Error Recovery Stress › should recover after visiting a non-existent route
+  [suite-00-performance] › performance/stress.spec.ts:256:5 › Stress Tests › Error Recovery Stress › should remain stable after multiple 404 navigations
+  [suite-01-base] › smoke/00_Login/01-login.spec.ts:10:3 › Login Tests - Etendo @smoke › should display login page correctly
+  [suite-01-base] › smoke/00_Login/01-login.spec.ts:23:3 › Login Tests - Etendo @smoke › should login successfully with valid credentials
+  [suite-01-base] › smoke/00_Login/01-login.spec.ts:31:3 › Login Tests - Etendo @smoke › should handle invalid credentials
+  [suite-01-base] › smoke/03_Procurement/PurchaseOrderDisplayLogicTest.spec.ts:9:3 › Sales Order - Display logic and field visibility @smoke › Displays required fields and hides delivery notes according to display logic
+  [suite-01-base] › smoke/04_Masterdata/ADMaSetupUserAndRoleTest.spec.ts:23:3 › User Management - Create user and assign role @smoke › Create user, assign role and verify login access
+  [suite-01-base] › smoke/04_Masterdata/ADMbSetupProductTest.spec.ts:23:3 › Master Data - Product and Pricing Setup @smoke › Configure price lists, schemas, attributes and create product
+  [suite-01-base] › smoke/04_Masterdata/ADMcSetupBusinessPartnerTest.spec.ts:16:3 › Master Data - Business Partner Setup @smoke › Create payment terms, invoice schedule and configure customer
+  [suite-01-base] › smoke/04_Masterdata/ADMdClientWindowSRFormViewTest.spec.ts:36:3 › Client Window SR FormView Regression @smoke › opens Client window FormView with populated values for main tab and Information subtab
+  [suite-01-base] › smoke/04_Masterdata/ADMdTreeViewTest.spec.ts:14:3 › Master Data - Hierarchical Tree View @smoke › Product Categories shows tree toggle and activates tree mode
+  [suite-01-base] › smoke/06_filters/FiltersComplete.spec.ts:9:3 › Advanced Filters - Complete Test @smoke › should test all advanced filter functionalities
+  [suite-01-base] › smoke/07_LinkedItems/LNKaLinkedItemsNavigationTest.spec.ts:20:3 › LinkedItems Navigation @smoke › Navigates to Sales Order, Goods Shipment and Purchase Invoice, verifying LinkedItems navigation
+  [suite-02-sales] › smoke/01_Sales/SALaOrderToInvoiceTest.spec.ts:15:6 › Sales Orders - Create, Complete Shipment and Invoice
+  [suite-02-sales] › smoke/01_Sales/SALbAddSalesInvoicePaymentTest.spec.ts:16:3 › Sales Invoice - Add Payment › should create a sales invoice, complete it and add payment
+  [suite-02-sales] › smoke/01_Sales/SALcGenerateInvoice.spec.ts:16:3 › Sales flow - Generate invoices from multiple sales orders › Generates invoices from processed sales orders and shipments for multiple customers
+  [suite-02-sales] › smoke/01_Sales/SALdCloseSalesOrderTest.spec.ts:15:3 › Sales Orders - Create, Complete and Close › should create a sales order, add lines, complete and close it
+  [suite-03-procurement] › smoke/03_Procurement/PROaOrderToInvoiceTest.spec.ts:20:3 › Purchase Order to Invoice flow @smoke › Completes Purchase Order, Goods Receipt and posts the Vendor Invoice
+  [suite-03-procurement] › smoke/03_Procurement/PRObOrderAndPaymentToInvoiceTest.spec.ts:19:3 › Purchase Order with advance payment flow @smoke › Processes advance payment and validates Purchase Invoice payments
+  [suite-03-procurement] › smoke/03_Procurement/PROcPurchaseInvoiceAddPaymentTest.spec.ts:16:3 › Purchase Invoice with payment registration @smoke › Completes a Purchase Invoice, adds payment and validates payment details
+  [suite-03-procurement] › smoke/03_Procurement/PROd_CreateRequisitionAndOrder.spec.ts:19:3 › Requisition flow - Create and generate Purchase Order @smoke › Processes a requisition and creates a Purchase Order from Manage Requisitions
+  [suite-03-procurement] › smoke/03_Procurement/PROeOrderToLandedCostTest.spec.ts:21:3 › Purchase Order to Landed Cost flow @smoke › Processes Landed Cost from Goods Receipt and validates cost distribution
+  [suite-03-procurement] › smoke/03_Procurement/PurchaseOrderDisplayLogicTest.spec.ts:9:3 › Sales Order - Display logic and field visibility @smoke › Displays required fields and hides delivery notes according to display logic
+  [suite-04-financial] › smoke/05_Financial/FINbInvoiceToPaymentTest.spec.ts:18:3 › Financial Test 2 - Sales Invoice to Payment In @smoke › Creates Sales Invoice, completes it, creates Payment In and links the invoice
+  [suite-04-financial] › smoke/05_Financial/FINcFinancialAccountAddTransactionTest.spec.ts:18:3 › Financial Account - Add Transaction from Purchase Invoice @smoke › Creates Purchase Invoice, completes it, verifies Payment Out Plan and adds Financial Account transaction
+  [suite-04-financial] › smoke/05_Financial/FINdPaymentProposalTest.spec.ts:18:3 › Financial - Payment Proposal - Select Expected Payments @smoke › Creates two Purchase Invoices, completes them, selects both in one go and generates payment
+Total: 61 tests in 24 files

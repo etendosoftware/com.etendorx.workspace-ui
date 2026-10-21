@@ -205,13 +205,14 @@ describe("Metadata", () => {
 
       localStorage.setItem("currentRoleId", roleId);
 
-      const spyPost = jest.spyOn(Metadata.client, "post").mockResolvedValue({
+      const spyRequest = jest.spyOn(Metadata.client, "request").mockResolvedValue({
         data: { menu: mockMenu },
       } as any);
 
       const result = await Metadata.getMenu();
       expect(result).toEqual(mockMenu);
-      expect(spyPost).toHaveBeenCalledWith("meta/menu", { role: roleId });
+      // GET (no options) so the browser HTTP cache can revalidate it with the body ETag
+      expect(spyRequest).toHaveBeenCalledWith("meta/menu");
     });
 
     it("should return cached menu if role hasn't changed", async () => {
@@ -223,10 +224,10 @@ describe("Metadata", () => {
       (Metadata as any).cache.set("OBMenu", mockMenu);
       (Metadata as any).currentRoleId = roleId;
 
-      const spyPost = jest.spyOn(Metadata.client, "post");
+      const spyRequest = jest.spyOn(Metadata.client, "request");
 
       const result = await Metadata.getMenu();
-      expect(spyPost).not.toHaveBeenCalled();
+      expect(spyRequest).not.toHaveBeenCalled();
       expect(result).toEqual(mockMenu);
     });
   });

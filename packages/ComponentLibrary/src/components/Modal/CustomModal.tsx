@@ -120,7 +120,9 @@ const CustomModal = ({
       <div
         className={`relative flex h-[625px] w-[900px] flex-col rounded-xl border-4 border-gray-300 bg-white ${customContentClass}`}>
         <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] px-4 py-2">
-          <h2 className="font-semibold text-lg">{title}</h2>
+          <h2 className="font-semibold text-lg" data-testid="legacy-process-modal-title">
+            {title}
+          </h2>
         </div>
         <div className="relative flex-1 overflow-hidden">
           {iframeLoading && (

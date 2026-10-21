@@ -1,11 +1,8 @@
-import { test, expect } from "@playwright/test";
-import { cleanupEtendo, loginToEtendo } from "../../helpers/etendo.helpers";
-import { DEFAULT_USER, DEFAULT_PASSWORD } from "../../../playwright.config";
+import { DEFAULT_PASSWORD, DEFAULT_USER } from "../../../playwright.config";
+import { expect, NO_SESSION, test } from "../../support/fixtures";
 
 test.describe("Login Tests - Etendo @smoke", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
+  test.use({ session: NO_SESSION });
 
   test("should display login page correctly", async ({ page }) => {
     await page.goto("/");
@@ -20,8 +17,8 @@ test.describe("Login Tests - Etendo @smoke", () => {
     await expect(page.locator("#password")).toHaveValue("");
   });
 
-  test("should login successfully with valid credentials", async ({ page }) => {
-    await loginToEtendo(page, DEFAULT_USER, DEFAULT_PASSWORD);
+  test("should login successfully with valid credentials", async ({ app, page }) => {
+    await app.auth.login(DEFAULT_USER, DEFAULT_PASSWORD);
 
     // Verify that the main interface loaded
     await expect(page.locator("body")).toBeVisible();

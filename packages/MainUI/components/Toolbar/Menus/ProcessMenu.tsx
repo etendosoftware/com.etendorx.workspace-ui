@@ -116,10 +116,10 @@ type ProcessMenuItemProps = ProcessMenuItemBaseProps<ProcessActionButton>;
 type ProcessDefinitionMenuItemProps = ProcessMenuItemBaseProps<ProcessDefinitionButton>;
 
 const ProcessMenuItem = (props: ProcessMenuItemProps) => (
-  <ProcessMenuItemBase {...props} data-testid="ProcessMenuItemBase__541926" />
+  <ProcessMenuItemBase {...props} data-testid={`ProcessMenuItem__${props.button.id}`} />
 );
 const ProcessDefinitionMenuItem = (props: ProcessDefinitionMenuItemProps) => (
-  <ProcessMenuItemBase {...props} data-testid="ProcessMenuItemBase__541926" />
+  <ProcessMenuItemBase {...props} data-testid={`ProcessMenuItem__${props.button.id}`} />
 );
 
 ProcessMenuItem.displayName = "ProcessMenuItem";

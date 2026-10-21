@@ -168,6 +168,7 @@ export const useToolbarCommands = () => {
         store().registerRawActions(tabId, newActions, owner),
       unregisterActions: (owner: ToolbarActionOwner) => store().clearOwnerActions(tabId, owner),
       registerAttachmentAction: (action?: () => void) => store().registerAttachmentAction(tabId, action),
+      registerFormViewRefetch: (refetch?: () => Promise<void>) => store().registerFormViewRefetch(tabId, refetch),
       setShouldOpenAttachmentModal: (open: boolean) => store().setShouldOpenAttachmentModal(tabId, open),
       setIsImplicitFilterApplied: (value: boolean) => store().setIsImplicitFilterApplied(tabId, value),
       setIsAdvancedFilterApplied: (value: boolean) => store().setIsAdvancedFilterApplied(tabId, value),

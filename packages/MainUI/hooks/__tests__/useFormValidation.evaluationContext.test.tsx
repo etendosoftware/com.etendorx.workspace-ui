@@ -19,7 +19,7 @@ import type React from "react";
 import { renderHook } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { useFormValidation } from "../useFormValidation";
 
 jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
@@ -28,12 +28,12 @@ jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (s: any) => any) => selector({ session: {} }),
 }));
-jest.mock("@/utils/expressions", () => {
-  const actual = jest.requireActual("@/utils/expressions");
-  return { ...actual, createSmartContext: jest.fn(actual.createSmartContext) };
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => {
+  const actual = jest.requireActual("@/utils/evaluation/sharedEvaluationContext");
+  return { ...actual, getEvaluationContext: jest.fn(actual.getEvaluationContext) };
 });
 
-const mockedCreate = createSmartContext as jest.Mock;
+const mockedCreate = getEvaluationContext as jest.Mock;
 
 const requiredWithLogic = (hqlName: string) =>
   ({

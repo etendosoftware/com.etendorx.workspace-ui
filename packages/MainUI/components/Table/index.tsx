@@ -83,7 +83,12 @@ import {
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
 import { processCalloutColumnValues } from "./utils/calloutUtils";
-import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
+import {
+  ACTION_FORM_INITIALIZATION,
+  MODE_CHANGE,
+  FIC_ERROR_STATUS,
+} from "@/utils/hooks/useFormInitialization/constants";
+import { showCalloutMessages } from "@/utils/callouts/calloutMessages";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -240,6 +245,9 @@ interface EditableCellContentProps extends CellEditingContextProps {
  * Editable cell content component
  * Extracted from inline Cell definition to reduce cognitive complexity
  */
+/** The session prop of cells while no row is being edited (only editable cells read it). */
+const NO_EDITING_SESSION: Record<string, unknown> = {};
+
 const EditableCellContent: React.FC<EditableCellContentProps> = ({
   rowId,
   fieldKey,
@@ -764,7 +772,6 @@ const DynamicTable = ({
   const { t } = useTranslation();
   const { graph } = useSelected();
   const user = useUserStore((s) => s.user);
-  const session = useUserStore((s) => s.session);
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
@@ -808,7 +815,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { showErrorModal, showSuccessModal, showWarningModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal, showStatusModal, showWarningModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -1048,6 +1055,11 @@ const DynamicTable = ({
   const [editingRows, setEditingRows] = useState<EditingRowsState>({});
   const editingRowsRef = useRef<EditingRowsState>({});
   editingRowsRef.current = editingRows; // Keep ref in sync with state
+  // Only editable cells read the session while rendering (their read-only logic), so the grid subscribes to it
+  // only while a row is being edited: otherwise every SETSESSION answer after a selection change repainted
+  // all visible cells. Handlers read the current session when they run.
+  const hasEditingRows = Object.keys(editingRows).length > 0;
+  const editingSession = useUserStore((s) => (hasEditingRows ? s.session : NO_EDITING_SESSION));
 
   // Grid grouping (classic "Group by" / "Ungroup"); regrouping is blocked like sorting while rows are being edited
   const canChangeGrouping = useCallback(() => canSortWithEditingRows(editingRowsRef.current), []);
@@ -1130,6 +1142,7 @@ const DynamicTable = ({
 
     setIsUploading(true);
     try {
+      const session = useUserStore.getState().session;
       const orgId = session["#AD_Org_ID"] || session.adOrgId;
 
       if (!orgId) {
@@ -1547,6 +1560,7 @@ const DynamicTable = ({
 
         const payload = buildPayloadByInputName(filteredRowData, fieldsByHqlName);
         const entityKeyColumn = tab.fields.id.columnName;
+        const session = useUserStore.getState().session;
         const calloutData = {
           ...session,
           ...payload,
@@ -1635,6 +1649,13 @@ const DynamicTable = ({
 
           const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
 
+          if (response?.data?.response?.status === FIC_ERROR_STATUS) {
+            const errorMsg = response.data.response.error?.message || "Unknown callout error";
+            logger.warn(`[InlineCallout] Backend callout error for ${field.hqlName}: ${errorMsg}`);
+            showErrorModal(errorMsg);
+            return;
+          }
+
           if (response?.data?.columnValues || response?.data?.auxiliaryInputValues) {
             // Mark that we're applying callout values to prevent loops
             editingRowUtils.setCalloutApplying(rowId, true);
@@ -1665,12 +1686,14 @@ const DynamicTable = ({
           } else {
             logger.warn(`[InlineCallout] No columnValues or auxiliaryInputValues in response for ${field.hqlName}`);
           }
+
+          showCalloutMessages(response.data?.calloutMessages, showStatusModal);
         });
       } catch (error) {
         logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
       }
     },
-    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow]
+    [tab, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
   );
 
   const toggleColumnsDropdown = useCallback(
@@ -2542,7 +2565,7 @@ const DynamicTable = ({
           editingRowUtils={editingRowUtils}
           columnFieldMappings={columnFieldMappings}
           initialFocusCell={initialFocusCellRef.current}
-          session={session}
+          session={editingSession}
           keyboardNavigationManager={keyboardNavigationManager}
           handleCellValueChange={handleCellValueChange}
           validateFieldOnBlur={validateFieldOnBlur}
@@ -2570,7 +2593,7 @@ const DynamicTable = ({
     [
       editingRowUtils,
       columnFieldMappings,
-      session,
+      editingSession,
       keyboardNavigationManager,
       handleCellValueChange,
       validateFieldOnBlur,
@@ -4024,17 +4047,6 @@ const DynamicTable = ({
       if (records.length !== 1) autoSelectedSingleRecordRef.current = undefined;
       return;
     }
-
-    // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-    console.debug("[DEBUG-LINKEDITEMS] Rule A auto-select firing", {
-      windowIdentifier,
-      tabId: tab.id,
-      tabName: tab.name,
-      tabLevel: tab.tabLevel,
-      isVisible: isVisible ?? true,
-      isTabCollapsed,
-      recordId: decision.recordId,
-    });
 
     autoSelectedSingleRecordRef.current = decision.recordId;
     table.setRowSelection({ [decision.recordId]: true });

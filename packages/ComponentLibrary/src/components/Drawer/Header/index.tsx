@@ -35,7 +35,7 @@ const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProp
         </div>
       )}
       <div>
-        <IconButton onClick={onClick} className="h-9 w-9" tabIndex={tabIndex}>
+        <IconButton onClick={onClick} className="h-9 w-9" tabIndex={tabIndex} data-testid="drawer-toggle-button">
           {open ? <MenuClose /> : <MenuOpen />}
         </IconButton>
       </div>

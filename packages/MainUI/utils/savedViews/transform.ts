@@ -22,8 +22,15 @@ import type {
   MRTViewConfig,
   RawSavedViewRecord,
   SavedView,
+  SavedViewScope,
   ViewStateSnapshot,
 } from "./types";
+
+const VALID_SCOPES: SavedViewScope[] = ["USER", "ROLE", "ORGANIZATION", "CLIENT", "SYSTEM"];
+
+function parseScope(raw: unknown): SavedViewScope {
+  return VALID_SCOPES.includes(raw as SavedViewScope) ? (raw as SavedViewScope) : "USER";
+}
 
 /**
  * Guards whether a parsed JSON value is a valid MRTViewConfig.
@@ -145,5 +152,7 @@ export function rawRecordToSavedView(record: RawSavedViewRecord): SavedView {
     isDefault: Boolean(record.isdefault ?? false),
     filterClause: String(record.filterclause ?? ""),
     gridConfiguration: String(record.gridconfiguration ?? ""),
+    scope: parseScope(record.scope),
+    editable: record.editable ?? true,
   };
 }

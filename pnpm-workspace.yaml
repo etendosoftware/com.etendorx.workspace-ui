@@ -1,4 +1,3 @@
 packages:
   - 'packages/*'
-  - 'cypress-tests'
   - 'playwright-tests'

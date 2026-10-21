@@ -21,7 +21,7 @@ The format stays `version: 1`: new parts are optional keys that are only written
 
 ### Saving, applying and resetting
 
-- **Saving** captures the current state of the tab. Saving under the name of an existing view overwrites that view, as in classic, instead of creating a duplicate.
+- **Saving** captures the current state of the tab. Saving under the name of an existing view overwrites that view, as in classic, instead of creating a duplicate. Only a view of the chosen scope that the user can edit is overwritten: a shared view (role, organization, client or system) the user cannot edit, or a view of another scope, keeps its own copy and a new view is created.
 - **Applying** a view replaces the table state of the tab. Visibility is replaced, not merged, so the columns the view does not list fall back to the metadata. It then restores:
   - the split heights;
   - the tab levels shown. As in classic, at most two levels are on screen (parent and child tab sets): `[parent, child]` is the split, a single level is that level maximized. The levels are only restored when their shallowest level is already open, because a deeper level needs a record selected in its parent level; a collapsed child panel is reopened at the saved height. A view without saved levels brings a maximized child back to the parent/child split.

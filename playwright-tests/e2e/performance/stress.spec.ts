@@ -1,22 +1,23 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginToEtendo, cleanupEtendo } from "../helpers/etendo.helpers";
+import { Auth } from "../support/components/Auth";
+import { SIDEBAR_TEST_IDS } from "../support/components";
+import { Sidebar } from "../support/components/Sidebar";
+
+/** `performance.memory` is a non-standard Chrome-only API. */
+type ChromePerformance = Performance & { memory?: { usedJSHeapSize: number } };
 
 // ─── Drawer helper ────────────────────────────────────────────────────────────
 // Opens the sidebar drawer if it is not already open.
 
 async function openDrawer(page: Page) {
-  const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-  }
+  await new Sidebar(page).open();
 }
 
 // ─── Suite ────────────────────────────────────────────────────────────────────
 
 test.describe("Stress Tests", () => {
   test.beforeEach(async ({ page }) => {
-    await loginToEtendo(page);
+    await new Auth(page).login();
   });
 
   // ── Rapid Navigation Stress ────────────────────────────────────────────────
@@ -27,7 +28,7 @@ test.describe("Stress Tests", () => {
       for (let i = 0; i < iterations; i++) {
         await page.goto("/");
         await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-        await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+        await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
         console.log(`Navigation iteration ${i + 1}/${iterations} completed`);
       }
     });
@@ -35,7 +36,7 @@ test.describe("Stress Tests", () => {
     test("should handle rapid menu search interactions", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
 
       const searchTerms = [
         "sales",
@@ -71,7 +72,7 @@ test.describe("Stress Tests", () => {
 
   test.describe("Form Interaction Stress", () => {
     test("should handle rapid input field interactions on login page", async ({ page }) => {
-      await cleanupEtendo(page);
+      await new Auth(page).cleanup();
       await page.goto("/");
       await page.locator("#username").waitFor({ state: "visible", timeout: 10_000 });
 
@@ -91,7 +92,7 @@ test.describe("Stress Tests", () => {
     test("should handle rapid click events without freezing", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
 
       const clicks = 20;
       for (let i = 0; i < clicks; i++) {
@@ -109,14 +110,14 @@ test.describe("Stress Tests", () => {
     test("should handle multiple login/logout cycles", async ({ page }) => {
       const cycles = 5;
       for (let i = 0; i < cycles; i++) {
-        await cleanupEtendo(page);
-        await loginToEtendo(page);
+        await new Auth(page).cleanup();
+        await new Auth(page).login();
         console.log(`Login/Logout cycle ${i + 1}/${cycles} completed`);
       }
     });
 
     test("should handle repeated failed login attempts gracefully", async ({ page }) => {
-      await cleanupEtendo(page);
+      await new Auth(page).cleanup();
       const attempts = 10;
 
       for (let i = 0; i < attempts; i++) {
@@ -142,11 +143,10 @@ test.describe("Stress Tests", () => {
     test.skip("should not exhibit excessive memory growth during navigation", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
 
       // performance.memory is a non-standard Chrome-only API — skip gracefully in other browsers.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const initialMemory = await page.evaluate(() => (performance as any).memory ?? null);
+      const initialMemory = await page.evaluate(() => (performance as ChromePerformance).memory ?? null);
       if (!initialMemory) {
         console.log("Performance.memory API not available (non-Chrome browser), skipping");
         return;
@@ -161,8 +161,7 @@ test.describe("Stress Tests", () => {
         await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const finalMemory = await page.evaluate(() => (performance as any).memory ?? null);
+      const finalMemory = await page.evaluate(() => (performance as ChromePerformance).memory ?? null);
       if (finalMemory) {
         const finalHeap = finalMemory.usedJSHeapSize as number;
         const growthMB = (finalHeap - initialHeap) / 1024 / 1024;
@@ -175,7 +174,7 @@ test.describe("Stress Tests", () => {
     test("should handle many DOM queries without degradation", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
 
       const queryCount = 100;
       const startTime = Date.now();
@@ -197,7 +196,7 @@ test.describe("Stress Tests", () => {
     test("should handle search while page is still rendering", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
       await openDrawer(page);
 
       const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
@@ -220,7 +219,7 @@ test.describe("Stress Tests", () => {
     test("should handle rapid keyboard events", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
       await openDrawer(page);
 
       const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
@@ -249,7 +248,7 @@ test.describe("Stress Tests", () => {
 
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
       console.log("Application recovered from 404 route");
     });
 
@@ -264,7 +263,7 @@ test.describe("Stress Tests", () => {
 
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 10_000 });
       console.log("Application stable after multiple 404 navigations");
     });
   });
