@@ -197,6 +197,18 @@ const COL_SPAN_CLASS: Record<number, string> = {
   2: "col-span-2",
   3: "col-span-3",
 };
+
+// A field that spans several columns keeps the label as wide as in a single column, so its input takes the rest
+const LABEL_WIDTH_CLASS: Record<number, string> = {
+  1: "w-1/3",
+  2: "w-1/6",
+  3: "w-1/9",
+};
+const INPUT_WIDTH_CLASS: Record<number, string> = {
+  1: "w-2/3",
+  2: "w-5/6",
+  3: "w-8/9",
+};
 const ROW_SPAN_CLASS: Record<number, string> = {
   1: "row-span-1",
   2: "row-span-2",
@@ -590,7 +602,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           }
         }}
         onKeyDown={handleFieldLinkOutShortcut}>
-        <div className="w-1/3 flex items-center gap-2 pr-2">
+        <div
+          className={`${(field.obuiappColspan != null && LABEL_WIDTH_CLASS[field.obuiappColspan]) || LABEL_WIDTH_CLASS[1]} flex items-center gap-2 pr-2`}>
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (
             <Asterisk
@@ -600,7 +613,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           )}
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
-        <div className="w-2/3">
+        <div
+          className={(field.obuiappColspan != null && INPUT_WIDTH_CLASS[field.obuiappColspan]) || INPUT_WIDTH_CLASS[1]}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
         </div>
       </div>

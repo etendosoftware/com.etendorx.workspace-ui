@@ -46,8 +46,11 @@ export interface SortableHandleProps {
 
 export interface SortableListProps<T extends { id: string }> {
   items: T[];
-  /** Called with the new order when a row is dropped somewhere else. */
-  onReorder: (items: T[]) => void;
+  /**
+   * Called with the new order when a row is dropped somewhere else, and with the positions the dragged row
+   * moved from and to, for lists that move more than the row itself.
+   */
+  onReorder: (items: T[], move: { from: number; to: number }) => void;
   /** Renders a row. Spread `attributes` and `listeners` on the element that should start the drag. */
   renderItem: (item: T, handle: SortableHandleProps) => ReactNode;
   className?: string;
@@ -109,7 +112,7 @@ export function SortableList<T extends { id: string }>({
       const from = items.findIndex((item) => item.id === active.id);
       const to = items.findIndex((item) => item.id === over.id);
       if (from >= 0 && to >= 0) {
-        onReorder(arrayMove(items, from, to));
+        onReorder(arrayMove(items, from, to), { from, to });
       }
     },
     [items, onReorder]

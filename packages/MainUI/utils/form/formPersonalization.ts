@@ -29,7 +29,7 @@ const MAX_COL_SPAN = 3;
 
 const clampColSpan = (colSpan: number): number => Math.min(MAX_COL_SPAN, Math.max(MIN_COL_SPAN, Math.round(colSpan)));
 
-const isStatusBarRecord = (record: FormPersonalizationRecord): boolean =>
+export const isStatusBarRecord = (record: FormPersonalizationRecord): boolean =>
   record.isStatusBarField === true || record.parentName === STATUS_BAR_GROUP;
 
 /**
@@ -102,8 +102,9 @@ export function applyFormPersonalization(
       next.displayed = false;
     }
 
+    // The status bar only draws the fields it is told to show, so a hidden one has to leave it
     const inStatusBar = isStatusBarRecord(record);
-    next.shownInStatusBar = inStatusBar;
+    next.shownInStatusBar = inStatusBar && !record.hiddenInForm;
 
     if (!inStatusBar && record.parentName) {
       next.fieldGroup = record.parentName;

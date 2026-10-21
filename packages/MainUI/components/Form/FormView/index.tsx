@@ -34,6 +34,8 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
+import { useFormPersonalization } from "@/hooks/useFormPersonalization";
+import { useUserStore } from "@/stores/userStore";
 import { usePersonalizedTab } from "@/hooks/usePersonalizedTab";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
@@ -507,6 +509,12 @@ function FormViewComponent({
   // The tab as the session's form personalization lays it out (order, visibility, sections, columns,
   // status bar and initial focus); the dictionary's tab while there is none.
   const personalizedTab = usePersonalizedTab(tab);
+  // Whether the personalization is known (loaded, failed, or impossible to load), so the sections it opens
+  // or collapses are seeded once instead of from the dictionary first
+  const { status: personalizationStatus } = useFormPersonalization(tab.id);
+  const canLoadPersonalization = useUserStore((s) => Boolean(s.token && s.currentRole?.id));
+  const personalizationSettled =
+    !canLoadPersonalization || personalizationStatus === "ready" || personalizationStatus === "error";
   const { fields, groups } = useFormFields(personalizedTab, currentRecordId, currentMode, true, availableFormData);
 
   /**
@@ -545,9 +553,9 @@ function FormViewComponent({
   // after leaving and re-entering the form. Skipped while groups is still empty so an
   // incomplete metadata snapshot is never persisted as a preference.
   useEffect(() => {
-    if (!windowIdentifier || groups.length === 0) return;
+    if (!windowIdentifier || groups.length === 0 || !personalizationSettled) return;
     initializeExpandedSections(() => computeInitialExpandedSections(groups));
-  }, [windowIdentifier, groups, initializeExpandedSections]);
+  }, [windowIdentifier, groups, personalizationSettled, initializeExpandedSections]);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;

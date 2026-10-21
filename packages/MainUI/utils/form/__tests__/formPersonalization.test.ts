@@ -190,6 +190,20 @@ describe("applyFormPersonalization", () => {
     expect(result.a.fieldGroup).toBe("g1");
   });
 
+  it("takes a hidden status bar field out of the bar", () => {
+    const result = applyFormPersonalization(
+      fieldsOf(makeField("a", { shownInStatusBar: true }), makeField("b", { shownInStatusBar: true })),
+      formOf(
+        { name: "a", parentName: STATUS_BAR_GROUP, isStatusBarField: true, hiddenInForm: true },
+        { name: "b", parentName: STATUS_BAR_GROUP, isStatusBarField: true }
+      )
+    );
+
+    expect(result.a.shownInStatusBar).toBe(false);
+    expect(result.a.displayed).toBe(false);
+    expect(result.b.shownInStatusBar).toBe(true);
+  });
+
   it("moves the initial focus to the field marked in the personalization", () => {
     const fields = fieldsOf(makeField("a", { isFirstFocusedField: true }), makeField("b"));
 

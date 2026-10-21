@@ -51,12 +51,17 @@ jest.mock("@workspaceui/componentlibrary/src/components/SortableList", () => ({
     renderItem,
   }: {
     items: { id: string }[];
-    onReorder: (items: { id: string }[]) => void;
+    onReorder: (items: { id: string }[], move: { from: number; to: number }) => void;
     renderItem: (item: { id: string }, handle: unknown) => React.ReactNode;
   }) => (
     <div>
-      <button type="button" onClick={() => onReorder([...items].reverse())}>
-        reverse-order
+      <button
+        type="button"
+        onClick={() => onReorder([items[items.length - 1], ...items.slice(0, -1)], { from: items.length - 1, to: 0 })}>
+        last-to-first
+      </button>
+      <button type="button" onClick={() => onReorder([...items.slice(1), items[0]], { from: 0, to: items.length - 1 })}>
+        first-to-last
       </button>
       {items.map((item) => (
         <div key={item.id}>
@@ -65,6 +70,13 @@ jest.mock("@workspaceui/componentlibrary/src/components/SortableList", () => ({
       ))}
     </div>
   ),
+}));
+
+jest.mock("@/hooks/useRecordDisplayLogic", () => ({ useRecordDisplayLogic: () => () => false }));
+const mockSetExpanded = jest.fn();
+jest.mock("@/contexts/CurrentWindowContext", () => ({ useCurrentWindowIdentifier: () => "win-1" }));
+jest.mock("@/stores/windowStore", () => ({
+  useWindowStore: (selector: (s: unknown) => unknown) => selector({ setTabExpandedSections: mockSetExpanded }),
 }));
 
 const mockSave = jest.fn();
@@ -216,11 +228,103 @@ describe("PersonalizeFormModal", () => {
   it("saves the new order of the rows, keeping the status bar first", async () => {
     renderModal();
 
-    fireEvent.click(screen.getByText("reverse-order"));
+    fireEvent.click(screen.getByText("first-to-last"));
     await act(async () => fireEvent.click(screen.getByText("formPersonalization.save")));
 
     const names = lastSavedForm().map((f: { name: string }) => f.name);
-    expect(names.indexOf("b")).toBeLessThan(names.indexOf("a"));
+    expect(names.indexOf("b")).toBeLessThan(names.indexOf("c"));
+    expect(lastSavedForm().find((f: { name: string }) => f.name === "c")).not.toHaveProperty("isStatusBarField");
+  });
+
+  it("ignores a move that puts a mandatory field without a default value in the status bar", async () => {
+    renderModal();
+
+    // Dropping "b" (mandatory, no default) at the top puts it in the status bar
+    fireEvent.click(screen.getByText("last-to-first"));
+    await act(async () => fireEvent.click(screen.getByText("formPersonalization.save")));
+
+    const names = lastSavedForm().map((f: { name: string }) => f.name);
+    expect(names.indexOf("a")).toBeLessThan(names.indexOf("b"));
+  });
+
+  it("has no initial focus choice for the fields of the status bar", () => {
+    renderModal();
+
+    expect(within(row("c")).queryByLabelText("formPersonalization.initialFocus")).toBeNull();
+    expect(within(row("a")).getByLabelText("formPersonalization.initialFocus")).toBeInTheDocument();
+  });
+
+  it("keeps every field hidden when several are hidden before the list redraws", async () => {
+    renderModal();
+
+    // Both clicks happen in one batch, so the second must build on the first
+    act(() => {
+      fireEvent.click(within(row("a")).getByRole("button", { name: "formPersonalization.hide" }));
+      fireEvent.click(within(row("c")).getByRole("button", { name: "formPersonalization.hide" }));
+    });
+    await act(async () => fireEvent.click(screen.getByText("formPersonalization.save")));
+
+    const hidden = lastSavedForm()
+      .filter((f: { hiddenInForm?: boolean }) => f.hiddenInForm)
+      .map((f: { name: string }) => f.name);
+    expect(hidden).toEqual(expect.arrayContaining(["a", "c"]));
+  });
+
+  it("re-seeds the open sections of the tab with the ones the personalization asks for", async () => {
+    renderModal();
+
+    await act(async () => fireEvent.click(screen.getByText("formPersonalization.save")));
+
+    expect(mockSetExpanded).toHaveBeenCalledWith("win-1", "tab-1", expect.arrayContaining(["_main"]), 0);
+  });
+
+  it("says which conditional fields the record being edited does not show", () => {
+    const conditionalTab = {
+      id: "tab-1",
+      fields: Object.fromEntries(
+        [makeField("a", { displayLogic: "@x@='Y'" }), makeField("b")].map((f) => [f.hqlName, f])
+      ),
+    } as unknown as Tab;
+
+    render(<PersonalizeFormModal tab={conditionalTab} onClose={jest.fn()} />);
+
+    expect(within(row("a")).getByText("formPersonalization.conditionalHidden")).toBeInTheDocument();
+    expect(within(row("b")).queryByText(/formPersonalization.conditional/)).toBeNull();
+  });
+
+  it("does not mark a status bar field as hidden for the record, as the bar ignores display logic", () => {
+    const barTab = {
+      id: "tab-1",
+      fields: Object.fromEntries(
+        [makeField("a"), makeField("c", { shownInStatusBar: true, displayLogic: "@x@='Y'" })].map((f) => [f.hqlName, f])
+      ),
+    } as unknown as Tab;
+
+    render(<PersonalizeFormModal tab={barTab} onClose={jest.fn()} />);
+
+    expect(within(row("c")).queryByText(/formPersonalization.conditional/)).toBeNull();
+  });
+
+  it("marks a section none of whose fields the record shows", () => {
+    const conditionalTab = {
+      id: "tab-1",
+      fields: Object.fromEntries(
+        [
+          makeField("a"),
+          makeField("p", { fieldGroup: "g1", fieldGroupName: "Plan", displayLogic: "@x@='Y'" }),
+          makeField("q", { fieldGroup: "g1", fieldGroupName: "Plan", displayLogic: "@x@='Y'" }),
+        ].map((f) => [f.hqlName, f])
+      ),
+    } as unknown as Tab;
+
+    render(<PersonalizeFormModal tab={conditionalTab} onClose={jest.fn()} />);
+
+    expect(
+      within(screen.getByTestId("personalize-section-g1")).getByText("formPersonalization.conditionalHidden")
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("personalize-section-_main")).queryByText("formPersonalization.conditionalHidden")
+    ).toBeNull();
   });
 
   it("saves for the user by default and closes", async () => {
@@ -231,6 +335,24 @@ describe("PersonalizeFormModal", () => {
     expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ scope: "USER" }));
     expect(mockSave.mock.calls[0][0]).not.toHaveProperty("role");
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("saves for the role picked in the selector", async () => {
+    permissions = {
+      scopes: ["USER", "ROLE"],
+      roles: [
+        { id: "role-1", name: "R1" },
+        { id: "role-2", name: "R2" },
+      ],
+      organizations: [],
+    };
+    renderModal();
+
+    fireEvent.change(screen.getByLabelText("formPersonalization.applyTo"), { target: { value: "ROLE" } });
+    fireEvent.change(screen.getByLabelText("formPersonalization.role"), { target: { value: "role-2" } });
+    await act(async () => fireEvent.click(screen.getByText("formPersonalization.save")));
+
+    expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ scope: "ROLE", role: "role-2" }));
   });
 
   it("offers only the levels the session may save at", () => {

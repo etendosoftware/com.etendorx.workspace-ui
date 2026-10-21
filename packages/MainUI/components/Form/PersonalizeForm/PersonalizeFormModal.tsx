@@ -28,17 +28,25 @@ import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import SortableList, { type SortableHandleProps } from "@workspaceui/componentlibrary/src/components/SortableList";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormPersonalization } from "@/hooks/useFormPersonalization";
+import { useRecordDisplayLogic } from "@/hooks/useRecordDisplayLogic";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useUserStore } from "@/stores/userStore";
+import { useWindowStore } from "@/stores/windowStore";
 import {
   buildEditorItems,
   type EditorField,
   type EditorItem,
   type EditorSection,
+  canHideField,
+  canShowInStatusBar,
   editorItemsToForm,
+  expandedSectionIds,
+  moveEditorRow,
   MAX_COL_SPAN,
   MIN_COL_SPAN,
   setFirstFocus,
+  statusBarFields,
   updateEditorItem,
 } from "@/utils/form/personalizeEditor";
 import { logger } from "@/utils/logger";
@@ -82,6 +90,19 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
   const currentRoleId = useUserStore((s) => s.currentRole?.id);
   const currentOrgId = useUserStore((s) => s.currentOrganization?.id);
   const { personalization, permissions, save, discard } = useFormPersonalization(tab.id);
+  const windowIdentifier = useCurrentWindowIdentifier();
+  const setTabExpandedSections = useWindowStore((s) => s.setTabExpandedSections);
+
+  // The form keeps the sections the user has open per tab, so a personalization would not show until the
+  // window is reopened; start from the sections it asks to open instead.
+  const applyExpandedSections = useCallback(
+    (rows: EditorItem[]) => {
+      if (windowIdentifier) {
+        setTabExpandedSections(windowIdentifier, tab.id, expandedSectionIds(rows), tab.tabLevel ?? 0);
+      }
+    },
+    [windowIdentifier, setTabExpandedSections, tab.id, tab.tabLevel]
+  );
 
   // Strings, not an object, so the effect below only reruns when a label actually changes.
   const mainTitle = t("forms.sections.main");
@@ -104,11 +125,34 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
     }
   }, [tab.fields, personalization?.form, mainTitle, statusBarTitle, touched]);
 
-  const change = useCallback((next: EditorItem[]) => {
+  // Takes the next rows or a function of the current ones, so several quick edits never overwrite each other
+  const change = useCallback((next: EditorItem[] | ((current: EditorItem[]) => EditorItem[])) => {
     setTouched(true);
     setItems(next);
   }, []);
 
+  const displaysForRecord = useRecordDisplayLogic();
+  const dictionaryByName = useMemo(() => new Map(Object.values(tab.fields).map((f) => [f.hqlName, f])), [tab.fields]);
+  const conditionalShown = useCallback(
+    (fieldId: string) => {
+      const field = dictionaryByName.get(fieldId);
+      return field ? displaysForRecord(field) : true;
+    },
+    [dictionaryByName, displaysForRecord]
+  );
+  // A section whose fields the record does not show at all is not drawn in the form either
+  const sectionHiddenForRecord = useCallback(
+    (sectionId: string) => {
+      const start = items.findIndex((item) => item.kind === "section" && item.id === sectionId);
+      const fields: EditorField[] = [];
+      for (const item of items.slice(start + 1)) {
+        if (item.kind === "section") break;
+        fields.push(item);
+      }
+      return fields.length > 0 && fields.every((f) => f.conditional && !conditionalShown(f.id));
+    },
+    [items, conditionalShown]
+  );
   const statusBarHeader = items[0];
   const listItems = useMemo(() => items.slice(1), [items]);
   const statusBarIds = useMemo(() => {
@@ -121,8 +165,14 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
   }, [listItems]);
 
   const handleReorder = useCallback(
-    (next: EditorItem[]) => change([statusBarHeader, ...next]),
-    [change, statusBarHeader]
+    (_next: EditorItem[], move: { from: number; to: number }) => {
+      const rows = [statusBarHeader, ...moveEditorRow(listItems, move.from, move.to)];
+      // A field that cannot go in the status bar stays where it was, as in Classic
+      if (statusBarFields(rows).every(canShowInStatusBar)) {
+        change(rows);
+      }
+    },
+    [change, statusBarHeader, listItems]
   );
 
   const defaultRoleId =
@@ -145,19 +195,21 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
         ...(scope === "ROLE" ? { role: effectiveRoleId } : {}),
         ...(scope === "ORGANIZATION" ? { organization: effectiveOrgId } : {}),
       });
+      applyExpandedSections(items);
       onClose();
     } catch (e) {
       logger.warn("[PersonalizeForm] Could not save the personalization:", e);
       setError(t("formPersonalization.saveError"));
       setBusy(false);
     }
-  }, [save, items, scope, effectiveRoleId, effectiveOrgId, onClose, t]);
+  }, [save, items, scope, effectiveRoleId, effectiveOrgId, applyExpandedSections, onClose, t]);
 
   const handleReset = useCallback(async () => {
     setBusy(true);
     setError(null);
     try {
       await discard();
+      applyExpandedSections(buildEditorItems(tab.fields, null, { main: mainTitle, statusBar: statusBarTitle }));
       onClose();
     } catch (e) {
       logger.warn("[PersonalizeForm] Could not discard the personalization:", e);
@@ -165,7 +217,7 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
       setConfirmingReset(false);
       setBusy(false);
     }
-  }, [discard, onClose, t]);
+  }, [discard, applyExpandedSections, tab.fields, mainTitle, statusBarTitle, onClose, t]);
 
   const renderHandle = (handle: SortableHandleProps) => (
     <button
@@ -185,14 +237,25 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
       className="flex items-center gap-2 mt-3 px-2 py-2 rounded-lg bg-(--color-transparent-neutral-5)"
       data-testid={`personalize-section-${section.id}`}>
       {renderHandle(handle)}
-      <span className="flex-1 text-sm font-semibold text-(--color-baseline-100)">{section.title}</span>
+      <span className="flex-1 text-sm font-semibold text-(--color-baseline-100)">
+        {section.title}
+        {sectionHiddenForRecord(section.id) && (
+          <span
+            className="ml-2 text-xs font-normal italic text-(--color-transparent-neutral-40)"
+            title={t("formPersonalization.conditionalHint")}>
+            {t("formPersonalization.conditionalHidden")}
+          </span>
+        )}
+      </span>
       <label className="flex items-center gap-1 text-xs text-(--color-transparent-neutral-70)">
         <input
           type="checkbox"
           className={CHECKBOX_CLASS}
           checked={section.expanded}
           aria-label={t("formPersonalization.sectionExpanded")}
-          onChange={(e) => change(updateEditorItem<EditorSection>(items, section.id, { expanded: e.target.checked }))}
+          onChange={(e) =>
+            change((current) => updateEditorItem<EditorSection>(current, section.id, { expanded: e.target.checked }))
+          }
         />
         {t("formPersonalization.sectionExpanded")}
       </label>
@@ -201,7 +264,7 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
 
   const renderField = (field: EditorField, handle: SortableHandleProps) => {
     const inStatusBar = statusBarIds.has(field.id);
-    const hideDisabled = field.mandatory && !field.hidden;
+    const hideDisabled = !canHideField(field) && !field.hidden;
     return (
       <div
         className="flex items-center gap-3 px-2 py-1.5 border-b border-(--color-transparent-neutral-10)"
@@ -212,6 +275,15 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
           title={field.title}>
           {field.title}
           {field.mandatory && <span className="ml-1 text-red-600">*</span>}
+          {field.conditional && !inStatusBar && (
+            <span
+              className="ml-2 text-xs italic text-(--color-transparent-neutral-40)"
+              title={t("formPersonalization.conditionalHint")}>
+              {conditionalShown(field.id)
+                ? t("formPersonalization.conditional")
+                : t("formPersonalization.conditionalHidden")}
+            </span>
+          )}
         </span>
         <div className={CELL_VISIBLE}>
           <button
@@ -226,7 +298,9 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
                   : t("formPersonalization.hide")
             }
             aria-label={field.hidden ? t("formPersonalization.show") : t("formPersonalization.hide")}
-            onClick={() => change(updateEditorItem<EditorField>(items, field.id, { hidden: !field.hidden }))}>
+            onClick={() =>
+              change((current) => updateEditorItem<EditorField>(current, field.id, { hidden: !field.hidden }))
+            }>
             {field.hidden ? (
               <EyeOffIcon width={18} height={18} className={ICON_FILL} data-testid={`EyeOffIcon__${field.id}`} />
             ) : (
@@ -248,7 +322,9 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
                 aria-label={t("formPersonalization.columns")}
                 title={t("formPersonalization.columns")}
                 onChange={(e) =>
-                  change(updateEditorItem<EditorField>(items, field.id, { colSpan: Number(e.target.value) }))
+                  change((current) =>
+                    updateEditorItem<EditorField>(current, field.id, { colSpan: Number(e.target.value) })
+                  )
                 }>
                 {COLUMN_OPTIONS.map((columns) => (
                   <option key={columns} value={columns}>
@@ -264,22 +340,26 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
                 checked={field.startRow}
                 aria-label={t("formPersonalization.startRow")}
                 title={t("formPersonalization.startRow")}
-                onChange={(e) => change(updateEditorItem<EditorField>(items, field.id, { startRow: e.target.checked }))}
+                onChange={(e) =>
+                  change((current) => updateEditorItem<EditorField>(current, field.id, { startRow: e.target.checked }))
+                }
               />
             </div>
           </>
         )}
         <div className={CELL_FOCUS}>
-          <input
-            type="radio"
-            className={RADIO_CLASS}
-            name="personalize-initial-focus"
-            checked={field.firstFocus}
-            disabled={field.hidden}
-            aria-label={t("formPersonalization.initialFocus")}
-            title={t("formPersonalization.initialFocus")}
-            onChange={() => change(setFirstFocus(items, field.id))}
-          />
+          {!inStatusBar && (
+            <input
+              type="radio"
+              className={RADIO_CLASS}
+              name="personalize-initial-focus"
+              checked={field.firstFocus}
+              disabled={field.hidden}
+              aria-label={t("formPersonalization.initialFocus")}
+              title={t("formPersonalization.initialFocus")}
+              onChange={() => change((current) => setFirstFocus(current, field.id))}
+            />
+          )}
         </div>
       </div>
     );
