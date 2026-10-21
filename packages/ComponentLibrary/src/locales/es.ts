@@ -420,6 +420,8 @@ const es = {
     recentlyViewed: "Visto recientemente",
     externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
     openExternalLink: "Abrir enlace",
+    legacyWindowPopupBlocked: "El navegador bloqueó la ventana que esta entrada del menú intentó abrir.",
+    openLegacyWindow: "Abrir ventana",
   },
   login: {
     title: "Iniciar sesión",
