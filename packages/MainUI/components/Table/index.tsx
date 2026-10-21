@@ -127,7 +127,7 @@ import {
 import { createKeyboardNavigationManager, type KeyboardNavigationManager } from "./utils/keyboardNavigation";
 import {
   useDebouncedCallback,
-  useThrottledCallback,
+  useStableCallback,
   usePerformanceMonitor,
   useMemoryManager,
 } from "./utils/performanceOptimizations";
@@ -486,6 +486,9 @@ const getRowId = (row: EntityData) => String(row.id);
 // Simple cache implementation with size limit
 const fieldTypeCache = new Map<string, FieldType>();
 const MAX_CACHE_SIZE = 100;
+
+/** Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. */
+const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"]';
 
 // Extended Column type with optional metadata properties
 interface ExtendedColumn extends Column {
@@ -2044,6 +2047,12 @@ const DynamicTable = ({
           }
 
           const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+          // Without this the request below is answered from the 30 s response cache: a second save of the
+          // same row showed the first save's values and sent its stale `updated` (false stale-object error).
+          datasource.clearCacheForEntity(tab.entityName);
+          if (parentTab) {
+            datasource.clearCacheForEntity(parentTab.entityName);
+          }
           const fullRecordResult = (await datasource.get(tab.entityName, {
             criteria: [{ fieldName: "id", operator: "equals", value: fetchId }],
             windowId: tab.window,
@@ -2084,6 +2093,7 @@ const DynamicTable = ({
       screenReaderAnnouncer,
       preserveClientSideIdentifiers,
       tab,
+      parentTab,
       updateRecordLocally,
       addRecordLocally,
       removeRecordLocally,
@@ -2096,8 +2106,8 @@ const DynamicTable = ({
   const rollbackOptimisticUpdate = useCallback(
     (rowId: string, editingRowData: EditingRowData, records: EntityData[]) => {
       if (editingRowData.isNew) {
-        const rolledBackRecords = records.filter((record) => String(record.id) !== rowId);
-        setOptimisticRecords(rolledBackRecords);
+        // A new row that failed to save stays on screen, still being edited, so the user can fix it.
+        setOptimisticRecords(records);
       } else {
         const rolledBackRecords = records.map((record) =>
           String(record.id) === rowId ? editingRowData.originalData : record
@@ -2177,27 +2187,20 @@ const DynamicTable = ({
     ]
   );
 
-  const handleSaveRow = useCallback(
-    async (rowId: string) => {
-      const editingRowData = editingRowUtils.getEditingRowData(rowId);
-      if (!editingRowData) return;
-
+  const saveRowOnce = useCallback(
+    async (rowId: string, editingRowData: EditingRowData) => {
       const isValid = await validateRow(rowId);
       if (!isValid) {
-        handleValidationErrors(rowId, editingRowData);
+        // validateRow just stored the errors: read them back, the snapshot taken before has none
+        handleValidationErrors(rowId, editingRowUtils.getEditingRowData(rowId) ?? editingRowData);
         return;
       }
 
       try {
         editingRowUtils.setRowSaving(rowId, true);
 
-        const {
-          saveRecordWithRetry,
-          createSaveOperation,
-          processSaveErrors,
-          getGeneralErrorMessage,
-          validateRecordBeforeSave,
-        } = await import("./utils/saveOperations");
+        const { saveRecord, createSaveOperation, processSaveErrors, getGeneralErrorMessage, validateRecordBeforeSave } =
+          await import("./utils/saveOperations");
         const { createOptimisticUpdateManager } = await import("./utils/optimisticUpdates");
 
         const optimisticManager = createOptimisticUpdateManager();
@@ -2223,12 +2226,13 @@ const DynamicTable = ({
         const updatedRecords = optimisticManager.applyOptimisticUpdate(currentRecords, optimisticUpdate);
         setOptimisticRecords(updatedRecords);
 
-        const saveResult = await saveRecordWithRetry({
+        // Sent once, never retried: the server may have committed an "add" that failed on the way back,
+        // and a business error (trigger, unique key) fails the same way every time.
+        const saveResult = await saveRecord({
           saveOperation,
           tab,
           windowMetadata: undefined,
           userId: user?.id || "",
-          maxRetries: 2,
         });
 
         if (saveResult.success && saveResult.data) {
@@ -2260,6 +2264,24 @@ const DynamicTable = ({
       handleSaveErrors,
       handleSaveException,
     ]
+  );
+
+  // Rows with a save in flight. Enter, the save button and the row's blur can all save the same row
+  // within a few milliseconds; a second "add" would insert the record twice.
+  const savingRowIdsRef = useRef(new Set<string>());
+
+  const handleSaveRow = useCallback(
+    async (rowId: string) => {
+      const editingRowData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingRowData || savingRowIdsRef.current.has(rowId)) return;
+      savingRowIdsRef.current.add(rowId);
+      try {
+        await saveRowOnce(rowId, editingRowData);
+      } finally {
+        savingRowIdsRef.current.delete(rowId);
+      }
+    },
+    [editingRowUtils, saveRowOnce]
   );
 
   const handleCancelRow = useCallback(
@@ -2321,8 +2343,9 @@ const DynamicTable = ({
     [editingRowUtils, optimisticRecords, displayRecords, confirmDiscardChanges]
   );
 
-  // Throttled cell value change handler to prevent excessive updates
-  const handleCellValueChange = useThrottledCallback(
+  // Applied on every change, never throttled: a throttle dropped the last keystrokes (a barcode
+  // scanner types a whole code and Enter at once) and saved a truncated value.
+  const handleCellValueChange = useStableCallback(
     (rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => {
       performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
         // Log incoming parameters to debug
@@ -2372,9 +2395,8 @@ const DynamicTable = ({
           });
         }
       });
-    },
-    50
-  ); // Throttle to max 20 updates per second
+    }
+  );
 
   // Context menu action handlers
   const handleContextMenuEditRow = useCallback(() => {
@@ -2963,8 +2985,12 @@ const DynamicTable = ({
         })(),
 
         onBlur: (e: React.FocusEvent<HTMLTableRowElement>) => {
-          const focusLeft = !e.currentTarget.contains(e.relatedTarget as Node);
-          if (!focusLeft) return;
+          // Dropdowns and dialogs the row opens render in a portal, outside the <tr>, but React still
+          // bubbles their focus events here. Focus moving into one of them, or leaving one, does not
+          // leave the row: a new row was saved as soon as its dropdown's search box took the focus.
+          const next = e.relatedTarget as Element | null;
+          if (e.currentTarget.contains(next) || next?.closest(ROW_POPUP_SELECTOR)) return;
+          if (!e.currentTarget.contains(e.target as Node)) return;
           if (editingData?.isNew) {
             handleSaveRow(rowId);
           } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
