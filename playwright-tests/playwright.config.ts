@@ -122,6 +122,18 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
 
+    // Group 6 — Regression probes (@regression): slower or rarer feature checks. A leaf of the chain (no
+    // project depends on it), so `--grep-invert @regression` leaves them out, e.g. on PRs: Playwright
+    // ignores --grep in the projects others depend on. Each spec changes only records it created.
+    {
+      name: "suite-05-regression",
+      testMatch: ["**/regression/**/*.spec.ts"],
+      dependencies: ["suite-04-financial"],
+      timeout: 360_000,
+      workers: 3,
+      use: { ...devices["Desktop Chrome"] },
+    },
+
     // Drift guard of the mocked-backend recordings: requests them again from the real backend.
     {
       name: "mock-drift",

@@ -1,7 +1,6 @@
 import type { Page } from "@playwright/test";
-import type { SavedRecord } from "../../support/api/ApiData";
 import { expect, test } from "../../support/fixtures";
-import { DATASOURCE } from "../../support/registry/datasources";
+import { createCategories } from "../../support/flows/records";
 
 const CONFIRM_DELETE = /Are you sure you want to delete/;
 const DELETED = /has been deleted successfully/;
@@ -32,17 +31,7 @@ async function confirmDelete(page: Page, question: RegExp): Promise<void> {
 test.describe("Grid - delete records and unsaved changes guard @smoke @grid", () => {
   test("deletes one and several records and guards a dirty form", async ({ app, api, data, page }) => {
     const prefix = data.uniqueValue("GRDb");
-    const records: SavedRecord[] = [];
-    for (const index of [1, 2, 3, 4]) {
-      const key = `${prefix}-${index}`;
-      records.push(
-        await api.add(DATASOURCE.BUSINESS_PARTNER_CATEGORY, {
-          organization: data.ORGANIZATION_ID.SPAIN,
-          searchKey: key,
-          name: key,
-        })
-      );
-    }
+    const records = await createCategories(api, prefix, 4);
     const [single, firstOfTwo, secondOfTwo, guarded] = records.map((record) => String(record.name));
 
     await app.sidebar.navigateTo("businessPartnerCategory");
