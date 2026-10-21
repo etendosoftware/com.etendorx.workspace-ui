@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { DEFAULT_PASSWORD, DEFAULT_USER } from "../../../playwright.config";
 import { ORGANIZATION, ROLE } from "../registry/data";
+import { runAndWaitForResponse } from "../wait";
 import { SIDEBAR_TEST_IDS } from "./Sidebar";
 
 /** Stable test IDs of the login page and the profile menu. */
@@ -12,6 +13,8 @@ export const AUTH_TEST_IDS = {
 } as const;
 
 const SAVE_AS_DEFAULT_LABEL = "Save as default";
+/** The request that stores the profile as the user's default: the last step of a profile save. */
+const SAVE_DEFAULTS_REQUEST = /kernel\?command=save/;
 const CANCEL_LABEL = "Cancel";
 const LOGIN_FORM_TIMEOUT = 10_000;
 const LANDING_TIMEOUT = 30_000;
@@ -78,7 +81,7 @@ export class Auth {
     await this.page.locator("#warehouse-select").click();
     await this.page.locator('[id^="warehouse-select-option-"]').first().click();
     await this.page.getByRole("checkbox", { name: SAVE_AS_DEFAULT_LABEL }).check();
-    await this.page.getByTestId(AUTH_TEST_IDS.profileSave).click();
+    await runAndWaitForResponse(this.page, SAVE_DEFAULTS_REQUEST, () => this.saveProfile());
   }
 
   /**
@@ -98,8 +101,7 @@ export class Auth {
         await this.pickOption(selectId, optionText);
       }
     }
-    await this.page.getByTestId(AUTH_TEST_IDS.profileSave).click();
-    await expect(this.page.getByTestId(AUTH_TEST_IDS.profileSave)).toBeHidden({ timeout: LANDING_TIMEOUT });
+    await this.saveProfile();
   }
 
   /** Reads the role, organization and warehouse of the session from the profile menu, then closes it. */
@@ -119,6 +121,16 @@ export class Auth {
   async logout(): Promise<void> {
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
     await this.page.getByTestId(AUTH_TEST_IDS.logout).click();
+  }
+
+  /**
+   * Saves the profile menu and waits until it closes: it closes once the session has the new
+   * profile (new token, its server-side session and CSRF token). A request sent before that, such
+   * as a datasource write of the `api` fixture, would still carry the previous token.
+   */
+  private async saveProfile(): Promise<void> {
+    await this.page.getByTestId(AUTH_TEST_IDS.profileSave).click();
+    await expect(this.page.getByTestId(AUTH_TEST_IDS.profileSave)).toBeHidden({ timeout: LANDING_TIMEOUT });
   }
 
   private async pickOption(selectId: string, optionText: string): Promise<void> {
