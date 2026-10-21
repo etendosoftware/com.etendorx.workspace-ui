@@ -412,3 +412,34 @@ button {
   border-color: #3b82f6 !important;
   background-color: #3b82f6 !important;
 }
+
+/*
+ * Dashboard grid resize handle: a subtle arc that follows the card's rounded corner, inside the card.
+ * Prefixed with .react-grid-layout to beat the library stylesheets, which app/layout.tsx imports after this file.
+ */
+.react-grid-layout > .react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+  right: 4px;
+  bottom: 4px;
+  background-image: none;
+  padding: 0;
+}
+
+.react-grid-layout > .react-grid-item > .react-resizable-handle.react-resizable-handle-se::after {
+  right: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgb(128 128 128 / 0.5);
+  border-bottom: 2px solid rgb(128 128 128 / 0.5);
+  border-bottom-right-radius: 8px;
+  transition: border-color 150ms;
+}
+
+.react-grid-layout > .react-grid-item > .react-resizable-handle.react-resizable-handle-se:hover::after {
+  border-color: rgb(128 128 128 / 0.9);
+}
+
+/* Dashboard grid: no text selection inside the widgets while dragging or resizing */
+.react-grid-layout:has(> .resizing, > .react-draggable-dragging) {
+  user-select: none;
+}

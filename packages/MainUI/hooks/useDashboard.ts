@@ -42,6 +42,7 @@ export interface UseDashboardReturn {
   refreshWidget: (instanceId: string) => Promise<void>;
   fetchWidgetPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
   updateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
+  toggleCollapsed: (instanceId: string) => Promise<void>;
   addWidget: (payload: AddWidgetRequest) => Promise<void>;
   removeWidget: (instanceId: string) => Promise<void>;
   updateParams: (instanceId: string, parameters: Record<string, string>) => Promise<void>;
@@ -67,6 +68,7 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
   const refreshWidget = useDashboardStore((s) => s.refreshWidget);
   const fetchWidgetPage = useDashboardStore((s) => s.fetchWidgetPage);
   const updateLayout = useDashboardStore((s) => s.updateLayout);
+  const toggleCollapsed = useDashboardStore((s) => s.toggleCollapsed);
   const addWidget = useDashboardStore((s) => s.addWidget);
   const removeWidget = useDashboardStore((s) => s.removeWidget);
   const updateParams = useDashboardStore((s) => s.updateParams);
@@ -93,6 +95,7 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
     refreshWidget,
     fetchWidgetPage,
     updateLayout,
+    toggleCollapsed,
     addWidget,
     removeWidget,
     updateParams,

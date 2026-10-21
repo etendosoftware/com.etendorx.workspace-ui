@@ -249,6 +249,47 @@ describe("dashboardStore", () => {
     });
   });
 
+  describe("collapse", () => {
+    const collapsed = (id: string, refreshInterval = 0) => ({ ...makeWidget(id, refreshInterval), collapsed: true });
+
+    it("does not fetch data for collapsed widgets on load or auto-refresh", async () => {
+      mockFetchLayout.mockResolvedValue({ widgets: [collapsed("w1", 30), makeWidget("w2")] } as any);
+      mockFetchWidgetData.mockResolvedValue(makeData("x"));
+
+      await useDashboardStore.getState().loadLayout();
+      jest.advanceTimersByTime(30_000);
+      await Promise.resolve();
+
+      expect(mockFetchWidgetData).toHaveBeenCalledTimes(1);
+      expect(mockFetchWidgetData).toHaveBeenCalledWith("w2", { page: 1, pageSize: WIDGET_PAGE_SIZE });
+    });
+
+    it("collapses without fetching and persists the state with the stored size", async () => {
+      useDashboardStore.setState({ layout: [makeWidget("w1")] });
+      mockUpdateLayout.mockResolvedValue(undefined as any);
+
+      await useDashboardStore.getState().toggleCollapsed("w1");
+
+      expect(useDashboardStore.getState().layout[0].collapsed).toBe(true);
+      expect(mockUpdateLayout).toHaveBeenCalledWith({
+        widgets: [{ instanceId: "w1", col: 0, row: 0, width: 4, height: 2, isVisible: true, isCollapsed: true }],
+      });
+      expect(mockFetchWidgetData).not.toHaveBeenCalled();
+    });
+
+    it("expands, persists and reloads the widget data", async () => {
+      useDashboardStore.setState({ layout: [collapsed("w1")] });
+      mockUpdateLayout.mockResolvedValue(undefined as any);
+      mockFetchWidgetData.mockResolvedValue(makeData("fresh"));
+
+      await useDashboardStore.getState().toggleCollapsed("w1");
+
+      expect(useDashboardStore.getState().layout[0].collapsed).toBe(false);
+      expect(mockUpdateLayout.mock.calls[0][0].widgets[0].isCollapsed).toBe(false);
+      expect(useDashboardStore.getState().widgetData.w1).toEqual(makeData("fresh"));
+    });
+  });
+
   describe("addWidget", () => {
     it("performs a full reload after adding", async () => {
       mockAddWidget.mockResolvedValue(undefined as any);

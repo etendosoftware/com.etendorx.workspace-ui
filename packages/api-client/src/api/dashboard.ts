@@ -91,6 +91,8 @@ export interface WidgetInstance {
   title: string;
   refreshInterval: number;
   available?: boolean;
+  /** Collapsed to its header; `position.height` keeps the expanded height. */
+  collapsed?: boolean;
 }
 
 export interface DashboardLayoutResponse {
@@ -249,6 +251,7 @@ export interface UpdateLayoutWidget {
   width: number;
   height: number;
   isVisible: boolean;
+  isCollapsed: boolean;
 }
 
 export interface UpdateLayoutRequest {
@@ -275,6 +278,15 @@ export interface DeleteWidgetResponse {
 
 // ── Serialization helpers ─────────────────────────────────────────────────────
 
+function toDecimal(n: number): string {
+  return Number.isInteger(n) ? `${n}.0` : String(n);
+}
+
+/** Rows and heights may be half-rows (the grid runs on half-row units), so they keep one decimal. */
+function toHalfStep(n: number): number {
+  return Math.round(n * 2) / 2;
+}
+
 /**
  * Serializes a layout payload to JSON ensuring integer fields are encoded as
  * decimal numbers (e.g. "2.0" instead of "2"). This is required because Java's
@@ -287,10 +299,10 @@ function serializeLayoutBody(payload: UpdateLayoutRequest): string {
   const rows = payload.widgets
     .map((w) => {
       const col = `${Math.round(w.col)}.0`;
-      const row = `${Math.round(w.row)}.0`;
+      const row = toDecimal(Math.max(0, toHalfStep(w.row)));
       const width = `${Math.max(1, Math.round(w.width))}.0`;
-      const height = `${Math.max(1, Math.round(w.height))}.0`;
-      return `{"instanceId":${JSON.stringify(w.instanceId)},"col":${col},"row":${row},"width":${width},"height":${height},"isVisible":${w.isVisible}}`;
+      const height = toDecimal(Math.max(1, toHalfStep(w.height)));
+      return `{"instanceId":${JSON.stringify(w.instanceId)},"col":${col},"row":${row},"width":${width},"height":${height},"isVisible":${w.isVisible},"isCollapsed":${w.isCollapsed}}`;
     })
     .join(",");
   return `{"widgets":[${rows}]}`;

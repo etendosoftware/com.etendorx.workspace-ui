@@ -32,6 +32,8 @@ docs/
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── dashboard-widget-refresh/     # Feature: Manual refresh of dashboard widgets
 │   │   └── README.md                # Refresh button, loading state, auto-refresh interplay
+│   ├── dashboard-widget-collapse/    # Feature: Collapse/expand dashboard widgets
+│   │   └── README.md                # Header-only cards, half-row grid, ISCOLLAPSED persistence
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
