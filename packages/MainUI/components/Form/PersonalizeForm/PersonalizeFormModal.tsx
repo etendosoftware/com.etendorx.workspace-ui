@@ -265,6 +265,12 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
   const renderField = (field: EditorField, handle: SortableHandleProps) => {
     const inStatusBar = statusBarIds.has(field.id);
     const hideDisabled = !canHideField(field) && !field.hidden;
+    let eyeTitle = t("formPersonalization.hide");
+    if (hideDisabled) {
+      eyeTitle = t("formPersonalization.mandatoryNotHideable");
+    } else if (field.hidden) {
+      eyeTitle = t("formPersonalization.show");
+    }
     return (
       <div
         className="flex items-center gap-3 px-2 py-1.5 border-b border-(--color-transparent-neutral-10)"
@@ -290,13 +296,7 @@ const PersonalizeFormModal: React.FC<PersonalizeFormModalProps> = ({ tab, onClos
             type="button"
             disabled={hideDisabled}
             className="flex items-center text-(--color-transparent-neutral-70) hover:text-(--color-baseline-100) disabled:opacity-40"
-            title={
-              hideDisabled
-                ? t("formPersonalization.mandatoryNotHideable")
-                : field.hidden
-                  ? t("formPersonalization.show")
-                  : t("formPersonalization.hide")
-            }
+            title={eyeTitle}
             aria-label={field.hidden ? t("formPersonalization.show") : t("formPersonalization.hide")}
             onClick={() =>
               change((current) => updateEditorItem<EditorField>(current, field.id, { hidden: !field.hidden }))

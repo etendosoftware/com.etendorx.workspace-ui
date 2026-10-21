@@ -60,7 +60,7 @@ export function useFormPersonalization(tabId: string | undefined): UseFormPerson
 
   useEffect(() => {
     if (key && tabId && token) {
-      void load(key, tabId);
+      load(key, tabId);
     }
   }, [key, tabId, token, load]);
 
