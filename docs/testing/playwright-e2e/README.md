@@ -225,6 +225,19 @@ Apply in order, and stop as soon as the budget is met. Every pipeline change mus
 4. **Cache the environment**: installing the ERP costs more than the whole test stage; a prebuilt database and
    compiled ERP per core version would save more than every new spec costs (infrastructure work).
 
+## When the Playwright check fails
+
+| Symptom in the report | Cause | Fix |
+|---|---|---|
+| `support-unit` › `spec tags`: "must have exactly one tier/area tag" | A spec under `smoke/` or `regression/` misses the tags of its folder (or has two) | Put `@smoke`/`@regression` and, in a probe folder, its area tag in the `describe` title ([Tiers and tags](#tiers-and-tags)) |
+| `mocked` › "requests without a recording: run pnpm pw:record" | The UI sends a request the recordings do not have: the flow of a mocked spec changed, or a new volatile value (a timestamp) is in the request | A changed flow: `pnpm pw:record` and commit `e2e/mocked/recordings/<spec>.har.gz`. A volatile value: add its key to `VOLATILE_KEYS` (`support/mock/normalize.ts`) |
+| `mock-drift` › "recordings no longer match the backend", with the JSON paths | The backend now answers a recorded request with another shape (keys or types; changed values never fail it) | If the change is intended, `pnpm pw:record` and commit the recordings in the same PR |
+
+**Metadata PRs.** The CI job clones `com.etendoerp.metadata` from the branch with the same name as the UI branch, or
+else from one with the same task key (then the base branch). A metadata change that alters a recorded response
+therefore makes `mock-drift` fail in the UI PR of that task: regenerate the recordings locally with that metadata
+branch deployed (backend running, UI on `:3000`) and commit them to the UI branch before pushing.
+
 ## Known issues
 
 Found by the probes, reported for their own issues (not fixed in ETP-5832):

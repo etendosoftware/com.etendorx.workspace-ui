@@ -262,6 +262,9 @@ cd playwright-tests && pnpm pw:mocked          # mocked specs only, no ERP neede
 cd playwright-tests && pnpm pw:record          # regenerate the mocked recordings (backend running)
 ```
 
+A red "Playwright Tests" check from a tag rule, the mocked specs or the drift guard: see
+[When the Playwright check fails](../docs/testing/playwright-e2e/README.md#when-the-playwright-check-fails).
+
 `--grep` does not filter projects other projects depend on (Playwright runs them in full): only the leaf projects
 (`suite-05-regression`, `mocked`, `mock-drift`) can be left out by tag.
 
