@@ -13,4 +13,5 @@ export interface DatasourceTarget {
 
 export const DATASOURCE = {
   BUSINESS_PARTNER_CATEGORY: { entity: "BusinessPartnerCategory", windowId: "192", tabId: "322" },
+  PREFERENCE: { entity: "ADPreference", windowId: "129", tabId: "156" },
 } as const satisfies Record<string, DatasourceTarget>;

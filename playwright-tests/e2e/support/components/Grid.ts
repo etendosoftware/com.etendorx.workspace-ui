@@ -10,6 +10,8 @@ const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
 const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
 /** The datasource request that saves an inline edit. */
 const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
+/** Record count of the grid toolbar: "Showing 12 records". */
+const SHOWING_RECORDS = /Showing (\d+) records?/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
 
@@ -61,6 +63,26 @@ export class Grid {
       .locator(`thead:visible [aria-label^="Sort by ${column} "], thead:visible [aria-label^="Sorted by ${column} "]`)
       .first();
     await runAndWaitForDatasource(this.page, () => button.click());
+  }
+
+  /**
+   * Opens the column actions menu ("Column Actions", three dots) of a column header and clicks an
+   * entry by test id (`column-actions-group-by`, `column-actions-set-summary`, …).
+   */
+  async columnAction(column: string, actionTestId: string): Promise<void> {
+    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
+    const header = this.page
+      .locator("thead:visible th")
+      .filter({ has: this.page.locator(sortButton) })
+      .first();
+    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.page.getByTestId(actionTestId).click();
+  }
+
+  /** The "Showing N records" count of the visible grid. */
+  async shownRecords(): Promise<number> {
+    const text = await this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first().textContent();
+    return Number(SHOWING_RECORDS.exec(text ?? "")?.[1]);
   }
 
   /** Visible data rows of the grid in `scope`, in display order. */
@@ -120,14 +142,23 @@ export class Grid {
    * columns (status, pinned actions) only render once scrolled into view.
    */
   async scrollToRightEnd(): Promise<void> {
+    await this.scrollHorizontally(true);
+  }
+
+  /** Scrolls the visible grid back to its left end (the first columns, the group cells). */
+  async scrollToLeftEnd(): Promise<void> {
+    await this.scrollHorizontally(false);
+  }
+
+  private async scrollHorizontally(toEnd: boolean): Promise<void> {
     await this.page
       .getByRole("table")
       .filter({ visible: true })
       .first()
-      .evaluate((table) => {
+      .evaluate((table, end) => {
         const container = table.parentElement as HTMLElement;
-        container.scrollLeft = container.scrollWidth;
-      });
+        container.scrollLeft = end ? container.scrollWidth : 0;
+      }, toEnd);
   }
 
   /**

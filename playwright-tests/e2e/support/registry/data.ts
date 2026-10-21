@@ -104,8 +104,14 @@ export const ORGANIZATION = {
   SPAIN: "Spain",
 } as const;
 
+/** AD_User_ID of the user the suite logs in with (`admin`). */
+export const USER_ID = {
+  ADMIN: "100",
+} as const;
+
 /** AD_Org_ID of the sample organizations, for records the `api` fixture creates. */
 export const ORGANIZATION_ID = {
+  ALL: "0",
   SPAIN: "357947E87C284935AD1D783CF6F099A1",
 } as const;
 
