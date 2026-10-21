@@ -14,6 +14,9 @@ const SHORTCUT = {
 };
 const RECORD_COUNT = 3;
 const SAVE_NEW_RECORD = /\/api\/datasource\/.*_operationType=add/;
+/** How long one press of the save shortcut is given to send the save before it is pressed again. */
+const SAVE_ATTEMPT_TIMEOUT = 5_000;
+const SAVE_TIMEOUT = 30_000;
 
 /**
  * Keyboard shortcuts of the core preference act like the toolbar and grid controls they stand
@@ -51,7 +54,16 @@ test.describe("Navigation - keyboard shortcuts @regression @nav", () => {
     await expect(name).toHaveValue("");
     await app.field.fill("Search Key", created);
     await name.fill(created);
-    await runAndWaitForResponse(page, SAVE_NEW_RECORD, () => page.keyboard.press(SHORTCUT.SAVE));
+    // The save shortcut does nothing while a callout of the typed values is running: press it again
+    // until the save is sent (a press during the save is ignored too, so it is never saved twice)
+    await expect(async () => {
+      await runAndWaitForResponse(
+        page,
+        SAVE_NEW_RECORD,
+        () => page.keyboard.press(SHORTCUT.SAVE),
+        SAVE_ATTEMPT_TIMEOUT
+      );
+    }).toPass({ timeout: SAVE_TIMEOUT });
     await app.breadcrumb.waitFor(created);
   });
 });
