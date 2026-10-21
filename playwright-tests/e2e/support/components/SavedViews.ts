@@ -3,6 +3,8 @@ import { runAndWaitForResponse } from "../wait";
 import { Toolbar } from "./Toolbar";
 
 const SAVED_VIEWS_REQUEST = /\/api\/meta\/saved-views/;
+const ACTION_TIMEOUT = 5_000;
+const MENU_TIMEOUT = 30_000;
 const TEST_IDS = {
   container: "SaveViewMenu__container",
   reset: "SaveViewMenu__reset-button",
@@ -37,10 +39,23 @@ export class SavedViews {
     await expect(this.content).toBeVisible();
   }
 
+  /**
+   * Runs one click of the menu with the menu open, opening it again when it closed or re-rendered
+   * meanwhile (it does right after a change: the toolbar renders again), so a detached entry is
+   * retried instead of waited for until the test times out.
+   */
+  private async inOpenMenu(click: () => Promise<unknown>): Promise<void> {
+    await expect(async () => {
+      if (!(await this.content.isVisible())) {
+        await this.toolbar.button("save-view").click({ timeout: ACTION_TIMEOUT });
+      }
+      await click();
+    }).toPass({ timeout: MENU_TIMEOUT });
+  }
+
   /** Saves the current grid state as a view; returns the id the backend gave it. */
   async saveCurrent(name: string): Promise<string> {
-    await this.open();
-    await this.page.getByTestId(TEST_IDS.save).click();
+    await this.inOpenMenu(() => this.page.getByTestId(TEST_IDS.save).click({ timeout: ACTION_TIMEOUT }));
     await this.page.getByTestId(TEST_IDS.name).fill(name);
     const saved = await runAndWaitForResponse(this.page, SAVED_VIEWS_REQUEST, () =>
       this.page.getByTestId(TEST_IDS.confirmSave).click()
@@ -51,16 +66,16 @@ export class SavedViews {
 
   /** Applies a saved view (client side: no request). */
   async apply(name: string): Promise<void> {
-    await this.open();
-    await this.view(name).getByTestId(TEST_IDS.apply).click();
+    await this.inOpenMenu(() => this.view(name).getByTestId(TEST_IDS.apply).click({ timeout: ACTION_TIMEOUT }));
     await expect(this.content).toBeHidden();
   }
 
   /** Makes a saved view the default of the tab. */
   async setDefault(name: string): Promise<void> {
-    await this.open();
-    await runAndWaitForResponse(this.page, SAVED_VIEWS_REQUEST, () =>
-      this.view(name).getByTestId(TEST_IDS.setDefault).click()
+    await this.inOpenMenu(() =>
+      runAndWaitForResponse(this.page, SAVED_VIEWS_REQUEST, () =>
+        this.view(name).getByTestId(TEST_IDS.setDefault).click({ timeout: ACTION_TIMEOUT })
+      )
     );
     await this.close();
   }
@@ -76,8 +91,7 @@ export class SavedViews {
 
   /** Back to the standard view of the tab (no filters, no default view). */
   async resetToStandard(): Promise<void> {
-    await this.open();
-    await this.page.getByTestId(TEST_IDS.reset).click();
+    await this.inOpenMenu(() => this.page.getByTestId(TEST_IDS.reset).click({ timeout: ACTION_TIMEOUT }));
     await expect(this.content).toBeHidden();
   }
 
