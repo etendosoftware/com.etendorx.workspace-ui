@@ -1,5 +1,6 @@
 import type { App } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
+import { TABS, WINDOW_IDS } from "../../support/registry/windows";
 
 const LINES = "Lines";
 const PRODUCT = "Product";
@@ -14,6 +15,14 @@ const SAMPLE_LINE_COUNT = 4;
 /** Quantity typed in the grid: the line amount callout (unit price 2) recalculates the net amount. */
 const EDITED_LINE = { quantity: "50", netAmount: "100" };
 const ORDERED_QUANTITY = "orderedQuantity";
+
+// The grid saves its sort per user: start from the default order of the lines and leave it so
+test.beforeEach(async ({ api }) => {
+  await api.resetGridConfiguration(WINDOW_IDS.SALES_ORDER, TABS.SALES_ORDER_LINES);
+});
+test.afterEach(async ({ api }) => {
+  await api.resetGridConfiguration(WINDOW_IDS.SALES_ORDER, TABS.SALES_ORDER_LINES);
+});
 
 /** The line shows the edited quantity and the net amount the callout recalculated. */
 async function expectEditedLine(lineValues: () => Promise<string[]>): Promise<void> {

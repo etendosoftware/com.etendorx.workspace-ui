@@ -12,6 +12,8 @@ export interface SavedRecord extends RecordValues {
 export type WriteOperation = "add" | "remove";
 
 const DATASOURCE_PATH = "/api/datasource";
+/** Column order, visibility and sort the grid saves per user, window and tab (ETMETA_GridConfiguration). */
+const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -51,6 +53,11 @@ export function datasourceAddBody(data: RecordValues): RecordValues {
     data,
     csrfToken: CSRF_PLACEHOLDER,
   };
+}
+
+/** Body that removes the saved grid configuration of one tab, as the UI sends it (`configuration: null`). */
+export function gridConfigurationResetBody(windowId: string, tabId: string): RecordValues {
+  return { windowId, tabId, configuration: null };
 }
 
 type WriteResponse = { status?: number; data?: SavedRecord[]; error?: { message?: string } };
@@ -111,6 +118,20 @@ export class ApiData {
       headers: await this.authHeaders(),
     });
     assertRemoved(await response.json(), target.entity);
+  }
+
+  /**
+   * Removes the grid configuration (column order, visibility, sort) the user has saved for a tab,
+   * so the grid shows its defaults. The grid saves it by itself when it is sorted or rearranged.
+   */
+  async resetGridConfiguration(windowId: string, tabId: string): Promise<void> {
+    const response = await this.page.request.put(GRID_CONFIGURATION_PATH, {
+      headers: await this.authHeaders(),
+      data: gridConfigurationResetBody(windowId, tabId),
+    });
+    if (!response.ok()) {
+      throw new Error(`Resetting the grid configuration of tab ${tabId} failed: ${response.status()}`);
+    }
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

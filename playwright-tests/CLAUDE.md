@@ -64,6 +64,9 @@ test.describe("Purchase Order - Book @smoke", () => {
 - Never change the user's defaults or global configuration: no "Save as default"; a preference a spec needs is
   created for the user and the window only and removed in `test.afterEach` (it still runs, with the page open,
   when the test timed out — a `finally` does not).
+- The grid saves the column order, visibility and sort per user, window and tab by itself. A spec that sorts or
+  rearranges a grid resets that tab with `api.resetGridConfiguration(windowId, tabId)` in `test.beforeEach` and
+  `test.afterEach` (GRDa): otherwise the next run, or another spec on the same tab, starts from its sort.
 - Do not pass `{ timeout }` as test details (Playwright ignores it); the project timeout applies, or call
   `test.setTimeout()` inside the test.
 - Records the test creates get keys from `data.uniqueValue("base")`: the local database is reused and

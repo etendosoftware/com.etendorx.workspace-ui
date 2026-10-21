@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { assertRemoved, datasourceAddBody, datasourceWriteUrl, savedRecordFrom } from "../api/ApiData";
+import {
+  assertRemoved,
+  datasourceAddBody,
+  datasourceWriteUrl,
+  gridConfigurationResetBody,
+  savedRecordFrom,
+} from "../api/ApiData";
 import { DATASOURCE } from "../registry/datasources";
 
 const TARGET = DATASOURCE.BUSINESS_PARTNER_CATEGORY;
@@ -32,6 +38,12 @@ test.describe("datasourceAddBody", () => {
     const body = datasourceAddBody({ name: "x" });
     expect(body).toMatchObject({ operationType: "add", componentId: "isc_OBViewForm_0", data: { name: "x" } });
     expect(body.csrfToken).toBeTruthy();
+  });
+});
+
+test.describe("gridConfigurationResetBody", () => {
+  test("removes the saved configuration of one tab of the window", () => {
+    expect(gridConfigurationResetBody("143", "187")).toEqual({ windowId: "143", tabId: "187", configuration: null });
   });
 });
 
