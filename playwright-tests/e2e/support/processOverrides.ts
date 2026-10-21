@@ -49,11 +49,32 @@ export function windowMetadataUrl(windowId: string): RegExp {
   return new RegExp(`/api/erp/meta/window/${windowId}(\\?|$)`);
 }
 
+/** URL of the metadata request of a process definition (`/api/erp/meta/process/<id>`). */
+export function processMetadataUrl(processId: string): RegExp {
+  return new RegExp(`/api/erp/meta/process/${processId}(\\?|$)`);
+}
+
+/** Answers a metadata request with its live response, changed by `apply` when it succeeded. */
+async function routeChanged(page: Page, url: RegExp, apply: (metadata: object) => void): Promise<void> {
+  await page.route(url, async (route) => {
+    const response = await route.fetch();
+    if (response.status() !== SUCCESS_STATUS) {
+      await route.fulfill({ response });
+      return;
+    }
+    const metadata = (await response.json()) as object;
+    apply(metadata);
+    await route.fulfill({ response, json: metadata });
+  });
+}
+
 /**
- * Applies `overrides` to the process definition `processId` in the metadata of `windowId`, from
- * the next time the page loads it. Call it before opening the window. A new browser context has
- * an empty HTTP cache, so the metadata arrives as a full response, never a 304.
- * @returns the count of changed definitions, to assert the override matched.
+ * Applies `overrides` to the process definition `processId`, from the next time the page loads it:
+ * in the metadata of `windowId` (the buttons of its tabs) and in the process metadata the modal
+ * fetches and merges over it (a definition without parameters is always fetched again). Call it
+ * before opening the window. A new browser context has an empty HTTP cache, so the metadata
+ * arrives as a full response, never a 304.
+ * @returns the count of changed definitions in the window metadata, to assert the override matched.
  */
 export async function overrideProcessDefinition(
   page: Page,
@@ -62,15 +83,11 @@ export async function overrideProcessDefinition(
   overrides: ProcessDefinitionOverrides
 ): Promise<AppliedOverride> {
   const state = { applied: 0 };
-  await page.route(windowMetadataUrl(windowId), async (route) => {
-    const response = await route.fetch();
-    if (response.status() !== SUCCESS_STATUS) {
-      await route.fulfill({ response });
-      return;
-    }
-    const metadata = (await response.json()) as WindowMetadata;
-    state.applied += applyProcessOverrides(metadata, processId, overrides);
-    await route.fulfill({ response, json: metadata });
+  await routeChanged(page, windowMetadataUrl(windowId), (metadata) => {
+    state.applied += applyProcessOverrides(metadata as WindowMetadata, processId, overrides);
+  });
+  await routeChanged(page, processMetadataUrl(processId), (metadata) => {
+    Object.assign(metadata, overrides);
   });
   return state;
 }

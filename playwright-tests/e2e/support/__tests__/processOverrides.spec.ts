@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { applyProcessOverrides, windowMetadataUrl } from "../processOverrides";
+import { applyProcessOverrides, processMetadataUrl, windowMetadataUrl } from "../processOverrides";
 
 type WindowMetadata = Parameters<typeof applyProcessOverrides>[0];
 
@@ -68,4 +68,18 @@ test.describe("windowMetadataUrl", () => {
       expect(url.test(`http://localhost:3000${other}`)).toBe(false);
     });
   }
+});
+
+test.describe("processMetadataUrl", () => {
+  const url = processMetadataUrl(PROCESS_ID);
+
+  test("matches the process metadata request, with or without query", () => {
+    expect(url.test(`http://localhost:3000/api/erp/meta/process/${PROCESS_ID}`)).toBe(true);
+    expect(url.test(`http://localhost:3000/api/erp/meta/process/${PROCESS_ID}?language=en_US`)).toBe(true);
+  });
+
+  test("does not match another process or the window metadata", () => {
+    expect(url.test(`http://localhost:3000/api/erp/meta/process/${PROCESS_ID}0`)).toBe(false);
+    expect(url.test(`http://localhost:3000/api/erp/meta/window/${PROCESS_ID}`)).toBe(false);
+  });
 });
