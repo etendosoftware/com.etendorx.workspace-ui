@@ -105,11 +105,11 @@ export class Auth {
   /** Reads the role, organization and warehouse of the session from the profile menu, then closes it. */
   async currentProfile(): Promise<Profile> {
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
-    const valueOf = (selectId: string) => this.page.locator(`#${selectId}`).inputValue();
+    const selectedValue = (selectId: string) => this.page.locator(`#${selectId}`).inputValue();
     const profile = {
-      role: await valueOf(PROFILE_SELECTS.role),
-      organization: await valueOf(PROFILE_SELECTS.organization),
-      warehouse: await valueOf(PROFILE_SELECTS.warehouse),
+      role: await selectedValue(PROFILE_SELECTS.role),
+      organization: await selectedValue(PROFILE_SELECTS.organization),
+      warehouse: await selectedValue(PROFILE_SELECTS.warehouse),
     };
     await this.page.getByRole("button", { name: CANCEL_LABEL, exact: true }).click();
     return profile;
