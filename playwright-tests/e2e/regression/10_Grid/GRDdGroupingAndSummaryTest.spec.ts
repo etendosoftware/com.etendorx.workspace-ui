@@ -42,7 +42,11 @@ test.describe("Grid - grouping and summary rows @regression @grid", () => {
       userContact: data.USER_ID.ADMIN,
       window: WINDOW_IDS.COUNTRY_AND_REGION,
     });
-    await page.reload(); // preferences are read once per session load
+    // Preferences are read once per session, and the UI server caches them per token: only a new
+    // login (a new token) reads the preference just created
+    await app.auth.logout();
+    await app.auth.login();
+    await app.auth.selectRoleOrgWarehouse();
     await app.sidebar.navigateTo("countryAndRegion");
     await app.grid.filter("Name", NAME_FILTER);
     const rows = await app.grid.shownRecords();
