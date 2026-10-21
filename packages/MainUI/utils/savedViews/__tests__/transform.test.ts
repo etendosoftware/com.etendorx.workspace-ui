@@ -20,13 +20,25 @@ import {
   parseGridConfiguration,
   parseClassicGridConfiguration,
   rawRecordToSavedView,
+  toAppliedViewState,
 } from "../transform";
-import type { MRTViewConfig, RawSavedViewRecord } from "../types";
+import type { MRTViewConfig, RawSavedViewRecord, ViewStateSnapshot } from "../types";
+import { FIXED_PINNED_COLUMNS } from "@/utils/table/columnState";
 
 // ============================================================================
 // Test 1: Persist Current View Configuration
 // buildGridConfiguration correctly serializes MRT state
 // ============================================================================
+
+/** Empty grid state; each test overrides only the parts it checks. */
+const EMPTY_STATE: ViewStateSnapshot = {
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  implicitFilterApplied: false,
+};
+
 describe("buildGridConfiguration", () => {
   it("serializes filters, visibility, sorting, and order into JSON", () => {
     const filters = [{ id: "name", value: "Acme" }];
@@ -34,7 +46,7 @@ describe("buildGridConfiguration", () => {
     const sorting = [{ id: "name", desc: false }];
     const order = ["name", "status", "date"];
 
-    const result = buildGridConfiguration(filters, visibility, sorting, order, false);
+    const result = buildGridConfiguration({ ...EMPTY_STATE, filters, visibility, sorting, order });
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.version).toBe(1);
@@ -46,20 +58,20 @@ describe("buildGridConfiguration", () => {
   });
 
   it("stores the grouping only for grouped views", () => {
-    const grouped = JSON.parse(buildGridConfiguration([], {}, [], [], false, ["status"])) as MRTViewConfig;
-    const ungrouped = JSON.parse(buildGridConfiguration([], {}, [], [], false, [])) as MRTViewConfig;
+    const grouped = JSON.parse(buildGridConfiguration({ ...EMPTY_STATE, grouping: ["status"] })) as MRTViewConfig;
+    const ungrouped = JSON.parse(buildGridConfiguration({ ...EMPTY_STATE, grouping: [] })) as MRTViewConfig;
 
     expect(grouped.grouping).toEqual(["status"]);
     expect(ungrouped).not.toHaveProperty("grouping");
   });
 
   it("produces a valid JSON string", () => {
-    const result = buildGridConfiguration([], {}, [], [], false);
+    const result = buildGridConfiguration(EMPTY_STATE);
     expect(() => JSON.parse(result)).not.toThrow();
   });
 
   it("handles empty state — all fields present and empty", () => {
-    const result = buildGridConfiguration([], {}, [], [], false);
+    const result = buildGridConfiguration(EMPTY_STATE);
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.version).toBe(1);
@@ -75,7 +87,7 @@ describe("buildGridConfiguration", () => {
       { id: "status", value: "active" },
       { id: "amount", value: "100" },
     ];
-    const result = buildGridConfiguration(filters, {}, [], [], false);
+    const result = buildGridConfiguration({ ...EMPTY_STATE, filters });
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.filters).toHaveLength(2);
@@ -85,26 +97,32 @@ describe("buildGridConfiguration", () => {
 
   it("serializes descending sort correctly", () => {
     const sorting = [{ id: "date", desc: true }];
-    const result = buildGridConfiguration([], {}, sorting, [], false);
+    const result = buildGridConfiguration({ ...EMPTY_STATE, sorting });
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.sorting[0].desc).toBe(true);
   });
 
   it("serializes implicitFilterApplied:true correctly", () => {
-    const result = buildGridConfiguration([], {}, [], [], true);
+    const result = buildGridConfiguration({ ...EMPTY_STATE, implicitFilterApplied: true });
     const parsed = JSON.parse(result) as MRTViewConfig;
     expect(parsed.implicitFilterApplied).toBe(true);
   });
 
   it("serializes implicitFilterApplied:false correctly", () => {
-    const result = buildGridConfiguration([], {}, [], [], false);
+    const result = buildGridConfiguration(EMPTY_STATE);
     const parsed = JSON.parse(result) as MRTViewConfig;
     expect(parsed.implicitFilterApplied).toBe(false);
   });
 
   it("round-trips implicitFilterApplied through parse/build cycle", () => {
-    const built = buildGridConfiguration([{ id: "status", value: "A" }], { status: true }, [], ["status"], true);
+    const built = buildGridConfiguration({
+      ...EMPTY_STATE,
+      filters: [{ id: "status", value: "A" }],
+      visibility: { status: true },
+      order: ["status"],
+      implicitFilterApplied: true,
+    });
     const parsed = JSON.parse(built) as MRTViewConfig;
     expect(parsed.implicitFilterApplied).toBe(true);
     expect(parsed.filters).toEqual([{ id: "status", value: "A" }]);
@@ -350,5 +368,77 @@ describe("rawRecordToSavedView", () => {
     expect(result.isDefault).toBe(false);
     expect(result.filterClause).toBe("");
     expect(result.gridConfiguration).toBe("");
+  });
+});
+
+// ============================================================================
+// Column widths, pinning and window layout (ETP-4639)
+// ============================================================================
+
+describe("buildGridConfiguration — widths, pinning and layout", () => {
+  const LAYOUT = { splitHeights: { "1": 30 }, activeLevels: [1] };
+  const parse = (state: Partial<ViewStateSnapshot>) =>
+    JSON.parse(buildGridConfiguration({ ...EMPTY_STATE, ...state })) as MRTViewConfig;
+
+  it("stores the widths, the columns the user pinned, the layout and the summaries", () => {
+    const parsed = parse({
+      sizing: { status: 140 },
+      pinning: { left: [...FIXED_PINNED_COLUMNS, "status"], right: [] },
+      layout: LAYOUT,
+      summaries: { amount: "sum" },
+      treeView: true,
+    });
+
+    expect(parsed.sizing).toEqual({ status: 140 });
+    expect(parsed.pinning).toEqual({ left: ["status"] });
+    expect(parsed.layout).toEqual(LAYOUT);
+    expect(parsed.summaries).toEqual({ amount: "sum" });
+    expect(parsed.treeView).toBe(true);
+  });
+
+  it("omits the parts left at their defaults, keeping the previous view shape", () => {
+    const parsed = parse({ sizing: {}, pinning: { left: [...FIXED_PINNED_COLUMNS] }, summaries: {}, treeView: false });
+
+    expect(parsed).not.toHaveProperty("treeView");
+    expect(parsed).not.toHaveProperty("summaries");
+    expect(parsed).not.toHaveProperty("sizing");
+    expect(parsed).not.toHaveProperty("pinning");
+    expect(parsed).not.toHaveProperty("layout");
+  });
+});
+
+describe("toAppliedViewState", () => {
+  it("applies a view saved before widths, pinning and layout existed with the defaults", () => {
+    const config = JSON.parse(buildGridConfiguration(EMPTY_STATE)) as MRTViewConfig;
+
+    expect(toAppliedViewState(config)).toEqual({
+      ...EMPTY_STATE,
+      grouping: [],
+      sizing: {},
+      pinning: { left: [...FIXED_PINNED_COLUMNS], right: [] },
+      layout: undefined,
+      summaries: {},
+      treeView: false,
+    });
+  });
+
+  it("restores the widths, the pinning with the fixed columns and the layout", () => {
+    const layout = { splitHeights: { "2": 70 } };
+    const config: MRTViewConfig = {
+      ...JSON.parse(buildGridConfiguration(EMPTY_STATE)),
+      sizing: { status: 90 },
+      pinning: { right: ["status"] },
+      layout,
+      summaries: { amount: "avg" },
+      treeView: true,
+    };
+
+    const state = toAppliedViewState(config);
+
+    expect(state.sizing).toEqual({ status: 90 });
+    expect(state.pinning).toEqual({ left: [...FIXED_PINNED_COLUMNS], right: ["status"] });
+    expect(state.layout).toEqual(layout);
+    expect(state.summaries).toEqual({ amount: "avg" });
+    expect(state.treeView).toBe(true);
   });
 });

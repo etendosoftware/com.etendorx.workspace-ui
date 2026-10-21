@@ -67,6 +67,7 @@ export default function Home() {
     removeWidget,
     fetchWidgetPage,
     updateLayout,
+    toggleCollapsed,
     refreshWidget,
     updateParams,
   } = useDashboard(currentRole?.id);
@@ -213,6 +214,7 @@ export default function Home() {
           onFetchPage={fetchWidgetPage}
           onRefresh={refreshWidget}
           onUpdateLayout={updateLayout}
+          onToggleCollapsed={toggleCollapsed}
           data-testid="DashboardGrid__home"
         />
       )}

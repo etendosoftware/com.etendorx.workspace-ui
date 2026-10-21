@@ -4,6 +4,8 @@
 
 The Table State Persistence feature provides global state management for table configurations across multiple windows in the Etendo WorkspaceUI. This feature ensures that table configurations (filters, column visibility, sorting, and column order) persist when users switch between windows, significantly improving user experience and productivity.
 
+> Column widths and pinning are kept in the same per-tab table state, and the column configuration is also stored per user across sessions. Saved views add the window layout. See [saved views and grid configuration](../saved-views/README.md).
+
 ## Problem Solved
 
 **Before**: When users switched between windows, all table configurations were lost because table state was managed locally in each `TabContext`. Users had to reconfigure tables repeatedly, leading to frustration and reduced productivity.

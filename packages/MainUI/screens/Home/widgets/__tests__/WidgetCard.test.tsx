@@ -172,4 +172,33 @@ describe("WidgetCard manual refresh", () => {
     );
     expectIdle();
   });
+
+  describe("collapse", () => {
+    const COLLAPSE_TEST_ID = `WidgetCard__collapse_${INSTANCE_ID}`;
+
+    it("hides the body and the refresh action while keeping the header when collapsed", () => {
+      renderCard({ instance: { ...instance, collapsed: true }, onRefresh: jest.fn(), onToggleCollapsed: jest.fn() });
+
+      expect(screen.getByText("My widget")).toBeInTheDocument();
+      expect(screen.queryByTestId(BODY_TEST_ID)).not.toBeInTheDocument();
+      expect(screen.queryByTestId(REFRESH_TEST_ID)).not.toBeInTheDocument();
+      expect(screen.getByTestId(COLLAPSE_TEST_ID)).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByTestId(COLLAPSE_TEST_ID)).toHaveAttribute("title", "dashboard.widget.expand");
+    });
+
+    it("shows the body when expanded and toggles through the callback", () => {
+      const onToggleCollapsed = jest.fn().mockResolvedValue(undefined);
+      renderCard({ onToggleCollapsed });
+
+      expect(screen.getByTestId(BODY_TEST_ID)).toBeInTheDocument();
+      expect(screen.getByTestId(COLLAPSE_TEST_ID)).toHaveAttribute("title", "dashboard.widget.collapse");
+      fireEvent.click(screen.getByTestId(COLLAPSE_TEST_ID));
+      expect(onToggleCollapsed).toHaveBeenCalledWith(INSTANCE_ID);
+    });
+
+    it("does not render the toggle when no callback is provided", () => {
+      renderCard();
+      expect(screen.queryByTestId(COLLAPSE_TEST_ID)).not.toBeInTheDocument();
+    });
+  });
 });

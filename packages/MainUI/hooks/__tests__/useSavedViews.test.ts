@@ -662,3 +662,121 @@ describe("useSavedViews — deleteView", () => {
     expect(result.current.isDeleting).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Column widths, pinning and window layout (ETP-4639)
+// ---------------------------------------------------------------------------
+const EXTENDED_STATE = {
+  filters: [],
+  visibility: { name: true },
+  sorting: [],
+  order: ["name"],
+  implicitFilterApplied: true,
+  sizing: { name: 180 },
+  pinning: { left: ["mrt-row-select", "actions", "name"], right: [] },
+  layout: { splitHeights: { "1": 30 }, activeLevels: [1] },
+};
+
+/** URL and parsed body of the first request sent with the given method. */
+function getSentRequest(spy: jest.SpyInstance, method: string) {
+  const call = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === method);
+  if (!call) throw new Error(`No ${method} request was sent`);
+  return { url: call[0] as string, body: JSON.parse((call[1] as RequestInit).body as string) };
+}
+
+/** Grid configuration sent in the body of the first request with the given method. */
+function getSentGridConfiguration(spy: jest.SpyInstance, method: string) {
+  return JSON.parse(getSentRequest(spy, method).body.gridconfiguration);
+}
+
+describe("useSavedViews — widths, pinning and layout", () => {
+  it("stores the widths, the pinned columns and the layout of a new view", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.saveView({ tabId: "tab-abc", name: "Wide", ...EXTENDED_STATE });
+    });
+
+    const config = getSentGridConfiguration(spy, "POST");
+    expect(config.sizing).toEqual({ name: 180 });
+    expect(config.pinning).toEqual({ left: ["name"] });
+    expect(config.layout).toEqual(EXTENDED_STATE.layout);
+  });
+
+  it("applies the widths, the pinning and the layout of a view", () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    const state = result.current.applyView({
+      id: "v3",
+      name: "Wide",
+      tabId: "tab-abc",
+      isDefault: false,
+      filterClause: "",
+      config: {
+        version: 1,
+        source: "workspace-ui",
+        ...EXTENDED_STATE,
+        pinning: { right: ["name"] },
+      },
+    });
+
+    expect(state?.sizing).toEqual({ name: 180 });
+    expect(state?.pinning).toEqual({ left: ["mrt-row-select", "actions"], right: ["name"] });
+    expect(state?.layout).toEqual(EXTENDED_STATE.layout);
+  });
+});
+
+describe("useSavedViews — updateView", () => {
+  it("overwrites the configuration of the view keeping its name and default flag", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]))
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+    await act(async () => {
+      await result.current.updateView("view-001", EXTENDED_STATE);
+    });
+
+    const { url, body } = getSentRequest(spy, "PUT");
+    expect(url).toContain("view-001");
+    expect(body).toMatchObject({ name: "Sales Orders", tab: "tab-abc", isdefault: true });
+    expect(getSentGridConfiguration(spy, "PUT").sizing).toEqual({ name: 180 });
+    expect(result.current.isSaving).toBe(false);
+  });
+
+  it("throws when the view is not loaded", async () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    await expect(result.current.updateView("missing", EXTENDED_STATE)).rejects.toThrow("View not found");
+  });
+
+  it("throws and sets the error when the server fails", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001" })]))
+      .mockReturnValueOnce(makeResponse({ error: "Server error" }, false, 500));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+    await act(async () => {
+      await expect(result.current.updateView("view-001", EXTENDED_STATE)).rejects.toThrow("HTTP 500");
+    });
+
+    expect(result.current.error).toBe("HTTP 500");
+    expect(result.current.isSaving).toBe(false);
+  });
+});

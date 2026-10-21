@@ -101,6 +101,19 @@ const CloseIcon = () => (
   </svg>
 );
 
+const ChevronIcon = ({ collapsed }: { collapsed: boolean }) => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    className={`transition-transform ${collapsed ? "-rotate-90" : ""}`}>
+    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 /** Applied to the refresh icon wrapper while a manual refresh is in flight. */
 const REFRESHING_ICON_CLASS = "animate-spin";
 /** Dims the current content while a manual refresh is in flight (content stays visible, no flicker). */
@@ -144,6 +157,8 @@ interface WidgetCardProps {
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
   /** Re-requests this instance's data on demand. The refresh button is only rendered when provided. */
   onRefresh?: (instanceId: string) => Promise<void>;
+  /** Collapses/expands the card to its header. The toggle is only rendered when provided. */
+  onToggleCollapsed?: (instanceId: string) => Promise<void>;
 }
 
 export default function WidgetCard({
@@ -155,10 +170,12 @@ export default function WidgetCard({
   onEditParams,
   onFetchPage,
   onRefresh,
+  onToggleCollapsed,
 }: WidgetCardProps) {
   const { t } = useTranslation();
   const { isRefreshing, refreshCount, refresh } = useManualRefresh(instance.instanceId, onRefresh);
   const isLocked = instance.layer !== "USER";
+  const isCollapsed = instance.collapsed === true;
   const isUnavailable = instance.available === false || data?.available === false;
   const isLoading = data === undefined && error === undefined && !isUnavailable;
   const theme = getTheme(instance.type);
@@ -167,10 +184,10 @@ export default function WidgetCard({
 
   return (
     <div
-      className={`flex flex-col rounded-2xl ${theme.card} p-5 h-full min-h-40 overflow-hidden`}
+      className={`flex flex-col rounded-2xl ${theme.card} px-5 h-full ${isCollapsed ? "py-4" : "py-5 min-h-40"} overflow-hidden`}
       data-testid={`WidgetCard__${instance.instanceId}`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 shrink-0 mb-3">
+      <div className={`flex items-center justify-between gap-2 shrink-0 ${isCollapsed ? "" : "mb-3"}`}>
         {/* Drag handle — only this area initiates drag */}
         <span
           className="widget-drag-handle flex items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
@@ -182,7 +199,18 @@ export default function WidgetCard({
           <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {onRefresh && (
+          {onToggleCollapsed && (
+            <button
+              type="button"
+              onClick={() => onToggleCollapsed(instance.instanceId)}
+              aria-expanded={!isCollapsed}
+              className={`${theme.icon} transition-colors cursor-pointer rounded p-0.5`}
+              title={t(isCollapsed ? "dashboard.widget.expand" : "dashboard.widget.collapse")}
+              data-testid={`WidgetCard__collapse_${instance.instanceId}`}>
+              <ChevronIcon collapsed={isCollapsed} data-testid="ChevronIcon__cb8729" />
+            </button>
+          )}
+          {onRefresh && !isCollapsed && (
             <button
               type="button"
               onClick={refresh}
@@ -216,37 +244,43 @@ export default function WidgetCard({
           </button>
         </div>
       </div>
-      {/* Content — scrollable area that fills remaining card height */}
-      <div
-        className={`flex-1 min-h-0 overflow-y-auto transition-opacity ${bodyStateClass}`}
-        data-testid={`WidgetCard__body_${instance.instanceId}`}>
-        {isUnavailable && (
-          <p className="text-sm text-baseline-50 italic" data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
-            {t("dashboard.widget.unavailable")}
-          </p>
-        )}
-        {!isUnavailable && isLoading && (
-          <div className="flex flex-col gap-2 animate-pulse" data-testid={`WidgetCard__loading_${instance.instanceId}`}>
-            <div className={`h-3 rounded ${theme.skeleton} w-3/4`} />
-            <div className={`h-3 rounded ${theme.skeleton} w-1/2`} />
-            <div className={`h-3 rounded ${theme.skeleton} w-2/3`} />
-          </div>
-        )}
-        {!isUnavailable && error !== undefined && !isLoading && (
-          <p className="text-sm text-error-main" data-testid={`WidgetCard__error_${instance.instanceId}`}>
-            {error}
-          </p>
-        )}
-        {!isUnavailable && data !== undefined && !error && data.data !== null && (
-          <WidgetRenderer
-            key={refreshCount}
-            type={instance.type}
-            data={data.data}
-            onFetchPage={onFetchPage}
-            data-testid="WidgetRenderer__cb8729"
-          />
-        )}
-      </div>
+      {/* Content — scrollable area that fills remaining card height; not mounted while collapsed */}
+      {!isCollapsed && (
+        <div
+          className={`flex-1 min-h-0 overflow-y-auto transition-opacity ${bodyStateClass}`}
+          data-testid={`WidgetCard__body_${instance.instanceId}`}>
+          {isUnavailable && (
+            <p
+              className="text-sm text-baseline-50 italic"
+              data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
+              {t("dashboard.widget.unavailable")}
+            </p>
+          )}
+          {!isUnavailable && isLoading && (
+            <div
+              className="flex flex-col gap-2 animate-pulse"
+              data-testid={`WidgetCard__loading_${instance.instanceId}`}>
+              <div className={`h-3 rounded ${theme.skeleton} w-3/4`} />
+              <div className={`h-3 rounded ${theme.skeleton} w-1/2`} />
+              <div className={`h-3 rounded ${theme.skeleton} w-2/3`} />
+            </div>
+          )}
+          {!isUnavailable && error !== undefined && !isLoading && (
+            <p className="text-sm text-error-main" data-testid={`WidgetCard__error_${instance.instanceId}`}>
+              {error}
+            </p>
+          )}
+          {!isUnavailable && data !== undefined && !error && data.data !== null && (
+            <WidgetRenderer
+              key={refreshCount}
+              type={instance.type}
+              data={data.data}
+              onFetchPage={onFetchPage}
+              data-testid="WidgetRenderer__cb8729"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
