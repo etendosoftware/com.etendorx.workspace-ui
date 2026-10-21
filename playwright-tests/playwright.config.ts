@@ -81,12 +81,12 @@ export default defineConfig({
         "**/07_LinkedItems/**",
         "**/PurchaseOrderDisplayLogicTest*",
         // PRCb never executes the payment: its onProcess aborts and the request is blocked
-        "**/08_Process/PRCb*",
-        "**/09_Form/**",
-        "**/10_Grid/**",
-        "**/11_Navigation/**",
+        "**/smoke/08_Process/PRCb*",
+        "**/smoke/09_Form/**",
+        "**/smoke/10_Grid/**",
+        "**/smoke/11_Navigation/**",
         // SESa never ticks "Save as default": the defaults other specs start from stay as they are
-        "**/12_Session/**",
+        "**/smoke/12_Session/**",
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
