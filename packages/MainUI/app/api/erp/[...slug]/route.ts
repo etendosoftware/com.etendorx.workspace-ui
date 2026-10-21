@@ -146,6 +146,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     // Recent items are rewritten on every menu access and shared across devices — a cached GET would
     // keep serving the list as it was at login for the whole life of the token.
     slug.includes("meta/recent-items") ||
+    // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
+    // reorders a column; a cached GET would restore the layout as it was at login.
+    slug.includes("meta/grid-configuration") ||
     // Process monitor polls must always reach the backend: a cached GET would freeze the executions.
     slug.includes("meta/process-monitor") ||
     // The instance purpose is global and changes once it is configured: a cached GET would keep telling

@@ -26,8 +26,23 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import { useUserStore } from "@/stores/userStore";
 import type { TranslateFunction, TranslationKeys } from "@/hooks/types";
-import type { ParsedSavedView, SavedViewScope } from "@/utils/savedViews/types";
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
+import type {
+  AppliedViewState,
+  ParsedSavedView,
+  SavedViewScope,
+  ViewStateSnapshot,
+  WindowLayout,
+} from "@/utils/savedViews/types";
+import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
+import { DEFAULT_TABLE_SUMMARIES } from "@/stores/windowStore";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_SortingState,
+  MRT_VisibilityState,
+} from "material-react-table";
 
 /**
  * Mirrors the backend's canManageScope gate (SavedViewService#canManageScope): a plain
@@ -72,20 +87,39 @@ export interface SaveViewMenuProps {
   currentOrder: string[];
   /** Grouped column ids of the grid (empty when ungrouped). */
   currentGrouping?: string[];
+  /** Column widths of the grid (empty when none was resized). */
+  currentSizing?: MRT_ColumnSizingState;
+  /** Pinned columns of the grid. */
+  currentPinning?: MRT_ColumnPinningState;
+  /** Window layout (parent/child split and maximized level) to store with the view. */
+  currentLayout?: WindowLayout;
+  /** Summary function of each column of the grid. */
+  currentSummaries?: Record<string, SummaryType>;
+  /** Whether the grid is shown as a tree. */
+  currentTreeView?: boolean;
   isImplicitFilterApplied: boolean;
   /** Metadata default implicit-filter state, used when resetting to the standard view. */
   defaultImplicitFilterApplied: boolean;
-  onApplyView: (state: {
-    filters: MRT_ColumnFiltersState;
-    visibility: MRT_VisibilityState;
-    sorting: MRT_SortingState;
-    order: string[];
-    implicitFilterApplied: boolean;
-    grouping?: string[];
-  }) => void;
+  onApplyView: (state: AppliedViewState) => void;
+  /** Called after going back to the standard view, so the stored column configuration is cleared too. */
+  onResetToStandard?: () => void;
 }
 
 const NO_GROUPING: string[] = [];
+
+/** Standard view: metadata defaults for the grid and the default window layout (no `layout`). */
+const getStandardViewState = (implicitFilterApplied: boolean): AppliedViewState => ({
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  implicitFilterApplied,
+  grouping: NO_GROUPING,
+  sizing: DEFAULT_COLUMN_SIZING,
+  pinning: DEFAULT_COLUMN_PINNING,
+  summaries: DEFAULT_TABLE_SUMMARIES,
+  treeView: false,
+});
 
 const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   anchorEl,
@@ -96,9 +130,15 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentSorting,
   currentOrder,
   currentGrouping = NO_GROUPING,
+  currentSizing,
+  currentPinning,
+  currentLayout,
+  currentSummaries,
+  currentTreeView,
   isImplicitFilterApplied,
   defaultImplicitFilterApplied,
   onApplyView,
+  onResetToStandard,
 }) => {
   const { t } = useTranslation();
   const {
@@ -109,6 +149,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     isUpdatingDefault,
     fetchViews,
     saveView,
+    updateView,
     setDefaultView,
     unsetDefaultView,
     applyView,
@@ -160,18 +201,29 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
 
     setOperationError(null);
 
+    const state: ViewStateSnapshot = {
+      filters: currentFilters,
+      visibility: currentVisibility,
+      sorting: currentSorting,
+      order: currentOrder,
+      implicitFilterApplied: isImplicitFilterApplied,
+      grouping: currentGrouping,
+      sizing: currentSizing,
+      pinning: currentPinning,
+      layout: currentLayout,
+      summaries: currentSummaries,
+      treeView: currentTreeView,
+    };
+    // Saving under the name of an existing view overwrites it, as in classic. Only a view of the chosen
+    // scope that the user may edit is overwritten; a shared view of another scope keeps its own copy.
+    const existingView = views.find((view) => view.name === trimmedName && view.scope === scope && view.editable);
+
     try {
-      await saveView({
-        tabId,
-        name: trimmedName,
-        filters: currentFilters,
-        visibility: currentVisibility,
-        sorting: currentSorting,
-        order: currentOrder,
-        implicitFilterApplied: isImplicitFilterApplied,
-        grouping: currentGrouping,
-        scope: scope === "USER" ? undefined : scope,
-      });
+      if (existingView) {
+        await updateView(existingView.id, state);
+      } else {
+        await saveView({ tabId, name: trimmedName, ...state, scope: scope === "USER" ? undefined : scope });
+      }
       setShowSaveInput(false);
       setNewViewName("");
       setScope("USER");
@@ -186,9 +238,16 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     currentSorting,
     currentOrder,
     currentGrouping,
+    currentSizing,
+    currentPinning,
+    currentLayout,
+    currentSummaries,
+    currentTreeView,
     isImplicitFilterApplied,
+    views,
     scope,
     saveView,
+    updateView,
     t,
   ]);
 
@@ -219,16 +278,10 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       setOperationError(t("savedViews.setDefaultError"));
       return;
     }
-    onApplyView({
-      filters: [],
-      visibility: {},
-      sorting: [],
-      order: [],
-      implicitFilterApplied: defaultImplicitFilterApplied,
-      grouping: NO_GROUPING,
-    });
+    onApplyView(getStandardViewState(defaultImplicitFilterApplied));
+    onResetToStandard?.();
     onClose();
-  }, [unsetDefaultView, tabId, onApplyView, onClose, t, defaultImplicitFilterApplied]);
+  }, [unsetDefaultView, tabId, onApplyView, onResetToStandard, onClose, t, defaultImplicitFilterApplied]);
 
   const handleApplyView = useCallback(
     (view: ParsedSavedView) => {

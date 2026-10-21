@@ -378,6 +378,21 @@ describe("Tab - Split view", () => {
     );
   });
 
+  it("toggles the tree view in the window store so saved views can capture it", () => {
+    renderSplitTab();
+    const merged = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+    const getTreeView = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.table.treeView;
+
+    act(() => merged.treeView());
+    expect(getTreeView()).toBe(true);
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isTreeMode: true });
+
+    const latest = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+    act(() => latest.treeView());
+    expect(getTreeView()).toBe(false);
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isTreeMode: false });
+  });
+
   it("starts in grid mode with the grid as the only pane", () => {
     renderSplitTab();
 
