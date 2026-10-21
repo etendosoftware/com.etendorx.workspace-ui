@@ -77,6 +77,8 @@ export const LIST_VALUE = {
 /** Process definitions (OBUIAPP_Process_ID) whose definition a spec overrides. */
 export const PROCESS = {
   ADD_PAYMENT: "9BED7889E1034FE68BD85D5D16857320",
+  /** Manual (client-side JS) process of the core: its classic handler is `OB.OpenClose.openClose`. */
+  OPEN_CLOSE_PERIODS: "A832A5DA28FB4BB391BDE883E928DFC5",
 } as const;
 
 /**
@@ -86,6 +88,8 @@ export const PROCESS = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Accounting period of the sample calendar (Open/Close Period Control). */
+  PERIOD_JAN_2011: "Jan-11",
   /** Sales order in Draft with four lines; specs clone it instead of changing it. */
   SALES_ORDER_DRAFT_WITH_LINES: "50014",
   /** Sales order in Draft with six lines (one of them "Transportation"). */

@@ -61,6 +61,14 @@ export const WINDOWS = {
   },
   financialAccount: { search: "finan", menuId: "65C70CA5BB3A4F67B6B456C90F907917", breadcrumb: /Financial Account/i },
 
+  // ── Financial setup ──────────────────────────────────────────────────────
+  periodControl: {
+    search: "open/close",
+    menuId: "75B726735EA7497C9DB06E35B1CBFD86",
+    breadcrumb: /Open\/Close Period Control/i,
+    landing: "grid",
+  },
+
   // ── General setup ────────────────────────────────────────────────────────
   processRequest: {
     search: "Process",
@@ -75,6 +83,7 @@ export type WindowKey = keyof typeof WINDOWS;
 /** AD_Window_ID of the windows whose metadata a spec intercepts (`support/processOverrides.ts`). */
 export const WINDOW_IDS = {
   PAYMENT_IN: "E547CE89D4C04429B6340FFA44E70716",
+  PERIOD_CONTROL: "E66E701CCBA14B8BA480CBDE37C50D7A",
 } as const;
 
 /**
