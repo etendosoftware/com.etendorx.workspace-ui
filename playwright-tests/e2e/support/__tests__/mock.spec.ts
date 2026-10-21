@@ -4,6 +4,7 @@ import { type HarEntry, RecordedResponses } from "../mock/replay";
 
 const DATASOURCE = "http://localhost:3000/api/datasource";
 const SESSION = "http://localhost:3000/api/erp/meta/session";
+const RECENT_DOCUMENTS = "http://localhost:3000/api/erp/sws/com.etendoerp.metadata.meta/recent-documents";
 
 function entry(url: string, text: string, postData?: string): HarEntry {
   return {
@@ -49,6 +50,16 @@ test.describe("request keys", () => {
     ]);
     expect(keys.size).toBe(4);
     expect(requestKey({ ...base, method: "post" })).toBe(requestKey(base));
+  });
+
+  test("leave out the body of the requests that only report what the user did", () => {
+    const recentDocument = (windowId: string) => ({
+      method: "POST",
+      url: `${RECENT_DOCUMENTS}?language=en_US`,
+      postData: JSON.stringify({ recordId: "1", windowId }),
+    });
+    expect(requestKey(recentDocument("140"))).toBe(requestKey(recentDocument("143")));
+    expect(requestKey(recentDocument("140"))).toBe(`POST ${new URL(RECENT_DOCUMENTS).pathname} `);
   });
 });
 

@@ -16,6 +16,13 @@ export const VOLATILE_KEYS: ReadonlySet<string> = new Set([
   "password",
 ]);
 
+/**
+ * Requests that only report what the user did: their answer never depends on the body, and the
+ * body itself depends on timing (the recent document a window switch reports), so the key leaves
+ * it out.
+ */
+export const REPORT_ONLY_PATHS: readonly RegExp[] = [/\/recent-documents$/];
+
 /** The part of a request the key is built from. */
 export interface KeyedRequest {
   method: string;
@@ -63,5 +70,7 @@ export function canonicalUrl(url: string): string {
 
 /** The key a recorded response is stored under and a live request is looked up with. */
 export function requestKey({ method, url, postData }: KeyedRequest): string {
-  return [method.toUpperCase(), canonicalUrl(url), canonicalBody(postData)].join(" ");
+  const reportOnly = REPORT_ONLY_PATHS.some((path) => path.test(new URL(url, "http://localhost").pathname));
+  const body = reportOnly ? "" : canonicalBody(postData);
+  return [method.toUpperCase(), canonicalUrl(url), body].join(" ");
 }

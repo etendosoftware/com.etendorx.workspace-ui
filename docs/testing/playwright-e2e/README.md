@@ -155,7 +155,9 @@ answer those requests from recordings, so the real UI runs in a real browser wit
   the flow a mocked spec runs, or when a merge brings UI requests the recording does not have (the `mocked` project
   reports them).
 - **Replay** (`support/mock/`): requests are keyed by method, path, sorted query and canonical JSON body, without
-  volatile values (`language`, `_noCache`, `csrfToken`, `password`, `recordTime`). A key asked more times than recorded
+  volatile values (`language`, `_noCache`, `csrfToken`, `password`, `recordTime`). Requests that only report what
+  the user did (`recent-documents`, `REPORT_ONLY_PATHS`) are keyed without their body, which depends on timing.
+  A key asked more times than recorded
   repeats its last response. A request with no recording gets a 404 and fails the test, except the background
   polling (alerts, process monitor).
 - **Pilot**: `mocked/NAVaMockedTest` runs the NAVa flow (`support/flows/navigation.ts`, shared with the real spec).

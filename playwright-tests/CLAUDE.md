@@ -244,7 +244,8 @@ test("…", async ({ app, browser, mockedBackend }) => {
 
 Record it with `pnpm pw:record` against a running backend and commit `e2e/mocked/recordings/<spec>.har.gz`. Put
 the flow in `support/flows/` when a real spec runs it too. A request with no recording fails the test: if the
-difference is a volatile value (a timestamp), add its key to `VOLATILE_KEYS` in `support/mock/normalize.ts`.
+difference is a volatile value (a timestamp), add its key to `VOLATILE_KEYS` in `support/mock/normalize.ts`; if the
+whole body of a request that only reports what the user did changes with timing, add its path to `REPORT_ONLY_PATHS`.
 
 A new window goes in `registry/windows.ts` (`search`, `menuId` = AD_Menu_ID, `breadcrumb`), a new sample
 record in `registry/data.ts` (look its id up in `referencedata/sampledata/QA_Testing`).
