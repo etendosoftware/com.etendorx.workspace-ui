@@ -819,6 +819,11 @@ Anything not implemented throws a clear error rather than failing silently.
     Cancel closes without refreshing, as Classic.
   - **Dialogs:** only the topmost modal renders the script dialog host (`isTopmostProcessModal`), so a
     child's `confirm` is drawn once.
+  - **Message bar:** each modal shows only its own messages, as each Classic popup has its own bar. The bar
+    store is a singleton, so a child sets the launcher's message aside when it opens (`isolateMessageBar`) and
+    restores it when it closes, and only the topmost modal renders the bar. A child's error (e.g. "This
+    transaction type must define either a Payment or a G/L Item") no longer shows in the launcher, nor stays
+    there after the child closes.
 
 ### 8.4 Per-row grid plugin
 

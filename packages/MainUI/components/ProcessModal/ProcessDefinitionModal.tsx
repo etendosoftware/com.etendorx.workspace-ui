@@ -144,7 +144,12 @@ import {
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
-import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
+import {
+  getMessageBarState,
+  isolateMessageBar,
+  messageBar,
+  subscribeMessageBar,
+} from "@/utils/processes/definition/messageBarStore";
 import {
   getProcessStack,
   isTopmostProcessModal,
@@ -1236,12 +1241,14 @@ function ProcessDefinitionModalContent({
   // survives the loading-spinner ↔ form transitions that mount/unmount the host.
   // The script-driven footer state is reset on the same open so it never leaks
   // between sessions.
+  // A nested modal (stack entry) instead sets the launcher's message aside and restores it on close,
+  // so each modal shows only its own messages, as each Classic popup has its own message bar.
   useEffect(() => {
-    if (open) {
-      messageBar.hide();
-      setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
-    }
-  }, [open]);
+    if (!open) return;
+    setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
+    if (stackEntryId !== undefined) return isolateMessageBar();
+    messageBar.hide();
+  }, [open, stackEntryId]);
 
   // Clear any pending view.fireOnPause callbacks when the modal unmounts.
   useEffect(() => {
@@ -1978,7 +1985,8 @@ function ProcessDefinitionModalContent({
             {/* Content */}
             <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
               {/* In-modal message bar driven by migrated scripts (view.messageBar / messageBar). */}
-              <ProcessMessageBar data-testid="ProcessMessageBar__761503" />
+              {/* Only the topmost modal shows the bar: a nested process's messages are its own. */}
+              {isTopmostModal && <ProcessMessageBar data-testid="ProcessMessageBar__761503" />}
               <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 {(loading || initializationLoading) && !result && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
