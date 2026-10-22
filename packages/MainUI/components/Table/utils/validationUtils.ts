@@ -284,7 +284,23 @@ export function validationErrorsToRecord(errors: ValidationError[]): Record<stri
  * @param rowData Current row data
  * @returns Validation result with specific focus on new row requirements
  */
-export function validateNewRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
+/** Key a field's value is stored under in the row: hqlName, then columnName, then name. */
+const getRowValueKey = (field: Field | Column): string => {
+  if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") return field.hqlName;
+  if ("columnName" in field && field.columnName && typeof field.columnName === "string") return field.columnName;
+  return field.name;
+};
+
+/**
+ * Validates a new row before saving, with the form view's rule (useFormValidation): only fields
+ * that are displayed, not read-only and not hidden by their display logic are required.
+ * Non-updatable fields are validated: they are editable while the record is new.
+ */
+export function validateNewRowForSave(
+  fields: (Field | Column)[],
+  rowData: EntityData,
+  isHiddenByDisplayLogic: (field: Field | Column) => boolean = () => false
+): RowValidationResult {
   const errors: ValidationError[] = [];
 
   for (const field of fields) {
@@ -299,21 +315,10 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
       continue;
     }
     const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
-    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+    if (fieldData.isReadOnly || fieldData.displayed === false || isHiddenByDisplayLogic(field)) {
       continue;
     }
-    // Try to get value using the most specific key available
-    // Priority: hqlName > columnName > name
-    // This ensures we match how data is actually stored in rowData
-    let fieldKey: string;
-    if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
-      fieldKey = field.hqlName;
-    } else if ("columnName" in field && field.columnName && typeof field.columnName === "string") {
-      fieldKey = field.columnName;
-    } else {
-      fieldKey = field.name;
-    }
-    const value = rowData[fieldKey] ?? rowData[field.name];
+    const value = rowData[getRowValueKey(field)] ?? rowData[field.name];
     const errorMessage = validateFieldValue(fieldData, value);
 
     if (errorMessage) {
@@ -341,7 +346,8 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
 export function validateExistingRowForSave(
   fields: (Field | Column)[],
   rowData: EntityData,
-  originalData: EntityData
+  originalData: EntityData,
+  isHiddenByDisplayLogic: (field: Field | Column) => boolean = () => false
 ): RowValidationResult {
   const errors: ValidationError[] = [];
 
@@ -362,13 +368,15 @@ export function validateExistingRowForSave(
     // Convert Column to Field if needed
     const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
-    // Skip validation for readonly fields
-    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+    // Skip validation for readonly and hidden fields
+    if (fieldData.isReadOnly || !fieldData.isUpdatable || isHiddenByDisplayLogic(field)) {
       continue;
     }
 
-    const currentValue = rowData[field.name];
-    const originalValue = originalData[field.name];
+    // Values are stored by hqlName: reading them by the field label validated nothing
+    const valueKey = getRowValueKey(field);
+    const currentValue = rowData[valueKey];
+    const originalValue = originalData[valueKey];
 
     // Only validate if the field has been modified
     if (currentValue !== originalValue) {

@@ -1,5 +1,10 @@
 import { renderHook, act } from "@testing-library/react";
-import { buildReloadModalOptions, extractServerErrorMessage, useFormAction } from "../useFormAction";
+import {
+  buildReloadModalOptions,
+  extractServerErrorMessage,
+  logoutOnSessionSaveError,
+  useFormAction,
+} from "../useFormAction";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
@@ -192,5 +197,33 @@ describe("buildReloadModalOptions", () => {
 
   it("returns undefined when no reload callback is given", () => {
     expect(buildReloadModalOptions(undefined, t)).toBeUndefined();
+  });
+});
+
+describe("logoutOnSessionSaveError", () => {
+  const handlers = () => ({
+    logout: jest.fn(),
+    setLoginErrorText: jest.fn(),
+    setLoginErrorDescription: jest.fn(),
+    t: ((key: string) => key) as never,
+  });
+
+  it("logs out with the CSRF message on an invalid CSRF token", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("InvalidCSRFToken", h)).toBe(true);
+    expect(h.logout).toHaveBeenCalled();
+    expect(h.setLoginErrorText).toHaveBeenCalledWith("login.errors.csrfToken.title");
+  });
+
+  it("logs out when the role cannot see the table", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("AccessTableNoView", h)).toBe(true);
+    expect(h.setLoginErrorDescription).toHaveBeenCalledWith("login.errors.noAccessTableNoView.description");
+  });
+
+  it("leaves any other error to the caller", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("must be unique", h)).toBe(false);
+    expect(h.logout).not.toHaveBeenCalled();
   });
 });
