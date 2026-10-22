@@ -95,11 +95,6 @@ export class Grid {
     return row.locator("td").evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim() ?? ""));
   }
 
-  /** Starts editing `row` in the grid (actions column "Edit in grid"). */
-  async editRow(row: Locator): Promise<void> {
-    await row.locator(EDIT_ROW_BUTTON).click();
-  }
-
   /** Input of a cell of a row being edited, by property name (`data-column-id`). */
   cellEditor(row: Locator, hqlName: string): Locator {
     return row.locator(`input[data-column-id="${hqlName}"]`);
@@ -209,12 +204,17 @@ export class Grid {
     return row;
   }
 
-  /** Starts editing a row inline through its actions column button. */
-  async editRow(text: string | RegExp): Promise<Locator> {
-    await this.row(text).locator('button[data-testid^="edit-button-"]').click();
-    const row = this.editingRow();
-    await row.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
-    return row;
+  /**
+   * Starts editing a row inline through its actions column button ("Edit in grid") and returns the
+   * row being edited.
+   * @param row - the row itself (e.g. {@link rowWithCell}) or a text of it.
+   */
+  async editRow(row: Locator | string | RegExp): Promise<Locator> {
+    const target = typeof row === "string" || row instanceof RegExp ? this.row(row) : row;
+    await target.locator(`button${EDIT_ROW_BUTTON}`).click();
+    const editing = this.editingRow();
+    await editing.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return editing;
   }
 
   /** Opens the form view of a row through its actions column button. */
