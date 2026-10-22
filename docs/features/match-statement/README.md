@@ -96,6 +96,38 @@ Details: [Pick & Execute §8.5 and §8.16](../../process/pickAndExecute/README.m
 - The default filter is visible as the selected value of the column filter. In Classic the `No` value is set in
   the filter editor too, but it may display empty.
 
+## Affinity column
+
+### Classic behavior
+
+- *Affinity* is the String column `affinity` (`bsl.matchingtype`), with
+  `clientclass = 'OBLevelImg {"valuesList":["NO", "dummy1", "dummy2", "AP", "AU"]}'`.
+- `OBGrid.createRecordComponent` splits the class name from its JSON properties
+  (`OB.Utilities.clientClassSplitProps`) and renders `isc.OBLevelImg` (`ob-formitem-canvas.js`). It shows
+  `levelImg_<index>_<len-1>.png`, a signal-style image with `index` filled bars, where `index` is the value's
+  position in `valuesList`. An empty value or one missing from the list shows nothing.
+
+| `matchingtype` | Meaning | Shown |
+|---|---|---|
+| `AU` | Strong automatic match | 4 of 4 bars |
+| `AP` | Weak match | 3 of 4 bars |
+| `NO` | No match | 4 empty bars |
+| `MA`, `AD`, empty | Manual / added / unmatched line | nothing |
+
+The column keeps the text filter (`OBLevelImg` does not override it).
+
+### Gap found and fix
+
+The new UI treated the `clientclass` as a navigation link and showed the raw code (`AU`) as a link that did not
+navigate. `OBLevelImg` columns now render `LevelIndicatorCell`, drawn as SVG bars, with the level resolved exactly
+as Classic does (`splitClientclass`, `readLevelValues`, `resolveLevel`). Links and Yes/No columns are unchanged.
+
+### Differences with Classic
+
+- The bars are drawn (SVG, theme color `--color-success-main`) instead of the PNG images, so any `valuesList`
+  length works.
+- Clicking the indicator does not select the row; selection follows the grid's own row behavior.
+
 ## Main files
 
 - `packages/MainUI/utils/ob/remoteCallManager.ts`: `OB.RemoteCallManager.call`, `encodeRequestParams`.
@@ -105,8 +137,10 @@ Details: [Pick & Execute §8.5 and §8.16](../../process/pickAndExecute/README.m
 - `packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx`: wires `viewData.sourceView`.
 - `packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts`: `handleJavaProcessResult`, toast only
   when the response carries a message.
-- `packages/MainUI/utils/table/clientclassLink.ts`: `isClientclassLinkColumn`, used by `hooks/table/useColumns.tsx`
+- `packages/MainUI/utils/table/clientclassLink.ts`: `isClientclassLinkColumn`, `hasClientclassCell`,
+  `splitClientclass`, `isLevelImgColumn`, `readLevelValues`, `resolveLevel`; used by `hooks/table/useColumns.tsx`
   and `WindowReferenceGrid.tsx`.
+- `packages/MainUI/components/Table/Cells/LevelIndicatorCell.tsx`: the level indicator.
 - `packages/MainUI/components/ProcessModal/utils/defaultsRequestPayload.ts` and `buildTabStandardContext`
   (`packages/MainUI/utils/index.ts`): the context sent to `DefaultsProcessActionHandler`.
 - `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `buildGridCriteria`, `findFilterColumn`,

@@ -416,6 +416,9 @@ The exported pure helper `shouldRenderCellEditor(isSelected, isFieldReadOnly, is
 `clientclass` is a Classic cell component the new UI does not render (e.g. `APRMMatchStatGridButtonsComponent` on
 Match Statement's *Match* column), so the column keeps its Yes/No tag and Yes/No filter. Before ETP-5877 the link
 Cell stringified the Yes/No tag into a clickable "[object Object]".
+A level indicator (`OBLevelImg`, e.g. Match Statement's *Affinity*) is not a link either: `useColumns` renders it with
+`LevelIndicatorCell`, and `finalColumns` keeps that Cell (`hasClientclassCell`). See
+[Match Statement: Affinity column](../../features/match-statement/README.md#affinity-column).
 
 **Why `_locallyAdded`?** When `handleCreateRow` confirms a new row, it calls `setRowSelection((prev) => ({ ...prev, [id]: true }))` so the row is immediately selected (the user expects the new row to feel "active"). Without a separate marker, the row would render as an editor — but the requirement is that confirmed local rows stay read-only and can only be removed via the trash icon. Setting `_locallyAdded: true` on `row.original` when the row is added via `addRecordLocally` gives module-level renderers a stable per-row flag they can read from `row.original` without needing closure state.
 
