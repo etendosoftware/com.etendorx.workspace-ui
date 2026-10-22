@@ -180,13 +180,41 @@ The new UI did none of it. The fixes are generic, in the nested-process substrat
 dropped Classic's `callerField: me`. The child reads `view.callerField.record.amount` (the line), so
 `openMatchProcess` now passes `callerField: { record: record, view: view }`. See the migration report.
 
+### Add: *Add Transaction*
+
+Classic opens `E68790A7…` (Pick & Execute with form parameters only) with `callerField = me` and
+`externalParams { bankStatementLineId }`.
+
+- **Defaults.** `AddTransactionFilterExpression` reads `bankStatementLineId` from the defaults context.
+- **`onLoad`.** Adds a hidden `bankStatementLineId` field from `callerField.record.id` and mirrors the organization
+  into `ad_org_id_process`.
+- **`onProcess`.** Runs only for a Match Statement launch (`callerField.record.match`):
+  - a deposit or withdrawal without payment or GL item is an error (`APRM_INVALID_TRANSACTION`);
+  - an amount different from the line's asks to split it (unless the preference is `Y`);
+  - otherwise it submits.
+- **Handler.** `AddTransactionActionHandler` reads `_params` (`bankStatementLineId`, `trxtype`, `trxdate`, amounts,
+  `fin_payment_id`, `c_glitem_id`, `ad_org_id`) and the top-level `inpTabId` / `Fin_Financial_Account_ID`. It
+  creates and processes the transaction, then matches the line (`AD`).
+
+**No Add-specific change was needed.** The nested-process fixes made for Search cover all of it:
+- the owner context gives the top-level keys;
+- `externalParams` reach the defaults and `_params`;
+- `onLoad` / `onProcess` run in the nested modal;
+- `callerField.record` is the row, including the HQL `match` alias, which the grid rows carry;
+- a declined split confirm aborts silently;
+- only success refreshes the Match Statement grid.
+
+The stored `onProcess` already follows the Pick & Execute validation contract (`undefined` to proceed, an error to
+abort).
+
 ### Differences with Classic
 
 - The split confirm uses the new UI dialog.
+- The Match Statement script also sends `transactionDate` in Add's `externalParams` (Classic sends only
+  `bankStatementLineId`). The value is `undefined`, so it is not sent.
 
-### Pending (next steps)
+### Pending
 
-- Add (*Add Transaction*), which reuses the nested-process fixes above.
 - The footer `UN` button visibility (`view.unmatchButton` is set on the onLoad view only).
 - Selecting the row when a button is clicked (Classic `selectSingleRecord`).
 
