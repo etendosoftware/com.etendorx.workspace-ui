@@ -410,6 +410,13 @@ otherwise            → fallbackCell  (or InteractiveGridCellRenderer)
 
 The exported pure helper `shouldRenderCellEditor(isSelected, isFieldReadOnly, isLocallyAdded)` encapsulates this decision so it's testable in isolation.
 
+**Client-class columns.** A column with a Classic `clientclass` renders as a navigation link (`useColumns`), and
+`finalColumns` keeps that link Cell instead of `ReadOnlyCellRenderer`. Both checks go through
+`isClientclassLinkColumn` (`utils/table/clientclassLink.ts`): a **Yes/No** column is never a link. Its
+`clientclass` is a Classic cell component the new UI does not render (e.g. `APRMMatchStatGridButtonsComponent` on
+Match Statement's *Match* column), so the column keeps its Yes/No tag and Yes/No filter. Before ETP-5877 the link
+Cell stringified the Yes/No tag into a clickable "[object Object]".
+
 **Why `_locallyAdded`?** When `handleCreateRow` confirms a new row, it calls `setRowSelection((prev) => ({ ...prev, [id]: true }))` so the row is immediately selected (the user expects the new row to feel "active"). Without a separate marker, the row would render as an editor — but the requirement is that confirmed local rows stay read-only and can only be removed via the trash icon. Setting `_locallyAdded: true` on `row.original` when the row is added via `addRecordLocally` gives module-level renderers a stable per-row flag they can read from `row.original` without needing closure state.
 
 ### 8.6 `WindowReferenceGridContext` — the bridge
@@ -715,6 +722,19 @@ The lupa (magnifying-glass) button next to the dropdown opens the full `Selector
 ### 8.16 Sorting and criteria
 
 `getSortByString(sorting, rawColumns, hasCriteria)` converts MRT's `MRT_SortingState` to the Etendo sortBy query param. Looks up each sort item against `column.filterFieldName`, `column.columnName`, or `column.header`; prefixes with `-` for descending; returns `-documentNo` as a default when there ARE criteria but no explicit sort (matches classic default sort on filtered grids).
+
+**Default filter expressions (`filterExpressions`).** The defaults returned by `DefaultsProcessActionHandler`
+reach the grid twice: as hidden datasource criteria (`buildGridCriteria`) and as the initial MRT column filters
+(the filter reset effect). For a **Yes/No** column the default is applied only as the column filter, the way
+Classic puts it in the filter editor (`setFilterEditorCriteria`):
+
+- `toColumnFilterSeedValue` seeds the Yes/No selection (`["true"]` / `["false"]`, via `toBooleanFilterValue`, which
+  reads `Yes`/`No`/`true`/`false`), so the request carries `equals true|false`.
+- `collectBooleanFilterFields` lists those fields, and `buildGridCriteria` leaves them out of the hidden criteria.
+  The user can clear the filter or switch it to the other value.
+
+Every other default keeps both channels as before. In the current dictionary this affects Match Statement's
+*Match* (`cleared = No`) and Copy from Orders' *Sales Transaction*.
 
 ### 8.17 External grid-selection sync (callouts)
 

@@ -67,6 +67,34 @@ showed the generic "Process completed successfully" toast. It now follows the Cl
 standard Java handler response: no message in the response, no toast. Responses with a message are unchanged.
 See [Pick & Execute §10.5](../../process/pickAndExecute/README.md#105-success-toast-on-close--server-gated-as-well).
 
+## Match column
+
+### Classic behavior
+
+- The *Match* field is the Yes/No column `cleared`. The HQL table `aprm_matchstatement` computes it as
+  `case when fat is null then false else true end`, so it is true when the line is matched.
+- Its `clientclass` `APRMMatchStatGridButtonsComponent` replaces the cell content with three row buttons (Search,
+  Add, Clear); the Yes/No value itself is not shown (`ob-grid.js`, `initWidget`).
+- The column keeps the Yes/No filter (`OBYesNoItem`), sent as `cleared equals true|false`.
+- `DefaultsProcessActionHandler` returns `filterExpressions: { match_statement: { cleared: "No" } }`
+  (`MatchStatementFilterExpression`, handler for the Financial Account window). Classic puts it in the filter
+  editor, so the grid opens with unmatched lines only and the user can clear or change the filter.
+
+### Gap found and fix
+
+| Gap | Fix |
+|---|---|
+| Every `clientclass` was treated as a navigation link, so the Yes/No tag was stringified into a clickable "[object Object]". | A Yes/No column is never a link (`isClientclassLinkColumn`); it renders its Yes/No tag. |
+| The `No` default became a hidden `cleared iContains "No"` criterion, impossible to remove (this grid has no implicit-filter button), plus a column filter sent as `iContains "false"`. | Yes/No defaults are applied only as the column's Yes/No filter (`equals false`), removable as in Classic. |
+
+Details: [Pick & Execute §8.5 and §8.16](../../process/pickAndExecute/README.md#85-cell-rendering-architecture).
+
+### Differences with Classic
+
+- Until the row buttons are implemented, the cell shows the read-only Yes/No tag instead of the buttons.
+- The default filter is visible as the selected value of the column filter. In Classic the `No` value is set in
+  the filter editor too, but it may display empty.
+
 ## Main files
 
 - `packages/MainUI/utils/ob/remoteCallManager.ts`: `OB.RemoteCallManager.call`, `encodeRequestParams`.
@@ -76,6 +104,10 @@ See [Pick & Execute §10.5](../../process/pickAndExecute/README.md#105-success-t
 - `packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx`: wires `viewData.sourceView`.
 - `packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts`: `handleJavaProcessResult`, toast only
   when the response carries a message.
+- `packages/MainUI/utils/table/clientclassLink.ts`: `isClientclassLinkColumn`, used by `hooks/table/useColumns.tsx`
+  and `WindowReferenceGrid.tsx`.
+- `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `buildGridCriteria`, `findFilterColumn`,
+  `toBooleanFilterValue`, `toColumnFilterSeedValue`, `collectBooleanFilterFields`.
 - `packages/MainUI/utils/processes/definition/dialogs.ts` and
   `components/ProcessModal/ProcessDialogHost.tsx`: `isc.confirm`, which resolves `true` on Confirm and
   `false` on Cancel or close.
