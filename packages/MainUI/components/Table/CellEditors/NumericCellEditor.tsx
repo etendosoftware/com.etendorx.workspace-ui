@@ -17,8 +17,22 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
+import { useLanguage } from "@/contexts/language";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
+
+/** Decimal separator of the user's language, the same rule the form view's numeric fields use. */
+export const getDecimalSeparator = (language?: string | null): string => {
+  const locale = (language || "en_US").replace("_", "-");
+  return new Intl.NumberFormat(locale).formatToParts(1.1).find((part) => part.type === "decimal")?.value ?? ".";
+};
+
+/**
+ * Turns what the user typed into a dot-decimal string: with a "," separator "1.234,5" is 1234.5,
+ * otherwise "," groups thousands and is dropped.
+ */
+export const normalizeNumericInput = (input: string, decimalSeparator: string): string =>
+  decimalSeparator === "," ? input.replace(/\./g, "").replace(",", ".") : input.replace(/,/g, "");
 
 /**
  * Number input editor for numeric/quantity fields
@@ -40,6 +54,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState<string>("");
   const [validationError, setValidationError] = useState<string>("");
+  const decimalSeparator = getDecimalSeparator(useLanguage().language);
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
@@ -104,7 +119,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
 
     // Remove any non-numeric characters except decimal point and minus sign
-    const cleanValue = inputValue.replace(/[^0-9.-]/g, "");
+    const cleanValue = normalizeNumericInput(inputValue, decimalSeparator).replace(/[^0-9.-]/g, "");
 
     // Check for valid number format
     const numberRegex = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
@@ -148,7 +163,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   const handleBlur = () => {
     // Format the number on blur for better display
     if (localValue && !validationError) {
-      const num = Number.parseFloat(localValue);
+      const num = Number.parseFloat(normalizeNumericInput(localValue, decimalSeparator));
       if (!Number.isNaN(num)) {
         // Format with appropriate decimal places
         const formatted = isQuantity ? num.toFixed(2) : String(num);

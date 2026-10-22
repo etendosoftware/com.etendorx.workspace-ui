@@ -71,6 +71,14 @@ export class KeyboardNavigationManager {
     // Sort cells by row order and then column order for consistent navigation
     const columnOrder = this.options.getColumnOrder?.() || [];
 
+    // Without an explicit column order, follow the cells on screen (rows top to bottom, columns left
+    // to right); sorting ids alphabetically sent Tab to an unrelated column.
+    if (columnOrder.length === 0) {
+      return editableCells.sort((a, b) =>
+        a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      );
+    }
+
     return editableCells.sort((a, b) => {
       // First sort by row (editing rows should maintain their visual order)
       const rowComparison = a.rowId.localeCompare(b.rowId);

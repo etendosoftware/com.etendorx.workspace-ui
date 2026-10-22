@@ -829,3 +829,15 @@ describe("Inline Editing Infrastructure", () => {
     });
   });
 });
+
+describe("createEditingRowStateUtils reads", () => {
+  it("see a write right away, before the next render", () => {
+    const ref = { current: {} as EditingRowsState };
+    const utils = createEditingRowStateUtils(ref, jest.fn());
+
+    utils.addEditingRow("row1", { id: "row1", name: "A" } as EntityData);
+    utils.updateCellValue("row1", "name", "B");
+
+    expect(utils.getEditingRowData("row1")?.modifiedData.name).toBe("B");
+  });
+});

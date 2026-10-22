@@ -414,6 +414,8 @@ const en = {
     recentlyViewed: "Recently Viewed",
     externalLinkPopupBlocked: "Your browser blocked the link this menu entry tried to open.",
     openExternalLink: "Open link",
+    legacyWindowPopupBlocked: "Your browser blocked the window this menu entry tried to open.",
+    openLegacyWindow: "Open window",
   },
   login: {
     title: "Log In",

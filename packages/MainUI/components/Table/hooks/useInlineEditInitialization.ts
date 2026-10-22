@@ -18,131 +18,94 @@
 import { useCallback, useState } from "react";
 import type { Tab, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
-import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import {
   buildFormInitializationParams,
   buildFormInitializationPayload,
+  buildSessionAttributes,
   fetchFormInitialization,
+  mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
+import { clearRecordContextFromSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import { useTabContext } from "@/contexts/tab";
 import useFormParent from "@/hooks/useFormParent";
+import { buildFormInitialState } from "@/hooks/useFormInitialState";
 import { FieldName } from "@/hooks/types";
+import { useUserStore } from "@/stores/userStore";
 
 interface UseInlineEditInitializationProps {
   tab: Tab;
 }
 
 interface InlineEditInitializationResult {
-  fetchInitialData: (rowId: string, isNew: boolean) => Promise<EntityData | null>;
+  /** `record` is the row being edited: its values go to the FIC as inp* fields, as the form view sends them. */
+  fetchInitialData: (rowId: string, isNew: boolean, record?: EntityData) => Promise<EntityData | null>;
   loading: boolean;
   error: Error | null;
 }
 
+const findEntityKeyColumn = (fields: Tab["fields"]): Field | undefined =>
+  Object.values(fields).find((field) => field?.column?.keyColumn);
+
 /**
- * Hook to fetch form initialization data for inline editing
- * Uses the same utilities as useFormInitialization but adapted for inline editing
+ * Fetches FormInitializationComponent data for a row edited inline. It follows the form view
+ * (`useFormInitialization` + `useFormInitialState`): the root-tab session reset before NEW, the
+ * record values in EDIT, the session merge and the same mapping of the response into values.
  */
 export function useInlineEditInitialization({ tab }: UseInlineEditInitializationProps): InlineEditInitializationResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { parentRecord } = useTabContext();
-  const parentData = useFormParent(FieldName.INPUT_NAME);
-
-  /**
-   * Finds the primary key column field in the tab's field configuration
-   */
-  const findEntityKeyColumn = useCallback((fields: Tab["fields"]): Field | undefined => {
-    return Object.values(fields).find((field) => field?.column?.keyColumn);
-  }, []);
-
-  // Remove custom mapping function - use existing utilities instead
-
-  /**
-   * Processes form initialization response into EntityData format
-   * Uses the exact same logic as useFormInitialState for consistency
-   */
-  const processFormInitializationData = useCallback(
-    (formInitialization: any, tab: Tab): EntityData => {
-      const fieldsByColumnName = getFieldsByColumnName(tab);
-      const acc = { ...formInitialization.sessionAttributes } as EntityData;
-
-      for (const [key, valueObj] of Object.entries(formInitialization.auxiliaryInputValues || {})) {
-        const { value } = valueObj as { value: any };
-        const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-
-        acc[newKey] = value;
-      }
-
-      // Process column values with identifiers - exact same logic as useFormInitialState
-      for (const [key, valueObj] of Object.entries(formInitialization.columnValues || {})) {
-        const { value, identifier } = valueObj as { value: any; identifier?: string };
-        const field = fieldsByColumnName?.[key];
-        const newKey = field?.hqlName ?? key;
-        // Use inputName for identifier storage to match callout and selector logic
-        const inputNameKey = field?.inputName || field?.hqlName || key;
-
-        acc[newKey] = value;
-
-        // Store identifier with inputName key for consistency with callouts and selectors
-        if (identifier) {
-          acc[`${inputNameKey}$_identifier`] = identifier;
-        } else if (value !== null && value !== undefined && value !== "") {
-          acc[`${inputNameKey}$_identifier`] = "";
-        }
-      }
-
-      // Include parent data
-      const processedParentData = { ...parentData };
-      const finalData = { ...acc, ...processedParentData };
-
-      return finalData;
-    },
-    [parentData]
-  );
+  const setSession = useUserStore((s) => s.setSession);
+  const parentDataByInputName = useFormParent(FieldName.INPUT_NAME);
+  const parentDataByHqlName = useFormParent(FieldName.HQL_NAME);
 
   const fetchInitialData = useCallback(
-    async (rowId: string, isNew: boolean): Promise<EntityData | null> => {
+    async (rowId: string, isNew: boolean, record?: EntityData): Promise<EntityData | null> => {
       setLoading(true);
       setError(null);
 
       try {
         const mode = isNew ? FormMode.NEW : FormMode.EDIT;
-        const recordId = isNew ? undefined : rowId;
         const parentId = parentRecord?.id?.toString();
-
-        // Build params for form initialization
         const params = buildFormInitializationParams({
           tab,
           mode,
-          recordId,
+          recordId: isNew ? undefined : rowId,
           parentId,
         });
 
-        // Find entity key column
         const entityKeyColumn = findEntityKeyColumn(tab.fields);
         if (!entityKeyColumn) {
           throw new Error("Missing key column for form initialization");
         }
 
-        // Build payload using the same logic as useFormInitialization
-        const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+        const isRootTabCall = params.get("PARENT_ID") === "null";
+        // Same as the form: wipe the record context a previously selected record left in the server
+        // session, or its values leak into SQL defaults and callouts of the new row.
+        if (isNew && isRootTabCall) {
+          await clearRecordContextFromSession({ tab, parentId });
+        }
 
-        // Fetch initialization data
-        const formInitializationResponse = await fetchFormInitialization(params, payload);
+        const payload = buildFormInitializationPayload(
+          tab,
+          mode,
+          parentDataByInputName,
+          entityKeyColumn,
+          isNew ? null : record
+        );
+        const formInitialization = await fetchFormInitialization(params, payload);
 
-        // Process the response into EntityData format
-        const initializedData = processFormInitializationData(formInitializationResponse, tab);
+        setSession((prev) => mergeSessionAttributes(prev, buildSessionAttributes(formInitialization), isRootTabCall));
 
         setLoading(false);
-        return initializedData;
+        return buildFormInitialState(formInitialization, tab, parentDataByHqlName);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Failed to fetch initialization data");
-        setError(error);
+        setError(err instanceof Error ? err : new Error("Failed to fetch initialization data"));
         setLoading(false);
         return null;
       }
     },
-    [tab, parentRecord, parentData, findEntityKeyColumn, processFormInitializationData]
+    [tab, parentRecord, parentDataByInputName, parentDataByHqlName, setSession]
   );
 
   return {

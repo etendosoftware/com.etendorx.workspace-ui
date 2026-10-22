@@ -177,6 +177,46 @@ export class Grid {
     });
   }
 
+  /** Row being edited inline (it shows the save button in its actions column). */
+  editingRow(): Locator {
+    return this.page.locator(VISIBLE_ROWS).filter({ has: this.page.locator('[data-testid^="save-button-"]') });
+  }
+
+  /** Inserts an inline row through the cell context menu and waits for its editors. */
+  async insertRow(): Promise<Locator> {
+    const cell = this.page.locator("tbody tr:visible td").filter({ hasNotText: /^$/ }).first();
+    await cell.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    await cell.click({ button: "right" });
+    await this.page.getByText("Insert Row", { exact: true }).click();
+    const row = this.editingRow();
+    await row.locator('[data-testid^="save-button-new_"]').waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return row;
+  }
+
+  /**
+   * Inserts an inline row in an empty grid through its "Create record in grid" button. The last
+   * visible one is taken: a child tab's grid is below its parent's.
+   */
+  async insertRowInEmptyGrid(): Promise<Locator> {
+    const button = this.page
+      .getByRole("button", { name: /in grid/i })
+      .filter({ visible: true })
+      .last();
+    await button.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    await button.click();
+    const row = this.editingRow();
+    await row.locator('[data-testid^="save-button-new_"]').waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return row;
+  }
+
+  /** Starts editing a row inline through its actions column button. */
+  async editRow(text: string | RegExp): Promise<Locator> {
+    await this.row(text).locator('button[data-testid^="edit-button-"]').click();
+    const row = this.editingRow();
+    await row.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return row;
+  }
+
   /** Opens the form view of a row through its actions column button. */
   async openForm(text: string | RegExp): Promise<void> {
     await this.openRowForm(this.row(text));

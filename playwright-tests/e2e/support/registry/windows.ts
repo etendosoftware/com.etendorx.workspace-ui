@@ -32,6 +32,7 @@ export const WINDOWS = {
   product: { search: "produ", menuId: "126", breadcrumb: /Product/i },
   productCategory: { search: "produc", menuId: "130", breadcrumb: /Product Category/i },
   taxCategory: { search: "tax", menuId: "124", breadcrumb: /Tax Category/i },
+  title: { search: "title", menuId: "190", breadcrumb: /Title/i },
   unitOfMeasure: { search: "unit", menuId: "107", breadcrumb: /Unit of Measure/i },
   user: { search: "us", menuId: "147", breadcrumb: /User/i },
 

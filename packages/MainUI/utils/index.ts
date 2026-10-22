@@ -300,7 +300,7 @@ export const buildQueryString = ({
     .join(",");
 
   return new URLSearchParams({
-    windowId: String(windowMetadata?.id || ""),
+    windowId: String(windowMetadata?.id || tab.window || ""),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? "add" : "update",

@@ -19,6 +19,7 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { EditingRowsState, EditingRowData, EditingRowStateUtils } from "../types/inlineEditing";
 import { getFieldReference } from "@/utils";
+import { generateLocalRecordId } from "@/components/ProcessModal/utils/generateLocalRecordId";
 
 /**
  * Creates utility functions for managing editing row state
@@ -28,8 +29,16 @@ import { getFieldReference } from "@/utils";
  */
 export function createEditingRowStateUtils(
   editingRowsRef: React.MutableRefObject<EditingRowsState>,
-  setEditingRows: React.Dispatch<React.SetStateAction<EditingRowsState>>
+  setEditingRowsState: React.Dispatch<React.SetStateAction<EditingRowsState>>
 ): EditingRowStateUtils {
+  // Writes go to the ref first, so a read right after a write (a callout or a save started by the
+  // same keystroke) sees the new values instead of waiting for the next render.
+  const setEditingRows = (update: React.SetStateAction<EditingRowsState>) => {
+    const next = typeof update === "function" ? update(editingRowsRef.current) : update;
+    editingRowsRef.current = next;
+    setEditingRowsState(next);
+  };
+
   const addEditingRow = (rowId: string, data: EntityData, isNew = false) => {
     setEditingRows((prev) => ({
       ...prev,
@@ -163,7 +172,8 @@ export function createEditingRowStateUtils(
  * @returns Unique string ID
  */
 export function generateNewRowId(): string {
-  return `new_${crypto.randomUUID()}`;
+  // crypto.randomUUID only exists in secure contexts: on a plain-HTTP deployment it is undefined
+  return `new_${generateLocalRecordId()}`;
 }
 /**
  * Creates an empty row data object for new records
