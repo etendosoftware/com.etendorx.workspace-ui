@@ -1760,6 +1760,7 @@ function ProcessDefinitionModalContent({
         onUnregisterGrid={unregisterGrid}
         fieldController={fieldController}
         gridResolver={gridResolver}
+        onRefreshFunction={onRefreshFunction}
         data-testid="WindowReferenceGrid__761503"
       />
     );

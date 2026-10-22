@@ -40,6 +40,7 @@ import type {
 import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
 import type { GridSelectionUpdater, GridSelectionStructure } from "./ProcessDefinitionModal";
 import type { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import type { OnRefreshFunction } from "./processView";
 
 export type ProcessType = (typeof PROCESS_TYPES)[keyof typeof PROCESS_TYPES] | "";
 
@@ -221,6 +222,8 @@ export interface WindowReferenceGridProps {
   fieldController?: FieldController;
   /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside `onGridLoad`. */
   gridResolver?: GridResolver;
+  /** The process `onRefresh` hook, exposed as `view.onRefreshFunction` to the grid's scripts. */
+  onRefreshFunction?: OnRefreshFunction;
 }
 
 export type RowProps = (props: {

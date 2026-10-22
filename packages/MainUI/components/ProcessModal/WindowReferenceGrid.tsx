@@ -74,7 +74,8 @@ import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./Wi
 import { getFieldReference } from "@/utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
-import { hasClientclassCell } from "@/utils/table/clientclassLink";
+import type { OnRefreshFunction } from "./processView";
+import { hasClientclassCell, isClientclassComponentColumn } from "@/utils/table/clientclassLink";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
@@ -752,6 +753,17 @@ export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsPro
  */
 export const shouldShowRowActions = (hasAnyActionableRow: boolean, hasRowActions: boolean, canAdd: boolean): boolean =>
   hasAnyActionableRow || hasRowActions || canAdd;
+
+/**
+ * Id of the column that hosts the script row buttons (`grid.setRowActions`):
+ * the first column whose `clientclass` is a Classic cell component the new UI
+ * does not render, as in Classic. `undefined` keeps the buttons in the leading
+ * actions column (no row actions, or no such column).
+ */
+export function findRowActionsHostColumnId(columns: readonly Column[], hasRowActions: boolean): string | undefined {
+  if (!hasRowActions) return undefined;
+  return columns.find(isClientclassComponentColumn)?.id;
+}
 
 interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: MRT row
@@ -1559,6 +1571,29 @@ export interface EmbeddedGridSubscriptions {
   columnValidator: Map<string, ColumnValidator>;
 }
 
+/** Dependencies of a script `view` built by the grid (onGridLoad, row actions, cell hooks). */
+type GridScriptViewDeps = Omit<Parameters<typeof createViewProxy>[2], "hookData" | "grid"> & {
+  grid: GridProxy;
+  onRefreshFunction?: OnRefreshFunction;
+};
+
+/**
+ * Builds the `view` a grid script receives and links it back as `grid.view`.
+ * Like the onLoad view, it exposes the process `onRefresh` hook as
+ * `view.onRefreshFunction`, so a row action can call `view.onRefreshFunction(view)`
+ * after its server call (Classic idiom) to refresh the grid.
+ */
+export function createGridScriptView(
+  formHandle: FormHandle,
+  parameters: Parameters<typeof createViewProxy>[1],
+  deps: GridScriptViewDeps
+): ViewProxy {
+  const { onRefreshFunction, ...viewDeps } = deps;
+  const view = createViewProxy(formHandle, parameters, { ...viewDeps, hookData: { onRefreshFunction } });
+  deps.grid.view = view;
+  return view;
+}
+
 export function createEmbeddedGridController(
   getApi: () => EmbeddedGridApi,
   getSelected: () => EntityData[],
@@ -1680,6 +1715,7 @@ const WindowReferenceGrid = ({
   onUnregisterGrid,
   fieldController,
   gridResolver,
+  onRefreshFunction,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -2526,15 +2562,15 @@ const WindowReferenceGrid = ({
         gridControllerRef.current ?? undefined,
         fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
       );
-      const view = createViewProxy(gridLoadFormHandle, parameters, {
+      const view = createGridScriptView(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
         controller: fieldController,
         viewController,
         gridResolver,
         data: viewData,
+        onRefreshFunction,
       });
-      grid.view = view;
       try {
         onGridLoadHook(grid, view, parameters);
       } catch (error) {
@@ -2553,6 +2589,7 @@ const WindowReferenceGrid = ({
     viewData,
     fieldController,
     gridResolver,
+    onRefreshFunction,
   ]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
@@ -2965,15 +3002,15 @@ const WindowReferenceGrid = ({
       gridControllerRef.current ?? undefined,
       fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
     );
-    const view = createViewProxy(gridLoadFormHandle, parameters, {
+    const view = createGridScriptView(gridLoadFormHandle, parameters, {
       messageBar,
       grid,
       controller: fieldController,
       viewController,
       gridResolver,
       data: viewData,
+      onRefreshFunction,
     });
-    grid.view = view;
     return { grid, view };
   }, [
     gridLoadFormHandle,
@@ -2984,6 +3021,7 @@ const WindowReferenceGrid = ({
     viewData,
     fieldController,
     gridResolver,
+    onRefreshFunction,
   ]);
 
   // Grid-cell variant of the item proxy passed to a per-column onChange / validator:
@@ -3309,15 +3347,15 @@ const WindowReferenceGrid = ({
         gridControllerRef.current ?? undefined,
         fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
       );
-      const view = createViewProxy(gridLoadFormHandle, parameters, {
+      const view = createGridScriptView(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
         controller: fieldController,
         viewController,
         gridResolver,
         data: viewData,
+        onRefreshFunction,
       });
-      grid.view = view;
       return { record, view, grid };
     },
     [
@@ -3330,6 +3368,7 @@ const WindowReferenceGrid = ({
       viewController,
       gridResolver,
       viewData,
+      onRefreshFunction,
     ]
   );
 
@@ -3381,6 +3420,23 @@ const WindowReferenceGrid = ({
       );
     },
     [evaluateRowActions, runRowAction]
+  );
+
+  // Column hosting the script row buttons (Classic clientclass component column), if any.
+  const rowActionsHostColumnId = useMemo(
+    () => findRowActionsHostColumnId(columns as Column[], hasRowActions),
+    [columns, hasRowActions]
+  );
+  // Script buttons left for the leading actions column (none when a column hosts them).
+  const hasLeadingRowActions = hasRowActions && !rowActionsHostColumnId;
+
+  // Stable host Cell reading the latest renderer, so the columns are not rebuilt on every record change.
+  const rowActionsCellRef = useRef(renderRowActionsCell);
+  rowActionsCellRef.current = renderRowActionsCell;
+  const RowActionsHostCell = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: MRT cell render args
+    ({ row }: any) => (row.original?.id ? rowActionsCellRef.current({ row }) : null),
+    []
   );
 
   const finalColumns = useMemo(() => {
@@ -3444,13 +3500,18 @@ const WindowReferenceGrid = ({
           // Note: columns usually have default or custom cell renderers set in useColumns or earlier logic
         }
 
+        // As in Classic, the clientclass component column shows the row buttons instead of its value.
+        if (col.id === rowActionsHostColumnId) {
+          newCol.Cell = RowActionsHostCell;
+        }
+
         return newCol;
       });
 
-    // The script row-action buttons are rendered inside the leading actions
-    // column (the "mrt-row-actions" Cell override), not as a trailing column.
+    // The script row-action buttons are rendered inside the host column above or,
+    // without one, inside the leading actions column (the "mrt-row-actions" Cell override).
     return mappedColumns;
-  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
+  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap, rowActionsHostColumnId, RowActionsHostCell]);
 
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -3492,7 +3553,7 @@ const WindowReferenceGrid = ({
   const hasAnyDeletableRow = canDelete && (records || []).length > 0;
   const hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow;
   // Creatable grids must own the create-row chrome too (see shouldShowRowActions).
-  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasRowActions, canAdd);
+  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasLeadingRowActions, canAdd);
   const enableEditingPredicate = useMemo(
     () => buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap),
     [finalColumns, windowReferenceTab, fieldReadOnlyMap]
@@ -3602,8 +3663,8 @@ const WindowReferenceGrid = ({
       positionActionsColumn: "first",
       displayColumnDefOptions: {
         "mrt-row-actions": {
-          size: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
-          minSize: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          size: hasLeadingRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          minSize: hasLeadingRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
           enableResizing: false,
           // Center the "Actions" header label over the centered icon row.
           muiTableHeadCellProps: {
@@ -3623,7 +3684,7 @@ const WindowReferenceGrid = ({
               onDelete: handleDeleteRow,
               deleteRowLabel,
               // Script buttons render on real (persisted) rows only.
-              leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
+              leadingActions: hasLeadingRowActions && row.original?.id ? renderRowActionsCell({ row }) : null,
             }),
         },
       },
@@ -3651,7 +3712,7 @@ const WindowReferenceGrid = ({
       enableRowSelectionFromMetadata,
       enableEditingPredicate,
       showRowActions,
-      hasRowActions,
+      hasLeadingRowActions,
       renderRowActionsCell,
     ]
   );

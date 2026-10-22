@@ -64,6 +64,8 @@ import {
   CreateRowActionButtons,
   collectEditInputValues,
   shouldShowRowActions,
+  findRowActionsHostColumnId,
+  createGridScriptView,
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
@@ -73,6 +75,7 @@ import {
 } from "../WindowReferenceGrid";
 import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { RowActionButton } from "@/utils/processes/definition/scriptProxies";
+import { createGridProxy } from "@/utils/processes/definition/scriptProxies";
 
 describe("WindowReferenceGrid Utilities", () => {
   describe("extractActualValue", () => {
@@ -787,6 +790,48 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("is false only when none apply", () => {
       expect(shouldShowRowActions(false, false, false)).toBe(false);
+    });
+  });
+
+  describe("findRowActionsHostColumnId", () => {
+    const column = (id: string, props: Record<string, unknown>) =>
+      ({ id, header: id, columnName: id, ...props }) as unknown as Column;
+    const MATCH = column("Match", { type: "boolean", clientclass: "APRMMatchStatGridButtonsComponent" });
+    const LINK = column("Order", { type: "text", clientclass: "SalesOrderTabLink" });
+    const LEVEL = column("Affinity", { type: "text", clientclass: "OBLevelImg" });
+
+    it("hosts the row buttons in the clientclass component column", () => {
+      expect(findRowActionsHostColumnId([LINK, LEVEL, MATCH], true)).toBe("Match");
+    });
+
+    it("keeps them in the leading column without a component column", () => {
+      expect(findRowActionsHostColumnId([LINK, LEVEL], true)).toBeUndefined();
+    });
+
+    it("hosts nothing without script row actions", () => {
+      expect(findRowActionsHostColumnId([MATCH], false)).toBeUndefined();
+    });
+  });
+
+  describe("createGridScriptView", () => {
+    const formHandle = { getValues: () => ({}), setValue: jest.fn() };
+    const messageBar = { setMessage: jest.fn(), hide: jest.fn() };
+
+    it("exposes the process onRefresh hook and links the view to the grid", () => {
+      const onRefreshFunction = jest.fn();
+      const grid = createGridProxy({ rows: [], selectedRecords: [] });
+
+      const view = createGridScriptView(formHandle, {}, { messageBar, grid, onRefreshFunction });
+      (view as unknown as { onRefreshFunction: (v: unknown) => void }).onRefreshFunction(view);
+
+      expect(onRefreshFunction).toHaveBeenCalledWith(view);
+      expect(grid.view).toBe(view);
+    });
+
+    it("leaves onRefreshFunction undefined when the process has no onRefresh hook", () => {
+      const view = createGridScriptView(formHandle, {}, { messageBar, grid: createGridProxy({ rows: [] }) });
+
+      expect((view as unknown as { onRefreshFunction?: unknown }).onRefreshFunction).toBeUndefined();
     });
   });
 

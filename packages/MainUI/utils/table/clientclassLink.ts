@@ -97,3 +97,13 @@ export function isClientclassLinkColumn(column: Column): boolean {
 export function hasClientclassCell(column: Column): boolean {
   return isClientclassLinkColumn(column) || isLevelImgColumn(column);
 }
+
+/**
+ * Whether the column's `clientclass` is a Classic cell component the new UI
+ * does not render by itself (neither a link nor a level indicator), e.g.
+ * `APRMMatchStatGridButtonsComponent`. Such a column hosts the script's row
+ * buttons, as the component does in Classic.
+ */
+export function isClientclassComponentColumn(column: Column): boolean {
+  return Boolean(column.clientclass) && !isClientclassLinkColumn(column) && !isLevelImgColumn(column);
+}

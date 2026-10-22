@@ -19,6 +19,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import {
   DEFAULT_LEVEL_VALUES,
   hasClientclassCell,
+  isClientclassComponentColumn,
   isClientclassLinkColumn,
   isLevelImgColumn,
   readLevelValues,
@@ -106,5 +107,19 @@ describe("level indicator (OBLevelImg)", () => {
     expect(hasClientclassCell(asColumn({ type: "text", clientclass: LINK_CLIENTCLASS }))).toBe(true);
     expect(hasClientclassCell(asColumn({ type: "boolean", clientclass: MATCH_CLIENTCLASS }))).toBe(false);
     expect(isLevelImgColumn(asColumn({ type: "text", clientclass: LINK_CLIENTCLASS }))).toBe(false);
+  });
+});
+
+describe("isClientclassComponentColumn", () => {
+  it("is true for a clientclass component the new UI does not render", () => {
+    expect(isClientclassComponentColumn(asColumn({ type: "boolean", clientclass: MATCH_CLIENTCLASS }))).toBe(true);
+  });
+
+  it.each([
+    ["a link", { type: "text", clientclass: LINK_CLIENTCLASS }],
+    ["a level indicator", { type: "text", clientclass: AFFINITY_CLIENTCLASS }],
+    ["no clientclass", { type: "boolean" }],
+  ])("is false for %s", (_label, props) => {
+    expect(isClientclassComponentColumn(asColumn(props))).toBe(false);
   });
 });
