@@ -37,6 +37,17 @@ function run(expr: string, values: Record<string, unknown>): unknown {
 }
 
 describe("parseDynamicExpression — @field_name@ tokenization", () => {
+  describe("context and OB.Utilities.getValue references", () => {
+    it.each([
+      ["context.$prop", "context.$IsAcctDimCentrally=='Y'", { $IsAcctDimCentrally: "Y" }],
+      ["context['prop']", "context['#AD_Org_ID']=='0'", { "#AD_Org_ID": "0" }],
+      ["OB.Utilities.getValue(obj, 'prop')", "OB.Utilities.getValue(currentValues, 'qty')=5", { qty: 5 }],
+    ])("keeps %s readable from the evaluation scope", (_case, expr, values) => {
+      expect(run(expr, values)).toBe(true);
+      expect(run(expr, {})).toBe(false);
+    });
+  });
+
   describe("single field reference", () => {
     it("resolves a field and evaluates equality to true", () => {
       expect(run("@isActive@='Y'", { isActive: "Y" })).toBe(true);

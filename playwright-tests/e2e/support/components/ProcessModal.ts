@@ -12,6 +12,8 @@ export const PROCESS_MODAL_TEST_IDS = {
   execute: "process-modal-execute-button",
   /** Close button of the wrapper modal of legacy processes and of the process result. */
   resultClose: "close-button",
+  /** Message bar of a React process modal (validation messages, script messages). */
+  messageBar: "ProcessMessageBar__container",
 } as const;
 
 const OK_TEXT = /^OK$/i;
@@ -48,6 +50,11 @@ export class ProcessModal {
   /** Title of a React process modal. */
   get title(): Locator {
     return this.page.getByTestId(PROCESS_MODAL_TEST_IDS.title);
+  }
+
+  /** Message bar of the open React process modal. */
+  get messageBar(): Locator {
+    return this.page.getByTestId(PROCESS_MODAL_TEST_IDS.messageBar);
   }
 
   /** Title of the wrapper modal of a legacy process. */

@@ -51,7 +51,7 @@ docs/
 │   └── table-state-persistence.md  # Table state persistence context
 ├── testing/                          # Testing strategy
 │   ├── session-sync-test-strategy.md
-│   └── playwright-e2e/               # Playwright E2E suite: behavior, decisions, CI checks
+│   └── playwright-e2e/               # Playwright E2E suite: behavior, decisions, CI checks, feature probes, mocked backend
 │       └── README.md
 ├── patterns/                         # Patterns and conventions
 │   ├── react-patterns.md           # React patterns including state persistence

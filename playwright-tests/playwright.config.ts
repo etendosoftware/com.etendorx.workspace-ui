@@ -12,6 +12,10 @@ const IFRAME_URL = envOr(["PLAYWRIGHT_IFRAME_URL", "CYPRESS_IFRAME_URL"], "local
 const DEFAULT_USER = envOr(["PLAYWRIGHT_USER", "CYPRESS_USER"], "admin");
 const DEFAULT_PASSWORD = envOr(["PLAYWRIGHT_PASSWORD", "CYPRESS_PASSWORD"], "admin");
 
+const DESKTOP_CHROME = { ...devices["Desktop Chrome"] };
+/** Last project of the smoke chain: the regression and mocked projects run after it. */
+const LAST_SMOKE_PROJECT = "suite-04-financial";
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
@@ -62,10 +66,11 @@ export default defineConfig({
       testMatch: ["**/performance/**"],
       dependencies: ["support-unit"],
       workers: 2,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
-    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state).
+    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state) and the feature
+    // probes that only read sample data or change records they created themselves.
     // Read-only specs or records with unique names: safe in parallel.
     {
       name: "suite-01-base",
@@ -75,11 +80,18 @@ export default defineConfig({
         "**/06_filters/**",
         "**/07_LinkedItems/**",
         "**/PurchaseOrderDisplayLogicTest*",
+        // PRCb never executes the payment: its onProcess aborts and the request is blocked
+        "**/smoke/08_Process/PRCb*",
+        "**/smoke/09_Form/**",
+        "**/smoke/10_Grid/**",
+        "**/smoke/11_Navigation/**",
+        // SESa never ticks "Save as default": the defaults other specs start from stay as they are
+        "**/smoke/12_Session/**",
       ],
       dependencies: ["suite-00-performance"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 3 — Sales (starts only after Group 2 finishes). Each spec selects only its own documents:
@@ -90,7 +102,7 @@ export default defineConfig({
       dependencies: ["suite-01-base"],
       timeout: 720_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 4 — Procurement (starts only after Sales finishes). Each spec filters by its own
@@ -101,17 +113,40 @@ export default defineConfig({
       dependencies: ["suite-02-sales"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
     },
 
     // Group 5 — Financial (runs last). Each spec selects only its own invoices and payments.
     {
-      name: "suite-04-financial",
+      name: LAST_SMOKE_PROJECT,
       testMatch: ["**/05_Financial/**"],
       dependencies: ["suite-03-procurement"],
       timeout: 360_000,
       workers: 3,
-      use: { ...devices["Desktop Chrome"] },
+      use: DESKTOP_CHROME,
+    },
+
+    // Group 6 — Regression probes (@regression): slower or rarer feature checks. A leaf of the chain (no
+    // project depends on it), so `--grep-invert @regression` leaves them out, e.g. on PRs: Playwright
+    // ignores --grep in the projects others depend on. Each spec changes only records it created.
+    {
+      name: "suite-05-regression",
+      testMatch: ["**/regression/**/*.spec.ts"],
+      dependencies: [LAST_SMOKE_PROJECT],
+      timeout: 360_000,
+      workers: 3,
+      use: DESKTOP_CHROME,
+    },
+
+    // Mocked-backend specs: the UI against recorded `/api/**` responses, no ERP needed. Last in the
+    // chain so it does not compete with the timed suites; run it alone with
+    // `--project=mocked --no-deps` (recordings: `pnpm pw:record`).
+    {
+      name: "mocked",
+      testMatch: ["**/mocked/**/*.spec.ts"],
+      dependencies: [LAST_SMOKE_PROJECT],
+      fullyParallel: true,
+      use: DESKTOP_CHROME,
     },
   ],
 

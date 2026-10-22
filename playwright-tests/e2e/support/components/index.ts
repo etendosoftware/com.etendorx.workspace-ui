@@ -4,14 +4,17 @@ import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CreateLinesFrom } from "./CreateLinesFrom";
 import { FormField } from "./FormField";
+import { InstancePurpose } from "./InstancePurpose";
 import { Grid } from "./Grid";
 import { LegacyFrame } from "./LegacyFrame";
 import { ProcessModal } from "./ProcessModal";
+import { SavedViews } from "./SavedViews";
 import { SelectorModal } from "./SelectorModal";
 import { Sidebar } from "./Sidebar";
 import { Tabs } from "./Tabs";
 import { Toast } from "./Toast";
 import { Toolbar } from "./Toolbar";
+import { WindowTabs } from "./WindowTabs";
 
 export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
@@ -36,6 +39,9 @@ export class App {
   readonly legacy: LegacyFrame;
   readonly createLinesFrom: CreateLinesFrom;
   readonly attributeSelector: AttributeSelector;
+  readonly windows: WindowTabs;
+  readonly instancePurpose: InstancePurpose;
+  readonly savedViews: SavedViews;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -50,6 +56,9 @@ export class App {
     this.legacy = new LegacyFrame(page);
     this.createLinesFrom = new CreateLinesFrom(page);
     this.attributeSelector = new AttributeSelector(page);
+    this.windows = new WindowTabs(page);
+    this.instancePurpose = new InstancePurpose(page);
+    this.savedViews = new SavedViews(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */

@@ -6,9 +6,13 @@ const TAB_TIMEOUT = 15_000;
 export class Tabs {
   constructor(private readonly page: Page) {}
 
-  /** The button of a child tab, by its accessible name. */
+  /**
+   * The button of a child tab, by its accessible name. Yes/No fields are buttons with the role
+   * switch and their own label (the "Bill of Materials" field of a product shares the name of its
+   * tab), so they are left out.
+   */
   tab(name: string): Locator {
-    return this.page.locator(`button[aria-label="${name}"]:visible`).first();
+    return this.page.locator(`button[aria-label="${name}"]:not([role="switch"]):visible`).first();
   }
 
   /** Opens a child tab. */

@@ -10,7 +10,9 @@ End-to-end tests of the new UI against a running Etendo Classic backend. CI runs
 playwright-tests/
   playwright.config.ts        projects (run in order through dependencies), timeouts, retries, reporters
   e2e/
-    smoke/<NN_Area>/*.spec.ts  business flows, one spec per flow, tagged @smoke
+    smoke/<NN_Area>/*.spec.ts  business flows (01–07) and feature probes (08_Process … 12_Session), tagged @smoke
+    regression/<NN_Area>/      slower or rarer feature probes, tagged @regression (leaf project suite-05-regression)
+    mocked/                    specs on recorded /api responses (no ERP) and their recordings/<spec>.har.gz
     performance/*.spec.ts      timing budgets (warning/failure thresholds)
     support/                   everything specs reuse — never write selectors in a spec if a piece exists here
       fixtures/index.ts        `test` / `expect` to import; `app`, `data`, `session` fixtures
@@ -18,9 +20,17 @@ playwright-tests/
                                AttributeSelector…)
       registry/windows.ts      how to open every window from the sidebar
       registry/data.ts         named sample data (business partners, products, field ids…) and uniqueValue()
+      registry/datasources.ts  entity, window and tab of what the `api` fixture writes
+      api/ApiData.ts           `api` fixture: create/delete records through the datasource
+      flows/                   flows shared by several specs (navigation state, own categories)
+      mock/                    mocked-backend layer: request keys, replay, its fixture
+      processOverrides.ts      override a process definition in the metadata the UI loads
+      network.ts               block a request and record that it was attempted
+      tags.ts                  tier and area tags
       wait.ts                  network/UI waits (FormInitialization, datasource, overlay)
       __tests__/               unit tests of the registries and pure helpers (project support-unit)
   scripts/check-e2e.mjs        convention ratchet (pnpm check:e2e)
+  scripts/sanitize-har.mjs     strips credentials from recordings; compact-har.mjs merges and gzips them
   reporters/flaky-summary.mjs  lists tests that passed only after a retry
   e2e-ratchet.baseline.json    committed counts of the ratchet rules
 ```
@@ -45,7 +55,18 @@ test.describe("Purchase Order - Book @smoke", () => {
 - Import `test` and `expect` from `support/fixtures`, never from `@playwright/test` (support unit tests excepted).
 - `app` is already logged in with role "QA Testing Admin" and organization "Spain". Use
   `test.use({ session: LOGIN_ONLY })` to keep the user's default role, `NO_SESSION` to start logged out.
-- Every smoke spec has `@smoke` in its `describe` title.
+- Every spec under `smoke/` has `@smoke` in its `describe` title, every spec under `regression/` `@regression`. A
+  feature probe (folders `08_Process`, `09_Form`, `10_Grid`, `11_Navigation`, `12_Session`) also has its area tag:
+  `@process`, `@form`, `@grid`, `@nav`, `@session`. `support/__tests__/tags.spec.ts` checks it.
+- A feature probe opens one window and checks several behaviors of one area in 10–30 s, without a document flow.
+  Read-only probes and probes on their own records go to `suite-01-base` (add the folder to its `testMatch`).
+- Data a spec needs but does not test (lines, categories, preferences) comes from the `api` fixture, not the UI.
+- Never change the user's defaults or global configuration: no "Save as default"; a preference a spec needs is
+  created for the user and the window only and removed in `test.afterEach` (it still runs, with the page open,
+  when the test timed out — a `finally` does not).
+- The grid saves the column order, visibility and sort per user, window and tab by itself. A spec that sorts or
+  rearranges a grid resets that tab with `api.resetGridConfiguration(windowId, tabId)` in `test.beforeEach` and
+  `test.afterEach` (GRDa): otherwise the next run, or another spec on the same tab, starts from its sort.
 - Do not pass `{ timeout }` as test details (Playwright ignores it); the project timeout applies, or call
   `test.setTimeout()` inside the test.
 - Records the test creates get keys from `data.uniqueValue("base")`: the local database is reused and
@@ -184,6 +205,50 @@ await app.toolbar.save("child");
 **Grid inside a process modal**: scope rows to `app.processModal.root` — the window grid behind the modal can show
 the same document numbers.
 
+**Create the data a probe needs (not what it tests)**
+
+```ts
+const [record] = await createCategories(api, data.uniqueValue("FRMd"), 1); // support/flows/records.ts
+const preference = await api.add(DATASOURCE.PREFERENCE, { property: "OBUIAPP_GroupingEnabled", searchKey: "Y", … });
+await api.remove(DATASOURCE.PREFERENCE, preference.id); // in test.afterEach
+```
+
+`api` reuses the token of the logged-in page: call it after `app` logged in. Rows by exact cell, never "the first
+row": `app.grid.rowWithCell(record.name)`.
+
+**Client behavior the bare core has no data for (a migrated onProcess)**
+
+```ts
+const override = await overrideProcessDefinition(page, WINDOW_IDS.PAYMENT_IN, data.PROCESS.ADD_PAYMENT, {
+  etmetaOnprocess: `async () => ({ severity: "error", text: "Aborted" })`,
+});
+const payment = await blockRequests(page, /AddPaymentActionHandler/); // nothing may execute
+// … open the process …
+expect(override.applied).toBeGreaterThan(0);
+expect(payment.sent).toBe(false);
+```
+
+Register overrides before the window opens; each test has its own context, so the metadata is never a 304. Script
+answers: abort a Pick and Execute with `{ severity: "error", text }`; a message for the user is
+`{ message: { msgType, msgTitle, msgText } }` (a bare `{ msgType, … }` is read as a plain success).
+
+**A mocked spec (no ERP)**
+
+```ts
+import { test } from "../support/mock/fixture"; // same app/data/api fixtures, /api answered from recordings
+test("…", async ({ app, browser, mockedBackend }) => {
+  const context = await browser.newContext();
+  await mockedBackend.attach(context); // another context served from the same recordings
+});
+```
+
+Record it with `pnpm pw:record` against a running backend and commit `e2e/mocked/recordings/<spec>.har.gz`. Put
+the flow in `support/flows/` when a real spec runs it too. Only `pw:record` writes recordings: a normal run, local or
+in CI, only replays them. A request with no recording fails the test: check it is intended before recording again
+(an unexpected request can be a bug the recording would hide); if the
+difference is a volatile value (a timestamp), add its key to `VOLATILE_KEYS` in `support/mock/normalize.ts`; if the
+whole body of a request that only reports what the user did changes with timing, add its path to `REPORT_ONLY_PATHS`.
+
 A new window goes in `registry/windows.ts` (`search`, `menuId` = AD_Menu_ID, `breadcrumb`), a new sample
 record in `registry/data.ts` (look its id up in `referencedata/sampledata/QA_Testing`).
 
@@ -196,8 +261,17 @@ cd playwright-tests && pnpm exec playwright test <spec> --no-deps --repeat-each=
 cd playwright-tests && pnpm exec playwright test <spec> --no-deps --workers=1 --headed  # watch it in a browser
 pnpm pw:typecheck                              # tsc --noEmit
 pnpm check:e2e                                 # convention ratchet
-pnpm test:e2e-tooling                          # unit tests of the ratchet and the reporter
+pnpm test:e2e-tooling                          # unit tests of the ratchet, reporter and HAR scripts
+cd playwright-tests && pnpm exec playwright test --grep-invert @regression  # leave the regression tier out
+cd playwright-tests && pnpm pw:mocked          # mocked specs only, no ERP needed (UI running)
+cd playwright-tests && pnpm pw:record          # regenerate the mocked recordings (backend running)
 ```
+
+A red "Playwright Tests" check from a tag rule or the mocked specs: see
+[When the Playwright check fails](../docs/testing/playwright-e2e/README.md#when-the-playwright-check-fails).
+
+`--grep` does not filter projects other projects depend on (Playwright runs them in full): only the leaf projects
+(`suite-05-regression`, `mocked`) can be left out by tag.
 
 Locally the suite needs the new UI on `http://localhost:3000` (`PLAYWRIGHT_BASE_URL` to change it;
 `PLAYWRIGHT_IFRAME_URL`, `PLAYWRIGHT_USER` and `PLAYWRIGHT_PASSWORD` also exist) built from

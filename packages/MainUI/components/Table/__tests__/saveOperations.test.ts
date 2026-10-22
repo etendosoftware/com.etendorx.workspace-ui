@@ -29,6 +29,7 @@ import {
   validateRecordBeforeSave,
 } from "../utils/saveOperations";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
@@ -120,6 +121,25 @@ describe("saveOperations", () => {
   });
 
   describe("saveRecord", () => {
+    it.each([
+      ["a successful save", { ok: true, data: { response: { status: 0, data: [{ id: "456" }] } } }, 1],
+      ["a rejected save", { ok: false, data: { response: { status: 1, error: { message: "Invalid" } } } }, 0],
+    ])("evicts the cached responses of the entity only after %s", async (_case, response, evictions) => {
+      const clearCacheForEntity = jest.spyOn(datasource, "clearCacheForEntity").mockClear();
+      mockMetadata.datasourceServletClient.request.mockResolvedValue(response);
+
+      await saveRecord({
+        saveOperation: { rowId: "456", isNew: false, data: { id: "456" }, originalData: { id: "456" } },
+        tab: mockTab,
+        userId: mockUserId,
+      });
+
+      expect(clearCacheForEntity).toHaveBeenCalledTimes(evictions);
+      if (evictions > 0) {
+        expect(clearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
+      }
+    });
+
     it("reports the property errors of a conversion failure (status -4)", async () => {
       mockMetadata.datasourceServletClient.request.mockResolvedValue({
         ok: true,

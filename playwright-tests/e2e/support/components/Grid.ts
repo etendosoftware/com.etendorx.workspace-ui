@@ -1,9 +1,19 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { runAndWaitForDatasource } from "../wait";
+import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
+import { exactText } from "./level";
 
 const ROW_TIMEOUT = 20_000;
 const CHECK_TIMEOUT = 10_000;
 const VISIBLE_ROWS = "tr:visible";
+/** Inline editing actions of a row (actions column): `edit-button-<id>`, `save-button-<id>`. */
+const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
+const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
+/** The datasource request that saves an inline edit. */
+const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
+/** Record count of the grid toolbar: "Showing 12 records". */
+const SHOWING_RECORDS = /Showing (\d+) records?/;
+/** Accessible name of the selection checkbox of a grid row. */
+const ROW_SELECTION_LABEL = "Toggle select row";
 
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
@@ -28,6 +38,78 @@ export class Grid {
   /** First visible row containing `text`. */
   row(text: string | RegExp): Locator {
     return this.page.locator(VISIBLE_ROWS).filter({ hasText: text }).first();
+  }
+
+  /**
+   * Row with a cell showing exactly `cellText`, for values that are the prefix of others (the
+   * document number "I/25" is contained in "I/250"). Pass `scope` (e.g. the process modal) when
+   * another grid on the page can show the same value.
+   */
+  rowWithCell(cellText: string, scope: Locator | Page = this.page): Locator {
+    return scope
+      .locator("tbody tr")
+      .filter({ has: this.page.locator("td").filter({ hasText: exactText(cellText) }) })
+      .first();
+  }
+
+  /**
+   * Clicks the sort button of a column header and waits for the data sorted by it (sorting is
+   * done by the backend). Each click toggles the direction.
+   */
+  async sortBy(column: string): Promise<void> {
+    // The header text also shows a filter count, so the button is found by its label:
+    // "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending"
+    const button = this.page
+      .locator(`thead:visible [aria-label^="Sort by ${column} "], thead:visible [aria-label^="Sorted by ${column} "]`)
+      .first();
+    await runAndWaitForDatasource(this.page, () => button.click());
+  }
+
+  /**
+   * Opens the column actions menu ("Column Actions", three dots) of a column header and clicks an
+   * entry by test id (`column-actions-group-by`, `column-actions-set-summary`, …).
+   */
+  async columnAction(column: string, actionTestId: string): Promise<void> {
+    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
+    const header = this.page
+      .locator("thead:visible th")
+      .filter({ has: this.page.locator(sortButton) })
+      .first();
+    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.page.getByTestId(actionTestId).click();
+  }
+
+  /** The "Showing N records" count of the visible grid. */
+  async shownRecords(): Promise<number> {
+    const text = await this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first().textContent();
+    return Number(SHOWING_RECORDS.exec(text ?? "")?.[1]);
+  }
+
+  /** Visible data rows of the grid in `scope`, in display order. */
+  rows(scope: Locator | Page = this.page): Locator {
+    return scope.locator("tbody tr:visible");
+  }
+
+  /** Trimmed texts of the cells of `row`, to assert exact values ("100" but not "1,100"). */
+  cellTexts(row: Locator): Promise<string[]> {
+    return row.locator("td").evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim() ?? ""));
+  }
+
+  /** Input of a cell of a row being edited, by property name (`data-column-id`). */
+  cellEditor(row: Locator, hqlName: string): Locator {
+    return row.locator(`input[data-column-id="${hqlName}"]`);
+  }
+
+  /** Saves the inline edit of `row` and waits until the backend saved it. */
+  async saveRow(row: Locator): Promise<void> {
+    await runAndWaitForResponse(this.page, ROW_SAVE_REQUEST, () => row.locator(SAVE_ROW_BUTTON).click());
+  }
+
+  /** Checks or unchecks the selection checkbox of `row` and waits until it shows that state. */
+  async setRowSelected(row: Locator, selected: boolean): Promise<void> {
+    const checkbox = row.getByRole("checkbox", { name: ROW_SELECTION_LABEL });
+    await checkbox.setChecked(selected, { timeout: ROW_TIMEOUT });
+    await expect(checkbox).toBeChecked({ checked: selected, timeout: CHECK_TIMEOUT });
   }
 
   /** Waits for a row containing `text`. */
@@ -55,14 +137,23 @@ export class Grid {
    * columns (status, pinned actions) only render once scrolled into view.
    */
   async scrollToRightEnd(): Promise<void> {
+    await this.scrollHorizontally(true);
+  }
+
+  /** Scrolls the visible grid back to its left end (the first columns, the group cells). */
+  async scrollToLeftEnd(): Promise<void> {
+    await this.scrollHorizontally(false);
+  }
+
+  private async scrollHorizontally(toEnd: boolean): Promise<void> {
     await this.page
       .getByRole("table")
       .filter({ visible: true })
       .first()
-      .evaluate((table) => {
+      .evaluate((table, end) => {
         const container = table.parentElement as HTMLElement;
-        container.scrollLeft = container.scrollWidth;
-      });
+        container.scrollLeft = end ? container.scrollWidth : 0;
+      }, toEnd);
   }
 
   /**
@@ -113,18 +204,28 @@ export class Grid {
     return row;
   }
 
-  /** Starts editing a row inline through its actions column button. */
-  async editRow(text: string | RegExp): Promise<Locator> {
-    await this.row(text).locator('button[data-testid^="edit-button-"]').click();
-    const row = this.editingRow();
-    await row.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
-    return row;
+  /**
+   * Starts editing a row inline through its actions column button ("Edit in grid") and returns the
+   * row being edited.
+   * @param row - the row itself (e.g. {@link rowWithCell}) or a text of it.
+   */
+  async editRow(row: Locator | string | RegExp): Promise<Locator> {
+    const target = typeof row === "string" || row instanceof RegExp ? this.row(row) : row;
+    await target.locator(`button${EDIT_ROW_BUTTON}`).click();
+    const editing = this.editingRow();
+    await editing.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
+    return editing;
   }
 
   /** Opens the form view of a row through its actions column button. */
   async openForm(text: string | RegExp): Promise<void> {
+    await this.openRowForm(this.row(text));
+  }
+
+  /** Opens the form view of a row (e.g. {@link rowWithCell}) through its actions column button. */
+  async openRowForm(row: Locator): Promise<void> {
     await expect(async () => {
-      const button = this.row(text).locator('button[data-testid^="form-button-"]');
+      const button = row.locator('button[data-testid^="form-button-"]');
       await button.scrollIntoViewIfNeeded();
       await button.click();
     }).toPass({ intervals: [500, 1_000, 2_000], timeout: ROW_TIMEOUT });

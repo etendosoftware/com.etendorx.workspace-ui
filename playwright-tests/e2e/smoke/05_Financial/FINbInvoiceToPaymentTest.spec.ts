@@ -1,6 +1,6 @@
 import type { Locator } from "@playwright/test";
 import { expect, test } from "../../support/fixtures";
-import { runAndWaitForDatasource, runAndWaitForResponse } from "../../support/wait";
+import { runAndWaitForDatasource, runAndWaitForFormInitialization, runAndWaitForResponse } from "../../support/wait";
 
 const ADD_PAYMENT_URL = /AddPaymentActionHandler/;
 const DO_NOT_USE_CREDIT = /Do not use Credit/i;
@@ -100,7 +100,8 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await app.sidebar.navigateTo("paymentIn");
 
     // ── Step 6: Create new Payment In ────────────────────────────────────────
-    await app.toolbar.newRecord();
+    // The new record's form initialization renders the form again and closes a dropdown opened before it
+    await runAndWaitForFormInitialization(page, () => app.toolbar.newRecord());
     await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
 
     // Received From (Business Partner): Customer A

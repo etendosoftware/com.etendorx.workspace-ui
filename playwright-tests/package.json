@@ -9,6 +9,8 @@
     "pw:ui": "playwright test --ui",
     "pw:report": "playwright show-report",
     "pw:one": "playwright test --no-deps",
+    "pw:mocked": "playwright test --project=mocked --no-deps",
+    "pw:record": "PW_MOCK_RECORD=1 playwright test --project=mocked --no-deps --workers=1 && node scripts/sanitize-har.mjs e2e/mocked/recordings/*.har && node scripts/compact-har.mjs e2e/mocked/recordings",
     "typecheck": "tsc --noEmit",
     "check:e2e": "node scripts/check-e2e.mjs",
     "test:tooling": "node --test scripts/__tests__/*.test.mjs reporters/__tests__/*.test.mjs"
