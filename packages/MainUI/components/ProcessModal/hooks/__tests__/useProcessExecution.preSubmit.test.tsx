@@ -60,13 +60,17 @@ describe("useProcessExecution — Pick&Execute pre-submit validation", () => {
 
   it("aborts the submit (no Java post) when onProcess returns an error severity", async () => {
     executeStringFunction.mockResolvedValue({ severity: "error", text: "Credit exceeds pending" });
-    const { result } = renderHook(() => useProcessExecution(makePEParams()));
+    const setResult = jest.fn();
+    const { result } = renderHook(() => useProcessExecution(makePEParams({ setResult })));
 
     await result.current.handleExecute("DONE");
     await flushPromises();
 
     expect(executeStringFunction).toHaveBeenCalledTimes(1);
+    expect(setMessage).toHaveBeenCalledTimes(1);
     expect(setMessage).toHaveBeenCalledWith("error", null, "Credit exceeds pending");
+    // Not repeated as a second "Process Error" banner.
+    expect(setResult).not.toHaveBeenCalledWith(expect.objectContaining({ success: false }));
     expect(global.fetch).not.toHaveBeenCalled(); // handleWindowReferenceExecute never ran
   });
 

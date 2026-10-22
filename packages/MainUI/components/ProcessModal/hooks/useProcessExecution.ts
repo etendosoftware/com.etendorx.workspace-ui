@@ -936,8 +936,9 @@ export function useProcessExecution({
           return false;
         }
         if (outcome === PRE_SUBMIT_OUTCOME.ABORT) {
+          // Shown once, in the message bar, as Classic does. No error result: it would render the
+          // same text again as a second "Process Error" banner.
           messageBar.setMessage("error", responseMessage.msgTitle ?? null, responseMessage.msgText ?? "");
-          setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
         }
         return outcome === PRE_SUBMIT_OUTCOME.PROCEED;
       } catch (error) {
@@ -953,7 +954,6 @@ export function useProcessExecution({
       button.processDefinition,
       extractResponseMessage,
       messageBar,
-      setResult,
       fetchJavaProcessResponse,
       buildWindowReferencePayload,
       handleJavaProcessResponse,

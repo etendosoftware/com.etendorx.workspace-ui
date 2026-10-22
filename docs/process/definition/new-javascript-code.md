@@ -267,7 +267,8 @@ async (process, view) => {
 Rules for this case (`runPreSubmitValidation` + `resolvePreSubmitOutcome`,
 `packages/MainUI/components/ProcessModal/utils/preSubmitOutcome.ts`):
 
-- return `{ severity: 'error', text }` (or any `error` severity) to **abort** the submit and show the text;
+- return `{ severity: 'error', text }` (or any `error` severity) to **abort** the submit and show the text
+  once, in the message bar (as Classic; no second "Process Error" banner);
   an error **without text** aborts **silently** (Classic `clientSideValidationFail()` with no message,
   e.g. a declined `confirm`);
 - return `undefined` (or anything that is not an error) to let the platform **proceed** with the submit;
