@@ -145,7 +145,13 @@ import {
 } from "@/utils/processes/definition/utils";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
 import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
-import { pushProcess } from "@/utils/processes/definition/processStack";
+import {
+  getProcessStack,
+  isTopmostProcessModal,
+  pushProcess,
+  subscribeProcessStack,
+} from "@/utils/processes/definition/processStack";
+import { buildNestedLaunch } from "@/utils/processes/definition/nestedLaunch";
 import {
   isDirectExecuteResult,
   shouldFireDirectExecute,
@@ -317,11 +323,16 @@ function ProcessDefinitionModalContent({
   contextRecord,
   windowId: windowIdProp,
   callerField: callerFieldProp,
+  ownerTab,
+  externalParams,
+  stackEntryId,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { getLabel, language } = useLanguage();
   const { graph } = useSelected();
-  const { tab, record: tabRecord } = useTabContext();
+  const { tab: contextTab, record: tabRecord } = useTabContext();
+  // A nested launch renders outside any tab: it runs in its owner's tab (Classic buttonOwnerView).
+  const tab = contextTab ?? ownerTab;
   const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const session = useUserStore((s) => s.session);
@@ -428,6 +439,8 @@ function ProcessDefinitionModalContent({
   const directExecuteFiredRef = useRef(false);
   // The bare direct-execute overlay does not host ProcessMessageBar, so the modal
   // has to know when a message exists to give the chrome (and the bar) back.
+  const processStack = useSyncExternalStore(subscribeProcessStack, getProcessStack, getProcessStack);
+  const isTopmostModal = isTopmostProcessModal(processStack, stackEntryId);
   const hasMessageBarMessage = useSyncExternalStore(
     subscribeMessageBar,
     () => getMessageBarState() !== null,
@@ -581,7 +594,8 @@ function ProcessDefinitionModalContent({
 
   // Pick-and-Execute discriminator: prefers the explicit `uiPattern` from metadata
   // and falls back to the presence of a Window Reference parameter for legacy seeds.
-  const isPE = useMemo(() => isPickAndExecute(button.processDefinition), [button.processDefinition]);
+  // From the loaded definition: a nested launch starts from a stub button without parameters.
+  const isPE = useMemo(() => isPickAndExecute(processDefinition), [processDefinition]);
 
   const {
     fetchConfig,
@@ -897,15 +911,18 @@ function ProcessDefinitionModalContent({
       setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
       isOkButtonEnabled: () => okEnabledRef.current,
       enableOkButton: () => setScriptButtonState((prev) => withOkForceEnabled(prev, true)),
-      // Layer a nested process modal on top; on its close (X or success) the host
-      // fires this (parent) view's onRefreshFunction, mirroring classic behaviour.
+      // Layer a nested process modal on top, running in this modal's tab and record; after a
+      // successful execution the host refreshes the caller view, mirroring classic behaviour.
       openProcess: (params) =>
-        pushProcess({
-          ...params,
-          windowId: params.windowId ?? windowId,
-          callerField: { ...(params.callerField ?? viewData.callerField), view: viewData },
-          onClose: () => onRefreshFunction?.(viewData),
-        }),
+        pushProcess(
+          buildNestedLaunch(params, {
+            windowId,
+            viewData,
+            ownerTab: tab,
+            ownerRecord: record ?? undefined,
+            onRefreshFunction,
+          })
+        ),
     }),
     [
       tab?.id,
@@ -917,6 +934,8 @@ function ProcessDefinitionModalContent({
       windowId,
       viewData,
       onRefreshFunction,
+      tab,
+      record,
     ]
   );
 
@@ -1120,6 +1139,7 @@ function ProcessDefinitionModalContent({
     getMappedFormValues,
     resolveDocAction,
     getMergedProcessValues,
+    getPopulatedGrids,
     buildProcessSpecificFields,
     buildWindowSpecificFields,
     getRecordIds,
@@ -1147,6 +1167,7 @@ function ProcessDefinitionModalContent({
     onRefreshFunction,
     tab,
     callerField: callerFieldProp,
+    externalParams,
     record: record ?? undefined,
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
@@ -1168,6 +1189,7 @@ function ProcessDefinitionModalContent({
     onSuccess,
     keepOpenOnSuccess,
     getMergedProcessValues,
+    getPopulatedGrids,
     getRecordIds,
     buildProcessSpecificFields,
     buildWindowSpecificFields,
@@ -1284,13 +1306,14 @@ function ProcessDefinitionModalContent({
           tab,
           record as Record<string, unknown> | null,
           recordValues,
-          session
+          session,
+          externalParams
         );
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, tab, record, recordValues, session, tabId, open, isPE]);
+  }, [fetchConfig, tab, record, recordValues, session, tabId, open, isPE, externalParams]);
 
   useEffect(() => {
     if (initializationError) {
@@ -1761,6 +1784,7 @@ function ProcessDefinitionModalContent({
         fieldController={fieldController}
         gridResolver={gridResolver}
         onRefreshFunction={onRefreshFunction}
+        externalParams={externalParams}
         data-testid="WindowReferenceGrid__761503"
       />
     );
@@ -1997,8 +2021,9 @@ function ProcessDefinitionModalContent({
           <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
             {renderModalContent()}
           </Modal>
-          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
-          <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
+          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. Only the
+              topmost modal renders it, so a nested process's dialog is not drawn twice. */}
+          {isTopmostModal && <ProcessDialogHost data-testid="ProcessDialogHost__761503" />}
           {/* Host for action-time dynamic parameter forms (openDynamicForm); unmounts with the modal. */}
           <ParameterDialogHost data-testid="ParameterDialogHost__761503" />
         </>

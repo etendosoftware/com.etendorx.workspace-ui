@@ -24,14 +24,17 @@ import { buildTabStandardContext } from "@/utils";
  * → `buttonOwnerView.getContextInfo()`), it carries the tab's standard properties
  * (`inpwindowId`, `inpTabId`, the key column, …) so default and filter
  * expressions reading them resolve. They go first, so the record values and the
- * session keep their values for every key sent before.
+ * session keep their values for every key sent before. The `externalParams` of a
+ * nested launch (e.g. `bankStatementLineId`) are added on top.
  */
 export function buildDefaultsRequestPayload(
   tab: Tab | null | undefined,
   record: Record<string, unknown> | null | undefined,
   recordValues: Record<string, EntityValue> | null,
-  session: ISession
+  session: ISession,
+  externalParams?: Record<string, unknown>
 ): Record<string, EntityValue> {
   const tabContext = tab ? (buildTabStandardContext(record ?? {}, tab) as Record<string, EntityValue>) : {};
-  return { ...tabContext, ...recordValues, ...session };
+  // A nested launch adds its externalParams last, as Classic `isc.addProperties(context, externalParams)`.
+  return { ...tabContext, ...recordValues, ...session, ...(externalParams as Record<string, EntityValue>) };
 }

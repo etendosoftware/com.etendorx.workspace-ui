@@ -1,4 +1,11 @@
-import { clearProcessStack, getProcessStack, popProcess, pushProcess, subscribeProcessStack } from "../processStack";
+import {
+  clearProcessStack,
+  getProcessStack,
+  isTopmostProcessModal,
+  popProcess,
+  pushProcess,
+  subscribeProcessStack,
+} from "../processStack";
 
 jest.mock("@/utils/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
@@ -92,5 +99,31 @@ describe("processStack", () => {
   it("warns when pushing without a mounted host", () => {
     pushProcess({ processId: PROCESS_A });
     expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("popProcess result", () => {
+  afterEach(() => clearProcessStack());
+
+  it("reports whether the entry was still in the stack", () => {
+    const id = pushProcess({ processId: "P-1" });
+
+    expect(popProcess(id)).toBe(true);
+    expect(popProcess(id)).toBe(false);
+  });
+});
+
+describe("isTopmostProcessModal", () => {
+  const entry = (id: number) => ({ id, processId: `P-${id}` });
+
+  it("is true for a modal outside the stack only while no nested process is open", () => {
+    expect(isTopmostProcessModal([])).toBe(true);
+    expect(isTopmostProcessModal([entry(1)])).toBe(false);
+  });
+
+  it("is true for a nested modal only when it is the last entry", () => {
+    expect(isTopmostProcessModal([entry(1), entry(2)], 2)).toBe(true);
+    expect(isTopmostProcessModal([entry(1), entry(2)], 1)).toBe(false);
+    expect(isTopmostProcessModal([], 1)).toBe(false);
   });
 });

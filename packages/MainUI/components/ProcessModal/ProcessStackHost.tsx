@@ -86,9 +86,12 @@ export default function ProcessStackHost() {
 
   if (stack.length === 0) return null;
 
+  // A success also closes the modal (onSuccess then onClose): only the first pop fires its callback.
   const handleClose = (request: OpenProcessRequest) => {
-    popProcess(request.id);
-    request.onClose?.();
+    if (popProcess(request.id)) request.onClose?.();
+  };
+  const handleSuccess = (request: OpenProcessRequest) => {
+    if (popProcess(request.id)) request.onSuccess?.();
   };
 
   return (
@@ -101,10 +104,13 @@ export default function ProcessStackHost() {
           button={buildButtonStub(request)}
           windowId={request.windowId}
           windowTitle={request.windowTitle}
-          contextRecord={request.externalParams}
+          contextRecord={request.ownerRecord}
+          ownerTab={request.ownerTab}
+          externalParams={request.externalParams}
+          stackEntryId={request.id}
           callerField={request.callerField}
           onClose={() => handleClose(request)}
-          onSuccess={() => handleClose(request)}
+          onSuccess={() => handleSuccess(request)}
           data-testid="ProcessStackHost__ProcessDefinitionModal"
         />
       ))}

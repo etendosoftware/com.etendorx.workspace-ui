@@ -276,6 +276,11 @@ export interface ViewData {
   sourceView?: unknown;
   parentRecord?: Record<string, unknown>;
   activeTabId?: string;
+  /**
+   * The grid parameters' values (`{ <param>: { _selection, _allRows } }`), added to
+   * `getContextInfo()` as Classic does for the process view's grids.
+   */
+  getGridValues?: () => Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -1086,6 +1091,7 @@ function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void
     inpTabId: data.activeTabId,
     ...(data.parentRecord ?? {}),
     ...(form.getValues() as Record<string, unknown>),
+    ...(data.getGridValues?.() ?? {}),
   });
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.

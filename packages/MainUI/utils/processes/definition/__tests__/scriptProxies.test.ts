@@ -427,6 +427,17 @@ describe("scriptProxies", () => {
       expect(() => (view.selectAllRecords as () => void)()).toThrow("view.selectAllRecords is not implemented yet");
     });
 
+    it("adds the grid parameters' values to getContextInfo, as Classic", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const grid = { _selection: [row("trx-1")], _allRows: [row("trx-1")] };
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        data: { activeTabId: "T-1", getGridValues: () => ({ findtransactiontomatch: grid }) },
+      });
+
+      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", amount: 7, findtransactiontomatch: grid });
+    });
+
     it("exposes read-only environment data and the context accessors regardless of controller", () => {
       const { handle } = makeFormHandle({ amount: 7 });
       const data: ViewData = {

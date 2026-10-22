@@ -67,4 +67,10 @@ describe("buildDefaultsRequestPayload", () => {
       expect.objectContaining({ inpwindowId: WINDOW_ID })
     );
   });
+
+  it("adds the nested launch's externalParams on top", () => {
+    const payload = buildDefaultsRequestPayload(tab, { id: "FA-1" }, null, {}, { bankStatementLineId: "BSL-1" });
+
+    expect(payload).toEqual(expect.objectContaining({ inpwindowId: WINDOW_ID, bankStatementLineId: "BSL-1" }));
+  });
 });

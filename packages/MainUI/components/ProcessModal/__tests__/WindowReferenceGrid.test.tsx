@@ -66,6 +66,7 @@ import {
   shouldShowRowActions,
   findRowActionsHostColumnId,
   createGridScriptView,
+  applyExternalParams,
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
@@ -790,6 +791,24 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("is false only when none apply", () => {
       expect(shouldShowRowActions(false, false, false)).toBe(false);
+    });
+  });
+
+  describe("applyExternalParams", () => {
+    it("sends the externalParams as datasource params, skipping empty values", () => {
+      const options: Record<string, unknown> = { tabId: "TAB-1" };
+
+      applyExternalParams(options as never, { bankStatementLineId: "BSL-1", transactionDate: undefined, other: null });
+
+      expect(options).toEqual({ tabId: "TAB-1", bankStatementLineId: "BSL-1" });
+    });
+
+    it("does nothing without externalParams", () => {
+      const options: Record<string, unknown> = { tabId: "TAB-1" };
+
+      applyExternalParams(options as never, undefined);
+
+      expect(options).toEqual({ tabId: "TAB-1" });
     });
   });
 

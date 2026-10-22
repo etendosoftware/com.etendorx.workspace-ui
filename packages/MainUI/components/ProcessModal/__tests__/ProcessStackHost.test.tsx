@@ -15,13 +15,24 @@ jest.mock("../ProcessDefinitionModal", () => ({
     onClose,
     onSuccess,
     callerField,
+    ownerTab,
+    contextRecord,
+    externalParams,
+    stackEntryId,
   }: {
     button: { processId: string };
     onClose: () => void;
     onSuccess?: () => void;
     callerField?: { id?: string; view?: unknown };
+    ownerTab?: { id: string };
+    contextRecord?: { id?: string };
+    externalParams?: Record<string, unknown>;
+    stackEntryId?: number;
   }) => (
     <div data-testid="modal-stub">
+      <span data-testid="modal-owner">{`${ownerTab?.id ?? ""}|${contextRecord?.id ?? ""}`}</span>
+      <span data-testid="modal-external">{JSON.stringify(externalParams ?? {})}</span>
+      <span data-testid="modal-entry">{String(stackEntryId)}</span>
       <span data-testid="modal-process-id">{button.processId}</span>
       <span data-testid="modal-caller-field-id">{callerField?.id ?? ""}</span>
       <span data-testid="modal-caller-has-view">{callerField?.view ? "yes" : "no"}</span>
@@ -90,18 +101,53 @@ describe("ProcessStackHost", () => {
     expect(screen.getByTestId("modal-caller-has-view").textContent).toBe("yes");
   });
 
-  it("pops the entry and fires its onClose on success", async () => {
+  it("pops the entry and fires only its onSuccess, once, on success", async () => {
     const onClose = jest.fn();
+    const onSuccess = jest.fn();
     render(<ProcessStackHost />);
     await act(async () => {
-      pushProcess({ processId: PROCESS_A, onClose });
+      pushProcess({ processId: PROCESS_A, onClose, onSuccess });
+    });
+
+    // A successful execution calls onSuccess and then onClose, as the modal does.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "success" }));
+      fireEvent.click(screen.getByRole("button", { name: "close" }));
+    });
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("modal-stub")).not.toBeInTheDocument();
+  });
+
+  it("does not fire onSuccess when the modal is closed without success", async () => {
+    const onSuccess = jest.fn();
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, onSuccess });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "success" }));
+      fireEvent.click(screen.getByRole("button", { name: "close" }));
     });
 
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId("modal-stub")).not.toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("forwards the owner context, the externalParams and the stack entry id", async () => {
+    render(<ProcessStackHost />);
+    let entryId = 0;
+    await act(async () => {
+      entryId = pushProcess({
+        processId: PROCESS_A,
+        ownerTab: { id: "TAB-1" } as never,
+        ownerRecord: { id: "REC-1" },
+        externalParams: { bankStatementLineId: "BSL-1" },
+      });
+    });
+
+    expect(screen.getByTestId("modal-owner").textContent).toBe("TAB-1|REC-1");
+    expect(screen.getByTestId("modal-external").textContent).toBe('{"bankStatementLineId":"BSL-1"}');
+    expect(screen.getByTestId("modal-entry").textContent).toBe(String(entryId));
   });
 });

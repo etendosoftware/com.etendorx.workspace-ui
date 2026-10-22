@@ -1246,6 +1246,18 @@ export const applyButtonOwnerViewTabId = (options: DatasourceParams, originTab?:
   options[BUTTON_OWNER_VIEW_TAB_ID_PARAM] = originTab.id;
 };
 
+/**
+ * Mirrors Classic OBPickAndExecuteGrid.transformRequest
+ * (`isc.addProperties(dsRequest.params, view.externalParams)`): the `externalParams`
+ * of a nested launch travel as datasource request params, which backend HQL
+ * transformers read (e.g. `bankStatementLineId`). Empty values are skipped.
+ */
+export const applyExternalParams = (options: DatasourceParams, externalParams?: Record<string, unknown>): void => {
+  for (const [key, value] of Object.entries(externalParams ?? {})) {
+    if (value !== undefined && value !== null) options[key] = value;
+  }
+};
+
 // Standard context variable keys that are always valid filter columns
 const STANDARD_FILTER_KEYS = [
   "c_bpartner_id",
@@ -1716,6 +1728,7 @@ const WindowReferenceGrid = ({
   fieldController,
   gridResolver,
   onRefreshFunction,
+  externalParams,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -2098,6 +2111,7 @@ const WindowReferenceGrid = ({
     options.isPickAndEdit = true;
     // Send the owner tab so backend HQL transformers pick the right query branch (Classic parity)
     applyButtonOwnerViewTabId(options, originTab);
+    applyExternalParams(options, externalParams);
     // Match Classic default: send true unless the user has explicitly toggled the filter off
     options.isImplicitFilterApplied = isImplicitFilterApplied ?? true;
 
@@ -2120,6 +2134,7 @@ const WindowReferenceGrid = ({
     etendoContext,
     originTab,
     booleanColumnFilterFields,
+    externalParams,
   ]);
 
   // `datasourceOptions` legitimately changes content on cell edits because
