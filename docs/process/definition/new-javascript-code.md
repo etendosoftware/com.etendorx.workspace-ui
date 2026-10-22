@@ -806,7 +806,9 @@ Anything not implemented throws a clear error rather than failing silently.
   (`nestedLaunch.ts`). These methods are live only with a `ViewController`.
   - **Context:** the child runs in the launcher's tab and record (Section 6.5). Its defaults request, grid
     datasource (`buttonOwnerViewTabId`, the owner's `@Entity.property@` session keys) and submit carry that
-    context, as Classic's `buttonOwnerView`.
+    context, as Classic's `buttonOwnerView`. The host also provides the launcher's tab selection graph (`ownerGraph`,
+    `SelectContext`), because it renders outside the window providers. The child reads the same selected records
+    as the launcher, and the session keys (e.g. `@FIN_Financial_Account.id@`) resolve.
   - **`externalParams`:** added to the defaults context, sent as grid datasource request params
     (`applyExternalParams`) and added to the submit `_params`, as Classic does.
   - **`callerField`:** the script's own (e.g. `{ record: row, view }`, Classic `callerField: me`), or the
