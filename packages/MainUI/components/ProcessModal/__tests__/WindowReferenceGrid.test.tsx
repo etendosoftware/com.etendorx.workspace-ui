@@ -52,6 +52,11 @@ import {
   applyRecordValues,
   evaluateFieldReadOnlyLogic,
   buildGridCriteria,
+  findFilterColumn,
+  readFilterExpressionValue,
+  toBooleanFilterValue,
+  toColumnFilterSeedValue,
+  collectBooleanFilterFields,
   getSortByString,
   GridCellRenderer,
   shouldRenderCellEditor,
@@ -66,7 +71,7 @@ import {
   RowActionsCell,
   type EmbeddedGridApi,
 } from "../WindowReferenceGrid";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { RowActionButton } from "@/utils/processes/definition/scriptProxies";
 
 describe("WindowReferenceGrid Utilities", () => {
@@ -169,6 +174,89 @@ describe("WindowReferenceGrid Utilities", () => {
       const result = buildGridCriteria(filterExpressions, "grid1");
       expect(result).toHaveLength(1);
       expect(result[0].fieldName).toBe("field1");
+    });
+
+    it("skips the fields applied as column filters (case-insensitive)", () => {
+      const filterExpressions = { grid1: { Cleared: "No", field1: "val1" } };
+
+      const result = buildGridCriteria(filterExpressions, "grid1", new Set(["cleared"]));
+
+      expect(result.map((criteria) => criteria.fieldName)).toEqual(["field1"]);
+    });
+  });
+
+  describe("default filter expressions on Yes/No columns", () => {
+    const MATCH_COLUMN = {
+      id: "Match",
+      header: "Match",
+      columnName: "cleared",
+      hqlName: "cleared",
+      type: "boolean",
+    } as unknown as Column;
+    const TEXT_COLUMN = {
+      id: "Description",
+      header: "Description",
+      columnName: "description",
+      type: "text",
+    } as unknown as Column;
+    const COLUMNS = [TEXT_COLUMN, MATCH_COLUMN];
+
+    it.each([
+      ["cleared", "columnName"],
+      ["CLEARED", "case-insensitive name"],
+      ["Match", "column id"],
+    ])("findFilterColumn resolves %p by %s", (fieldName) => {
+      expect(findFilterColumn(COLUMNS, fieldName)).toBe(MATCH_COLUMN);
+    });
+
+    it("findFilterColumn returns undefined for an unknown field or no columns", () => {
+      expect(findFilterColumn(COLUMNS, "amount")).toBeUndefined();
+      expect(findFilterColumn(undefined, "cleared")).toBeUndefined();
+    });
+
+    it.each([
+      ["No", ["false"]],
+      ["Yes", ["true"]],
+      ["true", ["true"]],
+      ["false", ["false"]],
+      [true, ["true"]],
+      [false, ["false"]],
+      ["maybe", undefined],
+      ["", undefined],
+    ])("toBooleanFilterValue(%p) is %p", (rawValue, expected) => {
+      expect(toBooleanFilterValue(rawValue)).toEqual(expected);
+    });
+
+    it.each([
+      ["No", "No"],
+      [{ value: "No" }, "No"],
+      [{ values: "A" }, "A"],
+      [{}, ""],
+      [null, ""],
+      [undefined, ""],
+      [3, "3"],
+    ])("readFilterExpressionValue(%p) is %p", (logic, expected) => {
+      expect(readFilterExpressionValue(logic)).toBe(expected);
+    });
+
+    it("seeds a Yes/No default as the column's boolean selection", () => {
+      expect(toColumnFilterSeedValue(MATCH_COLUMN, "No")).toEqual(["false"]);
+    });
+
+    it("seeds any other default as before", () => {
+      expect(toColumnFilterSeedValue(TEXT_COLUMN, "No")).toBe("No");
+      expect(toColumnFilterSeedValue(MATCH_COLUMN, "maybe")).toBe("maybe");
+      expect(toColumnFilterSeedValue(undefined, { value: "X" })).toBe("X");
+    });
+
+    it("collects only the boolean defaults applied as column filters", () => {
+      const fields = collectBooleanFilterFields({ Cleared: "No", description: "No", missing: "true" }, COLUMNS);
+
+      expect([...fields]).toEqual(["cleared"]);
+    });
+
+    it("collects nothing without expressions", () => {
+      expect(collectBooleanFilterFields(undefined, COLUMNS).size).toBe(0);
     });
   });
 
