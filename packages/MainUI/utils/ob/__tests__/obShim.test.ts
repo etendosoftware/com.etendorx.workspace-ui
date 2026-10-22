@@ -173,7 +173,7 @@ describe("createOBShim", () => {
     ob.RemoteCallManager.call("handler", { a: 1 }, {}, callback);
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(remoteCall).toHaveBeenCalledWith("handler", { a: 1 });
+    expect(remoteCall).toHaveBeenCalledWith("handler", { a: 1 }, {});
     expect(callback).toHaveBeenCalledWith({ status: 0 }, { ok: true }, { clientContext: undefined });
   });
 });
