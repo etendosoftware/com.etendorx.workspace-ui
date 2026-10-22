@@ -48,6 +48,7 @@ import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
 import { useToolbarShortcuts } from "@/hooks/Toolbar/useToolbarShortcuts";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
+import PersonalizeFormModal from "../Form/PersonalizeForm/PersonalizeFormModal";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
@@ -111,6 +112,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [saveViewAnchorEl, setSaveViewAnchorEl] = useState<HTMLElement | null>(null);
+  const [personalizeFormOpen, setPersonalizeFormOpen] = useState(false);
   const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
@@ -251,6 +253,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleSaveViewMenuClose = useCallback(() => {
     setSaveViewAnchorEl(null);
   }, []);
+
+  const handleClosePersonalizeForm = useCallback(() => setPersonalizeFormOpen(false), []);
 
   const { currentLayout, handleApplyView, handleAutoApplyView, handleApplyColumnConfiguration, handleResetToStandard } =
     useApplyViewState({ windowIdentifier, tabId: tab?.id ?? "" });
@@ -491,6 +495,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
         openAuditTrail();
         return;
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM) {
+        setPersonalizeFormOpen(true);
+        return;
+      }
       handleAction(action, button, event);
     },
     [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle, openAuditTrail]
@@ -599,6 +607,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           onApplyView={handleApplyView}
           onResetToStandard={handleResetToStandard}
           data-testid="SaveViewMenu__a2dd07"
+        />
+      )}
+      {personalizeFormOpen && tab?.id && (
+        <PersonalizeFormModal
+          tab={tab}
+          onClose={handleClosePersonalizeForm}
+          data-testid="PersonalizeFormModal__a2dd07"
         />
       )}
       {confirmAction && (
