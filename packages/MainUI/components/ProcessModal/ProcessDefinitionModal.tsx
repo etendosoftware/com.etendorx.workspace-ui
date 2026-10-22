@@ -152,6 +152,7 @@ import {
   shouldRenderDirectExecuteOverlay,
 } from "@/utils/processes/definition/directExecute";
 import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
+import { buildSourceView } from "@/utils/processes/definition/sourceView";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -858,7 +859,7 @@ function ProcessDefinitionModalContent({
         record: record ?? undefined,
       },
       parentWindow: tab ?? undefined,
-      sourceView: tab ?? undefined,
+      sourceView: buildSourceView(tab, record as Record<string, unknown> | null),
       parentRecord: recordValues ?? (record as Record<string, unknown>) ?? undefined,
       activeTabId: tab?.id,
     }),
