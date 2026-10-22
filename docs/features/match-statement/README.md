@@ -86,6 +86,7 @@ See [Pick & Execute §10.5](../../process/pickAndExecute/README.md#105-success-t
 |---|---|
 | Every `clientclass` was treated as a navigation link, so the Yes/No tag was stringified into a clickable "[object Object]". | A Yes/No column is never a link (`isClientclassLinkColumn`); it renders its Yes/No tag. |
 | The `No` default became a hidden `cleared iContains "No"` criterion, impossible to remove (this grid has no implicit-filter button), plus a column filter sent as `iContains "false"`. | Yes/No defaults are applied only as the column's Yes/No filter (`equals false`), removable as in Classic. |
+| The defaults request did not send the launching tab's standard properties, so `MatchStatementFilterExpression` found no `inpwindowId` and returned no filter: the grid opened unfiltered. | The request now carries the launching tab context (`buildDefaultsRequestPayload`), as Classic does. See [process defaults: launching tab context](../process-defaults-integration/api-integration.md#launching-tab-context-process-definition-modal). |
 
 Details: [Pick & Execute §8.5 and §8.16](../../process/pickAndExecute/README.md#85-cell-rendering-architecture).
 
@@ -106,6 +107,8 @@ Details: [Pick & Execute §8.5 and §8.16](../../process/pickAndExecute/README.m
   when the response carries a message.
 - `packages/MainUI/utils/table/clientclassLink.ts`: `isClientclassLinkColumn`, used by `hooks/table/useColumns.tsx`
   and `WindowReferenceGrid.tsx`.
+- `packages/MainUI/components/ProcessModal/utils/defaultsRequestPayload.ts` and `buildTabStandardContext`
+  (`packages/MainUI/utils/index.ts`): the context sent to `DefaultsProcessActionHandler`.
 - `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `buildGridCriteria`, `findFilterColumn`,
   `toBooleanFilterValue`, `toColumnFilterSeedValue`, `collectBooleanFilterFields`.
 - `packages/MainUI/utils/processes/definition/dialogs.ts` and
