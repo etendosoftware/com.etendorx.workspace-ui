@@ -35,6 +35,7 @@ jest.mock("@workspaceui/componentlibrary/src/components/Tag", () => ({
 }));
 
 import { useColumns } from "@/hooks/table/useColumns";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 describe("useColumns - reference cell links carry record id", () => {
   beforeEach(() => {
@@ -178,7 +179,7 @@ describe("useColumns - clientclass on a Yes/No column", () => {
   const NO_LABEL = "No";
 
   // Classic Match Statement "Match" field: Yes/No column whose clientclass is a cell component.
-  const yesNoClientclassTab: any = {
+  const yesNoClientclassTab = {
     fields: {
       cleared: {
         showInGridView: true,
@@ -189,7 +190,7 @@ describe("useColumns - clientclass on a Yes/No column", () => {
         clientclass: "APRMMatchStatGridButtonsComponent",
       },
     },
-  };
+  } as unknown as Tab;
 
   function Harness() {
     const column = useColumns(yesNoClientclassTab)[0] as unknown as {
@@ -210,5 +211,39 @@ describe("useColumns - clientclass on a Yes/No column", () => {
     expect(screen.queryByText("[object Object]")).not.toBeInTheDocument();
     expect(screen.getByText(NO_LABEL)).toBeInTheDocument();
     expect(clientclassNavSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("useColumns - OBLevelImg clientclass", () => {
+  // Classic Match Statement "Affinity" field: matching type drawn as a level indicator.
+  const affinityTab = {
+    fields: {
+      affinity: {
+        showInGridView: true,
+        name: "Affinity",
+        hqlName: "affinity",
+        columnName: "affinity",
+        column: { reference: "10" },
+        clientclass: 'OBLevelImg {"valuesList":["NO", "dummy1", "dummy2", "AP", "AU"]}',
+      },
+    },
+  } as unknown as Tab;
+
+  function Harness({ affinity }: Readonly<{ affinity: string | null }>) {
+    const { Cell } = useColumns(affinityTab)[0] as unknown as { Cell: React.ComponentType<{ row: unknown }> };
+    return <Cell row={{ original: { id: "LINE-1", affinity } }} />;
+  }
+
+  it("renders the level indicator instead of a navigation link", () => {
+    render(<Harness affinity="AP" />);
+
+    expect(screen.getByRole("img", { name: "3/4" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /navigate to referenced record/i })).not.toBeInTheDocument();
+  });
+
+  it.each(["MA", null])("renders nothing for a value outside the scale (%p)", (affinity) => {
+    const { container } = render(<Harness affinity={affinity} />);
+
+    expect(container).toBeEmptyDOMElement();
   });
 });

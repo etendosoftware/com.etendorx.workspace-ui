@@ -38,7 +38,13 @@ import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateF
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 import { isGridRenderableColumn, sortFieldsByGridOrder } from "@/utils/table/utils";
-import { isClientclassLinkColumn } from "@/utils/table/clientclassLink";
+import {
+  isClientclassLinkColumn,
+  isLevelImgColumn,
+  readLevelValues,
+  resolveLevel,
+} from "@/utils/table/clientclassLink";
+import { LevelIndicatorCell } from "../../components/Table/Cells/LevelIndicatorCell";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -370,6 +376,23 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 {displayNode}
               </button>
             );
+          },
+        };
+      } else if (isLevelImgColumn(column)) {
+        // Classic OBLevelImg: signal-style level indicator resolved from the raw cell value
+        const valuesList = readLevelValues(column);
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ row }: { row: { original: EntityData } }) => {
+            const record = row.original as Record<string, unknown>;
+            const resolved = resolveLevel(record[column.hqlName as string] ?? record[column.columnName], valuesList);
+            return resolved ? (
+              <LevelIndicatorCell
+                level={resolved.level}
+                max={resolved.max}
+                data-testid="LevelIndicatorCell__useColumns"
+              />
+            ) : null;
           },
         };
       } else if (isClientclassLinkColumn(column)) {

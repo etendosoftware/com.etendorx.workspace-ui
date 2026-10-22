@@ -74,7 +74,7 @@ import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./Wi
 import { getFieldReference } from "@/utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
-import { isClientclassLinkColumn } from "@/utils/table/clientclassLink";
+import { hasClientclassCell } from "@/utils/table/clientclassLink";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
@@ -3434,7 +3434,7 @@ const WindowReferenceGrid = ({
         if (isReadOnly) {
           // For Read-Only fields, override the Cell renderer
           // Exception: preserve custom Cell renderers from clientclass-based link columns
-          if (!isClientclassLinkColumn(col as Column)) {
+          if (!hasClientclassCell(col as Column)) {
             newCol.Cell = ReadOnlyCellRenderer;
           }
           // Ensure Edit component is removed so it cannot be triggered

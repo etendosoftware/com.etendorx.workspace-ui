@@ -16,15 +16,26 @@
  */
 
 import type { Column } from "@workspaceui/api-client/src/api/types";
-import { isClientclassLinkColumn } from "../clientclassLink";
+import {
+  DEFAULT_LEVEL_VALUES,
+  hasClientclassCell,
+  isClientclassLinkColumn,
+  isLevelImgColumn,
+  readLevelValues,
+  resolveLevel,
+  splitClientclass,
+} from "../clientclassLink";
 
 const MATCH_CLIENTCLASS = "APRMMatchStatGridButtonsComponent";
+const LINK_CLIENTCLASS = "SalesOrderTabLink";
+const AFFINITY_VALUES = ["NO", "dummy1", "dummy2", "AP", "AU"];
+const AFFINITY_CLIENTCLASS = `OBLevelImg ${JSON.stringify({ valuesList: AFFINITY_VALUES })}`;
 
 const asColumn = (props: Record<string, unknown>) => props as unknown as Column;
 
 describe("isClientclassLinkColumn", () => {
   it("is a link for a non Yes/No column with a clientclass", () => {
-    expect(isClientclassLinkColumn(asColumn({ type: "text", clientclass: "SalesOrderTabLink" }))).toBe(true);
+    expect(isClientclassLinkColumn(asColumn({ type: "text", clientclass: LINK_CLIENTCLASS }))).toBe(true);
   });
 
   it.each([
@@ -37,5 +48,63 @@ describe("isClientclassLinkColumn", () => {
 
   it.each([undefined, null, ""])("is not a link without a clientclass (%p)", (clientclass) => {
     expect(isClientclassLinkColumn(asColumn({ type: "text", clientclass }))).toBe(false);
+  });
+});
+
+describe("splitClientclass", () => {
+  it("splits the component name from its JSON properties", () => {
+    expect(splitClientclass(AFFINITY_CLIENTCLASS)).toEqual({
+      name: "OBLevelImg",
+      props: { valuesList: AFFINITY_VALUES },
+    });
+  });
+
+  it("returns the name without whitespace and no properties when there is no JSON", () => {
+    expect(splitClientclass(" OBLevelImg ")).toEqual({ name: "OBLevelImg", props: {} });
+  });
+
+  it("ignores invalid JSON properties", () => {
+    expect(splitClientclass("OBLevelImg {invalid")).toEqual({ name: "OBLevelImg", props: {} });
+  });
+
+  it.each([undefined, null, ""])("returns an empty name for %p", (clientclass) => {
+    expect(splitClientclass(clientclass)).toEqual({ name: "", props: {} });
+  });
+});
+
+describe("level indicator (OBLevelImg)", () => {
+  const affinityColumn = asColumn({ type: "text", clientclass: AFFINITY_CLIENTCLASS });
+
+  it.each([
+    ["AU", { level: 4, max: 4 }],
+    ["AP", { level: 3, max: 4 }],
+    ["NO", { level: 0, max: 4 }],
+    ["MA", null],
+    [null, null],
+    ["", null],
+  ])("resolves %p as Classic does", (value, expected) => {
+    expect(resolveLevel(value, AFFINITY_VALUES)).toEqual(expected);
+  });
+
+  it("resolves numeric values on the default scale", () => {
+    expect(resolveLevel(2, DEFAULT_LEVEL_VALUES)).toEqual({ level: 2, max: 4 });
+  });
+
+  it("reads the valuesList of the clientclass, or the default scale", () => {
+    expect(readLevelValues(affinityColumn)).toEqual(AFFINITY_VALUES);
+    expect(readLevelValues(asColumn({ clientclass: "OBLevelImg" }))).toBe(DEFAULT_LEVEL_VALUES);
+    expect(readLevelValues(asColumn({ clientclass: 'OBLevelImg {"valuesList":[]}' }))).toBe(DEFAULT_LEVEL_VALUES);
+  });
+
+  it("is a clientclass cell but not a link", () => {
+    expect(isLevelImgColumn(affinityColumn)).toBe(true);
+    expect(isClientclassLinkColumn(affinityColumn)).toBe(false);
+    expect(hasClientclassCell(affinityColumn)).toBe(true);
+  });
+
+  it("keeps links as clientclass cells and Yes/No columns without one", () => {
+    expect(hasClientclassCell(asColumn({ type: "text", clientclass: LINK_CLIENTCLASS }))).toBe(true);
+    expect(hasClientclassCell(asColumn({ type: "boolean", clientclass: MATCH_CLIENTCLASS }))).toBe(false);
+    expect(isLevelImgColumn(asColumn({ type: "text", clientclass: LINK_CLIENTCLASS }))).toBe(false);
   });
 });
