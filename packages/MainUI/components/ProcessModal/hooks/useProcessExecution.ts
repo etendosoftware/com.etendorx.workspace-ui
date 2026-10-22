@@ -553,7 +553,11 @@ export function useProcessExecution({
           onSuccess?.();
           await handleNavigateToTab(linkTabId, linkRecordId ?? "");
         } else {
-          showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+          // Classic `handleResponse` shows a message only when the handler returns one: a
+          // response without message (e.g. `{ refreshParent: true }`) closes and refreshes silently.
+          if (message) {
+            showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+          }
           handleSuccessClose(true);
         }
       } else {

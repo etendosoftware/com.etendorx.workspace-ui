@@ -16,6 +16,7 @@
 
 import "../testUtils/useProcessExecution.mocks";
 import { renderHook, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import { useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
 
@@ -118,6 +119,32 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     );
     expect(keepOpenCall).toBeUndefined();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  describe("success toast (Classic shows a message only when the handler returns one)", () => {
+    beforeEach(() => {
+      (toast.success as jest.Mock).mockClear();
+    });
+
+    it("closes without a toast when the response carries no message", async () => {
+      mockFetchJson({ refreshParent: true });
+      const onClose = jest.fn();
+
+      await runProcess({ onClose });
+
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it("closes with the toast when the response carries a message", async () => {
+      mockFetchJson(SUCCESS_RESPONSE);
+      const onClose = jest.fn();
+
+      await runProcess({ onClose });
+
+      expect(toast.success).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalled();
+    });
   });
 
   it("reads retryExecution nested under response.data", async () => {
