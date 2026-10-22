@@ -20,7 +20,6 @@ const inputDateInDays = (days: number): string => {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`;
 };
 
-
 /** Fills the header and one line of the new purchase invoice, completes it and returns its number. */
 async function completeInvoice(app: App, invoice: InvoiceSpec, fieldIds: { paymentMethod: string; quantity: string }) {
   const { page } = app;
