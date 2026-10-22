@@ -80,7 +80,15 @@ function buildButtonStub(request: OpenProcessRequest): ProcessDefinitionButton {
  * again (Classic runs the nested process with the launcher's `buttonOwnerView`).
  * Without an owner graph the children render as before.
  */
-function OwnerSelection({ graph, children }: { graph?: Graph<Tab>; children: ReactNode }) {
+function OwnerSelection({
+  graph,
+  children,
+}: {
+  graph?: Graph<Tab>;
+  children: ReactNode;
+  /** Test id added by the data-testid tooling; the provider renders no element of its own. */
+  "data-testid"?: string;
+}) {
   const value = useMemo(() => (graph ? { graph } : undefined), [graph]);
   if (!value) return <>{children}</>;
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
@@ -112,7 +120,7 @@ export default function ProcessStackHost() {
   return (
     <>
       {stack.map((request) => (
-        <OwnerSelection key={request.id} graph={request.ownerGraph}>
+        <OwnerSelection key={request.id} graph={request.ownerGraph} data-testid="OwnerSelection__286024">
           <ProcessDefinitionModal
             open
             type={PROCESS_TYPES.PROCESS_DEFINITION}
