@@ -168,6 +168,7 @@ import { buildDefaultsRequestPayload } from "./utils/defaultsRequestPayload";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
+  hasVisibleParameter,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
 import { buildSuccessBannerMessage, readBannerTitle } from "./utils/responseBanner";
@@ -626,6 +627,7 @@ function ProcessDefinitionModalContent({
     record: record || undefined,
     tab: tab || undefined,
     type,
+    externalParams,
   });
 
   const memoizedParameters = useMemo(() => Object.values(parameters), [parameters]);
@@ -1094,14 +1096,15 @@ function ProcessDefinitionModalContent({
         parameter,
         formValues,
         isDisplayed: isParamDisplayedRef.current,
-        // Report export buttons follow Classic: enabled only when every visible
-        // mandatory parameter actually holds a value.
-        requireActualValue: isOBUIAPPReport,
+        // Report export buttons and Pick & Execute processes follow Classic
+        // (`allRequiredParametersSet`): enabled only when every visible mandatory
+        // parameter actually holds a value, not when it merely has a default expression.
+        requireActualValue: isOBUIAPPReport || isPE,
       })
     );
     // logicFields is read indirectly through isParamDisplayedRef; keep it in deps so
     // the check recomputes when a callout/script toggles a parameter's visibility.
-  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport]);
+  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport, isPE]);
 
   const peGrids = useMemo(() => {
     if (!isPE) return [];
@@ -1822,6 +1825,15 @@ function ProcessDefinitionModalContent({
         </div>
       );
     }
+    // Classic hides a section whose fields are all hidden. It stays mounted (hidden) so its
+    // parameters keep registering exactly as before; only the empty header disappears.
+    if (!hasVisibleParameter(group, isWindowReferenceParameter, isParamDisplayedRef.current)) {
+      return (
+        <div key={`group-${group.id}`} hidden>
+          {renderGroupBody(group)}
+        </div>
+      );
+    }
     return (
       <CollapsibleSection
         key={`group-${group.id}`}
@@ -1882,7 +1894,6 @@ function ProcessDefinitionModalContent({
       !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
-    (isPE && !gridSelection) ||
     (isPE && hasInvalidSelection);
 
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.

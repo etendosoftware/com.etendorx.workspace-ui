@@ -16,6 +16,11 @@ export interface ProcessInitializationParams {
   record?: Record<string, unknown>;
   tab?: Tab;
   type: ProcessType;
+  /**
+   * `externalParams` of a nested launch, added to the defaults context as Classic
+   * `isc.addProperties(context, externalParams)` does (filter expressions read them).
+   */
+  externalParams?: Record<string, unknown>;
 }
 
 const buildProcessInitializationParams = ({
@@ -119,6 +124,7 @@ export function useProcessInitialization({
   record,
   tab,
   type,
+  externalParams,
 }: ProcessInitializationParams): UseProcessInitialization {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { error, processInitialization, loading } = state;
@@ -149,6 +155,7 @@ export function useProcessInitialization({
               ])
             ),
             ...extraKey,
+            ...(externalParams as Record<string, EntityValue>),
             processId,
             windowId: windowId || "",
             recordId: recordId || "",
@@ -159,6 +166,7 @@ export function useProcessInitialization({
           // Fallback to basic payload if record/tab not available
           payload = {
             ...contextData,
+            ...(externalParams as Record<string, EntityValue>),
             processId,
             windowId: windowId || null,
             recordId: recordId || "",
@@ -183,7 +191,7 @@ export function useProcessInitialization({
         dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
       }
     },
-    [params, enabled, processId, windowId, recordId, record, tab]
+    [params, enabled, processId, windowId, recordId, record, tab, externalParams]
   );
 
   const refetch = useCallback(

@@ -88,6 +88,29 @@ export interface IsParameterDisplayedOptions {
  * @param options - parameter, merged logic flags, current values and the evaluation context
  * @returns true when the parameter must be visible
  */
+/**
+ * Display logic token the server expands per process into the accounting
+ * dimension visibility rules (`DimensionDisplayUtility.computeAccountingDimensionDisplayLogic`).
+ * It is not a context variable, so the raw logic cannot be evaluated on the client.
+ */
+const ACCT_DIMENSION_DISPLAY_TOKEN = "@ACCT_DIMENSION_DISPLAY@";
+
+/**
+ * The display logic to evaluate for a parameter: the server-rewritten
+ * `displayLogicExpression` when the raw logic uses `@ACCT_DIMENSION_DISPLAY@`
+ * (as Classic does), otherwise the raw `displayLogic`, unchanged.
+ */
+export const resolveParameterDisplayLogic = (parameter: {
+  displayLogic?: string | null;
+  displayLogicExpression?: string;
+}): string | null | undefined => {
+  const { displayLogic, displayLogicExpression } = parameter;
+  if (displayLogicExpression && displayLogic?.includes(ACCT_DIMENSION_DISPLAY_TOKEN)) {
+    return displayLogicExpression;
+  }
+  return displayLogic;
+};
+
 export const isParameterDisplayed = ({
   parameter,
   logicFields,
@@ -102,11 +125,12 @@ export const isParameterDisplayed = ({
   }
 
   // 2. Fall back to the parameter's own display logic.
-  if (!parameter.displayLogic) return true;
+  const displayLogic = resolveParameterDisplayLogic(parameter);
+  if (!displayLogic) return true;
 
   // Skip compilation if display logic looks like a bare field name (malformed).
-  if (parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@")) {
-    logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
+  if (displayLogic.includes("_logic") && !displayLogic.includes("@")) {
+    logger.warn("Invalid display logic expression - looks like field name:", displayLogic);
     return true; // Default to visible for malformed expressions.
   }
 
@@ -117,10 +141,10 @@ export const isParameterDisplayed = ({
   }
 
   try {
-    const compiledExpr = compileExpression(parameter.displayLogic);
+    const compiledExpr = compileExpression(displayLogic);
     return toClassicBoolean(compiledExpr(evaluationContext, evaluationContext, windowId));
   } catch (error) {
-    logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
+    logger.warn("Error executing display logic expression:", displayLogic, error);
     return true; // Default to visible on error.
   }
 };
