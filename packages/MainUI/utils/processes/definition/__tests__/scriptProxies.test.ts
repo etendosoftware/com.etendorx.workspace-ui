@@ -2,6 +2,7 @@ import type { UseFormReturn } from "react-hook-form";
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import {
   buildGridVisibility,
+  clearScriptScope,
   createFormHandle,
   createFormProxy,
   createGridProxy,
@@ -11,6 +12,7 @@ import {
   normalizeValueMapEntries,
   notImplemented,
   resolveFormKey,
+  withScriptScope,
   type FieldController,
   type FooterButtonHandle,
   type FormHandle,
@@ -374,6 +376,70 @@ describe("scriptProxies", () => {
 
   describe("createViewProxy", () => {
     const messageBar: MessageBarHandle = { setMessage: jest.fn(), hide: jest.fn() };
+
+    describe("shared script scope (Classic single view object)", () => {
+      const UNMATCH_BUTTON = { _buttonValue: "UN" };
+
+      /** Two views of the same modal: they share the scope, as every Classic hook gets the same view. */
+      const makeViews = (scope: Record<string, unknown>) => {
+        const { handle } = makeFormHandle();
+        const onLoadView = createViewProxy(handle, PARAMETERS, { messageBar, data: { scriptScope: scope } });
+        const gridView = createViewProxy(handle, PARAMETERS, { messageBar, data: { scriptScope: scope } });
+        return { onLoadView, gridView };
+      };
+
+      it("reads from one view a property the script assigned on another", () => {
+        const { onLoadView, gridView } = makeViews({});
+
+        onLoadView.unmatchButton = UNMATCH_BUTTON;
+
+        expect(gridView.unmatchButton).toBe(UNMATCH_BUTTON);
+        expect("unmatchButton" in gridView).toBe(true);
+      });
+
+      it("keeps the views' own properties per view", () => {
+        const { handle } = makeFormHandle();
+        const scope = {};
+        const first = createViewProxy(handle, PARAMETERS, {
+          messageBar,
+          data: { scriptScope: scope },
+          hookData: { _buttonValue: "OK" },
+        });
+        const second = createViewProxy(handle, PARAMETERS, {
+          messageBar,
+          data: { scriptScope: scope },
+          hookData: { _buttonValue: "RE" },
+        });
+
+        first._buttonValue = "UN";
+
+        expect(second._buttonValue).toBe("RE");
+        expect(scope).toEqual({});
+      });
+
+      it("returns the shared view from getView and keeps its own keys enumerable only", () => {
+        const { onLoadView } = makeViews({});
+
+        onLoadView.unmatchButton = UNMATCH_BUTTON;
+
+        expect(onLoadView.getView()).toBe(onLoadView);
+        expect(Object.keys(onLoadView)).not.toContain("unmatchButton");
+      });
+
+      it("empties the scope in place when the modal opens again", () => {
+        const scope: Record<string, unknown> = { unmatchButton: UNMATCH_BUTTON };
+
+        clearScriptScope(scope);
+
+        expect(scope).toEqual({});
+      });
+
+      it("leaves a view without a scope unwrapped", () => {
+        const view = { messageBar };
+
+        expect(withScriptScope(view, undefined)).toBe(view);
+      });
+    });
 
     it("wires theForm and messageBar, and viewGrid only when a grid is given", () => {
       const { handle } = makeFormHandle({ amount: 1 });

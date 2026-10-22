@@ -277,6 +277,12 @@ export interface ViewData {
   parentRecord?: Record<string, unknown>;
   activeTabId?: string;
   /**
+   * Per-modal store for the properties a script assigns on its `view` (e.g.
+   * `view.unmatchButton`), shared by every view of the modal as Classic has a
+   * single view object (see `withScriptScope`).
+   */
+  scriptScope?: Record<string, unknown>;
+  /**
    * The grid parameters' values (`{ <param>: { _selection, _allRows } }`), added to
    * `getContextInfo()` as Classic does for the process view's grids.
    */
@@ -1080,7 +1086,7 @@ function buildParentWindow(
 }
 
 /** Read-only environment data and the always-live context accessors. */
-function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void {
+function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData, self: ViewProxy = view): void {
   view.windowId = data.windowId;
   view.callerField = data.callerField;
   view.sourceView = data.sourceView;
@@ -1095,7 +1101,7 @@ function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void
   });
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.
-  view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? view : { tabId });
+  view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? self : { tabId });
   // Classic `view.parentWindow.view.getContextInfo()` idiom (built after the accessors above).
   view.parentWindow = buildParentWindow(data.parentWindow, view);
 }
@@ -1167,6 +1173,41 @@ function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
  * is *also* attached nested as `view.hookData` — the form the migration guide
  * documents. Both spellings resolve to the same fields.
  */
+/**
+ * Shares the properties a script adds to its `view` across every view of the same
+ * modal, as Classic hands every hook the same view object: a property the script
+ * assigns that the view does not define (e.g. `view.unmatchButton` set in onLoad)
+ * is stored in `scope` and read back from any view holding the same scope. The
+ * view's own properties (platform surface, hook data) stay per view. Enumeration,
+ * spreads and JSON only see the view's own properties. Without a scope the view is
+ * returned unchanged.
+ *
+ * @param view The view object (its own keys stay its own).
+ * @param scope The modal's shared store, or undefined.
+ */
+export function withScriptScope<T extends object>(view: T, scope?: Record<string, unknown>): T {
+  if (!scope) return view;
+  return new Proxy(view, {
+    get: (target, key, receiver) =>
+      typeof key === "string" && !Reflect.has(target, key) ? scope[key] : Reflect.get(target, key, receiver),
+    set: (target, key, value, receiver) => {
+      if (typeof key !== "string" || Object.prototype.hasOwnProperty.call(target, key)) {
+        return Reflect.set(target, key, value, receiver);
+      }
+      scope[key] = value;
+      return true;
+    },
+    has: (target, key) => Reflect.has(target, key) || (typeof key === "string" && key in scope),
+  });
+}
+
+/** Empties a modal's shared script scope in place (its identity stays stable). */
+export function clearScriptScope(scope: Record<string, unknown>): void {
+  for (const key of Object.keys(scope)) {
+    delete scope[key];
+  }
+}
+
 export function createViewProxy(
   form: FormHandle,
   parameters: ParametersMap | undefined,
@@ -1190,9 +1231,11 @@ export function createViewProxy(
     theForm: createFormProxy(form, parameters, deps.controller, deps.gridResolver),
     messageBar: deps.messageBar,
   } as ViewProxy;
+  // The returned view: the same object, sharing script-assigned properties across the modal's views.
+  const self = withScriptScope(view, deps.data?.scriptScope);
   if (deps.grid) view.viewGrid = deps.grid;
 
-  assignViewData(view, form, deps.data ?? {});
+  assignViewData(view, form, deps.data ?? {}, self);
 
   if (deps.viewController) {
     assignViewActions(view, deps.viewController);
@@ -1210,5 +1253,5 @@ export function createViewProxy(
   }
   // Always-live (no controller dependency): opens an action-time dynamic parameter form.
   view.openDynamicForm = openParameterDialog;
-  return view;
+  return self;
 }

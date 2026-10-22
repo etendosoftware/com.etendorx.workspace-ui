@@ -124,6 +124,7 @@ import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/definition/moduleScope";
 import {
+  clearScriptScope,
   createFormHandle,
   createViewProxy,
   findParameter,
@@ -869,8 +870,12 @@ function ProcessDefinitionModalContent({
 
   // Read-only environment data surfaced on the `view` (pure values; no controller
   // needed). The same object reaches every hook via the canonical view builder.
+  // Properties the scripts assign on their `view`, shared by every view of this modal (Classic's
+  // single view object). A stable object, emptied on each open.
+  const scriptViewScopeRef = useRef<Record<string, unknown>>({});
   const viewData = useMemo<ViewData>(
     () => ({
+      scriptScope: scriptViewScopeRef.current,
       windowId,
       // A nested launch forwards its launcher field (carrying the launcher's view, so the nested
       // script reaches `view.callerField.view`); a top-level open derives it from the button.
@@ -1249,6 +1254,7 @@ function ProcessDefinitionModalContent({
   useEffect(() => {
     if (!open) return;
     setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
+    clearScriptScope(scriptViewScopeRef.current);
     if (stackEntryId !== undefined) return isolateMessageBar();
     messageBar.hide();
   }, [open, stackEntryId]);

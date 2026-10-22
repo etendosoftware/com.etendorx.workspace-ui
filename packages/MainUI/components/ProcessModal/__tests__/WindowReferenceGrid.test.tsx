@@ -67,6 +67,8 @@ import {
   findRowActionsHostColumnId,
   createGridScriptView,
   applyExternalParams,
+  refreshSelectedRecords,
+  runWithScopedSubscriptions,
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
@@ -791,6 +793,51 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("is false only when none apply", () => {
       expect(shouldShowRowActions(false, false, false)).toBe(false);
+    });
+  });
+
+  describe("refreshSelectedRecords", () => {
+    it("refreshes the selected records delivered again, keeping client-only keys", () => {
+      const selection = new Map<string, EntityData>([
+        ["L-1", { id: "L-1", cleared: true, _local: "kept" } as EntityData],
+        ["L-2", { id: "L-2", cleared: true } as EntityData],
+      ]);
+
+      const refreshed = refreshSelectedRecords(selection, [
+        { id: "L-1", cleared: false } as EntityData,
+        { id: "L-3", cleared: false } as EntityData,
+      ]);
+
+      expect(refreshed).toBe(1);
+      expect(selection.get("L-1")).toEqual({ id: "L-1", cleared: false, _local: "kept" });
+      expect(selection.get("L-2")).toEqual({ id: "L-2", cleared: true });
+      expect(selection.has("L-3")).toBe(false);
+    });
+  });
+
+  describe("runWithScopedSubscriptions", () => {
+    it("replaces the previous execution's subscriptions and keeps the others", () => {
+      const fromOnLoad = jest.fn();
+      const firstRun = jest.fn();
+      const secondRun = jest.fn();
+      const list: unknown[] = [fromOnLoad];
+
+      const first = runWithScopedSubscriptions([list], null, () => list.push(firstRun));
+      const second = runWithScopedSubscriptions([list], first, () => list.push(secondRun));
+
+      expect(list).toEqual([fromOnLoad, secondRun]);
+      expect(second).toEqual([[secondRun]]);
+    });
+
+    it("keeps a subscription the previous execution did not register", () => {
+      const fromOnLoad = jest.fn();
+      const list: unknown[] = [];
+
+      const first = runWithScopedSubscriptions([list], null, () => undefined);
+      list.push(fromOnLoad);
+      runWithScopedSubscriptions([list], first, () => undefined);
+
+      expect(list).toEqual([fromOnLoad]);
     });
   });
 
