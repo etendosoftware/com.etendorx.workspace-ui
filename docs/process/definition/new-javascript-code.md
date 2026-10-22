@@ -606,6 +606,12 @@ client's `/api` proxy, which injects the CSRF token server-side.
   exposes `getView`), so a migrated script can keep the literal Classic call. `getContextInfo()` returns
   the launching record's fields (keyed by `inputName`, e.g. `inpbpCurrencyId`) overlaid with the current
   parameter values.
+  `view.sourceView` is the launching tab: it keeps every property of the tab metadata and adds the
+  Classic `view.sourceView.getContextInfo()`, built from the launching record by `buildSourceView`
+  (`packages/MainUI/utils/processes/definition/sourceView.ts`). Unlike `view.getContextInfo()` it carries
+  no parameter values, only the record values by `inputName` plus the tab's standard properties
+  (`inpTabId`, `inpwindowId`, `inpTableId`, `inpKeyName`, `keyColumnName`) and the key column under its
+  DB column name (e.g. `Fin_Financial_Account_ID`), as Classic `OBStandardView.getContextInfo()` does.
 - **Action methods — live only when a controller is injected by the modal:** `view.refresh()`,
   `view.handleReadOnlyLogic()`, `view.handleButtonsStatus()`, `view.fireOnPause()`,
   `view.selectAllRecords()`, `view.getSelection()`, `view.openProcess(params)`,
@@ -906,6 +912,15 @@ or non-OK HTTP failure it invokes the error callback (or the callback) with `{ s
 script inspects `data`. This adapter is preferred over rewriting every call site to `await`, because
 `new Function`-compiled bodies cannot use top-level `await` cleanly and it enables near line-for-line
 ports.
+
+The arguments keep their Classic transport: `data` (2nd) is the POST body and `requestParams` (3rd)
+travels as URL query parameters, which is where `BaseActionHandler` reads `parameters.get(...)`.
+`encodeRequestParams` mirrors SmartClient `encodeParameter`: strings are sent as-is, any other value is
+JSON-encoded (an object such as `context` arrives as JSON, a boolean as `"true"` / `"false"`), and
+`null` / `undefined` values and the reserved `_action` key are skipped. An empty `requestParams` (`{}`,
+the common case) leaves the kernel URL unchanged. Before ETP-5877 the 3rd argument was dropped, so a
+handler reading it (e.g. `MatchStatementOnLoadActionHandler` and its `context` / `executeMatching`)
+failed.
 
 ### 8.8 `OB.Datasource` access
 
