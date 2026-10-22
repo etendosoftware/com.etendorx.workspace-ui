@@ -19,6 +19,7 @@ docs/
 │   │   └── window-references.md
 │   ├── process-scripts/              # Feature: Dynamic process scripts (onLoad / onProcess / PayScript)
 │   │   └── preferences.md           # Reading ERP preferences in scripts
+│   │   (export of stored process JS: ../process/definition/exporting-process-js.md)
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields

@@ -23,6 +23,9 @@ for two audiences:
   migrated code to paste into the metadata columns. Section 10 is the actionable playbook for that
   audience.
 
+After changing the stored JavaScript of a process, export it to `com.etendoerp.metadata.template` so it reaches
+other environments: see [exporting-process-js.md](./exporting-process-js.md).
+
 **Companion document.** This file describes the *platform*. The per-process inventory — which
 processes are in scope, which hook points each uses, and the QA acceptance criteria — lives in
 [`process-definition-js-testing.md`](./process-definition-js-testing.md) and is the authority for *what
