@@ -798,9 +798,16 @@ Anything not implemented throws a clear error rather than failing silently.
   per row.
 - **New UI:** declarative `grid.setRowActions(renderer)` (alias `setRecordComponent`). The renderer
   receives `{ record, view, grid }` and returns `{ buttons: [{ icon, prompt, action: (ctx) => void }] }`
-  or `null`. Icon presets: `search`, `add`, `clearRight`. Buttons render in the grid's leading
-  "Actions" column; a click never toggles row selection; throwing renderers/actions are caught and
-  logged. No arbitrary React from compiled strings.
+  or `null`. Icon presets: `search`, `add`, `clearRight`. Buttons render inside the column whose field
+  declares a Classic `clientclass` component the new UI does not render by itself (not a link, not
+  `OBLevelImg`; e.g. Match Statement's `APRMMatchStatGridButtonsComponent` on *Match*), as Classic does
+  (`findRowActionsHostColumnId`); without such a column they render in the grid's leading "Actions"
+  column. A click never toggles row selection; throwing renderers/actions are caught and logged. No
+  arbitrary React from compiled strings.
+- **`view` inside the grid hooks** (`onGridLoad`, row actions, per-column cell hooks) is built by
+  `createGridScriptView` and exposes the process `onRefresh` hook as `view.onRefreshFunction`, like the
+  onLoad view. So the Classic idiom `view.onRefreshFunction(view)` in a row-action callback refreshes the
+  grid. Before ETP-5877 it was `undefined` there and the callback threw before doing anything else.
 
 ### 8.5 Embedded interactive grid
 

@@ -600,6 +600,13 @@ The previously-existing `handleSaveRow` was removed entirely — MRT's per-row s
 
 `hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow` is passed to both `enableRowActions` and the `renderRowActions` factory. When false, MRT skips the column entirely — no empty header, no padding.
 
+**Script row buttons** (`grid.setRowActions`) also add to the Actions column (`hasRowActions`, 200px width), unless a
+column hosts them: `findRowActionsHostColumnId` picks the first column whose `clientclass` is a Classic cell
+component the new UI does not render, and that column's Cell shows the buttons instead of its value (as in Classic).
+`shouldShowRowActions` and the column size then use `hasLeadingRowActions = hasRowActions && !rowActionsHostColumnId`,
+so no empty Actions column remains. See
+[new-javascript-code §8.4](../definition/new-javascript-code.md#84-per-row-grid-plugin).
+
 The companion change is on `enableEditing`. The previous implementation always passed a callback, which made MRT reserve the Actions column header even when `canAdd = false` (because MRT inserts the column to host edit buttons whenever editing is conceivably possible). The new code passes a literal `false` when `canAdd = false`, suppressing the column header outright. When `canAdd = true`, the predicate is built by `buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap)` — extracted to a pure module-level helper that delegates per-column to the also-exported `isColumnEditable(col, fields, fieldReadOnlyMap)`. `isPersistedRow(row) → false` still gates first, so persisted rows can never enter edit-mode.
 
 The extraction matters for testability: previously the editable-predicate logic was nested inline and untestable; the helpers are now covered by `WindowReferenceGrid.actionsColumn.test.ts`.

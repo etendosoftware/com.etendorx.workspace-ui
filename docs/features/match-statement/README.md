@@ -128,6 +128,35 @@ as Classic does (`splitClientclass`, `readLevelValues`, `resolveLevel`). Links a
   length works.
 - Clicking the indicator does not select the row; selection follows the grid's own row behavior.
 
+## Row buttons (Search, Add, Clear)
+
+### Classic behavior
+
+`APRMMatchStatGridButtonsComponent` (the *Match* column's `clientclass`) replaces the cell with three buttons.
+Search and Add are enabled when the line is not matched; Clear is enabled when it is.
+
+| Button | Calls | Then |
+|---|---|---|
+| Search | `CheckRecordChangedActionHandler` | `view.onRefreshFunction(view)`. On error, shows the message; otherwise opens *Find Transactions to Match* (`154CB4F9…`) with `externalParams { bankStatementLineId, transactionDate }` |
+| Add | `CheckRecordChangedActionHandler` | Same, opening *Add Transaction* (`E68790A7…`) with `externalParams { bankStatementLineId }` |
+| Clear | `UnMatchTransactionActionHandler` `{ bankStatementLineId, updated }` | `view.onRefreshFunction(view)`. On error, shows the message; on success, no message |
+
+### Gaps found and fixes
+
+| Gap | Fix |
+|---|---|
+| The buttons rendered in a generic leading "Actions" column. | They render inside the *Match* column, the column whose `clientclass` is a component the new UI does not render (`findRowActionsHostColumnId`). The leading column is no longer shown for them. |
+| `view.onRefreshFunction` was `undefined` in the grid's script views, so every row-action callback threw on its first line. For Clear the unmatch ran but nothing refreshed; Search and Add never opened their process. | The grid receives the process `onRefresh` hook and exposes it on every grid script view (`createGridScriptView`). |
+
+**Clear works** with these fixes and no change to the stored JavaScript: it unmatches, refreshes the grid (the
+buttons switch state) and shows an error in the message bar if any.
+
+**Pending (next steps):** Search and Add open nested processes that still need the line's data (`externalParams`
+in defaults, datasource and `_params`, and `callerField.record`). They also need their `onLoad`/`onProcess` hooks
+to run in a nested modal, and a parent refresh with a real view (only after success, as Classic). Not started yet:
+the footer `UN` button visibility (`view.unmatchButton` is set on the onLoad view only), and selecting the row when
+a button is clicked (Classic `selectSingleRecord`).
+
 ## Main files
 
 - `packages/MainUI/utils/ob/remoteCallManager.ts`: `OB.RemoteCallManager.call`, `encodeRequestParams`.
@@ -141,6 +170,8 @@ as Classic does (`splitClientclass`, `readLevelValues`, `resolveLevel`). Links a
   `splitClientclass`, `isLevelImgColumn`, `readLevelValues`, `resolveLevel`; used by `hooks/table/useColumns.tsx`
   and `WindowReferenceGrid.tsx`.
 - `packages/MainUI/components/Table/Cells/LevelIndicatorCell.tsx`: the level indicator.
+- `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `createGridScriptView`,
+  `findRowActionsHostColumnId` (with `isClientclassComponentColumn` in `utils/table/clientclassLink.ts`).
 - `packages/MainUI/components/ProcessModal/utils/defaultsRequestPayload.ts` and `buildTabStandardContext`
   (`packages/MainUI/utils/index.ts`): the context sent to `DefaultsProcessActionHandler`.
 - `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `buildGridCriteria`, `findFilterColumn`,
