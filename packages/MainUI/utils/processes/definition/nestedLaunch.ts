@@ -16,6 +16,7 @@
  */
 
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type Graph from "@/data/graph";
 import type { OpenProcessLaunch } from "./processStack";
 import type { OpenProcessParams, ViewData } from "./scriptProxies";
 
@@ -29,6 +30,8 @@ export interface NestedLauncher {
   /** Tab and record the launching modal runs in (Classic `buttonOwnerView`). */
   ownerTab?: Tab;
   ownerRecord?: Record<string, unknown>;
+  /** The launching modal's tab selection graph. */
+  ownerGraph?: Graph<Tab>;
   /** The launching modal's `onRefresh` hook, used when the caller view has none. */
   onRefreshFunction?: RefreshFunction;
 }
@@ -64,6 +67,7 @@ export function buildNestedLaunch(params: OpenProcessParams, launcher: NestedLau
     callerField: { ...callerField, view: callerView },
     ownerTab: launcher.ownerTab,
     ownerRecord: launcher.ownerRecord,
+    ownerGraph: launcher.ownerGraph,
     onSuccess: () => refreshLauncherView(callerView, launcher.onRefreshFunction),
   };
 }

@@ -23,12 +23,14 @@ const PROCESS_ID = "154CB4F9274A479CB38A285E16984539";
 const OWNER_TAB = { id: "TAB-1", window: "WIN-1" } as Tab;
 const OWNER_RECORD = { id: "FA-1" };
 const LAUNCHER_FIELD = { id: "FIELD-1", record: { id: "FA-1" } };
+const OWNER_GRAPH = { id: "GRAPH-1" } as never;
 
 const launcher = (overrides: Record<string, unknown> = {}) => ({
   windowId: "WIN-1",
   viewData: { callerField: LAUNCHER_FIELD } as ViewData,
   ownerTab: OWNER_TAB,
   ownerRecord: OWNER_RECORD,
+  ownerGraph: OWNER_GRAPH,
   ...overrides,
 });
 
@@ -46,6 +48,7 @@ describe("buildNestedLaunch", () => {
         externalParams: { bankStatementLineId: "BSL-1" },
         ownerTab: OWNER_TAB,
         ownerRecord: OWNER_RECORD,
+        ownerGraph: OWNER_GRAPH,
       })
     );
   });

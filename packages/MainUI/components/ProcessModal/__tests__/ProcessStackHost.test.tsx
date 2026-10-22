@@ -6,6 +6,14 @@ jest.mock("@/utils/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
 }));
 
+// Shows the name of the tab selection graph the nested modal receives (or "none").
+function GraphName() {
+  const { useContext } = jest.requireActual("react");
+  const { SelectContext } = jest.requireActual("@/contexts/selected");
+  const { graph } = useContext(SelectContext) as { graph?: { name: string } };
+  return <span data-testid="modal-graph">{graph?.name ?? "none"}</span>;
+}
+
 // Lightweight stub so the test renders only the host wiring, not the full modal
 // (and its many providers). It surfaces processId and the close/success handlers.
 jest.mock("../ProcessDefinitionModal", () => ({
@@ -30,6 +38,7 @@ jest.mock("../ProcessDefinitionModal", () => ({
     stackEntryId?: number;
   }) => (
     <div data-testid="modal-stub">
+      <GraphName />
       <span data-testid="modal-owner">{`${ownerTab?.id ?? ""}|${contextRecord?.id ?? ""}`}</span>
       <span data-testid="modal-external">{JSON.stringify(externalParams ?? {})}</span>
       <span data-testid="modal-entry">{String(stackEntryId)}</span>
@@ -149,5 +158,23 @@ describe("ProcessStackHost", () => {
     expect(screen.getByTestId("modal-owner").textContent).toBe("TAB-1|REC-1");
     expect(screen.getByTestId("modal-external").textContent).toBe('{"bankStatementLineId":"BSL-1"}');
     expect(screen.getByTestId("modal-entry").textContent).toBe(String(entryId));
+  });
+
+  it("runs the nested modal inside the owner's tab selection graph", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, ownerGraph: { name: "OWNER-GRAPH" } as never });
+    });
+
+    expect(screen.getByTestId("modal-graph").textContent).toBe("OWNER-GRAPH");
+  });
+
+  it("renders the nested modal without a selection graph when the launch has none", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A });
+    });
+
+    expect(screen.getByTestId("modal-graph").textContent).toBe("none");
   });
 });

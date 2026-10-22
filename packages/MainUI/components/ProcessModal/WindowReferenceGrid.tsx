@@ -1771,7 +1771,7 @@ const WindowReferenceGrid = ({
   const shouldSendOrg = selectedRecordsCount === 1;
 
   const etendoContext = useMemo(() => {
-    return originTab ? buildEtendoContext(originTab, graph) : {};
+    return originTab && graph ? buildEtendoContext(originTab, graph) : {};
   }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});

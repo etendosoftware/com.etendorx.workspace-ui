@@ -409,7 +409,7 @@ function ProcessDefinitionModalContent({
 
   // Warehouse plugin — evaluated only for custom-component processes; its onLoad
   // returns the schema (type: 'warehouseProcess') used to render GenericWarehouseProcess.
-  const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
+  const selectedRecordsForPlugin = useMemo(() => (tab && graph ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
 
   const {
     schema: warehouseSchema,
@@ -575,7 +575,7 @@ function ProcessDefinitionModalContent({
   }, [parameters]);
 
   // Handle case when modal is opened from sidebar (no tab context)
-  const selectedRecords = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
+  const selectedRecords = useMemo(() => (tab && graph ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
   const selectedRecordsCount = (selectedRecords || []).length;
 
   const firstWindowReferenceParam = useMemo(
@@ -920,6 +920,7 @@ function ProcessDefinitionModalContent({
             viewData,
             ownerTab: tab,
             ownerRecord: record ?? undefined,
+            ownerGraph: graph,
             onRefreshFunction,
           })
         ),
@@ -936,6 +937,7 @@ function ProcessDefinitionModalContent({
       onRefreshFunction,
       tab,
       record,
+      graph,
     ]
   );
 

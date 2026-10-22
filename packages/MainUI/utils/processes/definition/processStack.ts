@@ -30,6 +30,7 @@
 
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type Graph from "@/data/graph";
 import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
 
 /** Method name exposed on the script-facing view; reused by the proxy wiring. */
@@ -50,6 +51,8 @@ export interface OpenProcessLaunch extends OpenProcessParams {
    */
   ownerTab?: Tab;
   ownerRecord?: Record<string, unknown>;
+  /** The owner's tab selection graph, so the nested modal reads the same selection (session context). */
+  ownerGraph?: Graph<Tab>;
 }
 
 /** A queued nested-process launch awaiting a host to render it. */
