@@ -243,7 +243,9 @@ test("…", async ({ app, browser, mockedBackend }) => {
 ```
 
 Record it with `pnpm pw:record` against a running backend and commit `e2e/mocked/recordings/<spec>.har.gz`. Put
-the flow in `support/flows/` when a real spec runs it too. A request with no recording fails the test: if the
+the flow in `support/flows/` when a real spec runs it too. Only `pw:record` writes recordings: a normal run, local or
+in CI, only replays them. A request with no recording fails the test: check it is intended before recording again
+(an unexpected request can be a bug the recording would hide); if the
 difference is a volatile value (a timestamp), add its key to `VOLATILE_KEYS` in `support/mock/normalize.ts`; if the
 whole body of a request that only reports what the user did changes with timing, add its path to `REPORT_ONLY_PATHS`.
 

@@ -153,7 +153,8 @@ answer those requests from recordings, so the real UI runs in a real browser wit
   dropped, and requests a reload aborted in flight dropped too: the replay would answer them with an empty body)
   into `e2e/mocked/recordings/<spec>.har.gz`. Regenerate after a change of `com.etendoerp.metadata` responses or of
   the flow a mocked spec runs, or when a merge brings UI requests the recording does not have (the `mocked` project
-  reports them).
+  reports them). Only `pnpm pw:record` writes recordings: a normal run, local or in CI, only replays the committed
+  file, so a stale recording keeps failing until a new one is committed.
 - **Replay** (`support/mock/`): requests are keyed by method, path, sorted query and canonical JSON body, without
   volatile values (`language`, `_noCache`, `csrfToken`, `password`, `recordTime`). Requests that only report what
   the user did (`recent-documents`, `REPORT_ONLY_PATHS`) are keyed without their body, which depends on timing.
@@ -230,7 +231,7 @@ Apply in order, and stop as soon as the budget is met. Every pipeline change mus
 | Symptom in the report | Cause | Fix |
 |---|---|---|
 | `support-unit` › `spec tags`: "must have exactly one tier/area tag" | A spec under `smoke/` or `regression/` misses the tags of its folder (or has two) | Put `@smoke`/`@regression` and, in a probe folder, its area tag in the `describe` title ([Tiers and tags](#tiers-and-tags)) |
-| `mocked` › "requests without a recording: run pnpm pw:record" | The UI sends a request the recordings do not have: the flow of a mocked spec changed, or a new volatile value (a timestamp) is in the request | A changed flow: `pnpm pw:record` and commit `e2e/mocked/recordings/<spec>.har.gz`. A volatile value: add its key to `VOLATILE_KEYS` (`support/mock/normalize.ts`) |
+| `mocked` › "requests without a recording: run pnpm pw:record" | The UI sends a request the recordings do not have: the flow of a mocked spec changed, or a new volatile value (a timestamp) is in the request | First check each listed request is intended: an unexpected one (a duplicate, a lost parameter) can be a bug that recording again would hide. A changed flow: `pnpm pw:record` and commit `e2e/mocked/recordings/<spec>.har.gz`. A volatile value: add its key to `VOLATILE_KEYS` (`support/mock/normalize.ts`). A request that only reports what the user did and whose whole body depends on timing: add its path to `REPORT_ONLY_PATHS` |
 
 **Metadata PRs.** The CI job clones `com.etendoerp.metadata` from the branch with the same name as the UI branch, or
 else from one with the same task key (then the base branch). A metadata change that alters a recorded response
