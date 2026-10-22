@@ -28,6 +28,12 @@ jest.mock("@/hooks/navigation/useRedirect", () => ({
   }),
 }));
 
+// The Yes/No Tag needs the MUI theme; a label-only stand-in keeps these cell tests theme-free.
+jest.mock("@workspaceui/componentlibrary/src/components/Tag", () => ({
+  __esModule: true,
+  default: ({ label }: { label: string }) => <span>{label}</span>,
+}));
+
 import { useColumns } from "@/hooks/table/useColumns";
 
 describe("useColumns - reference cell links carry record id", () => {
@@ -160,5 +166,49 @@ describe("useColumns - clientclass cell rendering", () => {
       return <Cell row={row} cell={cell} />;
     }
     expect(() => render(<HarnessNoGetValue />)).not.toThrow();
+  });
+});
+
+describe("useColumns - clientclass on a Yes/No column", () => {
+  beforeEach(() => {
+    clientclassNavSpy.mockClear();
+  });
+
+  // "No" in every locale (common.falseText), so the assertion holds whatever the test language is.
+  const NO_LABEL = "No";
+
+  // Classic Match Statement "Match" field: Yes/No column whose clientclass is a cell component.
+  const yesNoClientclassTab: any = {
+    fields: {
+      cleared: {
+        showInGridView: true,
+        name: "Match",
+        hqlName: "cleared",
+        columnName: "cleared",
+        column: { reference: "20" },
+        clientclass: "APRMMatchStatGridButtonsComponent",
+      },
+    },
+  };
+
+  function Harness() {
+    const column = useColumns(yesNoClientclassTab)[0] as unknown as {
+      Cell?: React.ComponentType<{ row: unknown; cell: unknown; renderedCellValue: unknown }>;
+      accessorFn: (row: unknown) => React.ReactNode;
+    };
+    const original = { id: "LINE-1", cleared: false };
+    const value = column.accessorFn(original);
+    if (!column.Cell) return <>{value}</>;
+    const { Cell } = column;
+    return <Cell row={{ original }} cell={{ getValue: () => value }} renderedCellValue={value} />;
+  }
+
+  it("renders the Yes/No value instead of a navigation link", () => {
+    render(<Harness />);
+
+    expect(screen.queryByRole("button", { name: /navigate to referenced record/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("[object Object]")).not.toBeInTheDocument();
+    expect(screen.getByText(NO_LABEL)).toBeInTheDocument();
+    expect(clientclassNavSpy).not.toHaveBeenCalled();
   });
 });

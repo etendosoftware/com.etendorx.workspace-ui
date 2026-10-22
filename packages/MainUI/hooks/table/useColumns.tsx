@@ -38,6 +38,7 @@ import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateF
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 import { isGridRenderableColumn, sortFieldsByGridOrder } from "@/utils/table/utils";
+import { isClientclassLinkColumn } from "@/utils/table/clientclassLink";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -371,7 +372,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             );
           },
         };
-      } else if (column.clientclass) {
+      } else if (isClientclassLinkColumn(column)) {
         // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
         const clientclass = column.clientclass as string;
         columnConfig = {
