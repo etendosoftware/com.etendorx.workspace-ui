@@ -897,6 +897,19 @@ The earlier behavior fell back to `t("process.completedSuccessfully")` when the 
 
 `responseBanner.test.ts` covers all three input shapes plus the silent-skip invariant.
 
+### 10.5 Success toast on close — server-gated as well
+
+The same rule applies when the modal closes after a standard Java handler response (`executeJavaProcess` →
+`handleJavaProcessResult` in `hooks/useProcessExecution.ts`). Classic `handleResponse`
+(`ob-parameter-window-view.js`) calls `messageBar.setMessage` only `if (message)`. A handler that returns no
+message, such as Match Statement's `OK` (`{ "refreshParent": true }`), therefore closes and refreshes **without**
+a toast. Before ETP-5877 the client showed the generic "Process completed successfully" toast in that case.
+
+Unchanged: responses that carry a message (`message` or `showMsgInProcessView`) keep their toast, `openDirectTab`
+navigation keeps its toast, and errors, `retryExecution` and reports follow their own paths. The script-driven
+path (`onProcess` returning a result) still uses the generic default text.
+`useProcessExecution.responseFlags.test.ts` covers both cases.
+
 ---
 
 ## 11. Tests

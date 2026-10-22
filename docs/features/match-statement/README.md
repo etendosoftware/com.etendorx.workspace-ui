@@ -59,6 +59,14 @@ case) sends exactly the same request as before.
 - The button labels of the confirm dialog come from the new UI translations (`common.confirm` /
   `common.cancel`).
 
+## Footer `OK` button
+
+Classic: `OK` submits to `MatchStatementActionHandler`, which returns no message for `OK`
+(`{ "refreshParent": true }`). The popup closes, the parent refreshes and no message is shown. The new UI
+showed the generic "Process completed successfully" toast. It now follows the Classic rule for every
+standard Java handler response: no message in the response, no toast. Responses with a message are unchanged.
+See [Pick & Execute §10.5](../../process/pickAndExecute/README.md#105-success-toast-on-close--server-gated-as-well).
+
 ## Main files
 
 - `packages/MainUI/utils/ob/remoteCallManager.ts`: `OB.RemoteCallManager.call`, `encodeRequestParams`.
@@ -66,6 +74,8 @@ case) sends exactly the same request as before.
 - `packages/MainUI/utils/processes/definition/sourceView.ts`: `buildSourceView`. It reuses
   `buildProcessPayload` from `packages/MainUI/utils/index.ts`.
 - `packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx`: wires `viewData.sourceView`.
+- `packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts`: `handleJavaProcessResult`, toast only
+  when the response carries a message.
 - `packages/MainUI/utils/processes/definition/dialogs.ts` and
   `components/ProcessModal/ProcessDialogHost.tsx`: `isc.confirm`, which resolves `true` on Confirm and
   `false` on Cancel or close.
