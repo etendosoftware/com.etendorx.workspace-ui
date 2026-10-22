@@ -71,6 +71,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onLanguageChange,
   saveAsDefault,
   onSaveAsDefaultChange,
+  onProfileApplied,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -352,6 +353,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const languageChanged = selectedLanguage && selectedLanguage.value !== language;
 
       await saveConfigurationDefaults(!!languageChanged);
+      onProfileApplied?.();
 
       cleanWindowState();
       handleClose();
@@ -378,6 +380,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     selectedLanguage,
     language,
     saveConfigurationDefaults,
+    onProfileApplied,
     cleanWindowState,
     setBypassUnloadWarning,
     onLanguageChange,

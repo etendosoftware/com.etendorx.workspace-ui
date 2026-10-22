@@ -420,6 +420,8 @@ const es = {
     recentlyViewed: "Visto recientemente",
     externalLinkPopupBlocked: "El navegador bloqueó el enlace que esta entrada del menú intentó abrir.",
     openExternalLink: "Abrir enlace",
+    legacyWindowPopupBlocked: "El navegador bloqueó la ventana que esta entrada del menú intentó abrir.",
+    openLegacyWindow: "Abrir ventana",
   },
   login: {
     title: "Iniciar sesión",
@@ -859,6 +861,8 @@ const es = {
     widget: {
       unavailable: "Módulo no instalado",
       refresh: "Actualizar",
+      collapse: "Contraer",
+      expand: "Expandir",
     },
     noWidgets: "No hay widgets configurados para este panel.",
     loadError: "No se pudo cargar el panel. Intente nuevamente.",

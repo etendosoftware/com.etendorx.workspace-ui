@@ -177,6 +177,26 @@ const openClassicProcessUrl = (
   }
 };
 
+/** Window name and size of the popup that shows the Classic form of a menu entry. */
+const LEGACY_POPUP_TARGET = "Test";
+const LEGACY_POPUP_FEATURES = "width=950,height=700";
+
+/** Opens the Classic popup; false when the browser blocked it. */
+const tryOpenLegacyPopup = (url: string): boolean => {
+  const popup = window.open(url, LEGACY_POPUP_TARGET, LEGACY_POPUP_FEATURES);
+  return Boolean(popup) && !popup?.closed;
+};
+
+/**
+ * Opens the Classic form of a menu entry in a popup. When the browser blocks it, a notice offers
+ * to open it manually, with the same URL (and so the same token), as reports do.
+ */
+const openLegacyManualProcess = (url: string, popupBlockedTexts: ReportPopupBlockedTexts): void => {
+  if (!tryOpenLegacyPopup(url)) {
+    notifyReportPopupBlocked(() => tryOpenLegacyPopup(url), popupBlockedTexts);
+  }
+};
+
 /**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
@@ -369,7 +389,10 @@ export default function Sidebar() {
       // Handle legacy manual processes (Form) as external popup
       const processConfig = getManualProcessConfig(item, token, ETENDO_BASE_URL);
       if (processConfig) {
-        window.open(processConfig.url, "Test", "width=950,height=700");
+        openLegacyManualProcess(processConfig.url, {
+          title: t("drawer.legacyWindowPopupBlocked"),
+          openLabel: t("drawer.openLegacyWindow"),
+        });
         return;
       }
 
@@ -390,7 +413,7 @@ export default function Sidebar() {
         openWindowItem(item);
       }
     },
-    [token, ETENDO_BASE_URL, openProcessModal, openClassicProcess, openWindowItem, openExternalMenuEntry]
+    [token, ETENDO_BASE_URL, t, openProcessModal, openClassicProcess, openWindowItem, openExternalMenuEntry]
   );
 
   /**

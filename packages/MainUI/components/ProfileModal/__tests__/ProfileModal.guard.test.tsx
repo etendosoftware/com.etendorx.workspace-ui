@@ -198,6 +198,27 @@ describe("ProfileModal — unsaved-changes guard", () => {
     expect(useUnsavedChangesStore.getState().bypassUnloadWarning).toBe(false);
   });
 
+  it("tells the host the profile change was applied, after saving the defaults", async () => {
+    const onProfileApplied = jest.fn();
+    renderModal({ onProfileApplied });
+
+    pressSave();
+
+    await waitFor(() => expect(onProfileApplied).toHaveBeenCalledTimes(1));
+    expect(mockSetDefaultConfiguration).toHaveBeenCalled();
+  });
+
+  it("does not tell the host the change was applied when it fails", async () => {
+    const onProfileApplied = jest.fn();
+    mockSetDefaultConfiguration.mockRejectedValue(new Error("Save failed"));
+    renderModal({ onProfileApplied });
+
+    pressSave();
+
+    await waitFor(() => expect(mockSetDefaultConfiguration).toHaveBeenCalled());
+    expect(onProfileApplied).not.toHaveBeenCalled();
+  });
+
   it("bypasses the native unload warning before the language reload", async () => {
     renderModal();
 

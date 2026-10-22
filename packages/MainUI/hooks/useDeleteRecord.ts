@@ -20,6 +20,7 @@ import type { EntityData, Tab, WindowMetadata } from "@workspaceui/api-client/sr
 import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "@/hooks/useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTranslation } from "./useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";
 import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
@@ -168,6 +169,9 @@ export const useDeleteRecord = ({
           throw new Error(responseErrorMessage);
         }
 
+        // The deleted records must not come back from the cached responses of the entity (e.g. when
+        // the window is reopened or the same filter is applied again within the cache TTL)
+        datasource.clearCacheForEntity(tab.entityName);
         onSuccess?.(records.length);
         // If save succeeded and this tab has parents, trigger parent refreshes
         if (tab?.tabLevel && tab.tabLevel > 0) {

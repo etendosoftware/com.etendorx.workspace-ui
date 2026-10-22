@@ -32,6 +32,7 @@ export const WINDOWS = {
   product: { search: "produ", menuId: "126", breadcrumb: /Product/i },
   productCategory: { search: "produc", menuId: "130", breadcrumb: /Product Category/i },
   taxCategory: { search: "tax", menuId: "124", breadcrumb: /Tax Category/i },
+  title: { search: "title", menuId: "190", breadcrumb: /Title/i },
   unitOfMeasure: { search: "unit", menuId: "107", breadcrumb: /Unit of Measure/i },
   user: { search: "us", menuId: "147", breadcrumb: /User/i },
 
@@ -48,6 +49,9 @@ export const WINDOWS = {
   manageRequisitions: { search: "requi", menuId: "1004400000", breadcrumb: /Manage Requisitions/i, landing: "grid" },
   landedCost: { search: "lande", menuId: "D0EB635DAB004B16B636122FEA516898", breadcrumb: /Landed Cost/i },
 
+  // ── Pricing ──────────────────────────────────────────────────────────────
+  discountsAndPromotions: { search: "discoun", menuId: "800117", breadcrumb: /Discounts and Promotions/i },
+
   // ── Financial ────────────────────────────────────────────────────────────
   paymentIn: { search: "payment", menuId: "DB84EB9507F34D9B802DDA0B1041B602", breadcrumb: /Payment In/i },
   paymentOut: { search: "payment", menuId: "C3BEE7BF3F5B44C3A24D24E3DC4870EC", breadcrumb: /Payment Out/i },
@@ -58,7 +62,17 @@ export const WINDOWS = {
   },
   financialAccount: { search: "finan", menuId: "65C70CA5BB3A4F67B6B456C90F907917", breadcrumb: /Financial Account/i },
 
+  // ── Financial setup ──────────────────────────────────────────────────────
+  periodControl: {
+    search: "open/close",
+    menuId: "75B726735EA7497C9DB06E35B1CBFD86",
+    breadcrumb: /Open\/Close Period Control/i,
+    landing: "grid",
+  },
+
   // ── General setup ────────────────────────────────────────────────────────
+  currency: { search: "currency", menuId: "102", breadcrumb: /Currency/i },
+  countryAndRegion: { search: "country", menuId: "109", breadcrumb: /Country and Region/i },
   processRequest: {
     search: "Process",
     menuId: "BE86736DF4AB4568A316A3922E6D6B7B",
@@ -69,12 +83,21 @@ export const WINDOWS = {
 
 export type WindowKey = keyof typeof WINDOWS;
 
+/** AD_Window_ID of the windows whose metadata a spec intercepts (`support/processOverrides.ts`). */
+export const WINDOW_IDS = {
+  PAYMENT_IN: "E547CE89D4C04429B6340FFA44E70716",
+  PERIOD_CONTROL: "E66E701CCBA14B8BA480CBDE37C50D7A",
+  COUNTRY_AND_REGION: "122",
+  SALES_ORDER: "143",
+} as const;
+
 /**
  * AD_Tab_ID of the tabs the specs scope their toolbar to (`toolbar.inTab`), where a header and
  * a child tab are on screen at once.
  */
 export const TABS = {
   SALES_ORDER_HEADER: "186",
+  SALES_ORDER_LINES: "187",
   FINANCIAL_ACCOUNT_TRANSACTION: "23691259D1BD4496BCC5F32645BCA4B9",
   PROCESS_REQUEST_MONITOR: "A22C68A803DA43D3AE1FFD51BBA3234A",
 } as const;

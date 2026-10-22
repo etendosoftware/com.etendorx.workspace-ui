@@ -455,7 +455,7 @@ describe("KeyboardNavigationManager", () => {
       expect(manager.getCurrentFocusedCell()?.columnId).toBe("col2");
     });
 
-    it("should fallback to alphabetical sort without column order", async () => {
+    it("should follow the on-screen order without column order", async () => {
       setupDom([
         { rowId: "row1", columnId: "colB" },
         { rowId: "row1", columnId: "colA" },
@@ -468,10 +468,10 @@ describe("KeyboardNavigationManager", () => {
         })
       );
 
-      const result = await manager.navigateToNextCell("row1", "colA");
+      const result = await manager.navigateToNextCell("row1", "colB");
 
       expect(result).toBe(true);
-      expect(manager.getCurrentFocusedCell()?.columnId).toBe("colB");
+      expect(manager.getCurrentFocusedCell()?.columnId).toBe("colA");
     });
   });
 });

@@ -11,7 +11,8 @@ export type ToolbarAction =
   | "delete"
   | "filter"
   | "toggle-tree-view"
-  | "copy-record";
+  | "copy-record"
+  | "save-view";
 
 const PROCESS_MENU_TEST_ID = "IconButtonWithText__process-menu";
 /** AD key of the toolbar "New Record" button, rendered icon-only (`IconButton__<key>`) in form view. */

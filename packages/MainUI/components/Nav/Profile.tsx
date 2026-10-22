@@ -15,13 +15,14 @@
  *************************************************************************
  */
 
-import { useContext, useState, useCallback, useMemo } from "react";
+import { useContext, useMemo } from "react";
 import { UserContext } from "../../contexts/user";
 import { logger } from "../../utils/logger";
 import type { ProfileWrapperProps } from "./types";
 import type { Language } from "../../contexts/types";
 import { useLanguage } from "@/contexts/language";
 import ProfileModal from "../ProfileModal/ProfileModal";
+import { useSaveAsDefault } from "../ProfileModal/useSaveAsDefault";
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {
@@ -36,12 +37,8 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     roles,
     languages,
   } = useContext(UserContext);
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const { saveAsDefault, onSaveAsDefaultChange, onProfileApplied } = useSaveAsDefault();
   const { language, setLanguage, getFlag } = useLanguage();
-
-  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setSaveAsDefault(event.target.checked);
-  }, []);
 
   const languagesWithFlags = useMemo(() => {
     return languages.map((lang) => ({
@@ -69,7 +66,8 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       onLanguageChange={setLanguage}
       language={language}
       languagesFlags={flagString}
-      onSaveAsDefaultChange={handleSaveAsDefaultChange}
+      onSaveAsDefaultChange={onSaveAsDefaultChange}
+      onProfileApplied={onProfileApplied}
       changeProfile={changeProfile}
       onSetDefaultConfiguration={setDefaultConfiguration}
       onPasswordChange={changePassword}

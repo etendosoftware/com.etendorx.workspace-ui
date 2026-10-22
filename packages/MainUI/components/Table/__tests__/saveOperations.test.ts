@@ -17,7 +17,6 @@
 
 import {
   saveRecord,
-  saveRecordWithRetry,
   createNewRecord,
   updateExistingRecord,
   createSaveOperation,
@@ -30,13 +29,11 @@ import {
   validateRecordBeforeSave,
 } from "../utils/saveOperations";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { EditingRowData, SaveOperation, ValidationError } from "../types/inlineEditing";
-
-const mockShouldRemoveIdFields = shouldRemoveIdFields as jest.Mock;
 
 // Mock the Metadata module
 jest.mock("@workspaceui/api-client/src/api/metadata");
@@ -45,6 +42,9 @@ const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 // Mock the utility functions
 jest.mock("@/utils", () => ({
   buildQueryString: jest.fn(() => "mocked-query-string"),
+  // The grid saves with the form's builder, which wraps buildSavePayload
+  buildFormPayload: (args: Parameters<typeof import("../utils/saveOperations").buildSavePayload>[0]) =>
+    jest.requireActual("../utils/saveOperations").buildSavePayload(args),
 }));
 
 jest.mock("@/utils/form/entityConfig", () => ({
@@ -121,6 +121,42 @@ describe("saveOperations", () => {
   });
 
   describe("saveRecord", () => {
+    it.each([
+      ["a successful save", { ok: true, data: { response: { status: 0, data: [{ id: "456" }] } } }, 1],
+      ["a rejected save", { ok: false, data: { response: { status: 1, error: { message: "Invalid" } } } }, 0],
+    ])("evicts the cached responses of the entity only after %s", async (_case, response, evictions) => {
+      const clearCacheForEntity = jest.spyOn(datasource, "clearCacheForEntity").mockClear();
+      mockMetadata.datasourceServletClient.request.mockResolvedValue(response);
+
+      await saveRecord({
+        saveOperation: { rowId: "456", isNew: false, data: { id: "456" }, originalData: { id: "456" } },
+        tab: mockTab,
+        userId: mockUserId,
+      });
+
+      expect(clearCacheForEntity).toHaveBeenCalledTimes(evictions);
+      if (evictions > 0) {
+        expect(clearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
+      }
+    });
+
+    it("reports the property errors of a conversion failure (status -4)", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: { response: { status: -4, errors: { accountingDate: "Invalid date" } } },
+      });
+
+      const result = await saveRecord({
+        saveOperation: { rowId: "new_1", isNew: true, data: { id: "new_1", name: "X" } },
+        tab: mockTab,
+        userId: mockUserId,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toEqual([{ field: "_general", message: "accountingDate: Invalid date", type: "server" }]);
+    });
+
     it("should successfully save new record", async () => {
       const saveOperation: SaveOperation = {
         rowId: "new_123",
@@ -627,88 +663,6 @@ describe("saveOperations", () => {
     it("allows saving when there are no columns to validate", () => {
       const result = validateRecordBeforeSave({ rowId: "1", isNew: true, data: { name: "Acme" } }, []);
       expect(result).toEqual({ canSave: true, errors: [] });
-    });
-  });
-
-  describe("saveRecordWithRetry", () => {
-    afterEach(() => {
-      jest.useRealTimers();
-      mockShouldRemoveIdFields.mockReturnValue(false);
-    });
-
-    const saveOperation: SaveOperation = {
-      rowId: "456",
-      isNew: false,
-      data: { id: "456", name: "Updated Name" },
-      originalData: { id: "456", name: "Original Name" },
-    };
-
-    it("returns immediately on success without retrying", async () => {
-      mockMetadata.datasourceServletClient.request.mockResolvedValue({
-        ok: true,
-        data: { response: { status: 0, data: [{ id: "456", name: "Updated Name" }] } },
-      });
-
-      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-
-      expect(result.success).toBe(true);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
-    });
-
-    /**
-     * Mocks a single failed response and asserts {@link saveRecordWithRetry} gave up after
-     * exactly one attempt -- the shared assertion behind every "does not retry on ..." case
-     * below, which only differ in the error shape that must abort the retry loop.
-     */
-    async function expectNoRetryOnError(mockResponse: { ok: boolean; status?: number; data: unknown }) {
-      mockMetadata.datasourceServletClient.request.mockResolvedValue(mockResponse);
-
-      const result = await saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-
-      expect(result.success).toBe(false);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(1);
-    }
-
-    it("does not retry on a field-specific validation error", async () => {
-      await expectNoRetryOnError({
-        ok: false,
-        data: { response: { status: 1, error: { message: "Invalid", fieldErrors: { name: "Required" } } } },
-      });
-    });
-
-    it("does not retry on a stale-object conflict (legacy nested shape)", async () => {
-      await expectNoRetryOnError({
-        ok: false,
-        data: { response: { status: 1, error: { message: "@OBJSON_StaleDate@" } } },
-      });
-    });
-
-    it("does not retry on a stale-object conflict (structured 409 shape)", async () => {
-      await expectNoRetryOnError({
-        ok: false,
-        status: 409,
-        data: { error: "@OBJSON_StaleDate@", code: "STALE_OBJECT", cid: "test-cid" },
-      });
-    });
-
-    it("retries a general server error and succeeds on the second attempt", async () => {
-      jest.useFakeTimers();
-      mockMetadata.datasourceServletClient.request
-        .mockResolvedValueOnce({
-          ok: false,
-          data: { response: { status: 1, error: { message: "Temporary failure" } } },
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          data: { response: { status: 0, data: [{ id: "456", name: "Updated Name" }] } },
-        });
-
-      const pending = saveRecordWithRetry({ saveOperation, tab: mockTab, userId: mockUserId });
-      await jest.runAllTimersAsync();
-      const result = await pending;
-
-      expect(result.success).toBe(true);
-      expect(mockMetadata.datasourceServletClient.request).toHaveBeenCalledTimes(2);
     });
   });
 

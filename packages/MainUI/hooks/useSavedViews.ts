@@ -16,10 +16,20 @@
  */
 
 import { useCallback, useState } from "react";
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
-import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
-import type { ParsedSavedView, RawSavedViewRecord, SavedViewScope } from "@/utils/savedViews/types";
+import {
+  buildGridConfiguration,
+  parseGridConfiguration,
+  rawRecordToSavedView,
+  toAppliedViewState,
+} from "@/utils/savedViews/transform";
+import type {
+  AppliedViewState,
+  ParsedSavedView,
+  RawSavedViewRecord,
+  SavedViewScope,
+  ViewStateSnapshot,
+} from "@/utils/savedViews/types";
 import { useUserStore } from "@/stores/userStore";
 
 const BASE_URL = "/api/meta/saved-views";
@@ -40,6 +50,28 @@ async function apiFetch(url: string, token: string, options?: RequestInit): Prom
   return res.json();
 }
 
+/** Body of a PUT that rewrites a view: everything is resent because the backend only updates the keys present. */
+function buildUpdateBody(view: ParsedSavedView, isDefault: boolean, gridConfiguration?: string): string {
+  return JSON.stringify({
+    name: view.name,
+    tab: view.tabId,
+    isdefault: isDefault,
+    filterclause: view.filterClause,
+    gridconfiguration: gridConfiguration ?? (view.config ? JSON.stringify(view.config) : ""),
+  });
+}
+
+/** Parameters to save a new view: the captured grid and window state plus the view identity. */
+export interface SaveViewParams extends ViewStateSnapshot {
+  tabId: string;
+  name: string;
+  isDefault?: boolean;
+  /** Omit for a personal (USER-scope) view — only administrators may set a shared scope. */
+  scope?: SavedViewScope;
+  /** Target role id, only used when scope is "ROLE". */
+  roleId?: string;
+}
+
 export interface UseSavedViewsReturn {
   views: ParsedSavedView[];
   isLoading: boolean;
@@ -50,27 +82,10 @@ export interface UseSavedViewsReturn {
   fetchViews: (tabId: string) => Promise<void>;
   setDefaultView: (viewId: string) => Promise<void>;
   unsetDefaultView: (tabId: string) => Promise<void>;
-  saveView: (params: {
-    tabId: string;
-    name: string;
-    filters: MRT_ColumnFiltersState;
-    visibility: MRT_VisibilityState;
-    sorting: MRT_SortingState;
-    order: string[];
-    implicitFilterApplied: boolean;
-    grouping?: string[];
-    isDefault?: boolean;
-    scope?: SavedViewScope;
-    roleId?: string;
-  }) => Promise<void>;
-  applyView: (view: ParsedSavedView) => {
-    filters: MRT_ColumnFiltersState;
-    visibility: MRT_VisibilityState;
-    sorting: MRT_SortingState;
-    order: string[];
-    implicitFilterApplied: boolean;
-    grouping: string[];
-  } | null;
+  saveView: (params: SaveViewParams) => Promise<void>;
+  /** Overwrites the grid and window state of an existing view (saving again under the same name). */
+  updateView: (viewId: string, state: ViewStateSnapshot) => Promise<void>;
+  applyView: (view: ParsedSavedView) => AppliedViewState | null;
   deleteView: (viewId: string) => Promise<void>;
 }
 
@@ -120,45 +135,14 @@ export function useSavedViews(): UseSavedViewsReturn {
   );
 
   const saveView = useCallback(
-    async ({
-      tabId,
-      name,
-      filters,
-      visibility,
-      sorting,
-      order,
-      implicitFilterApplied,
-      grouping = [],
-      isDefault = false,
-      scope,
-      roleId,
-    }: {
-      tabId: string;
-      name: string;
-      filters: MRT_ColumnFiltersState;
-      visibility: MRT_VisibilityState;
-      sorting: MRT_SortingState;
-      order: string[];
-      implicitFilterApplied: boolean;
-      grouping?: string[];
-      isDefault?: boolean;
-      scope?: SavedViewScope;
-      roleId?: string;
-    }): Promise<void> => {
+    async ({ tabId, name, isDefault = false, scope, roleId, ...state }: SaveViewParams): Promise<void> => {
       if (!token) throw new Error("Not authenticated");
 
       setIsSaving(true);
       setError(null);
 
       try {
-        const gridConfiguration = buildGridConfiguration(
-          filters,
-          visibility,
-          sorting,
-          order,
-          implicitFilterApplied,
-          grouping
-        );
+        const gridConfiguration = buildGridConfiguration(state);
 
         // The backend atomically clears any other default sharing this view's (tab, scope)
         // target before persisting isdefault=true — no separate clear-then-set round trip.
@@ -206,13 +190,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         // target before persisting isdefault=true.
         await apiFetch(`${BASE_URL}/${viewId}`, token, {
           method: "PUT",
-          body: JSON.stringify({
-            name: targetView.name,
-            tab: tabId,
-            isdefault: true,
-            filterclause: targetView.filterClause,
-            gridconfiguration: targetView.config ? JSON.stringify(targetView.config) : "",
-          }),
+          body: buildUpdateBody(targetView, true),
         });
 
         await fetchViews(tabId);
@@ -241,13 +219,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
           method: "PUT",
-          body: JSON.stringify({
-            name: currentDefault.name,
-            tab: tabId,
-            isdefault: false,
-            filterclause: currentDefault.filterClause,
-            gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
-          }),
+          body: buildUpdateBody(currentDefault, false),
         });
 
         await fetchViews(tabId);
@@ -263,33 +235,43 @@ export function useSavedViews(): UseSavedViewsReturn {
     [token, views, fetchViews]
   );
 
-  const applyView = useCallback(
-    (
-      view: ParsedSavedView
-    ): {
-      filters: MRT_ColumnFiltersState;
-      visibility: MRT_VisibilityState;
-      sorting: MRT_SortingState;
-      order: string[];
-      implicitFilterApplied: boolean;
-      grouping: string[];
-    } | null => {
-      if (!view.config) {
-        logger.warn("[useSavedViews] Cannot apply view — no MRT config:", view.name);
-        return null;
-      }
+  const updateView = useCallback(
+    async (viewId: string, state: ViewStateSnapshot): Promise<void> => {
+      if (!token) throw new Error("Not authenticated");
 
-      return {
-        filters: view.config.filters,
-        visibility: view.config.visibility,
-        sorting: view.config.sorting,
-        order: view.config.order,
-        implicitFilterApplied: view.config.implicitFilterApplied,
-        grouping: view.config.grouping ?? [],
-      };
+      const targetView = views.find((v) => v.id === viewId);
+      if (!targetView) throw new Error("View not found");
+
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        await apiFetch(`${BASE_URL}/${viewId}`, token, {
+          method: "PUT",
+          body: buildUpdateBody(targetView, targetView.isDefault, buildGridConfiguration(state)),
+        });
+
+        await fetchViews(targetView.tabId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error updating view";
+        logger.error("[useSavedViews] updateView failed:", err);
+        setError(message);
+        throw err;
+      } finally {
+        setIsSaving(false);
+      }
     },
-    []
+    [token, views, fetchViews]
   );
+
+  const applyView = useCallback((view: ParsedSavedView): AppliedViewState | null => {
+    if (!view.config) {
+      logger.warn("[useSavedViews] Cannot apply view — no MRT config:", view.name);
+      return null;
+    }
+
+    return toAppliedViewState(view.config);
+  }, []);
 
   const deleteView = useCallback(
     async (viewId: string): Promise<void> => {
@@ -330,6 +312,7 @@ export function useSavedViews(): UseSavedViewsReturn {
     setDefaultView,
     unsetDefaultView,
     saveView,
+    updateView,
     applyView,
     deleteView,
   };

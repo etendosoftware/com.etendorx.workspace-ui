@@ -4,8 +4,6 @@ import type { SampleRecord } from "../../support/registry/data";
 import { runAndWaitForDatasource } from "../../support/wait";
 
 const DUE_DATE_OFFSET_DAYS = 120;
-/** Shortest common prefix of two invoice numbers worth filtering by. */
-const MIN_SHARED_PREFIX = 4;
 
 interface InvoiceSpec {
   vendor: SampleRecord;
@@ -20,15 +18,6 @@ const inputDateInDays = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`;
-};
-
-/** Longest common prefix of the two numbers when long enough, otherwise the first number. */
-const sharedFilter = (first: string, second: string): string => {
-  let length = 0;
-  while (length < first.length && length < second.length && first[length] === second[length]) {
-    length++;
-  }
-  return length >= MIN_SHARED_PREFIX ? first.slice(0, length) : first;
 };
 
 /** Fills the header and one line of the new purchase invoice, completes it and returns its number. */
@@ -139,16 +128,15 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       }
     }
 
-    // Filter by the shared prefix of both invoice numbers so both rows show at once when
-    // possible: sequential numbers (e.g. 10000134 / 10000135) share enough characters. This
-    // avoids row virtualization hiding the second invoice when their due dates differ; the
+    // Filter by each invoice number in turn so its row is rendered: a shared prefix also matched the
+    // pending invoices of earlier runs, and row virtualization left the invoice out of the DOM. The
     // grid keeps rows selected when the filter hides them (keepNonExistentRowsSelected).
     const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
     await invoiceDocFilter.waitFor({ state: "visible", timeout: 15_000 });
 
     // Rows are scoped to the modal: the Purchase Invoice grid behind it shows the same numbers
     const modal = app.processModal.root;
-    await runAndWaitForDatasource(page, () => invoiceDocFilter.fill(sharedFilter(invoiceNumberA, invoiceNumberB)));
+    await runAndWaitForDatasource(page, () => invoiceDocFilter.fill(invoiceNumberA));
     await app.grid.clickRowCell(invoiceNumberA, modal);
     const rowA = modal.locator("tbody tr").filter({ hasText: invoiceNumberA }).first();
     await expect(rowA.getByRole("checkbox", { name: "Toggle select row" })).toBeChecked({ timeout: 10_000 });

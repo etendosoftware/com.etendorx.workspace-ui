@@ -276,8 +276,27 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
       pageSize = 75
     ): Promise<RefListField[]> => {
       const fieldKey = field.name || field.hqlName;
-      const orgId = contextData?.organization || "no-org";
-      const cacheKey = `${fieldKey}-${orgId}-${searchQuery || ""}-${pageSize}`;
+      const datasourceName = getDatasourceName(field);
+
+      if (!datasourceName) {
+        logger.warn(`[useInlineTableDirOptions] No datasource or referencedEntity found for field ${fieldKey}`);
+        return [];
+      }
+
+      const selectorDatasource = (field.selector as any)?.datasourceName;
+      const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
+
+      const baseBody = buildRequestBody(
+        field,
+        pageSize,
+        searchQuery,
+        contextData,
+        useSpecialDatasource,
+        datasourceName
+      );
+      // Keyed by the request itself: it carries the row and parent context the selector's validation
+      // rule depends on, so a row (or a parent) with other values never gets another one's options.
+      const cacheKey = `${fieldKey}|${datasourceName}?${new URLSearchParams(baseBody).toString()}`;
 
       // Return cached options if available and no search query
       if (optionsCache[cacheKey] && !searchQuery) {
@@ -288,25 +307,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
       setLoadingStates((prev) => ({ ...prev, [fieldKey]: true }));
 
       try {
-        const datasourceName = getDatasourceName(field);
-
-        if (!datasourceName) {
-          logger.warn(`[useInlineTableDirOptions] No datasource or referencedEntity found for field ${fieldKey}`);
-          return [];
-        }
-
-        const selectorDatasource = (field.selector as any)?.datasourceName;
-        const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
-
-        const baseBody = buildRequestBody(
-          field,
-          pageSize,
-          searchQuery,
-          contextData,
-          useSpecialDatasource,
-          datasourceName
-        );
-
         const body = new URLSearchParams(baseBody);
         const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
           method: "POST",

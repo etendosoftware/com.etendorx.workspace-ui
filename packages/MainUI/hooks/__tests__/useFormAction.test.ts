@@ -1,6 +1,12 @@
 import { renderHook, act } from "@testing-library/react";
-import { buildReloadModalOptions, extractServerErrorMessage, useFormAction } from "../useFormAction";
+import {
+  buildReloadModalOptions,
+  extractServerErrorMessage,
+  logoutOnSessionSaveError,
+  useFormAction,
+} from "../useFormAction";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
@@ -131,6 +137,20 @@ describe("useFormAction execute", () => {
     expect(onError).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith({ id: "1" }, {});
   });
+
+  it.each([
+    ["a successful save", { ok: true, status: 200, data: { response: { status: 0, data: [{ id: "1" }] } } }, 1],
+    ["a rejected save", { ok: false, status: 200, data: { response: { status: -4, error: { message: "x" } } } }, 0],
+  ])("evicts the cached responses of the entity only after %s", async (_case, response, evictions) => {
+    const clearCacheForEntity = jest.spyOn(datasource, "clearCacheForEntity");
+
+    await saveAndGetCallbacks(response);
+
+    expect(clearCacheForEntity).toHaveBeenCalledTimes(evictions);
+    if (evictions > 0) {
+      expect(clearCacheForEntity).toHaveBeenCalledWith(mockTab.entityName);
+    }
+  });
 });
 
 describe("extractServerErrorMessage", () => {
@@ -192,5 +212,33 @@ describe("buildReloadModalOptions", () => {
 
   it("returns undefined when no reload callback is given", () => {
     expect(buildReloadModalOptions(undefined, t)).toBeUndefined();
+  });
+});
+
+describe("logoutOnSessionSaveError", () => {
+  const handlers = () => ({
+    logout: jest.fn(),
+    setLoginErrorText: jest.fn(),
+    setLoginErrorDescription: jest.fn(),
+    t: ((key: string) => key) as never,
+  });
+
+  it("logs out with the CSRF message on an invalid CSRF token", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("InvalidCSRFToken", h)).toBe(true);
+    expect(h.logout).toHaveBeenCalled();
+    expect(h.setLoginErrorText).toHaveBeenCalledWith("login.errors.csrfToken.title");
+  });
+
+  it("logs out when the role cannot see the table", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("AccessTableNoView", h)).toBe(true);
+    expect(h.setLoginErrorDescription).toHaveBeenCalledWith("login.errors.noAccessTableNoView.description");
+  });
+
+  it("leaves any other error to the caller", () => {
+    const h = handlers();
+    expect(logoutOnSessionSaveError("must be unique", h)).toBe(false);
+    expect(h.logout).not.toHaveBeenCalled();
   });
 });

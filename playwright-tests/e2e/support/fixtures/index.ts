@@ -17,6 +17,7 @@
  * context server side. Logging in per test keeps every test independent.
  */
 import { test as base } from "@playwright/test";
+import { ApiData } from "../api/ApiData";
 import { App, type RoleSelection } from "../components";
 import * as data from "../registry/data";
 
@@ -44,6 +45,8 @@ interface Fixtures {
   app: App;
   /** Named test data (`registry/data.ts`). */
   data: typeof data;
+  /** Creates and deletes records through the datasource, in the session of `app`. */
+  api: ApiData;
 }
 
 export const test = base.extend<Fixtures>({
@@ -68,6 +71,9 @@ export const test = base.extend<Fixtures>({
   // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures must destructure their dependencies
   data: async ({}, use) => {
     await use(data);
+  },
+  api: async ({ app }, use) => {
+    await use(new ApiData(app.page));
   },
 });
 

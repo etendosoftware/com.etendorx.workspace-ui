@@ -54,6 +54,11 @@ export const PAYMENT_METHOD = {
   SPAIN_4: { id: "BC79E3E914CF471C91AE183FC5311BE7", name: "4 (Spain)" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Discount/promotion types (M_Offer_Type) of the core. */
+export const OFFER_TYPE = {
+  PRICE_ADJUSTMENT: { id: "5D4BAF6BB86D4D2C9ED3D5A6FC051579", name: "Price Adjustment" },
+} as const satisfies Record<string, SampleRecord>;
+
 export const DOCUMENT_TYPE = {
   STANDARD_ORDER: { id: "FF8080812C2ABFC6012C2B3BDF4D005A", name: "Standard Order" },
 } as const satisfies Record<string, SampleRecord>;
@@ -69,8 +74,45 @@ export const LIST_VALUE = {
   PROCESS_RECEIVED_PAYMENTS: { id: "7AC4F4FF644247B7BD320BBF67C4F066", name: "Process Received Payment(s)" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Process definitions (OBUIAPP_Process_ID) whose definition a spec overrides. */
+export const PROCESS = {
+  ADD_PAYMENT: "9BED7889E1034FE68BD85D5D16857320",
+  /** Manual (client-side JS) process of the core: its classic handler is `OB.OpenClose.openClose`. */
+  OPEN_CLOSE_PERIODS: "A832A5DA28FB4BB391BDE883E928DFC5",
+} as const;
+
+/**
+ * Documents of the sample data a spec only reads, by document number. Each one stays in the
+ * state described in every freshly installed database: no spec processes it.
+ */
+export const SAMPLE_DOCUMENT = {
+  /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
+  SALES_INVOICE_PENDING: "I/25",
+  /** Accounting period of the sample calendar (Open/Close Period Control). */
+  PERIOD_JAN_2011: "Jan-11",
+  /** Sales order in Draft with four lines; specs clone it instead of changing it. */
+  SALES_ORDER_DRAFT_WITH_LINES: "50014",
+  /** Sales order in Draft with six lines (one of them "Transportation"). */
+  SALES_ORDER_DRAFT_WITH_MORE_LINES: "50013",
+  /** Sales order in Draft (two lines). */
+  SALES_ORDER_DRAFT: "50015",
+  /** Booked (Completed) sales order. */
+  SALES_ORDER_COMPLETED: "50017",
+} as const;
+
 export const ORGANIZATION = {
   SPAIN: "Spain",
+} as const;
+
+/** AD_User_ID of the user the suite logs in with (`admin`). */
+export const USER_ID = {
+  ADMIN: "100",
+} as const;
+
+/** AD_Org_ID of the sample organizations, for records the `api` fixture creates. */
+export const ORGANIZATION_ID = {
+  ALL: "0",
+  SPAIN: "357947E87C284935AD1D783CF6F099A1",
 } as const;
 
 /** A storage bin (locator): `id` is the M_Locator_ID, `value` its search key. */

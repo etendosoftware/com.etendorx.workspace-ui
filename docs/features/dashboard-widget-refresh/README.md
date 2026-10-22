@@ -55,6 +55,6 @@ the same action as a dedicated header button, with a loading indicator.
 - `packages/MainUI/screens/Home/widgets/WidgetCard.tsx` — refresh button, loading state, renderer remount
 - `packages/MainUI/screens/Home/widgets/DashboardGrid.tsx` — passes `onRefresh` to each card
 - `packages/MainUI/screens/Home/index.tsx` — wires the store's `refreshWidget`
-- `packages/MainUI/stores/dashboardStore.ts` — `refreshWidget` and the auto-refresh intervals (unchanged)
+- `packages/MainUI/stores/dashboardStore.ts` — `refreshWidget` and the auto-refresh intervals (both skip collapsed widgets, see [Dashboard Widget Collapse](../dashboard-widget-collapse/README.md))
 - `packages/ComponentLibrary/src/locales/{en,es}.ts` — `dashboard.widget.refresh` label
 - Tests: `screens/Home/widgets/__tests__/WidgetCard.test.tsx`, `screens/Home/widgets/__tests__/DashboardGrid.test.tsx`, `stores/__tests__/dashboardStore.test.ts`

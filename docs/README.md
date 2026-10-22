@@ -30,8 +30,12 @@ docs/
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
+│   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
+│   │   └── README.md                # Widths, pinning, window layout, ETMETA_GridConfiguration
 │   ├── dashboard-widget-refresh/     # Feature: Manual refresh of dashboard widgets
 │   │   └── README.md                # Refresh button, loading state, auto-refresh interplay
+│   ├── dashboard-widget-collapse/    # Feature: Collapse/expand dashboard widgets
+│   │   └── README.md                # Header-only cards, half-row grid, ISCOLLAPSED persistence
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
@@ -47,7 +51,7 @@ docs/
 │   └── table-state-persistence.md  # Table state persistence context
 ├── testing/                          # Testing strategy
 │   ├── session-sync-test-strategy.md
-│   └── playwright-e2e/               # Playwright E2E suite: behavior, decisions, CI checks
+│   └── playwright-e2e/               # Playwright E2E suite: behavior, decisions, CI checks, feature probes, mocked backend
 │       └── README.md
 ├── patterns/                         # Patterns and conventions
 │   ├── react-patterns.md           # React patterns including state persistence
