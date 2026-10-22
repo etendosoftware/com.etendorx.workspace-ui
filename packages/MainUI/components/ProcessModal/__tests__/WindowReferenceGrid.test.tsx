@@ -67,7 +67,6 @@ import {
   findRowActionsHostColumnId,
   createGridScriptView,
   applyExternalParams,
-  refreshSelectedRecords,
   runWithScopedSubscriptions,
   isPersistedRow,
   isValidHqlName,
@@ -793,25 +792,6 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("is false only when none apply", () => {
       expect(shouldShowRowActions(false, false, false)).toBe(false);
-    });
-  });
-
-  describe("refreshSelectedRecords", () => {
-    it("refreshes the selected records delivered again, keeping client-only keys", () => {
-      const selection = new Map<string, EntityData>([
-        ["L-1", { id: "L-1", cleared: true, _local: "kept" } as EntityData],
-        ["L-2", { id: "L-2", cleared: true } as EntityData],
-      ]);
-
-      const refreshed = refreshSelectedRecords(selection, [
-        { id: "L-1", cleared: false } as EntityData,
-        { id: "L-3", cleared: false } as EntityData,
-      ]);
-
-      expect(refreshed).toBe(1);
-      expect(selection.get("L-1")).toEqual({ id: "L-1", cleared: false, _local: "kept" });
-      expect(selection.get("L-2")).toEqual({ id: "L-2", cleared: true });
-      expect(selection.has("L-3")).toBe(false);
     });
   });
 

@@ -1136,29 +1136,6 @@ export const publishDeliveredRows = (
 };
 
 /**
- * Refreshes the selected records with the rows just delivered, keyed by id, after a
- * refetch a script requested (`grid.invalidateCache()` / `fetchData()`): the grid
- * keeps the selection, and its records now carry the server's current values (e.g. a
- * line unmatched by the script is no longer `cleared`), as Classic re-reads them.
- * Client-only keys of a selected record are kept. Selected records absent from the
- * rows are left untouched.
- *
- * @returns how many selected records were refreshed
- */
-export const refreshSelectedRecords = (selection: Map<string, EntityData>, rows: EntityData[]): number => {
-  let refreshed = 0;
-  for (const row of rows) {
-    const id = String(row.id);
-    const selected = selection.get(id);
-    if (selected) {
-      selection.set(id, { ...selected, ...row });
-      refreshed++;
-    }
-  }
-  return refreshed;
-};
-
-/**
  * Runs an `onGridLoad` execution so its grid subscriptions (`onDataArrived`,
  * `onSelectionChanged`, `onRecordChange`, `onSelectionToggle`) replace the ones the
  * previous execution registered, instead of piling up on every data delivery.
@@ -2565,8 +2542,6 @@ const WindowReferenceGrid = ({
   const columnValidatorRef = useRef<Map<string, ColumnValidator>>(new Map());
   // What the last onGridLoad execution subscribed, replaced on the next execution.
   const gridLoadSubscriptionsRef = useRef<Array<Array<unknown>> | null>(null);
-  // Set by a script-requested refetch: the next delivery refreshes the selected records.
-  const refreshSelectionOnDeliveryRef = useRef(false);
   // Ids selected as of the last selectionChanged fire, for the onSelectionToggle diff.
   const prevSelectionIdsRef = useRef<Set<string>>(new Set());
   // Guards against the infinite loop when a column onChange calls grid.setEditValue
@@ -2614,10 +2589,6 @@ const WindowReferenceGrid = ({
     );
     setLocalRecords(prepared);
     publishDeliveredRows(gridApiRef, localRecordsRef, prepared);
-    if (refreshSelectionOnDeliveryRef.current) {
-      refreshSelectionOnDeliveryRef.current = false;
-      refreshSelectedRecords(persistentSelectionRef.current, prepared);
-    }
 
     // Notify any script-registered `grid.dataArrived` subscribers (mirrors the
     // classic grid lifecycle hook), independently of whether an onGridLoad body
@@ -3285,15 +3256,9 @@ const WindowReferenceGrid = ({
   // Live handles the controller reads at call time, refreshed every render so the
   // controller identity stays stable (the modal keeps it in a registry) while it
   // always operates on the current rows / selection / datasource handles.
-  // A refetch a script requests (`grid.invalidateCache()` / `fetchData()`) also refreshes the
-  // selected records with the delivered rows.
-  const refetchForScript = useCallback(() => {
-    refreshSelectionOnDeliveryRef.current = true;
-    refetch();
-  }, [refetch]);
   const gridApiRef = useRef<EmbeddedGridApi>({
     rows: localRecords,
-    refetch: refetchForScript,
+    refetch,
     criteria: datasourceOptions?.criteria,
     fields,
     handleRowSelection,
@@ -3303,7 +3268,7 @@ const WindowReferenceGrid = ({
   });
   gridApiRef.current = {
     rows: localRecords,
-    refetch: refetchForScript,
+    refetch,
     criteria: datasourceOptions?.criteria,
     fields,
     handleRowSelection,

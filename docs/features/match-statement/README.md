@@ -242,7 +242,7 @@ It never showed in the new UI, and pressing it would have failed:
 | Gap | Fix |
 |---|---|
 | onLoad stores `view.unmatchButton` on its view; onGridLoad, which shows / hides it on selection changes, receives another view. | Script-assigned view properties are shared by the modal's views (`withScriptScope`). |
-| After the unmatch refresh, the selected records kept their old values (`cleared`, `bslUpdated`). | A script-requested refetch refreshes the selected records (`refreshSelectedRecords`). |
+| After the unmatch refresh the selected records keep their old values (`cleared`, `bslUpdated`), and a line filtered out is still selected, so the button stayed visible. | As Classic `selectionChanged`, the stored scripts read each selected line from the rows the grid holds now (`grid.getEditedRecord(grid.getRecordIndex(selected))`): a line no longer matched, or no longer loaded, does not count for the visibility and is not sent. The selection itself is not rewritten, so user edits in other processes (e.g. Add Payment amounts) are untouched. |
 | Visibility was only recomputed on selection changes; Classic also recomputes it when the rows are drawn. | Stored onGridLoad calls `refreshUnmatchVisibility()` after every load. |
 | The selected records were sent with `bslUpdated` as a string with an offset; the handler compares it as UTC and answered `APRM_StaleDate` on servers outside UTC. | Stored onLoad sends `bslUpdated` as a `Date` (`toUnmatchRecord`), as Classic did. |
 | Each onGridLoad run added another selection subscription. | onGridLoad subscriptions are replaced per execution (`runWithScopedSubscriptions`). |
