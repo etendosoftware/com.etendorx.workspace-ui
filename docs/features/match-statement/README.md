@@ -225,9 +225,32 @@ With F&B the "Dimensions" section shows Organization, Business Partner and Proje
 - The Match Statement script also sends `transactionDate` in Add's `externalParams` (Classic sends only
   `bankStatementLineId`). The value is `undefined`, so it is not sent.
 
+## Footer buttons
+
+The `Actions` parameter (Button List) defines three buttons. The Classic onLoad also hides Cancel and the close X.
+
+| Button | Visible | Does (Classic) | New UI |
+|---|---|---|---|
+| OK | Always | Posts `_buttonValue: OK`; the handler returns `{}`. The popup closes without a message. | Same (no generic toast for a response without message). |
+| Reconcile All (`RE`) | Always | Posts `_buttonValue: RE`. The handler updates the draft reconciliation dates and balance and **processes** it (`FIN_ReconciliationProcess`, action `P`: `CO`). Answers "Success" or an error (e.g. a closed period, `APRM_PeriodNotAvailableClearedItem`). | Same request; the success message is a toast on close, and an error is shown in the modal (Classic shows it in the Financial Account window). |
+| Unmatch Selected (`UN`) | Hidden; shown while at least one selected row is matched (`cleared`) | The onLoad overrides its action: `UnMatchSelectedTransactionsActionHandler` with the selected records, then refresh and the handler's message. | See below. |
+
+### Unmatch Selected
+
+It never showed in the new UI, and pressing it would have failed:
+
+| Gap | Fix |
+|---|---|
+| onLoad stores `view.unmatchButton` on its view; onGridLoad, which shows / hides it on selection changes, receives another view. | Script-assigned view properties are shared by the modal's views (`withScriptScope`). |
+| After the unmatch refresh, the selected records kept their old values (`cleared`, `bslUpdated`). | A script-requested refetch refreshes the selected records (`refreshSelectedRecords`). |
+| Visibility was only recomputed on selection changes; Classic also recomputes it when the rows are drawn. | Stored onGridLoad calls `refreshUnmatchVisibility()` after every load. |
+| The selected records were sent with `bslUpdated` as a string with an offset; the handler compares it as UTC and answered `APRM_StaleDate` on servers outside UTC. | Stored onLoad sends `bslUpdated` as a `Date` (`toUnmatchRecord`), as Classic did. |
+| Each onGridLoad run added another selection subscription. | onGridLoad subscriptions are replaced per execution (`runWithScopedSubscriptions`). |
+
+The stored JavaScript changes are exported to `com.etendoerp.metadata.template` (`configScript.xml`).
+
 ### Pending
 
-- The footer `UN` button visibility (`view.unmatchButton` is set on the onLoad view only).
 - Selecting the row when a button is clicked (Classic `selectSingleRecord`).
 
 ## Main files

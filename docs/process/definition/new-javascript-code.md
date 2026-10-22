@@ -713,6 +713,17 @@ This deferral is intentional: read-only data is always safe, and any unported ac
       handler doing `jsonData.getBoolean("<key>")` throws `JSONObject["<key>"] not found.`. Any flag a
       script forwards to the backend must be a real boolean — which is exactly why `isVisible()` always
       returns one. When you forward a computed flag, prefer coercing it (`Boolean(...)` / `=== true`).
+- **Script-assigned properties are shared by the modal's views.** Each hook receives its own `view` object,
+  but a property the script adds to it (one the view does not define, e.g. `view.unmatchButton` set in onLoad)
+  is stored in a per-modal scope (`ViewData.scriptScope`, `withScriptScope` in `scriptProxies.ts`) and read
+  back from any other view of the same modal: onLoad, onChange, onProcess, onGridLoad, row actions. This mirrors
+  Classic, where every hook gets the same view object. The view's own properties (platform surface, hook data
+  such as `_buttonValue`) stay per view, and enumeration, spreads and JSON only see them. The scope is emptied
+  when the modal opens, and a nested modal has its own.
+- **`onGridLoad` subscriptions are per execution.** `onGridLoad` runs again on every data delivery. The grid
+  subscriptions it registers (`onDataArrived`, `onSelectionChanged`, `onRecordChange`, `onSelectionToggle`)
+  replace the ones its previous execution registered (`runWithScopedSubscriptions`) instead of piling up.
+  Subscriptions made from other hooks (e.g. onLoad) are kept.
 - **Grid values in the context:** the `onProcess` view's `getContextInfo()` also carries the grid
   parameters' values, `{ <gridParam>: { _selection, _allRows } }` (`ViewData.getGridValues`), as Classic
   `getContextInfo()` does.

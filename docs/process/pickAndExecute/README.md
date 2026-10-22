@@ -760,6 +760,11 @@ before.
 with the server-expanded `displayLogicExpression` (`resolveParameterDisplayLogic`), which reads the session's
 dimension values; every other parameter keeps its raw display logic.
 
+**Selection after a script refresh.** A refetch a script requests (`grid.invalidateCache()` / `fetchData()`)
+keeps the selection and refreshes the selected records with the delivered rows (`refreshSelectedRecords`), as
+Classic re-reads them. Scripts then read current values (e.g. a line unmatched by the script is no longer `cleared`).
+Filter, sort and paging refetches do not touch the selected records, so user edits on them are preserved.
+
 **Nested launches.** A grid inside a nested process modal (`view.openProcess`) gets the owner tab as `originTab`
 (so `buttonOwnerViewTabId` and the owner's session keys are sent) and the launch's `externalParams` as request params
 (`applyExternalParams`), mirroring Classic `OBPickAndExecuteGrid.transformRequest`. See
