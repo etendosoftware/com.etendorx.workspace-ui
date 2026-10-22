@@ -207,6 +207,18 @@ Classic opens `E68790A7…` (Pick & Execute with form parameters only) with `cal
 The stored `onProcess` already follows the Pick & Execute validation contract (`undefined` to proceed, an error to
 abort).
 
+**Form fixes found while testing it** (generic, ETP-5877):
+
+| Problem | Cause | Fix |
+|---|---|---|
+| Execute was enabled with empty mandatory dates; the server answered "Unparseable date: null". | A mandatory parameter with a default *expression* counted as filled, even when the default resolved empty. | Pick & Execute processes require an actual value in every visible mandatory parameter, as Classic `allRequiredParametersSet` (grid and Yes/No parameters exempt). |
+| Only *Currency* was pre-filled. | The defaults request (`useProcessInitialization`) did not send `externalParams`, so `AddTransactionFilterExpression` found no `bankStatementLineId`. | `externalParams` are added to that request's context. |
+| Two empty "Dimensions" sections. | Two field groups share the name (`BB8B7EB2…`, `800000`), and a section was drawn even with no visible field. | A section with no visible parameter is hidden (kept mounted), as Classic `OBSectionItem.showIf`. |
+| No dimension field was shown. | `@ACCT_DIMENSION_DISPLAY@` is a server-expanded token; evaluated raw it was empty. | Parameters using it evaluate the server's `displayLogicExpression` (`resolveParameterDisplayLogic`). |
+| Dimensions hidden for clients that do not maintain them centrally, and Campaign / Activity / Sales Region always hidden. | The session lacked Classic's `$Element_<elementtype>` values. | `com.etendoerp.metadata` `SessionBuilder` now emits them (see its technical reference). |
+
+With F&B the "Dimensions" section shows Organization, Business Partner and Project, as Classic.
+
 ### Differences with Classic
 
 - The split confirm uses the new UI dialog.

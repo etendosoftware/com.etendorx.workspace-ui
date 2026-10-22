@@ -746,6 +746,20 @@ Classic puts it in the filter editor (`setFilterEditorCriteria`):
 Every other default keeps both channels as before. In the current dictionary this affects Match Statement's
 *Match* (`cleared = No`) and Copy from Orders' *Sales Transaction*.
 
+**Mandatory parameters.** The Execute button of a Pick & Execute process is enabled only when every visible mandatory
+parameter holds an actual value (`isMandatoryParameterMissing` with `requireActualValue`, as reports already did),
+following Classic `allRequiredParametersSet`. A default *expression* alone no longer counts, so a default that
+resolved empty keeps the button disabled instead of posting nulls. Grid parameters (validated through their
+selection) and Yes/No parameters (a Classic checkbox always holds a value) are exempt.
+
+**Field-group sections.** A section whose parameters are all hidden by display logic is not shown
+(`hasVisibleParameter`), as Classic `OBSectionItem.showIf`. It stays mounted, hidden, so its parameters register as
+before.
+
+**Accounting dimension display logic.** A parameter whose display logic uses `@ACCT_DIMENSION_DISPLAY@` is evaluated
+with the server-expanded `displayLogicExpression` (`resolveParameterDisplayLogic`), which reads the session's
+dimension values; every other parameter keeps its raw display logic.
+
 **Nested launches.** A grid inside a nested process modal (`view.openProcess`) gets the owner tab as `originTab`
 (so `buttonOwnerViewTabId` and the owner's session keys are sent) and the launch's `externalParams` as request params
 (`applyExternalParams`), mirroring Classic `OBPickAndExecuteGrid.transformRequest`. See
