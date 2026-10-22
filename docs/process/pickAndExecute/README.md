@@ -746,6 +746,11 @@ Classic puts it in the filter editor (`setFilterEditorCriteria`):
 Every other default keeps both channels as before. In the current dictionary this affects Match Statement's
 *Match* (`cleared = No`) and Copy from Orders' *Sales Transaction*.
 
+**Nested launches.** A grid inside a nested process modal (`view.openProcess`) gets the owner tab as `originTab`
+(so `buttonOwnerViewTabId` and the owner's session keys are sent) and the launch's `externalParams` as request params
+(`applyExternalParams`), mirroring Classic `OBPickAndExecuteGrid.transformRequest`. See
+[new-javascript-code §8.3](../definition/new-javascript-code.md#83-nested-process-modal-stack).
+
 ### 8.17 External grid-selection sync (callouts)
 
 When the parent modal updates `gridSelection` (typically because the payscript wrote a new selection back), the grid syncs MRT's `rowSelection` to match. The sync uses a functional `setRowSelection` with a structural-equality bail-out:

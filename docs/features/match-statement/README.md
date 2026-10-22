@@ -151,11 +151,44 @@ Search and Add are enabled when the line is not matched; Clear is enabled when i
 **Clear works** with these fixes and no change to the stored JavaScript: it unmatches, refreshes the grid (the
 buttons switch state) and shows an error in the message bar if any.
 
-**Pending (next steps):** Search and Add open nested processes that still need the line's data (`externalParams`
-in defaults, datasource and `_params`, and `callerField.record`). They also need their `onLoad`/`onProcess` hooks
-to run in a nested modal, and a parent refresh with a real view (only after success, as Classic). Not started yet:
-the footer `UN` button visibility (`view.unmatchButton` is set on the onLoad view only), and selecting the row when
-a button is clicked (Classic `selectSingleRecord`).
+### Search: *Find Transactions to Match*
+
+Classic opens `154CB4F9…` with the Financial Account header as `buttonOwnerView`, `callerField = me` (the row and
+the Match Statement view) and `externalParams { bankStatementLineId, transactionDate }`.
+
+- **Grid.** It lists the account's processed, unreconciled transactions dated up to the line's date. The request
+  carries `@FIN_Financial_Account.id@` and `bankStatementLineId`, read by `TransactionsToMatchTransformer`.
+- **Done.** `OB.APRM.FindTransactions.onProcess` requires a selection. If the selected amount differs from the
+  line's amount, it asks to split the line (skipped when the `APRM_MATCHSTATEMENT_HIDE_PARTIALMATCH_POPUP`
+  preference is `Y`), then submits.
+- **Result.** Success matches the line (`MA`), closes the popup and refreshes the Match Statement grid.
+  Cancel closes without refreshing.
+
+The new UI did none of it. The fixes are generic, in the nested-process substrate:
+
+| Gap | Fix |
+|---|---|
+| The nested modal had no tab or record, so no context reached its defaults, grid or submit. | It runs in its owner's tab and record (`ownerTab` / `ownerRecord`, `buildNestedLaunch`). |
+| `isPE` was computed from the stub button, so the defaults were never requested and Done did nothing. | `isPE` reads the loaded process definition. |
+| `externalParams` were dropped. | They reach the defaults context, the grid datasource (`applyExternalParams`) and `_params`. |
+| `onLoad` / `onProcess` never ran in a nested modal. | They run, since the modal now has a tab. |
+| The migrated `onProcess` calls `view.executeProcess()`, which double-submitted, and a declined split confirm showed an empty error banner. | `executeProcess()` is the submit (Classic `actionHandlerCall()`); an error without text aborts silently. |
+| `view.getContextInfo()` had no grid selection. | It carries `{ findtransactiontomatch: { _selection, _allRows } }`. |
+| The parent refresh ran twice, also on cancel, with an invalid view; the split confirm was drawn twice. | Only success refreshes the caller view, once; only the topmost modal renders dialogs. |
+
+**Stored JavaScript change** (Match Statement `onGridLoad`, the `Match Statement` parameter): the migration had
+dropped Classic's `callerField: me`. The child reads `view.callerField.record.amount` (the line), so
+`openMatchProcess` now passes `callerField: { record: record, view: view }`. See the migration report.
+
+### Differences with Classic
+
+- The split confirm uses the new UI dialog.
+
+### Pending (next steps)
+
+- Add (*Add Transaction*), which reuses the nested-process fixes above.
+- The footer `UN` button visibility (`view.unmatchButton` is set on the onLoad view only).
+- Selecting the row when a button is clicked (Classic `selectSingleRecord`).
 
 ## Main files
 
@@ -170,7 +203,11 @@ a button is clicked (Classic `selectSingleRecord`).
   `splitClientclass`, `isLevelImgColumn`, `readLevelValues`, `resolveLevel`; used by `hooks/table/useColumns.tsx`
   and `WindowReferenceGrid.tsx`.
 - `packages/MainUI/components/Table/Cells/LevelIndicatorCell.tsx`: the level indicator.
-- `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `createGridScriptView`,
+- `packages/MainUI/utils/processes/definition/nestedLaunch.ts`, `processStack.ts` and
+  `components/ProcessModal/ProcessStackHost.tsx`: nested launches (owner context, `callerField`, refresh on success).
+- `packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts` and `utils/preSubmitOutcome.ts`: the P&E
+  `onProcess` outcome (`executeProcess()` as the submit, silent abort).
+- `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `applyExternalParams`, `createGridScriptView`,
   `findRowActionsHostColumnId` (with `isClientclassComponentColumn` in `utils/table/clientclassLink.ts`).
 - `packages/MainUI/components/ProcessModal/utils/defaultsRequestPayload.ts` and `buildTabStandardContext`
   (`packages/MainUI/utils/index.ts`): the context sent to `DefaultsProcessActionHandler`.

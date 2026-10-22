@@ -261,10 +261,18 @@ async (process, view) => {
 };
 ```
 
-Rules for this case: return `{ severity: 'error', text }` (or any `error` severity) to **abort** the
-submit; return `undefined` to **proceed**. Do **not** call `view.executeProcess()` here — the platform
-performs the submit itself, so calling it would double-submit. (On non-Window-Reference processes,
-`onProcess` keeps its full Section 5.2.1 behavior, including `view.executeProcess()`.)
+Rules for this case (`runPreSubmitValidation` + `resolvePreSubmitOutcome`,
+`packages/MainUI/components/ProcessModal/utils/preSubmitOutcome.ts`):
+
+- return `{ severity: 'error', text }` (or any `error` severity) to **abort** the submit and show the text;
+  an error **without text** aborts **silently** (Classic `clientSideValidationFail()` with no message,
+  e.g. a declined `confirm`);
+- return `undefined` (or anything that is not an error) to let the platform **proceed** with the submit;
+- calling `view.executeProcess()` is Classic `actionHandlerCall()`: it posts the very same Done payload,
+  and **that** response is handled as any execution (message, close, parent refresh, `retryExecution`). The
+  platform does **not** post again, whatever the script returns. Before ETP-5877 this double-submitted.
+
+(On non-Window-Reference processes, `onProcess` keeps its full Section 5.2.1 behavior.)
 
 ### 5.3 `em_etmeta_on_refresh` — process `onRefresh`
 
@@ -394,12 +402,13 @@ start with declarations.
 
 ### 6.5 Lifecycle & the nested-modal tab gating
 
-`onLoad` runs once per open (tracked by an identity ref) and is gated on `tab`; `onProcess` is gated on
-`tab`. The nested-process stack (Section 8.3) renders its modals from a root-level host that sits
-**outside** the tab context, so a nested modal has `tab === undefined` — meaning **`onLoad`/`onProcess`
-do not run in a nested modal**. By contrast, parameter `onChange` is bound to `form.watch` and is *not*
-tab-gated, so it **does** run inside a nested modal. Migration logic that must execute in a nested
-launch should live in a parameter `onChange`, not in `onLoad`/`onProcess`.
+`onLoad` runs once per open (tracked by an identity ref); `onLoad` and `onProcess` are gated by
+`shouldRunProcessLifecycleHooks` (`tab` present, or no `callerField`). The nested-process stack (Section 8.3)
+renders its modals from a root-level host **outside** the tab context, so a nested modal runs in its
+**owner's** tab and record (`ownerTab` / `ownerRecord`, the tab that launched the outermost process), as
+Classic runs a nested process with the launcher's `buttonOwnerView`. Since ETP-5877 a nested modal therefore
+has a `tab`, and **`onLoad`/`onProcess` run in it** like in Classic. Before, the nested modal had
+`tab === undefined` and both hooks were skipped. Parameter `onChange` is bound to `form.watch` and always runs.
 
 ### 6.6 `onChange` firing semantics
 
@@ -700,6 +709,9 @@ This deferral is intentional: read-only data is always safe, and any unported ac
       handler doing `jsonData.getBoolean("<key>")` throws `JSONObject["<key>"] not found.`. Any flag a
       script forwards to the backend must be a real boolean — which is exactly why `isVisible()` always
       returns one. When you forward a computed flag, prefer coercing it (`Boolean(...)` / `=== true`).
+- **Grid values in the context:** the `onProcess` view's `getContextInfo()` also carries the grid
+  parameters' values, `{ <gridParam>: { _selection, _allRows } }` (`ViewData.getGridValues`), as Classic
+  `getContextInfo()` does.
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
@@ -787,10 +799,20 @@ Anything not implemented throws a clear error rather than failing silently.
 - **New UI:** `view.openProcess(params)` (and `view.standardWindow.openProcess`) pushes onto a
   React-free LIFO stack (`packages/MainUI/utils/processes/definition/processStack.ts`); the root-level
   `ProcessStackHost` (`packages/MainUI/components/ProcessModal/ProcessStackHost.tsx`) renders one
-  `ProcessDefinitionModal` per entry (layered by MUI). On child close/success the parent's
-  `onRefreshFunction(parentView)` auto-fires, and `callerField` (with its `view`) is forwarded to the
-  child (Section 7.4). These methods are live only with a `ViewController`.
-- **Note:** recall the tab-gating nuance in Section 6.5 for what runs inside a nested modal.
+  `ProcessDefinitionModal` per entry (layered by MUI). The entry is built by `buildNestedLaunch`
+  (`nestedLaunch.ts`). These methods are live only with a `ViewController`.
+  - **Context:** the child runs in the launcher's tab and record (Section 6.5). Its defaults request, grid
+    datasource (`buttonOwnerViewTabId`, the owner's `@Entity.property@` session keys) and submit carry that
+    context, as Classic's `buttonOwnerView`.
+  - **`externalParams`:** added to the defaults context, sent as grid datasource request params
+    (`applyExternalParams`) and added to the submit `_params`, as Classic does.
+  - **`callerField`:** the script's own (e.g. `{ record: row, view }`, Classic `callerField: me`), or the
+    launcher's (Section 7.4). Pass it explicitly when the child reads `view.callerField.record`.
+  - **Close:** only a **successful** execution refreshes the caller view
+    (`callerField.view.onRefreshFunction(callerField.view)`, else the launcher's `onRefresh`), once. X /
+    Cancel closes without refreshing, as Classic.
+  - **Dialogs:** only the topmost modal renders the script dialog host (`isTopmostProcessModal`), so a
+    child's `confirm` is drawn once.
 
 ### 8.4 Per-row grid plugin
 
