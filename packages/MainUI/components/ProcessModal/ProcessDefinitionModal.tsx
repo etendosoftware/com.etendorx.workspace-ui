@@ -153,6 +153,7 @@ import {
 } from "@/utils/processes/definition/directExecute";
 import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
 import { buildSourceView } from "@/utils/processes/definition/sourceView";
+import { buildDefaultsRequestPayload } from "./utils/defaultsRequestPayload";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
@@ -1279,12 +1280,17 @@ function ProcessDefinitionModalContent({
   useEffect(() => {
     if (open && isPE) {
       const loadConfig = async () => {
-        const combinedPayload = { ...recordValues, ...session };
+        const combinedPayload = buildDefaultsRequestPayload(
+          tab,
+          record as Record<string, unknown> | null,
+          recordValues,
+          session
+        );
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, recordValues, session, tabId, open, isPE]);
+  }, [fetchConfig, tab, record, recordValues, session, tabId, open, isPE]);
 
   useEffect(() => {
     if (initializationError) {
