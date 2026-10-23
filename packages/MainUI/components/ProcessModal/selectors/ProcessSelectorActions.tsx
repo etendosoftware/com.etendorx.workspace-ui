@@ -24,6 +24,7 @@ import type { EntityData, Field, Tab } from "@workspaceui/api-client/src/api/typ
 import SelectorModal from "@/components/Form/FormView/selectors/SelectorModal";
 import type { ProcessSelectorContext } from "@/hooks/types";
 import { buildProcessSelectorOverlay } from "@/hooks/datasource/useTableDirDatasource";
+import { useTranslation } from "@/hooks/useTranslation";
 import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import { getSelectorPopupShortcutId, isEventFromDropdownPortal, isSelectorPopupShortcut } from "@/utils/form/keyboard";
@@ -86,6 +87,7 @@ const ProcessSelectorActions = ({
   children,
 }: ProcessSelectorActionsProps) => {
   const { getValues, setValue } = useFormContext();
+  const { t } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const fieldName = getSelectorFieldName(field);
   const { hasTableRelated, hasProcessDefinitionRelated, processDefinitionId } = field.selector ?? {};
@@ -112,6 +114,8 @@ const ProcessSelectorActions = ({
   const handleAdd = useCallback(() => {
     onOpenProcess?.({
       processId: processDefinitionId as string,
+      // Titled after the field, as Classic `OBUISEL_AddNewRecord` ("Add Payment").
+      windowTitle: t("process.addNewRecord").replace("%0", () => field.name),
       callerField: {
         id: field.id,
         name: field.name,
@@ -119,7 +123,7 @@ const ProcessSelectorActions = ({
       },
       callerContext: processContext?.values,
     });
-  }, [onOpenProcess, processDefinitionId, field, setValue, processContext]);
+  }, [onOpenProcess, processDefinitionId, field, setValue, processContext, t]);
 
   if (!canSearch && !canAdd) {
     return <>{children}</>;
@@ -136,7 +140,7 @@ const ProcessSelectorActions = ({
             tooltip="Search"
             tooltipPosition="top"
             tabIndex={NOT_TABBABLE}
-            data-testid={`ProcessSelectorSearch__${field.id}`}>
+            data-testid={`IconButton__${field.id}`}>
             <SearchIcon className="h-5 w-5 fill-current" data-testid={`SearchIcon__${field.id}`} />
           </IconButton>
         )}
@@ -147,7 +151,7 @@ const ProcessSelectorActions = ({
             tooltip="Add"
             tooltipPosition="top"
             tabIndex={NOT_TABBABLE}
-            data-testid={`ProcessSelectorAdd__${field.id}`}>
+            data-testid={`IconButton__${field.id}`}>
             <PlusIcon className="h-5 w-5 fill-current" data-testid={`PlusIcon__${field.id}`} />
           </IconButton>
         )}

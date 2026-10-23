@@ -22,22 +22,15 @@ import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
 import ProcessSelectorActions from "../ProcessSelectorActions";
 
-// The shared IconButton mock drops onClick; this one keeps it and the test id.
+// The shared IconButton mock drops onClick; this one keeps it and names the button by its tooltip.
 jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
   __esModule: true,
-  default: ({
-    onClick,
-    children,
-    "data-testid": testId,
-  }: {
-    onClick?: () => void;
-    children?: React.ReactNode;
-    "data-testid"?: string;
-  }) => (
-    <button type="button" data-testid={testId} onClick={onClick}>
-      {children}
-    </button>
+  default: ({ onClick, tooltip }: { onClick?: () => void; tooltip?: string }) => (
+    <button type="button" aria-label={tooltip} onClick={onClick} />
   ),
+}));
+jest.mock("@/hooks/useTranslation", () => ({
+  useTranslation: () => ({ t: (key: string) => (key === "process.addNewRecord" ? "Add %0" : key) }),
 }));
 jest.mock("@/utils/form/keyboard", () => ({
   getSelectorPopupShortcutId: () => "Selector_ShowPopup",
@@ -69,8 +62,8 @@ const FIELD_NAME = "Payment";
 const PROCESS_ID = "E68790A7B65F4D45AB35E2BAE34C1F39";
 const ADD_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
 const PAYMENT_ID = "PAY-1";
-const SEARCH_BUTTON = `ProcessSelectorSearch__${FIELD_ID}`;
-const ADD_BUTTON = `ProcessSelectorAdd__${FIELD_ID}`;
+const SEARCH_BUTTON = { name: "Search" };
+const ADD_BUTTON = { name: "Add" };
 const PROCESS_CONTEXT = { processId: PROCESS_ID, values: { trxtype: "BPW", fin_payment_id: "" } };
 
 const buildField = (selector: Record<string, unknown>): Field =>
@@ -136,29 +129,29 @@ describe("ProcessSelectorActions", () => {
     renderActions();
 
     expect(screen.getByTestId("combo")).toBeInTheDocument();
-    expect(screen.getByTestId(SEARCH_BUTTON)).toBeInTheDocument();
-    expect(screen.getByTestId(ADD_BUTTON)).toBeInTheDocument();
+    expect(screen.getByRole("button", SEARCH_BUTTON)).toBeInTheDocument();
+    expect(screen.getByRole("button", ADD_BUTTON)).toBeInTheDocument();
   });
 
   it("renders only the selector when the metadata has neither a grid nor a process", () => {
     renderActions({ selector: {} });
 
     expect(screen.getByTestId("combo")).toBeInTheDocument();
-    expect(screen.queryByTestId(SEARCH_BUTTON)).not.toBeInTheDocument();
-    expect(screen.queryByTestId(ADD_BUTTON)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", SEARCH_BUTTON)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", ADD_BUTTON)).not.toBeInTheDocument();
   });
 
   it("hides both buttons on a read-only parameter", () => {
     renderActions({ isReadOnly: true });
 
-    expect(screen.queryByTestId(SEARCH_BUTTON)).not.toBeInTheDocument();
-    expect(screen.queryByTestId(ADD_BUTTON)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", SEARCH_BUTTON)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", ADD_BUTTON)).not.toBeInTheDocument();
   });
 
   it("opens the search popup with the tab and the process context the combo sends", () => {
     renderActions();
 
-    fireEvent.click(screen.getByTestId(SEARCH_BUTTON));
+    fireEvent.click(screen.getByRole("button", SEARCH_BUTTON));
 
     const modal = screen.getByTestId("selector-modal");
     expect(modal).toHaveAttribute("data-tab", "TAB-1");
@@ -170,7 +163,7 @@ describe("ProcessSelectorActions", () => {
   it("writes the record picked in the popup, resolving its id through the selector valueField", async () => {
     renderActions();
 
-    fireEvent.click(screen.getByTestId(SEARCH_BUTTON));
+    fireEvent.click(screen.getByRole("button", SEARCH_BUTTON));
     // The write validates the field asynchronously: let it settle inside act.
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "pick" })));
 
@@ -189,12 +182,13 @@ describe("ProcessSelectorActions", () => {
     const onOpenProcess = jest.fn();
     renderActions({ onOpenProcess });
 
-    fireEvent.click(screen.getByTestId(ADD_BUTTON));
+    fireEvent.click(screen.getByRole("button", ADD_BUTTON));
 
     const params = onOpenProcess.mock.calls[0][0] as OpenProcessParams;
     expect(params).toEqual(
       expect.objectContaining({
         processId: ADD_PROCESS_ID,
+        windowTitle: `Add ${FIELD_NAME}`,
         callerContext: PROCESS_CONTEXT.values,
         callerField: expect.objectContaining({ id: FIELD_ID, name: FIELD_NAME }),
       })
@@ -208,6 +202,6 @@ describe("ProcessSelectorActions", () => {
   it("hides the add button when there is no process launcher", () => {
     renderActions({ onOpenProcess: undefined });
 
-    expect(screen.queryByTestId(ADD_BUTTON)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", ADD_BUTTON)).not.toBeInTheDocument();
   });
 });

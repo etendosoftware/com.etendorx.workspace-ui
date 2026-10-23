@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import ProcessStackHost from "../ProcessStackHost";
+import ProcessStackHost, { getButtonStub } from "../ProcessStackHost";
 import { clearProcessStack, pushProcess } from "@/utils/processes/definition/processStack";
 
 jest.mock("@/utils/logger", () => ({
@@ -188,5 +188,13 @@ describe("ProcessStackHost", () => {
     });
 
     expect(screen.getByTestId("modal-graph").textContent).toBe("none");
+  });
+
+  it("keeps one button per entry, so pushing another process does not reset the modals below", () => {
+    const first = { id: 1, processId: PROCESS_A };
+    const second = { id: 2, processId: PROCESS_B };
+
+    expect(getButtonStub(first)).toBe(getButtonStub(first));
+    expect(getButtonStub(second)).not.toBe(getButtonStub(first));
   });
 });

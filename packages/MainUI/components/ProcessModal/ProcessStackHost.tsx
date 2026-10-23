@@ -75,6 +75,22 @@ function buildButtonStub(request: OpenProcessRequest): ProcessDefinitionButton {
 }
 
 /**
+ * One stub per stack entry: the modal re-initializes when its button changes, so a
+ * new stub on every render would reset the modals below whenever another process is
+ * pushed or popped (e.g. the values of Add Transaction while Add Payment opens on top).
+ */
+const buttonStubs = new WeakMap<OpenProcessRequest, ProcessDefinitionButton>();
+
+export function getButtonStub(request: OpenProcessRequest): ProcessDefinitionButton {
+  let stub = buttonStubs.get(request);
+  if (!stub) {
+    stub = buildButtonStub(request);
+    buttonStubs.set(request, stub);
+  }
+  return stub;
+}
+
+/**
  * Runs a nested modal inside its owner's tab selection: the stack host renders
  * outside the window providers, so the launching modal's graph is provided
  * again (Classic runs the nested process with the launcher's `buttonOwnerView`).
@@ -124,7 +140,7 @@ export default function ProcessStackHost() {
           <ProcessDefinitionModal
             open
             type={PROCESS_TYPES.PROCESS_DEFINITION}
-            button={buildButtonStub(request)}
+            button={getButtonStub(request)}
             windowId={request.windowId}
             windowTitle={request.windowTitle}
             contextRecord={request.ownerRecord}
