@@ -66,6 +66,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
   [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
   [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: "toolbar-button-show-audit-trail",
+  [TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM]: "toolbar-button-personalize-form",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW]:
     "toolbar-button-save-view h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0",
   [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]:
@@ -144,6 +145,8 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
   const isSaveViewButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
+  // Personalizing the form only makes sense where a form is on screen.
+  const isPersonalizeFormButtonHidden = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM;
 
   const uIPattern = tab?.uIPattern;
   const isNewForSrOrEd =
@@ -167,6 +170,7 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
     !isSaveViewButtonHidden &&
+    !isPersonalizeFormButtonHidden &&
     !isAuditTrailButtonHidden(button, tab) &&
     !isNewForSrOrEd &&
     !isWriteActionForRo &&
