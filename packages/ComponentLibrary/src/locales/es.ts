@@ -364,6 +364,7 @@ const es = {
     confirmationMessage: "¿Deseas ejecutar este proceso?",
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
+    reportTimeout: "El reporte tardó demasiado en ejecutarse y fue cancelado. Intente nuevamente con filtros más acotados.",
     processError: "Error mientras se cargaba la informacion del proceso",
     missingMandatoryFields: "No ha completado todos los campos requeridos",
     warning: "Advertencia",
