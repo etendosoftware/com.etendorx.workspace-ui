@@ -219,6 +219,14 @@ abort).
 
 With F&B the "Dimensions" section shows Organization, Business Partner and Project, as Classic.
 
+**Search and add buttons.** As in Classic, Organization, Business Partner, Project, Product, Payment and the
+dimensions show a magnifier (their selectors have grid fields); G/L Item and the currencies do not. Payment also
+shows a "+" that opens **Add Payment** on top. Add Payment receives the transaction values (type, amounts, business
+partner, organization, date) in its defaults context. Run from the Financial Account window,
+`AddPaymentActionHandler` answers `setSelectorValueFromRecord`, and the created payment is written into Payment.
+This is generic for process selectors: see
+[process parameter selector](../../components/process-parameter-selector.md#selector-search-and-add-buttons).
+
 ### Differences with Classic
 
 - The split confirm uses the new UI dialog.
@@ -289,6 +297,9 @@ prompt, nested process), `Grid.clearFilter` and `ApiData.fetch`.
 - `packages/MainUI/components/Table/Cells/LevelIndicatorCell.tsx`: the level indicator.
 - `packages/MainUI/utils/processes/definition/nestedLaunch.ts`, `processStack.ts` and
   `components/ProcessModal/ProcessStackHost.tsx`: nested launches (owner context, `callerField`, refresh on success).
+- `packages/MainUI/components/ProcessModal/selectors/ProcessSelectorActions.tsx`: the magnifier and "+" of process
+  selectors; `hooks/useActionDispatchContext.ts` and `utils/processes/definition/actionDispatcherStore.ts`:
+  `setSelectorValueFromRecord` and the stack of action handlers.
 - `packages/MainUI/components/ProcessModal/hooks/useProcessExecution.ts` and `utils/preSubmitOutcome.ts`: the P&E
   `onProcess` outcome (`executeProcess()` as the submit, silent abort).
 - `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `applyExternalParams`, `createGridScriptView`,

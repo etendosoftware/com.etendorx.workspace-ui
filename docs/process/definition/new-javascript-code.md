@@ -825,6 +825,15 @@ Anything not implemented throws a clear error rather than failing silently.
     (`applyExternalParams`) and added to the submit `_params`, as Classic does.
   - **`callerField`:** the script's own (e.g. `{ record: row, view }`, Classic `callerField: me`), or the
     launcher's (Section 7.4). Pass it explicitly when the child reads `view.callerField.record`.
+  - **`callerContext`:** the launcher's values, added to the child's defaults context only (after
+    `externalParams`), as Classic adds `callerField.view.getContextInfo()`. A selector's "+" sends the
+    process values by `dBColumnName` ([process parameter selector](../../components/process-parameter-selector.md#selector-search-and-add-buttons)).
+  - **`callerField.setValueFromRecord`:** when the child answers `setSelectorValueFromRecord`, its record
+    (`{value, map}`) is written into the selector that launched it, as Classic `callerField.setValueFromRecord`.
+    Without it the action only logs a warning.
+  - **Response actions:** each open modal registers its action handlers on a stack
+    (`actionDispatcherStore.ts`); the topmost receives the actions, and closing it gives the launcher its
+    handlers back.
   - **Close:** only a **successful** execution refreshes the caller view
     (`callerField.view.onRefreshFunction(callerField.view)`, else the launcher's `onRefresh`), once. X /
     Cancel closes without refreshing, as Classic.

@@ -125,6 +125,40 @@ const isReadOnly = useMemo(() => {
 - **QuantitySelector**: Numeric input with unit support
 - **WindowReferenceGrid**: Embedded grid for complex selections
 
+### Selector search and add buttons
+
+A selector parameter (`tabledir` / `product` type) shows the same buttons as a selector field in a form
+(`Form/FormView/selectors/GenericSelector.tsx`) and as Classic's `OBSelectorItem`. They come from the selector
+metadata `com.etendoerp.metadata` emits for fields and parameters alike (`FieldBuilder.addSelectorInfo`); no
+process needs its own configuration.
+
+| Button | Shown when | Classic equivalent | Does |
+|---|---|---|---|
+| Magnifier | `selector.hasTableRelated` (the `OBUISEL_Selector` has fields shown in grid) | `showSelectorGrid` | Opens `SelectorModal` (grid with filters). The picked record is written through the selector `valueField`. Ctrl+Enter opens it too. |
+| "+" | `selector.hasProcessDefinitionRelated` (`OBUISEL_Selector.OBUIAPP_Process_ID` is set) | `selector.processId` (add icon) | Opens `selector.processDefinitionId` on top of the current process, as `view.openProcess` does. |
+
+Neither button shows on a read-only parameter. Both are out of the tab sequence.
+
+- **Same filtering as the combo.** The search popup receives the process context of the combo
+  (`buildProcessSelectorOverlay`: `_processDefinitionId`, `_selectorFieldId` and the parameter values by
+  `dBColumnName`) through its `extraParams` prop, and the process tab as `currentTab`. A nested process has no
+  TabContext, so the modal passes its tab (`tab ?? ownerTab`).
+- **The "+" process.** It runs in the launcher's tab, record and window (the nested-process stack). Its defaults
+  request receives the launcher's values as `callerContext`, as Classic adds `callerField.view.getContextInfo()`.
+  When it answers `setSelectorValueFromRecord {record: {value, map}}`, the record is written into the selector
+  (`callerField.setValueFromRecord`). See
+  [nested-process stack](../process/definition/new-javascript-code.md#83-nested-process-modal-stack).
+- **Classic Search references.** A parameter whose selector carries `legacySearchUrl` (a Search reference with a
+  Classic info window, e.g. `/info/Product.html`) keeps `LegacySelectorAffix`, which opens that popup instead.
+
+Differences with Classic:
+- The text typed in the selector is not passed to the "+" process (Classic `enteredValues`).
+- The search popup has no "Create New" button.
+- In forms, the "+" does not write the created record back into the field yet.
+
+Main files: `ProcessModal/selectors/ProcessSelectorActions.tsx`, `ProcessParameterSelector.tsx`,
+`Form/FormView/selectors/SelectorModal.tsx` (`extraParams`), `ProcessDefinitionModal.tsx` (`tab`, `onOpenProcess`).
+
 ### Error Handling and Fallbacks
 
 #### Validation Before Rendering
