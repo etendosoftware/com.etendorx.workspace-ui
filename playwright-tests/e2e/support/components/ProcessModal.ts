@@ -152,6 +152,12 @@ export class ProcessModal {
     return this.page.locator(`[data-testid^="${PROCESS_MODAL_TEST_IDS.execute}"]:visible`).first();
   }
 
+  /** Closes the open React process modal without executing it, and waits until it is gone. */
+  async close(timeout = RESULT_TIMEOUT): Promise<void> {
+    await this.root.getByTestId(PROCESS_MODAL_TEST_IDS.close).click();
+    await expect(this.root).toHaveCount(0, { timeout });
+  }
+
   /** Waits for the result view and closes it. Fails if the process never shows its result. */
   async closeResult(timeout = RESULT_TIMEOUT): Promise<void> {
     const close = this.page.getByTestId(PROCESS_MODAL_TEST_IDS.resultClose);

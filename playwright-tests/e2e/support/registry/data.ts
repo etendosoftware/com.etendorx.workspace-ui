@@ -99,6 +99,17 @@ export const PROCESS = {
 } as const;
 
 /**
+ * OBUIAPP_Parameter_ID of process parameters the specs reach by id (`IconButton__<id>`), as
+ * `FIELD` does for window fields.
+ */
+export const PROCESS_PARAMETER = {
+  /** Payment of Add Transaction: a selector with a search popup and a "+" that opens Add Payment. */
+  ADD_TRANSACTION_PAYMENT: "6F1DACE3F9744318948C5A0154FAFEF2",
+  /** Business Partner of Add Transaction: a selector with a search popup. */
+  ADD_TRANSACTION_BUSINESS_PARTNER: "D58EE6F45C72436DB613C79F5FE8A37C",
+} as const;
+
+/**
  * Documents of the sample data a spec only reads, by document number. Each one stays in the
  * state described in every freshly installed database: no spec processes it.
  */
@@ -158,6 +169,10 @@ export const FIELD = {
   PURCHASE_INVOICE_PAYMENT_METHOD: "830698140BCD4AC3E040007F01000289",
   PAYMENT_IN_RECEIVED_FROM: "7C541AC0C75CFDD7E040007F01016B4D",
   FINANCIAL_ACCOUNT_TRANSACTION_TYPE: "7019E1AFE07B44309AE2F0C6629C1251",
+  /** Payment of a transaction: a selector with a search popup and a "+" that opens Add Payment. */
+  FINANCIAL_ACCOUNT_TRANSACTION_PAYMENT: "74928A07F7C54A7D8247E1F6C43FCA30",
+  /** Business Partner of a sales order: the most common selector with a search popup. */
+  SALES_ORDER_BUSINESS_PARTNER: "1573",
   LANDED_COST_AMOUNT: "0056819E516C679FE050007F01000569",
   LANDED_COST_RECEIPT_GOODS_RECEIPT: "00E613F204372E40E050007F01002A87",
   GOODS_RECEIPT_LINE_ATTRIBUTE_SET_VALUE: "6536",

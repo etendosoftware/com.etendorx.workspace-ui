@@ -19,7 +19,7 @@ import { WindowTabs } from "./WindowTabs";
 
 export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
-export { MATCH_ROW_ACTION, type MatchRowAction } from "./MatchStatement";
+export { MATCH_ROW_ACTION, type MatchRowAction, SECOND_NESTED_LEVEL } from "./MatchStatement";
 export { PROCESS_MODAL_TEST_IDS } from "./ProcessModal";
 export { SIDEBAR_TEST_IDS } from "./Sidebar";
 export type { TabLevel } from "./level";

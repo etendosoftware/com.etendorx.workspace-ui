@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { ApiData } from "../../support/api/ApiData";
-import { App, MATCH_ROW_ACTION } from "../../support/components";
+import { App, MATCH_ROW_ACTION, SECOND_NESTED_LEVEL } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
 import * as data from "../../support/registry/data";
 import { DATASOURCE } from "../../support/registry/datasources";
@@ -27,11 +27,24 @@ const UNMATCHED_RESULT = /1 record\(s\) were properly unmatched/;
 const SEARCH_TITLE = "Match to a not cleared transaction";
 const ADD_TITLE = "Add new transaction";
 const PROCESS = "Process";
+const BUSINESS_PARTNER = "Business Partner";
+/** Column of the Business Partner search popup of Add Transaction. */
+const COMMERCIAL_NAME = "Commercial Name";
+const PAYMENT = "Payment";
+const ADD_PAYMENT_TITLE = "Add Payment";
+const DEPOSIT_TO = "Deposit To";
+const RECEIVED_FROM = "Received From";
+const ACTION_REGARDING_DOCUMENT = "Action Regarding Document";
+const PROCESS_MADE_PAYMENT = "Process Made Payment(s)";
 
-/** A bank statement line and a transaction that matches it: same G/L item, date and amount. */
+/**
+ * A bank statement line and a transaction that matches it: same G/L item, date and amount. A pair
+ * `withoutGLItem` is a line alone, with no G/L item, so Add Transaction offers its Payment field.
+ */
 interface MatchPair {
   reference: string;
   amount: number;
+  withoutGLItem?: boolean;
 }
 
 /** Day after `isoDate` ("2026-10-23" → "2026-10-24"). */
@@ -74,7 +87,7 @@ async function createStatement(app: App, statementName: string, pairs: MatchPair
     const shared = {
       organization: data.ORGANIZATION_ID.SPAIN,
       transactionDate: date,
-      gLItem: data.GL_ITEM.SALARIES.id,
+      ...(pair.withoutGLItem ? {} : { gLItem: data.GL_ITEM.SALARIES.id }),
     };
     await api.add(DATASOURCE.BANK_STATEMENT_LINE, {
       ...shared,
@@ -84,6 +97,7 @@ async function createStatement(app: App, statementName: string, pairs: MatchPair
       dramount: pair.amount,
       cramount: 0,
     });
+    if (pair.withoutGLItem) continue;
     await api.add(DATASOURCE.FINANCIAL_ACCOUNT_TRANSACTION, {
       ...shared,
       account: ACCOUNT.id,
@@ -97,7 +111,7 @@ async function createStatement(app: App, statementName: string, pairs: MatchPair
     });
   }
   await processRecord(app, TABS.FINANCIAL_ACCOUNT_BANK_STATEMENT, "Imported Bank Statements", "Name", statementName);
-  for (const pair of pairs) {
+  for (const pair of pairs.filter((candidate) => !candidate.withoutGLItem)) {
     await processRecord(app, TABS.FINANCIAL_ACCOUNT_TRANSACTION, "Transaction", "Description", pair.reference);
   }
 }
@@ -178,12 +192,14 @@ test.describe("Financial Account - Match Statement @smoke", () => {
   const algorithmLine: MatchPair = { reference: data.uniqueValue("FINe-A"), amount: baseAmount };
   /** Matched and unmatched with the row buttons. */
   const rowButtonsLine: MatchPair = { reference: data.uniqueValue("FINe-B"), amount: baseAmount + 1 };
+  /** Opens Add Transaction with its Payment field, to create the payment from its "+". */
+  const paymentLine: MatchPair = { reference: data.uniqueValue("FINe-C"), amount: baseAmount + 2, withoutGLItem: true };
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     const app = await login(page);
     await openAccount(app);
-    await createStatement(app, statementName, [algorithmLine, rowButtonsLine]);
+    await createStatement(app, statementName, [algorithmLine, rowButtonsLine, paymentLine]);
     await page.close();
   });
 
@@ -241,6 +257,50 @@ test.describe("Financial Account - Match Statement @smoke", () => {
     // Closing it creates nothing: the line stays unmatched
     await matchStatement.closeNested();
     await expectMatched(app, row, false);
+  });
+
+  test("The magnifying glass of an Add Transaction selector picks the record filtered in its popup", async ({
+    app,
+    data,
+  }) => {
+    const { matchStatement } = app;
+    const vendor = data.BUSINESS_PARTNER.VENDOR_A.name;
+    await matchStatement.openFromRow(await openOnLine(app, paymentLine), MATCH_ROW_ACTION.ADD);
+
+    const businessPartner = app.selectorModal(data.PROCESS_PARAMETER.ADD_TRANSACTION_BUSINESS_PARTNER);
+    await businessPartner.open();
+    await businessPartner.filter(COMMERCIAL_NAME, vendor);
+    await businessPartner.pick(vendor);
+
+    await expect(businessPartner.dialog).toBeHidden();
+    await app.field.expectToContain(BUSINESS_PARTNER, vendor);
+    await matchStatement.closeNested();
+  });
+
+  test("The + of Payment creates the payment in Add Payment, which comes back to Add Transaction", async ({
+    app,
+    data,
+  }) => {
+    const { matchStatement } = app;
+    const vendor = data.BUSINESS_PARTNER.VENDOR_A;
+    const row = await openOnLine(app, paymentLine);
+    await matchStatement.openFromRow(row, MATCH_ROW_ACTION.ADD);
+
+    const payment = app.selectorModal(data.PROCESS_PARAMETER.ADD_TRANSACTION_PAYMENT);
+    await expect(payment.searchButton).toBeVisible();
+    await payment.addButton.click();
+
+    // Add Payment opens on top with the data of the transaction: a payment made from the account
+    await expect(matchStatement.secondNestedTitle).toHaveText(ADD_PAYMENT_TITLE);
+    await app.field.expectToContain(DEPOSIT_TO, ACCOUNT.name);
+    await app.field.selectById(RECEIVED_FROM, vendor.id, { search: vendor.name });
+    await app.field.select(ACTION_REGARDING_DOCUMENT, PROCESS_MADE_PAYMENT);
+    await matchStatement.executeNested(SECOND_NESTED_LEVEL);
+
+    // The created payment is the Payment of the transaction, which then matches the line
+    await app.field.expectToContain(PAYMENT, vendor.name);
+    await matchStatement.executeNested();
+    await expectMatched(app, row, true);
   });
 
   test("Confirm in the algorithm prompt runs the matching algorithm", async ({ app }) => {

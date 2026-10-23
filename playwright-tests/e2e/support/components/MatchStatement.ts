@@ -20,6 +20,12 @@ const SKIP_ALGORITHM = "Cancel";
 const UNMATCH_SELECTED = "Unmatch Selected";
 const EXECUTE = "Execute";
 const MODAL_TIMEOUT = 15_000;
+/** An execution runs the process (and its onProcess) before the modal closes. */
+const EXECUTE_TIMEOUT = 30_000;
+/** Stack levels of the process modals: Match Statement is 0. */
+const NESTED_LEVEL = 1;
+/** Level of a process opened on top of the nested one (e.g. Add Payment from Add Transaction). */
+export const SECOND_NESTED_LEVEL = 2;
 
 /**
  * Match Statement (Financial Account): the process modal with the statement lines, its row buttons
@@ -35,7 +41,17 @@ export class MatchStatement {
 
   /** The process a row button opened on top of Match Statement. */
   get nestedModal(): Locator {
-    return this.page.getByTestId(PROCESS_MODAL_TEST_IDS.root).nth(1);
+    return this.modalAt(NESTED_LEVEL);
+  }
+
+  /** The process opened on top of the nested one, e.g. Add Payment from the "+" of Add Transaction. */
+  get secondNestedModal(): Locator {
+    return this.modalAt(SECOND_NESTED_LEVEL);
+  }
+
+  /** Title of the process opened on top of the nested one. */
+  get secondNestedTitle(): Locator {
+    return this.secondNestedModal.getByTestId(PROCESS_MODAL_TEST_IDS.title);
   }
 
   /** Title of the process a row button opened on top of Match Statement. */
@@ -71,16 +87,29 @@ export class MatchStatement {
     await this.nestedTitle.waitFor({ state: "visible", timeout: MODAL_TIMEOUT });
   }
 
-  /** Executes the process opened on top of Match Statement and waits until it closed. */
-  async executeNested(): Promise<void> {
-    await this.nestedModal.getByRole("button", { name: EXECUTE, exact: true }).click();
-    await expect(this.page.getByTestId(PROCESS_MODAL_TEST_IDS.root)).toHaveCount(1, { timeout: MODAL_TIMEOUT });
+  /**
+   * Executes a process opened on top of Match Statement (`level` 1, or 2 for one opened on top of
+   * that) and waits until it closed.
+   */
+  async executeNested(level = NESTED_LEVEL): Promise<void> {
+    await this.modalAt(level).getByRole("button", { name: EXECUTE, exact: true }).click();
+    await this.waitForModals(level, EXECUTE_TIMEOUT);
   }
 
-  /** Closes the process opened on top of Match Statement without executing it. */
-  async closeNested(): Promise<void> {
-    await this.nestedModal.getByTestId(PROCESS_MODAL_TEST_IDS.close).click();
-    await expect(this.page.getByTestId(PROCESS_MODAL_TEST_IDS.root)).toHaveCount(1, { timeout: MODAL_TIMEOUT });
+  /** Closes a process opened on top of Match Statement without executing it. */
+  async closeNested(level = NESTED_LEVEL): Promise<void> {
+    await this.modalAt(level).getByTestId(PROCESS_MODAL_TEST_IDS.close).click();
+    await this.waitForModals(level);
+  }
+
+  /** The process modal at `level` of the stack: 0 is Match Statement. */
+  private modalAt(level: number): Locator {
+    return this.page.getByTestId(PROCESS_MODAL_TEST_IDS.root).nth(level);
+  }
+
+  /** Waits until `count` process modals are open. */
+  private async waitForModals(count: number, timeout = MODAL_TIMEOUT): Promise<void> {
+    await expect(this.page.getByTestId(PROCESS_MODAL_TEST_IDS.root)).toHaveCount(count, { timeout });
   }
 
   /** Column index (`data-index`) of the grid cell an element is in, or of a header cell itself. */
