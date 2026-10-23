@@ -26,6 +26,7 @@ jest.mock("../ProcessDefinitionModal", () => ({
     ownerTab,
     contextRecord,
     externalParams,
+    callerContext,
     stackEntryId,
   }: {
     button: { processId: string };
@@ -35,12 +36,14 @@ jest.mock("../ProcessDefinitionModal", () => ({
     ownerTab?: { id: string };
     contextRecord?: { id?: string };
     externalParams?: Record<string, unknown>;
+    callerContext?: Record<string, unknown>;
     stackEntryId?: number;
   }) => (
     <div data-testid="modal-stub">
       <GraphName />
       <span data-testid="modal-owner">{`${ownerTab?.id ?? ""}|${contextRecord?.id ?? ""}`}</span>
       <span data-testid="modal-external">{JSON.stringify(externalParams ?? {})}</span>
+      <span data-testid="modal-caller-context">{JSON.stringify(callerContext ?? {})}</span>
       <span data-testid="modal-entry">{String(stackEntryId)}</span>
       <span data-testid="modal-process-id">{button.processId}</span>
       <span data-testid="modal-caller-field-id">{callerField?.id ?? ""}</span>
@@ -158,6 +161,15 @@ describe("ProcessStackHost", () => {
     expect(screen.getByTestId("modal-owner").textContent).toBe("TAB-1|REC-1");
     expect(screen.getByTestId("modal-external").textContent).toBe('{"bankStatementLineId":"BSL-1"}');
     expect(screen.getByTestId("modal-entry").textContent).toBe(String(entryId));
+  });
+
+  it("forwards the caller context of a process opened from a selector", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, callerContext: { trxtype: "BPW" } });
+    });
+
+    expect(screen.getByTestId("modal-caller-context").textContent).toBe('{"trxtype":"BPW"}');
   });
 
   it("runs the nested modal inside the owner's tab selection graph", async () => {

@@ -53,6 +53,22 @@ describe("buildNestedLaunch", () => {
     );
   });
 
+  it("keeps the caller context and the selector write-back of a process opened from a selector", () => {
+    const setValueFromRecord = jest.fn();
+    const launch = buildNestedLaunch(
+      {
+        processId: PROCESS_ID,
+        callerField: { id: "F-PAYMENT", setValueFromRecord },
+        callerContext: { trxtype: "BPW" },
+      },
+      launcher()
+    );
+
+    expect(launch.callerContext).toEqual({ trxtype: "BPW" });
+    launch.callerField?.setValueFromRecord?.({ value: "PAY-1" });
+    expect(setValueFromRecord).toHaveBeenCalledWith({ value: "PAY-1" });
+  });
+
   it("keeps the script's own windowId", () => {
     expect(buildNestedLaunch({ processId: PROCESS_ID, windowId: "OTHER" }, launcher()).windowId).toBe("OTHER");
   });

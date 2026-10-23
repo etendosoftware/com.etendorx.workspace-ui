@@ -78,6 +78,21 @@ jest.mock("../LegacySelectorAffix", () => ({
   ),
 }));
 
+// The search / add buttons are exercised in their own test; here we only assert what
+// ProcessParameterSelector hands them.
+jest.mock("../ProcessSelectorActions", () => ({
+  __esModule: true,
+  default: ({ currentTab, processContext, onOpenProcess, children }: any) => (
+    <div
+      data-testid="selector-actions"
+      data-tab={currentTab?.id ?? ""}
+      data-process={processContext?.processId ?? ""}
+      data-can-open={String(Boolean(onOpenProcess))}>
+      {children}
+    </div>
+  ),
+}));
+
 jest.mock("../UploadFileSelector", () => ({
   UploadFileSelector: ({ field, onFileChange }: any) => (
     <div>
@@ -350,6 +365,48 @@ describe("ProcessParameterSelector", () => {
 
     expect(screen.queryByTestId("legacy-affix")).not.toBeInTheDocument();
     expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("hands the selector to the search and add buttons with the tab, process context and launcher", () => {
+    const selectorParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", hasTableRelated: true },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={selectorParameter}
+          processId="PROCESS-1"
+          tab={{ id: "TAB-1" } as any}
+          onOpenProcess={jest.fn()}
+        />
+      </TestWrapper>
+    );
+
+    const actions = screen.getByTestId("selector-actions");
+    expect(actions).toHaveAttribute("data-tab", "TAB-1");
+    expect(actions).toHaveAttribute("data-process", "PROCESS-1");
+    expect(actions).toHaveAttribute("data-can-open", "true");
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("keeps the legacy search affix, without the search and add buttons, when legacySearchUrl exists", () => {
+    const searchParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", hasTableRelated: true, legacySearchUrl: "/info/Product.html" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={searchParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("legacy-affix")).toBeInTheDocument();
+    expect(screen.queryByTestId("selector-actions")).not.toBeInTheDocument();
   });
 
   it("should render QuantitySelector for quantity references", () => {

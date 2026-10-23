@@ -32,6 +32,7 @@ import { isNumericReference } from "@/utils/form/constants";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import { openParameterDialog } from "./parameterDialogStore";
 import type { DynamicParameter } from "./utils";
+import type { SetSelectorValuePayload } from "@/components/ProcessModal/utils/responseActionDispatcher";
 
 // ---------------------------------------------------------------------------
 // Dependencies (structural subsets, so tests can pass plain mocks)
@@ -161,6 +162,11 @@ export interface OpenProcessParams {
   externalParams?: Record<string, unknown>;
   callerField?: CallerField;
   paramWindow?: unknown;
+  /**
+   * Values of the launcher, added to the defaults context only (Classic merges
+   * `callerField.view.getContextInfo()` there), keyed as Classic does (`dBColumnName`).
+   */
+  callerContext?: Record<string, unknown>;
 }
 
 /** Built-in icon presets for a row-action button. */
@@ -262,6 +268,11 @@ export interface CallerField extends Record<string, unknown> {
   record?: EntityData;
   /** The launcher's view, so a nested script can reach `view.callerField.view`. */
   view?: unknown;
+  /**
+   * Writes a record into the selector that launched the process (Classic
+   * `callerField.setValueFromRecord`), run by the `setSelectorValueFromRecord` response action.
+   */
+  setValueFromRecord?: (record: NonNullable<SetSelectorValuePayload["record"]>) => void;
 }
 
 /**

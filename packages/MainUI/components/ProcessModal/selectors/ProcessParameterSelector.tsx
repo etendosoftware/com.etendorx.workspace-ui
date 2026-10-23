@@ -1,6 +1,7 @@
-import type { ProcessParameter, Field, EntityValue } from "@workspaceui/api-client/src/api/types";
+import type { ProcessParameter, Field, EntityValue, Tab } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
 import type { ProcessSelectorContext } from "@/hooks/types";
+import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
 import { memo, useMemo } from "react";
 import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
@@ -29,6 +30,7 @@ import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 import GenericSelector from "./GenericSelector";
 import { UploadFileSelector } from "./UploadFileSelector";
 import LegacySelectorAffix from "./LegacySelectorAffix";
+import ProcessSelectorActions from "./ProcessSelectorActions";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
@@ -55,6 +57,11 @@ interface ProcessParameterSelectorProps {
   // preferences. Must match what `ProcessDefinitionModal` passes to `isParameterDisplayed` for
   // the script-facing `item.isVisible()` proxy, or the two would disagree on visibility.
   windowId?: string;
+  // Tab the process runs in (also for a nested process, which has no TabContext): the
+  // selector search popup sends its context.
+  tab?: Tab;
+  // Opens a process on top of this one: the "+" of a selector whose selector has a process.
+  onOpenProcess?: (params: OpenProcessParams) => void;
 }
 
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
@@ -103,6 +110,8 @@ const ProcessParameterSelectorImpl = ({
   values = EMPTY_VALUES,
   processId,
   windowId,
+  tab,
+  onOpenProcess,
 }: ProcessParameterSelectorProps) => {
   const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
@@ -304,7 +313,18 @@ const ProcessParameterSelectorImpl = ({
               </LegacySelectorAffix>
             );
           }
-          return tableDirSelector;
+          // Magnifier and "+" of the selector, shown from its metadata as in forms.
+          return (
+            <ProcessSelectorActions
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              currentTab={tab}
+              processContext={processContext}
+              onOpenProcess={onOpenProcess}
+              data-testid="ProcessSelectorActions__dac06b">
+              {tableDirSelector}
+            </ProcessSelectorActions>
+          );
         }
 
         case "quantity":

@@ -130,6 +130,7 @@ export default function ProcessStackHost() {
             contextRecord={request.ownerRecord}
             ownerTab={request.ownerTab}
             externalParams={request.externalParams}
+            callerContext={request.callerContext}
             stackEntryId={request.id}
             callerField={request.callerField}
             onClose={() => handleClose(request)}

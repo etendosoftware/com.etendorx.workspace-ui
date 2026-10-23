@@ -21,6 +21,11 @@ export interface ProcessInitializationParams {
    * `isc.addProperties(context, externalParams)` does (filter expressions read them).
    */
   externalParams?: Record<string, unknown>;
+  /**
+   * Values of the launcher of a process opened from a selector's "+", added to the
+   * defaults context after `externalParams`, as Classic adds `callerField.view.getContextInfo()`.
+   */
+  callerContext?: Record<string, unknown>;
 }
 
 const buildProcessInitializationParams = ({
@@ -125,6 +130,7 @@ export function useProcessInitialization({
   tab,
   type,
   externalParams,
+  callerContext,
 }: ProcessInitializationParams): UseProcessInitialization {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { error, processInitialization, loading } = state;
@@ -137,6 +143,8 @@ export function useProcessInitialization({
   const fetch = useCallback(
     async (contextData: Record<string, EntityValue> = {}) => {
       if (!params || !enabled) return;
+      // What the launch adds to the context: its external params, then the caller's values.
+      const launchContext = { ...externalParams, ...callerContext } as Record<string, EntityValue>;
 
       try {
         let payload: Record<string, EntityValue>;
@@ -155,7 +163,7 @@ export function useProcessInitialization({
               ])
             ),
             ...extraKey,
-            ...(externalParams as Record<string, EntityValue>),
+            ...launchContext,
             processId,
             windowId: windowId || "",
             recordId: recordId || "",
@@ -166,7 +174,7 @@ export function useProcessInitialization({
           // Fallback to basic payload if record/tab not available
           payload = {
             ...contextData,
-            ...(externalParams as Record<string, EntityValue>),
+            ...launchContext,
             processId,
             windowId: windowId || null,
             recordId: recordId || "",
@@ -191,7 +199,7 @@ export function useProcessInitialization({
         dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
       }
     },
-    [params, enabled, processId, windowId, recordId, record, tab, externalParams]
+    [params, enabled, processId, windowId, recordId, record, tab, externalParams, callerContext]
   );
 
   const refetch = useCallback(

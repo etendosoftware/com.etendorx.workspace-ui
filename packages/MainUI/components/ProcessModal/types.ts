@@ -146,6 +146,8 @@ export interface ProcessDefinitionModalProps {
   ownerTab?: Tab;
   /** `externalParams` of a nested launch, added to the defaults context, the grid requests and `_params`. */
   externalParams?: Record<string, unknown>;
+  /** Values of the launcher of a process opened from a selector's "+", added to the defaults context only. */
+  callerContext?: Record<string, unknown>;
   /** Process-stack entry id of a nested launch (undefined for a modal opened outside the stack). */
   stackEntryId?: number;
 }

@@ -68,3 +68,29 @@ describe("useProcessInitialization — externalParams in the defaults context", 
     expect(payload).not.toHaveProperty("bankStatementLineId");
   });
 });
+
+describe("useProcessInitialization — callerContext in the defaults context", () => {
+  const CALLER_CONTEXT = { trxtype: "BPW", bankStatementLineId: "FROM-CALLER" };
+
+  beforeEach(() => {
+    post.mockReset();
+    post.mockResolvedValue({ data: { defaults: {} } } as never);
+  });
+
+  it("adds the caller's values after externalParams, so they take precedence", async () => {
+    const payload = await sentPayload({
+      record: { id: "FA-1" },
+      tab: TAB,
+      externalParams: EXTERNAL_PARAMS,
+      callerContext: CALLER_CONTEXT,
+    });
+
+    expect(payload).toEqual(expect.objectContaining({ ...CALLER_CONTEXT, processId: PROCESS_ID }));
+  });
+
+  it("adds them to the basic payload without a launching tab", async () => {
+    const payload = await sentPayload({ callerContext: CALLER_CONTEXT });
+
+    expect(payload).toEqual(expect.objectContaining({ ...CALLER_CONTEXT, processId: PROCESS_ID }));
+  });
+});

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -32,8 +32,10 @@ import {
 } from "@/utils/processes/definition/reportActions";
 import {
   clearActionDispatchContext,
+  delegateActionDispatchContext,
   setActionDispatchContext,
 } from "@/utils/processes/definition/actionDispatcherStore";
+import type { CallerField } from "@/utils/processes/definition/scriptProxies";
 import {
   buildOpenUrlFallbackAction,
   openExternalWindow,
@@ -59,6 +61,10 @@ export interface UseActionDispatchContextParams {
   closeModal: () => void;
   /** Auth token used to fetch report files. */
   token: string;
+  /** The selector that launched this process, if any (classic `callerField`). */
+  callerField?: CallerField;
+  /** Whether the modal is open; only an open modal receives actions. Defaults to `true`. */
+  active?: boolean;
 }
 
 /** Maps a classic message type to the matching sonner toast function. */
@@ -78,9 +84,9 @@ function showViewToast(payload: ProcessActionMessage): void {
 
 /**
  * Registers the modal's action-dispatch handlers in the singleton store while
- * the modal is mounted, so migrated scripts (`OB.Utilities.Action.executeJSON`)
+ * the modal is open, so migrated scripts (`OB.Utilities.Action.executeJSON`)
  * and the onProcess return path turn each classic action type into a side
- * effect. Cleared on unmount so a closed modal never receives stray actions.
+ * effect. Cleared on close and unmount so a closed modal never receives stray actions.
  */
 export function useActionDispatchContext({
   refreshParentGrid,
@@ -88,6 +94,8 @@ export function useActionDispatchContext({
   navigateToTab,
   closeModal,
   token,
+  callerField,
+  active = true,
 }: UseActionDispatchContextParams): void {
   const { t } = useTranslation();
   const { config } = useRuntimeConfig();
@@ -106,9 +114,12 @@ export function useActionDispatchContext({
       },
       refreshParentGrid: () => refreshParentGrid(),
       refreshGridParameter: () => refreshModalGrid(),
-      setSelectorValueFromRecord: () => {
-        // The standalone process modal has no caller selector field; this
-        // becomes effective once a process can be launched from a selector.
+      setSelectorValueFromRecord: (payload) => {
+        // Only a process launched from a selector (its "+") has a field to write into.
+        if (callerField?.setValueFromRecord && payload.record) {
+          callerField.setValueFromRecord(payload.record);
+          return;
+        }
         logger.warn("[ProcessModal] setSelectorValueFromRecord has no caller field in this context");
       },
       say: (message) => {
@@ -145,10 +156,17 @@ export function useActionDispatchContext({
         if (payload.closeModal && opened) closeModal();
       },
     };
-  }, [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t, classicHost]);
+  }, [refreshParentGrid, refreshModalGrid, navigateToTab, closeModal, token, t, classicHost, callerField]);
 
+  // Registered once per opening, delegating to the latest handlers: the stack follows the order
+  // the modals were opened in, and rebuilding the handlers does not move this modal above a
+  // nested one opened on top of it.
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
   useEffect(() => {
-    setActionDispatchContext(ctx);
-    return () => clearActionDispatchContext(ctx);
-  }, [ctx]);
+    if (!active) return;
+    const registered = delegateActionDispatchContext(() => ctxRef.current);
+    setActionDispatchContext(registered);
+    return () => clearActionDispatchContext(registered);
+  }, [active]);
 }

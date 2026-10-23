@@ -132,6 +132,7 @@ import {
   type FieldController,
   type GridController,
   type GridResolver,
+  type OpenProcessParams,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
@@ -332,6 +333,7 @@ function ProcessDefinitionModalContent({
   callerField: callerFieldProp,
   ownerTab,
   externalParams,
+  callerContext,
   stackEntryId,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -629,6 +631,7 @@ function ProcessDefinitionModalContent({
     tab: tab || undefined,
     type,
     externalParams,
+    callerContext,
   });
 
   const memoizedParameters = useMemo(() => Object.values(parameters), [parameters]);
@@ -953,6 +956,15 @@ function ProcessDefinitionModalContent({
     ]
   );
 
+  // A selector's "+" opens its process as `view.openProcess` does. Stable identity (it reads the
+  // latest controller), so the memoized parameter selectors do not re-render when it is rebuilt.
+  const viewControllerRef = useRef(viewController);
+  viewControllerRef.current = viewController;
+  const openNestedProcess = useCallback(
+    (params: OpenProcessParams) => viewControllerRef.current.openProcess(params),
+    []
+  );
+
   // Registry of the embedded grids' programmable handles, keyed by parameter
   // name. Each WindowReferenceGrid registers/unregisters its controller; the
   // resolver below lets any hook reach a grid through
@@ -1242,6 +1254,9 @@ function ProcessDefinitionModalContent({
     // no chrome to dismiss.
     closeModal: performClose,
     token: token ?? "",
+    // A process launched from a selector's "+" writes the record it creates back into it.
+    callerField: callerFieldProp,
+    active: open,
   });
 
   // Start each modal open with a clean message bar. The bar's lifetime is owned
@@ -1766,6 +1781,8 @@ function ProcessDefinitionModalContent({
       values={formValues}
       processId={processId}
       windowId={windowId}
+      tab={tab ?? undefined}
+      onOpenProcess={openNestedProcess}
       data-testid="ProcessParameterSelector__761503"
     />
   );
