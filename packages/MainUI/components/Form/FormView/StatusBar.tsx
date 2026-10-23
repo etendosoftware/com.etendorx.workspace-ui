@@ -20,11 +20,11 @@ import StatusBarField from "@/components/Form/FormView/StatusBarField";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useCallback } from "react";
-import { useTabContext } from "@/contexts/tab";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
+import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 
 interface StatusBarProps {
   fields: Record<string, Field>;
@@ -42,21 +42,8 @@ export default function StatusBar({
   isNavigating = false,
 }: StatusBarProps) {
   const { t } = useTranslation();
-  const { onBack, onSave } = useToolbarContext();
-  const { hasFormChanges } = useTabContext();
-
-  const handleCloseRecord = useCallback(async () => {
-    try {
-      if (hasFormChanges) {
-        // Save with skipFormStateUpdate: true to prevent the form from
-        // transitioning to EDIT mode with the new record ID before we navigate back
-        await onSave({ skipFormStateUpdate: true });
-      }
-      onBack();
-    } catch (error) {
-      console.error("Error saving record", error);
-    }
-  }, [hasFormChanges, onSave, onBack]);
+  // Same action as Ctrl+Shift+X (classic ToolBar_SaveClose), registered by FormActions.
+  const { onSaveAndClose } = useToolbarCommands();
 
   return (
     <div
@@ -82,9 +69,9 @@ export default function StatusBar({
         )}
         <IconButton
           data-testid="icon-button"
-          onClick={handleCloseRecord}
+          onClick={onSaveAndClose}
           className="w-8 h-8"
-          tooltip={t("forms.statusBar.closeRecord")}
+          tooltip={withShortcutHint(t("forms.statusBar.closeRecord"), SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE)}
           disabled={false}>
           <CloseIcon data-testid="CloseIcon__cfc328" />
         </IconButton>

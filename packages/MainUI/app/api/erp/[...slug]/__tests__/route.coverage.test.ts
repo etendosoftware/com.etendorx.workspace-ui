@@ -463,16 +463,13 @@ describe("ERP slug route coverage", () => {
   });
 
   describe("Session cookie capture", () => {
-    it("captures the ERP JSESSIONID from a mutation response into the session store", async () => {
-      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
-      clearErpSessionCookie("test-token");
-
+    const mockFetchWithSessionCookie = (cookie: string) =>
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         status: 200,
         headers: {
           get: (k: string) => {
-            if (k === "set-cookie") return "JSESSIONID=NEWSESSION123; Path=/etendo; HttpOnly";
+            if (k === "set-cookie") return `${cookie}; Path=/etendo; HttpOnly`;
             if (k === "content-type") return "application/json";
             return null;
           },
@@ -482,6 +479,12 @@ describe("ERP slug route coverage", () => {
         text: async () => '{"ok":true}',
         arrayBuffer: async () => new TextEncoder().encode('{"ok":true}').buffer,
       });
+
+    it("captures the ERP JSESSIONID from a mutation response into the session store", async () => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+
+      mockFetchWithSessionCookie("JSESSIONID=NEWSESSION123");
 
       const req = createMockRequest(
         "POST",
@@ -494,6 +497,45 @@ describe("ERP slug route coverage", () => {
       // The rotating JSESSIONID must be persisted so the next request reuses the same
       // backend session (keeping SETSESSION state alive for e.g. UsedByLink).
       expect(getErpSessionCookie("test-token")).toBe("JSESSIONID=NEWSESSION123");
+    });
+
+    // Only the uncached mutation path captures the session cookie, so each case proves its data (per-user
+    // recent items and grid configuration, polled executions, the configured instance purpose) is never
+    // served from the Next.js Data Cache, which never revalidates.
+    it.each([
+      ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
+      [
+        "meta/grid-configuration",
+        "https://localhost/api/erp/meta/grid-configuration?windowId=143",
+        ["meta", "grid-configuration"],
+        "GRIDCONFIG123",
+      ],
+      [
+        "meta/process-monitor",
+        "https://localhost/api/erp/meta/process-monitor?since=1",
+        ["meta", "process-monitor"],
+        "PROCMON123",
+      ],
+      [
+        "meta/instance-purpose",
+        "https://localhost/api/erp/meta/instance-purpose?language=en_US",
+        ["meta", "instance-purpose"],
+        "INSTPURPOSE123",
+      ],
+      [
+        "meta/form-personalization",
+        "https://localhost/api/erp/meta/form-personalization?tab=T1",
+        ["meta", "form-personalization"],
+        "FORMPERS123",
+      ],
+    ])("serves %s GET requests through the uncached mutation path", async (_name, url, slug, sessionId) => {
+      const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
+      clearErpSessionCookie("test-token");
+      mockFetchWithSessionCookie(`JSESSIONID=${sessionId}`);
+
+      await GET(createMockRequest("GET", url), { params: Promise.resolve({ slug }) });
+
+      expect(getErpSessionCookie("test-token")).toBe(`JSESSIONID=${sessionId}`);
     });
   });
 });

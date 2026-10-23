@@ -27,10 +27,17 @@ import WidgetCard from "./WidgetCard";
 
 /** Matches the backend model: 4 logical columns per row */
 const GRID_COLS = 4;
-/** Visual row height in pixels */
-const ROW_HEIGHT = 120;
-/** Minimum rows a widget can be resized to (prevents broken layouts) */
+/**
+ * Grid units per persisted row. The grid runs on half-rows so a collapsed widget can shrink to
+ * its header; persisted rows/heights are units / ROW_UNITS (halves are stored as e.g. 1.5).
+ */
+const ROW_UNITS = 2;
+/** Half-row height in pixels: 2 units + 1 margin = 120px, the original persisted row height */
+const ROW_HEIGHT = 54;
+/** Minimum persisted rows a widget can be resized to (prevents broken layouts) */
 const MIN_H = 2;
+/** Grid units a collapsed widget occupies — just its header */
+const COLLAPSED_UNITS = 1;
 /** Gap between grid items [x, y] in pixels */
 const GRID_MARGIN: [number, number] = [12, 12];
 
@@ -41,25 +48,37 @@ function toRglLayout(instances: WidgetInstance[]): Layout {
     (w): LayoutItem => ({
       i: w.instanceId,
       x: w.position.col,
-      y: w.position.row,
+      y: Math.round(w.position.row * ROW_UNITS),
       w: w.position.width,
-      h: w.position.height,
+      h: w.collapsed ? COLLAPSED_UNITS : Math.round(w.position.height * ROW_UNITS),
       minW: 1,
-      minH: MIN_H,
+      minH: w.collapsed ? COLLAPSED_UNITS : MIN_H * ROW_UNITS,
       maxW: GRID_COLS,
+      isResizable: !w.collapsed,
     })
   );
 }
 
-function toUpdatePayload(layout: Layout): UpdateLayoutWidget[] {
-  return layout.map((item) => ({
-    instanceId: item.i,
-    col: Math.round(item.x),
-    row: Math.round(item.y),
-    width: Math.max(1, Math.round(item.w)),
-    height: Math.max(1, Math.round(item.h)),
-    isVisible: true,
-  }));
+function toUpdatePayload(layout: Layout, instances: WidgetInstance[]): UpdateLayoutWidget[] {
+  return layout.map((item) => {
+    const instance = instances.find((w) => w.instanceId === item.i);
+    const collapsed = instance?.collapsed === true;
+    return {
+      instanceId: item.i,
+      col: Math.round(item.x),
+      row: item.y / ROW_UNITS,
+      width: Math.max(1, Math.round(item.w)),
+      // A collapsed item renders 1 unit tall; persist its expanded height so expanding restores it.
+      height: collapsed && instance ? instance.position.height : item.h / ROW_UNITS,
+      isVisible: true,
+      isCollapsed: collapsed,
+    };
+  });
+}
+
+// A selection anchored on mousedown would otherwise grow over the widget content while dragging/resizing.
+function clearTextSelection(): void {
+  window.getSelection()?.removeAllRanges();
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -72,7 +91,9 @@ interface DashboardGridProps {
   onRemove: (instanceId: string) => void;
   onEditParams?: (instanceId: string) => void;
   onFetchPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
+  onRefresh?: (instanceId: string) => Promise<void>;
   onUpdateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
+  onToggleCollapsed?: (instanceId: string) => Promise<void>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -85,7 +106,9 @@ export default function DashboardGrid({
   onRemove,
   onEditParams,
   onFetchPage,
+  onRefresh,
   onUpdateLayout,
+  onToggleCollapsed,
 }: DashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(800);
@@ -110,9 +133,9 @@ export default function DashboardGrid({
   // PUT requests triggered by programmatic re-renders (e.g. after addWidget).
   const handleInteractionEnd = useCallback(
     (layout: Layout) => {
-      onUpdateLayout(toUpdatePayload(layout));
+      onUpdateLayout(toUpdatePayload(layout, instances));
     },
-    [onUpdateLayout]
+    [onUpdateLayout, instances]
   );
 
   const rglLayout = toRglLayout(instances);
@@ -138,6 +161,8 @@ export default function DashboardGrid({
           enabled: true,
           handles: ["se"],
         }}
+        onDragStart={clearTextSelection}
+        onResizeStart={clearTextSelection}
         onDragStop={handleInteractionEnd}
         onResizeStop={handleInteractionEnd}
         autoSize
@@ -152,6 +177,8 @@ export default function DashboardGrid({
               onRemove={onRemove}
               onEditParams={onEditParams}
               onFetchPage={(page, pageSize) => onFetchPage(instance.instanceId, page, pageSize)}
+              onRefresh={onRefresh}
+              onToggleCollapsed={onToggleCollapsed}
               data-testid="WidgetCard__e6b441"
             />
           </div>

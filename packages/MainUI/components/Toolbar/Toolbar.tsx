@@ -44,13 +44,17 @@ import {
 } from "../ProcessModal/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
+import { useAuditTrail } from "@/hooks/Toolbar/useAuditTrail";
+import { useToolbarShortcuts } from "@/hooks/Toolbar/useToolbarShortcuts";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SaveViewMenu from "./Menus/SaveViewMenu";
+import PersonalizeFormModal from "../Form/PersonalizeForm/PersonalizeFormModal";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
+import { isTreeModeSupported } from "@/utils/table/treeMode";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -65,8 +69,14 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
+import { useApplyViewState } from "@/hooks/useApplyViewState";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSplitView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({
+  windowId,
+  isFormView = false,
+  isSplitView = false,
+  isFocused = false,
+}) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -92,11 +102,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   const tabFormMode = useWindowStore((s) => s.windows[windowIdentifier]?.tabs[tab?.id ?? ""]?.form?.formMode);
   const isNewRecord = tabFormMode === FORM_MODES.NEW;
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
-  const setTableFilters = useWindowStore((s) => s.setTableFilters);
-  const setTableVisibility = useWindowStore((s) => s.setTableVisibility);
-  const setTableSorting = useWindowStore((s) => s.setTableSorting);
-  const setTableOrder = useWindowStore((s) => s.setTableOrder);
-  const setTableImplicitFilterApplied = useWindowStore((s) => s.setTableImplicitFilterApplied);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
@@ -107,16 +112,27 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [saveViewAnchorEl, setSaveViewAnchorEl] = useState<HTMLElement | null>(null);
+  const [personalizeFormOpen, setPersonalizeFormOpen] = useState(false);
   const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
+  const { openAuditTrail } = useAuditTrail({
+    tab,
+    selectedRecords,
+    isNewRecord,
+  });
   const hasParentTab = !!tab?.parentTabId;
   const {
     tableColumnFilters,
     tableColumnVisibility,
     tableColumnSorting,
     tableColumnOrder,
+    tableColumnGrouping,
+    tableColumnSizing,
+    tableColumnPinning,
+    tableColumnSummaries,
+    tableTreeView,
     activeLevels,
     activeTabsByLevel,
     isImplicitFilterApplied: storeImplicitFilterApplied,
@@ -133,7 +149,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
   const defaultImplicitFilterApplied = useMemo(() => (tab ? getDefaultImplicitFilter(tab) : true), [tab]);
   const effectiveImplicitFilterApplied = storeImplicitFilterApplied ?? defaultImplicitFilterApplied;
   const parentId = parentRecord?.id?.toString();
-  const isTreeNodeView = tab?.tableTree ? true : undefined;
+  const isTreeNodeView = isTreeModeSupported(tab) ? true : undefined;
 
   const {
     handleAction,
@@ -147,6 +163,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
     handleCancelConfirm,
     actionModal,
     closeActionModal,
+    isExporting,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -237,37 +254,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
     setSaveViewAnchorEl(null);
   }, []);
 
-  const handleApplyView = useCallback(
-    (state: {
-      filters: typeof tableColumnFilters;
-      visibility: typeof tableColumnVisibility;
-      sorting: typeof tableColumnSorting;
-      order: typeof tableColumnOrder;
-      implicitFilterApplied: boolean;
-    }) => {
-      if (!windowIdentifier || !tab?.id) return;
-      const ti = tab.id;
-      setTableFilters(windowIdentifier, ti, state.filters);
-      setTableVisibility(windowIdentifier, ti, state.visibility);
-      setTableSorting(windowIdentifier, ti, state.sorting);
-      setTableOrder(windowIdentifier, ti, state.order);
-      setTableImplicitFilterApplied(windowIdentifier, ti, state.implicitFilterApplied);
-    },
-    [
-      windowIdentifier,
-      tab?.id,
-      setTableFilters,
-      setTableVisibility,
-      setTableSorting,
-      setTableOrder,
-      setTableImplicitFilterApplied,
-    ]
-  );
+  const handleClosePersonalizeForm = useCallback(() => setPersonalizeFormOpen(false), []);
+
+  const { currentLayout, handleApplyView, handleAutoApplyView, handleApplyColumnConfiguration, handleResetToStandard } =
+    useApplyViewState({ windowIdentifier, tabId: tab?.id ?? "" });
 
   useAutoApplyDefaultView({
     tabId: tab?.id ?? "",
     windowIdentifier,
-    onApplyView: handleApplyView,
+    onApplyView: handleAutoApplyView,
+    onApplyColumnConfiguration: handleApplyColumnConfiguration,
   });
 
   const handleProcessMenuClick = useCallback(
@@ -495,9 +491,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
         handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
         return;
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL) {
+        openAuditTrail();
+        return;
+      }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM) {
+        setPersonalizeFormOpen(true);
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle]
+    [handleAction, handleOpenEmailModal, handleSaveViewMenuToggle, openAuditTrail]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -522,8 +526,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
       showShareLinkTooltip: showShareLinkTooltip,
       tab: tab,
       selectedRecordsLength: selectedRecordsLength,
+      selectedRecords: selectedRecords,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
+      isExporting: isExporting,
     });
 
     const config = {
@@ -569,7 +575,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
     showShareLinkTooltip,
     isAdvancedFilterApplied,
     isProcessRefreshing,
+    isExporting,
   ]);
+
+  useToolbarShortcuts(toolbarConfig, isFocused);
 
   if (loading) {
     return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
@@ -587,10 +596,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, isSp
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
+          currentGrouping={tableColumnGrouping}
+          currentSizing={tableColumnSizing}
+          currentPinning={tableColumnPinning}
+          currentLayout={currentLayout}
+          currentSummaries={tableColumnSummaries}
+          currentTreeView={tableTreeView}
           isImplicitFilterApplied={effectiveImplicitFilterApplied}
           defaultImplicitFilterApplied={defaultImplicitFilterApplied}
           onApplyView={handleApplyView}
+          onResetToStandard={handleResetToStandard}
           data-testid="SaveViewMenu__a2dd07"
+        />
+      )}
+      {personalizeFormOpen && tab?.id && (
+        <PersonalizeFormModal
+          tab={tab}
+          onClose={handleClosePersonalizeForm}
+          data-testid="PersonalizeFormModal__a2dd07"
         />
       )}
       {confirmAction && (

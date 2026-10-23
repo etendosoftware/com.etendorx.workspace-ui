@@ -22,12 +22,12 @@ import { useUserStore } from "@/stores/userStore";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { isDebugCallouts } from "@/utils/debug";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
+import { applyOutFields, buildGridVisibleProperties } from "@/utils/callouts/calloutPayload";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
-import { useParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Label from "../Label";
@@ -39,6 +39,7 @@ import useFormParent from "@/hooks/useFormParent";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
+import { handleFieldLinkOutShortcut } from "@/utils/form/keyboard";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
@@ -144,49 +145,6 @@ const isImmediateCalloutField = (reference: string) => {
   return fieldEntry?.calloutTrigger === CALLOUT_TRIGGERS.ON_CHANGE;
 };
 
-// Build _gridVisibleProperties so that the FIC in CHANGE mode can identify
-// property fields and compute their values from DB when a related FK field
-// changes (e.g. selecting a new "file" populates the read-only "Type" field).
-// Classic always sends this list in callout payloads.
-const buildGridVisibleProperties = (tab: { fields: Record<string, Field> }) =>
-  Object.values(tab.fields)
-    .filter((f) => f.displayed && f.columnName)
-    .flatMap((f) => {
-      const propertyPath = f.column?.propertyPath;
-      if (propertyPath) {
-        return [f.columnName, propertyPath.replace(/\./g, "$")];
-      }
-      return [f.columnName];
-    });
-
-// Populate callout inputs from selector out-fields metadata.
-// For type "calloutInput": append the suffix to the field's inputName so the
-// backend callout receives the hidden input (e.g. inpmProductId_CURR).
-// For type "field": directly set the target form field value from the selected record.
-const applyOutFields = (
-  field: Field,
-  optionData: Record<string, unknown> | undefined,
-  calloutData: Record<string, any>,
-  setValue: (name: string, value: unknown, options?: { shouldDirty: boolean }) => void
-) => {
-  const outFields = field.selector?.outFields;
-  if (!outFields?.length || !optionData) return;
-
-  for (const outField of outFields) {
-    const rawValue = optionData[outField.selectorFieldProperty];
-    if (outField.type === "calloutInput" && outField.suffix) {
-      calloutData[`${field.inputName}${outField.suffix}`] = String(rawValue ?? "");
-    } else if (outField.type === "field" && outField.targetHqlName) {
-      const val = rawValue ?? "";
-      setValue(outField.targetHqlName, val, { shouldDirty: false });
-      const identifierKey = `${outField.selectorFieldProperty}$_identifier`;
-      if (optionData[identifierKey]) {
-        setValue(`${outField.targetHqlName}$_identifier`, optionData[identifierKey], { shouldDirty: false });
-      }
-    }
-  }
-};
-
 const COL_START_CLASS: Record<number, string> = {
   1: "col-start-1",
   2: "col-start-2",
@@ -197,6 +155,22 @@ const COL_SPAN_CLASS: Record<number, string> = {
   2: "col-span-2",
   3: "col-span-3",
 };
+
+// A field that spans several columns keeps the label as wide as in a single column, so its input takes the rest
+const LABEL_WIDTH_CLASS: Record<number, string> = {
+  1: "w-1/3",
+  2: "w-1/6",
+  3: "w-1/9",
+};
+const INPUT_WIDTH_CLASS: Record<number, string> = {
+  1: "w-2/3",
+  2: "w-5/6",
+  3: "w-8/9",
+};
+const labelWidthClass = (colSpan: number | null | undefined): string =>
+  LABEL_WIDTH_CLASS[colSpan ?? 1] ?? LABEL_WIDTH_CLASS[1];
+const inputWidthClass = (colSpan: number | null | undefined): string =>
+  INPUT_WIDTH_CLASS[colSpan ?? 1] ?? INPUT_WIDTH_CLASS[1];
 const ROW_SPAN_CLASS: Record<number, string> = {
   1: "row-span-1",
   2: "row-span-2",
@@ -237,7 +211,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
       {} as Record<string, Field>
     );
   }, [tab.fields]);
-  const { recordId } = useParams<{ recordId: string }>();
   const session = useUserStore((s) => s.session);
   const parentData = useFormParent();
 
@@ -259,7 +232,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
 
   const executeCalloutBase = useCallout({
     field,
-    rowId: recordId,
     parentId: getParentId(),
     changedColumnOverride: standardChangedColumn,
   });
@@ -300,14 +272,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
     try {
-      const smartContext = createSmartContext({
-        values: { ...record, ...readOnlyValues },
-        fields: tab.fields,
-        parentValues: parentRecord || undefined,
-        parentFields: parentTab?.fields,
-        context: session,
-        windowId: tab.window,
-      });
+      // Same context as building it from { ...record, ...readOnlyValues }, shared with the other fields
+      const smartContext = getEvaluationContext(
+        {
+          values: record || undefined,
+          fields: tab.fields,
+          parentValues: parentRecord || undefined,
+          parentFields: parentTab?.fields,
+          context: session,
+          windowId: tab.window,
+        },
+        readOnlyValues
+      );
       return toClassicBoolean(compiledExpr(smartContext, smartContext, tab.window));
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
@@ -586,8 +562,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           if (!e.currentTarget.contains(e.relatedTarget)) {
             runCallout(true);
           }
-        }}>
-        <div className="w-1/3 flex items-center gap-2 pr-2">
+        }}
+        onKeyDown={handleFieldLinkOutShortcut}>
+        <div className={`${labelWidthClass(field.obuiappColspan)} flex items-center gap-2 pr-2`}>
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (
             <Asterisk
@@ -597,7 +574,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           )}
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
-        <div className="w-2/3">
+        <div className={inputWidthClass(field.obuiappColspan)}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
         </div>
       </div>

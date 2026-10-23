@@ -56,3 +56,19 @@ export const shouldRefreshAfterProcess = (data: unknown): boolean => {
 export const shouldRetryAfterProcess = (data: unknown): boolean => {
   return readProcessResponseFlag(data, PROCESS_RESPONSE_FIELDS.RETRY_EXECUTION) === true;
 };
+
+/**
+ * Decides whether the modal stays open after a Java process execution.
+ * Requires `retryExecution: true`. A non-report execution with an explicit
+ * success message still closes (toast + close flow); a report execution
+ * (`OBUIAPP_Report`) stays open like the classic popup, so the user can export
+ * another format after the file was delivered.
+ */
+export const shouldKeepModalOpen = (
+  data: unknown,
+  isExplicitSuccessMessage: boolean,
+  isReportExecution: boolean
+): boolean => {
+  if (!shouldRetryAfterProcess(data)) return false;
+  return isReportExecution || !isExplicitSuccessMessage;
+};

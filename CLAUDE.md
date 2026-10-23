@@ -166,6 +166,19 @@ Current testing approach uses Jest with React Testing Library:
 - API client unit tests
 - See `TESTING.md` for detailed testing guidelines and coverage requirements
 
+### End-to-end tests (Playwright)
+
+E2E specs live in `playwright-tests/`. Read `playwright-tests/CLAUDE.md` before writing or changing a spec, and
+`docs/testing/playwright-e2e/README.md` for the projects, tiers and how to read a failed check.
+
+**Mocked specs and their recordings.** The specs in `playwright-tests/e2e/mocked/` run the real UI on recorded
+`/api/**` responses: `playwright-tests/e2e/mocked/recordings/<spec>.har.gz` (a gzipped HAR, committed). A normal run,
+local or in CI, only replays that file and never updates it. A UI change that sends a new or different request in a
+mocked flow (a new endpoint, a new parameter, an extra request when a window opens) fails the `mocked` project with
+"requests without a recording". Before regenerating, check each new request is intended: an unexpected one can be a
+bug the recording would hide. Then run `pnpm pw:record` with the backend and the UI running, and commit the updated
+`.har.gz` with the change.
+
 ## Git Conventions (Git Police)
 
 This repository is enforced by the Git Police bot. All branches, commits, and PRs MUST follow these rules.

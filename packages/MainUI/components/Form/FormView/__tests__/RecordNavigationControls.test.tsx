@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RecordNavigationControls } from "../RecordNavigationControls";
 
@@ -26,12 +26,19 @@ jest.mock("@/hooks/useTranslation", () => ({
   }),
 }));
 
+/** Longer than the hover delay of the component library tooltip. */
+const TOOLTIP_DELAY_MS = 1000;
+
 describe("RecordNavigationControls", () => {
   const mockOnNext = jest.fn().mockResolvedValue(undefined);
   const mockOnPrevious = jest.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("should render navigation controls with correct position", () => {
@@ -204,5 +211,33 @@ describe("RecordNavigationControls", () => {
 
     const indicator = screen.getByTestId("record-position-indicator");
     expect(indicator).toHaveClass("select-none");
+  });
+
+  it("advertises the classic previous / next shortcuts in the button tooltips", () => {
+    jest.useFakeTimers();
+    render(
+      <RecordNavigationControls
+        onNext={mockOnNext}
+        onPrevious={mockOnPrevious}
+        canNavigateNext={true}
+        canNavigatePrevious={true}
+        currentIndex={1}
+        totalRecords={10}
+        isNavigating={false}
+      />
+    );
+
+    const [previousButton, nextButton] = screen.getAllByRole("button");
+    const hoverTooltip = (button: HTMLElement, text: string) => {
+      fireEvent.mouseEnter(button.parentElement as HTMLElement);
+      act(() => {
+        jest.advanceTimersByTime(TOOLTIP_DELAY_MS);
+      });
+      expect(screen.getByText(text)).toBeInTheDocument();
+      fireEvent.mouseLeave(button.parentElement as HTMLElement);
+    };
+
+    hoverTooltip(previousButton, "forms.statusBar.previousRecord (Alt+Shift+PgUp)");
+    hoverTooltip(nextButton, "forms.statusBar.nextRecord (Alt+Shift+PgDn)");
   });
 });

@@ -166,46 +166,50 @@ function resolveDefaultReferences(acc: EntityData, fields: Tab["fields"], fields
   }
 }
 
+/** FIC key of a property field: its inputName without the "inp" prefix ("_propertyField_type_Type"). */
+function getFieldsByPropertyFieldKey(fields: Tab["fields"] | undefined): FieldMap {
+  if (!fields) return {} as FieldMap;
+  return Object.values(fields).reduce((acc, field) => {
+    if (field.column?.propertyPath && field.inputName) {
+      acc[field.inputName.replace(/^inp/, "")] = field;
+    }
+    return acc;
+  }, {} as FieldMap);
+}
+
+/**
+ * Turns a FormInitializationComponent response into record values keyed by hqlName: session
+ * attributes, auxiliary inputs, column values (booleans, identifiers, entries), static defaults
+ * and @Column@ default references. `parentData` (keyed by hqlName) fills what the FIC left out.
+ * Shared by the form view and the grid's inline editing so both start a record the same way.
+ */
+export function buildFormInitialState(
+  formInitialization: FormInitializationResponse,
+  tab: Tab,
+  parentData: EntityData = {}
+): EntityData {
+  const fieldsByColumnName = getFieldsByColumnName(tab);
+  const acc = { ...formInitialization.sessionAttributes } as EntityData;
+
+  applyAuxiliaryInputs(acc, formInitialization.auxiliaryInputValues, fieldsByColumnName);
+  const ficKeys = applyColumnValues(
+    acc,
+    formInitialization.columnValues,
+    fieldsByColumnName,
+    getFieldsByPropertyFieldKey(tab.fields)
+  );
+  applyStaticDefaults(acc, tab.fields, ficKeys);
+  resolveDefaultReferences(acc, tab.fields, fieldsByColumnName);
+
+  return { ...parentData, ...acc };
+}
+
 export const useFormInitialState = (formInitialization?: FormInitializationResponse | null) => {
   const { tab } = useTabContext();
   const parentData = useFormParent(FieldName.HQL_NAME);
-  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
 
-  // Build a secondary lookup for property fields using the FIC response key format.
-  // The FIC returns property field values in columnValues under the key
-  // `_propertyField_{propertyPath}_{columnName}`, which is the field's `inputName`
-  // with the leading "inp" stripped (e.g. "inp_propertyField_type_Type" → "_propertyField_type_Type").
-  // This map lets us find the field and obtain its hqlName so the value ends up
-  // in the form state under the right key.
-  const fieldsByPropertyFieldKey = useMemo(() => {
-    if (!tab?.fields) return {} as FieldMap;
-    return Object.values(tab.fields).reduce((acc, field) => {
-      if (field.column?.propertyPath && field.inputName) {
-        // Strip the "inp" prefix: "inp_propertyField_type_Type" → "_propertyField_type_Type"
-        const ficKey = field.inputName.replace(/^inp/, "");
-        acc[ficKey] = field;
-      }
-      return acc;
-    }, {} as FieldMap);
-  }, [tab?.fields]);
-
-  const initialState = useMemo(() => {
-    if (!formInitialization) return null;
-
-    const acc = { ...formInitialization.sessionAttributes } as EntityData;
-
-    applyAuxiliaryInputs(acc, formInitialization.auxiliaryInputValues, fieldsByColumnName);
-    const ficKeys = applyColumnValues(
-      acc,
-      formInitialization.columnValues,
-      fieldsByColumnName,
-      fieldsByPropertyFieldKey
-    );
-    applyStaticDefaults(acc, tab.fields, ficKeys);
-    resolveDefaultReferences(acc, tab.fields, fieldsByColumnName);
-
-    return { ...parentData, ...acc };
-  }, [fieldsByColumnName, fieldsByPropertyFieldKey, formInitialization, parentData, tab?.fields]);
-
-  return initialState;
+  return useMemo(
+    () => (formInitialization ? buildFormInitialState(formInitialization, tab, parentData) : null),
+    [formInitialization, parentData, tab]
+  );
 };

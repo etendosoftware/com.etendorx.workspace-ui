@@ -70,4 +70,10 @@ export default {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 
   testTimeout: 10000,
+
+  // A jsdom worker grows to ~2 GB over the suite; the default (cores - 1 workers) can exhaust a
+  // developer machine's memory. Half the cores, each worker restarted after a test file once it
+  // holds more than 1 GB, ran the suite as fast as more workers with ~35% less memory.
+  maxWorkers: "50%",
+  workerIdleMemoryLimit: "1GB",
 };

@@ -20,11 +20,11 @@ import { useFormContext } from "react-hook-form";
 import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserStore } from "@/stores/userStore";
-import { createSmartContext } from "@/utils/expressions";
 import type { EvaluationContext } from "@/utils/expressions";
 import { lazyContext } from "@/utils/evaluation/lazyContext";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 
 /**
  * Interface for validation result of a single field
@@ -100,7 +100,7 @@ export const useFormValidation = (tab: Tab) => {
         // A validation pass shares one context across fields; standalone calls build their own.
         const ctx = getContext
           ? getContext()
-          : createSmartContext({
+          : getEvaluationContext({
               values: currentValues,
               fields: tab?.fields,
               context: session,
@@ -255,7 +255,7 @@ export const useFormValidation = (tab: Tab) => {
     const formValues = getValues();
     // Built on the first field that needs it, inside isFieldDisplayed's try; a failed build is retried.
     const getContext = lazyContext(() =>
-      createSmartContext({ values: formValues, fields: tab?.fields, context: session, windowId: tab?.window })
+      getEvaluationContext({ values: formValues, fields: tab?.fields, context: session, windowId: tab?.window })
     );
     const missingFields: FieldValidationResult[] = [];
 

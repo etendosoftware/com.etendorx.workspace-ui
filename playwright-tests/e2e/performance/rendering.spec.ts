@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginToEtendo, cleanupEtendo } from "../helpers/etendo.helpers";
+import { Auth } from "../support/components/Auth";
+import { SIDEBAR_TEST_IDS } from "../support/components";
+import { Sidebar } from "../support/components/Sidebar";
 
 // ─── Thresholds ───────────────────────────────────────────────────────────────
 // warning: target (competitive ERPs); failure: max tolerable (Nielsen 10s rule).
@@ -16,6 +18,10 @@ const THRESHOLDS = {
 };
 
 type Threshold = { warning: number; failure: number };
+/** Window with the Web Vitals the init scripts collect. */
+type VitalsWindow = Window & { __LCP__?: number; __CLS__?: number };
+/** Layout shift entry (not in the TypeScript DOM library). */
+type LayoutShift = PerformanceEntry & { hadRecentInput: boolean; value: number };
 
 // ─── Performance assertion ────────────────────────────────────────────────────
 
@@ -33,18 +39,14 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
 // Opens the sidebar drawer if it is not already open.
 
 async function openDrawer(page: Page) {
-  const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-  }
+  await new Sidebar(page).open();
 }
 
 // ─── Suite ────────────────────────────────────────────────────────────────────
 
 test.describe("Rendering Performance Tests", () => {
   test.beforeEach(async ({ page }) => {
-    await loginToEtendo(page);
+    await new Auth(page).login();
   });
 
   // ── Page Load Performance ──────────────────────────────────────────────────
@@ -52,7 +54,7 @@ test.describe("Rendering Performance Tests", () => {
   test.describe("Page Load Performance", () => {
     test("should load the login page within acceptable time", async ({ page }) => {
       // Clear session so the next navigation lands on the login page.
-      await cleanupEtendo(page);
+      await new Auth(page).cleanup();
 
       const start = Date.now();
       await page.goto("/");
@@ -64,7 +66,7 @@ test.describe("Rendering Performance Tests", () => {
       const start = Date.now();
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
       assertPerformance(Date.now() - start, "Dashboard load", THRESHOLDS.dashboardLoad);
     });
   });
@@ -76,8 +78,7 @@ test.describe("Rendering Performance Tests", () => {
       // addInitScript runs before the page loads on every subsequent navigation,
       // so the PerformanceObserver is active from the very first paint event.
       await page.addInitScript(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const w = window as any;
+        const w = window as VitalsWindow;
         w.__LCP__ = 0;
         const observer = new PerformanceObserver((list) => {
           const entries = list.getEntries();
@@ -89,26 +90,23 @@ test.describe("Rendering Performance Tests", () => {
 
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
       // Allow 3s for LCP to stabilise (late image loads, lazy components).
       await page.waitForTimeout(3_000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lcp = await page.evaluate(() => ((window as any).__LCP__ as number) || 0);
+      const lcp = await page.evaluate(() => (window as VitalsWindow).__LCP__ || 0);
       console.log(`LCP: ${lcp.toFixed(2)}ms`);
       assertPerformance(lcp, "Largest Contentful Paint (LCP)", THRESHOLDS.lcp);
     });
 
     test("should have acceptable Cumulative Layout Shift (CLS)", async ({ page }) => {
       await page.addInitScript(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const w = window as any;
+        const w = window as VitalsWindow;
         w.__CLS__ = 0;
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const e = entry as any;
-            if (!e.hadRecentInput) w.__CLS__ += e.value;
+            const e = entry as LayoutShift;
+            if (!e.hadRecentInput) w.__CLS__ = (w.__CLS__ ?? 0) + e.value;
           }
         });
         observer.observe({ type: "layout-shift", buffered: true });
@@ -116,12 +114,11 @@ test.describe("Rendering Performance Tests", () => {
 
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
       // Allow 5s for layout shifts to accumulate and settle.
       await page.waitForTimeout(5_000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cls = await page.evaluate(() => ((window as any).__CLS__ as number) || 0);
+      const cls = await page.evaluate(() => (window as VitalsWindow).__CLS__ || 0);
       console.log(`CLS Score: ${cls.toFixed(4)}`);
       // CLS is a unitless ratio — threshold is 0.25 (Google Web Vitals "poor" boundary).
       expect(cls, "CLS must be under 0.25 (Google Web Vitals threshold)").toBeLessThan(0.25);
@@ -130,7 +127,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should have acceptable First Input Delay (FID) simulation", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
 
       // Measures main-thread availability: time from a synthetic input event dispatch
       // until the browser returns control. Real FID requires an actual user interaction
@@ -151,7 +148,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should have acceptable time to interactive", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
 
       const timing = await page.evaluate(() => {
         const nav = (performance.getEntriesByType("navigation") as PerformanceNavigationTiming[])[0];
@@ -184,7 +181,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should complete full page load within threshold", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
 
       const timing = await page.evaluate(() => {
         const nav = (performance.getEntriesByType("navigation") as PerformanceNavigationTiming[])[0];
@@ -205,7 +202,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should not load excessive resources", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
 
       const resourceCount = await page.evaluate(() => performance.getEntriesByType("resource").length);
       console.log(`Total resources loaded: ${resourceCount}`);
@@ -215,7 +212,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should not have individual resources exceeding duration threshold", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
 
       const slowResources = await page.evaluate(() =>
         performance
@@ -238,7 +235,7 @@ test.describe("Rendering Performance Tests", () => {
       const start = Date.now();
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
       // openDrawer opens the sidebar and waits internally for the input to be visible.
       await openDrawer(page);
       assertPerformance(Date.now() - start, "Menu search input render", THRESHOLDS.menuRender);
@@ -247,7 +244,7 @@ test.describe("Rendering Performance Tests", () => {
     test("should render menu search results without excessive delay", async ({ page }) => {
       await page.goto("/");
       await page.locator("body").waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+      await page.getByTestId(SIDEBAR_TEST_IDS.toggle).waitFor({ state: "visible", timeout: 15_000 });
       await openDrawer(page);
 
       const drawerInput = page.locator('[data-testid="drawer-search-input"] input');

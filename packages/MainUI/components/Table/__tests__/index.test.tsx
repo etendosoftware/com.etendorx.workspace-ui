@@ -64,14 +64,15 @@ jest.mock("@/contexts/datasourceContext", () => ({
   }),
 }));
 
-jest.mock("@/contexts/ToolbarContext", () => ({
-  useToolbarContext: () => ({
+jest.mock("@/contexts/ToolbarContext", () => {
+  const toolbar = () => ({
     registerActions: jest.fn(),
     unregisterActions: jest.fn(),
     registerAttachmentAction: jest.fn(),
     setShouldOpenAttachmentModal: jest.fn(),
-  }),
-}));
+  });
+  return { useToolbarContext: toolbar, useToolbarCommands: toolbar };
+});
 
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
@@ -114,6 +115,10 @@ jest.mock("@/stores/userStore", () => ({
       },
       session: {},
     }),
+}));
+
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: () => ({ logout: jest.fn() }),
 }));
 
 jest.mock("@/contexts/window", () => ({
@@ -254,12 +259,21 @@ jest.mock("@/hooks/useTableSelection", () => ({
   default: jest.fn(),
 }));
 
+// Stable reference: a fresh object per render would re-run the summary effect forever
+const mockTableColumnSummaries = {};
+
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => ({
     tableColumnFilters: [],
     tableColumnVisibility: {},
     tableColumnSorting: [],
     tableColumnOrder: [],
+    tableColumnSizing: {},
+    tableColumnPinning: {},
+    tableColumnSummaries: mockTableColumnSummaries,
+    setTableColumnSizing: jest.fn(),
+    setTableColumnPinning: jest.fn(),
+    setTableColumnSummaries: jest.fn(),
   }),
 }));
 
@@ -474,13 +488,14 @@ describe("DynamicTable Component", () => {
   });
 
   describe("Component Type", () => {
-    it("should be a React component", () => {
-      expect(typeof DynamicTable).toBe("function");
+    it("should be a memoized React component", () => {
+      // Memoized so Tab re-renders with the same props skip the (expensive) grid body
+      expect((DynamicTable as unknown as { $$typeof: symbol }).$$typeof).toBe(Symbol.for("react.memo"));
     });
 
-    it("should be a valid React functional component", () => {
+    it("should wrap a functional component", () => {
       expect(React.isValidElement(DynamicTable)).toBe(false);
-      expect(typeof DynamicTable).toBe("function");
+      expect(typeof (DynamicTable as unknown as { type: unknown }).type).toBe("function");
     });
   });
 

@@ -20,12 +20,19 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
+import type {
+  MRT_VisibilityState,
+  MRT_ColumnFiltersState,
+  MRT_SortingState,
+  MRT_ColumnSizingState,
+  MRT_ColumnPinningState,
+} from "material-react-table";
 import type { WindowContextState, WindowState, TabState, TableState, NavigationState } from "@/utils/window/constants";
 import type { TabFormState } from "@/utils/url/constants";
 import { TAB_MODES } from "@/utils/url/constants";
 import { getWindowIdFromIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { DEFAULT_SPLIT_STATE, clampSplitTableWidth } from "@/utils/window/splitView";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 
 // ---------------------------------------------------------------------------
 // Internal helper: ensures window + tab exist in the draft (immer mutates)
@@ -106,6 +113,12 @@ export const DEFAULT_TABLE_STATE: TableState = {
  */
 export const DEFAULT_EXPANDED_SECTIONS: string[] = [];
 
+/** Stable empty grouping returned when a tab is not grouped (same snapshot-caching reason). */
+export const DEFAULT_TABLE_GROUPING: string[] = [];
+
+/** Stable empty summaries returned when no column has a summary function (same snapshot-caching reason). */
+export const DEFAULT_TABLE_SUMMARIES: Record<string, SummaryType> = {};
+
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   activeLevels: [0],
   activeTabsByLevel: new Map(),
@@ -151,6 +164,7 @@ export interface WindowStore {
   ) => void;
   setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState, tabLevel?: number) => void;
   setTableOrder: (windowIdentifier: string, tabId: string, order: string[], tabLevel?: number) => void;
+  setTableGrouping: (windowIdentifier: string, tabId: string, grouping: string[], tabLevel?: number) => void;
   setTableImplicitFilterApplied: (
     windowIdentifier: string,
     tabId: string,
@@ -158,9 +172,34 @@ export interface WindowStore {
     tabLevel?: number
   ) => void;
   setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
+  setTableSizing: (windowIdentifier: string, tabId: string, sizing: MRT_ColumnSizingState, tabLevel?: number) => void;
+  setTableSummaries: (
+    windowIdentifier: string,
+    tabId: string,
+    summaries: Record<string, SummaryType>,
+    tabLevel?: number
+  ) => void;
+  /** Shows the grid of a tab as a tree or as a flat grid. */
+  setTableTreeView: (windowIdentifier: string, tabId: string, treeView: boolean, tabLevel?: number) => void;
+  setTableColumnPinning: (
+    windowIdentifier: string,
+    tabId: string,
+    pinning: MRT_ColumnPinningState,
+    tabLevel?: number
+  ) => void;
+  /**
+   * Replaces the given table fields at once (a saved view, a stored grid configuration or the
+   * standard view). Unlike setTableVisibility it does not merge, so an empty visibility really
+   * resets the columns to the metadata defaults.
+   */
+  applyTableViewState: (windowIdentifier: string, tabId: string, state: Partial<TableState>, tabLevel?: number) => void;
 
   // ---- Navigation setters ------------------------------------------------
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
+  /** Stores the height of a child tab level once the user finishes resizing the parent/child split. */
+  setNavigationSplitHeight: (windowIdentifier: string, level: number, height: number) => void;
+  /** Replaces the heights of every child tab level (applying a saved view or the standard view). */
+  setNavigationSplitHeights: (windowIdentifier: string, splitHeights: Record<number, number>) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
 
@@ -275,6 +314,16 @@ export const useWindowStore = create<WindowStore>()(
           "window/setTableOrder"
         ),
 
+      setTableGrouping: (windowIdentifier, tabId, grouping, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.grouping = grouping;
+          },
+          false,
+          "window/setTableGrouping"
+        ),
+
       setTableImplicitFilterApplied: (windowIdentifier, tabId, isApplied, tabLevel = 0) =>
         set(
           (draft) => {
@@ -293,6 +342,56 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setTableAdvancedCriteria"
+        ),
+
+      setTableSizing: (windowIdentifier, tabId, sizing, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.sizing = sizing;
+          },
+          false,
+          "window/setTableSizing"
+        ),
+
+      setTableSummaries: (windowIdentifier, tabId, summaries, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.summaries = summaries;
+          },
+          false,
+          "window/setTableSummaries"
+        ),
+
+      setTableTreeView: (windowIdentifier, tabId, treeView, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.treeView = treeView;
+          },
+          false,
+          "window/setTableTreeView"
+        ),
+
+      setTableColumnPinning: (windowIdentifier, tabId, pinning, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            draft.windows[windowIdentifier].tabs[tabId].table.pinning = pinning;
+          },
+          false,
+          "window/setTableColumnPinning"
+        ),
+
+      applyTableViewState: (windowIdentifier, tabId, state, tabLevel = 0) =>
+        set(
+          (draft) => {
+            ensureTabExistsDraft(draft.windows, windowIdentifier, tabId, tabLevel);
+            Object.assign(draft.windows[windowIdentifier].tabs[tabId].table, state);
+          },
+          false,
+          "window/applyTableViewState"
         ),
 
       // ---- Navigation setters ------------------------------------------
@@ -316,6 +415,28 @@ export const useWindowStore = create<WindowStore>()(
           },
           false,
           "window/setNavigationActiveLevels"
+        ),
+
+      setNavigationSplitHeight: (windowIdentifier, level, height) =>
+        set(
+          (draft) => {
+            const navigation = draft.windows[windowIdentifier]?.navigation;
+            if (!navigation) return;
+            navigation.splitHeights = { ...navigation.splitHeights, [level]: height };
+          },
+          false,
+          "window/setNavigationSplitHeight"
+        ),
+
+      setNavigationSplitHeights: (windowIdentifier, splitHeights) =>
+        set(
+          (draft) => {
+            const navigation = draft.windows[windowIdentifier]?.navigation;
+            if (!navigation) return;
+            navigation.splitHeights = splitHeights;
+          },
+          false,
+          "window/setNavigationSplitHeights"
         ),
 
       setNavigationActiveTabsByLevel: (windowIdentifier, activeTabsByLevel) =>
@@ -384,6 +505,7 @@ export const useWindowStore = create<WindowStore>()(
                   initialized: false,
                 },
                 tabs: windowData?.tabs ?? {},
+                externalUrl: windowData?.externalUrl,
               };
             }
           },

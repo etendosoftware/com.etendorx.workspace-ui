@@ -31,7 +31,7 @@ import { DatasourceProvider } from "@/contexts/datasourceContext";
 import WindowProvider from "@/contexts/window";
 import { Tab } from "@/components/window/Tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import DynamicTable from "@/components/Table";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
@@ -101,7 +101,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockUseTabRefreshContext = useTabRefreshContext as jest.MockedFunction<typeof useTabRefreshContext>;
-const mockUseToolbarContext = useToolbarContext as jest.MockedFunction<typeof useToolbarContext>;
+const mockUseToolbarCommands = useToolbarCommands as jest.MockedFunction<typeof useToolbarCommands>;
 
 // Helper function to render with theme and providers
 const renderWithTheme = (component: React.ReactElement) => {
@@ -151,7 +151,7 @@ describe("Tab - Refresh Registration", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       onRefresh: mockOnRefresh,
       onSave: jest.fn(),
@@ -315,7 +315,7 @@ describe("Tab - Split view", () => {
       triggerParentRefreshes: jest.fn(),
     });
 
-    mockUseToolbarContext.mockReturnValue({
+    mockUseToolbarCommands.mockReturnValue({
       registerActions: mockRegisterActions,
       unregisterActions: jest.fn(),
       onRefresh: jest.fn(),
@@ -376,6 +376,21 @@ describe("Tab - Split view", () => {
       expect.objectContaining({ showTableAndForm: expect.any(Function) }),
       TOOLBAR_ACTION_OWNERS.TAB
     );
+  });
+
+  it("toggles the tree view in the window store so saved views can capture it", () => {
+    renderSplitTab();
+    const merged = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+    const getTreeView = () => useWindowStore.getState().windows[WINDOW_IDENTIFIER]?.tabs[splitTab.id]?.table.treeView;
+
+    act(() => merged.treeView());
+    expect(getTreeView()).toBe(true);
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isTreeMode: true });
+
+    const latest = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+    act(() => latest.treeView());
+    expect(getTreeView()).toBe(false);
+    expect(lastPropsOf(DynamicTable)).toMatchObject({ isTreeMode: false });
   });
 
   it("starts in grid mode with the grid as the only pane", () => {

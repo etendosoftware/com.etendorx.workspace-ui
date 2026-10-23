@@ -102,6 +102,30 @@ describe("ResizeHandle — wrapper variant (default)", () => {
   });
 });
 
+describe("ResizeHandle — height set from outside", () => {
+  const renderVerticalDivider = (initialHeight: number) =>
+    render(<ResizeHandle variant="divider" direction="vertical" initialHeight={initialHeight} />);
+
+  it("follows a new initial height", () => {
+    const { rerender } = renderVerticalDivider(30);
+
+    rerender(<ResizeHandle variant="divider" direction="vertical" initialHeight={60} />);
+
+    expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "60");
+  });
+
+  it("does not jump while the user is dragging", () => {
+    const { rerender } = renderVerticalDivider(30);
+    fireEvent.mouseDown(screen.getByRole("separator"), { clientY: 0 });
+
+    rerender(<ResizeHandle variant="divider" direction="vertical" initialHeight={60} />);
+
+    expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "30");
+    fireEvent.mouseUp(document);
+    expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "60");
+  });
+});
+
 describe("isInteractiveTarget", () => {
   it.each(["INPUT", "BUTTON", "TEXTAREA"])("detects a bare <%s>", (tagName) => {
     expect(isInteractiveTarget(document.createElement(tagName))).toBe(true);

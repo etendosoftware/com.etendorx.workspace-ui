@@ -23,6 +23,8 @@ import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { useTabContext } from "@/contexts/tab";
 import { FIC_ERROR_STATUS } from "@/utils/hooks/useFormInitialization/constants";
+import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
+import { showCalloutMessages } from "@/utils/callouts/calloutMessages";
 
 export interface UseCalloutProps {
   field: Field;
@@ -37,6 +39,7 @@ const MODE = "CHANGE";
 export const useCallout = ({ field, parentId = "null", rowId = "null", changedColumnOverride }: UseCalloutProps) => {
   const { tab } = useTabContext();
   const tabId = tab?.id ?? "";
+  const { showStatusModal } = useStatusModal();
 
   return useCallback(
     async (payload: FieldValues) => {
@@ -75,11 +78,13 @@ export const useCallout = ({ field, parentId = "null", rowId = "null", changedCo
           actualData = rawData.response;
         }
 
+        showCalloutMessages(actualData.calloutMessages, showStatusModal);
+
         return actualData as FormInitializationResponse;
       } catch (error) {
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId, changedColumnOverride]
+    [tabId, field.inputName, parentId, rowId, changedColumnOverride, showStatusModal]
   );
 };

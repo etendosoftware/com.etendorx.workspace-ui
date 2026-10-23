@@ -73,6 +73,11 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
         }
         const colDef = column.columnDef as CustomColumnDef;
 
+        // Locked columns (e.g. the grouped column while the grid is grouped) cannot be hidden
+        if (colDef.enableHiding === false) {
+          return false;
+        }
+
         if (colDef?.isAuditField) {
           return true;
         }

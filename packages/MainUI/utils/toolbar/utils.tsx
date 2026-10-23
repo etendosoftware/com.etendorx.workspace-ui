@@ -22,9 +22,16 @@ import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon"
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
-import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, ISession, Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import { AUDIT_TRAIL_STATUS, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
+import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
+import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
+import { CircularProgress } from "@mui/material";
+
+/** Size (px) of the spinner shown in place of a toolbar button icon while its action is running */
+const BUSY_SPINNER_SIZE = 16;
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -58,6 +65,8 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
   [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
+  [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: "toolbar-button-show-audit-trail",
+  [TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM]: "toolbar-button-personalize-form",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW]:
     "toolbar-button-save-view h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0",
   [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]:
@@ -117,6 +126,10 @@ export interface ToolbarButtonContext {
   isCopilotInstalled?: boolean;
 }
 
+/** Classic only offers the Audit Trail on tabs whose table is Fully Audited. */
+const isAuditTrailButtonHidden = (button: ToolbarButtonMetadata, tab?: Tab) =>
+  button.action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL && !tab?.tableFullyAudited;
+
 const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContext) => {
   if (!button.active) return false;
 
@@ -132,6 +145,8 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
   const isSaveViewButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
+  // Personalizing the form only makes sense where a form is on screen.
+  const isPersonalizeFormButtonHidden = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM;
 
   const uIPattern = tab?.uIPattern;
   const isNewForSrOrEd =
@@ -155,6 +170,8 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     !isPrintButtonInTransactionWindow &&
     !isCopilotButtonHidden &&
     !isSaveViewButtonHidden &&
+    !isPersonalizeFormButtonHidden &&
+    !isAuditTrailButtonHidden(button, tab) &&
     !isNewForSrOrEd &&
     !isWriteActionForRo &&
     !isSplitToggleForSr
@@ -197,8 +214,10 @@ export const createButtonByType = ({
   t,
   tab,
   selectedRecordsLength,
+  selectedRecords = [],
   isAdvancedFilterApplied,
   isSplitView,
+  isExporting = false,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -214,20 +233,25 @@ export const createButtonByType = ({
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
+  // Tooltip text with the keyboard shortcut of the action, e.g. `Refresh (Ctrl+Shift+R)`.
+  const buttonTooltip = withShortcutHint(button.name, getToolbarActionShortcutId(button.action));
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
+    action: button.action,
     icon:
       isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ? (
         <PlusIcon className="w-4 h-4" data-testid="PlusIcon__5aeccd" />
       ) : (
         <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />
       ),
-    tooltip: button.name,
+    tooltip: buttonTooltip,
     disabled: !button.active,
     height: IconSize,
     width: IconSize,
@@ -258,7 +282,7 @@ export const createButtonByType = ({
 
   const buildDisableConfig = (isDisabled: boolean): Partial<ToolbarButton> => ({
     disabled: isDisabled,
-    tooltip: isDisabled ? "" : button.name,
+    tooltip: isDisabled ? "" : buttonTooltip,
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
@@ -300,6 +324,12 @@ export const createButtonByType = ({
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      // Busy while the export request is in flight, so it cannot be triggered twice.
+      [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () => buildDisableConfig(!button.active || isExporting),
+      [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: () => {
+        const isAuditTrailReady = getAuditTrailStatus({ selectedRecords, isNewRecord }) === AUDIT_TRAIL_STATUS.READY;
+        return buildDisableConfig(!isAuditTrailReady || isDocumentProcessing);
+      },
       // Refreshing a form with pending edits would drop them without asking, so the
       // button is blocked instead — the same rule as Classic's `hasNotChanged()`, which
       // also covers a record still being created.
@@ -358,12 +388,22 @@ export const createButtonByType = ({
     return {};
   };
 
+  const getBusyConfig = (): Partial<ToolbarButton> => {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV && isExporting) {
+      return {
+        icon: <CircularProgress size={BUSY_SPINNER_SIZE} color="inherit" data-testid="CircularProgress__5aeccd" />,
+      };
+    }
+    return {};
+  };
+
   const finalConfig = {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
     ...getPressedConfig(),
+    ...getBusyConfig(),
   };
 
   if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && showFilterTooltip) {
@@ -403,8 +443,10 @@ interface ButtonConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }
 
 /**
@@ -431,8 +473,10 @@ const createSectionButtons = (
       t: config.t,
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
+      selectedRecords: config.selectedRecords,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
       isSplitView: config.isSplitView,
+      isExporting: config.isExporting,
     });
 
     // Apply button-specific styles if available
@@ -479,8 +523,10 @@ interface ToolbarSectionsConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  selectedRecords?: EntityData[];
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
+  isExporting?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -500,8 +546,10 @@ export const getToolbarSections = ({
   t,
   tab,
   selectedRecordsLength,
+  selectedRecords = [],
   isAdvancedFilterApplied = false,
   isSplitView = false,
+  isExporting = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -530,8 +578,10 @@ export const getToolbarSections = ({
     showShareLinkTooltip,
     tab,
     selectedRecordsLength,
+    selectedRecords,
     t,
     isAdvancedFilterApplied,
+    isExporting,
   };
 
   return {

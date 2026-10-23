@@ -7,6 +7,7 @@ import { executeWithSessionAndCsrfRetry } from "@/app/api/_utils/sessionRetryWit
 import { getDatasourceUrl } from "../_utils/endpoints";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
+import { withCompression } from "../_utils/compression";
 export const runtime = "nodejs";
 
 // Union type for datasource parameters
@@ -249,6 +250,10 @@ function getRequestConfig(request: NextRequest, params: DatasourceRequestParams)
 }
 
 export async function POST(request: NextRequest) {
+  return withCompression(request, await handleDatasourcePost(request));
+}
+
+async function handleDatasourcePost(request: NextRequest) {
   try {
     // 1. Validate authentication
     const authResult = await validateAuth(request);

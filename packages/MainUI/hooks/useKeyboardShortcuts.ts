@@ -33,7 +33,19 @@ function normalizeKey(event: KeyboardEvent): string {
   return event.key;
 }
 
-function isInputTarget(target: EventTarget | null): boolean {
+/**
+ * Ctrl+Shift combinations only match `ctrl+shift+<key>`: a `ctrl+<key>` shortcut must not take
+ * them, since they are other classic shortcuts (e.g. Ctrl+Shift+M is Email, Ctrl+M is split view).
+ */
+function findShortcut(shortcuts: ShortcutMap, event: KeyboardEvent): ShortcutConfig | undefined {
+  const isCtrl = event.ctrlKey || event.metaKey;
+  if (isCtrl && event.shiftKey) {
+    return shortcuts[`ctrl+shift+${event.key.toLowerCase()}`];
+  }
+  return shortcuts[normalizeKey(event)];
+}
+
+export function isInputTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof Element)) return false;
   const tag = target.tagName.toLowerCase();
   return tag === "input" || tag === "textarea" || tag === "select" || target.getAttribute("contenteditable") === "true";
@@ -47,8 +59,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): vo
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      const normalizedKey = normalizeKey(event);
-      const config = shortcutsRef.current[normalizedKey];
+      const config = findShortcut(shortcutsRef.current, event);
 
       if (!config) return;
 

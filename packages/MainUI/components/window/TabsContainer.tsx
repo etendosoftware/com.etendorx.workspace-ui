@@ -17,23 +17,27 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect, useRef } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
-import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
+import { haveSameTabs, getTabDisplayLogic, shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowContext } from "@/contexts/window";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useLiveTabRecord } from "@/hooks/useLiveTabRecord";
 import { useUserStore } from "@/stores/userStore";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
-import { createSmartContext } from "@/utils/expressions";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { useTabLevelShortcuts, useWindowActivationFocus } from "@/hooks/navigation/useTabLevelShortcuts";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
+
+const NO_TABS: Tab[] = [];
 
 /**
  * TabsContainer Component
@@ -72,6 +76,8 @@ const TabsGroupRenderer = ({
   const session = useUserStore((s) => s.session);
   // Fetch the record of the parent tab to evaluate THIS level's tabs
   const parentRecord = useSelectedRecord(activeParentTab || undefined);
+  // Unsaved header edits take part in the evaluation, like Classic's form context
+  const parentValues = useLiveTabRecord(activeParentTab, parentRecord);
 
   // FETCH GRANDPARENT CONTEXT to verify PARENT'S visibility (Cascading Hide)
   // If the parent tab itself is hidden (by its own display logc), we must hide these children
@@ -81,15 +87,16 @@ const TabsGroupRenderer = ({
   const grandParentTab = currentLevel > 1 ? getActiveTabForLevel(grandParentLevel) : null;
   // Verify Parent Visibility against Grandparent Record
   const grandParentRecord = useSelectedRecord(grandParentTab || undefined);
+  const grandParentValues = useLiveTabRecord(grandParentTab, grandParentRecord);
 
   const isParentVisible = useMemo(() => {
     if (!activeParentTab) return true;
-    const expression = activeParentTab.displayLogic || activeParentTab.displayLogicExpression;
+    const expression = getTabDisplayLogic(activeParentTab);
     if (!expression) return true;
 
-    // Use createSmartContext for robust evaluation
-    const context = createSmartContext({
-      values: grandParentRecord || undefined,
+    // Shared with any other caller that evaluates against the same values
+    const context = getEvaluationContext({
+      values: grandParentValues,
       fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
       context: session,
       windowId: activeParentTab.window,
@@ -102,7 +109,7 @@ const TabsGroupRenderer = ({
     } catch {
       return true;
     }
-  }, [activeParentTab, grandParentRecord, grandParentTab, session]);
+  }, [activeParentTab, grandParentValues, grandParentTab, session]);
 
   const filteredTabs = useMemo(() => {
     // 1. Cascade Check: If Parent is hidden, Children are hidden.
@@ -118,15 +125,15 @@ const TabsGroupRenderer = ({
     // Every tab in this container belongs to the same window, so one window id scopes them all.
     const contextWindowId = activeParentTab?.window ?? tabs[0]?.window;
 
-    const context = createSmartContext({
-      values: parentRecord || undefined,
+    const context = getEvaluationContext({
+      values: parentValues,
       fields: activeParentTab?.fields,
       context: session,
       windowId: contextWindowId,
     });
 
     const result = tabs.filter((tab) => {
-      const expression = tab.displayLogic || tab.displayLogicExpression;
+      const expression = getTabDisplayLogic(tab);
 
       if (!expression) {
         return true;
@@ -143,9 +150,17 @@ const TabsGroupRenderer = ({
 
     const filteredTabs = result.filter((tab) => shouldShowTab(tab, activeParentTab));
     return filteredTabs;
-  }, [tabs, parentRecord, session, activeParentTab, isParentVisible, currentLevel]);
+  }, [tabs, parentValues, session, activeParentTab, isParentVisible]);
 
-  if (!Array.isArray(filteredTabs) || filteredTabs.length === 0) {
+  // Live values re-evaluate on every edit of a referenced field; keep the previous list while the
+  // visible tabs stay the same so Tabs is not re-rendered for nothing.
+  const visibleTabsRef = useRef(filteredTabs);
+  if (!haveSameTabs(visibleTabsRef.current, filteredTabs)) {
+    visibleTabsRef.current = filteredTabs;
+  }
+  const visibleTabs = visibleTabsRef.current;
+
+  if (!Array.isArray(visibleTabs) || visibleTabs.length === 0) {
     return null;
   }
 
@@ -153,8 +168,8 @@ const TabsGroupRenderer = ({
 
   return (
     <Tabs
-      key={filteredTabs[0].id}
-      tabs={filteredTabs}
+      key={visibleTabs[0].id}
+      tabs={visibleTabs}
       isTopGroup={isTopGroup}
       initialActiveTab={initialActiveTab ?? undefined}
       data-testid="Tabs__895626"
@@ -173,6 +188,10 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
+
+  const windowTabs = windowData?.tabs ?? NO_TABS;
+  useTabLevelShortcuts(windowTabs);
+  useWindowActivationFocus(windowTabs);
 
   /**
    * Memoized tab grouping by hierarchical levels.

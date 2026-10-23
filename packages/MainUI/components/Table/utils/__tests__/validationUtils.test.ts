@@ -347,3 +347,33 @@ describe("validationUtils", () => {
     });
   });
 });
+
+describe("save-time validation follows the form view's rules", () => {
+  const mandatory = (overrides: Partial<Field>) =>
+    makeField({ isMandatory: true, displayed: true, ...overrides } as Partial<Field>);
+
+  it("does not require fields that are not displayed or hidden by display logic", () => {
+    const fields = [
+      mandatory({ name: "Organization", hqlName: "organization", displayed: false } as Partial<Field>),
+      mandatory({ name: "Hidden", hqlName: "hidden", displayLogicExpression: "@x@='Y'" } as Partial<Field>),
+    ];
+
+    const result = validateNewRowForSave(fields, {} as EntityData, (field) => "displayLogicExpression" in field);
+
+    expect(result.isValid).toBe(true);
+  });
+
+  it("requires non-updatable fields of a new row, which are editable until it is saved", () => {
+    const fields = [mandatory({ name: "Search Key", hqlName: "searchKey", isUpdatable: false })];
+
+    expect(validateNewRowForSave(fields, {} as EntityData).isValid).toBe(false);
+  });
+
+  it("validates an existing row by the values stored under each hqlName", () => {
+    const fields = [mandatory({ name: "Name", hqlName: "name" })];
+
+    const result = validateExistingRowForSave(fields, { name: "" } as EntityData, { name: "Old" } as EntityData);
+
+    expect(result.isValid).toBe(false);
+  });
+});

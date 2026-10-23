@@ -24,6 +24,7 @@ import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/che
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
+import ExternalLinkIcon from "@workspaceui/componentlibrary/src/assets/icons/external-link.svg";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -33,7 +34,14 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { isWindowDirty } from "@/utils/window/dirtyState";
 import { getTitleForWindow } from "@/utils/window/windowTitle";
 import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
+import { useWindowTabShortcuts } from "@/hooks/navigation/useWindowTabShortcuts";
 import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
+
+/** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
+const getIconForWindow = (window: WindowState) => {
+  if (!window.externalUrl) return undefined;
+  return <ExternalLinkIcon className="fill-black" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
+};
 
 export default function WindowTabs() {
   const { t } = useTranslation();
@@ -130,6 +138,15 @@ export default function WindowTabs() {
     [windows, closingWindowIds]
   );
 
+  useWindowTabShortcuts({
+    windows: visibleWindows,
+    onSelectWindow: handleSelectWindow,
+    onCloseWindow: handleCloseWindow,
+    onSelectWorkspace: setAllWindowsInactive,
+    // While the close prompt is open its own buttons decide; shortcuts would act behind it.
+    enabled: !pendingCloseWindow,
+  });
+
   // Clear any optimistic closing ids that no longer exist in windows
   useEffect(() => {
     setClosingWindowIds((prev) => {
@@ -182,6 +199,7 @@ export default function WindowTabs() {
               }}>
               <WindowTab
                 title={title}
+                icon={getIconForWindow(window)}
                 isActive={isActive}
                 isDirty={isWindowDirty(dirtyWindows, window.windowIdentifier)}
                 onActivate={() => {

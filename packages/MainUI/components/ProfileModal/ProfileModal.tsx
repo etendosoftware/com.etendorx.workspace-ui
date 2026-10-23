@@ -71,6 +71,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onLanguageChange,
   saveAsDefault,
   onSaveAsDefaultChange,
+  onProfileApplied,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -352,6 +353,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       const languageChanged = selectedLanguage && selectedLanguage.value !== language;
 
       await saveConfigurationDefaults(!!languageChanged);
+      onProfileApplied?.();
 
       cleanWindowState();
       handleClose();
@@ -378,6 +380,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     selectedLanguage,
     language,
     saveConfigurationDefaults,
+    onProfileApplied,
     cleanWindowState,
     setBypassUnloadWarning,
     onLanguageChange,
@@ -439,7 +442,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton onClick={handleClick} className="w-10 h-10" data-testid="IconButton__75987a">
+      <IconButton onClick={handleClick} className="w-10 h-10" data-testid="profile-menu-button">
         {icon}
       </IconButton>
       <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]" data-testid="Menu__75987a">
@@ -488,7 +491,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} data-testid="CheckCircle__75987a" />}
             onClick={handleSave}
             disabled={isSaveDisabled}
-            data-testid="Button__75987a">
+            data-testid="profile-save-button">
             {t("common.save")}
           </Button>
         </div>

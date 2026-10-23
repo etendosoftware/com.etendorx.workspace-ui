@@ -20,8 +20,10 @@ import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { FormFields } from "../FormFieldsContent";
+import { useFormViewContext } from "../contexts/FormViewContext";
+import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
@@ -64,9 +66,7 @@ jest.mock("../selectors/BaseSelector", () => ({
   compileExpression: jest.fn(() => () => true),
 }));
 
-jest.mock("@/utils/expressions", () => ({
-  createSmartContext: jest.fn(() => ({})),
-}));
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => ({ getEvaluationContext: jest.fn(() => ({})) }));
 
 jest.mock("../Sections/noteSection", () => ({
   __esModule: true,
@@ -80,7 +80,9 @@ jest.mock("../Sections/AttachmentSection", () => ({
 
 jest.mock("../Sections/LinkedItemsSection", () => ({
   __esModule: true,
-  default: () => <div data-testid="linked-items-section" />,
+  default: ({ isSectionExpanded }: { isSectionExpanded: boolean }) => (
+    <div data-testid="linked-items-section" data-expanded={String(isSectionExpanded)} />
+  ),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -174,6 +176,33 @@ describe("FormFields — Notes / Attachments / LinkedItems visibility by mode", 
   });
 });
 
+describe("FormFields — LinkedItems expansion state", () => {
+  const mockUseFormViewContext = useFormViewContext as jest.Mock;
+  const defaultImplementation = mockUseFormViewContext.getMockImplementation();
+
+  const renderWithLinkedItemsExpanded = (isExpanded: boolean) => {
+    const context = defaultImplementation?.();
+    mockUseFormViewContext.mockImplementation(() => ({
+      ...context,
+      isSectionExpanded: jest.fn((id: string) => id !== LINKED_ITEMS_SECTION_ID || isExpanded),
+    }));
+    renderFormFields(FormMode.EDIT);
+    return screen.getByTestId("linked-items-section");
+  };
+
+  afterEach(() => {
+    mockUseFormViewContext.mockImplementation(defaultImplementation);
+  });
+
+  it("tells the LinkedItemsSection when its section is expanded", () => {
+    expect(renderWithLinkedItemsExpanded(true)).toHaveAttribute("data-expanded", "true");
+  });
+
+  it("tells the LinkedItemsSection when its section is collapsed", () => {
+    expect(renderWithLinkedItemsExpanded(false)).toHaveAttribute("data-expanded", "false");
+  });
+});
+
 describe("FormFields — loading state", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -197,7 +226,7 @@ describe("FormFields — expression evaluation context", () => {
   // clearAllMocks keeps implementations: restore the module mocks' defaults so overrides don't leak.
   afterEach(() => {
     (useDisplayLogicFormValues as jest.Mock).mockReset().mockImplementation(() => ({}));
-    (createSmartContext as jest.Mock).mockReset().mockImplementation(() => ({}));
+    (getEvaluationContext as jest.Mock).mockReset().mockImplementation(() => ({}));
   });
 
   const withLogic = (hqlName: string) => makeField({ hqlName, displayLogicExpression: "@a@ = 'Y'" } as any);
@@ -210,7 +239,7 @@ describe("FormFields — expression evaluation context", () => {
     render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);
     expect(screen.getByText("Main")).toBeInTheDocument();
     expect(screen.getByText("More")).toBeInTheDocument();
-    expect(createSmartContext).toHaveBeenCalledTimes(1);
+    expect(getEvaluationContext).toHaveBeenCalledTimes(1);
   });
 
   it("follows the display-logic fields of the tab and the record identifier", () => {
@@ -219,7 +248,7 @@ describe("FormFields — expression evaluation context", () => {
   });
 
   it("still shows the sections when the context build throws", () => {
-    (createSmartContext as jest.Mock).mockImplementation(() => {
+    (getEvaluationContext as jest.Mock).mockImplementation(() => {
       throw new Error("boom");
     });
     render(<FormFields {...baseProps} groups={groups} mode={FormMode.EDIT} />);

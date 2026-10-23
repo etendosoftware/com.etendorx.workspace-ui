@@ -36,6 +36,13 @@ export class Metadata {
   public static kernelClient = new Client();
   public static datasourceServletClient = new Client();
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION, "etendo_metadata_");
+  /**
+   * Window and tab definitions, kept in memory only. They are 1–3 MB each, so persisting them
+   * overflowed localStorage, and every read parsed the whole JSON again. Across reloads they come
+   * from the browser HTTP cache instead: the backend answers GET with a body ETag and a 304 when
+   * unchanged.
+   */
+  private static definitions = new Map<string, unknown>();
   private static currentRoleId: string | null = null;
   private static pendingMenuRequest: Promise<Etendo.Menu[]> | null = null;
   public static loginClient = new Client();
@@ -48,6 +55,7 @@ export class Metadata {
 
     // Route metadata and kernel through ERP proxy
     Metadata.client.setBaseUrl(joinUrl(baseUrl, API_ERP_PROXY));
+    Metadata.removePersistedDefinitions();
     // Kernel endpoints are called via forward servlet
     Metadata.kernelClient.setBaseUrl(joinUrl(baseUrl, API_ERP_PROXY + API_KERNEL_SERVLET));
     Metadata.datasourceServletClient.setBaseUrl(joinUrl(baseUrl, API_DATASOURCE_PROXY));
@@ -59,6 +67,7 @@ export class Metadata {
     const cachedLang = Metadata.cache.get<string>("current_language");
     if (cachedLang !== value) {
       Metadata.cache.clear();
+      Metadata.definitions.clear();
       Metadata.cache.set("current_language", value);
     }
 
@@ -155,7 +164,7 @@ export class Metadata {
     if (existing) return existing as Promise<Etendo.WindowMetadata>;
 
     const promise = (async () => {
-      const { data, ok, status } = await Metadata.client.post(`meta/window/${windowId}`);
+      const { data, ok, status } = await Metadata.client.request(`meta/window/${windowId}`);
       if (!ok) {
         if (status === HTTP_CODES.UNAUTHORIZED) {
           throw new WindowAccessDeniedError(windowId, status);
@@ -168,9 +177,9 @@ export class Metadata {
       if (data?.isWindowAccessible === false) {
         throw new WindowAccessDeniedError(windowId, status);
       }
-      Metadata.cache.set(Metadata.getWindowCacheKey(windowId), data);
+      Metadata.definitions.set(Metadata.getWindowCacheKey(windowId), data);
       for (const tab of data.tabs) {
-        Metadata.cache.set(Metadata.getTabCacheKey(tab.id), tab);
+        Metadata.definitions.set(Metadata.getTabCacheKey(tab.id), tab);
       }
       return data as Etendo.WindowMetadata;
     })().finally(() => {
@@ -182,7 +191,7 @@ export class Metadata {
   }
 
   public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get<Etendo.WindowMetadata>(Metadata.getWindowCacheKey(windowId));
+    const cached = Metadata.definitions.get(Metadata.getWindowCacheKey(windowId)) as Etendo.WindowMetadata | undefined;
 
     if (cached) {
       return cached;
@@ -191,15 +200,15 @@ export class Metadata {
   }
 
   private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
-    const { data } = await Metadata.client.post(`meta/tab/${tabId}`);
+    const { data } = await Metadata.client.request(`meta/tab/${tabId}`);
 
-    Metadata.cache.set(Metadata.getTabCacheKey(tabId!), data);
+    Metadata.definitions.set(Metadata.getTabCacheKey(tabId!), data);
 
     return data;
   }
 
   public static async getTab(tabId: Etendo.Tab["id"]): Promise<Etendo.Tab> {
-    const cached = Metadata.cache.get<Etendo.Tab>(Metadata.getTabCacheKey(tabId));
+    const cached = Metadata.definitions.get(Metadata.getTabCacheKey(tabId)) as Etendo.Tab | undefined;
 
     if (cached) {
       return cached;
@@ -234,7 +243,10 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Metadata.cache.get<{ fields: Etendo.Column[] }>(Metadata.getTabCacheKey(tabId))?.fields ?? [];
+    return (
+      (Metadata.definitions.get(Metadata.getTabCacheKey(tabId)) as { fields: Etendo.Column[] } | undefined)?.fields ??
+      []
+    );
   }
 
   public static async getMenu(forceRefresh = false): Promise<Etendo.Menu[]> {
@@ -252,7 +264,8 @@ export class Metadata {
 
     Metadata.pendingMenuRequest = (async () => {
       try {
-        const { data } = await Metadata.client.post("meta/menu", { role: currentRoleId });
+        // GET so the browser HTTP cache revalidates it: an unchanged menu costs a 304 (body ETag).
+        const { data } = await Metadata.client.request("meta/menu");
         const menu = data.menu;
         Metadata.cache.set("OBMenu", menu);
         Metadata.currentRoleId = currentRoleId;
@@ -279,7 +292,8 @@ export class Metadata {
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
     return (
-      Metadata.cache.get<Etendo.WindowMetadata>(Metadata.getWindowCacheKey(windowId)) || ({} as Etendo.WindowMetadata)
+      (Metadata.definitions.get(Metadata.getWindowCacheKey(windowId)) as Etendo.WindowMetadata | undefined) ||
+      ({} as Etendo.WindowMetadata)
     );
   }
 
@@ -289,7 +303,12 @@ export class Metadata {
   }
 
   public static clearWindowCache(windowId: string) {
-    Metadata.cache.delete(Metadata.getWindowCacheKey(windowId));
+    Metadata.definitions.delete(Metadata.getWindowCacheKey(windowId));
+  }
+
+  /** Removes window and tab definitions persisted in localStorage by earlier versions. */
+  private static removePersistedDefinitions() {
+    Metadata.cache.deleteWhere((id) => id.startsWith("window-") || id.startsWith("tab-"));
   }
 
   public static clearToolbarCache() {

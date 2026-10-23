@@ -208,10 +208,10 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
     // Wait for the button to be available (loading to finish)
     // Our mocks return loading: false for hooks, so it should be immediate,
     // but the component has some internal state loading.
-    // The "Execute" button has testid="ExecuteButton__761503"
+    // The "Execute" button has testid="process-modal-execute-button"
 
     // We need to wait for internal loading state to settle if any
-    const executeBtn = await screen.findByTestId("ExecuteButton__761503");
+    const executeBtn = await screen.findByTestId("process-modal-execute-button");
     expect(executeBtn).toBeInTheDocument();
 
     // Ensure it's not disabled (wait if needed)

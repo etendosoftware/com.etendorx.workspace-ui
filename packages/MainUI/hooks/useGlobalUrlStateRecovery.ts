@@ -14,6 +14,8 @@ import { isWindowAccessDeniedError } from "@workspaceui/api-client/src/api/error
 import { buildAccessDeniedToastTexts, reportWindowsAccessDenied } from "@/utils/accessDenied";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { WindowState } from "@/utils/window/constants";
+import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
+import { recoverExternalPageWindow } from "@/utils/window/externalPageRecovery";
 
 /**
  * Global URL state recovery hook for Etendo WorkspaceUI.
@@ -96,9 +98,6 @@ export const useGlobalUrlStateRecovery = () => {
         // Extract all window identifiers from URL (wi_0, wi_1, wi_2, ...)
         const recoveryDataList = parseWindowRecoveryData(searchParams);
 
-        // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-        console.debug("[DEBUG-LINKEDITEMS] recoverAllWindows", { recoveryDataList });
-
         // No windows to recover - common on initial app load
         if (recoveryDataList.length === 0) {
           if (isMounted.current) setIsRecoveryLoading(false);
@@ -109,21 +108,14 @@ export const useGlobalUrlStateRecovery = () => {
         // Each window recovery is independent and can run concurrently
         const windowPromises = recoveryDataList.map(async (info, index): Promise<WindowState | null> => {
           const windowId = getWindowIdFromIdentifier(info.windowIdentifier);
+          // In-app tabs of External menu entries have no AD window metadata to recover.
+          if (isExternalPageWindowId(windowId)) {
+            return recoverExternalPageWindow(info);
+          }
 
           try {
             // Fetch window metadata (cached if previously loaded)
             const metadata = await loadWindowData(windowId);
-
-            // TEMP DEBUG - remove after diagnosis (ETP-4625 linked-items regression)
-            console.debug("[DEBUG-LINKEDITEMS] windowRecovery metadata loaded", {
-              windowIdentifier: info.windowIdentifier,
-              extractedWindowId: windowId,
-              metadataWindowName: metadata?.name,
-              requestedTabId: info.tabId,
-              requestedRecordId: info.recordId,
-              hasRecoveryData: info.hasRecoveryData,
-              availableTabIds: metadata?.tabs?.map((t) => ({ id: t.id, name: t.name, tabLevel: t.tabLevel })),
-            });
 
             let windowState: WindowState;
 

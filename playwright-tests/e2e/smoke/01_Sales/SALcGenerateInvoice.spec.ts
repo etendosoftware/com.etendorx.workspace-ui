@@ -1,399 +1,191 @@
-import { test, expect, type Frame } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  clickOkInLegacyPopup,
-  closeToastIfPresent,
-  expectSuccessToast,
-} from "../../helpers/etendo.helpers";
+import type { Frame } from "@playwright/test";
+import { LegacyFrame } from "../../support/components/LegacyFrame";
+import { exactText } from "../../support/components/level";
+import { expect, test } from "../../support/fixtures";
+import { TABS } from "../../support/registry/windows";
+import { runAndWaitForDatasource, runAndWaitForResponse } from "../../support/wait";
 
-test.describe("Sales flow - Generate invoices from multiple sales orders", () => {
-  test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
-  });
+const PROCESS_ORDER = "Process Order";
+/** "Create Shipments from Orders" (a Classic form opened in a popup window). */
+const CREATE_SHIPMENTS_MENU = { search: "create", id: "346" };
+const ORDER_CHECKBOXES = 'input[type="checkbox"][name="inpOrder"]';
+/** Document number of an order row: the text of its link (`<a class="Link"><span>`). */
+const ORDER_ROW_NUMBER = "a.Link span";
+const LEGACY_BUTTONS = 'td.Button_text, button, input[type="button"], input[type="submit"]';
+const COPIES = 2;
+const DOCUMENT_NUMBER_TIMEOUT = 20_000;
 
-  test(
-    "Generates invoices from processed sales orders and shipments for multiple customers",
-    { timeout: 720_000 },
-    async ({ page }) => {
-      // ── Login & role ──────────────────────────────────────────────────────────
-      await loginToEtendo(page);
-      await selectRoleOrgWarehouse(page);
-      await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
+/** Today in the DD-MM-YYYY format the legacy date inputs accept as value. */
+const todayAsLegacyDate = (): string => {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+};
 
-      // ── Step 1: Navigate to Sales Order ──────────────────────────────────────
-      const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-      if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-        await page.locator(".h-14 > div > .transition > svg").click();
-        await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
-      }
-      await drawerInput.click({ force: true });
-      await page.keyboard.type("sales");
-      await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
+/** Result line of "Create Shipments from Orders" for the order `number`. */
+const shipmentCompleted = (number: string): RegExp =>
+  new RegExp(`Order No\\. ${number} Shipment No\\. \\d+: Shipment completed successfully`);
+
+/** Clicks the legacy button with exactly `text` in a frame. */
+const clickLegacyButton = (frame: Frame, text: string) =>
+  frame
+    .locator(LEGACY_BUTTONS)
+    .filter({ hasText: exactText(text) })
+    .first()
+    .click();
+
+test.describe("Sales flow - Generate invoices from multiple sales orders @smoke", () => {
+  test("Generates invoices from processed sales orders and shipments for multiple customers", async ({
+    app,
+    data,
+    page,
+  }) => {
+    // ── Step 1: Navigate to Sales Order ──────────────────────────────────────
+    await app.sidebar.navigateTo("salesOrder");
+
+    // ── Step 2: Create New Sales Order ────────────────────────────────────────
+    await app.toolbar.newRecord();
+
+    // ── Step 3: Fill header ───────────────────────────────────────────────────
+    await app.field.selectById("Business Partner", data.BUSINESS_PARTNER.CUSTOMER_BARCELONA.id);
+    await app.field.selectById("Transaction Document", data.DOCUMENT_TYPE.STANDARD_ORDER.id);
+    await app.toolbar.save();
+    await app.toast.closeAll();
+
+    await app.field.selectById("Invoice Terms", "I");
+    await app.toolbar.save();
+    await app.toast.closeAll();
+
+    // ── Step 4: Add order line ────────────────────────────────────────────────
+    await app.tabs.open("Lines");
+    await app.toolbar.newRecord("child");
+
+    // Pick the first product listed and wait for the callout that fills price and UOM
+    await app.field.selector("Product", { level: "child" }).click();
+    const firstProduct = page.locator('[data-testid^="OptionItem__"]').first();
+    await firstProduct.waitFor({ state: "visible", timeout: 15_000 });
+    await runAndWaitForResponse(page, /FormInitializationComponent/, () => firstProduct.click());
+
+    await app.field.fillById(data.FIELD.SALES_ORDER_LINE_QUANTITY, "11");
+
+    // Save line and wait for the backend to persist it
+    await runAndWaitForDatasource(page, () => app.toolbar.save("child"));
+    await app.toast.closeAll();
+
+    // ── Step 5: Process Order (Book) ──────────────────────────────────────────
+    await app.toolbar.process("Book");
+    await expect(app.processModal.legacyTitle).toHaveText(PROCESS_ORDER, { timeout: 10_000 });
+    await app.processModal.confirm();
+    await app.processModal.expectSuccess();
+    await app.processModal.finishLegacy();
+    await app.toast.closeAll();
+
+    // Numbers of the orders this test books: only those are shipped, so the specs running alongside
+    // keep their own orders
+    const orderNumbers = [await app.breadcrumb.documentNumber()];
+
+    /** Number of the open order once it is not one of `orderNumbers` (the copy replaced the original). */
+    const newOrderNumber = async (): Promise<string> => {
+      let number = "";
+      await expect(async () => {
+        number = await app.breadcrumb.documentNumber();
+        expect(orderNumbers).not.toContain(number);
+      }).toPass({ timeout: DOCUMENT_NUMBER_TIMEOUT });
+      return number;
+    };
+
+    // ── Steps 6–7: Copy the order and book each copy ─────────────────────────
+    // Header toolbar of the order (its child Lines tab renders a toolbar too)
+    const headerToolbar = app.toolbar.inTab(TABS.SALES_ORDER_HEADER);
+    for (let copy = 0; copy < COPIES; copy++) {
+      await headerToolbar.button("copy-record").click();
+      // Clone without children (the first option of the confirmation)
       await page
-        .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
-        .catch(() => null);
-      await page
-        .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
-        .evaluate((el) => (el as HTMLElement).click());
+        .getByRole("button", { name: /^(Clone|Yes)$/ })
+        .first()
+        .click();
 
-      // ── Step 2: Create New Sales Order ────────────────────────────────────────
-      // The New Record button being enabled is the definitive signal that the window
-      // has fully loaded — no need for a separate breadcrumb check.
+      // The process menu is enabled once the copy is loaded and selected
       await page
-        .locator("button.toolbar-button-new:not([disabled])")
-        .filter({ hasText: "New Record" })
+        .locator('[data-testid="IconButtonWithText__process-menu"]:visible:not([disabled])')
         .first()
         .waitFor({ state: "visible", timeout: 30_000 });
-      await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
-      await page
-        .locator('[aria-label="Business Partner"] > div[tabindex="0"]')
-        .waitFor({ state: "visible", timeout: 30_000 });
 
-      // ── Step 3: Fill header ───────────────────────────────────────────────────
-      await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').click();
-      await page
-        .locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate')
-        .waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').click();
-
-      await page.locator('[aria-label="Transaction Document"] > div[tabindex="0"]').click();
-      await page
-        .locator('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate')
-        .waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate').click();
-
-      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').first().click();
-      await closeToastIfPresent(page);
-
-      await page.locator('[aria-label="Invoice Terms"] > div[tabindex="0"]').click();
-      await page.locator('[data-testid="OptionItem__I"] > .truncate').waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator('[data-testid="OptionItem__I"] > .truncate').click();
-
-      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').first().click();
-      await closeToastIfPresent(page);
-
-      // ── Step 4: Add order line ────────────────────────────────────────────────
-      await page.locator('button[aria-label="Lines"]').click();
-
-      const linesNewBtn = page
-        .locator("button.toolbar-button-new:not([disabled])")
-        .filter({ hasText: "New Record" })
-        .last();
-      await linesNewBtn.waitFor({ state: "visible", timeout: 20_000 });
-      await linesNewBtn.click({ force: true });
-
-      await page.locator('[aria-label="Product"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 15_000 });
-      await page.locator('[aria-label="Product"] > div[tabindex="0"]').click();
-      // Wait for at least one option to load, then pick the first available
-      await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
-      // Register FormInit listener before clicking so we don't miss the response
-      const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
-      await page.locator('[data-testid^="OptionItem__"]').first().click({ force: true });
-      await formInitDone; // wait for backend to populate price/UOM before setting quantity
-      await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible", timeout: 30_000 });
-
-      // Set quantity — use native value setter to bypass React's synthetic event handling
-      await page.evaluate(() => {
-        const input = document.querySelector('[data-testid="TextInput__1130"]') as HTMLInputElement;
-        if (!input) return;
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-        nativeSetter?.call(input, "11");
-        input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-      });
-      await page.waitForTimeout(1_000);
-
-      // Save line (index 1 = save button inside the Lines tab toolbar)
-      const lineSaveResponse = page
-        .waitForResponse(/org\.openbravo\.service\.json\.JsonRestServlet/, { timeout: 15_000 })
-        .catch(() => null);
-      // .last() targets the Lines toolbar save button (header save is disabled while editing a line)
-      await page.locator("button.toolbar-button-save").last().click();
-      await lineSaveResponse; // wait for backend to confirm the line was persisted
-      await closeToastIfPresent(page);
-
-      // ── Step 5: Process Order (Book) ──────────────────────────────────────────
-      await page.locator('[data-testid="IconButtonWithText__process-menu"]:visible').first().click();
-      await page.locator(".rounded-2xl > :nth-child(1):visible").click();
-      await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
-        timeout: 10_000,
-      });
-
-      await clickOkInLegacyPopup(page);
-
-      // Success may appear inside the popup or as a toast
-      const successInPopup = page.locator(".mb-1").filter({ hasText: "Process completed successfully" });
-      if (await successInPopup.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await page.locator('[data-testid="close-button"]').click();
-      } else {
-        await expectSuccessToast(page);
-      }
-      await closeToastIfPresent(page);
-
-      // ── Steps 6–7: Create and process related documents from within the sales order ──
-      // NOTE: IconButton__C7913FFAF4DF44BFB0392755DEAE9C89 is located in the 3rd child of
-      // its container (likely a sub-tab or related-records strip in the sales order view).
-      // ChevronDownIcon__987e83 opens a process dropdown on that sub-context toolbar.
-      // Both blocks are direct translations from the Cypress test; validate with live app.
-      for (let i = 0; i < 2; i++) {
-        await page
-          .locator(':nth-child(3) > [data-testid="IconButton__C7913FFAF4DF44BFB0392755DEAE9C89"]:visible')
-          .first()
-          .click();
-        await page.locator(".bg-\\[var\\(--color-etendo-main\\)\\]:visible").first().click();
-
-        // Wait for the process menu button to be visible and enabled — replaces the
-        // unreliable hardcoded delay. "not([disabled])" confirms the toolbar has
-        // initialized and has a selected record (applies to both iterations).
-        await page
-          .locator('[data-testid="IconButtonWithText__process-menu"]:visible:not([disabled])')
-          .first()
-          .waitFor({ state: "visible", timeout: 30_000 });
-
-        await page.locator('[data-testid="ChevronDownIcon__987e83"]:visible').first().click();
-        await page.locator(".rounded-2xl > :nth-child(1):visible").click();
-        // clickOkInLegacyPopup polls all frames for the OK button — no hardcoded delay needed.
-        await clickOkInLegacyPopup(page, 20_000);
-        await page.locator('[data-testid="close-button"]').click();
-        await closeToastIfPresent(page);
-      }
-
-      // ── Step 8: Navigate to Create Invoices batch process (MenuTitle__346) ────
-      const createInput = page.locator('[data-testid="drawer-search-input"] input');
-      if (!(await createInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-        await page.locator(".h-14 > div > .transition > svg").click();
-        await createInput.waitFor({ state: "visible", timeout: 10_000 });
-      }
-      await createInput.click({ force: true });
-      await createInput.fill("");
-      await page.keyboard.type("create");
-      await page.locator('[data-testid="MenuTitle__346"]').waitFor({ state: "visible", timeout: 10_000 });
-
-      // Form now opens in an external popup (window.open) — capture it before triggering the click.
-      const formPopupPromise = page.waitForEvent("popup");
-      await page
-        .locator('[data-testid="MenuTitle__346"] > .flex.overflow-hidden > .relative > .ml-2')
-        .evaluate((el) => (el as HTMLElement).click());
-      const formPopup = await formPopupPromise;
-      await formPopup.waitForLoadState("domcontentloaded");
-
-      // Menu.html loads the actual form (GenerateShipmentsmanual.html) inside a nested iframe.
-      // Search formPopup.frames() to find the nested frame that contains #paramDateFrom.
-      let processFrame: Frame | null = null;
-      const frameDeadline = Date.now() + 30_000;
-      while (Date.now() < frameDeadline && !processFrame) {
-        for (const f of formPopup.frames()) {
-          try {
-            if ((await f.locator("#paramDateFrom").count()) > 0) {
-              processFrame = f;
-              break;
-            }
-          } catch {
-            // Frame detached or cross-origin — keep searching
-          }
-        }
-        if (!processFrame) await page.waitForTimeout(500);
-      }
-      if (!processFrame) throw new Error("Create Invoices process frame not found");
-
-      // Set From Date to today — mirrors Cypress setLegacyDate("paramDateFrom") which uses today.
-      // Etendo legacy forms use DD-MM-YYYY with dashes for .value assignment.
-      const today = new Date();
-      const legacyDateStr = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
-      await processFrame.locator("#paramDateFrom").waitFor({ state: "attached", timeout: 10_000 });
-      await processFrame.evaluate((dateStr) => {
-        const input = document.getElementById("paramDateFrom") as HTMLInputElement | null;
-        if (!input) return;
-        input.value = dateStr;
-        ["input", "change", "blur"].forEach((e) =>
-          input.dispatchEvent(new Event(e, { bubbles: true, cancelable: true }))
-        );
-      }, legacyDateStr);
-      await page.waitForTimeout(1_000);
-
-      // Search — Etendo classic renders this as td.Button_text; fall back to getByRole if needed.
-      await processFrame.evaluate(() => {
-        const btns = document.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"]');
-        for (const btn of btns) {
-          if (btn.textContent?.trim() === "Search" || (btn as HTMLInputElement).value === "Search") {
-            btn.click();
-            return;
-          }
-        }
-      });
-
-      // Wait for results to load after Search click
-      await page.waitForTimeout(2_000);
-
-      // Find the frame that has the inpOrder checkboxes (the results frame in the frameset).
-      let resultsFrame: Frame = processFrame;
-      const cbDeadline = Date.now() + 15_000;
-      outer: while (Date.now() < cbDeadline) {
-        for (const f of formPopup.frames()) {
-          try {
-            if ((await f.locator('input[type="checkbox"][name="inpOrder"]').count()) > 0) {
-              resultsFrame = f;
-              break outer;
-            }
-          } catch {
-            // detached frame — skip
-          }
-        }
-        await page.waitForTimeout(300);
-      }
-
-      // Select checkboxes — mirrors Cypress selectLegacyCheckboxes(name, leaveLastUnchecked=true)
-      await resultsFrame.evaluate(() => {
-        const checkboxes = Array.from(
-          document.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name="inpOrder"]')
-        );
-        const limit = checkboxes.length > 1 ? checkboxes.length - 1 : checkboxes.length;
-        checkboxes.slice(0, limit).forEach((cb) => cb.click());
-      });
-      await page.waitForTimeout(500);
-
-      // Process button is in the same results frame
-      await resultsFrame.evaluate(() => {
-        const btns = document.querySelectorAll<HTMLElement>(
-          'td.Button_text, button, input[type="button"], input[type="submit"]'
-        );
-        for (const btn of btns) {
-          if (btn.textContent?.trim() === "Process" || (btn as HTMLInputElement).value === "Process") {
-            btn.click();
-            return;
-          }
-        }
-      });
-
-      // Success message: search formPopup.frames() (popup context, not main page)
-      const successSelector = ".MessageBox_TextTitle#messageBoxIDTitle";
-      const successDeadline = Date.now() + 30_000;
-      let processSuccess = false;
-      while (Date.now() < successDeadline && !processSuccess) {
-        for (const f of formPopup.frames()) {
-          try {
-            const el = f.locator(successSelector);
-            if ((await el.count()) > 0) {
-              const txt = await el.textContent();
-              if (/Process completed successfully/i.test(txt ?? "")) {
-                processSuccess = true;
-                break;
-              }
-            }
-          } catch {
-            // detached frame
-          }
-        }
-        if (!processSuccess) await page.waitForTimeout(300);
-      }
-      if (!processSuccess) throw new Error("Create Shipments process did not complete successfully within 30s");
-
-      // Close the popup window (replaces the React modal close button)
-      await formPopup.close();
-      await closeToastIfPresent(page);
-
-      // ── Step 9: Navigate to Generate Invoices report (MenuTitle__192) ─────────
-      // const reportInput = page.locator('[data-testid="drawer-search-input"] input');
-      // if (!(await reportInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-      //   await page.locator(".h-14 > div > .transition > svg").click();
-      //   await reportInput.waitFor({ state: "visible", timeout: 10_000 });
-      // }
-      // await reportInput.click({ force: true });
-      // await reportInput.fill("");
-      // await page.keyboard.type("genera");
-      // await page.locator('[data-testid="MenuTitle__192"]').waitFor({ state: "visible", timeout: 10_000 });
-      // await page
-      //   .locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2')
-      //   .evaluate((el) => (el as HTMLElement).click());
-
-      // // Wait briefly before executing — avoids known race where the report
-      // // fires before the previous process result is fully committed.
-      // await page.waitForTimeout(3_000);
-
-      // // Execute the report — retry once if the backend returns an async execution error.
-      // // "Async Execution Failed: Process Instance or Definition not found" can appear intermittently
-      // // when a previous process instance is still being cleaned up on the server side.
-      // const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
-      // await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
-      // await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
-      // await executeBtn.click();
-
-      // // If an async error appears within 3 s, retry the execution once.
-      // await page.waitForTimeout(3_000);
-      // const asyncErrorLocator = page.getByText(/Async Execution Failed/i);
-      // if (await asyncErrorLocator.isVisible({ timeout: 0 }).catch(() => false)) {
-      //   await executeBtn.waitFor({ state: "visible", timeout: 10_000 });
-      //   await executeBtn.click();
-      // }
-
-      // // Verify report completion — the result may appear in a legacy iframe or on the React page.
-      // // The Generate Invoices report shows "Created: X" directly (not "Process completed successfully"),
-      // // so accept either pattern. Poll all frames (same pattern as the Create Shipments success check).
-      // const invoiceSuccessDeadline = Date.now() + 150_000;
-      // const invoiceSuccessPattern = /Process completed success|Created:/i;
-      // let invoiceProcessSuccess = false;
-      // while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
-      //   // Check main page first
-      //   if (
-      //     await page
-      //       .getByText(invoiceSuccessPattern)
-      //       .isVisible({ timeout: 0 })
-      //       .catch(() => false)
-      //   ) {
-      //     invoiceProcessSuccess = true;
-      //     break;
-      //   }
-      //   // Then check all frames
-      //   for (const f of page.frames()) {
-      //     try {
-      //       const txt = await f
-      //         .locator("body")
-      //         .textContent({ timeout: 500 })
-      //         .catch(() => "");
-      //       if (invoiceSuccessPattern.test(txt)) {
-      //         invoiceProcessSuccess = true;
-      //         break;
-      //       }
-      //     } catch {
-      //       // detached frame — skip
-      //     }
-      //   }
-      //   if (!invoiceProcessSuccess) await page.waitForTimeout(300);
-      // }
-      // if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 150s");
-
-      // // Verify "Created:" summary — check main page and all frames
-      // const createdDeadline = Date.now() + 15_000;
-      // let createdFound = false;
-      // while (Date.now() < createdDeadline && !createdFound) {
-      //   if (
-      //     await page
-      //       .getByText(/^Created:/)
-      //       .isVisible({ timeout: 0 })
-      //       .catch(() => false)
-      //   ) {
-      //     createdFound = true;
-      //     break;
-      //   }
-      //   for (const f of page.frames()) {
-      //     try {
-      //       const txt = await f
-      //         .locator("body")
-      //         .textContent({ timeout: 500 })
-      //         .catch(() => "");
-      //       if (/Created:/.test(txt)) {
-      //         createdFound = true;
-      //         break;
-      //       }
-      //     } catch {
-      //       // detached frame
-      //     }
-      //   }
-      //   if (!createdFound) await page.waitForTimeout(300);
-      // }
-      // if (!createdFound) throw new Error('Generate Invoices: "Created:" summary not found within 15s');
+      await headerToolbar.process("Book");
+      await app.processModal.confirm(20_000);
+      await app.processModal.finishLegacy();
+      await app.toast.closeAll();
+      orderNumbers.push(await newOrderNumber());
     }
-  );
+
+    // As in the Classic suite, all the orders but the last one are shipped
+    const ordersToShip = orderNumbers.slice(0, -1);
+
+    // ── Step 8: Create Shipments from Orders (Classic form in a popup window) ─
+    const popupOpened = page.waitForEvent("popup");
+    await app.sidebar.openMenuEntry(CREATE_SHIPMENTS_MENU.search, CREATE_SHIPMENTS_MENU.id);
+    const formPopup = await popupOpened;
+    await formPopup.waitForLoadState("domcontentloaded");
+    const popupFrames = new LegacyFrame(formPopup);
+
+    // Menu.html loads the form inside a nested frame
+    const processFrame = await popupFrames.findFrameWith("#paramDateFrom", 30_000);
+
+    // Set From Date to today (legacy forms take DD-MM-YYYY as value)
+    await processFrame.locator("#paramDateFrom").evaluate((element, value) => {
+      const input = element as HTMLInputElement;
+      input.value = value;
+      for (const type of ["input", "change", "blur"]) {
+        input.dispatchEvent(new Event(type, { bubbles: true, cancelable: true }));
+      }
+    }, todayAsLegacyDate());
+
+    // Search submits the form and reloads its frame, which may already list orders: wait for the
+    // reload before looking for the boxes, or they vanish while being checked
+    const searchLoaded = formPopup.waitForEvent("framenavigated", {
+      predicate: (frame) => frame !== formPopup.mainFrame(),
+    });
+    await clickLegacyButton(processFrame, "Search");
+    const reloadedFrame = await searchLoaded;
+    await reloadedFrame.waitForLoadState("load");
+
+    // The results frame lists the booked orders of every spec: select the rows of this test's orders
+    // by document number. The Classic page redraws the list as boxes get checked, so they are
+    // clicked in one pass from inside the page.
+    const resultsFrame = await popupFrames.findFrameWith(ORDER_CHECKBOXES);
+    const selectedOrders = await resultsFrame.locator(ORDER_CHECKBOXES).evaluateAll(
+      (boxes, { numbers, numberSelector }) => {
+        const selected: string[] = [];
+        for (const box of boxes) {
+          const number = box.closest("tr")?.querySelector(numberSelector)?.textContent?.trim() ?? "";
+          if (numbers.includes(number)) {
+            (box as HTMLInputElement).click();
+            selected.push(number);
+          }
+        }
+        return selected;
+      },
+      { numbers: ordersToShip, numberSelector: ORDER_ROW_NUMBER }
+    );
+    expect(selectedOrders.sort()).toEqual([...ordersToShip].sort());
+
+    await clickLegacyButton(resultsFrame, "Process");
+
+    // Success message of the Classic message box
+    const messageFrame = await popupFrames.findFrameWith("#messageBoxIDTitle", 30_000);
+    await expect(messageFrame.locator("#messageBoxIDTitle")).toHaveText(/Process completed successfully/i, {
+      timeout: 30_000,
+    });
+    // One shipment per selected order, as the Classic suite checks
+    const messageBody = messageFrame.locator("#messageBoxIDMessage");
+    for (const number of ordersToShip) {
+      await expect(messageBody).toContainText(shipmentCompleted(number));
+    }
+
+    // Close the popup window
+    await formPopup.close();
+    await app.toast.closeAll();
+
+    // Step 9 (Generate Invoices report) has been disabled since the Cypress migration; its
+    // previous implementation is in the git history of this file.
+  });
 });

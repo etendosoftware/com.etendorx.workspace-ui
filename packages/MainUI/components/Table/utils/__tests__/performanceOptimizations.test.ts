@@ -6,7 +6,9 @@ import {
   PerformanceMonitor,
   calculateVisibleRange,
   MemoryManager,
+  useStableCallback,
 } from "../performanceOptimizations";
+import { renderHook } from "@testing-library/react";
 
 jest.mock("@/utils/logger", () => ({
   logger: { debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
@@ -87,6 +89,36 @@ describe("throttle", () => {
     jest.advanceTimersByTime(110);
     throttled();
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("useStableCallback", () => {
+  it("keeps its identity when the caller passes a new function each render, and calls the latest one", () => {
+    const first = jest.fn();
+    const second = jest.fn();
+    const { result, rerender } = renderHook(({ fn }) => useStableCallback(fn), {
+      initialProps: { fn: first },
+    });
+    const stable = result.current;
+
+    rerender({ fn: second });
+    expect(result.current).toBe(stable);
+
+    result.current("a");
+    expect(second).toHaveBeenCalledWith("a");
+    expect(first).not.toHaveBeenCalled();
+  });
+
+  it("runs every call right away, so the last of a burst is never dropped", () => {
+    const fn = jest.fn();
+    const { result } = renderHook(() => useStableCallback(fn));
+
+    result.current("P");
+    result.current("PW");
+    result.current("PW1");
+
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(fn).toHaveBeenLastCalledWith("PW1");
   });
 });
 

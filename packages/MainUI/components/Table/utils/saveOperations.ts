@@ -18,7 +18,8 @@
 import type { EntityData, Tab, WindowMetadata, Column } from "@workspaceui/api-client/src/api/types";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { buildQueryString } from "@/utils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import { buildFormPayload, buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { getPasswordFieldNames, shouldExcludePasswordField, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
@@ -70,6 +71,10 @@ export function notifyStaleObjectAwareError(
   const { message, options } = getStaleObjectErrorNotification(errorMessage, t, onReload);
   showErrorModal(message, options);
 }
+
+/** Local calendar date as yyyy-MM-dd, the format the datasource parses for date properties. */
+const toLocalDateString = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 /**
  * Builds the payload for saving a record via the datasource servlet
@@ -168,7 +173,10 @@ export function buildSavePayload({
     operationType: mode === FormMode.NEW ? "add" : "update",
     componentId: "isc_OBViewForm_0",
     data: {
-      accountingDate: new Date(),
+      // Today, for entities whose tab has no accounting date field (Copy from Orders, Landed Cost).
+      // Sent as a date string: a Date object went through normalizeDates as {}, which the server
+      // cannot convert. A tab with the field sends its own value, which wins.
+      accountingDate: toLocalDateString(new Date()),
       ...filteredValues,
     },
     csrfToken,
@@ -239,160 +247,6 @@ function parseServerValidationErrors(errorData: any): ValidationError[] {
   }
 
   return errors;
-}
-
-/**
- * Determines if an error is retryable (network issues, temporary server errors)
- * @param error The error that occurred
- * @param response The server response if available
- * @returns True if the operation should be retryable
- */
-function isRetryableError(error: any, response?: any): boolean {
-  // Network errors are retryable
-  if (error instanceof TypeError && error.message.includes("fetch")) {
-    return true;
-  }
-
-  // Timeout errors are retryable
-  if (error.name === "AbortError" || error.message.includes("timeout")) {
-    return true;
-  }
-
-  // Server errors (5xx) are retryable, client errors (4xx) are not
-  if (response?.status >= 500) {
-    return true;
-  }
-
-  // Specific server error codes that might be temporary
-  if (response?.response?.status === -1 || response?.response?.status === 503) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Logs a successful retry attempt
- */
-function logRetrySuccess(attempt: number, rowId: string): void {
-  if (attempt > 0) {
-    logger.info(`[SaveOperation] Retry successful on attempt ${attempt + 1}:`, {
-      rowId,
-    });
-  }
-}
-
-/**
- * Checks if the retry loop should be aborted based on the result
- */
-function shouldAbortRetry(result: SaveResult, attempt: number, maxRetries: number): boolean {
-  // Don't retry validation errors - they won't change
-  const hasValidationErrors = result.errors?.some((error) => error.type === "server" && error.field !== "_general");
-
-  // Don't retry stale-object conflicts — they require user action (refresh)
-  const hasStaleError = result.errors?.some((error) => isStaleObjectError(error.message));
-
-  // Return true if there are validation/stale errors or we've reached max retries
-  return (hasValidationErrors ?? false) || (hasStaleError ?? false) || attempt === maxRetries;
-}
-
-/**
- * Waits for a specified duration with exponential backoff
- */
-async function waitWithBackoff(attempt: number): Promise<void> {
-  const delay = Math.min(1000 * 2 ** attempt, 5000);
-  await new Promise((resolve) => setTimeout(resolve, delay));
-}
-
-/**
- * Creates a network error result
- */
-function createNetworkErrorResult(error: unknown): SaveResult {
-  return {
-    success: false,
-    errors: [
-      {
-        field: "_general",
-        message: error instanceof Error ? error.message : "Network error occurred",
-        type: "server",
-      },
-    ],
-  };
-}
-
-/**
- * Saves a record with retry mechanism for network errors
- * @param saveOperation The save operation data
- * @param tab The tab metadata
- * @param windowMetadata The window metadata
- * @param userId The current user ID for CSRF token
- * @param signal Optional abort signal for cancellation
- * @param maxRetries Maximum number of retry attempts
- * @returns Promise with save result
- */
-export async function saveRecordWithRetry({
-  saveOperation,
-  tab,
-  windowMetadata,
-  userId,
-  signal,
-  maxRetries = 2,
-}: {
-  saveOperation: SaveOperation;
-  tab: Tab;
-  windowMetadata?: WindowMetadata;
-  userId: string;
-  signal?: AbortSignal;
-  maxRetries?: number;
-}): Promise<SaveResult> {
-  let lastResponse: any;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await saveRecord({
-        saveOperation,
-        tab,
-        windowMetadata,
-        userId,
-        signal,
-      });
-
-      if (result.success) {
-        logRetrySuccess(attempt, saveOperation.rowId);
-        return result;
-      }
-
-      lastResponse = result;
-
-      if (shouldAbortRetry(result, attempt, maxRetries)) {
-        return result;
-      }
-    } catch (error) {
-      if (!isRetryableError(error, lastResponse) || attempt === maxRetries) {
-        return createNetworkErrorResult(error);
-      }
-
-      logger.warn(`[SaveOperation] Retryable error on attempt ${attempt + 1}, retrying:`, {
-        rowId: saveOperation.rowId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-
-    // Wait before retrying (exponential backoff)
-    await waitWithBackoff(attempt);
-  }
-
-  // This should never be reached, but just in case
-  return {
-    success: false,
-    errors: [
-      {
-        field: "_general",
-        message: "Maximum retry attempts exceeded",
-        type: "server",
-      },
-    ],
-  };
 }
 
 /**
@@ -468,7 +322,7 @@ function prepareSaveData(
  * flat HTTP 409 body ({@code {error, code: "STALE_OBJECT", cid}}) instead of the generic
  * nested shape used for every other save outcome. That marker is normalized here into the
  * same "_general" error shape used by every other error, so downstream consumers
- * (isStaleObjectError, shouldAbortRetry, Table/index.tsx) don't need to know about the
+ * (isStaleObjectError, Table/index.tsx) don't need to know about the
  * two response shapes.
  */
 function handleSaveResponse(response: { status?: number; data?: any }, saveOperation: SaveOperation): SaveResult {
@@ -483,12 +337,19 @@ function handleSaveResponse(response: { status?: number; data?: any }, saveOpera
   }
 
   const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
+  // Conversion errors (status -4) come as a map of property -> message, like the form view reads them
+  const errorsMap = data?.response?.errors as Record<string, unknown> | undefined;
+  const errorsMapMessage = errorsMap
+    ? Object.entries(errorsMap)
+        .map(([field, message]) => `${field}: ${String(message)}`)
+        .join("; ")
+    : "";
   const errorMessage = isStructuredConflict
     ? (data.error as string)
-    : data?.response?.error?.message || "Unknown server error";
-  const validationErrors = isStructuredConflict
-    ? [{ field: "_general", message: errorMessage, type: "server" as const }]
-    : parseServerValidationErrors(data?.response?.error);
+    : data?.response?.error?.message || errorsMapMessage || "Unknown server error";
+  const parsedErrors = isStructuredConflict ? [] : parseServerValidationErrors(data?.response?.error);
+  const validationErrors =
+    parsedErrors.length > 0 ? parsedErrors : [{ field: "_general", message: errorMessage, type: "server" as const }];
 
   logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
     rowId: saveOperation.rowId,
@@ -553,7 +414,8 @@ export async function saveRecord({
     const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
     const { values, oldValues } = prepareSaveData(saveOperation, tab, mode);
 
-    const body = buildSavePayload({
+    // Same body as the form view, including the extension-module (em_*) to standard column mapping
+    const body = buildFormPayload({
       values,
       oldValues,
       mode,
@@ -572,7 +434,12 @@ export async function saveRecord({
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
-    return handleSaveResponse({ data, status }, saveOperation);
+    const result = handleSaveResponse({ data, status }, saveOperation);
+    if (result.success) {
+      // Cached responses of the entity still hold the record as it was before the save
+      datasource.clearCacheForEntity(tab.entityName);
+    }
+    return result;
   } catch (error) {
     return handleSaveError(saveOperation, error);
   }

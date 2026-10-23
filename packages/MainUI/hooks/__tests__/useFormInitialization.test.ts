@@ -132,4 +132,42 @@ describe("useFormInitialization", () => {
 
     expect(fetchFormInitialization).toHaveBeenCalledTimes(1);
   });
+
+  it("fetches the record shown last when it changes while a fetch is in flight, and drops the stale response", async () => {
+    (useCurrentRecord as jest.Mock).mockReturnValue({ record: {}, loading: false });
+    (buildFormInitializationParams as jest.Mock).mockImplementation(
+      ({ recordId }: { recordId: string }) => new URLSearchParams(`ROW_ID=${recordId}`)
+    );
+    const pending: Record<string, (value: unknown) => void> = {};
+    (fetchFormInitialization as jest.Mock).mockImplementation(
+      (params: URLSearchParams) =>
+        new Promise((resolve) => {
+          pending[params.get("ROW_ID") as string] = resolve;
+        })
+    );
+
+    const { result, rerender } = renderHook(
+      ({ recordId }) => useFormInitialization({ tab: mockTab, mode: FormMode.EDIT, recordId }),
+      { initialProps: { recordId: "r1" } }
+    );
+    // Fast record navigation while r1 is in flight: r2 is skipped, r3 is the record shown
+    rerender({ recordId: "r2" });
+    rerender({ recordId: "r3" });
+
+    await act(async () => {
+      pending.r1({ auxiliaryInputValues: {}, from: "r1" });
+    });
+    await waitFor(() => expect(pending.r3).toBeDefined());
+    expect(result.current.formInitialization).toBeNull(); // r1's response is not applied to r3
+    expect(mockSetSession).not.toHaveBeenCalled();
+
+    await act(async () => {
+      pending.r3({ auxiliaryInputValues: {}, from: "r3" });
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.formInitialization).toEqual(expect.objectContaining({ from: "r3" }));
+    expect(
+      (fetchFormInitialization as jest.Mock).mock.calls.map(([params]: [URLSearchParams]) => params.get("ROW_ID"))
+    ).toEqual(["r1", "r3"]);
+  });
 });

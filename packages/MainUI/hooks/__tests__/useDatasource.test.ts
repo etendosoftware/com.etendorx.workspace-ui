@@ -25,6 +25,7 @@ import type { Column, MRT_ColumnFiltersState } from "@workspaceui/api-client/src
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
   datasource: {
     get: jest.fn(),
+    clearCacheForEntity: jest.fn(),
   },
 }));
 jest.mock("@/utils/logger");
@@ -313,6 +314,54 @@ describe("useDatasource hook", () => {
         expect(result.current.records.some((r) => r.id === "99")).toBe(true);
         expect(result.current.records.some((r) => r.id === "transient")).toBe(false);
       });
+    });
+  });
+
+  describe("refetchKey", () => {
+    type Props = { trxType: string; refetchKey: string };
+    const renderWithKey = (initialProps: Props) =>
+      renderHook(
+        ({ trxType, refetchKey }: Props) =>
+          useDatasource({ entity: mockEntity, params: { transaction_type: trxType } as never, refetchKey }),
+        { initialProps }
+      );
+    const lastSentTrxType = () => {
+      const calls = (datasource.get as jest.Mock).mock.calls;
+      return calls[calls.length - 1][1].transaction_type;
+    };
+
+    it("does not refetch when only params change after the first fetch", async () => {
+      const { result, rerender } = renderWithKey({ trxType: "I", refetchKey: "k1" });
+      await waitFor(() => expect(result.current.hasFirstFetchCompleted).toBe(true));
+      const callsAfterFirstFetch = (datasource.get as jest.Mock).mock.calls.length;
+
+      rerender({ trxType: "O", refetchKey: "k1" });
+
+      expect(datasource.get).toHaveBeenCalledTimes(callsAfterFirstFetch);
+    });
+
+    it("an explicit refetch sends the latest params, not the ones of the first fetch", async () => {
+      const { result, rerender } = renderWithKey({ trxType: "I", refetchKey: "k1" });
+      await waitFor(() => expect(result.current.hasFirstFetchCompleted).toBe(true));
+      expect(lastSentTrxType()).toBe("I");
+
+      rerender({ trxType: "O", refetchKey: "k1" });
+      await act(async () => {
+        await result.current.refetch();
+      });
+
+      expect(lastSentTrxType()).toBe("O");
+    });
+
+    it("a refetchKey change refetches with the latest params", async () => {
+      const { result, rerender } = renderWithKey({ trxType: "I", refetchKey: "k1" });
+      await waitFor(() => expect(result.current.hasFirstFetchCompleted).toBe(true));
+      const callsAfterFirstFetch = (datasource.get as jest.Mock).mock.calls.length;
+
+      rerender({ trxType: "B", refetchKey: "k2" });
+
+      await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(callsAfterFirstFetch + 1));
+      expect(lastSentTrxType()).toBe("B");
     });
   });
 });

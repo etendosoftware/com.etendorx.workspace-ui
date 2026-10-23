@@ -19,6 +19,8 @@ import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
+import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 
 interface RecordNavigationControlsProps {
   onNext: () => void;
@@ -53,7 +55,7 @@ export function RecordNavigationControls({
       <IconButton
         data-testid="previous-record-button"
         onClick={onPrevious}
-        tooltip={t("forms.statusBar.previousRecord")}
+        tooltip={withShortcutHint(t("forms.statusBar.previousRecord"), SHORTCUT_IDS.STATUS_BAR_PREVIOUS)}
         disabled={buttonsDisabled || !canNavigatePrevious}>
         <ChevronLeftIcon data-testid="ChevronLeftIcon__navigation" />
       </IconButton>
@@ -65,7 +67,7 @@ export function RecordNavigationControls({
       <IconButton
         data-testid="next-record-button"
         onClick={onNext}
-        tooltip={t("forms.statusBar.nextRecord")}
+        tooltip={withShortcutHint(t("forms.statusBar.nextRecord"), SHORTCUT_IDS.STATUS_BAR_NEXT)}
         disabled={buttonsDisabled || !canNavigateNext}>
         <ChevronRightIcon data-testid="ChevronRightIcon__navigation" />
       </IconButton>

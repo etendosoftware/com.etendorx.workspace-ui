@@ -19,14 +19,14 @@ jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.
 jest.mock("@/app/actions/revalidate", () => ({ revalidateDopoProcess: jest.fn() }));
 
 import { act, renderHook } from "@testing-library/react";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { createFormValuesStore } from "@/contexts/tabFormValuesStore";
 import { useToolbar } from "../useToolbar";
 
 jest.mock("@workspaceui/api-client/src/api/metadata");
-jest.mock("@/utils/expressions", () => {
-  const actual = jest.requireActual("@/utils/expressions");
-  return { ...actual, createSmartContext: jest.fn(actual.createSmartContext) };
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => {
+  const actual = jest.requireActual("@/utils/evaluation/sharedEvaluationContext");
+  return { ...actual, getEvaluationContext: jest.fn(actual.getEvaluationContext) };
 });
 
 const mockStore = createFormValuesStore();
@@ -64,18 +64,18 @@ jest.mock("@/hooks/useFormFields", () => ({ __esModule: true, default: () => moc
 describe("useToolbar process buttons and form values", () => {
   beforeEach(() => {
     act(() => mockStore.set({}));
-    (createSmartContext as jest.Mock).mockClear();
+    (getEvaluationContext as jest.Mock).mockClear();
   });
 
   it("does not re-evaluate the buttons when a field they do not read changes", () => {
     const { result } = renderHook(() => useToolbar("W1", "tab1"));
     expect(result.current.processButtons).toHaveLength(2);
-    const builds = (createSmartContext as jest.Mock).mock.calls.length;
+    const builds = (getEvaluationContext as jest.Mock).mock.calls.length;
 
     act(() => mockStore.set((prev) => ({ ...prev, description: "perf" })));
     act(() => mockStore.set((prev) => ({ ...prev, description: "perf-check" })));
 
-    expect((createSmartContext as jest.Mock).mock.calls.length).toBe(builds);
+    expect((getEvaluationContext as jest.Mock).mock.calls.length).toBe(builds);
   });
 
   it("re-evaluates the buttons with the edited value when a field they read changes", () => {

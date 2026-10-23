@@ -18,6 +18,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { useAutoApplyDefaultView } from "../useAutoApplyDefaultView";
 import { useWindowStore } from "@/stores/windowStore";
+import { loadTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
 
 jest.mock("@/utils/logger");
 jest.mock("@/stores/userStore", () => ({
@@ -25,6 +26,10 @@ jest.mock("@/stores/userStore", () => ({
 }));
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: { getState: jest.fn(() => ({ windows: {} })) },
+}));
+jest.mock("@/utils/savedViews/gridConfiguration", () => ({
+  ...jest.requireActual("@/utils/savedViews/gridConfiguration"),
+  loadTabColumnConfiguration: jest.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -73,13 +78,16 @@ function makeErrorResponse(status = 500) {
 interface RenderOptions {
   tabId?: string;
   windowIdentifier?: string;
+  onApplyColumnConfiguration?: jest.Mock;
 }
 
 async function renderAndWait(
   onApplyView: jest.Mock,
-  { tabId = "tab-abc", windowIdentifier = "win-1" }: RenderOptions = {}
+  { tabId = "tab-abc", windowIdentifier = "win-1", onApplyColumnConfiguration }: RenderOptions = {}
 ) {
-  const hookResult = renderHook(() => useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }));
+  const hookResult = renderHook(() =>
+    useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView, onApplyColumnConfiguration })
+  );
   await act(async () => {});
   return hookResult;
 }
@@ -109,6 +117,7 @@ describe("useAutoApplyDefaultView", () => {
         sorting: [{ id: "status", desc: false }],
         order: ["status"],
         implicitFilterApplied: true,
+        grouping: [],
       })
     );
   });
@@ -234,5 +243,116 @@ describe("useAutoApplyDefaultView", () => {
     await renderAndWait(onApplyView);
 
     expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ implicitFilterApplied: false }));
+  });
+
+  it("restores the grouping of a grouped default view", async () => {
+    const groupedConfig = JSON.stringify({ ...JSON.parse(VALID_GRID_CONFIG), grouping: ["status"] });
+
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord({ gridconfiguration: groupedConfig })]));
+    const onApplyView = jest.fn();
+
+    await renderAndWait(onApplyView);
+
+    expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ grouping: ["status"] }));
+  });
+
+  it("does not apply view when the server answers with a non-zero status", async () => {
+    jest.spyOn(global, "fetch").mockReturnValue(
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ response: { status: -1 } }),
+      } as Response)
+    );
+    const onApplyView = jest.fn();
+
+    await renderAndWait(onApplyView);
+
+    expect(onApplyView).not.toHaveBeenCalled();
+  });
+
+  describe("stored column configuration", () => {
+    const COLUMN_CONFIGURATION = {
+      version: 1,
+      visibility: { status: false },
+      order: ["status"],
+      sizing: { status: 80 },
+    };
+    const mockLoad = loadTabColumnConfiguration as jest.Mock;
+    let windowSequence = 0;
+    /** A fresh window per test: the restored tabs are tracked for the whole life of a window. */
+    const nextWindow = () => `win-columns-${++windowSequence}`;
+
+    beforeEach(() => {
+      mockLoad.mockReset();
+      mockLoad.mockResolvedValue(COLUMN_CONFIGURATION);
+    });
+
+    it("restores the stored columns when the tab has no default view", async () => {
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
+      const onApplyColumnConfiguration = jest.fn();
+      const windowIdentifier = nextWindow();
+
+      await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
+
+      expect(mockLoad).toHaveBeenCalledWith(windowIdentifier, "tab-abc");
+      expect(onApplyColumnConfiguration).toHaveBeenCalledWith({
+        visibility: { status: false },
+        order: ["status"],
+        sizing: { status: 80 },
+        pinning: { left: ["mrt-row-select", "actions"], right: [] },
+      });
+    });
+
+    it("gives the default view precedence over the stored columns", async () => {
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord()]));
+      const onApplyView = jest.fn();
+      const onApplyColumnConfiguration = jest.fn();
+
+      await renderAndWait(onApplyView, { windowIdentifier: nextWindow(), onApplyColumnConfiguration });
+
+      expect(onApplyView).toHaveBeenCalledTimes(1);
+      expect(mockLoad).not.toHaveBeenCalled();
+      expect(onApplyColumnConfiguration).not.toHaveBeenCalled();
+    });
+
+    it("restores the stored columns on a direct link, where the default view is skipped", async () => {
+      const windowIdentifier = nextWindow();
+      (useWindowStore.getState as jest.Mock).mockReturnValueOnce({
+        windows: { [windowIdentifier]: { tabs: { "tab-abc": { initializedWithDirectLink: true } } } },
+      });
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord()]));
+      const onApplyView = jest.fn();
+      const onApplyColumnConfiguration = jest.fn();
+
+      await renderAndWait(onApplyView, { windowIdentifier, onApplyColumnConfiguration });
+
+      expect(onApplyView).not.toHaveBeenCalled();
+      expect(onApplyColumnConfiguration).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the session columns when the tab remounts in the same window", async () => {
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
+      const onApplyColumnConfiguration = jest.fn();
+      const windowIdentifier = nextWindow();
+
+      const first = await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
+      first.unmount();
+      await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
+
+      expect(onApplyColumnConfiguration).toHaveBeenCalledTimes(1);
+    });
+
+    it("applies nothing when no columns were stored", async () => {
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
+      mockLoad.mockResolvedValue(null);
+      const onApplyColumnConfiguration = jest.fn();
+
+      await renderAndWait(jest.fn(), { windowIdentifier: nextWindow(), onApplyColumnConfiguration });
+
+      expect(onApplyColumnConfiguration).not.toHaveBeenCalled();
+    });
   });
 });

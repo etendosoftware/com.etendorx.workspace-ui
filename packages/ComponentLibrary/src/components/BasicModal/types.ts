@@ -39,6 +39,8 @@ export interface ModalIProps extends Omit<ModalProps, "children" | "open"> {
   buttons?: ReactNode;
   backgroundGradient?: string;
   isFullScreenEnabled?: boolean;
+  /** Focuses the save button when the modal opens, so Enter confirms it. */
+  autoFocusSave?: boolean;
   open?: boolean;
   onAfterClose?: () => void;
 }

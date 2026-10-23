@@ -11,6 +11,7 @@ import {
   rewriteHtmlResourceUrls,
   buildErpErrorCodeHeaders,
 } from "./route.helpers";
+import { withCompression } from "../../_utils/compression";
 
 type RequestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
@@ -142,6 +143,20 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes("meta/dashboard/") ||
     slug.includes("meta/widget/") ||
     slug.includes("meta/favorites") ||
+    // Recent items are rewritten on every menu access and shared across devices — a cached GET would
+    // keep serving the list as it was at login for the whole life of the token.
+    slug.includes("meta/recent-items") ||
+    // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
+    // reorders a column; a cached GET would restore the layout as it was at login.
+    slug.includes("meta/grid-configuration") ||
+    // Process monitor polls must always reach the backend: a cached GET would freeze the executions.
+    slug.includes("meta/process-monitor") ||
+    // The instance purpose is global and changes once it is configured: a cached GET would keep telling
+    // the session it still has to configure it, since the Data Cache never revalidates.
+    slug.includes("meta/instance-purpose") ||
+    // Form personalization changes whenever a user saves or discards it, and the cache never revalidates:
+    // a cached GET would keep serving the layout as it was when the form was first opened.
+    slug.includes("meta/form-personalization") ||
     // The session payload reflects mutations that do not change the token (and therefore not the
     // cache key), such as a password change clearing the expired flag. Caching it would keep serving
     // the pre-mutation state indefinitely — the cache has no revalidation window.
@@ -422,6 +437,58 @@ async function handleMutationRequest(
   return parseFinalMutationResponse(result as string);
 }
 
+/**
+ * Window, tab and menu definitions are answered by com.etendoerp.metadata with an ETag computed from
+ * the body. They skip the Next.js Data Cache (which never revalidates) and pass the conditional
+ * headers through, so the browser HTTP cache revalidates them and an unchanged definition costs
+ * a 304 instead of 1–3 MB.
+ */
+function isRevalidatedMetadataRoute(slug: string, method: string): boolean {
+  return method === "GET" && /^meta\/(?:(?:window|tab)\/[^/]+|menu)$/.test(slug);
+}
+
+const REVALIDATION_RESPONSE_HEADERS = ["content-type", "etag", "cache-control"];
+
+async function handleRevalidatedMetadataRequest(
+  request: Request,
+  erpUrl: string,
+  userToken: string,
+  slug: string
+): Promise<Response> {
+  const headers = buildErpHeaders(userToken, request, "GET", undefined, "", slug);
+  const ifNoneMatch = request.headers.get("if-none-match");
+  if (ifNoneMatch) {
+    headers["If-None-Match"] = ifNoneMatch;
+  }
+
+  const response = await fetch(erpUrl, { method: "GET", headers, cache: "no-store" });
+  captureErpSessionCookie(userToken, response);
+
+  if (!response.ok && response.status !== 304) {
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed: ${response.status} ${response.statusText}. ${errorText}`,
+      status: response.status,
+      statusText: response.statusText,
+      slug,
+      errorText,
+    });
+  }
+
+  const responseHeaders = new Headers();
+  for (const name of REVALIDATION_RESPONSE_HEADERS) {
+    const value = response.headers.get(name);
+    if (value) {
+      responseHeaders.set(name, value);
+    }
+  }
+
+  return new Response(response.status === 304 ? null : response.body, {
+    status: response.status,
+    headers: responseHeaders,
+  });
+}
+
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
@@ -433,6 +500,11 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     }
 
     const erpUrl = buildErpUrl(slug, request.url);
+
+    if (isRevalidatedMetadataRoute(slug, method)) {
+      return await handleRevalidatedMetadataRequest(request, erpUrl, userToken, slug);
+    }
+
     const requestBody = await getRequestBody(request, method);
     const contentType = getContentType(request);
 
@@ -669,21 +741,21 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "GET");
+  return withCompression(request, await handleERPRequest(request, context.params, "GET"));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "POST");
+  return withCompression(request, await handleERPRequest(request, context.params, "POST"));
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PUT");
+  return withCompression(request, await handleERPRequest(request, context.params, "PUT"));
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "DELETE");
+  return withCompression(request, await handleERPRequest(request, context.params, "DELETE"));
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string[] }> }) {
-  return handleERPRequest(request, context.params, "PATCH");
+  return withCompression(request, await handleERPRequest(request, context.params, "PATCH"));
 }

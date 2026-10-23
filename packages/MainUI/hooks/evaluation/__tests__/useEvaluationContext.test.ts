@@ -16,22 +16,22 @@
  */
 
 import { renderHook } from "@testing-library/react";
-import { createSmartContext } from "@/utils/expressions";
+import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { logger } from "@/utils/logger";
 import { useEvaluationContext } from "../useEvaluationContext";
 
-jest.mock("@/utils/expressions", () => {
-  const actual = jest.requireActual("@/utils/expressions");
-  return { ...actual, createSmartContext: jest.fn(actual.createSmartContext) };
+jest.mock("@/utils/evaluation/sharedEvaluationContext", () => {
+  const actual = jest.requireActual("@/utils/evaluation/sharedEvaluationContext");
+  return { ...actual, getEvaluationContext: jest.fn(actual.getEvaluationContext) };
 });
 jest.mock("@/utils/logger", () => ({ logger: { warn: jest.fn() } }));
 
-const mockedCreate = createSmartContext as jest.Mock;
+const mockedCreate = getEvaluationContext as jest.Mock;
 
 describe("useEvaluationContext", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("builds through createSmartContext with the given options", () => {
+  it("builds through getEvaluationContext with the given options", () => {
     const values = { docStatus: "CO" };
     const { result } = renderHook(() => useEvaluationContext({ values, windowId: "W1" }));
     expect(result.current?.DOCSTATUS).toBe("CO");

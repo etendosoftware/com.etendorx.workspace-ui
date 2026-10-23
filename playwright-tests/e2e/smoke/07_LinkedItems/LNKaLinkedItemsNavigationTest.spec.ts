@@ -1,192 +1,131 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  typeInGlobalSearch,
-  disableImplicitFilter,
-  openSidebarAndGetSearch,
-} from "../../helpers/etendo.helpers";
+import type { Page } from "@playwright/test";
+import { expect, test } from "../../support/fixtures";
+import type { WindowKey } from "../../support/registry/windows";
+
+const DOCUMENT_NO_COLUMN = "Document No.";
+/** Entries of the Linked Items list: `LinkedItem__<record id>`. */
+const LINKED_ITEMS = '[data-testid^="LinkedItem__"]:visible';
+
+/** Visible button with exactly `text`: section and category tabs are buttons with role="tab". */
+const buttonWithText = (page: Page, text: string | RegExp) =>
+  page.locator("button:visible").filter({ hasText: text }).first();
 
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
     // Equivalent to Cypress `cy.on("uncaught:exception", () => false)`
     page.on("pageerror", () => {
       /* swallow uncaught page errors */
     });
   });
 
-  test(
-    "Navigates to Sales Order, Goods Shipment and Purchase Invoice, verifying LinkedItems navigation",
-    { timeout: 360_000 },
-    async ({ page }) => {
-      await loginToEtendo(page);
-      await selectRoleOrgWarehouse(page);
+  test("Navigates to Sales Order, Goods Shipment and Purchase Invoice, verifying LinkedItems navigation", async ({
+    app,
+    page,
+  }) => {
+    // ── Small helpers (local to this test) ───────────────────────────────────
+    const openWindow = async (key: WindowKey) => {
+      await app.sidebar.navigateTo(key);
+      await page.waitForURL(/\/window/, { timeout: 15_000 });
+    };
 
-      // ── Small helpers (local to this test) ───────────────────────────────────
-      const ensureDrawerOpen = async () => {
-        await openSidebarAndGetSearch(page);
-      };
+    const filterByDocumentNo = async (value: string) => {
+      // Disable implicit filter (e.g. processed='N') before applying our filter
+      await app.toolbar.disableImplicitFilter();
+      await app.grid.filter(DOCUMENT_NO_COLUMN, value);
+      // Wait for the table to re-render with filtered results before proceeding
+      await app.grid.waitForRow(value);
+    };
 
-      const navigateViaSearch = async (searchText: string, menuText: string | RegExp) => {
-        await ensureDrawerOpen();
-        await typeInGlobalSearch(page, searchText);
+    const openLinkedItemsTab = async () => {
+      const btn = buttonWithText(page, /^Linked Items$/);
+      await btn.waitFor({ state: "visible", timeout: 15_000 });
+      await btn.scrollIntoViewIfNeeded();
+      await btn.click();
+    };
 
-        const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: menuText }).first();
-        await menuItem.waitFor({ state: "visible", timeout: 10_000 });
-        await menuItem.scrollIntoViewIfNeeded();
-        await menuItem.click({ force: true });
-        await page.waitForURL(/\/window/, { timeout: 15_000 });
-      };
+    const clickLinkedItemButton = async (label: string) => {
+      const btn = buttonWithText(page, label);
+      await btn.waitFor({ state: "visible", timeout: 15_000 });
+      await btn.scrollIntoViewIfNeeded();
+      await btn.click();
+    };
 
-      const filterByDocumentNo = async (value: string) => {
-        // Disable implicit filter (e.g. processed='N') before applying our filter
-        await disableImplicitFilter(page);
+    const clickParagraphWithText = async (pattern: string | RegExp) => {
+      const el = page.locator("p:visible").filter({ hasText: pattern }).first();
+      await el.waitFor({ state: "visible", timeout: 15_000 });
+      await el.scrollIntoViewIfNeeded();
+      await el.click();
+    };
 
-        const filterInput = page.locator('input[placeholder="Filter Document No...."]').locator("visible=true").first();
-        await filterInput.waitFor({ state: "visible", timeout: 15_000 });
-        await filterInput.clear();
-        await filterInput.fill(value);
-        await filterInput.press("Enter");
-        // Wait for the table to re-render with filtered results before proceeding
-        await page
-          .locator("tr:visible")
-          .filter({ hasText: value })
-          .first()
-          .waitFor({ state: "visible", timeout: 15_000 });
-      };
+    // =========================================================================
+    // PART 1: Sales Order
+    // =========================================================================
+    await openWindow("salesOrder");
+    await filterByDocumentNo("50012");
+    await app.grid.openForm("50012");
 
-      const openRowFormByText = async (rowText: string | RegExp) => {
-        // Re-query inside expect.toPass to handle DOM detachment
-        // caused by column virtualisation re-renders.
-        await expect(async () => {
-          const btn = page
-            .locator("tr:visible")
-            .filter({ hasText: rowText })
-            .first()
-            .locator('button[data-testid^="form-button-"]');
-          await btn.scrollIntoViewIfNeeded();
-          await btn.click();
-        }).toPass({ intervals: [500, 1_000, 2_000], timeout: 15_000 });
-      };
+    await openLinkedItemsTab();
+    await clickLinkedItemButton("Sales Quotation - Line Tax");
+    await clickParagraphWithText(/50012.*Exempt.*VAT/);
 
-      const openLinkedItemsTab = async () => {
-        // UsedByLink request may be skipped if the result is cached — use catch to avoid
-        // failing the test when no new network call is made.
-        const reqPromise = page
-          .waitForRequest((req) => req.url().includes("UsedByLink") && req.method() === "POST", { timeout: 5_000 })
-          .catch(() => null);
-        const btn = page
-          .locator("button:visible")
-          .filter({ hasText: /^Linked Items$/ })
-          .first();
-        await btn.waitFor({ state: "visible", timeout: 15_000 });
-        await btn.scrollIntoViewIfNeeded();
-        await Promise.all([reqPromise, btn.click()]);
-      };
-
-      const clickLinkedItemButton = async (label: string) => {
-        const btn = page.locator("button:visible").filter({ hasText: label }).first();
-        await btn.waitFor({ state: "visible", timeout: 15_000 });
-        await btn.scrollIntoViewIfNeeded();
-        await btn.click();
-      };
-
-      const clickParagraphWithText = async (pattern: string | RegExp, extraSelector?: string) => {
-        const base = extraSelector ? page.locator(extraSelector) : page.locator("p:visible");
-        const el = base.filter({ hasText: pattern }).first();
-        await el.waitFor({ state: "visible", timeout: 15_000 });
-        await el.scrollIntoViewIfNeeded();
-        await el.click();
-      };
-
-      // =========================================================================
-      // PART 1: Sales Order
-      // =========================================================================
-      await navigateViaSearch("sales order", "Sales Order");
-      await filterByDocumentNo("50012");
-      await openRowFormByText("50012");
-
-      await openLinkedItemsTab();
-      await clickLinkedItemButton("Sales Quotation - Line Tax");
-      await clickParagraphWithText(/50012.*Exempt.*VAT/);
-
-      await expect(
-        page
-          .locator("span:visible")
-          .filter({ hasText: /^Sales Quotation$/ })
-          .first()
-      ).toBeVisible({ timeout: 15_000 });
-      await expect(
-        page
-          .locator("button:visible")
-          .filter({ hasText: /^Line Tax$/ })
-          .first()
-      ).toBeVisible({ timeout: 10_000 });
-
-      // =========================================================================
-      // PART 2: Goods Shipment
-      // =========================================================================
-      await navigateViaSearch("goods shipment", "Goods Shipment");
-
-      await page.waitForTimeout(1_000);
-      await filterByDocumentNo("500014");
-
-      // Column virtualisation: scroll the table to the right so the pinned
-      // actions column with the form button becomes visible.
-      await page
-        .locator(".MuiTableContainer-root:visible")
+    await expect(
+      page
+        .locator("span:visible")
+        .filter({ hasText: /^Sales Quotation$/ })
         .first()
-        .evaluate((el) => {
-          (el as HTMLElement).scrollLeft = (el as HTMLElement).scrollWidth;
-        });
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(buttonWithText(page, /^Line Tax$/)).toBeVisible({
+      timeout: 10_000,
+    });
 
-      await openRowFormByText("2014");
+    // =========================================================================
+    // PART 2: Goods Shipment
+    // =========================================================================
+    await openWindow("goodsShipment");
+    await filterByDocumentNo("500014");
 
-      await openLinkedItemsTab();
-      await clickLinkedItemButton("Goods Shipment - Lines");
-      await clickParagraphWithText(/500014.*Customer A.*costing Product 2/);
+    // Column virtualisation: scroll the table to the right so the pinned
+    // actions column with the form button becomes visible.
+    await app.grid.scrollToRightEnd();
 
-      await expect(
-        page
-          .locator("p:visible")
-          .filter({ hasText: /^Goods Shipment$/ })
-          .first()
-      ).toBeVisible({ timeout: 15_000 });
-      await expect(
-        page
-          .locator("button:visible")
-          .filter({ hasText: /^Lines$/ })
-          .first()
-      ).toBeVisible({ timeout: 10_000 });
+    await app.grid.openForm("2014");
 
-      // =========================================================================
-      // PART 3: Purchase Invoice
-      // =========================================================================
-      await navigateViaSearch("purchase invoice", "Purchase Invoice");
-      await filterByDocumentNo("10000017");
-      await openRowFormByText("10000017");
+    await openLinkedItemsTab();
+    await clickLinkedItemButton("Goods Shipment - Lines");
+    await clickParagraphWithText(/500014.*Customer A.*costing Product 2/);
 
-      await openLinkedItemsTab();
-      await clickLinkedItemButton("Purchase Invoice - Basic Discounts");
-      await clickParagraphWithText("10000017");
+    await expect(
+      page
+        .locator("p:visible")
+        .filter({ hasText: /^Goods Shipment$/ })
+        .first()
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(buttonWithText(page, /^Lines$/)).toBeVisible({
+      timeout: 10_000,
+    });
 
-      // Navigate through the blue link
-      await clickParagraphWithText("10000017", "p.text-sm.text-blue-600");
+    // =========================================================================
+    // PART 3: Purchase Invoice
+    // =========================================================================
+    await openWindow("purchaseInvoice");
+    await filterByDocumentNo("10000017");
+    await app.grid.openForm("10000017");
 
-      await expect(
-        page
-          .locator(":is(p, span):visible")
-          .filter({ hasText: /^Purchase Invoice$/ })
-          .first()
-      ).toBeVisible({ timeout: 15_000 });
-      await expect(
-        page
-          .locator("button:visible")
-          .filter({ hasText: /^Basic Discounts$/ })
-          .first()
-      ).toBeVisible({ timeout: 10_000 });
-    }
-  );
+    await openLinkedItemsTab();
+    await clickLinkedItemButton("Purchase Invoice - Basic Discounts");
+    await clickParagraphWithText("10000017");
+
+    // Navigate through the linked record entry
+    await page.locator(LINKED_ITEMS).filter({ hasText: "10000017" }).first().click();
+
+    await expect(
+      page
+        .locator(":is(p, span):visible")
+        .filter({ hasText: /^Purchase Invoice$/ })
+        .first()
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(buttonWithText(page, /^Basic Discounts$/)).toBeVisible({
+      timeout: 10_000,
+    });
+  });
 });

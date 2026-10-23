@@ -276,6 +276,34 @@ describe("useSavedViews — saveView", () => {
     expect(gridConfig.version).toBe(1);
     expect(gridConfig.source).toBe("workspace-ui");
     expect(gridConfig.filters).toEqual([{ id: "amount", value: "100" }]);
+    expect(gridConfig).not.toHaveProperty("grouping");
+  });
+
+  it("stores the grouping of a grouped grid", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.saveView({
+        tabId: "tab-abc",
+        name: "Grouped",
+        filters: [],
+        visibility: {},
+        sorting: [],
+        order: [],
+        implicitFilterApplied: false,
+        grouping: ["amount"],
+      });
+    });
+
+    const postCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "POST");
+    const body = JSON.parse((postCall![1] as RequestInit).body as string);
+
+    expect(JSON.parse(body.gridconfiguration).grouping).toEqual(["amount"]);
   });
 
   it("throws and sets error when server returns error on save", async () => {
@@ -336,6 +364,31 @@ describe("useSavedViews — applyView", () => {
     expect(state?.visibility).toEqual({ status: true });
     expect(state?.sorting).toEqual([{ id: "status", desc: false }]);
     expect(state?.order).toEqual(["status"]);
+    expect(state?.grouping).toEqual([]);
+  });
+
+  it("restores the grouping of a grouped view", () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    const state = result.current.applyView({
+      id: "v2",
+      name: "Grouped View",
+      tabId: "tab-abc",
+      isDefault: false,
+      filterClause: "",
+      config: {
+        version: 1,
+        source: "workspace-ui",
+        filters: [],
+        visibility: {},
+        sorting: [],
+        order: [],
+        implicitFilterApplied: true,
+        grouping: ["status"],
+      },
+    });
+
+    expect(state?.grouping).toEqual(["status"]);
   });
 
   it("returns null when the view has no config", () => {
@@ -385,7 +438,7 @@ describe("useSavedViews — setDefaultView", () => {
     expect(result.current.isUpdatingDefault).toBe(false);
   });
 
-  it("clears the previous default before setting the new one", async () => {
+  it("sends a single PUT and lets the backend clear the previous default atomically", async () => {
     const spy = jest
       .spyOn(global, "fetch")
       .mockReturnValueOnce(
@@ -394,7 +447,6 @@ describe("useSavedViews — setDefaultView", () => {
           makeRawRecord({ id: "view-002", isdefault: false }),
         ])
       )
-      .mockReturnValueOnce(makeResponse(null, true, 204))
       .mockReturnValueOnce(makeResponse(null, true, 204))
       .mockReturnValueOnce(
         makeFetchViewsResponse([
@@ -414,15 +466,11 @@ describe("useSavedViews — setDefaultView", () => {
     });
 
     const putCalls = spy.mock.calls.filter((c) => (c[1] as RequestInit)?.method === "PUT");
-    expect(putCalls).toHaveLength(2);
+    expect(putCalls).toHaveLength(1);
 
-    const clearBody = JSON.parse((putCalls[0][1] as RequestInit).body as string);
-    expect(clearBody.isdefault).toBe(false);
-    expect(putCalls[0][0] as string).toContain("view-001");
-
-    const setBody = JSON.parse((putCalls[1][1] as RequestInit).body as string);
+    const setBody = JSON.parse((putCalls[0][1] as RequestInit).body as string);
     expect(setBody.isdefault).toBe(true);
-    expect(putCalls[1][0] as string).toContain("view-002");
+    expect(putCalls[0][0] as string).toContain("view-002");
   });
 
   it("throws when viewId is not found in current views", async () => {
@@ -612,5 +660,123 @@ describe("useSavedViews — deleteView", () => {
     expect(thrown).toBe(true);
     expect(result.current.error).not.toBeNull();
     expect(result.current.isDeleting).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Column widths, pinning and window layout (ETP-4639)
+// ---------------------------------------------------------------------------
+const EXTENDED_STATE = {
+  filters: [],
+  visibility: { name: true },
+  sorting: [],
+  order: ["name"],
+  implicitFilterApplied: true,
+  sizing: { name: 180 },
+  pinning: { left: ["mrt-row-select", "actions", "name"], right: [] },
+  layout: { splitHeights: { "1": 30 }, activeLevels: [1] },
+};
+
+/** URL and parsed body of the first request sent with the given method. */
+function getSentRequest(spy: jest.SpyInstance, method: string) {
+  const call = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === method);
+  if (!call) throw new Error(`No ${method} request was sent`);
+  return { url: call[0] as string, body: JSON.parse((call[1] as RequestInit).body as string) };
+}
+
+/** Grid configuration sent in the body of the first request with the given method. */
+function getSentGridConfiguration(spy: jest.SpyInstance, method: string) {
+  return JSON.parse(getSentRequest(spy, method).body.gridconfiguration);
+}
+
+describe("useSavedViews — widths, pinning and layout", () => {
+  it("stores the widths, the pinned columns and the layout of a new view", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.saveView({ tabId: "tab-abc", name: "Wide", ...EXTENDED_STATE });
+    });
+
+    const config = getSentGridConfiguration(spy, "POST");
+    expect(config.sizing).toEqual({ name: 180 });
+    expect(config.pinning).toEqual({ left: ["name"] });
+    expect(config.layout).toEqual(EXTENDED_STATE.layout);
+  });
+
+  it("applies the widths, the pinning and the layout of a view", () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    const state = result.current.applyView({
+      id: "v3",
+      name: "Wide",
+      tabId: "tab-abc",
+      isDefault: false,
+      filterClause: "",
+      config: {
+        version: 1,
+        source: "workspace-ui",
+        ...EXTENDED_STATE,
+        pinning: { right: ["name"] },
+      },
+    });
+
+    expect(state?.sizing).toEqual({ name: 180 });
+    expect(state?.pinning).toEqual({ left: ["mrt-row-select", "actions"], right: ["name"] });
+    expect(state?.layout).toEqual(EXTENDED_STATE.layout);
+  });
+});
+
+describe("useSavedViews — updateView", () => {
+  it("overwrites the configuration of the view keeping its name and default flag", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]))
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+    await act(async () => {
+      await result.current.updateView("view-001", EXTENDED_STATE);
+    });
+
+    const { url, body } = getSentRequest(spy, "PUT");
+    expect(url).toContain("view-001");
+    expect(body).toMatchObject({ name: "Sales Orders", tab: "tab-abc", isdefault: true });
+    expect(getSentGridConfiguration(spy, "PUT").sizing).toEqual({ name: 180 });
+    expect(result.current.isSaving).toBe(false);
+  });
+
+  it("throws when the view is not loaded", async () => {
+    const { result } = renderHook(() => useSavedViews());
+
+    await expect(result.current.updateView("missing", EXTENDED_STATE)).rejects.toThrow("View not found");
+  });
+
+  it("throws and sets the error when the server fails", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001" })]))
+      .mockReturnValueOnce(makeResponse({ error: "Server error" }, false, 500));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+    await act(async () => {
+      await expect(result.current.updateView("view-001", EXTENDED_STATE)).rejects.toThrow("HTTP 500");
+    });
+
+    expect(result.current.error).toBe("HTTP 500");
+    expect(result.current.isSaving).toBe(false);
   });
 });

@@ -78,11 +78,12 @@ jest.mock("@/hooks/Toolbar/useStatusModal", () => ({
 }));
 
 const mockResetFormChanges = jest.fn();
+const mockSetAuxiliaryInputs = jest.fn();
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     resetFormChanges: mockResetFormChanges,
     parentTab: null,
-    setAuxiliaryInputs: jest.fn(),
+    setAuxiliaryInputs: mockSetAuxiliaryInputs,
     setFormValues: jest.fn(),
   }),
 }));
@@ -96,10 +97,9 @@ const mockRegisterFormViewRefetch = jest.fn();
 const mockRegisterAttachmentAction = jest.fn();
 const mockSetShouldOpenAttachmentModal = jest.fn();
 jest.mock("@/contexts/ToolbarContext", () => ({
-  useToolbarContext: () => ({
+  useToolbarCommands: () => ({
     registerFormViewRefetch: mockRegisterFormViewRefetch,
     registerAttachmentAction: mockRegisterAttachmentAction,
-    shouldOpenAttachmentModal: false,
     setShouldOpenAttachmentModal: mockSetShouldOpenAttachmentModal,
   }),
 }));
@@ -282,6 +282,20 @@ describe("FormView", () => {
     expect(screen.getByTestId("FormActions-mock")).toBeInTheDocument();
   });
 
+  it("publishes the record's auxiliary inputs and clears them when the form closes", () => {
+    mockUseFormInitialization.mockReturnValue({
+      formInitialization: { auxiliaryInputValues: { APRM_OrderIsPaid: { value: "Y" } } },
+      refetch: mockFormInitRefetch,
+      loading: false,
+    });
+    const { unmount } = renderFormView();
+    expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({ APRM_OrderIsPaid: "Y" });
+
+    unmount();
+    // Otherwise the grid's toolbar keeps evaluating display logic with the closed form's values
+    expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({});
+  });
+
   it("renders in NEW mode", () => {
     renderFormView({ mode: FormMode.NEW, recordId: NEW_RECORD_ID });
 
@@ -356,6 +370,13 @@ describe("FormView", () => {
     });
 
     expect(mockSave).toHaveBeenCalledWith({});
+  });
+
+  it("hands FormActions the handler that reveals the missing required fields", () => {
+    renderFormView();
+
+    expect(capturedFormActionsProps?.onFieldErrors).toEqual(expect.any(Function));
+    expect(() => capturedFormActionsProps?.onFieldErrors?.([] as never)).not.toThrow();
   });
 
   it("starts a new record via FormActions' onNew", async () => {

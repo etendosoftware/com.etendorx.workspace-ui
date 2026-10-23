@@ -1053,6 +1053,8 @@ function ProcessDefinitionModalContent({
 
   const initializationBlocksSubmit = Boolean(initializationError);
 
+  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
+
   const hasMandatoryParametersWithoutValue = useMemo(() => {
     if (loading || initializationLoading) return false;
 
@@ -1064,11 +1066,14 @@ function ProcessDefinitionModalContent({
         parameter,
         formValues,
         isDisplayed: isParamDisplayedRef.current,
+        // Report export buttons follow Classic: enabled only when every visible
+        // mandatory parameter actually holds a value.
+        requireActualValue: isOBUIAPPReport,
       })
     );
     // logicFields is read indirectly through isParamDisplayedRef; keep it in deps so
     // the check recomputes when a callout/script toggles a parameter's visibility.
-  }, [loading, initializationLoading, parameters, formValues, logicFields]);
+  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport]);
 
   const peGrids = useMemo(() => {
     if (!isPE) return [];
@@ -1133,6 +1138,7 @@ function ProcessDefinitionModalContent({
   const { handleExecute, handleReportProcessExecute, handleNavigateToTab } = useProcessExecution({
     processId,
     javaClassName,
+    reportId: isOBUIAPPReport ? processDefinition.report?.id : undefined,
     windowId,
     tabId,
     etmetaOnprocess,
@@ -1854,7 +1860,6 @@ function ProcessDefinitionModalContent({
     handleReportProcessExecute();
   }, [parameters, form, logicFields, handleReportProcessExecute, t]);
 
-  const isOBUIAPPReport = processDefinition?.uIPattern === OBUIAPP_REPORT_UI_PATTERN;
   const reportActions: ReportOutputFormat[] = getReportActions(isOBUIAPPReport ? processDefinition.report : undefined);
 
   /**
@@ -1913,11 +1918,15 @@ function ProcessDefinitionModalContent({
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+          <div
+            className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col"
+            data-testid="process-modal">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-bold">{button.name}</h3>
+                <h3 className="text-lg font-bold" data-testid="process-modal-title">
+                  {button.name}
+                </h3>
                 {!!headerDescription && <p className="text-sm text-gray-600">{headerDescription}</p>}
               </div>
               {!scriptButtonState.closeHidden && (
@@ -1925,7 +1934,8 @@ function ProcessDefinitionModalContent({
                   type="button"
                   onClick={handleClose}
                   className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                  disabled={isPending}>
+                  disabled={isPending}
+                  data-testid="process-modal-close-button">
                   <CloseIcon data-testid="CloseIcon__761503" />
                 </button>
               )}

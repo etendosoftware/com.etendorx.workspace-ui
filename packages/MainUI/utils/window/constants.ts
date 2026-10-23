@@ -15,8 +15,15 @@
  *************************************************************************
  */
 
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
+import type {
+  MRT_VisibilityState,
+  MRT_ColumnFiltersState,
+  MRT_SortingState,
+  MRT_ColumnSizingState,
+  MRT_ColumnPinningState,
+} from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
 
 export const WINDOW_PROPERTY_NAMES = {
   TITLE: "title",
@@ -35,12 +42,30 @@ export interface TableState {
   order: string[];
   isImplicitFilterApplied: boolean | undefined;
   advancedCriteria?: any;
+  /** Column ids the grid is grouped by (classic `groupByFields`); absent or empty when ungrouped. */
+  grouping?: string[];
+  /** Column widths the user set, keyed by column id (classic field `width`); absent when none was resized. */
+  sizing?: MRT_ColumnSizingState;
+  /** Pinned columns (classic field `frozen`), including the fixed selection and actions ones; absent by default. */
+  pinning?: MRT_ColumnPinningState;
+  /** Summary function of each column (classic view state `summaryFunctions`); absent when there is none. */
+  summaries?: Record<string, SummaryType>;
+  /** The grid is shown as a tree (classic view definition `viewMode: 'tree'`); absent for the flat grid. */
+  treeView?: boolean;
 }
+
+/** Height of a child tab level, as a percentage of the viewport, when the user never resized it. */
+export const DEFAULT_SPLIT_HEIGHT = 50;
 
 export interface NavigationState {
   activeLevels: number[];
   activeTabsByLevel: Map<number, string>;
   initialized: boolean;
+  /**
+   * Height of each child tab level (the parent/child split), as a percentage of the viewport and
+   * keyed by tab level. A level without entry uses DEFAULT_SPLIT_HEIGHT.
+   */
+  splitHeights?: Record<number, number>;
 }
 
 /**
@@ -84,6 +109,8 @@ export interface WindowState {
   tabs: {
     [tabId: string]: TabState;
   };
+  /** Set only on the in-app tabs that embed an External menu entry: the URL they show. */
+  externalUrl?: string;
 }
 
 export interface WindowContextState {

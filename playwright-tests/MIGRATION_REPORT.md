@@ -4,6 +4,17 @@
 **Branch:** `hotfix/ETP-3526`
 **Test file:** `e2e/smoke/01_Sales/SALaOrderToInvoiceTest.spec.ts`
 
+> **Update 2026-10-19 (ETP-5798): the skipped smoke specs run again.** The three specs skipped since the
+> Cypress migration are active and migrated to the support layer (`e2e/support`):
+>
+> | Spec | Root cause of the skip | Resolution |
+> |---|---|---|
+> | `01_Sales/SALaOrderToInvoiceTest` | Step 7 below: Classic "Create Lines From" of a Goods Shipment rejects the storage bin when only its search key is typed — the hidden locator id stays empty (a Goods Receipt pre-fills it, so PROa worked). The spec also used `test.skip(title, body)`, which never registers the inner test. | `CreateLinesFrom` sets the locator id and search key, as the Classic selector popup does (`LOCATOR` in `support/registry/data.ts`). Rewritten as `test.describe`. |
+> | `03_Procurement/PRObOrderAndPaymentToInvoiceTest` | Add Details never listed the order: changing Transaction Type to Orders refetched the grid with the old `transaction_type=I` (application bug in `useDatasource` with a `refetchKey`). | Fixed in `useDatasource` (every request carries the latest params). |
+> | `03_Procurement/PROeOrderToLandedCostTest` | The sample data schedules "Costing Background process" only for the F&B client, so the QA Testing receipt was never costed; the spec also used a storage bin of another organization. The receipt never completed either: "Raw material A" requires a serial number, which the spec tried to set on the order line, where neither Classic nor the new UI asks for it. | The spec sets the serial number on the receipt line (attribute selector), checks the receipt completes, runs the costing process for QA Testing (reusing the request when it exists) and waits for a successful run in its Process Monitor; it uses the Spain warehouse bin. |
+>
+> Feature documentation: `docs/testing/playwright-e2e/README.md`. Conventions: `playwright-tests/CLAUDE.md`.
+
 ---
 
 ## Objective

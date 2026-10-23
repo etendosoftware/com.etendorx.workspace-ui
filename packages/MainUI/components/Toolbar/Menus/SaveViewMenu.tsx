@@ -17,15 +17,65 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
-import type { ParsedSavedView } from "@/utils/savedViews/types";
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
+import { useUserStore } from "@/stores/userStore";
+import type { TranslateFunction, TranslationKeys } from "@/hooks/types";
+import type {
+  AppliedViewState,
+  ParsedSavedView,
+  SavedViewScope,
+  ViewStateSnapshot,
+  WindowLayout,
+} from "@/utils/savedViews/types";
+import { DEFAULT_COLUMN_PINNING, DEFAULT_COLUMN_SIZING } from "@/utils/table/columnState";
+import { DEFAULT_TABLE_SUMMARIES } from "@/stores/windowStore";
+import type { SummaryType } from "@/components/Table/HeaderContextMenu";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_SortingState,
+  MRT_VisibilityState,
+} from "material-react-table";
+
+/**
+ * Mirrors the backend's canManageScope gate (SavedViewService#canManageScope): a plain
+ * business role carries userLevel "O" only, while Client/System administrator roles
+ * additionally carry "C"/"S" — only those may define a shared (non-USER) view. This is a
+ * UX convenience to hide options the backend would reject anyway; the backend re-checks.
+ */
+function getManageableScopes(userLevel: string | undefined): SavedViewScope[] {
+  const level = userLevel ?? "";
+  const scopes: SavedViewScope[] = ["USER"];
+  if (level.includes("C") || level.includes("S")) {
+    scopes.push("ROLE", "ORGANIZATION", "CLIENT");
+  }
+  if (level.includes("S")) {
+    scopes.push("SYSTEM");
+  }
+  return scopes;
+}
+
+function getSetDefaultTitle(view: ParsedSavedView, t: TranslateFunction): string {
+  if (!view.editable) {
+    return t("savedViews.notEditable");
+  }
+  return view.isDefault ? t("savedViews.defaultView") : t("savedViews.setAsDefault");
+}
+
+const SCOPE_LABEL_KEYS: Record<SavedViewScope, TranslationKeys> = {
+  USER: "savedViews.scopeUser",
+  ROLE: "savedViews.scopeRole",
+  ORGANIZATION: "savedViews.scopeOrganization",
+  CLIENT: "savedViews.scopeClient",
+  SYSTEM: "savedViews.scopeSystem",
+};
 
 export interface SaveViewMenuProps {
   anchorEl: HTMLElement | null;
@@ -35,17 +85,41 @@ export interface SaveViewMenuProps {
   currentVisibility: MRT_VisibilityState;
   currentSorting: MRT_SortingState;
   currentOrder: string[];
+  /** Grouped column ids of the grid (empty when ungrouped). */
+  currentGrouping?: string[];
+  /** Column widths of the grid (empty when none was resized). */
+  currentSizing?: MRT_ColumnSizingState;
+  /** Pinned columns of the grid. */
+  currentPinning?: MRT_ColumnPinningState;
+  /** Window layout (parent/child split and maximized level) to store with the view. */
+  currentLayout?: WindowLayout;
+  /** Summary function of each column of the grid. */
+  currentSummaries?: Record<string, SummaryType>;
+  /** Whether the grid is shown as a tree. */
+  currentTreeView?: boolean;
   isImplicitFilterApplied: boolean;
   /** Metadata default implicit-filter state, used when resetting to the standard view. */
   defaultImplicitFilterApplied: boolean;
-  onApplyView: (state: {
-    filters: MRT_ColumnFiltersState;
-    visibility: MRT_VisibilityState;
-    sorting: MRT_SortingState;
-    order: string[];
-    implicitFilterApplied: boolean;
-  }) => void;
+  onApplyView: (state: AppliedViewState) => void;
+  /** Called after going back to the standard view, so the stored column configuration is cleared too. */
+  onResetToStandard?: () => void;
 }
+
+const NO_GROUPING: string[] = [];
+
+/** Standard view: metadata defaults for the grid and the default window layout (no `layout`). */
+const getStandardViewState = (implicitFilterApplied: boolean): AppliedViewState => ({
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  implicitFilterApplied,
+  grouping: NO_GROUPING,
+  sizing: DEFAULT_COLUMN_SIZING,
+  pinning: DEFAULT_COLUMN_PINNING,
+  summaries: DEFAULT_TABLE_SUMMARIES,
+  treeView: false,
+});
 
 const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   anchorEl,
@@ -55,9 +129,16 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentVisibility,
   currentSorting,
   currentOrder,
+  currentGrouping = NO_GROUPING,
+  currentSizing,
+  currentPinning,
+  currentLayout,
+  currentSummaries,
+  currentTreeView,
   isImplicitFilterApplied,
   defaultImplicitFilterApplied,
   onApplyView,
+  onResetToStandard,
 }) => {
   const { t } = useTranslation();
   const {
@@ -68,13 +149,18 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     isUpdatingDefault,
     fetchViews,
     saveView,
+    updateView,
     setDefaultView,
     unsetDefaultView,
     applyView,
     deleteView,
   } = useSavedViews();
 
+  const currentRole = useUserStore((s) => s.currentRole);
+  const manageableScopes = useMemo(() => getManageableScopes(currentRole?.userLevel), [currentRole?.userLevel]);
+
   const [newViewName, setNewViewName] = useState("");
+  const [scope, setScope] = useState<SavedViewScope>("USER");
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
@@ -93,6 +179,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     if (!anchorEl) {
       setShowSaveInput(false);
       setNewViewName("");
+      setScope("USER");
       setConfirmDeleteId(null);
       setOperationError(null);
     }
@@ -114,18 +201,32 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
 
     setOperationError(null);
 
+    const state: ViewStateSnapshot = {
+      filters: currentFilters,
+      visibility: currentVisibility,
+      sorting: currentSorting,
+      order: currentOrder,
+      implicitFilterApplied: isImplicitFilterApplied,
+      grouping: currentGrouping,
+      sizing: currentSizing,
+      pinning: currentPinning,
+      layout: currentLayout,
+      summaries: currentSummaries,
+      treeView: currentTreeView,
+    };
+    // Saving under the name of an existing view overwrites it, as in classic. Only a view of the chosen
+    // scope that the user may edit is overwritten; a shared view of another scope keeps its own copy.
+    const existingView = views.find((view) => view.name === trimmedName && view.scope === scope && view.editable);
+
     try {
-      await saveView({
-        tabId,
-        name: trimmedName,
-        filters: currentFilters,
-        visibility: currentVisibility,
-        sorting: currentSorting,
-        order: currentOrder,
-        implicitFilterApplied: isImplicitFilterApplied,
-      });
+      if (existingView) {
+        await updateView(existingView.id, state);
+      } else {
+        await saveView({ tabId, name: trimmedName, ...state, scope: scope === "USER" ? undefined : scope });
+      }
       setShowSaveInput(false);
       setNewViewName("");
+      setScope("USER");
     } catch {
       setOperationError(t("savedViews.error"));
     }
@@ -136,14 +237,24 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     currentVisibility,
     currentSorting,
     currentOrder,
+    currentGrouping,
+    currentSizing,
+    currentPinning,
+    currentLayout,
+    currentSummaries,
+    currentTreeView,
     isImplicitFilterApplied,
+    views,
+    scope,
     saveView,
+    updateView,
     t,
   ]);
 
   const handleSaveCancel = useCallback(() => {
     setShowSaveInput(false);
     setNewViewName("");
+    setScope("USER");
     setOperationError(null);
   }, []);
 
@@ -167,15 +278,10 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
       setOperationError(t("savedViews.setDefaultError"));
       return;
     }
-    onApplyView({
-      filters: [],
-      visibility: {},
-      sorting: [],
-      order: [],
-      implicitFilterApplied: defaultImplicitFilterApplied,
-    });
+    onApplyView(getStandardViewState(defaultImplicitFilterApplied));
+    onResetToStandard?.();
     onClose();
-  }, [unsetDefaultView, tabId, onApplyView, onClose, t, defaultImplicitFilterApplied]);
+  }, [unsetDefaultView, tabId, onApplyView, onResetToStandard, onClose, t, defaultImplicitFilterApplied]);
 
   const handleApplyView = useCallback(
     (view: ParsedSavedView) => {
@@ -261,6 +367,19 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
               maxLength={100}
               data-testid="SaveViewMenu__name-input"
             />
+            {manageableScopes.length > 1 && (
+              <select
+                className="w-full border border-(--color-transparent-neutral-20) rounded-lg px-2 py-1 text-sm outline-none focus:border-(--color-dynamic-main) bg-(--color-baseline-0)"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as SavedViewScope)}
+                data-testid="SaveViewMenu__scope-select">
+                {manageableScopes.map((s) => (
+                  <option key={s} value={s}>
+                    {t(SCOPE_LABEL_KEYS[s])}
+                  </option>
+                ))}
+              </select>
+            )}
             <div className="flex gap-1">
               <button
                 type="button"
@@ -335,11 +454,19 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                 <>
                   <button
                     type="button"
-                    className="flex-1 text-left text-sm cursor-pointer truncate"
+                    className="flex-1 text-left text-sm cursor-pointer truncate flex items-center gap-1"
                     onClick={() => handleApplyView(view)}
                     title={view.name}
                     data-testid="SaveViewMenu__view-apply">
-                    {view.name}
+                    <span className="truncate">{view.name}</span>
+                    {view.scope !== "USER" && (
+                      <span
+                        className="shrink-0 text-[10px] uppercase tracking-wide text-(--color-transparent-neutral-60) border border-(--color-transparent-neutral-20) rounded px-1"
+                        title={t("savedViews.sharedView")}
+                        data-testid="SaveViewMenu__view-scope-badge">
+                        {t("savedViews.sharedView")}
+                      </span>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -348,10 +475,10 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                         ? "text-(--color-dynamic-main)"
                         : "text-(--color-transparent-neutral-40) hover:text-(--color-dynamic-main) opacity-0 group-hover:opacity-100"
                     }`}
-                    onClick={() => !view.isDefault && handleSetDefault(view.id)}
-                    disabled={isUpdatingDefault || view.isDefault}
+                    onClick={() => !view.isDefault && view.editable && handleSetDefault(view.id)}
+                    disabled={isUpdatingDefault || view.isDefault || !view.editable}
                     aria-label={t("savedViews.setAsDefault")}
-                    title={view.isDefault ? t("savedViews.defaultView") : t("savedViews.setAsDefault")}
+                    title={getSetDefaultTitle(view, t)}
                     data-testid="SaveViewMenu__view-set-default">
                     {view.isDefault ? (
                       <StarIcon fontSize="small" data-testid="StarIcon__f77826" />
@@ -359,14 +486,16 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                       <StarBorderIcon fontSize="small" data-testid="StarBorderIcon__f77826" />
                     )}
                   </button>
-                  <button
-                    type="button"
-                    className="text-xs text-(--color-transparent-neutral-40) hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                    onClick={() => handleDeleteClick(view.id)}
-                    aria-label={t("savedViews.delete")}
-                    data-testid="SaveViewMenu__view-delete">
-                    <DeleteOutlineIcon fontSize="small" data-testid="DeleteOutlineIcon__f77826" />
-                  </button>
+                  {view.editable && (
+                    <button
+                      type="button"
+                      className="text-xs text-(--color-transparent-neutral-40) hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                      onClick={() => handleDeleteClick(view.id)}
+                      aria-label={t("savedViews.delete")}
+                      data-testid="SaveViewMenu__view-delete">
+                      <DeleteOutlineIcon fontSize="small" data-testid="DeleteOutlineIcon__f77826" />
+                    </button>
+                  )}
                 </>
               )}
             </div>

@@ -62,4 +62,88 @@ describe("ActionModal", () => {
     render(<ActionModal {...defaultProps} buttons={buttons} isLoading={true} />);
     expect(screen.getByText("Action Button")).toBeDisabled();
   });
+
+  describe("keyboard", () => {
+    const YES = "Yes";
+    const NO = "No";
+    const documentListener = jest.fn();
+    const keyboardButtons = [
+      { id: "yes", label: YES, onClick: jest.fn(), variant: "primary" as const },
+      { id: "no", label: NO, onClick: jest.fn(), variant: "secondary" as const },
+    ];
+    const renderDialog = (props: Partial<ActionModalProps> = {}) =>
+      render(<ActionModal {...defaultProps} buttons={keyboardButtons} {...props} />);
+    const pressTab = (shiftKey = false) =>
+      fireEvent.keyDown(document.activeElement as Element, { key: "Tab", shiftKey });
+
+    beforeEach(() => {
+      mockOnClose.mockClear();
+      document.addEventListener("keydown", documentListener);
+    });
+    afterEach(() => {
+      document.removeEventListener("keydown", documentListener);
+      documentListener.mockClear();
+    });
+
+    it("is an accessible modal dialog named by its title", () => {
+      renderDialog();
+      expect(screen.getByRole("dialog", { name: "Test Title" })).toHaveAttribute("aria-modal", "true");
+    });
+
+    it("focuses the first action when it opens", () => {
+      renderDialog();
+      expect(screen.getByText(YES)).toHaveFocus();
+    });
+
+    it("wraps Tab and Shift+Tab at the dialog edges", () => {
+      renderDialog();
+      screen.getByText(NO).focus();
+
+      pressTab();
+      expect(screen.getByLabelText("common.close")).toHaveFocus();
+      pressTab(true);
+      expect(screen.getByText(NO)).toHaveFocus();
+    });
+
+    it("lets the browser move Tab between inner buttons", () => {
+      renderDialog();
+
+      expect(pressTab()).toBe(true);
+    });
+
+    it("brings the focus back from outside the dialog", () => {
+      renderDialog();
+      (document.activeElement as HTMLElement).blur();
+
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Tab" });
+
+      expect(screen.getByLabelText("common.close")).toHaveFocus();
+    });
+
+    it("keeps Tab on the dialog when nothing can be focused", () => {
+      renderDialog({ isLoading: true });
+
+      const event = fireEvent.keyDown(screen.getByRole("dialog"), { key: "Tab" });
+
+      expect(event).toBe(false);
+    });
+
+    it("closes with Escape unless it is loading", () => {
+      const { rerender } = renderDialog();
+      fireEvent.keyDown(screen.getByText(YES), { key: "Escape" });
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+
+      rerender(<ActionModal {...defaultProps} buttons={keyboardButtons} isLoading />);
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps its keys away from the page shortcuts", () => {
+      renderDialog();
+
+      fireEvent.keyDown(screen.getByText(YES), { key: "Enter" });
+
+      expect(documentListener).not.toHaveBeenCalled();
+    });
+  });
 });

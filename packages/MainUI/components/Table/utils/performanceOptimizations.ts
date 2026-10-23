@@ -100,36 +100,16 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
 };
 
 /**
- * Hook for creating throttled callbacks
- * Automatically handles cleanup on unmount
+ * Returns a function with a stable identity that always calls the latest `callback`.
+ * Callers pass an inline function: the grid's columns depend on the returned one, and a new one
+ * re-rendered every cell on each selection change.
  */
-export const useThrottledCallback = <T extends (...args: any[]) => any>(
-  callback: T,
-  interval: number
+export const useStableCallback = <T extends (...args: any[]) => any>(
+  callback: T
 ): ((...args: Parameters<T>) => void) => {
-  const lastExecutionRef = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  return useCallback(
-    (...args: Parameters<T>) => {
-      const now = Date.now();
-
-      if (now - lastExecutionRef.current >= interval) {
-        lastExecutionRef.current = now;
-        callback(...args);
-      } else if (!timeoutRef.current) {
-        timeoutRef.current = setTimeout(
-          () => {
-            lastExecutionRef.current = Date.now();
-            timeoutRef.current = null;
-            callback(...args);
-          },
-          interval - (now - lastExecutionRef.current)
-        );
-      }
-    },
-    [callback, interval]
-  );
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+  return useCallback((...args: Parameters<T>) => callbackRef.current(...args), []);
 };
 
 /**

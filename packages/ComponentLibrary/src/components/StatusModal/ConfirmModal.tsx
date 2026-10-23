@@ -47,6 +47,7 @@ const ConfirmModal = memo(
         secondaryButtonLabel={hideSecondaryButton ? undefined : secondaryButtonLabel}
         SaveIcon={SaveIcon}
         backgroundGradient={backgroundGradient}
+        autoFocusSave
         onSave={onConfirm}
         onCancel={onCancel}>
         <Box sx={sx.statusModalContainer}>

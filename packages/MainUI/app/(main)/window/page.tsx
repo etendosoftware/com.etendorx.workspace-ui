@@ -21,9 +21,19 @@ import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useWindowStore } from "@/stores/windowStore";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
+import ExternalPage from "@/components/window/ExternalPage";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
 import { AccessDeniedScreen } from "@/components/AccessDeniedDisplay";
+import type { WindowState } from "@/utils/window/constants";
+
+/** In-app tabs of External menu entries embed their URL; every other tab is an AD window. */
+const renderWindowContent = (win: WindowState) => {
+  if (win.externalUrl) {
+    return <ExternalPage window={win} data-testid={`ExternalPage__${win.windowIdentifier}`} />;
+  }
+  return <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />;
+};
 
 export default function Page() {
   const windowsObj = useWindowStore((s) => s.windows);
@@ -102,7 +112,7 @@ export default function Page() {
                 transition: "opacity 150ms ease-in-out",
                 pointerEvents: isVisible ? "auto" : "none",
               }}>
-              <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
+              {renderWindowContent(win)}
             </div>
           );
         })}

@@ -27,7 +27,7 @@ import {
 } from "@/utils/form/constants";
 import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
 import { NOT_TABBABLE } from "@/utils/form/focus";
-import { isEventFromDropdownPortal, isSelectorPopupShortcut } from "@/utils/form/keyboard";
+import { getSelectorPopupShortcutId, isEventFromDropdownPortal, isSelectorPopupShortcut } from "@/utils/form/keyboard";
 import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -92,10 +92,12 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
   const canOpenSearchModal = Boolean(hasTableRelated) && !isReadOnly;
+  const popupShortcutId = getSelectorPopupShortcutId(effectiveField.column?.reference);
 
   /**
    * Ctrl+Enter opens the record picker, mirroring the `Selector_ShowPopup`
-   * shortcut of Etendo Classic. It replaces the magnifier as the keyboard path,
+   * shortcut of Etendo Classic (`SelectorLink_ShowPopup` / `TreeItem_ShowPopup` for
+   * selectors as link and trees). It replaces the magnifier as the keyboard path,
    * since the magnifier itself is deliberately out of the tab sequence.
    *
    * Declared before the early returns below: every Hook in this component must run
@@ -104,7 +106,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const handleFieldKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (!canOpenSearchModal) return;
-      if (!isSelectorPopupShortcut(event)) return;
+      if (!isSelectorPopupShortcut(event, popupShortcutId)) return;
       // A dropdown lives in a portal, but React still bubbles its events through
       // this component, so its own Ctrl+Enter must not reach the picker.
       if (isEventFromDropdownPortal(event)) return;
@@ -112,7 +114,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       event.preventDefault();
       setIsSearchModalOpen(true);
     },
-    [canOpenSearchModal]
+    [canOpenSearchModal, popupShortcutId]
   );
 
   const { reference } = effectiveField.column;

@@ -154,6 +154,16 @@ export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTre
   };
 };
 
+/**
+ * Column that receives the tree indentation: the one rendering the tree controls (flagged with
+ * `_shouldUseTreeMode`, i.e. the first DISPLAYED data column). Falls back to the second column
+ * (first data column, after Actions) when no column is flagged.
+ */
+const getTreeIndentColumnId = (columns: MRT_ColumnDef<EntityData>[]): string | undefined => {
+  const treeColumn = columns.find((col) => (col as { _shouldUseTreeMode?: boolean })._shouldUseTreeMode === true);
+  return (treeColumn ?? columns[1])?.id;
+};
+
 export const getMUITableBodyCellProps = ({
   shouldUseTreeMode,
   sx,
@@ -167,9 +177,7 @@ export const getMUITableBodyCellProps = ({
   column: MRT_Column<EntityData>;
   row: MRT_Row<EntityData>;
 }): SxProps<Theme> => {
-  // In tree mode, apply indentation to the SECOND column (first data column, after Actions)
-  // This is index 1 because Actions is at index 0
-  const treeIndentColumnId = columns[1]?.id;
+  const treeIndentColumnId = getTreeIndentColumnId(columns);
   const isTreeIndentColumn = column.id === treeIndentColumnId;
   const paddingLeft = `${12 + ((row.original.__level as number) || 0) * 16}px`;
 

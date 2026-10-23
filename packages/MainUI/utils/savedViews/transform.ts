@@ -15,8 +15,22 @@
  *************************************************************************
  */
 
-import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
-import type { ClassicViewConfig, MRTViewConfig, RawSavedViewRecord, SavedView } from "./types";
+import { getUserPinnedColumns, hasUserPinnedColumns, withFixedPinnedColumns } from "@/utils/table/columnState";
+import type {
+  AppliedViewState,
+  ClassicViewConfig,
+  MRTViewConfig,
+  RawSavedViewRecord,
+  SavedView,
+  SavedViewScope,
+  ViewStateSnapshot,
+} from "./types";
+
+const VALID_SCOPES: SavedViewScope[] = ["USER", "ROLE", "ORGANIZATION", "CLIENT", "SYSTEM"];
+
+function parseScope(raw: unknown): SavedViewScope {
+  return VALID_SCOPES.includes(raw as SavedViewScope) ? (raw as SavedViewScope) : "USER";
+}
 
 /**
  * Guards whether a parsed JSON value is a valid MRTViewConfig.
@@ -50,15 +64,23 @@ export function parseGridConfiguration(raw: string): MRTViewConfig | null {
 }
 
 /**
- * Converts current MRT table state into a JSON string suitable for `gridConfiguration`.
+ * Converts the current grid and window state into a JSON string suitable for `gridConfiguration`.
+ * Optional parts are only stored when they differ from the defaults, so a view without them keeps
+ * the shape of the views saved before they existed.
  */
-export function buildGridConfiguration(
-  filters: MRT_ColumnFiltersState,
-  visibility: MRT_VisibilityState,
-  sorting: MRT_SortingState,
-  order: string[],
-  implicitFilterApplied: boolean
-): string {
+export function buildGridConfiguration({
+  filters,
+  visibility,
+  sorting,
+  order,
+  implicitFilterApplied,
+  grouping = [],
+  sizing = {},
+  pinning = {},
+  layout,
+  summaries = {},
+  treeView = false,
+}: ViewStateSnapshot): string {
   const config: MRTViewConfig = {
     version: 1,
     source: "workspace-ui",
@@ -67,8 +89,34 @@ export function buildGridConfiguration(
     sorting,
     order,
     implicitFilterApplied,
+    ...(grouping.length > 0 && { grouping }),
+    ...(Object.keys(sizing).length > 0 && { sizing }),
+    ...(hasUserPinnedColumns(pinning) && { pinning: getUserPinnedColumns(pinning) }),
+    ...(layout && { layout }),
+    ...(Object.keys(summaries).length > 0 && { summaries }),
+    ...(treeView && { treeView }),
   };
   return JSON.stringify(config);
+}
+
+/**
+ * Resolves a stored view into the state to apply: parts missing in older views fall back to the
+ * defaults (ungrouped, default widths, only the fixed pinned columns, no summaries, flat grid).
+ */
+export function toAppliedViewState(config: MRTViewConfig): AppliedViewState {
+  return {
+    filters: config.filters,
+    visibility: config.visibility,
+    sorting: config.sorting,
+    order: config.order,
+    implicitFilterApplied: config.implicitFilterApplied,
+    grouping: config.grouping ?? [],
+    sizing: config.sizing ?? {},
+    pinning: withFixedPinnedColumns(config.pinning ?? {}),
+    layout: config.layout,
+    summaries: config.summaries ?? {},
+    treeView: config.treeView ?? false,
+  };
 }
 
 /**
@@ -104,5 +152,7 @@ export function rawRecordToSavedView(record: RawSavedViewRecord): SavedView {
     isDefault: Boolean(record.isdefault ?? false),
     filterClause: String(record.filterclause ?? ""),
     gridConfiguration: String(record.gridconfiguration ?? ""),
+    scope: parseScope(record.scope),
+    editable: record.editable ?? true,
   };
 }

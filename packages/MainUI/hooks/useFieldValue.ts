@@ -16,7 +16,7 @@
  */
 
 import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { formatNumber, getFieldReference } from "@/utils";
 import { useLanguage } from "@/contexts/language";
@@ -25,12 +25,14 @@ import { useLanguage } from "@/contexts/language";
  * Hook to safely get field value with proper identifier/value synchronization
  */
 export const useFieldValue = (field: Field) => {
-  const { watch } = useFormContext();
   const { language } = useLanguage();
   const colorWatchKey = field.colorFieldName
     ? `${field.hqlName}$${field.colorFieldName}`
     : `${field.hqlName}$__color_noop__`;
-  const [value, identifier, colorValue] = watch([field.hqlName, `${field.hqlName}$_identifier`, colorWatchKey]);
+  // useWatch, not watch(): a render-time watch() subscribes the whole FormView to these fields
+  const [value, identifier, colorValue] = useWatch({
+    name: [field.hqlName, `${field.hqlName}$_identifier`, colorWatchKey],
+  });
 
   const displayValue = useMemo(() => {
     if (identifier !== null && identifier !== undefined && identifier !== "") {

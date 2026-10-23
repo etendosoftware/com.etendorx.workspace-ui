@@ -109,7 +109,9 @@ instead of to the pane container, which would otherwise walk the form header
 
 | Shortcut | Action | Classic equivalent (`OBUIAPP_KeyboardShortcuts`) |
 |---|---|---|
-| `Ctrl+Enter` | Opens the record picker of a reference field | `Selector_ShowPopup` |
+| `Ctrl+Enter` | Opens the record picker of a reference field | `Selector_ShowPopup` (`SelectorLink_ShowPopup`, `TreeItem_ShowPopup`) |
+| `Ctrl+Alt+Enter` | Opens the record the field references, as a click on its label | `ViewForm_OpenLinkOut` |
+| `Alt+↓` / `↓` | Opens a tree field / moves the keyboard into the open tree | `TreeItem_ShowTree` / `TreeItem_MoveToTree` |
 | `Space` | Toggles a boolean field | `isc.CycleItem.handleKeyPress` |
 | `Enter` / `Space` | Opens a dropdown or activates a picker from its trigger | — |
 | `↑` / `↓` | Moves the highlight inside an open dropdown | — |
@@ -117,12 +119,15 @@ instead of to the pane container, which would otherwise walk the form header
 | `Escape` | Closes an open dropdown | — |
 | `F6` | Moves the focus to the other pane in split view | — |
 
-`Ctrl+Enter` is handled on the field itself, not through `useKeyboardShortcuts`:
-that hook listens on `document`, so every mounted field would answer at once.
+These shortcuts are handled on the field itself, not through a `document` listener,
+which would make every mounted field answer at once. Their keys come from the
+`OBUIAPP_KeyboardShortcuts` preference through `matchesShortcut`: see
+[`keyboard-shortcuts`](../keyboard-shortcuts/README.md) for the grammar and the
+form, grid and window shortcuts.
 
-Not implemented yet: `ViewForm_OpenLinkOut` (`Ctrl+Alt+Enter`), Classic's keyboard
-path to the referenced window. `useKeyboardShortcuts` would need to grow support
-for `alt` combinations first — its `normalizeKey` only distinguishes `ctrl`.
+`Ctrl+Alt+Enter` is listened to on the field container (`BaseSelector`) and clicks
+the navigable label, so it follows the same redirect as the mouse. Fields without a
+navigable label ignore it.
 
 ### Boolean fields
 
@@ -195,7 +200,7 @@ testable under jsdom.
 | File | Role |
 |---|---|
 | `utils/form/focus.ts` | Focusability rules, field lookup, adjacent-field navigation |
-| `utils/form/keyboard.ts` | Field-level shortcut predicates and the dropdown-portal selector |
+| `utils/form/keyboard.ts` | Field-level shortcut predicates (picker, link out, tree) and the dropdown-portal selector |
 | `hooks/useFormInitialFocus.ts` | Places the initial focus, with its guards |
 | `components/Form/FormView/index.tsx` | Resolves the flagged field and the focus key |
 | `components/Form/FormView/FormFieldsContent.tsx` | Marks the fields root |

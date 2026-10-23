@@ -1,18 +1,10 @@
-import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  navigateByMenuTestId,
-  clickNewRecord,
-  clickSave,
-  typeName,
-  closeToastIfPresent,
-} from "../../helpers/etendo.helpers";
+import { expect, test } from "../../support/fixtures";
+
+/** Lot-controlled attribute set of the sample data. */
+const LOTS_ATTRIBUTE_SET = "Lots";
 
 test.describe("Master Data - Product and Pricing Setup @smoke", () => {
   test.beforeEach(async ({ page }) => {
-    await cleanupEtendo(page);
     page.on("pageerror", (err) => {
       if (!/Hydration failed/i.test(err.message)) {
         throw err;
@@ -20,179 +12,112 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     });
   });
 
-  test("Configure price lists, schemas, attributes and create product", async ({ page }) => {
+  test("Configure price lists, schemas, attributes and create product", async ({ app, data, page }) => {
     test.setTimeout(480_000);
-    // ── Local helpers ────────────────────────────────────────────────────────
-    const clickNewChildRecord = async () => {
-      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]:visible > span').click();
-    };
+    // Records with a unique key or name get a per-run suffix so the test runs on a reused database
+    const priceListName = data.uniqueValue("Wholesale_pricelist");
+    const categoryKey = data.uniqueValue("Pr_Met");
+    const categoryName = data.uniqueValue("Precious Metals");
+    const uomName = data.uniqueValue("Carat");
+    const taxCategoryName = data.uniqueValue("VAT 3%");
+    const productKey = data.uniqueValue("Platinum");
 
-    const fillVisibleByAriaLabel = async (label: string, value: string) => {
-      const input = page.locator(`input[aria-label="${label}"]`).locator("visible=true").first();
-      await input.waitFor({ state: "visible", timeout: 20_000 });
-      await input.clear();
-      await input.fill(value);
-    };
-
-    const selectAutocomplete = async (
-      containerAriaLabel: string,
-      optionText: string,
-      searchPlaceholder: "Search options" | "Search..." | "Buscar..." = "Search options"
-    ) => {
-      await page.locator(`[aria-label="${containerAriaLabel}"]:visible > div[tabindex="0"]`).click();
-      const searchInput =
-        searchPlaceholder === "Search options"
-          ? page.locator('input[aria-label="Search options"]:visible').first()
-          : page.locator(`input[placeholder="${searchPlaceholder}"]:visible`).first();
-      await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-      await searchInput.fill(optionText);
-      await page.locator('[data-testid^="OptionItem"]').filter({ hasText: optionText }).first().click();
-    };
-
-    // ── Login + navigate to Price List Schema window ─────────────────────────
-    await loginToEtendo(page);
-    await selectRoleOrgWarehouse(page);
-    await page.waitForTimeout(1_000);
-
-    await navigateByMenuTestId(page, "price", "MenuTitle__310");
-    await page.waitForTimeout(1_000);
+    // ── Price List Schema window ─────────────────────────────────────────────
+    await app.sidebar.navigateTo("priceListSchema");
 
     // ── Standard price list schema ────────────────────────────────────────────
-    await clickNewRecord(page);
-    await typeName(page, "standar");
-    await clickSave(page);
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
+    await app.toolbar.newRecord();
+    await app.field.fill("Name", "standar");
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // Open Lines subtab
     const linesBtn = page
-      .locator("button:visible")
-      .filter({ hasText: /^Lines$/ })
+      .getByRole("button", { name: /^Lines$/ })
+      .filter({ visible: true })
       .first();
     await linesBtn.waitFor({ state: "visible", timeout: 20_000 });
     await expect(linesBtn).toBeEnabled();
     await linesBtn.click();
-    await page.waitForTimeout(1_000);
 
-    await clickNewChildRecord();
-    await page.waitForTimeout(1_000);
+    await app.toolbar.newRecord("child");
+    await app.field.fill("Surcharge List Price Amount", "1");
 
-    await fillVisibleByAriaLabel("Surcharge List Price Amount", "1");
-
-    // Save line (second save button)
-    await page.locator("button.toolbar-button-save").locator("visible=true").nth(1).click();
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
+    // Save line
+    await app.toolbar.save("child");
+    await app.toast.closeAll();
 
     // Cancel to go back
-    const cancelBtn = page.locator("button.toolbar-button-cancel:not([disabled])").locator("visible=true").first();
+    const cancelBtn = app.page.locator("button.toolbar-button-cancel:visible:not([disabled])").first();
     await cancelBtn.waitFor({ state: "visible", timeout: 20_000 });
     await cancelBtn.click();
 
     // ── Spain price list schema ───────────────────────────────────────────────
-    await clickNewChildRecord();
-    await typeName(page, "spain_pricelist");
-    await page.waitForTimeout(1_000);
-    await clickSave(page);
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
+    await app.toolbar.newRecord("child");
+    await app.field.fill("Name", "spain_pricelist");
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
-    await clickNewChildRecord();
-    await page.waitForTimeout(1_000);
-    await fillVisibleByAriaLabel("List Price Discount %", "10");
-    await page.waitForTimeout(1_000);
-    await clickSave(page);
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
-    await page.waitForTimeout(1_000);
+    await app.toolbar.newRecord("child");
+    await app.field.fill("List Price Discount %", "10");
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Price List window (base list) ─────────────────────────────────────────
-    await navigateByMenuTestId(page, "price", "MenuTitle__132");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await typeName(page, "Wholesale_pricelist ");
-    await clickSave(page);
-    await closeToastIfPresent(page);
+    await app.sidebar.navigateTo("priceList");
+    await app.toolbar.newRecord();
+    await app.field.fill("Name", priceListName);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Attributes window ─────────────────────────────────────────────────────
-    await navigateByMenuTestId(page, "att", "MenuTitle__353");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await page.waitForTimeout(1_000);
-    await typeName(page, "Serial number ");
-    await page.waitForTimeout(1_000);
+    await app.sidebar.navigateTo("attributeSet");
+    await app.toolbar.newRecord();
+    await app.field.fill("Name", "Serial number");
 
     // Toggle "Serial No." switch
-    const serialSwitch = page.locator('button[role="switch"][aria-label="Serial No."]').locator("visible=true").first();
+    const serialSwitch = page.getByRole("switch", { name: "Serial No." }).filter({ visible: true }).first();
     await serialSwitch.waitFor({ state: "visible", timeout: 20_000 });
     await serialSwitch.click();
-    await clickSave(page);
-    await page.waitForTimeout(1_000);
-    await closeToastIfPresent(page);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Product Categories window ─────────────────────────────────────────────
-    await navigateByMenuTestId(page, "produc", "MenuTitle__130");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await fillVisibleByAriaLabel("Search Key", "Pr_Met");
-    await page.waitForTimeout(1_000);
-    await typeName(page, "Precious Metals");
-    await page.waitForTimeout(1_000);
-    await clickSave(page);
-    await closeToastIfPresent(page);
+    await app.sidebar.navigateTo("productCategory");
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", categoryKey);
+    await app.field.fill("Name", categoryName);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Unit of Measure window ────────────────────────────────────────────────
-    await navigateByMenuTestId(page, "unit", "MenuTitle__107");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await page.waitForTimeout(1_000);
-    await fillVisibleByAriaLabel("EDI Code", "Ca");
-    await page.waitForTimeout(1_000);
-    await fillVisibleByAriaLabel("Symbol", "Ca");
-    await page.waitForTimeout(1_000);
-    await typeName(page, "Carat");
-    await clickSave(page);
-    await closeToastIfPresent(page);
+    await app.sidebar.navigateTo("unitOfMeasure");
+    await app.toolbar.newRecord();
+    await app.field.fill("EDI Code", "Ca");
+    await app.field.fill("Symbol", "Ca");
+    await app.field.fill("Name", uomName);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Tax Category window ───────────────────────────────────────────────────
-    await navigateByMenuTestId(page, "tax", "MenuTitle__124");
-    await page.waitForTimeout(1_000);
-
-    await clickNewRecord(page);
-    await page.waitForTimeout(1_000);
-    await typeName(page, "VAT 3%");
-    await page.waitForTimeout(1_000);
-    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]:visible').first().click();
-    await closeToastIfPresent(page);
+    await app.sidebar.navigateTo("taxCategory");
+    await app.toolbar.newRecord();
+    await app.field.fill("Name", taxCategoryName);
+    await app.toolbar.save();
+    await app.toast.closeAll();
 
     // ── Product window ────────────────────────────────────────────────────────
-    await navigateByMenuTestId(page, "produ", "MenuTitle__126");
-    await page.waitForTimeout(1_000);
+    await app.sidebar.navigateTo("product");
+    await app.toolbar.newRecord();
+    await app.field.fill("Search Key", productKey);
+    await app.field.fill("Name", productKey);
 
-    await clickNewRecord(page);
-    await page.waitForTimeout(1_000);
-    await fillVisibleByAriaLabel("Search Key", "Platinum");
-    await page.waitForTimeout(1_000);
-    await typeName(page, "Platinum");
-    await page.waitForTimeout(1_000);
+    await app.field.select("Product Category", categoryName, { search: categoryName });
+    await app.field.select("UOM", uomName, { search: uomName });
+    await app.field.select("Tax Category", taxCategoryName, { search: taxCategoryName });
+    await app.field.select("Attribute Set", LOTS_ATTRIBUTE_SET, { search: LOTS_ATTRIBUTE_SET });
 
-    await selectAutocomplete("Product Category", "Precious Metals", "Search...");
-    await page.waitForTimeout(1_000);
-    await selectAutocomplete("UOM", "Carat", "Search options");
-    await page.waitForTimeout(1_000);
-    await selectAutocomplete("Tax Category", "VAT 3%", "Search options");
-    await page.waitForTimeout(1_000);
-    await selectAutocomplete("Attribute Set", "Lots", "Search options");
-    await page.waitForTimeout(1_000);
-
-    await clickSave(page);
-    await closeToastIfPresent(page);
+    await app.toolbar.save();
+    await app.toast.closeAll();
   });
 });
