@@ -219,6 +219,14 @@ abort).
 
 With F&B the "Dimensions" section shows Organization, Business Partner and Project, as Classic.
 
+**Fixes found while testing the "+"** (ETP-5877):
+
+| Problem | Cause | Fix |
+|---|---|---|
+| Opening or closing Add Payment on top reset Add Transaction, losing its values and the payment just written. | The nested-process host built a new button object for every entry on each render; the modal re-initializes when its button changes. | One button per stack entry (`getButtonStub`). |
+| Add Payment opened from the "+" had no title. | A nested launch is titled by its `windowTitle`, which the "+" did not send. | Titled as Classic `OBUISEL_AddNewRecord` ("Add Payment"). |
+| Picking a payment (from the combo or the "+") left the amounts empty. | With an empty description the stored Payment onChange omitted `strDescription` (`undefined` is dropped from the JSON); `AddTransactionOnChangePaymentActionHandler` reads it with `getString` and answered `{}`. | The stored onChange sends `''` (exported to `com.etendoerp.metadata.template`). |
+
 **Search and add buttons.** As in Classic, Organization, Business Partner, Project, Product, Payment and the
 dimensions show a magnifier (their selectors have grid fields); G/L Item and the currencies do not. Payment also
 shows a "+" that opens **Add Payment** on top. Add Payment receives the transaction values (type, amounts, business
@@ -264,9 +272,10 @@ The stored JavaScript changes are exported to `com.etendoerp.metadata.template` 
 ## End-to-end tests
 
 `playwright-tests/e2e/smoke/05_Financial/FINeMatchStatementTest.spec.ts` (project `suite-04-financial`) covers the
-flows above on Spain Bank. Its `beforeAll` creates a statement with two lines and a matching transaction for each
-(same G/L item, date and amount) through the datasource, and runs the Classic "Process" of the statement and of the
-transactions. The tests run in order on that statement:
+flows above on Spain Bank. Its `beforeAll` creates a statement with three lines through the datasource: two with a
+matching transaction each (same G/L item, date and amount), and one with no G/L item and no transaction, so Add
+Transaction offers its Payment field. It runs the Classic "Process" of the statement and of the transactions. The
+tests run in order on that statement:
 
 | Test | Checks |
 |---|---|
@@ -274,13 +283,16 @@ transactions. The tests run in order on that statement:
 | Search | Find Transactions matches the line with the picked transaction. |
 | Clear | The line is unmatched; Search and Add are enabled again. |
 | Add | Add Transaction opens with the transaction type, G/L item and amount of the line; closing it creates nothing. |
+| Magnifying glass of an Add Transaction selector | The Business Partner popup filters by commercial name and the picked partner is set. |
+| "+" of Payment | Add Payment opens on top (deposit to the account), creates the payment, and the payment comes back to Add Transaction with its amount; executing Add Transaction matches the line. |
 | Confirm in the algorithm prompt | The prompt text is translated (no `APRM_` key) and the algorithm matches the other line. |
 | Unmatch Selected | Shown only for a selected matched line; unmatches it and shows the handler message. |
 
 Classic only processes a statement whose lines are later than every line of the processed statements of the account,
 so the spec dates the new lines the day after the last one (today on a fresh database). The lines are found by their
 amount, unique to each run. The support pieces are `support/components/MatchStatement.ts` (row buttons, algorithm
-prompt, nested process), `Grid.clearFilter` and `ApiData.fetch`.
+prompt, nested processes by stack level), `support/components/SelectorModal.ts` (magnifying glass, popup, "+"),
+`Grid.clearFilter` and `ApiData.fetch`.
 
 ## Main files
 

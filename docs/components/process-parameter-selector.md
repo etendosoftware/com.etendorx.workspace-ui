@@ -143,7 +143,8 @@ Neither button shows on a read-only parameter. Both are out of the tab sequence.
   (`buildProcessSelectorOverlay`: `_processDefinitionId`, `_selectorFieldId` and the parameter values by
   `dBColumnName`) through its `extraParams` prop, and the process tab as `currentTab`. A nested process has no
   TabContext, so the modal passes its tab (`tab ?? ownerTab`).
-- **The "+" process.** It runs in the launcher's tab, record and window (the nested-process stack). Its defaults
+- **The "+" process.** It is titled after the field ("Add Payment", Classic `OBUISEL_AddNewRecord`) and runs in
+  the launcher's tab, record and window (the nested-process stack); the launcher keeps its values while it is open. Its defaults
   request receives the launcher's values as `callerContext`, as Classic adds `callerField.view.getContextInfo()`.
   When it answers `setSelectorValueFromRecord {record: {value, map}}`, the record is written into the selector
   (`callerField.setValueFromRecord`). See
