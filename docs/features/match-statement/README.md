@@ -253,6 +253,27 @@ The stored JavaScript changes are exported to `com.etendoerp.metadata.template` 
 
 - Selecting the row when a button is clicked (Classic `selectSingleRecord`).
 
+## End-to-end tests
+
+`playwright-tests/e2e/smoke/05_Financial/FINeMatchStatementTest.spec.ts` (project `suite-04-financial`) covers the
+flows above on Spain Bank. Its `beforeAll` creates a statement with two lines and a matching transaction for each
+(same G/L item, date and amount) through the datasource, and runs the Classic "Process" of the statement and of the
+transactions. The tests run in order on that statement:
+
+| Test | Checks |
+|---|---|
+| Cancel in the algorithm prompt | The line stays unmatched; Search, Add and Clear render in the Match column and there is no Actions column. |
+| Search | Find Transactions matches the line with the picked transaction. |
+| Clear | The line is unmatched; Search and Add are enabled again. |
+| Add | Add Transaction opens with the transaction type, G/L item and amount of the line; closing it creates nothing. |
+| Confirm in the algorithm prompt | The prompt text is translated (no `APRM_` key) and the algorithm matches the other line. |
+| Unmatch Selected | Shown only for a selected matched line; unmatches it and shows the handler message. |
+
+Classic only processes a statement whose lines are later than every line of the processed statements of the account,
+so the spec dates the new lines the day after the last one (today on a fresh database). The lines are found by their
+amount, unique to each run. The support pieces are `support/components/MatchStatement.ts` (row buttons, algorithm
+prompt, nested process), `Grid.clearFilter` and `ApiData.fetch`.
+
 ## Main files
 
 - `packages/MainUI/utils/ob/remoteCallManager.ts`: `OB.RemoteCallManager.call`, `encodeRequestParams`.

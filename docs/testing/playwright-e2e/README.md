@@ -69,7 +69,7 @@ inside a project, spec files run in parallel up to the project's `workers`.
 | `suite-01-base` | login, master data, filters, linked items, display logic, `@smoke` feature probes | 3 | Read-only specs, or records with `uniqueValue()` names. |
 | `suite-02-sales` | SALa–SALd | 3 | Customer Barcelona and Customer A; each spec selects only its own orders, shipments and invoices. |
 | `suite-03-procurement` | PROa–PROe | 3 | Vendor A; each spec filters by its own document numbers. PROe runs the client-wide "Costing Background" process, which does not change the others' documents. |
-| `suite-04-financial` | FINb–FINd | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. |
+| `suite-04-financial` | FINb–FINe | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. FINe (Match Statement) is the only spec on Spain Bank: the matching algorithm runs on every unmatched line of the account. Its tests run in order (`mode: "serial"`) on one statement. |
 | `suite-05-regression` | `regression/` | 3 | `@regression` probes, each on its own records or on a window no other spec uses (Currency for saved views, Country and Region for grouping). |
 | `mocked` | `mocked/` | default | Recorded responses only: no ERP needed. Run it alone with `pnpm pw:mocked`. |
 
@@ -180,7 +180,7 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | PurchaseOrderDisplayLogic | mockable | Display logic evaluation of a new record. |
 | FiltersComplete | split | Building the advanced filter is client side; that rows are filtered is server side. |
 | LNKa | split | Linked-items rendering and navigation are client side; the categories come from a server handler. |
-| SALa–SALd, PROa–PROe, FINb–FINd | real backend | Document processing, Classic popups, accounting, background processes. |
+| SALa–SALd, PROa–PROe, FINb–FINe | real backend | Document processing, Classic popups, accounting, background processes. |
 | crud-performance | real backend | Measures real latency. |
 | rendering, stress | split | Page load, Web Vitals and 404 recovery are client side; dashboard timings and login cycles need the server. |
 | PRCb | split | Grid selection and onProcess abort are client side; amounts come from the Add Payment handlers. |

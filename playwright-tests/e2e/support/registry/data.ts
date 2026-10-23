@@ -59,8 +59,25 @@ export const OFFER_TYPE = {
   PRICE_ADJUSTMENT: { id: "5D4BAF6BB86D4D2C9ED3D5A6FC051579", name: "Price Adjustment" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Financial accounts of the sample data. */
+export const FINANCIAL_ACCOUNT = {
+  /** Bank account of Spain (EUR) with the "Standard" matching algorithm; only FINe changes its statements. */
+  SPAIN_BANK: { id: "0D0000E0A27040E383D5B03755249B61", name: "Spain Bank" },
+} as const satisfies Record<string, SampleRecord>;
+
+/** G/L items of the sample data. */
+export const GL_ITEM = {
+  SALARIES: { id: "9325117728F843FE9F77A67886C99541", name: "Salaries" },
+} as const satisfies Record<string, SampleRecord>;
+
+/** C_Currency_ID of the currencies of the sample data. */
+export const CURRENCY_ID = {
+  EUR: "102",
+} as const;
+
 export const DOCUMENT_TYPE = {
   STANDARD_ORDER: { id: "FF8080812C2ABFC6012C2B3BDF4D005A", name: "Standard Order" },
+  BANK_STATEMENT_FILE: { id: "FF8080812C2ABFC6012C2B6528F100D2", name: "Bank Statement File" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const ROLE = {
