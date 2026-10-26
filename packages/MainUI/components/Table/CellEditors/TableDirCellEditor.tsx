@@ -529,6 +529,43 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     return displayText || getPlaceholderText();
   };
 
+  const renderOptionList = () => {
+    if (isBelowThreshold) {
+      return <div className="px-4 py-2 text-sm text-gray-500">{minCharsHint}</div>;
+    }
+
+    if (filteredOptions.length > 0) {
+      return filteredOptions.map((option, index) => {
+        const isSelected = String(option.id) === localValue || String(option.value) === localValue;
+        return (
+          <div
+            key={option.id || option.value}
+            onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
+            onMouseEnter={() => handleOptionMouseEnter(index)}
+            className={`
+              px-4 py-2 text-sm cursor-pointer flex items-center justify-between
+              ${highlightedIndex === index ? "bg-blue-50" : ""}
+              ${isSelected ? "bg-blue-50 font-medium" : ""}
+              hover:bg-blue-50
+            `}
+            // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
+            role="option"
+            aria-selected={isSelected}
+            tabIndex={-1}>
+            <span className="truncate">{option.label}</span>
+            {isSelected && (
+              <CheckCircleFilledIcon width={16} height={16} aria-label="Selected" data-testid={"Image__" + field.id} />
+            )}
+          </div>
+        );
+      });
+    }
+
+    return (
+      <div className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</div>
+    );
+  };
+
   return (
     <div ref={wrapperRef} className="w-full max-w-full min-w-0 box-border">
       <div
@@ -624,43 +661,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             </div>
           )}
 
-          {isBelowThreshold ? (
-            <div className="px-4 py-2 text-sm text-gray-500">{minCharsHint}</div>
-          ) : filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => {
-              const isSelected = String(option.id) === localValue || String(option.value) === localValue;
-              return (
-                <div
-                  key={option.id || option.value}
-                  onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
-                  onMouseEnter={() => handleOptionMouseEnter(index)}
-                  className={`
-                    px-4 py-2 text-sm cursor-pointer flex items-center justify-between
-                    ${highlightedIndex === index ? "bg-blue-50" : ""}
-                    ${isSelected ? "bg-blue-50 font-medium" : ""}
-                    hover:bg-blue-50
-                  `}
-                  // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={-1}>
-                  <span className="truncate">{option.label}</span>
-                  {isSelected && (
-                    <CheckCircleFilledIcon
-                      width={16}
-                      height={16}
-                      aria-label="Selected"
-                      data-testid={"Image__" + field.id}
-                    />
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <div className="px-4 py-2 text-sm text-gray-500">
-              {isLoading ? "Loading options..." : "No options found"}
-            </div>
-          )}
+          {renderOptionList()}
         </div>
       </Menu>
     </div>

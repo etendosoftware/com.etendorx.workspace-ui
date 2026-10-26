@@ -53,7 +53,7 @@ describe("isSearchSelectorDatasource", () => {
     expect(isSearchSelectorDatasource("ComboTableDatasourceService")).toBe(false);
     expect(isSearchSelectorDatasource("ADList")).toBe(false);
     expect(isSearchSelectorDatasource("")).toBe(false);
-    expect(isSearchSelectorDatasource(undefined)).toBe(false);
+    expect(isSearchSelectorDatasource()).toBe(false);
   });
 });
 
