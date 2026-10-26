@@ -312,6 +312,11 @@ export interface CanvasProxy extends Record<string, unknown> {
 
 export interface ItemProxy extends Record<string, unknown> {
   name: string;
+  /**
+   * Id of the process parameter (`OBUIAPP_Parameter_ID`), Classic `field.paramId`: handlers such as
+   * `AddPaymentDisplayLogicActionHandler` receive parameters by id. Absent for an unknown item.
+   */
+  paramId?: string;
   getValue: () => unknown;
   setValue: (value: unknown) => void;
   /**
@@ -884,6 +889,7 @@ export function createItemProxy(
     getValue: () => coerceParamValue(form.getValues(paramName), parameter),
     setValue: (value: unknown) => applyValue(form, paramName, value),
   };
+  if (parameter?.id) item.paramId = parameter.id;
   if (extras.rowNum !== undefined) item.rowNum = extras.rowNum;
   if (extras.columnName !== undefined) item.columnName = extras.columnName;
   if (controller) {
@@ -1096,20 +1102,48 @@ function buildParentWindow(
   return { ...base, view: accessors, activeView };
 }
 
+/**
+ * The form values keyed by parameter column name (`dBColumnName`), as Classic keys a parameter
+ * window's context: handlers read it so (e.g. `difference` for Add Payment's overpayment action).
+ */
+export function valuesByColumnName(
+  values: Record<string, unknown>,
+  parameters: ParametersMap | undefined
+): Record<string, unknown> {
+  const byColumn: Record<string, unknown> = {};
+  for (const parameter of Object.values(parameters ?? {})) {
+    if (parameter.dBColumnName && parameter.name in values) {
+      byColumn[parameter.dBColumnName] = values[parameter.name];
+    }
+  }
+  return byColumn;
+}
+
 /** Read-only environment data and the always-live context accessors. */
-function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData, self: ViewProxy = view): void {
+function assignViewData(
+  view: ViewProxy,
+  form: FormHandle,
+  data: ViewData,
+  self: ViewProxy = view,
+  parameters?: ParametersMap
+): void {
   view.windowId = data.windowId;
   view.callerField = data.callerField;
   view.sourceView = data.sourceView;
   view.activeView = { tabId: data.activeTabId };
   // Context map = the launching tab id (so classic `contextInfo.inpTabId` resolves), overlaid with
   // the parent record fields and the current parameter values (real values win over the default).
-  view.getContextInfo = () => ({
-    inpTabId: data.activeTabId,
-    ...(data.parentRecord ?? {}),
-    ...(form.getValues() as Record<string, unknown>),
-    ...(data.getGridValues?.() ?? {}),
-  });
+  // The parameter values are also keyed by column name, as Classic does.
+  view.getContextInfo = () => {
+    const values = form.getValues() as Record<string, unknown>;
+    return {
+      inpTabId: data.activeTabId,
+      ...(data.parentRecord ?? {}),
+      ...values,
+      ...valuesByColumnName(values, parameters),
+      ...(data.getGridValues?.() ?? {}),
+    };
+  };
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.
   view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? self : { tabId });
@@ -1212,11 +1246,34 @@ export function withScriptScope<T extends object>(view: T, scope?: Record<string
   });
 }
 
-/** Empties a modal's shared script scope in place (its identity stays stable). */
-export function clearScriptScope(scope: Record<string, unknown>): void {
+/**
+ * The scope of the `form` of each modal, keyed by the modal's view scope: Classic hands every hook
+ * the same form object too, so a property a script adds to it (e.g. Add Payment's
+ * `form._overpaymentOriginalValueMap`, set in onLoad and read on a later change) is kept.
+ */
+const formScopes = new WeakMap<Record<string, unknown>, Record<string, unknown>>();
+
+function formScopeOf(scope?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!scope) return undefined;
+  let formScope = formScopes.get(scope);
+  if (!formScope) {
+    formScope = {};
+    formScopes.set(scope, formScope);
+  }
+  return formScope;
+}
+
+function emptyScope(scope: Record<string, unknown>): void {
   for (const key of Object.keys(scope)) {
     delete scope[key];
   }
+}
+
+/** Empties a modal's shared script scope, and its form's, in place (their identity stays stable). */
+export function clearScriptScope(scope: Record<string, unknown>): void {
+  emptyScope(scope);
+  const formScope = formScopes.get(scope);
+  if (formScope) emptyScope(formScope);
 }
 
 export function createViewProxy(
@@ -1234,19 +1291,23 @@ export function createViewProxy(
     executeProcess?: (actionValue?: string) => Promise<unknown>;
   }
 ): ViewProxy {
+  const formProxy = createFormProxy(form, parameters, deps.controller, deps.gridResolver);
   const view = {
     ...(deps.hookData ?? {}),
     // Declared after the spread so a stray `hookData` key inside the data can
     // never shadow the canonical nested accessor.
     hookData: deps.hookData ?? {},
-    theForm: createFormProxy(form, parameters, deps.controller, deps.gridResolver),
+    // The form shares script-assigned properties across the modal's hooks, as the view does.
+    theForm: withScriptScope(formProxy, formScopeOf(deps.data?.scriptScope)),
     messageBar: deps.messageBar,
   } as ViewProxy;
   // The returned view: the same object, sharing script-assigned properties across the modal's views.
   const self = withScriptScope(view, deps.data?.scriptScope);
+  // Classic `form.paramWindow`: the parameter window (view) the form belongs to.
+  formProxy.paramWindow = self;
   if (deps.grid) view.viewGrid = deps.grid;
 
-  assignViewData(view, form, deps.data ?? {}, self);
+  assignViewData(view, form, deps.data ?? {}, self, parameters);
 
   if (deps.viewController) {
     assignViewActions(view, deps.viewController);

@@ -119,6 +119,7 @@ import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProces
 import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useFormDefaultsSync } from "./hooks/useFormDefaultsSync";
+import { withUniqueParameterNames } from "@/utils/processes/definition/uniqueParameterNames";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
@@ -1378,6 +1379,7 @@ function ProcessDefinitionModalContent({
           const processData = response.data;
 
           if (processData.parameters) {
+            processData.parameters = withUniqueParameterNames(processData.parameters);
             setParameters((prev) => {
               const merged = { ...processData.parameters };
               for (const [key, value] of Object.entries(prev)) {
@@ -2086,8 +2088,23 @@ function ProcessDefinitionModalContent({
  * Provides a guard against null button props and forwards all props to the content component.
  */
 export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
-  if (!button) return null;
+  // Every parameter needs its own form field: parameters sharing a name get unique keys.
+  const uniqueButton = useMemo(() => withUniqueButtonParameters(button), [button]);
+  if (!uniqueButton) return null;
   return (
-    <ProcessDefinitionModalContent {...props} button={button} data-testid="ProcessDefinitionModalContent__761503" />
+    <ProcessDefinitionModalContent
+      {...props}
+      button={uniqueButton}
+      data-testid="ProcessDefinitionModalContent__761503"
+    />
   );
+}
+
+/** The button with its process parameters keyed uniquely; the same button when they already are. */
+function withUniqueButtonParameters<T extends ProcessDefinitionModalProps["button"]>(button: T): T {
+  const parameters = button?.processDefinition?.parameters;
+  if (!button || !parameters) return button;
+  const unique = withUniqueParameterNames(parameters);
+  if (unique === parameters) return button;
+  return { ...button, processDefinition: { ...button.processDefinition, parameters: unique } };
 }

@@ -2,6 +2,7 @@ import type { ProcessParameter, Field, EntityValue, Tab } from "@workspaceui/api
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
 import type { ProcessSelectorContext } from "@/hooks/types";
 import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
+import { parameterLabel } from "@/utils/processes/definition/uniqueParameterNames";
 import { memo, useMemo } from "react";
 import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
@@ -380,7 +381,7 @@ const ProcessParameterSelectorImpl = ({
       <div className="w-1/3 flex items-center gap-2 pr-2">
         <Label
           htmlFor={parameter.name}
-          name={labelOverrides?.[parameter.name] ?? parameter.name}
+          name={labelOverrides?.[parameter.name] ?? parameterLabel(parameter)}
           data-testid="Label__dac06b"
         />
         {parameter.mandatory && (

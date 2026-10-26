@@ -144,6 +144,18 @@ describe("ProcessParameterSelector", () => {
     expect(screen.getByTestId("parameter-label")).toHaveTextContent("Test Parameter");
   });
 
+  it("captions a parameter renamed to be unique with its shared name", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={{ ...baseParameter, name: "expectedDifference", label: "There is a difference of" }}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("parameter-label")).toHaveTextContent("There is a difference of");
+  });
+
   it("should show mandatory indicator when parameter is mandatory", () => {
     const mandatoryParameter = { ...baseParameter, mandatory: true };
 

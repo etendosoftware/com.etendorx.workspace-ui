@@ -12,6 +12,7 @@ import {
   normalizeValueMapEntries,
   notImplemented,
   resolveFormKey,
+  valuesByColumnName,
   withScriptScope,
   type FieldController,
   type FooterButtonHandle,
@@ -243,6 +244,21 @@ describe("scriptProxies", () => {
     });
   });
 
+  describe("parameter ids and column-keyed values (Classic)", () => {
+    it("gives an item the id of its parameter, as Classic field.paramId", () => {
+      const { handle } = makeFormHandle();
+      const parameter = { ...param("amount", "amount_col"), id: "PARAM-1" } as ProcessParameter;
+
+      expect(createItemProxy(handle, "amount", {}, undefined, undefined, parameter).paramId).toBe("PARAM-1");
+      expect(createItemProxy(handle, "unknown").paramId).toBeUndefined();
+    });
+
+    it("keys the parameter values by column name, skipping values the form does not hold", () => {
+      expect(valuesByColumnName({ amount: 7 }, PARAMETERS)).toEqual({ amount_col: 7 });
+      expect(valuesByColumnName({ amount: 7 }, undefined)).toEqual({});
+    });
+  });
+
   describe("findParameter", () => {
     const overdue = {
       name: "Number Of Days Overdue: Group Three",
@@ -434,6 +450,30 @@ describe("scriptProxies", () => {
         expect(scope).toEqual({});
       });
 
+      it("shares the properties a script adds to the form across the modal's hooks", () => {
+        const { onLoadView, gridView } = makeViews({});
+
+        onLoadView.theForm._overpaymentOriginalValueMap = { CR: "Credit" };
+
+        expect(gridView.theForm._overpaymentOriginalValueMap).toEqual({ CR: "Credit" });
+      });
+
+      it("empties the form's shared properties too when the modal opens again", () => {
+        const scope: Record<string, unknown> = {};
+        const { onLoadView, gridView } = makeViews(scope);
+        onLoadView.theForm.isCreditAllowed = true;
+
+        clearScriptScope(scope);
+
+        expect(gridView.theForm.isCreditAllowed).toBeUndefined();
+      });
+
+      it("exposes its view as form.paramWindow (Classic)", () => {
+        const { onLoadView } = makeViews({});
+
+        expect(onLoadView.theForm.paramWindow).toBe(onLoadView);
+      });
+
       it("leaves a view without a scope unwrapped", () => {
         const view = { messageBar };
 
@@ -501,7 +541,12 @@ describe("scriptProxies", () => {
         data: { activeTabId: "T-1", getGridValues: () => ({ findtransactiontomatch: grid }) },
       });
 
-      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", amount: 7, findtransactiontomatch: grid });
+      expect(view.getContextInfo()).toEqual({
+        inpTabId: "T-1",
+        amount: 7,
+        amount_col: 7,
+        findtransactiontomatch: grid,
+      });
     });
 
     it("exposes read-only environment data and the context accessors regardless of controller", () => {
@@ -518,7 +563,7 @@ describe("scriptProxies", () => {
       expect(view.callerField?.record).toEqual(row("rec-1"));
       expect(view.activeView?.tabId).toBe("T-1");
       // Context = the launching tab id + parent record overlaid with the live parameter values.
-      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
+      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7, amount_col: 7 });
       // getView returns this view for the active tab, a minimal handle otherwise.
       expect(view.getView("T-1")).toBe(view);
       expect(view.getView("OTHER")).toEqual({ tabId: "OTHER" });
@@ -536,7 +581,12 @@ describe("scriptProxies", () => {
 
       // Classic idiom `view.parentWindow.view.getContextInfo()` resolves to the same context.
       expect(parentWindow.view.getContextInfo()).toEqual(view.getContextInfo());
-      expect(parentWindow.view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
+      expect(parentWindow.view.getContextInfo()).toEqual({
+        inpTabId: "T-1",
+        docStatus: "DR",
+        amount: 7,
+        amount_col: 7,
+      });
       expect(parentWindow.view.getView("T-1")).toBe(view);
       // The original parentWindow data is preserved alongside the injected `view` handle.
       expect(parentWindow.tabTitle).toBe("Business Partner");
@@ -550,7 +600,7 @@ describe("scriptProxies", () => {
       });
       const parentWindow = view.parentWindow as { view: ViewProxy };
 
-      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7 });
+      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7, amount_col: 7 });
     });
 
     it("exposes the classic two-tier parentWindow.activeView[.parentView].getContextInfo fallback", () => {
@@ -564,7 +614,7 @@ describe("scriptProxies", () => {
         };
       };
 
-      const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7 };
+      const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7, amount_col: 7 };
       expect(parentWindow.activeView.getContextInfo()).toEqual(expected);
       expect(parentWindow.activeView.parentView.getContextInfo()).toEqual(expected);
     });
