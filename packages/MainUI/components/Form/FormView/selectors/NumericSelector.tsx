@@ -59,17 +59,22 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     [getDecimalSeparator]
   );
 
-  const formatDisplayValue = useCallback(
-    (value: number): string => {
+  // Thousands separators are presentation only: shown while the field is not being edited, and dropped on
+  // focus so the value can be typed and parsed as before. Integers keep their plain format.
+  const formatValue = useCallback(
+    (value: number, grouped: boolean): string => {
       if (isInteger) {
         return String(value);
       }
       const locale = (language ?? "en_US").replace("_", "-");
       const formatOptions = getNumericFormatOptions(field.column?.reference, field.column?.valueFormat);
-      return new Intl.NumberFormat(locale, { ...formatOptions, useGrouping: false }).format(value);
+      return new Intl.NumberFormat(locale, { ...formatOptions, useGrouping: grouped }).format(value);
     },
     [isInteger, language, field.column]
   );
+
+  const formatDisplayValue = useCallback((value: number): string => formatValue(value, true), [formatValue]);
+  const formatEditValue = useCallback((value: number): string => formatValue(value, false), [formatValue]);
 
   useEffect(() => {
     if (!isFocused) {
@@ -162,11 +167,17 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
 
+      // Back to the editable (ungrouped) format. The grouped text cannot be parsed, so start from the form value.
+      const currentValue = Number(formValue);
+      if (formValue !== null && formValue !== undefined && formValue !== "" && !Number.isNaN(currentValue)) {
+        setLocalValue(formatEditValue(currentValue));
+      }
+
       if (props.onFocus) {
         props.onFocus(event);
       }
     },
-    [props]
+    [props, formValue, formatEditValue]
   );
 
   const handleBlur = useCallback(

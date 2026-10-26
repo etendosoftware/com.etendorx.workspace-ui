@@ -55,6 +55,7 @@ export const FIELD_REFERENCES = {
   DECIMAL: "800008",
   INTEGER: "11",
   QUANTITY_22: "22",
+  RATE: "800019",
 } as const;
 
 // Shared test utilities to reduce code duplication
