@@ -221,6 +221,20 @@ const en = {
       title: "Recovery Failed",
       description: "Unable to restore window state from URL",
     },
+    boundary: {
+      title: "Something went wrong",
+      description:
+        "An unexpected error interrupted this screen. You can try again or reload the page. Unsaved changes may be lost.",
+      reload: "Reload page",
+      reference: "Error reference",
+    },
+    connection: {
+      offlineTitle: "You are offline",
+      offlineDescription: "Check your internet connection. The application will reconnect automatically.",
+      backOnlineTitle: "Connection restored",
+      timeoutTitle: "The server took too long to respond",
+      timeoutDescription: "Please try again in a moment. If the problem persists, contact your administrator.",
+    },
     accessDenied: {
       title: "Access Denied",
       description: "Your role does not have access to this window. Contact your system administrator if you need it.",

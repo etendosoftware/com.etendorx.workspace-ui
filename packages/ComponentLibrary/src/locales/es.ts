@@ -222,6 +222,20 @@ const es = {
       title: "Error de Recuperación",
       description: "No se pudo restaurar el estado de la ventana desde la URL",
     },
+    boundary: {
+      title: "Algo salió mal",
+      description:
+        "Un error inesperado interrumpió esta pantalla. Puedes intentar de nuevo o recargar la página. Los cambios sin guardar pueden perderse.",
+      reload: "Recargar página",
+      reference: "Referencia del error",
+    },
+    connection: {
+      offlineTitle: "Sin conexión",
+      offlineDescription: "Revisa tu conexión a internet. La aplicación se reconectará automáticamente.",
+      backOnlineTitle: "Conexión restablecida",
+      timeoutTitle: "El servidor tardó demasiado en responder",
+      timeoutDescription: "Inténtalo de nuevo en un momento. Si el problema persiste, contacta al administrador.",
+    },
     accessDenied: {
       title: "Acceso denegado",
       description: "Tu rol no tiene acceso a esta ventana. Contacta al administrador del sistema si necesitas acceso.",
