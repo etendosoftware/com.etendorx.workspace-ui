@@ -155,7 +155,16 @@ Neither button shows on a read-only parameter. Both are out of the tab sequence.
 Differences with Classic:
 - The text typed in the selector is not passed to the "+" process (Classic `enteredValues`).
 - The search popup has no "Create New" button.
-- In forms, the "+" does not write the created record back into the field yet.
+
+**Forms.** The "+" of a form field (`Form/FormView/selectors/GenericSelector.tsx`) passes the same `callerField`
+(`writeCallerRecord`, `utils/form/selectors/utils.tsx`): the created record is written into the field and its
+callout runs, as Classic (e.g. a transaction's Payment takes the amount and business partner of the payment).
+
+**Typed numbers survive the defaults.** The modal re-applies the process defaults whenever they are recomputed
+(`useFormDefaultsSync`, `keepDirtyValues`), e.g. after a script changes a parameter's value map. A number the user
+types is marked as edited (`NumericSelector` `dirtyOnEdit`, set by `ProcessParameterSelector`), so it is kept:
+before, Add Payment's Actual Payment went back to 0 once its onChange offered an overpayment action. Forms do not set
+`dirtyOnEdit`.
 
 Main files: `ProcessModal/selectors/ProcessSelectorActions.tsx`, `ProcessParameterSelector.tsx`,
 `Form/FormView/selectors/SelectorModal.tsx` (`extraParams`), `ProcessDefinitionModal.tsx` (`tab`, `onOpenProcess`).

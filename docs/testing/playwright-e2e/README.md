@@ -118,7 +118,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | FRMa | smoke | Display logic of fields (Product: Stocked, Bill of Materials, Linked To Product, Tax Category) and of a child tab (Bill of Materials) re-evaluated after a field change, unsaved | Sample product, not saved |
 | FRMb | smoke | Editability by document status: a draft sales order is editable, a booked one read-only, "Copy Lines" only while not processed | Sample orders 50015 and 50017 |
 | FRMc | smoke | Save → reload round trip of text, dates, integer, yes/no, list, table, number, price and quantity fields (Discounts and Promotions) | Own record |
-| FRMe | smoke | Selector buttons in a form: the magnifying glass picks a record filtered in its popup (Sales Order business partner); the "+" opens the process that creates the record in the context of the form (Transaction payment → Add Payment, paid out from the account) | Sample records, not saved |
+| FRMe | smoke | Selector buttons in a form: the magnifying glass picks a record filtered in its popup (Sales Order business partner); the "+" opens the process that creates the record in the context of the form, and the record comes back to the field (Transaction payment → Add Payment received into the account: the typed Actual Payment is kept, the payment is written into Payment and its callout sets the deposit amount) | Own payment of Customer Germany (nothing pending, left as credit); the transaction is not saved |
 | GRDa | smoke | Child tab follows the header selection, clone with lines, backend sort, inline edit with its callout, refresh after save | Clone of sample order 50014 |
 | GRDb | smoke | Delete one and two records from the grid, unsaved-changes guard when closing a window, no deleted record back after reopening | Own categories (`api`) |
 | NAVa | smoke | Deep link in a fresh session, URL recovery after a reload, switching open windows keeps their record | Sample records |
@@ -187,7 +187,7 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | PRCb | split | Grid selection and onProcess abort are client side; amounts come from the Add Payment handlers. |
 | FRMa, FRMb, NAVa | mockable | Display/read-only logic and URL state on recorded metadata and records (NAVa is the pilot). |
 | FRMc, SESa | real backend | Save → reload round trip; server-side session and defaults. |
-| FRMe | real backend | Selector popup records and Add Payment defaults come from the datasource and the defaults handler. |
+| FRMe | real backend | Selector popup records, Add Payment defaults and execution, and the transaction callout run on the server. |
 | GRDa, GRDb | split | Child tab, sort and guard are client side; callout, clone, delete and cache are server side. |
 | PRCc, PRCd, FRMd, GRDc, GRDe | real backend | Report generation, Classic handler contract, attachment storage, saved views and tree moves are persisted. |
 | GRDd, NAVb, NAVc | mockable | Client-side grouping, summary, shortcuts and record navigation on recorded data. |
