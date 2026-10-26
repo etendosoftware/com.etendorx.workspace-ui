@@ -39,6 +39,8 @@ export const BUSINESS_PARTNER = {
   VENDOR_B: { id: "4028E6C72959682B01295F40C2A202E7", name: "Vendor B" },
   CUSTOMER_A: { id: "4028E6C72959682B01295F40C3CB02EC", name: "Customer A" },
   CUSTOMER_BARCELONA: { id: "4028E6C72959682B01295F40CFE1031B", name: "Customer Barcelona" },
+  /** No pending invoices or orders: a payment received from it is left as credit, touching no document. */
+  CUSTOMER_GERMANY: { id: "4028E6C72959682B01295F40CF060317", name: "Customer Germany" },
   EMPLOYEE_A: { id: "4028E6C72959682B01295F40C5CF02F5", name: "Employee A" },
 } as const satisfies Record<string, SampleRecord>;
 
