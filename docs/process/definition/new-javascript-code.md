@@ -720,6 +720,20 @@ This deferral is intentional: read-only data is always safe, and any unported ac
   Classic, where every hook gets the same view object. The view's own properties (platform surface, hook data
   such as `_buttonValue`) stay per view, and enumeration, spreads and JSON only see them. The scope is emptied
   when the modal opens, and a nested modal has its own.
+- **The form is shared too, and knows its view.** A property a script adds to `view.theForm` (e.g. Add
+  Payment's `form._overpaymentOriginalValueMap`, set in onLoad and read on a later change) is kept for every
+  hook of the modal, in a form scope tied to the view scope; it is emptied with it. `form.paramWindow` is the
+  view, as Classic, so a helper that only receives the form can still call `view` methods (`fireOnPause`,
+  `getContextInfo`).
+- **Parameter ids and column names, as Classic.** `item.paramId` is the parameter's `OBUIAPP_Parameter_ID`
+  (Classic `form.getField(name).paramId`): handlers such as `AddPaymentDisplayLogicActionHandler` and
+  `AddPaymentReloadLabelsActionHandler` look parameters up by id and fail with a name. `view.getContextInfo()`
+  also keys each parameter value by its `dBColumnName` (besides the form key), as a Classic parameter window
+  does: a handler reading `context.difference` finds it.
+- **Parameters with the same name.** The form keys each field by the parameter name, so two parameters
+  sharing one (Add Payment's visible `difference` and hidden `expectedDifference`, both "There is a difference
+  of") would share a field and its value. The modal keys the later one (by sequence) by its `dBColumnName` and
+  keeps the shared name as its caption (`withUniqueParameterNames`, `uniqueParameterNames.ts`).
 - **`onGridLoad` subscriptions are per execution.** `onGridLoad` runs again on every data delivery. The grid
   subscriptions it registers (`onDataArrived`, `onSelectionChanged`, `onRecordChange`, `onSelectionToggle`)
   replace the ones its previous execution registered (`runWithScopedSubscriptions`) instead of piling up.
