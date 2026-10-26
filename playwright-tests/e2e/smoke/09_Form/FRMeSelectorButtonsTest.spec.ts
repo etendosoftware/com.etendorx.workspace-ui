@@ -16,6 +16,8 @@ const ACTION_REGARDING_DOCUMENT = "Action Regarding Document";
 const PAYMENT = "Payment";
 const DEPOSIT_AMOUNT = "Deposit Amount";
 const DIFFERENCE = "There is a difference of";
+const OVERPAYMENT_ACTION = "Overpayment Action";
+const LEAVE_AS_CREDIT = "Leave the credit to be used later";
 
 /** An amount unique to the run, below 1000 so it shows without a group separator ("123.45"). */
 function uniqueAmount(): string {
@@ -80,6 +82,8 @@ test.describe("Form - selector search popup and add button @smoke @form", () => 
     await expect(actualPayment).toHaveValue(amount);
 
     await app.field.selectById(ACTION_REGARDING_DOCUMENT, data.LIST_VALUE.PROCESS_RECEIVED_PAYMENTS.id);
+    // As Classic, the amount no invoice takes asks what to do with it: it is left as credit
+    await app.field.select(OVERPAYMENT_ACTION, LEAVE_AS_CREDIT);
     await app.processModal.execute();
     await app.processModal.waitForClose();
 
