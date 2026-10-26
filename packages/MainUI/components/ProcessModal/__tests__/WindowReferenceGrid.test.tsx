@@ -833,7 +833,7 @@ describe("WindowReferenceGrid Utilities", () => {
     it("does nothing without externalParams", () => {
       const options: Record<string, unknown> = { tabId: "TAB-1" };
 
-      applyExternalParams(options as never, undefined);
+      applyExternalParams(options as never);
 
       expect(options).toEqual({ tabId: "TAB-1" });
     });

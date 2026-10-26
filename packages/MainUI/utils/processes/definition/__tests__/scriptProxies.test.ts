@@ -477,7 +477,7 @@ describe("scriptProxies", () => {
       it("leaves a view without a scope unwrapped", () => {
         const view = { messageBar };
 
-        expect(withScriptScope(view, undefined)).toBe(view);
+        expect(withScriptScope(view)).toBe(view);
       });
     });
 
