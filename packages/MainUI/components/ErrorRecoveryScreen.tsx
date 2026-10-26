@@ -46,13 +46,14 @@ export function ErrorRecoveryScreen({ error, reset }: Readonly<ErrorRecoveryScre
         title={t("errors.boundary.title")}
         description={t("errors.boundary.description")}
         showRetry={Boolean(reset)}
-        onRetry={reset}>
+        onRetry={reset}
+        data-testid="ErrorDisplay__99bcc7">
         {error.digest && (
           <p className="text-xs text-gray-500 mb-4">
             {t("errors.boundary.reference")}: {error.digest}
           </p>
         )}
-        <Button variant="outlined" onClick={() => window.location.reload()}>
+        <Button variant="outlined" onClick={() => window.location.reload()} data-testid="Button__99bcc7">
           {t("errors.boundary.reload")}
         </Button>
       </ErrorDisplay>

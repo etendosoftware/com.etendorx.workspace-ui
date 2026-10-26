@@ -110,7 +110,7 @@ export default async function RootLayout({
                   {/* Outside UserProvider: it replaces its subtree with the login and the mandatory
                       password-change screens, which also need to raise toasts. */}
                   <Toaster data-testid="Toaster__ba7569" />
-                  <GlobalErrorHandlers />
+                  <GlobalErrorHandlers data-testid="GlobalErrorHandlers__ba7569" />
                 </LanguageProvider>
               </PreferencesProvider>
             </ThemeProvider>

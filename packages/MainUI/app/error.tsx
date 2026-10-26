@@ -24,5 +24,5 @@ export default function RouteError({
   error,
   reset,
 }: Readonly<{ error: Error & { digest?: string }; reset: () => void }>) {
-  return <ErrorRecoveryScreen error={error} reset={reset} />;
+  return <ErrorRecoveryScreen error={error} reset={reset} data-testid="ErrorRecoveryScreen__7059e5" />;
 }

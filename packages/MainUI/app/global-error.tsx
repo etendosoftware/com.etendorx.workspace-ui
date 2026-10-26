@@ -28,7 +28,7 @@ export default function GlobalError({ error }: Readonly<{ error: Error & { diges
   return (
     <html lang="en">
       <body>
-        <ErrorRecoveryScreen error={error} />
+        <ErrorRecoveryScreen error={error} data-testid="ErrorRecoveryScreen__ac488f" />
       </body>
     </html>
   );
