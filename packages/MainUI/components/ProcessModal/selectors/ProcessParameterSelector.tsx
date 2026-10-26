@@ -250,6 +250,9 @@ const ProcessParameterSelectorImpl = ({
               field={mappedField}
               disabled={isReadOnly}
               placeholder={parameter.description}
+              // What the user types must survive a later re-application of the process
+              // defaults (e.g. after a script changes a parameter's value map).
+              dirtyOnEdit
               data-testid="NumericSelector__dac06b"
             />
           );

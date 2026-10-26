@@ -26,7 +26,9 @@ jest.mock("@/components/Form/FormView/selectors/BooleanSelector", () => ({
 }));
 
 jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
-  NumericSelector: ({ field }: any) => <input data-testid="numeric-selector" name={field.hqlName} type="number" />,
+  NumericSelector: ({ field, dirtyOnEdit }: any) => (
+    <input data-testid="numeric-selector" name={field.hqlName} type="number" data-dirty-on-edit={String(dirtyOnEdit)} />
+  ),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
@@ -191,6 +193,16 @@ describe("ProcessParameterSelector", () => {
 
     expect(screen.getByTestId("numeric-selector")).toBeInTheDocument();
     expect(screen.getByTestId("numeric-selector")).toHaveAttribute("type", "number");
+  });
+
+  it("keeps what the user types in a numeric parameter across a later re-application of the defaults", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={{ ...baseParameter, reference: "Amount" }} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("numeric-selector")).toHaveAttribute("data-dirty-on-edit", "true");
   });
 
   it("should render GenericSelector for unsupported references", () => {

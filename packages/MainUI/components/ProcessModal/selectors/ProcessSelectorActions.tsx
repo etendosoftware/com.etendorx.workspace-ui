@@ -25,13 +25,10 @@ import SelectorModal from "@/components/Form/FormView/selectors/SelectorModal";
 import type { ProcessSelectorContext } from "@/hooks/types";
 import { buildProcessSelectorOverlay } from "@/hooks/datasource/useTableDirDatasource";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
+import { getSelectorFieldName, updateSelectorValue, writeCallerRecord } from "@/utils/form/selectors/utils";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import { getSelectorPopupShortcutId, isEventFromDropdownPortal, isSelectorPopupShortcut } from "@/utils/form/keyboard";
-import type { CallerField, OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
-
-/** Record a process sends back to the selector that launched it (`setSelectorValueFromRecord`). */
-type CallerRecord = Parameters<NonNullable<CallerField["setValueFromRecord"]>>[0];
+import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
 
 interface ProcessSelectorActionsProps {
   field: Field;
@@ -56,16 +53,6 @@ export const writePickedRecord = (setValue: UseFormSetValue<FieldValues>, field:
   if (!id) return;
   const displayField = field.selector?.displayField as string | undefined;
   updateSelectorValue(setValue, getSelectorFieldName(field), id, record, displayField);
-};
-
-/** Writes the record a process created (`{value, map}`, Classic `setValueFromRecord`) into the selector. */
-export const writeCallerRecord = (setValue: UseFormSetValue<FieldValues>, field: Field, record: CallerRecord): void => {
-  if (!record.value) return;
-  const identifier = typeof record.map === "string" ? record.map : record.value;
-  updateSelectorValue(setValue, getSelectorFieldName(field), record.value, {
-    id: record.value,
-    _identifier: identifier,
-  });
 };
 
 /**
