@@ -127,6 +127,12 @@ export const buildKernelEndpoint = (args: {
   return `${KERNEL_ENDPOINT}?${qs.toString()}`;
 };
 
+/**
+ * Client-side deadline for report executions. Matches the classic UI, where the SmartClient RPC call
+ * times out after 240 s, so the modal never waits indefinitely on a request the server or proxy cut.
+ */
+export const REPORT_EXECUTION_TIMEOUT_MS = 240_000;
+
 /** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
 const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
   const response = await fetch(url, init);
@@ -582,15 +588,31 @@ export function useProcessExecution({
     ]
   );
 
-  /** Posts an execution payload to the process's Java handler and returns the parsed response. */
+  /**
+   * Posts an execution payload to the process's Java handler and returns the parsed response. A
+   * report execution is aborted after {@link REPORT_EXECUTION_TIMEOUT_MS} and fails with its own message.
+   */
   const fetchJavaProcessResponse = useCallback(
     async (payload: unknown): Promise<unknown> => {
-      const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName, reportId });
-      const hasFiles = Object.keys(fileParams).length > 0;
-      const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
-      return fetchAndParseJson(apiUrl, requestInit);
+      const timeoutController = reportId ? new AbortController() : undefined;
+      const timeoutId = timeoutController
+        ? setTimeout(() => timeoutController.abort(), REPORT_EXECUTION_TIMEOUT_MS)
+        : undefined;
+      try {
+        const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName, reportId });
+        const hasFiles = Object.keys(fileParams).length > 0;
+        const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
+        return await fetchAndParseJson(apiUrl, { ...requestInit, signal: timeoutController?.signal });
+      } catch (error) {
+        if (timeoutController?.signal.aborted) {
+          throw new Error(t("process.reportTimeout"));
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
+      }
     },
-    [processId, tab?.window, javaClassName, reportId, fileParams, buildMultipartRequest, buildJsonRequest]
+    [t, processId, tab?.window, javaClassName, reportId, fileParams, buildMultipartRequest, buildJsonRequest]
   );
 
   /**

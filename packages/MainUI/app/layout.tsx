@@ -37,6 +37,7 @@ import { RecentItemsProvider } from "@/contexts/recentItems";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 import { Toaster } from "@/components/Toaster";
+import { GlobalErrorHandlers } from "@/components/GlobalErrorHandlers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -109,6 +110,7 @@ export default async function RootLayout({
                   {/* Outside UserProvider: it replaces its subtree with the login and the mandatory
                       password-change screens, which also need to raise toasts. */}
                   <Toaster data-testid="Toaster__ba7569" />
+                  <GlobalErrorHandlers data-testid="GlobalErrorHandlers__ba7569" />
                 </LanguageProvider>
               </PreferencesProvider>
             </ThemeProvider>
