@@ -10,6 +10,8 @@ const PRIORITY = { typed: "7", shown: "7" };
 const DISCOUNT_PERCENT = { typed: "12.5", shown: "12.5" };
 const DISCOUNT_AMOUNT = { typed: "1234.5", shown: "1234.50" };
 const MIN_QUANTITY = { typed: "2", shown: "2" };
+/** The record restored from the URL after a reload: up to a minute on a busy CI. */
+const RECOVERY_TIMEOUT = 60_000;
 
 /**
  * Save → reload round trip: a discount is created with a non-default value in a field of each
@@ -43,7 +45,7 @@ test.describe("Form - save and reload round trip of field types @smoke @form", (
     await app.toast.closeAll();
 
     await page.reload();
-    await app.breadcrumb.waitFor(name);
+    await app.breadcrumb.waitFor(name, RECOVERY_TIMEOUT);
 
     await app.field.expectToContain("Discount/Promotion Type", type.name);
     await expect(app.field.input("Name")).toHaveValue(name);

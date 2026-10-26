@@ -18,6 +18,9 @@ const DEPOSIT_AMOUNT = "Deposit Amount";
 const DIFFERENCE = "There is a difference of";
 const OVERPAYMENT_ACTION = "Overpayment Action";
 const LEAVE_AS_CREDIT = "Leave the credit to be used later";
+/** Time for the process scripts and the display logic to react to a typed amount. */
+const SETTLE_TIMEOUT = 10_000;
+const AMOUNT_TIMEOUT = 60_000;
 
 /** An amount unique to the run, below 1000 so it shows without a group separator ("123.45"). */
 function uniqueAmount(): string {
@@ -74,11 +77,17 @@ test.describe("Form - selector search popup and add button @smoke @form", () => 
     await app.field.selectById(RECEIVED_FROM, customer.id, { search: customer.name });
 
     // The amount typed stays once the process scripts reacted to it (no invoice takes it: all of it is
-    // a difference, left as credit)
+    // a difference, left as credit). Typed again until the field that asks what to do with it shows:
+    // on a busy server, the answer to the display logic asked when the customer was picked can arrive
+    // after the one asked for the amount, and hide that field again.
     const actualPayment = app.field.input(ACTUAL_PAYMENT);
-    await actualPayment.fill(amount);
-    await actualPayment.press("Tab");
-    await expect(app.field.input(DIFFERENCE)).toHaveValue(amount);
+    await expect(async () => {
+      await actualPayment.fill("");
+      await actualPayment.fill(amount);
+      await actualPayment.press("Tab");
+      await expect(app.field.input(DIFFERENCE)).toHaveValue(amount, { timeout: SETTLE_TIMEOUT });
+      await expect(app.field.selector(OVERPAYMENT_ACTION)).toBeVisible({ timeout: SETTLE_TIMEOUT });
+    }).toPass({ timeout: AMOUNT_TIMEOUT });
     await expect(actualPayment).toHaveValue(amount);
 
     await app.field.selectById(ACTION_REGARDING_DOCUMENT, data.LIST_VALUE.PROCESS_RECEIVED_PAYMENTS.id);

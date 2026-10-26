@@ -10,6 +10,8 @@ const LINKED_ITEMS = '[data-testid^="LinkedItem__"]:visible';
  * minute on a busy CI.
  */
 const NAVIGATION_TIMEOUT = 60_000;
+/** The server looks for the linked records in every table that references the record: slow on a busy CI. */
+const CATEGORIES_TIMEOUT = 60_000;
 /** Child tabs of the opened record load after its window is shown. */
 const TAB_TIMEOUT = 30_000;
 
@@ -50,9 +52,10 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await btn.click();
     };
 
+    /** Opens a category of linked records: the categories are asked to the server once the section opens. */
     const clickLinkedItemButton = async (label: string) => {
       const btn = buttonWithText(page, label);
-      await btn.waitFor({ state: "visible", timeout: 15_000 });
+      await btn.waitFor({ state: "visible", timeout: CATEGORIES_TIMEOUT });
       await btn.scrollIntoViewIfNeeded();
       await btn.click();
     };

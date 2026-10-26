@@ -11,7 +11,8 @@ export const SIDEBAR_TEST_IDS = {
 
 const MENU_ENTRY_TIMEOUT = 10_000;
 const TOGGLE_TIMEOUT = 2_000;
-const LANDING_TIMEOUT = 30_000;
+/** A window loads its metadata the first time it opens: up to a minute on a busy CI. */
+const LANDING_TIMEOUT = 60_000;
 /** Grid header of a list-only view: proves the window opened when it has no breadcrumb form tab. */
 const VISIBLE_GRID_HEADER = "table thead:visible";
 
