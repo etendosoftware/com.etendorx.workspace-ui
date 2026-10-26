@@ -621,11 +621,11 @@ export function useProcessExecution({
         await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
-        const timedOut = timeoutController?.signal.aborted === true;
-        setResult({
-          success: false,
-          error: timedOut ? t("process.reportTimeout") : error instanceof Error ? error.message : "Unknown error",
-        });
+        let errorMessage = error instanceof Error ? error.message : "Unknown error";
+        if (timeoutController?.signal.aborted) {
+          errorMessage = t("process.reportTimeout");
+        }
+        setResult({ success: false, error: errorMessage });
       } finally {
         clearTimeout(timeoutId);
       }
