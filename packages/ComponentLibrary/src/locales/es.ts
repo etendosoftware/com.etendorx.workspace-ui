@@ -513,6 +513,7 @@ const es = {
   form: {
     select: {
       placeholder: "Seleccione una opción",
+      minCharsHint: "Escribe al menos {{min}} caracteres para buscar",
     },
   },
   copilot: {

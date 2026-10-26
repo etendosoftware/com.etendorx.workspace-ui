@@ -33,6 +33,7 @@ import { DropdownPortal } from "./DropdownPortal";
 import SearchInput from "./Select/SearchInput";
 import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
 import { NOT_TABBABLE } from "@/utils/form/focus";
+import { getMinCharsHint, isBelowSearchThreshold } from "@/utils/selectorUtils";
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
@@ -63,6 +64,8 @@ interface MultiSelectProps {
   maxHeight?: number;
   enableTextFilterLogic?: boolean;
   isReadOnly?: boolean;
+  /** Minimum typed characters before `onSearch` queries; 0 (default) means no minimum. */
+  minSearchChars?: number;
 }
 
 const OptionItem = memo(
@@ -118,6 +121,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   maxHeight = 240,
   enableTextFilterLogic = false,
   isReadOnly = false,
+  minSearchChars = 0,
 }: MultiSelectProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -125,6 +129,9 @@ const MultiSelect = memo(function MultiSelectCmp({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
+
+  const minCharsHint = getMinCharsHint(t, minSearchChars);
+  const isBelowThreshold = isBelowSearchThreshold(searchTerm, minSearchChars);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -304,6 +311,10 @@ const MultiSelect = memo(function MultiSelectCmp({
       ));
     }
 
+    if (isBelowThreshold) {
+      return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{minCharsHint}</li>;
+    }
+
     if (filteredOptions.length > 0) {
       return filteredOptions.map((option, index) => (
         <OptionItem
@@ -332,6 +343,8 @@ const MultiSelect = memo(function MultiSelectCmp({
     handleToggle,
     showSkeleton,
     showLoading,
+    isBelowThreshold,
+    minCharsHint,
     t,
   ]);
 
@@ -385,6 +398,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           handleKeyDown={handleKeyDown}
           handleSearchBlur={handleSearchBlur}
           handleFocus={() => {}}
+          placeholder={minCharsHint || undefined}
           data-testid="SearchInput__cb81f7"
         />
         <ul

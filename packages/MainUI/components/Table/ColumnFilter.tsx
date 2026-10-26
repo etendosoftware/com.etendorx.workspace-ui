@@ -10,6 +10,8 @@ import { MultiSelect } from "../Form/FormView/selectors/components/MultiSelect";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { SELECTOR_MIN_SEARCH_CHARS } from "@/hooks/datasource/constants";
+import { isBelowSearchThreshold, isSearchSelectorDatasource } from "@/utils/selectorUtils";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -36,15 +38,23 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // Search selector columns list their values from a possibly large table, so their filter waits for a
+  // minimum of typed characters before querying.
+  const minSearchChars = isSearchSelectorDatasource(column.selectorDatasourceName as string | undefined)
+    ? SELECTOR_MIN_SEARCH_CHARS
+    : 0;
+
   // All hooks must be called unconditionally
   const handleSearchChange = useCallback(
     (searchQuery: string) => {
       const isBooleanColumn =
         column.type === "boolean" || column.column?._identifier === "YesNo" || column.column?.reference === "20";
 
+      if (isBelowSearchThreshold(searchQuery, minSearchChars)) return;
+
       if (onLoadOptions && !isBooleanColumn) onLoadOptions(searchQuery);
     },
-    [column, onLoadOptions]
+    [column, onLoadOptions, minSearchChars]
   );
 
   // Compute values after hooks
@@ -133,6 +143,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
       maxHeight={200}
       data-testid="MultiSelect__a8fea9"
       enableTextFilterLogic={true}
+      minSearchChars={minSearchChars}
     />
   );
 };

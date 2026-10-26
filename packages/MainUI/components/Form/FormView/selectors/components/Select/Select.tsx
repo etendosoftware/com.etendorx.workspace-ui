@@ -1,5 +1,7 @@
 import {
+  getMinCharsHint,
   handleKeyboardActivation,
+  isBelowSearchThreshold,
   type Option,
   useFocusHandler,
   useHoverHandlers,
@@ -43,6 +45,7 @@ function SelectCmp({
   hasMore = true,
   field,
   columns,
+  minSearchChars = 0,
 }: SelectProps) {
   const { t } = useTranslation();
   const { register, setValue } = useFormContext();
@@ -68,6 +71,9 @@ function SelectCmp({
   const dropdownId = useMemo(() => `dropdown-${name}`, [name]);
 
   const handleSearchChange = useSearchHandler(onSearch);
+
+  const minCharsHint = getMinCharsHint(t, minSearchChars);
+  const isBelowThreshold = isBelowSearchThreshold(searchTerm, minSearchChars);
 
   const filteredOptions = useMemo(
     () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -496,21 +502,26 @@ function SelectCmp({
           handleFocus={handleFocus}
           listRef={listRef as React.RefObject<HTMLUListElement>}
           handleScroll={handleScroll}
+          searchPlaceholder={minCharsHint || undefined}
           renderedOptions={
-            <>
-              {columns?.length ? (
-                <li
-                  className="px-4 py-2 grid gap-2 border-b-2 border-gray-300 bg-gray-50 sticky top-0 z-10"
-                  style={gridStyle}>
-                  {columns.map((col) => (
-                    <span key={col.accessorKey} className="text-xs font-semibold text-gray-500 uppercase truncate">
-                      {col.header}
-                    </span>
-                  ))}
-                </li>
-              ) : null}
-              {renderedOptions}
-            </>
+            isBelowThreshold ? (
+              <li className="px-4 py-3 text-sm text-baseline-60">{minCharsHint}</li>
+            ) : (
+              <>
+                {columns?.length ? (
+                  <li
+                    className="px-4 py-2 grid gap-2 border-b-2 border-gray-300 bg-gray-50 sticky top-0 z-10"
+                    style={gridStyle}>
+                    {columns.map((col) => (
+                      <span key={col.accessorKey} className="text-xs font-semibold text-gray-500 uppercase truncate">
+                        {col.header}
+                      </span>
+                    ))}
+                  </li>
+                ) : null}
+                {renderedOptions}
+              </>
+            )
           }
           dropdownId={dropdownId}
           minWidth={columnsMinWidth}

@@ -504,6 +504,7 @@ const en = {
   form: {
     select: {
       placeholder: "Select an option",
+      minCharsHint: "Type at least {{min}} characters to search",
     },
   },
   copilot: {
