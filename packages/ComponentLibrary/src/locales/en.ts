@@ -357,6 +357,7 @@ const en = {
     confirmationMessage: "Want to execute this process?",
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
+    reportTimeout: "The report took too long to run and was cancelled. Try again with narrower filters.",
     processError: "Process failed",
     missingMandatoryFields: "You have not filled in all needed fields",
     warning: "Warning",

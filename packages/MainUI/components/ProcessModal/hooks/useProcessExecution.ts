@@ -126,6 +126,12 @@ export const buildKernelEndpoint = (args: {
   return `${KERNEL_ENDPOINT}?${qs.toString()}`;
 };
 
+/**
+ * Client-side deadline for report executions. Matches the classic UI, where the SmartClient RPC call
+ * times out after 240 s, so the modal never waits indefinitely on a request the server or proxy cut.
+ */
+export const REPORT_EXECUTION_TIMEOUT_MS = 240_000;
+
 /** Fetches `url`, throws on non-2xx, returns parsed JSON or null when body is not JSON. */
 const fetchAndParseJson = async (url: string, init: RequestInit): Promise<unknown> => {
   const response = await fetch(url, init);
@@ -573,12 +579,16 @@ export function useProcessExecution({
 
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
+      const timeoutController = reportId ? new AbortController() : undefined;
+      const timeoutId = timeoutController
+        ? setTimeout(() => timeoutController.abort(), REPORT_EXECUTION_TIMEOUT_MS)
+        : undefined;
       try {
         const apiUrl = buildKernelEndpoint({ processId, windowId: tab?.window, javaClassName, reportId });
         const hasFiles = Object.keys(fileParams).length > 0;
         const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
-        const resultData = await fetchAndParseJson(apiUrl, requestInit);
+        const resultData = await fetchAndParseJson(apiUrl, { ...requestInit, signal: timeoutController?.signal });
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
         // Dispatch the server `responseActions` registry-first, mirroring the
@@ -611,10 +621,17 @@ export function useProcessExecution({
         await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
-        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+        let errorMessage = error instanceof Error ? error.message : "Unknown error";
+        if (timeoutController?.signal.aborted) {
+          errorMessage = t("process.reportTimeout");
+        }
+        setResult({ success: false, error: errorMessage });
+      } finally {
+        clearTimeout(timeoutId);
       }
     },
     [
+      t,
       processId,
       tab?.window,
       javaClassName,
