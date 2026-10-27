@@ -1,4 +1,5 @@
 import { expect, test } from "../../support/fixtures";
+import { TABS } from "../../support/registry/windows";
 import { runAndWaitForResponse } from "../../support/wait";
 
 const DEFAULTS_URL = /DefaultsProcessActionHandler/;
@@ -46,13 +47,15 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
     await app.processModal.closeResult();
     await app.toast.closeAll();
 
-    // Refresh and verify Completed status
-    await app.toolbar.button("refresh").click();
+    // Refresh and verify Completed status. The header toolbar is found by its tab: while the
+    // refresh reloads the record, its process menu is briefly gone and the Lines one comes first.
+    const headerToolbar = app.toolbar.inTab(TABS.PURCHASE_INVOICE_HEADER);
+    await headerToolbar.button("refresh").click();
     // The status resolves in a virtualized (off-screen) row — toBeAttached matches Cypress should("exist")
     await expect(page.getByText("Completed", { exact: true }).first()).toBeAttached({ timeout: 20_000 });
 
     // ── Step 6: Add Payment ───────────────────────────────────────────────────
-    await runAndWaitForResponse(page, DEFAULTS_URL, () => app.toolbar.process("Add Payment"));
+    await runAndWaitForResponse(page, DEFAULTS_URL, () => headerToolbar.process("Add Payment"));
 
     // Wait for the payment dialog to load: the Action dropdown and the table rows appear once
     // the defaults are loaded
