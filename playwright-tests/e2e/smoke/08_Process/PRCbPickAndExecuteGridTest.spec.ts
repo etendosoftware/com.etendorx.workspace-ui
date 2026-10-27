@@ -14,6 +14,9 @@ const PAYMENT_AMOUNT = "100";
 const EDITED_AMOUNT = "60";
 const ALLOCATED_TOTAL = 'input[aria-label="Amount on Invoices and/or Orders"]';
 const LINE_AMOUNT = 'input[aria-label="Amount"]';
+/** The 40.00 of the payment no invoice takes: as Classic, Execute waits until it says what to do with it. */
+const OVERPAYMENT_ACTION = "Overpayment Action";
+const LEAVE_AS_CREDIT = "Leave the credit to be used later";
 
 /** Types an amount in the cell editor of a selected row and leaves the cell. */
 async function editLineAmount(cell: Locator, amount: string): Promise<void> {
@@ -72,6 +75,9 @@ test.describe("Pick and Execute grid - selection, cell edit and onProcess abort 
 
     await app.field.selector("Action Regarding Document").click();
     await page.getByTestId(`OptionItem__${data.LIST_VALUE.PROCESS_RECEIVED_PAYMENTS.id}`).click();
+    await expect(app.field.selector(OVERPAYMENT_ACTION)).toBeVisible();
+    await expect(app.processModal.executeButton(), "Execute is enabled with an unhandled difference").toBeDisabled();
+    await app.field.select(OVERPAYMENT_ACTION, LEAVE_AS_CREDIT);
     await app.processModal.execute();
 
     await expect(app.processModal.messageBar).toContainText(ABORT_MESSAGE);
