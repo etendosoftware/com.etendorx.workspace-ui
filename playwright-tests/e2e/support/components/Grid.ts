@@ -16,6 +16,8 @@ const SHOWING_RECORDS = /Showing (\d+) records?/;
 const ROW_SELECTION_LABEL = "Toggle select row";
 /** Entry of the column actions menu that removes the filter of the column. */
 const CLEAR_FILTER = "Clear filter";
+/** Text the header of a filtered column carries: "Filtering by <column> - …". */
+const FILTERING_BY = "Filtering by";
 
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
@@ -93,13 +95,15 @@ export class Grid {
 
   /**
    * Removes the filter of a column through its column actions menu ("Clear filter"), e.g. a
-   * filter a process grid applies when it opens, and waits for the data without it.
+   * filter a process grid applies when it opens. Waits for the header to stop showing the filter,
+   * not for a request: when the grid already fetched the data without that filter (a process grid
+   * can load once before it applies its own), it shows that data again without asking for it.
    */
   async clearFilter(column: string, scope: Locator | Page = this.page): Promise<void> {
-    await this.columnHeader(column, scope).getByRole("button", { name: "Column Actions" }).click();
-    await runAndWaitForDatasource(this.page, () =>
-      this.page.getByRole("menuitem", { name: CLEAR_FILTER, exact: true }).click()
-    );
+    const header = this.columnHeader(column, scope);
+    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.page.getByRole("menuitem", { name: CLEAR_FILTER, exact: true }).click();
+    await expect(header).not.toContainText(`${FILTERING_BY} ${column}`);
   }
 
   /** The "Showing N records" count of the visible grid. */
