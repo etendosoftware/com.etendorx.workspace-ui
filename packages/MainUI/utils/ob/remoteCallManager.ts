@@ -24,10 +24,41 @@ const RPC_STATUS_FAILURE = -1;
 /** Thrown when the shim is built without a transport (a wiring bug, not a runtime failure). */
 const REMOTE_CALL_NO_TRANSPORT = "OB.RemoteCallManager.call requires a remoteCall dependency";
 
+/** Request parameter written by the transport itself; a caller-provided value never overrides it. */
+const ACTION_PARAM = "_action";
+
 /** Transport injected so this module stays free of any React / fetch layer. */
 export interface RemoteCallDeps {
-  /** Performs the kernel action call (e.g. the modal's `callAction`). */
-  remoteCall?: (handler: string, params: Record<string, unknown>) => Promise<{ data: unknown }>;
+  /** Performs the kernel action call (e.g. the modal's `callAction`), with optional URL query parameters. */
+  remoteCall?: (
+    handler: string,
+    params: Record<string, unknown>,
+    queryParams?: Record<string, string>
+  ) => Promise<{ data: unknown }>;
+}
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * Encodes classic `requestParams` as URL query parameters, the way classic
+ * `OB.RemoteCallManager.call` does (SmartClient `encodeParameter`): strings are
+ * sent as-is and any other value is JSON-encoded, so an object such as
+ * `context` arrives as JSON and a boolean as `"true"` / `"false"`. Empty
+ * values and the reserved `_action` key are skipped.
+ */
+export function encodeRequestParams(requestParams: unknown): Record<string, string> {
+  const encoded: Record<string, string> = {};
+  if (!isPlainObject(requestParams)) {
+    return encoded;
+  }
+  for (const [key, value] of Object.entries(requestParams)) {
+    if (key === ACTION_PARAM || value === undefined || value === null) {
+      continue;
+    }
+    encoded[key] = typeof value === "string" ? value : JSON.stringify(value);
+  }
+  return encoded;
 }
 
 /**
@@ -43,14 +74,15 @@ export interface RemoteCallDeps {
  *   was provided, otherwise `callback`, with `{ status: -1 }` so classic
  *   `response.status < 0` error branches keep working.
  *
- * `requestParams` is accepted for signature compatibility but not used for
- * routing: the kernel call is always a POST to the action handler.
+ * `data` is the POST body and `requestParams` travels as URL query parameters
+ * (see `encodeRequestParams`), so action handlers reading
+ * `parameters.get(...)` receive them as in classic.
  */
 export function createRemoteCallManager(deps: RemoteCallDeps): OBRemoteCallManager {
   const call = (
     actionName: string,
     data?: Record<string, unknown>,
-    _requestParams?: unknown,
+    requestParams?: unknown,
     callback?: RemoteCallback,
     callerContext?: unknown,
     errorCallback?: RemoteCallback
@@ -60,7 +92,7 @@ export function createRemoteCallManager(deps: RemoteCallDeps): OBRemoteCallManag
       throw new Error(REMOTE_CALL_NO_TRANSPORT);
     }
     const request = { clientContext: callerContext };
-    remoteCall(actionName, data ?? {})
+    remoteCall(actionName, data ?? {}, encodeRequestParams(requestParams))
       .then((result) => {
         callback?.({ status: RPC_STATUS_SUCCESS }, result.data, request);
       })

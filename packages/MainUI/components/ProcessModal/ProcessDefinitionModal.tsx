@@ -119,11 +119,13 @@ import { useProcessFICCallout, type FICCalloutResponse } from "./hooks/useProces
 import { compileOnRefreshFunction, type OnRefreshFunction } from "./processView";
 import { useGridRowValidation } from "./hooks/useGridRowValidation";
 import { useFormDefaultsSync } from "./hooks/useFormDefaultsSync";
+import { withUniqueParameterNames } from "@/utils/processes/definition/uniqueParameterNames";
 import { useParameterChangeHooks } from "./hooks/useParameterChangeHooks";
 import { useActionDispatchContext } from "./hooks/useActionDispatchContext";
 import { compileParameterHook, type CompiledParameterHook } from "@/utils/processes/definition/compileParameterHook";
 import { classifyPayscriptBody, evaluateModuleScope } from "@/utils/processes/definition/moduleScope";
 import {
+  clearScriptScope,
   createFormHandle,
   createViewProxy,
   findParameter,
@@ -131,6 +133,7 @@ import {
   type FieldController,
   type GridController,
   type GridResolver,
+  type OpenProcessParams,
   type ViewController,
   type ViewData,
 } from "@/utils/processes/definition/scriptProxies";
@@ -144,17 +147,31 @@ import {
   type ScriptButtonState,
 } from "@/utils/processes/definition/utils";
 import { shouldRunProcessLifecycleHooks } from "@/utils/processes/definition/processLifecycle";
-import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
-import { pushProcess } from "@/utils/processes/definition/processStack";
+import {
+  getMessageBarState,
+  isolateMessageBar,
+  messageBar,
+  subscribeMessageBar,
+} from "@/utils/processes/definition/messageBarStore";
+import {
+  getProcessStack,
+  isTopmostProcessModal,
+  pushProcess,
+  subscribeProcessStack,
+} from "@/utils/processes/definition/processStack";
+import { buildNestedLaunch } from "@/utils/processes/definition/nestedLaunch";
 import {
   isDirectExecuteResult,
   shouldFireDirectExecute,
   shouldRenderDirectExecuteOverlay,
 } from "@/utils/processes/definition/directExecute";
 import { initialProcessParameters } from "@/utils/processes/definition/manualProcess";
+import { buildSourceView } from "@/utils/processes/definition/sourceView";
+import { buildDefaultsRequestPayload } from "./utils/defaultsRequestPayload";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
+  hasVisibleParameter,
   type ProcessParameterGroup,
 } from "./utils/groupProcessParametersByFieldGroup";
 import { buildSuccessBannerMessage, readBannerTitle } from "./utils/responseBanner";
@@ -315,11 +332,17 @@ function ProcessDefinitionModalContent({
   contextRecord,
   windowId: windowIdProp,
   callerField: callerFieldProp,
+  ownerTab,
+  externalParams,
+  callerContext,
+  stackEntryId,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { getLabel, language } = useLanguage();
   const { graph } = useSelected();
-  const { tab, record: tabRecord } = useTabContext();
+  const { tab: contextTab, record: tabRecord } = useTabContext();
+  // A nested launch renders outside any tab: it runs in its owner's tab (Classic buttonOwnerView).
+  const tab = contextTab ?? ownerTab;
   const refetchDatasource = useOptionalDatasourceContext()?.refetchDatasource;
   const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const session = useUserStore((s) => s.session);
@@ -396,7 +419,7 @@ function ProcessDefinitionModalContent({
 
   // Warehouse plugin — evaluated only for custom-component processes; its onLoad
   // returns the schema (type: 'warehouseProcess') used to render GenericWarehouseProcess.
-  const selectedRecordsForPlugin = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
+  const selectedRecordsForPlugin = useMemo(() => (tab && graph ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
 
   const {
     schema: warehouseSchema,
@@ -426,6 +449,8 @@ function ProcessDefinitionModalContent({
   const directExecuteFiredRef = useRef(false);
   // The bare direct-execute overlay does not host ProcessMessageBar, so the modal
   // has to know when a message exists to give the chrome (and the bar) back.
+  const processStack = useSyncExternalStore(subscribeProcessStack, getProcessStack, getProcessStack);
+  const isTopmostModal = isTopmostProcessModal(processStack, stackEntryId);
   const hasMessageBarMessage = useSyncExternalStore(
     subscribeMessageBar,
     () => getMessageBarState() !== null,
@@ -560,7 +585,7 @@ function ProcessDefinitionModalContent({
   }, [parameters]);
 
   // Handle case when modal is opened from sidebar (no tab context)
-  const selectedRecords = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
+  const selectedRecords = useMemo(() => (tab && graph ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
   const selectedRecordsCount = (selectedRecords || []).length;
 
   const firstWindowReferenceParam = useMemo(
@@ -579,7 +604,8 @@ function ProcessDefinitionModalContent({
 
   // Pick-and-Execute discriminator: prefers the explicit `uiPattern` from metadata
   // and falls back to the presence of a Window Reference parameter for legacy seeds.
-  const isPE = useMemo(() => isPickAndExecute(button.processDefinition), [button.processDefinition]);
+  // From the loaded definition: a nested launch starts from a stub button without parameters.
+  const isPE = useMemo(() => isPickAndExecute(processDefinition), [processDefinition]);
 
   const {
     fetchConfig,
@@ -605,6 +631,8 @@ function ProcessDefinitionModalContent({
     record: record || undefined,
     tab: tab || undefined,
     type,
+    externalParams,
+    callerContext,
   });
 
   const memoizedParameters = useMemo(() => Object.values(parameters), [parameters]);
@@ -846,8 +874,12 @@ function ProcessDefinitionModalContent({
 
   // Read-only environment data surfaced on the `view` (pure values; no controller
   // needed). The same object reaches every hook via the canonical view builder.
+  // Properties the scripts assign on their `view`, shared by every view of this modal (Classic's
+  // single view object). A stable object, emptied on each open.
+  const scriptViewScopeRef = useRef<Record<string, unknown>>({});
   const viewData = useMemo<ViewData>(
     () => ({
+      scriptScope: scriptViewScopeRef.current,
       windowId,
       // A nested launch forwards its launcher field (carrying the launcher's view, so the nested
       // script reaches `view.callerField.view`); a top-level open derives it from the button.
@@ -858,7 +890,7 @@ function ProcessDefinitionModalContent({
         record: record ?? undefined,
       },
       parentWindow: tab ?? undefined,
-      sourceView: tab ?? undefined,
+      sourceView: buildSourceView(tab, record as Record<string, unknown> | null),
       parentRecord: recordValues ?? (record as Record<string, unknown>) ?? undefined,
       activeTabId: tab?.id,
     }),
@@ -895,15 +927,19 @@ function ProcessDefinitionModalContent({
       setCloseHidden: (hidden) => setScriptButtonState((prev) => withCloseHidden(prev, hidden)),
       isOkButtonEnabled: () => okEnabledRef.current,
       enableOkButton: () => setScriptButtonState((prev) => withOkForceEnabled(prev, true)),
-      // Layer a nested process modal on top; on its close (X or success) the host
-      // fires this (parent) view's onRefreshFunction, mirroring classic behaviour.
+      // Layer a nested process modal on top, running in this modal's tab and record; after a
+      // successful execution the host refreshes the caller view, mirroring classic behaviour.
       openProcess: (params) =>
-        pushProcess({
-          ...params,
-          windowId: params.windowId ?? windowId,
-          callerField: { ...(params.callerField ?? viewData.callerField), view: viewData },
-          onClose: () => onRefreshFunction?.(viewData),
-        }),
+        pushProcess(
+          buildNestedLaunch(params, {
+            windowId,
+            viewData,
+            ownerTab: tab,
+            ownerRecord: record ?? undefined,
+            ownerGraph: graph,
+            onRefreshFunction,
+          })
+        ),
     }),
     [
       tab?.id,
@@ -915,7 +951,19 @@ function ProcessDefinitionModalContent({
       windowId,
       viewData,
       onRefreshFunction,
+      tab,
+      record,
+      graph,
     ]
+  );
+
+  // A selector's "+" opens its process as `view.openProcess` does. Stable identity (it reads the
+  // latest controller), so the memoized parameter selectors do not re-render when it is rebuilt.
+  const viewControllerRef = useRef(viewController);
+  viewControllerRef.current = viewController;
+  const openNestedProcess = useCallback(
+    (params: OpenProcessParams) => viewControllerRef.current.openProcess(params),
+    []
   );
 
   // Registry of the embedded grids' programmable handles, keyed by parameter
@@ -1066,14 +1114,15 @@ function ProcessDefinitionModalContent({
         parameter,
         formValues,
         isDisplayed: isParamDisplayedRef.current,
-        // Report export buttons follow Classic: enabled only when every visible
-        // mandatory parameter actually holds a value.
-        requireActualValue: isOBUIAPPReport,
+        // Report export buttons and Pick & Execute processes follow Classic
+        // (`allRequiredParametersSet`): enabled only when every visible mandatory
+        // parameter actually holds a value, not when it merely has a default expression.
+        requireActualValue: isOBUIAPPReport || isPE,
       })
     );
     // logicFields is read indirectly through isParamDisplayedRef; keep it in deps so
     // the check recomputes when a callout/script toggles a parameter's visibility.
-  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport]);
+  }, [loading, initializationLoading, parameters, formValues, logicFields, isOBUIAPPReport, isPE]);
 
   const peGrids = useMemo(() => {
     if (!isPE) return [];
@@ -1118,6 +1167,7 @@ function ProcessDefinitionModalContent({
     getMappedFormValues,
     resolveDocAction,
     getMergedProcessValues,
+    getPopulatedGrids,
     buildProcessSpecificFields,
     buildWindowSpecificFields,
     getRecordIds,
@@ -1145,6 +1195,7 @@ function ProcessDefinitionModalContent({
     onRefreshFunction,
     tab,
     callerField: callerFieldProp,
+    externalParams,
     record: record ?? undefined,
     initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
@@ -1166,6 +1217,7 @@ function ProcessDefinitionModalContent({
     onSuccess,
     keepOpenOnSuccess,
     getMergedProcessValues,
+    getPopulatedGrids,
     getRecordIds,
     buildProcessSpecificFields,
     buildWindowSpecificFields,
@@ -1203,6 +1255,9 @@ function ProcessDefinitionModalContent({
     // no chrome to dismiss.
     closeModal: performClose,
     token: token ?? "",
+    // A process launched from a selector's "+" writes the record it creates back into it.
+    callerField: callerFieldProp,
+    active: open,
   });
 
   // Start each modal open with a clean message bar. The bar's lifetime is owned
@@ -1210,12 +1265,15 @@ function ProcessDefinitionModalContent({
   // survives the loading-spinner ↔ form transitions that mount/unmount the host.
   // The script-driven footer state is reset on the same open so it never leaks
   // between sessions.
+  // A nested modal (stack entry) instead sets the launcher's message aside and restores it on close,
+  // so each modal shows only its own messages, as each Classic popup has its own message bar.
   useEffect(() => {
-    if (open) {
-      messageBar.hide();
-      setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
-    }
-  }, [open]);
+    if (!open) return;
+    setScriptButtonState(EMPTY_SCRIPT_BUTTON_STATE);
+    clearScriptScope(scriptViewScopeRef.current);
+    if (stackEntryId !== undefined) return isolateMessageBar();
+    messageBar.hide();
+  }, [open, stackEntryId]);
 
   // Clear any pending view.fireOnPause callbacks when the modal unmounts.
   useEffect(() => {
@@ -1278,12 +1336,18 @@ function ProcessDefinitionModalContent({
   useEffect(() => {
     if (open && isPE) {
       const loadConfig = async () => {
-        const combinedPayload = { ...recordValues, ...session };
+        const combinedPayload = buildDefaultsRequestPayload(
+          tab,
+          record as Record<string, unknown> | null,
+          recordValues,
+          session,
+          externalParams
+        );
         await fetchConfig(combinedPayload);
       };
       loadConfig();
     }
-  }, [fetchConfig, recordValues, session, tabId, open, isPE]);
+  }, [fetchConfig, tab, record, recordValues, session, tabId, open, isPE, externalParams]);
 
   useEffect(() => {
     if (initializationError) {
@@ -1315,6 +1379,7 @@ function ProcessDefinitionModalContent({
           const processData = response.data;
 
           if (processData.parameters) {
+            processData.parameters = withUniqueParameterNames(processData.parameters);
             setParameters((prev) => {
               const merged = { ...processData.parameters };
               for (const [key, value] of Object.entries(prev)) {
@@ -1718,6 +1783,8 @@ function ProcessDefinitionModalContent({
       values={formValues}
       processId={processId}
       windowId={windowId}
+      tab={tab ?? undefined}
+      onOpenProcess={openNestedProcess}
       data-testid="ProcessParameterSelector__761503"
     />
   );
@@ -1753,6 +1820,8 @@ function ProcessDefinitionModalContent({
         onUnregisterGrid={unregisterGrid}
         fieldController={fieldController}
         gridResolver={gridResolver}
+        onRefreshFunction={onRefreshFunction}
+        externalParams={externalParams}
         data-testid="WindowReferenceGrid__761503"
       />
     );
@@ -1777,6 +1846,15 @@ function ProcessDefinitionModalContent({
     if (group.id === DEFAULT_PROCESS_PARAM_GROUP_ID) {
       return (
         <div key={`group-${group.id}`} className="w-full">
+          {renderGroupBody(group)}
+        </div>
+      );
+    }
+    // Classic hides a section whose fields are all hidden. It stays mounted (hidden) so its
+    // parameters keep registering exactly as before; only the empty header disappears.
+    if (!hasVisibleParameter(group, isWindowReferenceParameter, isParamDisplayedRef.current)) {
+      return (
+        <div key={`group-${group.id}`} hidden>
           {renderGroupBody(group)}
         </div>
       );
@@ -1841,7 +1919,6 @@ function ProcessDefinitionModalContent({
       !scriptButtonState.okForceEnabled) ||
     isSubmitting ||
     !!isFinalSuccess ||
-    (isPE && !gridSelection) ||
     (isPE && hasInvalidSelection);
 
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
@@ -1944,7 +2021,8 @@ function ProcessDefinitionModalContent({
             {/* Content */}
             <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
               {/* In-modal message bar driven by migrated scripts (view.messageBar / messageBar). */}
-              <ProcessMessageBar data-testid="ProcessMessageBar__761503" />
+              {/* Only the topmost modal shows the bar: a nested process's messages are its own. */}
+              {isTopmostModal && <ProcessMessageBar data-testid="ProcessMessageBar__761503" />}
               <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 {(loading || initializationLoading) && !result && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
@@ -1989,8 +2067,9 @@ function ProcessDefinitionModalContent({
           <Modal open={open && !isFinalSuccess} onClose={handleClose} data-testid="Modal__761503">
             {renderModalContent()}
           </Modal>
-          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. */}
-          <ProcessDialogHost data-testid="ProcessDialogHost__761503" />
+          {/* Host for migrated-script dialogs (confirm/warn/say); unmounts with the modal. Only the
+              topmost modal renders it, so a nested process's dialog is not drawn twice. */}
+          {isTopmostModal && <ProcessDialogHost data-testid="ProcessDialogHost__761503" />}
           {/* Host for action-time dynamic parameter forms (openDynamicForm); unmounts with the modal. */}
           <ParameterDialogHost data-testid="ParameterDialogHost__761503" />
         </>
@@ -2009,8 +2088,23 @@ function ProcessDefinitionModalContent({
  * Provides a guard against null button props and forwards all props to the content component.
  */
 export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
-  if (!button) return null;
+  // Every parameter needs its own form field: parameters sharing a name get unique keys.
+  const uniqueButton = useMemo(() => withUniqueButtonParameters(button), [button]);
+  if (!uniqueButton) return null;
   return (
-    <ProcessDefinitionModalContent {...props} button={button} data-testid="ProcessDefinitionModalContent__761503" />
+    <ProcessDefinitionModalContent
+      {...props}
+      button={uniqueButton}
+      data-testid="ProcessDefinitionModalContent__761503"
+    />
   );
+}
+
+/** The button with its process parameters keyed uniquely; the same button when they already are. */
+function withUniqueButtonParameters<T extends ProcessDefinitionModalProps["button"]>(button: T): T {
+  const parameters = button?.processDefinition?.parameters;
+  if (!button || !parameters) return button;
+  const unique = withUniqueParameterNames(parameters);
+  if (unique === parameters) return button;
+  return { ...button, processDefinition: { ...button.processDefinition, parameters: unique } };
 }

@@ -1,6 +1,8 @@
-import type { ProcessParameter, Field, EntityValue } from "@workspaceui/api-client/src/api/types";
+import type { ProcessParameter, Field, EntityValue, Tab } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
 import type { ProcessSelectorContext } from "@/hooks/types";
+import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
+import { parameterLabel } from "@/utils/processes/definition/uniqueParameterNames";
 import { memo, useMemo } from "react";
 import { useUserStore } from "@/stores/userStore";
 import { useFormContext } from "react-hook-form";
@@ -29,6 +31,7 @@ import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 import GenericSelector from "./GenericSelector";
 import { UploadFileSelector } from "./UploadFileSelector";
 import LegacySelectorAffix from "./LegacySelectorAffix";
+import ProcessSelectorActions from "./ProcessSelectorActions";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
@@ -55,6 +58,11 @@ interface ProcessParameterSelectorProps {
   // preferences. Must match what `ProcessDefinitionModal` passes to `isParameterDisplayed` for
   // the script-facing `item.isVisible()` proxy, or the two would disagree on visibility.
   windowId?: string;
+  // Tab the process runs in (also for a nested process, which has no TabContext): the
+  // selector search popup sends its context.
+  tab?: Tab;
+  // Opens a process on top of this one: the "+" of a selector whose selector has a process.
+  onOpenProcess?: (params: OpenProcessParams) => void;
 }
 
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
@@ -103,6 +111,8 @@ const ProcessParameterSelectorImpl = ({
   values = EMPTY_VALUES,
   processId,
   windowId,
+  tab,
+  onOpenProcess,
 }: ProcessParameterSelectorProps) => {
   const session = useUserStore((s) => s.session);
   const { watch, register } = useFormContext();
@@ -241,6 +251,9 @@ const ProcessParameterSelectorImpl = ({
               field={mappedField}
               disabled={isReadOnly}
               placeholder={parameter.description}
+              // What the user types must survive a later re-application of the process
+              // defaults (e.g. after a script changes a parameter's value map).
+              dirtyOnEdit
               data-testid="NumericSelector__dac06b"
             />
           );
@@ -304,7 +317,18 @@ const ProcessParameterSelectorImpl = ({
               </LegacySelectorAffix>
             );
           }
-          return tableDirSelector;
+          // Magnifier and "+" of the selector, shown from its metadata as in forms.
+          return (
+            <ProcessSelectorActions
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              currentTab={tab}
+              processContext={processContext}
+              onOpenProcess={onOpenProcess}
+              data-testid="ProcessSelectorActions__dac06b">
+              {tableDirSelector}
+            </ProcessSelectorActions>
+          );
         }
 
         case "quantity":
@@ -357,7 +381,7 @@ const ProcessParameterSelectorImpl = ({
       <div className="w-1/3 flex items-center gap-2 pr-2">
         <Label
           htmlFor={parameter.name}
-          name={labelOverrides?.[parameter.name] ?? parameter.name}
+          name={labelOverrides?.[parameter.name] ?? parameterLabel(parameter)}
           data-testid="Label__dac06b"
         />
         {parameter.mandatory && (

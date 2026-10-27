@@ -74,6 +74,12 @@ interface SelectorModalProps {
    * that were pre-selected but not currently loaded in the grid).
    */
   onMultiSelect?: (records: EntityData[]) => void;
+  /**
+   * Optional params added to the records request. Used by process parameters to
+   * send the same process context their combo sends (e.g. `_processDefinitionId`),
+   * so the selector filters the records the same way.
+   */
+  extraParams?: Record<string, unknown>;
 }
 
 const SelectorModal = ({
@@ -87,6 +93,7 @@ const SelectorModal = ({
   initialSelectedIds,
   initialSelectedIdentifiersById,
   onMultiSelect,
+  extraParams,
 }: SelectorModalProps) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const { sx } = useStyle();
@@ -228,8 +235,8 @@ const SelectorModal = ({
   );
 
   const datasourceParams = useMemo(
-    () =>
-      buildSelectorDatasourceParams({
+    () => ({
+      ...buildSelectorDatasourceParams({
         field,
         etendoContext: _etendoContext,
         language,
@@ -241,6 +248,8 @@ const SelectorModal = ({
         defaultFilterResponse,
         gridColumns,
       }),
+      ...extraParams,
+    }),
     [
       field,
       _etendoContext,
@@ -252,6 +261,7 @@ const SelectorModal = ({
       defaultCriteria,
       defaultFilterResponse,
       gridColumns,
+      extraParams,
     ]
   );
 

@@ -39,6 +39,8 @@ export const BUSINESS_PARTNER = {
   VENDOR_B: { id: "4028E6C72959682B01295F40C2A202E7", name: "Vendor B" },
   CUSTOMER_A: { id: "4028E6C72959682B01295F40C3CB02EC", name: "Customer A" },
   CUSTOMER_BARCELONA: { id: "4028E6C72959682B01295F40CFE1031B", name: "Customer Barcelona" },
+  /** No pending invoices or orders: a payment received from it is left as credit, touching no document. */
+  CUSTOMER_GERMANY: { id: "4028E6C72959682B01295F40CF060317", name: "Customer Germany" },
   EMPLOYEE_A: { id: "4028E6C72959682B01295F40C5CF02F5", name: "Employee A" },
 } as const satisfies Record<string, SampleRecord>;
 
@@ -59,8 +61,25 @@ export const OFFER_TYPE = {
   PRICE_ADJUSTMENT: { id: "5D4BAF6BB86D4D2C9ED3D5A6FC051579", name: "Price Adjustment" },
 } as const satisfies Record<string, SampleRecord>;
 
+/** Financial accounts of the sample data. */
+export const FINANCIAL_ACCOUNT = {
+  /** Bank account of Spain (EUR) with the "Standard" matching algorithm; only FINe changes its statements. */
+  SPAIN_BANK: { id: "0D0000E0A27040E383D5B03755249B61", name: "Spain Bank" },
+} as const satisfies Record<string, SampleRecord>;
+
+/** G/L items of the sample data. */
+export const GL_ITEM = {
+  SALARIES: { id: "9325117728F843FE9F77A67886C99541", name: "Salaries" },
+} as const satisfies Record<string, SampleRecord>;
+
+/** C_Currency_ID of the currencies of the sample data. */
+export const CURRENCY_ID = {
+  EUR: "102",
+} as const;
+
 export const DOCUMENT_TYPE = {
   STANDARD_ORDER: { id: "FF8080812C2ABFC6012C2B3BDF4D005A", name: "Standard Order" },
+  BANK_STATEMENT_FILE: { id: "FF8080812C2ABFC6012C2B6528F100D2", name: "Bank Statement File" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const ROLE = {
@@ -79,6 +98,17 @@ export const PROCESS = {
   ADD_PAYMENT: "9BED7889E1034FE68BD85D5D16857320",
   /** Manual (client-side JS) process of the core: its classic handler is `OB.OpenClose.openClose`. */
   OPEN_CLOSE_PERIODS: "A832A5DA28FB4BB391BDE883E928DFC5",
+} as const;
+
+/**
+ * OBUIAPP_Parameter_ID of process parameters the specs reach by id (`IconButton__<id>`), as
+ * `FIELD` does for window fields.
+ */
+export const PROCESS_PARAMETER = {
+  /** Payment of Add Transaction: a selector with a search popup and a "+" that opens Add Payment. */
+  ADD_TRANSACTION_PAYMENT: "6F1DACE3F9744318948C5A0154FAFEF2",
+  /** Business Partner of Add Transaction: a selector with a search popup. */
+  ADD_TRANSACTION_BUSINESS_PARTNER: "D58EE6F45C72436DB613C79F5FE8A37C",
 } as const;
 
 /**
@@ -141,6 +171,10 @@ export const FIELD = {
   PURCHASE_INVOICE_PAYMENT_METHOD: "830698140BCD4AC3E040007F01000289",
   PAYMENT_IN_RECEIVED_FROM: "7C541AC0C75CFDD7E040007F01016B4D",
   FINANCIAL_ACCOUNT_TRANSACTION_TYPE: "7019E1AFE07B44309AE2F0C6629C1251",
+  /** Payment of a transaction: a selector with a search popup and a "+" that opens Add Payment. */
+  FINANCIAL_ACCOUNT_TRANSACTION_PAYMENT: "74928A07F7C54A7D8247E1F6C43FCA30",
+  /** Business Partner of a sales order: the most common selector with a search popup. */
+  SALES_ORDER_BUSINESS_PARTNER: "1573",
   LANDED_COST_AMOUNT: "0056819E516C679FE050007F01000569",
   LANDED_COST_RECEIPT_GOODS_RECEIPT: "00E613F204372E40E050007F01002A87",
   GOODS_RECEIPT_LINE_ATTRIBUTE_SET_VALUE: "6536",

@@ -396,6 +396,7 @@ const es = {
     openLink: "Abrir enlace",
     reportFileFailed: "El reporte se generó pero no se pudo abrir ni descargar el archivo.",
     openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
+    addNewRecord: "Añadir %0",
   },
   processModal: {
     gridToolbar: {

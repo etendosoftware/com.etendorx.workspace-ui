@@ -55,6 +55,53 @@ export function datasourceAddBody(data: RecordValues): RecordValues {
   };
 }
 
+/** One condition of a datasource read, e.g. `{ fieldName: "bankStatement.processed", operator: "equals", value: true }`. */
+export interface FetchCriterion {
+  fieldName: string;
+  operator: string;
+  value: unknown;
+}
+
+/** A datasource read: conditions that must all hold, an optional sort (`-name` descending) and a row limit. */
+export interface FetchQuery {
+  criteria: FetchCriterion[];
+  sortBy?: string;
+  limit?: number;
+}
+
+const DEFAULT_FETCH_LIMIT = 100;
+
+/** Body of a datasource read (`POST /api/datasource`), with the parameters a grid sends. */
+export function datasourceFetchBody(target: DatasourceTarget, query: FetchQuery): RecordValues {
+  const params: RecordValues = {
+    windowId: target.windowId,
+    tabId: target.tabId,
+    _operationType: "fetch",
+    _noCount: "true",
+    _startRow: "0",
+    _endRow: String(query.limit ?? DEFAULT_FETCH_LIMIT),
+    _constructor: "AdvancedCriteria",
+    operator: "and",
+    criteria: query.criteria.map((criterion) => JSON.stringify(criterion)),
+  };
+  if (query.sortBy) {
+    params._sortBy = query.sortBy;
+  }
+  return { entity: target.entity, params };
+}
+
+/**
+ * The records a datasource read answered with.
+ * @throws when the answer has no record list (an error or an unexpected body).
+ */
+export function fetchedRecordsFrom(body: unknown, entity: string): RecordValues[] {
+  const records = (body as { response?: { data?: unknown } })?.response?.data;
+  if (!Array.isArray(records)) {
+    throw new Error(`Reading ${entity} through the datasource failed: ${JSON.stringify(body)}`);
+  }
+  return records as RecordValues[];
+}
+
 /** Body that removes the saved grid configuration of one tab, as the UI sends it (`configuration: null`). */
 export function gridConfigurationResetBody(windowId: string, tabId: string): RecordValues {
   return { windowId, tabId, configuration: null };
@@ -96,7 +143,7 @@ export function assertRemoved(body: unknown, entity: string): void {
 }
 
 /**
- * Creates and deletes records through the datasource, as the UI does when it saves or deletes.
+ * Creates, reads and deletes records through the datasource, as the UI does when it loads, saves or deletes.
  * For data a spec needs to exist but does not test the creation of: it is much faster than the
  * UI. Needs a logged-in page (the request reuses its token and server-side session).
  */
@@ -110,6 +157,15 @@ export class ApiData {
       data: datasourceAddBody(values),
     });
     return savedRecordFrom(await response.json(), target.entity);
+  }
+
+  /** Reads records through the datasource, as a grid does, with the tab's rules applied. */
+  async fetch(target: DatasourceTarget, query: FetchQuery): Promise<RecordValues[]> {
+    const response = await this.page.request.post(DATASOURCE_PATH, {
+      headers: await this.authHeaders(),
+      data: datasourceFetchBody(target, query),
+    });
+    return fetchedRecordsFrom(await response.json(), target.entity);
   }
 
   /** Deletes a record by id, with the DELETE request the UI sends (a POST "remove" deletes nothing). */

@@ -1,10 +1,18 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import ProcessStackHost from "../ProcessStackHost";
+import ProcessStackHost, { getButtonStub } from "../ProcessStackHost";
 import { clearProcessStack, pushProcess } from "@/utils/processes/definition/processStack";
 
 jest.mock("@/utils/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
 }));
+
+// Shows the name of the tab selection graph the nested modal receives (or "none").
+function GraphName() {
+  const { useContext } = jest.requireActual("react");
+  const { SelectContext } = jest.requireActual("@/contexts/selected");
+  const { graph } = useContext(SelectContext) as { graph?: { name: string } };
+  return <span data-testid="modal-graph">{graph?.name ?? "none"}</span>;
+}
 
 // Lightweight stub so the test renders only the host wiring, not the full modal
 // (and its many providers). It surfaces processId and the close/success handlers.
@@ -15,13 +23,28 @@ jest.mock("../ProcessDefinitionModal", () => ({
     onClose,
     onSuccess,
     callerField,
+    ownerTab,
+    contextRecord,
+    externalParams,
+    callerContext,
+    stackEntryId,
   }: {
     button: { processId: string };
     onClose: () => void;
     onSuccess?: () => void;
     callerField?: { id?: string; view?: unknown };
+    ownerTab?: { id: string };
+    contextRecord?: { id?: string };
+    externalParams?: Record<string, unknown>;
+    callerContext?: Record<string, unknown>;
+    stackEntryId?: number;
   }) => (
     <div data-testid="modal-stub">
+      <GraphName />
+      <span data-testid="modal-owner">{`${ownerTab?.id ?? ""}|${contextRecord?.id ?? ""}`}</span>
+      <span data-testid="modal-external">{JSON.stringify(externalParams ?? {})}</span>
+      <span data-testid="modal-caller-context">{JSON.stringify(callerContext ?? {})}</span>
+      <span data-testid="modal-entry">{String(stackEntryId)}</span>
       <span data-testid="modal-process-id">{button.processId}</span>
       <span data-testid="modal-caller-field-id">{callerField?.id ?? ""}</span>
       <span data-testid="modal-caller-has-view">{callerField?.view ? "yes" : "no"}</span>
@@ -90,18 +113,88 @@ describe("ProcessStackHost", () => {
     expect(screen.getByTestId("modal-caller-has-view").textContent).toBe("yes");
   });
 
-  it("pops the entry and fires its onClose on success", async () => {
+  it("pops the entry and fires only its onSuccess, once, on success", async () => {
     const onClose = jest.fn();
+    const onSuccess = jest.fn();
     render(<ProcessStackHost />);
     await act(async () => {
-      pushProcess({ processId: PROCESS_A, onClose });
+      pushProcess({ processId: PROCESS_A, onClose, onSuccess });
+    });
+
+    // A successful execution calls onSuccess and then onClose, as the modal does.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "success" }));
+      fireEvent.click(screen.getByRole("button", { name: "close" }));
+    });
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("modal-stub")).not.toBeInTheDocument();
+  });
+
+  it("does not fire onSuccess when the modal is closed without success", async () => {
+    const onSuccess = jest.fn();
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, onSuccess });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "success" }));
+      fireEvent.click(screen.getByRole("button", { name: "close" }));
     });
 
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId("modal-stub")).not.toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("forwards the owner context, the externalParams and the stack entry id", async () => {
+    render(<ProcessStackHost />);
+    let entryId = 0;
+    await act(async () => {
+      entryId = pushProcess({
+        processId: PROCESS_A,
+        ownerTab: { id: "TAB-1" } as never,
+        ownerRecord: { id: "REC-1" },
+        externalParams: { bankStatementLineId: "BSL-1" },
+      });
+    });
+
+    expect(screen.getByTestId("modal-owner").textContent).toBe("TAB-1|REC-1");
+    expect(screen.getByTestId("modal-external").textContent).toBe('{"bankStatementLineId":"BSL-1"}');
+    expect(screen.getByTestId("modal-entry").textContent).toBe(String(entryId));
+  });
+
+  it("forwards the caller context of a process opened from a selector", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, callerContext: { trxtype: "BPW" } });
+    });
+
+    expect(screen.getByTestId("modal-caller-context").textContent).toBe('{"trxtype":"BPW"}');
+  });
+
+  it("runs the nested modal inside the owner's tab selection graph", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A, ownerGraph: { name: "OWNER-GRAPH" } as never });
+    });
+
+    expect(screen.getByTestId("modal-graph").textContent).toBe("OWNER-GRAPH");
+  });
+
+  it("renders the nested modal without a selection graph when the launch has none", async () => {
+    render(<ProcessStackHost />);
+    await act(async () => {
+      pushProcess({ processId: PROCESS_A });
+    });
+
+    expect(screen.getByTestId("modal-graph").textContent).toBe("none");
+  });
+
+  it("keeps one button per entry, so pushing another process does not reset the modals below", () => {
+    const first = { id: 1, processId: PROCESS_A };
+    const second = { id: 2, processId: PROCESS_B };
+
+    expect(getButtonStub(first)).toBe(getButtonStub(first));
+    expect(getButtonStub(second)).not.toBe(getButtonStub(first));
   });
 });

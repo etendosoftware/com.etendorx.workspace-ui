@@ -389,6 +389,8 @@ const en = {
     openLink: "Open link",
     reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
+    /** Title of the process a selector's "+" opens (Classic `OBUISEL_AddNewRecord`); %0 is the field. */
+    addNewRecord: "Add %0",
   },
   processModal: {
     gridToolbar: {

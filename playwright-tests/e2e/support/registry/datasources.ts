@@ -1,3 +1,5 @@
+import { TABS, WINDOW_IDS } from "./windows";
+
 /**
  * Datasources the `api` fixture writes to: the entity of a tab and the window/tab ids its
  * datasource request carries (the backend applies the tab's rules to the write).
@@ -12,6 +14,21 @@ export interface DatasourceTarget {
 }
 
 export const DATASOURCE = {
+  BANK_STATEMENT: {
+    entity: "FIN_BankStatement",
+    windowId: WINDOW_IDS.FINANCIAL_ACCOUNT,
+    tabId: TABS.FINANCIAL_ACCOUNT_BANK_STATEMENT,
+  },
+  BANK_STATEMENT_LINE: {
+    entity: "FIN_BankStatementLine",
+    windowId: WINDOW_IDS.FINANCIAL_ACCOUNT,
+    tabId: TABS.FINANCIAL_ACCOUNT_BANK_STATEMENT_LINE,
+  },
+  FINANCIAL_ACCOUNT_TRANSACTION: {
+    entity: "FIN_Finacc_Transaction",
+    windowId: WINDOW_IDS.FINANCIAL_ACCOUNT,
+    tabId: TABS.FINANCIAL_ACCOUNT_TRANSACTION,
+  },
   BUSINESS_PARTNER_CATEGORY: { entity: "BusinessPartnerCategory", windowId: "192", tabId: "322" },
   PREFERENCE: { entity: "ADPreference", windowId: "129", tabId: "156" },
   PRODUCT_CATEGORY: { entity: "ProductCategory", windowId: "144", tabId: "189" },
