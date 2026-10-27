@@ -17,7 +17,6 @@
 
 import {
   MaterialReactTable,
-  MRT_ToggleDensePaddingButton,
   MRT_ToggleFullScreenButton,
   type MRT_Row,
   type MRT_RowVirtualizer,
@@ -54,6 +53,11 @@ import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
+import { useTopBarSlots } from "@/contexts/TitleActionsSlot";
+import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
+import { createPortal } from "react-dom";
+import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
@@ -839,9 +843,9 @@ const getHierarchyIcon = (
       svgContent = atob(eTMETAIcon);
       // Replace black fill with primary blue color to match design system
       // Also handles specific case where fill is set to black or inherited
-      svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
+      svgContent = svgContent.replace(/fill="black"/g, 'fill="#2a1757"');
       // Add logic for paths that might not have fill attribute but rely on default black
-      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
+      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#2a1757"');
     } catch (e) {
       console.error("Error parsing eTMETAIcon SVG", e);
       svgContent = eTMETAIcon; // Fallback to original if decode fails
@@ -860,10 +864,10 @@ const getHierarchyIcon = (
 
   if (hasChildren) {
     const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-    return <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+    return <Icon className="min-w-5 min-h-5" fill={"#2a1757"} data-testid="HierarchyIcon__8ca888" />;
   }
 
-  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#2a1757"} data-testid="HierarchyIcon__8ca888" />;
 };
 
 /** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
@@ -976,6 +980,8 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
+  const { footer: footerSlot, titleSuffix: titleSuffixSlot } = useTopBarSlots();
+  const { slot: toolbarExtrasSlot, isGridVisible } = useToolbarExtrasSlot();
   const { registerRefresh, triggerParentRefreshes } = useTabRefreshContext();
   const { logout } = useUserContext();
   const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
@@ -1086,6 +1092,24 @@ const DynamicTable = ({
     srAutoOpenedForParentRef.current = decision.trackingKey;
     setRecordId(decision.recordId);
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
+
+  // Child tabs show their record count as a badge on the tab strip instead of a bar above the grid.
+  const setTabCount = useTabCountsStore((s) => s.setCount);
+  const clearTabCount = useTabCountsStore((s) => s.clearCount);
+  // Like Classic: with several parent records selected a child tab shows no children, only a message.
+  const selectedParents = useSelectedRecords(parentTab ?? undefined);
+  const hasMultipleParents = tab.tabLevel > 0 && selectedParents.length > 1;
+  const tabCountKey = getTabCountKey(windowIdentifier ?? "", tab.id);
+  const loadedRecordsCount = displayRecords.length;
+  const isChildTab = tab.tabLevel > 0;
+  useEffect(() => {
+    if (!isChildTab) return;
+    if (hasMultipleParents) {
+      clearTabCount(tabCountKey);
+    } else if (!loading) {
+      setTabCount(tabCountKey, loadedRecordsCount);
+    }
+  }, [isChildTab, hasMultipleParents, loading, loadedRecordsCount, setTabCount, clearTabCount, tabCountKey]);
 
   // Summary State (the summary functions live in the window store so saved views can capture them)
   const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
@@ -2555,7 +2579,7 @@ const DynamicTable = ({
                   e.stopPropagation();
                   row.toggleSelected();
                 }}
-                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#2a1757] checked:border-[#2a1757]"
               />
               {isSelected && (
                 <CheckIcon
@@ -2712,13 +2736,18 @@ const DynamicTable = ({
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
   const effectiveRecords = useMemo(() => {
+    // Several parents selected: like Classic, no children are listed (an empty-state message explains why).
+    if (hasMultipleParents) {
+      return [];
+    }
+
     if (optimisticRecords.length === 0) {
       return displayRecords;
     }
 
     // Use compatibility utility to merge records properly
     return mergeOptimisticRecordsWithSort(displayRecords, optimisticRecords, editingRows);
-  }, [optimisticRecords, displayRecords, editingRows]);
+  }, [hasMultipleParents, optimisticRecords, displayRecords, editingRows]);
 
   const columns = useMemo(() => {
     if (!baseColumns.length) {
@@ -3142,11 +3171,12 @@ const DynamicTable = ({
           onContextMenu={handleTableBodyContextMenu}
           onInsertRow={handleInsertRow}
           uIPattern={uIPattern}
+          multipleParents={hasMultipleParents}
           data-testid="EmptyState__8ca888"
         />
       );
     },
-    [handleTableBodyContextMenu, handleInsertRow, loading]
+    [handleTableBodyContextMenu, handleInsertRow, loading, uIPattern, hasMultipleParents]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -3438,7 +3468,6 @@ const DynamicTable = ({
       if (isFullScreen) {
         return (
           <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
-            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
             <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
             <button
               type="button"
@@ -3464,22 +3493,59 @@ const DynamicTable = ({
       // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
       // that Etendo Classic shows in the quick-filter bar above the grid.
       const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
-      return (
-        <>
-          <RecordCounterBar
-            totalRecords={total}
-            loadedRecords={loaded}
-            selectedCount={selCount}
-            isLoading={loading}
-            labels={labels}
-            actions={
+      // The root tab hands its counter to the footer and its view controls to the toolbar, which frees this row.
+      const canDockInChrome = tab.tabLevel === 0 && footerSlot && titleSuffixSlot && toolbarExtrasSlot;
+      // Child tabs: the count goes to the tab badge; the selection and view controls to the tab's own toolbar.
+      const canDockChild = tab.tabLevel > 0 && toolbarExtrasSlot;
+      const counterBar = (
+        <RecordCounterBar
+          totalRecords={total}
+          loadedRecords={loaded}
+          selectedCount={selCount}
+          isLoading={loading}
+          labels={labels}
+          variant={canDockInChrome ? "inline" : "bar"}
+          showTotal={!canDockInChrome}
+          actions={
+            canDockInChrome ? undefined : (
               <>
-                <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
                 <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
               </>
-            }
-            data-testid="RecordCounterBar__8ca888"
-          />
+            )
+          }
+          data-testid="RecordCounterBar__8ca888"
+        />
+      );
+      if (canDockChild) {
+        return isGridVisible
+          ? createPortal(
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
+              toolbarExtrasSlot
+            )
+          : null;
+      }
+
+      return (
+        <>
+          {canDockInChrome
+            ? isGridVisible && (
+                <>
+                  {createPortal(
+                    <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
+                      <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">
+                        {loading ? "" : t("table.counter.titleCount").replace("{count}", String(loaded))}
+                      </span>
+                    </span>,
+                    titleSuffixSlot
+                  )}
+
+                  {createPortal(
+                    <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
+                    toolbarExtrasSlot
+                  )}
+                </>
+              )
+            : counterBar}
           {quickFilterCols.length > 0 && (
             <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
               {quickFilterCols.map((col: Column) => {
@@ -3587,6 +3653,16 @@ const DynamicTable = ({
     },
     [effectiveRecords, keepRowInView]
   );
+
+  // The corner cell of the grid shows how many rows are selected (instead of the funnel), like Classic.
+  const rowSelectionState = table.getState().rowSelection;
+  const selectedRowsCount = useMemo(() => Object.values(rowSelectionState).filter(Boolean).length, [rowSelectionState]);
+  useEffect(() => {
+    const paper = table.refs?.tablePaperRef?.current;
+    if (!paper) return;
+    paper.dataset.selectedCount = String(selectedRowsCount);
+    paper.style.setProperty("--ui-selected-count", `"${selectedRowsCount}"`);
+  }, [table, selectedRowsCount]);
 
   useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
     isKeyboardNavigationSource,

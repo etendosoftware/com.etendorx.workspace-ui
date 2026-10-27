@@ -37,9 +37,9 @@ export const SubTabsSwitch = ({
       onDoubleClick={() => {
         onDoubleClick(current);
       }}
-      className="flex items-center justify-between px-2 py-2 bg-(--color-transparent-neutral-5) max-h-[2.75rem]">
+      className="flex h-10 items-stretch justify-between px-3 bg-(--ui-child-strip)">
       <div
-        className="flex overflow-x-auto flex-nowrap scroll-smooth"
+        className="flex items-stretch gap-5 overflow-x-auto flex-nowrap scroll-smooth"
         style={{
           scrollbarWidth: "thin",
           scrollbarColor: "rgba(0, 0, 0, 0.3) transparent",
@@ -56,7 +56,9 @@ export const SubTabsSwitch = ({
           />
         ))}
       </div>
-      <IconButton className="bg-transparent" data-testid={`IconButton__${current?.id ?? activeTabId ?? "a89627"}`}>
+      <IconButton
+        className="self-center bg-transparent"
+        data-testid={`IconButton__${current?.id ?? activeTabId ?? "a89627"}`}>
         <ChevronDown
           onClick={() => {
             if (collapsed) {

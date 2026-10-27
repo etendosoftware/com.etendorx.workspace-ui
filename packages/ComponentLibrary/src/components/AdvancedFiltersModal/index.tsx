@@ -474,7 +474,9 @@ const FilterConditionRow = memo(
         {/* Logical Operator / "Donde" */}
         <div className="w-14 flex-shrink-0">
           {isFirst ? (
-            <span className="text-xs text-gray-500 font-medium">{t("advancedFilters.where")}</span>
+            <span className="text-xs text-gray-500 font-medium border-b border-dotted border-gray-400 pb-0.5">
+              {t("advancedFilters.where")}
+            </span>
           ) : (
             <Select
               options={logicalOptions}
@@ -609,7 +611,9 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
       {/* Logical Operator / "Donde" */}
       <div className="w-20 flex-shrink-0">
         {isFirst ? (
-          <span className="text-sm text-gray-600 font-medium">{t("advancedFilters.where")}</span>
+          <span className="text-sm text-gray-600 font-medium border-b border-dotted border-gray-400 pb-0.5">
+            {t("advancedFilters.where")}
+          </span>
         ) : (
           <Select
             options={logicalOptions}
@@ -695,7 +699,9 @@ const FilterGroup = ({
       {/* Logical Operator for the group row */}
       <div className="w-20 flex-shrink-0 pt-2">
         {isFirst ? (
-          <span className="text-sm text-gray-600 font-medium">{t("advancedFilters.where")}</span>
+          <span className="text-sm text-gray-600 font-medium border-b border-dotted border-gray-400 pb-0.5">
+            {t("advancedFilters.where")}
+          </span>
         ) : (
           <Select
             options={logicalOptions}
@@ -748,7 +754,7 @@ const FilterGroup = ({
         <button
           type="button"
           onClick={() => onAddCondition(group.id)}
-          className="flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+          className="flex items-center gap-1 mt-2 text-xs font-medium text-(--ui-link) hover:brightness-75 transition-colors">
           {t("advancedFilters.addCondition")}{" "}
           <PlusIconSVG className="w-3 h-3 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
         </button>
@@ -930,10 +936,13 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden font-sans">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <div className={"flex items-center gap-2  py-2 text-sm font-medium rounded-md transition-all"}>
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div
+          className={
+            "flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-900 shadow-sm"
+          }>
           <FilterIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
           {t("advancedFilters.title")}
         </div>
@@ -1002,14 +1011,14 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
           <button
             type="button"
             onClick={handleAddCondition}
-            className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            className="flex items-center gap-1 text-sm font-medium text-(--ui-link) hover:brightness-75 transition-colors">
             {t("advancedFilters.addCondition")}{" "}
             <PlusIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
           </button>
           <button
             type="button"
             onClick={handleAddGroup}
-            className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            className="flex items-center gap-1 text-sm font-medium text-(--ui-link) hover:brightness-75 transition-colors">
             {t("advancedFilters.addGroup")}{" "}
             <PlusIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
           </button>
@@ -1017,11 +1026,11 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
         <button
           type="button"
           onClick={handleClearAll}
-          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+          className="flex items-center gap-2 text-sm font-medium text-(--ui-link) hover:brightness-75 transition-colors">
           {t("advancedFilters.clearAll")}{" "}
           <RefreshIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
         </button>
@@ -1030,7 +1039,7 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
             type="button"
             onClick={handleApply}
             className={
-              "px-5 py-2 text-sm font-medium rounded-lg transition-colors bg-(--color-dynamic-main) text-white hover:bg-blue-700"
+              "px-5 py-2 text-sm font-medium rounded-full transition-opacity bg-(--ui-text) text-(--ui-card-bg) hover:opacity-85"
             }>
             {t("advancedFilters.applyFilters")} {validFilterCount > 0 && `(${validFilterCount})`}
           </button>

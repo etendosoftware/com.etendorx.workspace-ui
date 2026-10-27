@@ -41,11 +41,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, isDirt
         className={`
          h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
          relative group transition-all duration-200 text-(--color-baseline-90) 
-         ${
-           isActive
-             ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
-             : "hover:bg-(--color-baseline-0)"
-         }
+         ${isActive ? "bg-(--ui-tab-active-bg) border-b-2 border-(--ui-tab-active-line) font-semibold" : "hover:bg-(--color-baseline-0)"}
        `}
         style={{
           borderTopLeftRadius: "12px",
@@ -55,7 +51,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, isDirt
           type="button"
           className="h-full flex items-center flex-1 truncate gap-2 bg-transparent border-none cursor-pointer"
           onClick={onActivate}>
-          {icon ?? <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />}
+          {icon ?? <FolderIcon className="fill-(--ui-text)" data-testid="FolderIcon__15c554" />}
           <span className="flex-1 truncate text-sm font-medium">{label}</span>
         </button>
         <button

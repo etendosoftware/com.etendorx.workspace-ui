@@ -36,10 +36,10 @@ export const BACKGROUND = "#C6D3FF";
 export const themeOptions: ThemeOptions = {
   palette: {
     dynamicColor: {
-      main: "#004ACA",
-      dark: "#00296F",
-      light: "#D5E3FC",
-      contrastText: "#E5EFFF",
+      main: "#2a1757",
+      dark: "#1b0f3a",
+      light: "#dcd6ec",
+      contrastText: "#ece8f6",
     },
     baselineColor: {
       neutral: {
@@ -68,10 +68,10 @@ export const themeOptions: ThemeOptions = {
         80: "rgba(0, 3, 13, 0.8)",
       },
       etendoPrimary: {
-        main: "#004ACA",
-        dark: "#00296F",
-        contrastText: "#E5EFFF",
-        light: " rgba(0, 74, 202, 0.05)",
+        main: "#2a1757",
+        dark: "#1b0f3a",
+        contrastText: "#ece8f6",
+        light: " rgba(42, 23, 87, 0.05)",
       },
     },
     specificColor: {
@@ -238,3 +238,99 @@ export const themeOptions: ThemeOptions = {
 
 // Theme for MUI components
 export const theme = createTheme(themeOptions);
+
+// ---- Dark theme --------------------------------------------------------------------------------
+// Same structure as the light theme: the neutral scales are inverted so every `baselineColor`
+// consumer (sx props, theme hooks) flips without changes.
+const DARK_NEUTRAL = {
+  0: "#16171B",
+  10: "#1E1F24",
+  20: "#2A2C32",
+  30: "#383A42",
+  40: "#5D606C",
+  50: "#8B8E9A",
+  60: "#A4A7B3",
+  70: "#BDBFCA",
+  80: "#D4D6DF",
+  90: "#E9EAF0",
+  100: "#F6F6FA",
+};
+const DARK_ACCENT = "#8B7BDC";
+const DARK_ACCENT_DARK = "#5A49A8";
+
+const lightPalette = themeOptions.palette as NonNullable<ThemeOptions["palette"]>;
+
+export const darkThemeOptions: ThemeOptions = {
+  ...themeOptions,
+  palette: {
+    ...lightPalette,
+    mode: "dark",
+    background: { default: "#0F1013", paper: "#1C1D22" },
+    text: { primary: "#ECECF1", secondary: "#9A9CA8" },
+    divider: "#2A2C32",
+    dynamicColor: { main: DARK_ACCENT, dark: DARK_ACCENT_DARK, light: "#2D2650", contrastText: "#E9E6FB" },
+    specificColor: {
+      ...(lightPalette.specificColor as NonNullable<typeof lightPalette.specificColor>),
+      // Neutral tag/chip surface (read by `Tag`): the light value would be a pale pill with pale text.
+      draft: { main: "#BDBFCA", contrastText: "#2A2C32" },
+    },
+    baselineColor: {
+      neutral: DARK_NEUTRAL,
+      transparentNeutral: {
+        0: "transparent",
+        5: "rgba(255, 255, 255, 0.05)",
+        10: "rgba(255, 255, 255, 0.1)",
+        20: "rgba(255, 255, 255, 0.2)",
+        30: "rgba(255, 255, 255, 0.3)",
+        40: "rgba(255, 255, 255, 0.4)",
+        50: "rgba(255, 255, 255, 0.5)",
+        60: "rgba(255, 255, 255, 0.6)",
+        70: "rgba(255, 255, 255, 0.7)",
+        80: "rgba(255, 255, 255, 0.8)",
+      },
+      etendoPrimary: {
+        main: DARK_ACCENT,
+        dark: DARK_ACCENT_DARK,
+        contrastText: "#E9E6FB",
+        light: "rgba(139, 123, 220, 0.12)",
+      },
+    },
+    primary: { light: "#2D2650", main: DARK_ACCENT, dark: DARK_ACCENT_DARK, contrastText: "#16171B" },
+    secondary: { light: "#3A3410", main: SECONDARY_500, dark: SECONDARY_300, contrastText: "#16171B" },
+    tertiary: { light: "#1E2236", main: "#1E2236", dark: "#262B45", contrastText: "#ECECF1" },
+  },
+  components: {
+    ...themeOptions.components,
+    MuiCssBaseline: {
+      styleOverrides: `
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: #3a3d46 transparent;
+        }
+        *::-webkit-scrollbar { width: 12px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb {
+          background-color: #3a3d46;
+          border-radius: 10px;
+          border: 3px solid transparent;
+        }
+        *::-webkit-scrollbar-thumb:hover { background-color: #4a4d58; }
+      `,
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          fontSize: "0.875rem",
+          backgroundColor: "#ECECF1",
+          color: "#16171B",
+          borderRadius: "0.25rem",
+          padding: "0.25rem, 0.35rem, 0.25rem, 0.35rem",
+          maxWidth: 500,
+        },
+        arrow: { color: "#ECECF1" },
+      },
+    },
+  },
+};
+
+export const darkTheme = createTheme(darkThemeOptions);

@@ -137,7 +137,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`${open && expanded && item.children && "bg-(--color-baseline-10) m-2 mb-0 p-1 pb-0"} p-2 rounded-lg`}>
+        className={`${open && expanded && item.children && "m-0 p-1 pb-0"} p-2 rounded-lg`}>
         <button
           type="button"
           onMouseEnter={() => {
@@ -149,13 +149,13 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           onClick={handleClick}
           className={`flex transition-colors duration-300 cursor-pointer w-full items-center
             ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
-             text-xl justify-between p-1 gap-1 hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] ${"text-neutral-90 hover:bg-dynamic-contrast-text hover:text-dynamic-main hover:text-neutral-0"}`}>
+             text-xl justify-between p-1 gap-1 ${"text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)"}`}>
           <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
             <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
               <img
                 alt="img"
                 src={`data:image/svg+xml;base64,${CLOCK_B64}`}
-                className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
+                className="filter-[brightness(0)] dark:filter-[brightness(0)_invert(1)] opacity-70 w-5 h-5"
               />
             </div>
             {open && (
@@ -181,8 +181,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
                 type="button"
                 onClick={() => handleRecentItemClick(recentItem)}
                 className={clsx(
-                  "rounded-full px-2 py-1 text-sm font-medium border text-baseline-80",
-                  "bg-[#00030D0D] text-gray-800 border-gray-300 hover:bg-gray-200 transition"
+                  "rounded-full px-2.5 py-1 text-[13px] font-medium border",
+                  "bg-(--ui-chip-bg) text-(--ui-text) border-transparent hover:bg-(--ui-chip-hover) transition"
                 )}>
                 {recentItem.name}
               </button>

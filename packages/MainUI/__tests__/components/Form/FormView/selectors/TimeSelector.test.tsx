@@ -214,7 +214,7 @@ describe("TimeSelector", () => {
       const input = screen.getByLabelText("Test Time");
       fireEvent.focus(input);
 
-      expect(input.className).toContain("border-[#004ACA]");
+      expect(input.className).toContain("border-[#2a1757]");
     });
 
     it("should remove focus styles on blur", () => {
@@ -228,7 +228,7 @@ describe("TimeSelector", () => {
       fireEvent.focus(input);
       fireEvent.blur(input);
 
-      expect(input.className).not.toContain("border-[#004ACA]");
+      expect(input.className).not.toContain("border-[#2a1757]");
     });
 
     it("should apply focus style to label when focused", () => {
@@ -281,7 +281,7 @@ describe("TimeSelector", () => {
       const input = screen.getByLabelText("Test Time");
       fireEvent.focus(input);
 
-      expect(input.className).not.toContain("border-[#004ACA]");
+      expect(input.className).not.toContain("border-[#2a1757]");
     });
 
     it("should disable pointer events on container when read-only", () => {

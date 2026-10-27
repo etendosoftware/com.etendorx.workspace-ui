@@ -584,9 +584,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
   }
 
+  const topToolbar = <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />;
+
   return (
     <>
-      <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
+      {topToolbar}
       {(!isFormView || isSplitView) && tab?.id && (
         <SaveViewMenu
           anchorEl={saveViewAnchorEl}

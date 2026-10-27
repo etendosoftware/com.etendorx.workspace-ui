@@ -36,7 +36,7 @@ interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
  * keyboard user could reach the field without any sign of being on it.
  */
 const FOCUS_RING_CLASSES =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#004ACA]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2a1757]";
 
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
   ({ checked = false, onCheckedChange, disabled = false, className = "", field, ...props }, ref) => {

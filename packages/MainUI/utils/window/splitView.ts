@@ -262,12 +262,8 @@ export const getFormPaneClassName = (isFocused: boolean): string => {
   return `flex-1 h-full min-h-0 min-w-0 relative z-10 ${PANE_FOCUS_BORDER_CLASSES} ${borderColor}`;
 };
 
-export const getFocusBorderColor = (isFocused: boolean): string => {
-  if (isFocused) {
-    return "border-l-[var(--color-secondary-500)]";
-  }
-  return "border-l-transparent";
-};
+// The focused pane no longer paints its left border; the transparent border keeps the layout width stable.
+export const getFocusBorderColor = (_isFocused: boolean): string => "border-l-transparent";
 
 /**
  * Record the form pane must switch to so that it keeps following the grid

@@ -78,6 +78,8 @@ export const useStyle = (): StylesType => {
       style: {
         ...(icon.props as { style?: CSSProperties }).style,
         color: self.getTextColor(customTextColor),
+        // Follow the label color: the icons ship with a fixed fill that does not flip with the theme.
+        fill: self.getTextColor(customTextColor),
         width: "1rem",
         height: "1rem",
         margin: "0",

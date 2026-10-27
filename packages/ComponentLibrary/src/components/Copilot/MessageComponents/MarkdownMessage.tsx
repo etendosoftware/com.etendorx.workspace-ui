@@ -69,7 +69,7 @@ const Code: Components["code"] = ({ className, children }) => {
 const Link: Components["a"] = ({ href, children }) => (
   <a
     href={href}
-    className="text-(--color-dynamic-main) hover:underline break-words max-w-full inline-block"
+    className="text-(--ui-link) hover:underline break-words max-w-full inline-block"
     target="_blank"
     rel="noopener noreferrer">
     {children}

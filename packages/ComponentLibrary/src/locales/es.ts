@@ -284,6 +284,8 @@ const es = {
       noType: "Sin tipo",
       noRecord: "Ninguna fila seleccionada",
       emptyRecords: "No hay registros para mostrar",
+      multipleParentsSelected:
+        "Hay varios registros padre seleccionados. Solo se pueden ver los hijos de 1 padre a la vez.",
     },
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
@@ -292,6 +294,7 @@ const es = {
       showingRecords: "Mostrando {count} registros",
       showingPartialRecords: "Mostrando {loaded} de {total} registros",
       selectedRecords: "{count} seleccionados",
+      titleCount: "({count} registros)",
       recordsLoaded: "Registros cargados",
     },
     selectAll: {

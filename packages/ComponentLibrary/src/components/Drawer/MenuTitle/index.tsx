@@ -44,34 +44,22 @@ function getIconSrc(item: { icon?: string | null; type?: string }): string {
   }
 }
 
-function getMenuButtonClassName(open?: boolean, selected?: boolean, isParentActive?: boolean): string {
-  let stateClasses = "";
+function getMenuButtonClassName(
+  open?: boolean,
+  selected?: boolean,
+  isParentActive?: boolean,
+  isTopLevel?: boolean
+): string {
+  const base = "relative flex items-center transition-colors duration-200 cursor-pointer";
   if (open) {
-    const selectedClasses = selected
-      ? "bg-dynamic-main text-white [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-      : "text-baseline-80 hover:text-dynamic-main";
-    stateClasses = `rounded-lg text-xl justify-between p-1 ${selectedClasses} w-full`;
-  } else {
-    const parentActiveClasses = isParentActive
-      ? "bg-dynamic-main [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-      : "";
-    stateClasses = `p-2.5 rounded-full hover:bg-dynamic-main hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)] ${parentActiveClasses}`;
+    const shape = isTopLevel ? "px-4 py-0.5" : "rounded-lg px-2 py-0.5";
+    let state = "text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)";
+    if (selected) state = "bg-(--ui-selected-bg) text-(--ui-text) font-medium";
+    else if (isParentActive) state = "text-(--ui-text) font-medium hover:bg-(--ui-hover)";
+    return `${base} text-xl justify-between w-full ${shape} ${state}`;
   }
-
-  const hoverFilter = open
-    ? "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]"
-    : "";
-  const hoverBg = selected
-    ? "hover:bg-dynamic-main text-white hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-    : "hover:bg-dynamic-contrast-text";
-  const parentActiveFilter =
-    isParentActive && open
-      ? "[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] text-dynamic-main"
-      : "";
-
-  return `${hoverFilter} relative flex items-center transition-colors duration-300 cursor-pointer ${hoverBg} ${parentActiveFilter} ${stateClasses}`
-    .trim()
-    .replace(/\s+/g, " ");
+  const rail = selected || isParentActive ? "bg-(--ui-selected-bg)" : "hover:bg-(--ui-hover)";
+  return `${base} p-2.5 rounded-full ${rail}`;
 }
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
@@ -90,7 +78,7 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 );
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
-  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable }) => {
+  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable, isTopLevel }) => {
     const favoritesCtx = useFavoritesDrawer();
     const isFav = !!(favoritesCtx && item.windowId && favoritesCtx.isFavorite(item.windowId));
     const highlightCtx = useDrawerHighlight();
@@ -144,20 +132,20 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         tabIndex={0}
         onClick={onClick}
         onKeyDown={handleTitleKeyDown}
-        className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}>
+        className={`${getMenuButtonClassName(open, selected, isParentActive, isTopLevel)} ${highlightClasses}`.trim()}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
             <span className="text-base">
               <img
                 alt={item.icon ? "img" : item.type || "icon"}
                 src={getIconSrc(item)}
-                className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
+                className="filter-[brightness(0)] dark:filter-[brightness(0)_invert(1)] opacity-70 w-5 h-5"
               />
             </span>
           </div>
           {open && (
             <div className="relative group flex items-center py-1.5 flex-1 min-w-0">
-              <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
+              <span className="ml-2 font-normal text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
                 {item.name}
               </span>
               {favoritesCtx && item.windowId && (
@@ -167,7 +155,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                   className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
                     isFav
                       ? "text-yellow-400 opacity-100"
-                      : "text-baseline-40 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
+                      : "text-slate-400 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
                   }`}
                   title={isFav ? "Remove from favorites" : "Add to favorites"}>
                   <StarIcon filled={isFav} />

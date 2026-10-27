@@ -61,6 +61,8 @@ export interface MenuTitleProps {
   isExpandable?: boolean;
   popperOpen?: boolean;
   isParentActive?: boolean;
+  /** Root entries get the full-width band when one of their descendants is active. */
+  isTopLevel?: boolean;
 }
 
 export interface DrawerSectionProps extends React.PropsWithChildren {

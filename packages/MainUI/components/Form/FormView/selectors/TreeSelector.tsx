@@ -314,9 +314,9 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     if (isReadOnly) {
       return `${base} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)`;
     }
-    const active = "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]";
+    const active = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
     const hover = "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
-    const focus = "focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer";
+    const focus = "focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer";
     const interactive = isFocused || isOpen ? active : hover;
     return `${base} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactive} ${focus}`;
   }, [isReadOnly, isFocused, isOpen]);
@@ -325,7 +325,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     const base = "text-sm truncate max-w-[calc(100%-40px)] font-medium";
     if (!selectedLabel) return `${base} text-baseline-60`;
     const isActive = (isFocused || isOpen) && !isReadOnly;
-    return `${base} ${isActive ? "text-[#004ACA]" : "text-(--color-transparent-neutral-80)"}`;
+    return `${base} ${isActive ? "text-[#2a1757]" : "text-(--color-transparent-neutral-80)"}`;
   }, [selectedLabel, isFocused, isOpen, isReadOnly]);
 
   const chevronClassNames = useMemo(() => {

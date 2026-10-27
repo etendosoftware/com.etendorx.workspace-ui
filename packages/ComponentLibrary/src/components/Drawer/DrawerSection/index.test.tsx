@@ -33,14 +33,14 @@ describe("DrawerSection - optimistic selection (pendingWindowId)", () => {
   it("marks as selected when pendingWindowId matches item.windowId", () => {
     renderSection({ pendingWindowId: baseItem.windowId });
     const btn = screen.getByRole("button", { name: /Sales/ });
-    expect(btn.className).toContain("bg-dynamic-main");
+    expect(btn.className).toContain("bg-(--ui-selected-bg)");
   });
 
   it("does not mark as selected when pendingWindowId does not match", () => {
     renderSection({ pendingWindowId: "OTHER" });
     const btn = screen.getByRole("button", { name: /Sales/ });
     // When not selected, it should not have the active style
-    expect(btn.className).not.toContain("bg-dynamic-main");
+    expect(btn.className).not.toContain("bg-(--ui-selected-bg)");
   });
 });
 

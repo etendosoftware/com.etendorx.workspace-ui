@@ -213,23 +213,25 @@ const Drawer: React.FC<DrawerProps> = ({
       <div
         style={{ width: `${drawerWidth}rem` }}
         className={`h-screen max-h-screen transition-all duration-500 ease-in-out
-             bg-(--color-baseline-0) border-none 
-             rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
+             bg-(--ui-sidebar-bg) text-(--ui-text) border-none
+             flex flex-col overflow-hidden ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
         <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
         {open && (
           // The navigation keys are handled here, on the container, and not on the input:
           // its key events bubble up to this point, so the Tab autocompletion of
           // `TextInputAutocomplete` keeps working untouched — passing it an `onKeyDown`
           // would replace its own handler instead of composing with it.
-          <div className="p-2 pb-0" onKeyDown={handleSearchKeyDown}>
-            <TextInputAutocomplete
-              value={searchValue}
-              setValue={setSearchValue}
-              placeholder="Search"
-              autoCompleteTexts={allItemTitles}
-              inputRef={searchInputRef}
-              data-testid="drawer-search-input"
-            />
+          <div className="px-3 pt-3 pb-2" onKeyDown={handleSearchKeyDown}>
+            <div className="rounded-lg bg-(--ui-search-bg) [&_div]:bg-transparent! [&_div]:rounded-lg! [&_fieldset]:border-0! [&_input]:text-(--ui-text)! [&_input]:text-[13px]! [&_input::placeholder]:text-(--ui-text-muted)! [&_svg]:text-(--ui-text-muted)">
+              <TextInputAutocomplete
+                value={searchValue}
+                setValue={setSearchValue}
+                placeholder="Search"
+                autoCompleteTexts={allItemTitles}
+                inputRef={searchInputRef}
+                data-testid="drawer-search-input"
+              />
+            </div>
           </div>
         )}
         {RecentlyViewedComponent && (

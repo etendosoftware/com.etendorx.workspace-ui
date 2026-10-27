@@ -79,7 +79,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
   };
 
   const getArrowStyles = () => {
-    const base = "absolute w-2 h-2 rotate-45 bg-gray-900";
+    const base = "absolute w-2 h-2 rotate-45 bg-gray-900 dark:bg-[#ececf1]";
 
     switch (position) {
       case "top":
@@ -121,7 +121,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
             className="fixed z-[1000] w-max opacity-100 transition-opacity duration-100 pointer-events-none">
             <div className="relative">
               <div className={getArrowStyles()} style={getArrowOffsetStyle()} />
-              <div className="bg-gray-900 text-white text-sm rounded px-2 py-1 shadow-md break-words">{title}</div>
+              <div className="bg-gray-900 text-white dark:bg-[#ececf1] dark:text-[#16171b] text-sm rounded px-2 py-1 shadow-md break-words">{title}</div>
             </div>
           </div>,
           document.body

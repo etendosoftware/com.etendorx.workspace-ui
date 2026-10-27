@@ -78,7 +78,7 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
+    <div className="flex flex-col gap-0 w-full h-full max-h-full">
       {shouldShowTabs && (
         <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowIdentifier ?? "351d9c"}`}>
           <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
@@ -105,7 +105,7 @@ export default function Page() {
           return (
             <div
               key={win.windowIdentifier}
-              className="absolute inset-0 flex flex-col overflow-hidden"
+              className="absolute inset-0 flex flex-col overflow-hidden px-4 pt-2"
               style={{
                 visibility: isVisible ? "visible" : "hidden",
                 opacity: isVisible ? 1 : 0,
