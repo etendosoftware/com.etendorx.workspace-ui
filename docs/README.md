@@ -31,6 +31,8 @@ docs/
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── application-forms/            # Feature: Classic Application Forms opened from the menu
+│   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
