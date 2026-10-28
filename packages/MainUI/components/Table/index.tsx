@@ -78,6 +78,7 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
+import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { isSameColumnVisibility, resolveUpdater } from "@/utils/table/columnState";
 import { useUserStore } from "@/stores/userStore";
@@ -4302,10 +4303,14 @@ const DynamicTable = ({
   // while hidden. Without the window check, a window that stops being the active one would re-render
   // its whole body on every tab switch.
   const isWindowActive = useIsCurrentWindowActive();
+  const isActiveTab = useIsActiveTab();
+  // A grid shown again is not rendered anew unless something it shows changed: rendering it rebuilds its
+  // header, and showing a tab would then redraw the whole grid.
   const tableElement = useFrozenWhileHidden(
-    isVisible && isWindowActive,
+    isVisible && isWindowActive && isActiveTab,
     <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
-    [effectiveRecords, table.getState().rowSelection]
+    [effectiveRecords, table.getState().rowSelection, tableState, columns],
+    true
   );
 
   if (error) {

@@ -30,6 +30,7 @@ export const TabButton = ({
   onClick,
   active,
   onDoubleClick,
+  onPrewarm,
   isWindow = false,
   showIcon = false,
   onClose,
@@ -68,6 +69,10 @@ export const TabButton = ({
   const handleDoubleClick = useCallback(() => {
     onDoubleClick(tab);
   }, [onDoubleClick, tab]);
+
+  const handlePrewarm = useCallback(() => {
+    onPrewarm?.(tab);
+  }, [onPrewarm, tab]);
 
   const handleClose = useCallback(
     (e: React.MouseEvent) => {
@@ -159,6 +164,8 @@ export const TabButton = ({
       type="button"
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onPointerEnter={handlePrewarm}
+      onFocus={handlePrewarm}
       title={title}
       aria-label={title}
       className={baseClass}>

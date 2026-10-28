@@ -29,6 +29,7 @@ export const SubTabsSwitch = ({
   activeTabId,
   onClick,
   onDoubleClick,
+  onPrewarm,
   collapsed,
   isExpanded,
 }: TabsSwitchProps) => {
@@ -52,6 +53,7 @@ export const SubTabsSwitch = ({
             onClick={onClick}
             active={(activeTabId ?? current.id) === tab.id}
             onDoubleClick={onDoubleClick}
+            onPrewarm={onPrewarm}
             data-testid={`TabButton__${tab.id ?? "a89627"}`}
           />
         ))}
