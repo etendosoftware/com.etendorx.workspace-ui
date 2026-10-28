@@ -22,6 +22,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { createContext, useCallback, useEffect, useMemo } from "react";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useWindowStore } from "@/stores/windowStore";
+import { registerSessionReset } from "@/utils/session/resetSessionState";
 
 /**
  * Context interface for managing tab selection and navigation state.
@@ -54,6 +55,7 @@ export const SelectContext = createContext<SelectedContext>({} as SelectedContex
  * Consider implementing cache eviction strategies if memory usage becomes a concern.
  */
 const windowGraphCache = new Map<string, Graph<Tab>>();
+registerSessionReset(() => windowGraphCache.clear());
 
 /**
  * Provider component for tab selection context.

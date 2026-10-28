@@ -28,6 +28,7 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { toast } from "sonner";
 import { DEFAULT_PASSWORD_EXPIRED_ERROR, ERP_ERROR_CODE_HEADER } from "@/utils/session/constants";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 
 const mockRouterPush = jest.fn();
 
@@ -77,6 +78,7 @@ jest.mock("@/utils/propertyStore", () => ({
   savePreferences: jest.fn(),
   clearPreferences: jest.fn(),
 }));
+jest.mock("@/utils/session/resetSessionState", () => ({ resetSessionState: jest.fn() }));
 jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 
@@ -233,6 +235,20 @@ describe("UserProvider auth UX", () => {
     expect(datasource.setToken).toHaveBeenCalledWith("");
     expect(CopilotClient.setToken).toHaveBeenCalledWith("");
     expect(useUserStore.getState().token).toBeNull();
+  });
+
+  it("resets the session state and revokes the token it held on logout", async () => {
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse());
+    (doLogout as jest.Mock).mockResolvedValue(undefined);
+
+    renderProvider();
+
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    fireEvent.click(await screen.findByTestId("trigger-logout"));
+
+    expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+    expect(resetSessionState).toHaveBeenCalledTimes(1);
+    expect(doLogout).toHaveBeenCalledWith("jwt-token");
   });
 });
 
