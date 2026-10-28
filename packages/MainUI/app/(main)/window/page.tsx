@@ -41,22 +41,58 @@ interface WindowSlotProps {
   isVisible: boolean;
 }
 
+/** How long the window that is being left stays on screen, fading out under the one that is entered. */
+const LEAVING_FADE_MS = 120;
+
+/**
+ * True for a short while after `isVisible` turns false. The window being left is kept painted until
+ * the one being entered has had time to paint, so that a window that has to be painted again (it
+ * has been hidden for a while) never leaves the near-black page background showing in between.
+ */
+function useIsLeaving(isVisible: boolean): boolean {
+  const wasVisibleRef = useRef(isVisible);
+  const isLeavingRef = useRef(false);
+  const [, setTick] = useState(0);
+
+  if (wasVisibleRef.current && !isVisible) isLeavingRef.current = true;
+  if (isVisible) isLeavingRef.current = false;
+  wasVisibleRef.current = isVisible;
+
+  useEffect(() => {
+    if (isVisible || !isLeavingRef.current) return;
+    const timer = setTimeout(() => {
+      isLeavingRef.current = false;
+      setTick((tick) => tick + 1);
+    }, LEAVING_FADE_MS);
+    return () => clearTimeout(timer);
+  }, [isVisible]);
+
+  return isLeavingRef.current;
+}
+
 /**
  * Layer for one open window. It subscribes to its own slice of the store, so a change in one
  * window (filters, selection, form state) never re-renders the layers of the other windows.
  */
 const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: WindowSlotProps) {
   const win = useWindowStore((s) => s.windows[windowIdentifier]);
+  const isLeaving = useIsLeaving(isVisible);
   if (!win) return null;
+  const isShown = isVisible || isLeaving;
   return (
     <div
       className="absolute inset-0 flex flex-col overflow-hidden px-4 pt-2"
       style={{
-        visibility: isVisible ? "visible" : "hidden",
+        visibility: isShown ? "visible" : "hidden",
         // Skips style, layout and paint of a window that is not on screen, keeping it mounted and its size.
-        contentVisibility: isVisible ? "visible" : "hidden",
+        contentVisibility: isShown ? "visible" : "hidden",
+        // The window being entered appears at once, on top, and it is opaque (the page background, aligned
+        // with the viewport like the body's) so the one being left never shows through it.
+        backgroundImage: isVisible ? "var(--background-gradient)" : "none",
+        backgroundAttachment: "fixed",
         opacity: isVisible ? 1 : 0,
-        // No fade between windows: switching tabs cuts straight to the other window, as Classic does.
+        zIndex: isVisible ? 1 : 0,
+        transition: isVisible ? "none" : `opacity ${LEAVING_FADE_MS}ms ease-out`,
         pointerEvents: isVisible ? "auto" : "none",
       }}>
       {renderWindowContent(win)}
