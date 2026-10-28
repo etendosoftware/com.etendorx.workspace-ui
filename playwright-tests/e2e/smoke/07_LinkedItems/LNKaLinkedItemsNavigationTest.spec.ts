@@ -19,6 +19,9 @@ const TAB_TIMEOUT = 30_000;
 const buttonWithText = (page: Page, text: string | RegExp) =>
   page.locator("button:visible").filter({ hasText: text }).first();
 
+/** Visible child tab named `name`: its button also holds the record count badge once the tab has loaded. */
+const childTab = (page: Page, name: string) => buttonWithText(page, new RegExp(`^${name}\\d*$`));
+
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
     // Equivalent to Cypress `cy.on("uncaught:exception", () => false)`
@@ -87,7 +90,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Sales Quotation$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Line Tax$/)).toBeVisible({ timeout: TAB_TIMEOUT });
+    await expect(childTab(page, "Line Tax")).toBeVisible({ timeout: TAB_TIMEOUT });
 
     // =========================================================================
     // PART 2: Goods Shipment
@@ -111,7 +114,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Goods Shipment$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Lines$/)).toBeVisible({ timeout: TAB_TIMEOUT });
+    await expect(childTab(page, "Lines")).toBeVisible({ timeout: TAB_TIMEOUT });
 
     // =========================================================================
     // PART 3: Purchase Invoice
@@ -130,6 +133,6 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Purchase Invoice$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Basic Discounts$/)).toBeVisible({ timeout: TAB_TIMEOUT });
+    await expect(childTab(page, "Basic Discounts")).toBeVisible({ timeout: TAB_TIMEOUT });
   });
 });
