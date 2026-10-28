@@ -4341,6 +4341,7 @@ const DynamicTable = ({
         hasEditingRows={editingRowsCount > 0}
         focusRegionId={focusRegionId}
         isFocused={isFocused}
+        data-testid="GridShortcuts__8ca888"
       />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         {tableElement}

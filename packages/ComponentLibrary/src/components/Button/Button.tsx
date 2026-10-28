@@ -36,7 +36,11 @@ const getButtonClasses = ({
         "text-(--color-etendo-contrast-text) dark:text-[#16171b]",
         disabled
           ? "bg-(--color-transparent-neutral-100) opacity-20"
-          : ["bg-(--color-baseline-100)", "hover:bg-(--color-dynamic-main)", "hover:[&>span>svg]:fill-white dark:hover:[&>span>svg]:fill-[#16171b]"]
+          : [
+              "bg-(--color-baseline-100)",
+              "hover:bg-(--color-dynamic-main)",
+              "hover:[&>span>svg]:fill-white dark:hover:[&>span>svg]:fill-[#16171b]",
+            ]
       ),
     outlined: ({ disabled }) =>
       clsx(
