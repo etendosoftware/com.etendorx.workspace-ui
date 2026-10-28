@@ -77,6 +77,7 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
+import { isSameColumnVisibility, resolveUpdater } from "@/utils/table/columnState";
 import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logoutOnSessionSaveError } from "@/hooks/useFormAction";
@@ -3297,6 +3298,9 @@ const DynamicTable = ({
         handleMRTColumnVisibilityChange(updaterOrValue);
         return;
       }
+      // The column menu re-sends the current state when it mounts: nothing changed, so there is
+      // nothing to store (it would write the defaults as the user's own configuration).
+      if (isSameColumnVisibility(resolveUpdater(updaterOrValue, tableColumnVisibility), tableColumnVisibility)) return;
       handleMRTColumnVisibilityChange(updaterOrValue);
       scheduleColumnSave();
     },
