@@ -56,7 +56,7 @@ const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: Win
         // Skips style, layout and paint of a window that is not on screen, keeping it mounted and its size.
         contentVisibility: isVisible ? "visible" : "hidden",
         opacity: isVisible ? 1 : 0,
-        transition: "opacity 150ms ease-in-out",
+        // No fade between windows: switching tabs cuts straight to the other window, as Classic does.
         pointerEvents: isVisible ? "auto" : "none",
       }}>
       {renderWindowContent(win)}
