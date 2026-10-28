@@ -1019,6 +1019,8 @@ const DynamicTable = ({
   const { tab, parentTab, parentRecord } = useTabContext();
   const { footer: footerSlot, titleSuffix: titleSuffixSlot } = useTopBarSlots();
   const { slot: toolbarExtrasSlot, isGridVisible } = useToolbarExtrasSlot();
+  // Only the root tab of the active window writes its record count in the title (the slots are null otherwise).
+  const titleCountSlot = tab.tabLevel === 0 && footerSlot && toolbarExtrasSlot ? titleSuffixSlot : null;
   const { registerRefresh, triggerParentRefreshes } = useTabRefreshContext();
   const { logout } = useUserContext();
   const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
@@ -3571,15 +3573,6 @@ const DynamicTable = ({
             ? isGridVisible && (
                 <>
                   {createPortal(
-                    <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
-                      <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">
-                        {loading ? "" : t("table.counter.titleCount").replace("{count}", String(loaded))}
-                      </span>
-                    </span>,
-                    titleSuffixSlot
-                  )}
-
-                  {createPortal(
                     <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
                     toolbarExtrasSlot
                   )}
@@ -4332,6 +4325,18 @@ const DynamicTable = ({
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
+      {/* Outside the frozen grid element: it must unmount when the window stops being the active one,
+          or the counters of every open window pile up in the shared title bar. */}
+      {titleCountSlot &&
+        isGridVisible &&
+        createPortal(
+          <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
+            <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">
+              {loading ? "" : t("table.counter.titleCount").replace("{count}", String(displayRecords.length))}
+            </span>
+          </span>,
+          titleCountSlot
+        )}
       <GridShortcuts
         shortcuts={shortcuts}
         gridShortcuts={gridShortcuts}
