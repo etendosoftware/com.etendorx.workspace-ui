@@ -25,14 +25,21 @@ const CLASSIC_DEFAULTS = { role: "role-min", organization: "org-max", warehouse:
 
 type FakeResponse = { ok: boolean; status: number; headers: Headers; json: () => Promise<unknown> };
 
-function erpResponse(body: unknown, { ok = true, jsessionId }: { ok?: boolean; jsessionId?: string } = {}): FakeResponse {
+function erpResponse(
+  body: unknown,
+  { ok = true, jsessionId }: { ok?: boolean; jsessionId?: string } = {}
+): FakeResponse {
   const headers = new Headers();
   if (jsessionId) headers.set("set-cookie", `JSESSIONID=${jsessionId}; Path=/`);
   return { ok, status: ok ? 200 : 500, headers, json: async () => body };
 }
 
 function makeRequest(body: unknown): NextRequest {
-  return { headers: new Headers(), url: "https://localhost:3000/api/auth/login", json: async () => body } as NextRequest;
+  return {
+    headers: new Headers(),
+    url: "https://localhost:3000/api/auth/login",
+    json: async () => body,
+  } as NextRequest;
 }
 
 /** Routes every fetched URL to a queue of fake responses, in call order. */
@@ -42,7 +49,7 @@ function mockErp(routes: Record<string, FakeResponse[]>): jest.Mock {
     if (!response) throw new Error(`Unexpected request to ${url}`);
     return response;
   });
-  (global as any).fetch = fetchMock;
+  global.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
 }
 
@@ -65,7 +72,7 @@ describe("POST /api/auth/login — Classic login defaults", () => {
 
   afterAll(() => {
     process.env = OLD_ENV;
-    (global as any).fetch = originalFetch;
+    global.fetch = originalFetch;
   });
 
   it("keeps the original token when it already uses the Classic defaults", async () => {
@@ -79,7 +86,10 @@ describe("POST /api/auth/login — Classic login defaults", () => {
     expect(res.body).toEqual({ token: FIRST_TOKEN });
     expect(fetchMock).toHaveBeenCalledWith(
       LOGIN_DEFAULTS_URL,
-      expect.objectContaining({ method: "GET", headers: expect.objectContaining({ Authorization: `Bearer ${FIRST_TOKEN}` }) })
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ Authorization: `Bearer ${FIRST_TOKEN}` }),
+      })
     );
     expect(requestBodies(fetchMock, LOGIN_URL)).toHaveLength(1);
   });
@@ -96,9 +106,15 @@ describe("POST /api/auth/login — Classic login defaults", () => {
     const res = await POST(makeRequest(CREDENTIALS));
 
     expect(res.body).toEqual({ token: ALIGNED_TOKEN });
-    expect(requestBodies(fetchMock, LOGIN_URL)[1]).toEqual({ role: "role-min", organization: "org-max", warehouse: "wh-min" });
+    expect(requestBodies(fetchMock, LOGIN_URL)[1]).toEqual({
+      role: "role-min",
+      organization: "org-max",
+      warehouse: "wh-min",
+    });
     const switchHeaders = fetchMock.mock.calls[2][1].headers;
-    expect(switchHeaders).toEqual(expect.objectContaining({ Authorization: `Bearer ${FIRST_TOKEN}`, Cookie: "JSESSIONID=FIRST" }));
+    expect(switchHeaders).toEqual(
+      expect.objectContaining({ Authorization: `Bearer ${FIRST_TOKEN}`, Cookie: "JSESSIONID=FIRST" })
+    );
     expect(getErpSessionCookie(ALIGNED_TOKEN)).toBe("JSESSIONID=ALIGNED");
     expect(getErpSessionCookie(FIRST_TOKEN)).toBeNull();
   });

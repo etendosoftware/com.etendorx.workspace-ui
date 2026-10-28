@@ -142,7 +142,18 @@ interface LoginDefaults {
   current: boolean;
 }
 
-function isInitialLogin(body: any): boolean {
+interface LoginRequestBody {
+  username?: string;
+  password?: string;
+  role?: string;
+}
+
+interface ErpLoginResponse {
+  token?: string;
+  message?: string;
+}
+
+function isInitialLogin(body: LoginRequestBody | null): boolean {
   return Boolean(body?.username && body?.password && !body?.role);
 }
 
@@ -168,7 +179,7 @@ function buildProfileBody(defaults: LoginDefaults): Record<string, string> {
   return profile;
 }
 
-async function readJson(response: Response): Promise<any | null> {
+async function readJson(response: Response): Promise<ErpLoginResponse | null> {
   if (!response.ok) {
     return null;
   }
@@ -176,7 +187,11 @@ async function readJson(response: Response): Promise<any | null> {
   return response.json();
 }
 
-function adoptSwitchedLogin(response: Response, data: any, userToken: string): any | null {
+function adoptSwitchedLogin(
+  response: Response,
+  data: ErpLoginResponse | null,
+  userToken: string
+): ErpLoginResponse | null {
   if (!data?.token) {
     return null;
   }
@@ -185,7 +200,10 @@ function adoptSwitchedLogin(response: Response, data: any, userToken: string): a
   return data;
 }
 
-async function switchToLoginDefaults(userToken: string, profile: Record<string, string>): Promise<any | null> {
+async function switchToLoginDefaults(
+  userToken: string,
+  profile: Record<string, string>
+): Promise<ErpLoginResponse | null> {
   const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, ERP_LOGIN_PATH);
   const cookieHeader = getErpSessionCookie(userToken) || undefined;
   const response = await fetchErpLogin(erpLoginUrl, profile, cookieHeader, userToken);
@@ -205,7 +223,7 @@ async function switchToLoginDefaults(userToken: string, profile: Record<string, 
  *
  * @returns the switched login response, or null to keep the original one
  */
-async function alignWithClassicDefaults(userToken: string): Promise<any | null> {
+async function alignWithClassicDefaults(userToken: string): Promise<ErpLoginResponse | null> {
   try {
     const defaults = await fetchLoginDefaults(userToken);
     if (!defaults || defaults.current) {
