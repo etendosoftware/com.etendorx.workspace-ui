@@ -181,14 +181,11 @@ export default function WindowTabs() {
         </IconButton>
       )}
       <div
-        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
+        className="w-full flex items-center gap-1 px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
           const title = getTitleForWindow(window, windowsData);
           const isActive = window.isActive;
-
-          const activeIndex = visibleWindows.findIndex((w) => w.isActive);
-          const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
 
           return (
             <div
@@ -210,9 +207,6 @@ export default function WindowTabs() {
                 }}
                 data-testid="WindowTab__c8117d"
               />
-              {showSeparator && index < visibleWindows.length - 1 && (
-                <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
-              )}
             </div>
           );
         })}

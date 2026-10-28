@@ -14,7 +14,7 @@
  *************************************************************************
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
 
 jest.mock("@workspaceui/componentlibrary/src/assets/icons/folder.svg", () => ({
@@ -41,5 +41,41 @@ describe("WindowTab", () => {
 
     expect(screen.getByTestId("CustomIcon")).toBeInTheDocument();
     expect(screen.queryByTestId("FolderIcon__15c554")).not.toBeInTheDocument();
+  });
+
+  describe("activation", () => {
+    const setup = () => {
+      const onActivate = jest.fn();
+      const onClose = jest.fn();
+      render(<WindowTab title="Tab" isActive={false} onActivate={onActivate} onClose={onClose} />);
+      // The tab itself is the element that holds the padding around the icon and the label.
+      const tab = screen.getByText("Tab").closest("button")?.parentElement as HTMLElement;
+      return { onActivate, onClose, tab };
+    };
+
+    it("activates the window when the label is clicked", () => {
+      const { onActivate } = setup();
+
+      fireEvent.click(screen.getByText("Tab"));
+
+      expect(onActivate).toHaveBeenCalledTimes(1);
+    });
+
+    it("activates the window when the tab is clicked outside its icon and label", () => {
+      const { onActivate, tab } = setup();
+
+      fireEvent.click(tab);
+
+      expect(onActivate).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes the window without activating it when the close button is clicked", () => {
+      const { onActivate, onClose } = setup();
+
+      fireEvent.click(screen.getByTitle("primaryTabs.closeWindow"));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onActivate).not.toHaveBeenCalled();
+    });
   });
 });
