@@ -216,7 +216,10 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           return (
             <div
               key={tab.id}
-              className={`flex flex-col flex-1 h-full min-h-0${isActive ? "" : " hidden"}`}
+              // An inactive tab keeps its box (out of the flow, invisible) instead of display:none: a grid
+              // that collapses to zero size starts at zero rows when shown again, and flashes while it measures.
+              className={`flex flex-col flex-1 h-full min-h-0${isActive ? "" : " absolute inset-0 invisible pointer-events-none"}`}
+              style={isActive ? undefined : { contentVisibility: "hidden" }}
               onClick={() => isActive && setFocus(tab.id)}
               onKeyDown={(e) => isActive && (e.key === "Enter" || e.key === " ") && setFocus(tab.id)}>
               <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab?.id ?? activeTabId ?? "6fa401"}`}>
