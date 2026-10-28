@@ -47,7 +47,8 @@ import EmptyState from "./EmptyState";
 import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useKeyboardShortcuts, type ShortcutMap } from "@/hooks/useKeyboardShortcuts";
+import { useFocusContext } from "@/contexts/focus";
 import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
@@ -818,6 +819,8 @@ interface DynamicTableProps {
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
+  /** Focus region of this grid's tab; when set, the grid tracks the focus without re-rendering. */
+  focusRegionId?: string;
   onFocusAcquire?: () => void;
 }
 
@@ -895,6 +898,37 @@ const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<Ent
   );
 };
 
+interface GridShortcutsProps {
+  shortcuts: ShortcutMap;
+  gridShortcuts: Omit<Parameters<typeof useGridShortcuts>[0], "enabled">;
+  isGridVisible: boolean;
+  hasEditingRows: boolean;
+  /** Focus region of the grid's tab. Without it, `isFocused` (default: focused) decides. */
+  focusRegionId?: string;
+  isFocused?: boolean;
+}
+
+/**
+ * Binds the keyboard shortcuts of the grid. It renders nothing and reads the focus itself, so that
+ * moving the focus between tabs (every tab switch) re-renders this leaf and not the whole grid.
+ */
+const GridShortcuts = ({
+  shortcuts,
+  gridShortcuts,
+  isGridVisible,
+  hasEditingRows,
+  focusRegionId,
+  isFocused,
+}: GridShortcutsProps) => {
+  const focusScope = useMemo(() => (focusRegionId ? [focusRegionId] : []), [focusRegionId]);
+  const { activeFocusId } = useFocusContext(focusScope);
+  const hasFocus = focusRegionId ? activeFocusId === focusRegionId : (isFocused ?? true);
+
+  useKeyboardShortcuts(shortcuts, !hasEditingRows && hasFocus);
+  useGridShortcuts({ ...gridShortcuts, enabled: isGridVisible && !hasEditingRows && hasFocus });
+  return null;
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -905,6 +939,7 @@ const DynamicTable = ({
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
+  focusRegionId,
   onFocusAcquire,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
@@ -3724,31 +3759,26 @@ const DynamicTable = ({
     [shouldUseTreeMode, effectiveRecords]
   );
 
-  useKeyboardShortcuts(
-    {
-      Enter: { handler: handleEnter },
-      ArrowUp: { handler: handleArrowUp },
-      ArrowDown: { handler: handleArrowDown },
-      ...(shouldUseTreeMode
-        ? {
-            ArrowRight: { handler: handleTreeArrowRight },
-            ArrowLeft: { handler: handleTreeArrowLeft },
-          }
-        : {}),
-    },
-    editingRowsCount === 0 && (isFocused ?? true)
-  );
-
-  // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
-  useGridShortcuts({
+  // The shortcuts read the focus in GridShortcuts, so moving the focus does not re-render the grid.
+  const shortcuts: ShortcutMap = {
+    Enter: { handler: handleEnter },
+    ArrowUp: { handler: handleArrowUp },
+    ArrowDown: { handler: handleArrowDown },
+    ...(shouldUseTreeMode
+      ? {
+          ArrowRight: { handler: handleTreeArrowRight },
+          ArrowLeft: { handler: handleTreeArrowLeft },
+        }
+      : {}),
+  };
+  const gridShortcuts = {
     containerRef: tableContainerRef,
     tableRef,
-    enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
     canAddRow: !parentTab || Boolean(parentRecord),
     onNewRow: handleInsertRow,
     onEditRow: handleEditRow,
     onOpenInForm: openRecordInFormView,
-  });
+  };
 
   // When the grid becomes visible again after leaving form view, DOM focus is
   // on <body>. The row-click handler (line ~2594) focuses the table container,
@@ -4298,6 +4328,14 @@ const DynamicTable = ({
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
+      <GridShortcuts
+        shortcuts={shortcuts}
+        gridShortcuts={gridShortcuts}
+        isGridVisible={isVisible}
+        hasEditingRows={editingRowsCount > 0}
+        focusRegionId={focusRegionId}
+        isFocused={isFocused}
+      />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         {tableElement}
       </div>

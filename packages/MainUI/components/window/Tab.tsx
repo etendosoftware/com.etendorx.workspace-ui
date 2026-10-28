@@ -1446,7 +1446,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
                 isTabCollapsed={collapsed}
                 areFiltersDisabled={advancedFilters.length > 0}
                 uIPattern={tab.uIPattern}
-                isFocused={isFocused}
+                focusRegionId={tab.id}
                 onFocusAcquire={acquire}
                 data-testid="DynamicTable__5893c8"
               />
