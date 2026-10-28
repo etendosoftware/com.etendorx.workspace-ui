@@ -53,6 +53,8 @@ const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: Win
       className="absolute inset-0 flex flex-col overflow-hidden px-4 pt-2"
       style={{
         visibility: isVisible ? "visible" : "hidden",
+        // Skips style, layout and paint of a window that is not on screen, keeping it mounted and its size.
+        contentVisibility: isVisible ? "visible" : "hidden",
         opacity: isVisible ? 1 : 0,
         transition: "opacity 150ms ease-in-out",
         pointerEvents: isVisible ? "auto" : "none",
