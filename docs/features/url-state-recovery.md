@@ -4,6 +4,10 @@
 
 The URL State Recovery system enables users to reload pages or share deep-link URLs without losing their window state. When a page loads with URL parameters, the system reconstructs the complete window state including tab hierarchy and record selections.
 
+A logout drops the window parameters from the URL (and empties the window store), so a new login in the
+same browser tab never recovers the windows of the previous session; see
+[Login and Logout](./login-logout/README.md).
+
 ## How It Works
 
 ### URL Parameters

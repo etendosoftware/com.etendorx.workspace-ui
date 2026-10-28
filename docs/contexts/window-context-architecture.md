@@ -954,6 +954,10 @@ const handleLogout = () => {
 };
 ```
 
+`UserProvider.logout()` already does this for every logout path through `resetSessionState()`, together
+with the URL window parameters and the other session caches; see
+[Login and Logout](../features/login-logout/README.md).
+
 ### 4. State Updates
 
 ```typescript
