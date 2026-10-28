@@ -52,13 +52,24 @@ const externalItem: RecentItem = {
 
 const windowItem: RecentItem = { id: "MENU_WIN", name: "Sales Order", windowId: WINDOW_ID, type: "Window" };
 
+const FORM_MENU_ID = "MENUFORM";
+const MODULE_FORM_URL = "/com.example.module.ad_forms/ModuleForm.html";
+const formItem: RecentItem = { id: FORM_MENU_ID, name: "Module Form", windowId: FORM_MENU_ID, type: "Form" };
+const liveFormEntry = { id: FORM_MENU_ID, name: "Module Form", type: "Form", formId: "F1", formUrl: MODULE_FORM_URL };
+const PROCESS_MENU_ID = "MENUPROC";
+const processItem: RecentItem = { id: PROCESS_MENU_ID, name: "Process", windowId: PROCESS_MENU_ID, type: "Process" };
+const liveProcessEntry = { id: PROCESS_MENU_ID, name: "Process", type: "Process", processId: "P1" };
+
+/** Window id of the single window opened by the widget, if any. */
+const getOpenedWindowId = () => Object.values(useWindowStore.getState().windows)[0]?.windowId;
+
 const clickItem = (id: string) => fireEvent.click(screen.getByTestId(`RecentlyViewedRenderer__item_${id}`));
 
 describe("RecentlyViewedRenderer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useWindowStore.getState().cleanState();
-    useRecentItemsStore.setState({ items: [externalItem, windowItem] });
+    useRecentItemsStore.setState({ items: [externalItem, windowItem, formItem, processItem] });
     setUserSession(ROLE_ID);
     jest.mocked(Metadata.getCachedMenu).mockReturnValue([]);
   });
@@ -104,5 +115,50 @@ describe("RecentlyViewedRenderer", () => {
     expect(mockOpenExternalMenuEntry).not.toHaveBeenCalled();
     const [opened] = Object.values(useWindowStore.getState().windows);
     expect(opened).toMatchObject({ windowId: WINDOW_ID, title: "Sales Order", isActive: true });
+  });
+
+  describe("entries served by Etendo Classic", () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      openSpy = jest.spyOn(window, "open").mockReturnValue({ closed: false } as Window);
+    });
+
+    afterEach(() => {
+      openSpy.mockRestore();
+    });
+
+    it("opens a form in its Classic popup with the address of the live menu entry", () => {
+      jest.mocked(Metadata.getCachedMenu).mockReturnValue([liveFormEntry, liveProcessEntry]);
+      render(<RecentlyViewedRenderer />);
+
+      clickItem(FORM_MENU_ID);
+
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`url=${MODULE_FORM_URL}&`),
+        "Test",
+        "width=950,height=700"
+      );
+      expect(useWindowStore.getState().windows).toEqual({});
+    });
+
+    it("keeps the previous navigation when the form is no longer in the menu", () => {
+      render(<RecentlyViewedRenderer />);
+
+      clickItem(FORM_MENU_ID);
+
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(getOpenedWindowId()).toBe(FORM_MENU_ID);
+    });
+
+    it("leaves process-like entries, which need the menu process modal, to the previous navigation", () => {
+      jest.mocked(Metadata.getCachedMenu).mockReturnValue([liveFormEntry, liveProcessEntry]);
+      render(<RecentlyViewedRenderer />);
+
+      clickItem(PROCESS_MENU_ID);
+
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(getOpenedWindowId()).toBe(PROCESS_MENU_ID);
+    });
   });
 });
