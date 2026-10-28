@@ -58,7 +58,8 @@ import { useTabContext } from "@/contexts/tab";
 import { useTopBarSlots } from "@/contexts/TitleActionsSlot";
 import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 import { createPortal } from "react-dom";
-import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
+import { getTabCountKey } from "@/stores/tabCountsStore";
+import { useTabRecordCount } from "@/hooks/table/useTabRecordCount";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
@@ -1134,22 +1135,17 @@ const DynamicTable = ({
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
 
   // Child tabs show their record count as a badge on the tab strip instead of a bar above the grid.
-  const setTabCount = useTabCountsStore((s) => s.setCount);
-  const clearTabCount = useTabCountsStore((s) => s.clearCount);
   // Like Classic: with several parent records selected a child tab shows no children, only a message.
   const selectedParents = useSelectedRecords(parentTab ?? undefined);
   const hasMultipleParents = tab.tabLevel > 0 && selectedParents.length > 1;
   const tabCountKey = getTabCountKey(windowIdentifier ?? "", tab.id);
-  const loadedRecordsCount = displayRecords.length;
-  const isChildTab = tab.tabLevel > 0;
-  useEffect(() => {
-    if (!isChildTab) return;
-    if (hasMultipleParents) {
-      clearTabCount(tabCountKey);
-    } else if (!loading) {
-      setTabCount(tabCountKey, loadedRecordsCount);
-    }
-  }, [isChildTab, hasMultipleParents, loading, loadedRecordsCount, setTabCount, clearTabCount, tabCountKey]);
+  useTabRecordCount({
+    tabCountKey,
+    isChildTab: tab.tabLevel > 0,
+    hasMultipleParents,
+    isLoading: loading,
+    loadedRecordsCount: displayRecords.length,
+  });
 
   // Summary State (the summary functions live in the window store so saved views can capture them)
   const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
@@ -3563,27 +3559,19 @@ const DynamicTable = ({
           data-testid="RecordCounterBar__8ca888"
         />
       );
-      if (canDockChild) {
-        return isGridVisible
+      // The full screen control goes to the toolbar slot, while the grid is the pane on screen.
+      const dockFullScreen = (slot: Element) =>
+        isGridVisible
           ? createPortal(
               <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
-              toolbarExtrasSlot
+              slot
             )
           : null;
-      }
+      if (canDockChild) return dockFullScreen(toolbarExtrasSlot);
 
       return (
         <>
-          {canDockInChrome
-            ? isGridVisible && (
-                <>
-                  {createPortal(
-                    <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
-                    toolbarExtrasSlot
-                  )}
-                </>
-              )
-            : counterBar}
+          {canDockInChrome ? dockFullScreen(toolbarExtrasSlot) : counterBar}
           {quickFilterCols.length > 0 && (
             <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
               {quickFilterCols.map((col: Column) => {

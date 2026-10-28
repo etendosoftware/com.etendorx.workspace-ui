@@ -258,7 +258,7 @@ const DARK_NEUTRAL = {
 const DARK_ACCENT = "#8B7BDC";
 const DARK_ACCENT_DARK = "#5A49A8";
 
-const lightPalette = themeOptions.palette as NonNullable<ThemeOptions["palette"]>;
+const lightPalette: NonNullable<ThemeOptions["palette"]> = themeOptions.palette ?? {};
 
 export const darkThemeOptions: ThemeOptions = {
   ...themeOptions,
@@ -270,7 +270,7 @@ export const darkThemeOptions: ThemeOptions = {
     divider: "#2A2C32",
     dynamicColor: { main: DARK_ACCENT, dark: DARK_ACCENT_DARK, light: "#2D2650", contrastText: "#E9E6FB" },
     specificColor: {
-      ...(lightPalette.specificColor as NonNullable<typeof lightPalette.specificColor>),
+      ...lightPalette.specificColor,
       // Neutral tag/chip surface (read by `Tag`): the light value would be a pale pill with pale text.
       draft: { main: "#BDBFCA", contrastText: "#2A2C32" },
     },

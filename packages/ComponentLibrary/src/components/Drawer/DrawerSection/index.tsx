@@ -168,11 +168,10 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleClick]
     );
 
+    const nestedClasses = parentId ? "mx-2 my-0.5 rounded-lg" : "";
     const sectionClasses = [
       "bg-transparent",
-      open
-        ? `${parentId ? "mx-2 my-0.5 rounded-lg" : ""} focus:outline-none focus:ring-2 focus:ring-(--ui-accent)/40`
-        : "flex justify-center",
+      open ? `${nestedClasses} focus:outline-none focus:ring-2 focus:ring-(--ui-accent)/40` : "flex justify-center",
       !open && hasActiveChild ? "bg-(--ui-selected-bg) rounded-full" : "",
     ].join(" ");
 

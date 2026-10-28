@@ -335,6 +335,13 @@ const MultiSelect = memo(function MultiSelectCmp({
     t,
   ]);
 
+  let openStyles = "";
+  if (isOpen) {
+    openStyles = enableTextFilterLogic
+      ? "rounded-md border border-(--ui-text-muted)!"
+      : "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light";
+  }
+
   return (
     <div
       ref={wrapperRef}
@@ -343,7 +350,7 @@ const MultiSelect = memo(function MultiSelectCmp({
       <div
         onClick={handleClick}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
-          ${isOpen ? (enableTextFilterLogic ? "rounded-md border border-(--ui-text-muted)!" : "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light") : ""} 
+          ${openStyles} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
         {enableTextFilterLogic && selectedLabels.length > 0 ? (
           // Table filters show the selection as a removable chip, like the column filter design.

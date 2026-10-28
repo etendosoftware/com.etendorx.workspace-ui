@@ -501,6 +501,7 @@ button {
  * inverted (baseline, gray, slate), so utilities built on them flip without
  * touching each component.
  * ------------------------------------------------------------------------- */
+/* stylelint-disable-next-line at-rule-no-unknown -- Tailwind v4 directive */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 html[data-theme="dark"] {
@@ -600,20 +601,30 @@ html[data-theme="dark"] {
   --color-slate-800: #d4d6df;
   --color-slate-900: #e9eaf0;
   --color-slate-950: #f6f6fa;
+
+  /* Tinted surfaces that were pastel in the light theme. */
+  --color-secondary-100: #2b2a17;
+  --color-tertiary-50: #1e2236;
+  --color-tertiary-100: #262b45;
+  --color-primary-100: #2d2650;
+
+  /* Tailwind blue/indigo utilities use a lighter lilac ramp. */
+  --color-blue-50: #1d1936;
+  --color-blue-100: #262048;
+  --color-blue-200: #342c63;
+  --color-blue-300: #5d4fb0;
+  --color-blue-400: #7a6bcf;
+  --color-blue-500: #8b7bdc;
+  --color-blue-600: #9d8fe6;
+  --color-blue-700: #b2a7ee;
+  --color-blue-800: #c8bff4;
+  --color-blue-900: #ddd7f9;
 }
 
 /* Literal white surfaces become the dark card color; `text-white` and `bg-white/NN` overlays are left alone. */
 html[data-theme="dark"] .bg-white,
 html[data-theme="dark"] .hover\:bg-white:hover {
   background-color: var(--ui-card-bg);
-}
-
-/* Tinted surfaces that were pastel in the light theme. */
-html[data-theme="dark"] {
-  --color-secondary-100: #2b2a17;
-  --color-tertiary-50: #1e2236;
-  --color-tertiary-100: #262b45;
-  --color-primary-100: #2d2650;
 }
 
 /* Dark theme: black base64 icons turn white, and the Tailwind blue/indigo utilities use a lighter lilac ramp. */
@@ -625,19 +636,6 @@ html[data-theme="dark"] .icon-base64 {
 /* Disabled toolbar icons are black images dimmed with grayscale; they need the inversion too. */
 html[data-theme="dark"] button:disabled .icon-base64 {
   filter: invert(1) grayscale(1);
-}
-
-html[data-theme="dark"] {
-  --color-blue-50: #1d1936;
-  --color-blue-100: #262048;
-  --color-blue-200: #342c63;
-  --color-blue-300: #5d4fb0;
-  --color-blue-400: #7a6bcf;
-  --color-blue-500: #8b7bdc;
-  --color-blue-600: #9d8fe6;
-  --color-blue-700: #b2a7ee;
-  --color-blue-800: #c8bff4;
-  --color-blue-900: #ddd7f9;
 }
 
 /* Theme switch animation: cross-fade for browsers with View Transitions, class-based fallback otherwise.*/
