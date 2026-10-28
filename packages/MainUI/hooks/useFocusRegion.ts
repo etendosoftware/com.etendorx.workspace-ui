@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFocusContext } from "@/contexts/focus";
 
 /**
@@ -30,7 +30,8 @@ export function useFocusRegion(
   id: string,
   options?: { onBlur?: () => Promise<void> | void }
 ): { isFocused: boolean; acquire: () => void } {
-  const { activeFocusId, setFocus, registerRegion, unregisterRegion } = useFocusContext();
+  const scope = useMemo(() => [id], [id]);
+  const { activeFocusId, setFocus, registerRegion, unregisterRegion } = useFocusContext(scope);
 
   // Ref keeps onBlur fresh without causing re-registration on every render
   const onBlurRef = useRef(options?.onBlur);

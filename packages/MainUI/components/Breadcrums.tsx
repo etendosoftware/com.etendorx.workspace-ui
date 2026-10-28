@@ -86,7 +86,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
   const toggle = useFavoritesStore((s) => s.toggle);
   const menuIdByWindowId = useFavoritesStore((s) => s.menuIdByWindowId);
-  const { activeFocusId, setFocus } = useFocusContext();
+  const focusScope = useMemo(() => allTabs.flat().map((tab) => tab.id), [allTabs]);
+  const { activeFocusId, setFocus } = useFocusContext(focusScope);
 
   const { setActiveLevel, activeTabsByLevel, activeLevels } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",

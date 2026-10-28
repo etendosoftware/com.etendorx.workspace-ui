@@ -80,7 +80,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   useEffect(() => {
     setCustomHeight(storedHeight);
   }, [storedHeight]);
-  const { setFocus } = useFocusContext();
+  // Only moves the focus: an empty scope keeps this tab bar out of the focus re-renders.
+  const { setFocus } = useFocusContext([]);
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
     tabId: "",
