@@ -56,7 +56,7 @@ export default function StatusBar({
   const hasStatusFields = Object.keys(fields).length > 0;
 
   const navigation = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" data-testid="record-navigation">
       {onNavigateNext && onNavigatePrevious && (
         <RecordNavigationControls
           onNext={onNavigateNext}
