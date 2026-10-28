@@ -37,9 +37,11 @@ import type {
   Field,
   FormInitializationResponse,
   RefListField,
+  Tab,
   UIPattern,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
+import type { TranslateFunction } from "@/hooks/types";
 import React, { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -801,6 +803,172 @@ const columnToFieldForEditor = (column: Column): Field => {
 
   fieldCache.set(cacheKey, field);
   return field;
+};
+
+interface GridTopToolbarParams {
+  mrtTable: MRT_TableInstance<EntityData>;
+  displayRecords: EntityData[];
+  hasMoreRecords: boolean;
+  t: TranslateFunction;
+  baseColumns: Column[];
+  tab: Tab;
+  footerSlot: HTMLElement | null;
+  titleSuffixSlot: HTMLElement | null;
+  toolbarExtrasSlot: HTMLElement | null;
+  isGridVisible: boolean;
+  loading: boolean;
+  tableColumnFilters: ColumnFiltersState;
+  handleDateTextFilterChange: (columnId: string, value: string) => void;
+}
+
+/**
+ * Top toolbar of the grid: the record counter and quick filters, or only the exit control while the grid is full
+ * screen. The counter and the view controls move to the footer and the tab toolbar when those slots are there.
+ * Kept out of the component so that its branches do not count towards the component's complexity.
+ */
+const renderGridTopToolbar = ({
+  mrtTable,
+  displayRecords,
+  hasMoreRecords,
+  t,
+  baseColumns,
+  tab,
+  footerSlot,
+  titleSuffixSlot,
+  toolbarExtrasSlot,
+  isGridVisible,
+  loading,
+  tableColumnFilters,
+  handleDateTextFilterChange,
+}: GridTopToolbarParams) => {
+  const isFullScreen = mrtTable.getState().isFullScreen;
+
+  if (isFullScreen) {
+    return (
+      <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+        <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+        <button
+          type="button"
+          onClick={() => mrtTable.setIsFullScreen(false)}
+          className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+          aria-label="Exit fullscreen">
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  const rowSelection = mrtTable.getState().rowSelection;
+  const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+  const loaded = displayRecords.length;
+  const total = hasMoreRecords ? loaded + 1 : loaded;
+  const labels = {
+    showingRecords: t("table.counter.showingRecords"),
+    showingPartialRecords: t("table.counter.showingPartialRecords"),
+    selectedRecords: t("table.counter.selectedRecords"),
+    recordsLoaded: t("table.counter.recordsLoaded"),
+  };
+  // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+  // that Etendo Classic shows in the quick-filter bar above the grid.
+  const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
+  // The root tab hands its counter to the footer and its view controls to the toolbar, which frees this row.
+  const canDockInChrome = tab.tabLevel === 0 && footerSlot && titleSuffixSlot && toolbarExtrasSlot;
+  // Child tabs: the count goes to the tab badge; the selection and view controls to the tab's own toolbar.
+  const canDockChild = tab.tabLevel > 0 && toolbarExtrasSlot;
+  const counterBar = (
+    <RecordCounterBar
+      totalRecords={total}
+      loadedRecords={loaded}
+      selectedCount={selCount}
+      isLoading={loading}
+      labels={labels}
+      variant={canDockInChrome ? "inline" : "bar"}
+      showTotal={!canDockInChrome}
+      actions={
+        canDockInChrome ? undefined : (
+          <>
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+          </>
+        )
+      }
+      data-testid="RecordCounterBar__8ca888"
+    />
+  );
+  // The full screen control goes to the toolbar slot, while the grid is the pane on screen.
+  const dockFullScreen = (slot: Element) =>
+    isGridVisible
+      ? createPortal(
+          <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
+          slot
+        )
+      : null;
+  if (canDockChild) return dockFullScreen(toolbarExtrasSlot);
+
+  return (
+    <>
+      {canDockInChrome ? dockFullScreen(toolbarExtrasSlot) : counterBar}
+      {quickFilterCols.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
+          {quickFilterCols.map((col: Column) => {
+            const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
+            const currentValue = currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
+            return (
+              <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
+                <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">{col.header}:</span>
+                <input
+                  type="text"
+                  value={currentValue}
+                  onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
+                  placeholder="…"
+                  className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+interface TitleRecordCountProps {
+  slot: HTMLElement | null;
+  isGridVisible: boolean;
+  isLoading: boolean;
+  count: number;
+  t: TranslateFunction;
+}
+
+/** Record count of the active grid, shown in the shared title bar through a portal. */
+const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, t }: TitleRecordCountProps) => {
+  if (!slot || !isGridVisible) return null;
+  const label = isLoading ? "" : t("table.counter.titleCount").replace("{count}", String(count));
+  return createPortal(
+    <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
+      <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">{label}</span>
+    </span>,
+    slot
+  );
+};
+
+/** Confirmation dialog of the grid (discard changes, save with errors). */
+const ConfirmationDialog = ({ state }: { state: ReturnType<typeof useTableConfirmation>["confirmationState"] }) => {
+  const isError = state.statusType === "error";
+  return (
+    <StatusModal
+      open={state.isOpen}
+      statusType={state.statusType}
+      statusText={isError ? state.title : `${state.title}\n\n${state.message}`}
+      errorMessage={isError ? state.message : undefined}
+      saveLabel={state.confirmText || "OK"}
+      secondaryButtonLabel={state.showCancel ? state.cancelText : undefined}
+      onSave={state.onConfirm}
+      onCancel={state.onCancel}
+      onClose={state.onCancel}
+      isDeleteSuccess={false}
+      data-testid="ConfirmationDialog__8ca888"
+    />
+  );
 };
 
 interface DynamicTableProps {
@@ -3505,99 +3673,22 @@ const DynamicTable = ({
     // cell shows without changing the cell, so cells are not memoized while either is in use.
     memoMode: editingRowsCount === 0 && !shouldUseTreeMode ? "cells" : undefined,
     enableTopToolbar: true,
-    renderTopToolbar: ({ table: mrtTable }) => {
-      const isFullScreen = mrtTable.getState().isFullScreen;
-
-      if (isFullScreen) {
-        return (
-          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
-            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-            <button
-              type="button"
-              onClick={() => mrtTable.setIsFullScreen(false)}
-              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
-              aria-label="Exit fullscreen">
-              ✕
-            </button>
-          </div>
-        );
-      }
-
-      const rowSelection = mrtTable.getState().rowSelection;
-      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
-      const loaded = displayRecords.length;
-      const total = hasMoreRecords ? loaded + 1 : loaded;
-      const labels = {
-        showingRecords: t("table.counter.showingRecords"),
-        showingPartialRecords: t("table.counter.showingPartialRecords"),
-        selectedRecords: t("table.counter.selectedRecords"),
-        recordsLoaded: t("table.counter.recordsLoaded"),
-      };
-      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
-      // that Etendo Classic shows in the quick-filter bar above the grid.
-      const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
-      // The root tab hands its counter to the footer and its view controls to the toolbar, which frees this row.
-      const canDockInChrome = tab.tabLevel === 0 && footerSlot && titleSuffixSlot && toolbarExtrasSlot;
-      // Child tabs: the count goes to the tab badge; the selection and view controls to the tab's own toolbar.
-      const canDockChild = tab.tabLevel > 0 && toolbarExtrasSlot;
-      const counterBar = (
-        <RecordCounterBar
-          totalRecords={total}
-          loadedRecords={loaded}
-          selectedCount={selCount}
-          isLoading={loading}
-          labels={labels}
-          variant={canDockInChrome ? "inline" : "bar"}
-          showTotal={!canDockInChrome}
-          actions={
-            canDockInChrome ? undefined : (
-              <>
-                <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-              </>
-            )
-          }
-          data-testid="RecordCounterBar__8ca888"
-        />
-      );
-      // The full screen control goes to the toolbar slot, while the grid is the pane on screen.
-      const dockFullScreen = (slot: Element) =>
-        isGridVisible
-          ? createPortal(
-              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
-              slot
-            )
-          : null;
-      if (canDockChild) return dockFullScreen(toolbarExtrasSlot);
-
-      return (
-        <>
-          {canDockInChrome ? dockFullScreen(toolbarExtrasSlot) : counterBar}
-          {quickFilterCols.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
-              {quickFilterCols.map((col: Column) => {
-                const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
-                const currentValue =
-                  currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
-                return (
-                  <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
-                    <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">
-                      {col.header}:
-                    </span>
-                    <input
-                      type="text"
-                      value={currentValue}
-                      onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
-                      placeholder="…"
-                      className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      );
-    },
+    renderTopToolbar: ({ table: mrtTable }) =>
+      renderGridTopToolbar({
+        mrtTable,
+        displayRecords,
+        hasMoreRecords,
+        t,
+        baseColumns,
+        tab,
+        footerSlot,
+        titleSuffixSlot,
+        toolbarExtrasSlot,
+        isGridVisible,
+        loading,
+        tableColumnFilters,
+        handleDateTextFilterChange,
+      }),
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     enableGrouping: isGroupingAvailable,
@@ -4324,16 +4415,14 @@ const DynamicTable = ({
       onClick={onFocusAcquire}>
       {/* Outside the frozen grid element: it must unmount when the window stops being the active one,
           or the counters of every open window pile up in the shared title bar. */}
-      {titleCountSlot &&
-        isGridVisible &&
-        createPortal(
-          <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
-            <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">
-              {loading ? "" : t("table.counter.titleCount").replace("{count}", String(displayRecords.length))}
-            </span>
-          </span>,
-          titleCountSlot
-        )}
+      <TitleRecordCount
+        slot={titleCountSlot}
+        isGridVisible={isGridVisible}
+        isLoading={loading}
+        count={displayRecords.length}
+        t={t}
+        data-testid="TitleRecordCount__8ca888"
+      />
       <GridShortcuts
         shortcuts={shortcuts}
         gridShortcuts={gridShortcuts}
@@ -4375,23 +4464,7 @@ const DynamicTable = ({
         areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
       />
-      <StatusModal
-        open={confirmationState.isOpen}
-        statusType={confirmationState.statusType}
-        statusText={
-          confirmationState.statusType === "error"
-            ? confirmationState.title
-            : `${confirmationState.title}\n\n${confirmationState.message}`
-        }
-        errorMessage={confirmationState.statusType === "error" ? confirmationState.message : undefined}
-        saveLabel={confirmationState.confirmText || "OK"}
-        secondaryButtonLabel={confirmationState.showCancel ? confirmationState.cancelText : undefined}
-        onSave={confirmationState.onConfirm}
-        onCancel={confirmationState.onCancel}
-        onClose={confirmationState.onCancel}
-        isDeleteSuccess={false}
-        data-testid="ConfirmationDialog__8ca888"
-      />
+      <ConfirmationDialog state={confirmationState} data-testid="ConfirmationDialog__8ca888" />
       <HeaderContextMenu
         anchorEl={headerContextMenuAnchor}
         onClose={handleCloseHeaderContextMenu}
