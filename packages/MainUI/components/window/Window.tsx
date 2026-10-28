@@ -22,14 +22,14 @@ import { SelectedProvider } from "@/contexts/selected";
 import { useTranslation } from "@/hooks/useTranslation";
 
 import TabsContainer from "@/components/window/TabsContainer";
-import { useState, useEffect, useRef } from "react";
+import { memo, useState, useEffect, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 
-export default function Window({ window }: { window: WindowState }) {
+function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { windowId, windowIdentifier } = window;
@@ -135,3 +135,11 @@ export default function Window({ window }: { window: WindowState }) {
     </CurrentWindowProvider>
   );
 }
+
+// Window only reads the two identifiers; the rest of its state lives in stores it selects from.
+// Comparing just these keeps it from re-rendering whenever any other window changes.
+export default memo(
+  Window,
+  (prev, next) =>
+    prev.window.windowId === next.window.windowId && prev.window.windowIdentifier === next.window.windowIdentifier
+);
