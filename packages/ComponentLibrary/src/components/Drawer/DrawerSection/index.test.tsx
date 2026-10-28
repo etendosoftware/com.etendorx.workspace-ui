@@ -44,6 +44,60 @@ describe("DrawerSection - optimistic selection (pendingWindowId)", () => {
   });
 });
 
+describe("DrawerSection - hover and focus notification", () => {
+  const leaf = { id: "win-1", name: "Sales", type: "Window", windowId: "A123", children: [] } as const;
+  const folder = {
+    id: "folder-1",
+    name: "Folder",
+    type: "Folder",
+    windowId: undefined,
+    children: [{ id: "c1", name: "Child", type: "Window", windowId: "C1", children: [] }],
+  } as const;
+
+  const renderItem = (item: typeof leaf | typeof folder, hasChildren: boolean, onItemHover: jest.Mock) =>
+    render(
+      <DrawerSection
+        item={item as any}
+        onClick={jest.fn()}
+        open
+        isSearchActive={false}
+        onToggleExpand={jest.fn()}
+        hasChildren={hasChildren}
+        isExpandable={hasChildren}
+        windowId={undefined}
+        isExpanded={false}
+        onItemHover={onItemHover}
+      />
+    );
+
+  it("reports a leaf item when the pointer enters it", () => {
+    const onItemHover = jest.fn();
+    renderItem(leaf, false, onItemHover);
+
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /Sales/ }).parentElement as HTMLElement);
+
+    expect(onItemHover).toHaveBeenCalledWith(leaf);
+  });
+
+  it("reports a leaf item when keyboard focus lands on it", () => {
+    const onItemHover = jest.fn();
+    renderItem(leaf, false, onItemHover);
+
+    fireEvent.focus(screen.getByRole("button", { name: /Sales/ }));
+
+    expect(onItemHover).toHaveBeenCalledWith(leaf);
+  });
+
+  it("does not report a folder, which opens no window", () => {
+    const onItemHover = jest.fn();
+    renderItem(folder, true, onItemHover);
+
+    fireEvent.focus(screen.getByRole("button", { name: /Folder/ }));
+
+    expect(onItemHover).not.toHaveBeenCalled();
+  });
+});
+
 describe("DrawerSection - collapsed flyout scroll & hover", () => {
   jest.useFakeTimers();
 

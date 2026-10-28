@@ -219,6 +219,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         aria-expanded={expanded}
         onKeyDown={handleKeyDown}
         onMouseEnter={handleCombinedMouseEnter}
+        onFocus={handleMouseEnterLeaf}
         onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}

@@ -22,6 +22,7 @@ import { getAllItemTitles } from "../../utils/searchUtils";
 import {
   findAdjacentMenuItem,
   findHighlightedMenuItem,
+  findMenuItemById,
   findNavigableMenuItems,
   getMenuItemId,
   MENU_NAVIGATION_OFFSETS,
@@ -77,6 +78,18 @@ const Drawer: React.FC<DrawerProps> = ({
   });
   const [drawerWidth, setDrawerWidth] = useState<number>(DRAWER_OPEN_WIDTH);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const onItemHoverRef = useRef(onItemHover);
+  onItemHoverRef.current = onItemHover;
+
+  // Keyboard navigation never moves the DOM focus out of the search box, so the highlighted entry is
+  // reported the way a hovered one is: its window can be loaded before Enter opens it.
+  useEffect(() => {
+    if (!highlightedItemId) return;
+    const item = findMenuItemById(itemsRef.current, highlightedItemId);
+    if (item) onItemHoverRef.current?.(item);
+  }, [highlightedItemId]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const menuListRef = useRef<HTMLDivElement>(null);
