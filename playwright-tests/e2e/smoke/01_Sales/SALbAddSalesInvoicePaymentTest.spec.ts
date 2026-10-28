@@ -13,7 +13,7 @@ test.describe("Sales Invoice - Add Payment @smoke", () => {
 
     // ── Step 2: Create New Sales Invoice ──────────────────────────────────────
     await app.toolbar.newRecord();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
 
     // ── Step 3: Fill Business Partner — "Customer A" ──────────────────────────
     // Customer A has confirmed sales prices for Final good A.

@@ -53,6 +53,12 @@ export class Toolbar {
     return atLevel(this.scope.locator(`button.toolbar-button-${action}:visible`), level);
   }
 
+  /** Closes the record open in form view: its close button sits next to the record pagination. */
+  async closeRecord(level: TabLevel = "header"): Promise<void> {
+    const navigation = atLevel(this.scope.locator('[data-testid="record-navigation"]:visible'), level);
+    await navigation.getByTestId("icon-button").click();
+  }
+
   /** Creates a new record. */
   async newRecord(level: TabLevel = "header"): Promise<void> {
     const button = this.scope === this.page ? this.button("new", level) : this.newRecordInTab();

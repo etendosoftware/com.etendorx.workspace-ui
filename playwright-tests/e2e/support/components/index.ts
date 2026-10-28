@@ -4,6 +4,7 @@ import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CreateLinesFrom } from "./CreateLinesFrom";
 import { FormField } from "./FormField";
+import { FormSections } from "./FormSections";
 import { InstancePurpose } from "./InstancePurpose";
 import { Grid } from "./Grid";
 import { LegacyFrame } from "./LegacyFrame";
@@ -35,6 +36,7 @@ export class App {
   readonly toolbar: Toolbar;
   readonly tabs: Tabs;
   readonly field: FormField;
+  readonly formSections: FormSections;
   readonly grid: Grid;
   readonly toast: Toast;
   readonly processModal: ProcessModal;
@@ -53,6 +55,7 @@ export class App {
     this.toolbar = new Toolbar(page);
     this.tabs = new Tabs(page);
     this.field = new FormField(page);
+    this.formSections = new FormSections(page);
     this.grid = new Grid(page);
     this.toast = new Toast(page);
     this.processModal = new ProcessModal(page);

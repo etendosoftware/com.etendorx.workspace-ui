@@ -45,12 +45,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await app.grid.waitForRow(value);
     };
 
-    const openLinkedItemsTab = async () => {
-      const btn = buttonWithText(page, /^Linked Items$/);
-      await btn.waitFor({ state: "visible", timeout: 15_000 });
-      await btn.scrollIntoViewIfNeeded();
-      await btn.click();
-    };
+    const openLinkedItemsTab = () => app.formSections.open(/^Linked Items$/);
 
     /** Opens a category of linked records: the categories are asked to the server once the section opens. */
     const clickLinkedItemButton = async (label: string) => {

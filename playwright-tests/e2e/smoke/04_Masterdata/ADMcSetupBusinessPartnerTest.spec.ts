@@ -30,7 +30,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await app.toast.closeAll();
 
     // Close the record view
-    await app.page.getByTestId("status-bar-container").getByTestId("icon-button").click();
+    await app.toolbar.closeRecord();
 
     // Second payment term: 120d
     await app.toolbar.newRecord();

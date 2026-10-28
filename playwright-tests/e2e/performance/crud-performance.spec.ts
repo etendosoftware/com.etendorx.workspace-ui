@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { Auth } from "../support/components/Auth";
+import { FormSections } from "../support/components/FormSections";
 import { Toast } from "../support/components/Toast";
 import { Sidebar } from "../support/components/Sidebar";
 
@@ -109,7 +110,7 @@ test.describe("CRUD Performance Tests", () => {
 
       const start = Date.now();
       await page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).first().click();
-      await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 20_000 });
+      await expect(new FormSections(page).main).toBeVisible({ timeout: 20_000 });
       assertPerformance(Date.now() - start, "New Sales Order form load", THRESHOLDS.newRecordForm);
     });
 
@@ -136,7 +137,7 @@ test.describe("CRUD Performance Tests", () => {
       await page.locator("button.toolbar-button-new").waitFor({ state: "visible", timeout: 20_000 });
 
       await page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).first().click();
-      await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 20_000 });
+      await expect(new FormSections(page).main).toBeVisible({ timeout: 20_000 });
 
       await page
         .locator('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm')
@@ -253,7 +254,7 @@ test.describe("CRUD Performance Tests", () => {
       await page.locator("button.toolbar-button-new").waitFor({ state: "visible", timeout: 20_000 });
 
       await page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).first().click();
-      await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 20_000 });
+      await expect(new FormSections(page).main).toBeVisible({ timeout: 20_000 });
 
       const start = Date.now();
       await page

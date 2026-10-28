@@ -1,8 +1,8 @@
 import { expect, test } from "../../support/fixtures";
 
 test.describe("Purchase Order to Invoice flow @smoke", () => {
-  test("Completes Purchase Order, Goods Receipt and posts the Vendor Invoice", async ({ app, data, page }) => {
-    const mainSection = page.getByRole("tab", { name: "Main Section" });
+  test("Completes Purchase Order, Goods Receipt and posts the Vendor Invoice", async ({ app, data }) => {
+    const mainSection = app.formSections.main;
 
     // ── Step 1: Navigate to Purchase Order ───────────────────────────────────
     await app.sidebar.navigateTo("purchaseOrder");

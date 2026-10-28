@@ -23,7 +23,7 @@ const inputDateInDays = (days: number): string => {
 /** Fills the header and one line of the new purchase invoice, completes it and returns its number. */
 async function completeInvoice(app: App, invoice: InvoiceSpec, fieldIds: { paymentMethod: string; quantity: string }) {
   const { page } = app;
-  await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
+  await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
   // Wait for the business partner callout: it sets the vendor's default payment method
   await app.field.select("Business Partner", invoice.vendor.name, { search: invoice.vendor.name, callout: true });
   if (invoice.paymentMethod) {
