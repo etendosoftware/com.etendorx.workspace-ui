@@ -48,6 +48,7 @@ import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts, type ShortcutMap } from "@/hooks/useKeyboardShortcuts";
+import { useIsCurrentWindowActive } from "@/hooks/useShortcutBindings";
 import { useFocusContext } from "@/contexts/focus";
 import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
@@ -4299,10 +4300,13 @@ const DynamicTable = ({
     table,
   ]);
 
-  // Hidden behind the form, the grid skips re-renders that change nothing it shows (cells, date
-  // formatting, row measurement); its rows and selection still update while hidden.
+  // Hidden behind the form, or with its whole window hidden, the grid skips re-renders that change
+  // nothing it shows (cells, date formatting, row measurement); its rows and selection still update
+  // while hidden. Without the window check, a window that stops being the active one would re-render
+  // its whole body on every tab switch.
+  const isWindowActive = useIsCurrentWindowActive();
   const tableElement = useFrozenWhileHidden(
-    isVisible,
+    isVisible && isWindowActive,
     <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
     [effectiveRecords, table.getState().rowSelection]
   );
