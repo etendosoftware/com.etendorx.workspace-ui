@@ -40,7 +40,7 @@ import type {
   UIPattern,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
@@ -2657,20 +2657,24 @@ const DynamicTable = ({
    */
   const openRecordInFormView = useCallback(
     (record: EntityData, tableInstance: MRT_TableInstance<EntityData>) => {
-      openRecordInForm({
-        record,
-        tab,
-        graph,
-        windowIdentifier,
-        getSelectedRecord,
-        setRecordId,
-        selectRow: (recordId: string) => {
-          // Mirrors the single click path: flag the change as user driven so the auto scroll effect
-          // does not fight the current viewport, and replace (never merge) the previous selection so
-          // the highlighted row and the opened record can never diverge.
-          isManualSelection.current = true;
-          tableInstance.setRowSelection({ [recordId]: true });
-        },
+      // A transition lets the click return at once while the form renders, instead of blocking the
+      // input until the whole form tree is built.
+      startTransition(() => {
+        openRecordInForm({
+          record,
+          tab,
+          graph,
+          windowIdentifier,
+          getSelectedRecord,
+          setRecordId,
+          selectRow: (recordId: string) => {
+            // Mirrors the single click path: flag the change as user driven so the auto scroll effect
+            // does not fight the current viewport, and replace (never merge) the previous selection so
+            // the highlighted row and the opened record can never diverge.
+            isManualSelection.current = true;
+            tableInstance.setRowSelection({ [recordId]: true });
+          },
+        });
       });
     },
     [tab, graph, windowIdentifier, getSelectedRecord, setRecordId]
