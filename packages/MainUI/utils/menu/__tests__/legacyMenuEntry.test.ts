@@ -32,7 +32,7 @@ const BASE_URL = "http://localhost:8080/etendo";
 const TOKEN = "TOKEN123";
 const FORM = "Form";
 const MODULE_FORM_URL = "/com.example.module.ad_forms/ModuleForm.html";
-const CLASSIC_URL = "http://classic/url";
+const CLASSIC_URL = "https://classic/url";
 const FORM_MENU_ID = "MENU_FORM";
 const POPUP_TEXTS = { title: "Blocked", openLabel: "Open" };
 
