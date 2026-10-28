@@ -33,6 +33,7 @@ const TOKEN = "TOKEN123";
 const FORM = "Form";
 const MODULE_FORM_URL = "/com.example.module.ad_forms/ModuleForm.html";
 const CLASSIC_URL = "http://classic/url";
+const FORM_MENU_ID = "MENU_FORM";
 const POPUP_TEXTS = { title: "Blocked", openLabel: "Open" };
 
 const buildItem = (overrides: Partial<ExtendedMenu> = {}): ExtendedMenu => ({
@@ -160,20 +161,20 @@ describe("legacyMenuEntry", () => {
   });
 
   describe("findLiveMenuEntry", () => {
-    const liveForm = buildItem({ id: "MENU_FORM", type: FORM, formId: "F1", formUrl: MODULE_FORM_URL });
+    const liveForm = buildItem({ id: FORM_MENU_ID, type: FORM, formId: "F1", formUrl: MODULE_FORM_URL });
     const menu: Menu[] = [buildItem({ id: "FOLDER", type: "Folder", children: [liveForm] })];
 
     it("finds the live entry with the same id and type", () => {
-      expect(findLiveMenuEntry(menu, { id: "MENU_FORM", type: FORM })).toBe(liveForm);
+      expect(findLiveMenuEntry(menu, { id: FORM_MENU_ID, type: FORM })).toBe(liveForm);
     });
 
     it("ignores an entry with the same id but another type", () => {
-      expect(findLiveMenuEntry(menu, { id: "MENU_FORM", type: "Window" })).toBeNull();
+      expect(findLiveMenuEntry(menu, { id: FORM_MENU_ID, type: "Window" })).toBeNull();
     });
 
     it("returns null when the menu does not have the entry", () => {
       expect(findLiveMenuEntry(menu, { id: "MISSING", type: FORM })).toBeNull();
-      expect(findLiveMenuEntry(undefined, { id: "MENU_FORM", type: FORM })).toBeNull();
+      expect(findLiveMenuEntry(undefined, { id: FORM_MENU_ID, type: FORM })).toBeNull();
     });
   });
 });
