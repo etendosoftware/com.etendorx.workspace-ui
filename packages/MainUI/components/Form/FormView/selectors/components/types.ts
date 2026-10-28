@@ -86,4 +86,6 @@ export interface SelectProps {
   onLoadMore?: () => void;
   field: Field;
   columns?: ColumnDef[];
+  /** Minimum typed characters before `onSearch` queries; 0 (default) means no minimum. */
+  minSearchChars?: number;
 }

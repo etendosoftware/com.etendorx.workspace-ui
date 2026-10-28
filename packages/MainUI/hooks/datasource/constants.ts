@@ -33,6 +33,15 @@ export const TABLEDIR_SELECTOR_DEFAULTS = {
 
 export const COMBO_TABLE_DATASOURCE = "ComboTableDatasourceService";
 
+/** Datasource of reference lists, which are small and never need a search minimum. */
+export const AD_LIST_DATASOURCE = "ADList";
+
+/**
+ * Minimum number of typed characters before a search selector (OBUISEL) queries the backend. Below it
+ * the typeahead stays quiet, which avoids poorly selective queries on large tables.
+ */
+export const SELECTOR_MIN_SEARCH_CHARS = 3;
+
 export const COMBO_TABLE_SELECTOR_DEFAULTS = {
   datasourceName: COMBO_TABLE_DATASOURCE,
   displayField: "_identifier",

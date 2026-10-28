@@ -22,6 +22,7 @@ const DropdownPortal = memo(
     renderedOptions,
     dropdownId,
     minWidth,
+    searchPlaceholder,
   }: {
     isOpen: boolean;
     viewportData: DropdownViewportData;
@@ -36,6 +37,7 @@ const DropdownPortal = memo(
     renderedOptions: React.ReactNode;
     dropdownId: string;
     minWidth?: number;
+    searchPlaceholder?: string;
   }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [showAbove, setShowAbove] = useState(false);
@@ -76,6 +78,7 @@ const DropdownPortal = memo(
         handleKeyDown={handleKeyDown}
         handleSearchBlur={handleSearchBlur}
         handleFocus={handleFocus}
+        placeholder={searchPlaceholder}
         data-testid="SearchInput__ff38f9"
       />
     );
