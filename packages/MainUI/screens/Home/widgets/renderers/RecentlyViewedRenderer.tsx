@@ -27,6 +27,10 @@ import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { findExternalMenuEntry, isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
 import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
+import { useOpenLegacyMenuEntry } from "@/hooks/useOpenLegacyMenuEntry";
+import { findLiveMenuEntry } from "@/utils/menu/legacyMenuEntry";
+import { MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
+import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
@@ -34,8 +38,27 @@ export default function RecentlyViewedRenderer() {
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const recentItems = useRecentItemsStore((s) => s.items);
   const openExternalMenuEntry = useOpenExternalMenuEntry();
+  const openLegacyMenuEntry = useOpenLegacyMenuEntry();
 
   const items = currentRole?.id ? recentItems : [];
+
+  /**
+   * Opens a recent entry served by Etendo Classic (Form, ProcessManual, Report, View) the same way
+   * the menu does, with the live menu entry so the form address resolved today is honored.
+   *
+   * @returns true when the entry was opened.
+   */
+  const openClassicRecentItem = useCallback(
+    (item: RecentItem): boolean => {
+      if (item.type === MENU_ITEM_TYPES.WINDOW) return false;
+      const liveEntry = findLiveMenuEntry(Metadata.getCachedMenu(), item);
+      if (!liveEntry) return false;
+      // Process-like entries open in the process modal, which only the menu hosts.
+      if (resolveMenuClickIntent(liveEntry).kind !== MENU_CLICK_INTENT_KINDS.NONE) return false;
+      return openLegacyMenuEntry(liveEntry);
+    },
+    [openLegacyMenuEntry]
+  );
 
   const handleClick = useCallback(
     (item: RecentItem) => {
@@ -44,12 +67,13 @@ export default function RecentlyViewedRenderer() {
         openExternalMenuEntry(findExternalMenuEntry(Metadata.getCachedMenu(), item.id) ?? item);
         return;
       }
+      if (openClassicRecentItem(item)) return;
       const windowId = item.windowId ?? item.id;
       if (!windowId) return;
       const windowIdentifier = getNewWindowIdentifier(windowId);
       setWindowActive({ windowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [setWindowActive, openExternalMenuEntry]
+    [setWindowActive, openExternalMenuEntry, openClassicRecentItem]
   );
 
   if (items.length === 0) {

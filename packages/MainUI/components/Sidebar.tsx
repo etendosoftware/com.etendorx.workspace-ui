@@ -15,14 +15,8 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { type ReportPopupBlockedTexts, notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
-import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
-import { openEtendoViewPopup } from "@/utils/menu/openEtendoView";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
-import formsData from "../utils/processes/forms/data.json";
-import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
-import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
@@ -32,38 +26,7 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
 import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
-
-interface FormData {
-  paramUrl: string;
-}
-
-const buildProcessUrl = (processId: string, token: string | null, baseUrl: string): string => {
-  const params = new URLSearchParams({
-    Command: `BUTTON${processId}`,
-    IsPopUpCall: "1",
-  });
-  if (token) {
-    params.append("token", token);
-  }
-  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
-};
-
-const buildFormUrl = (formPath: string, token: string | null, baseUrl: string): string => {
-  const params = new URLSearchParams({
-    noprefs: "true",
-    hideMenu: "true",
-    Command: "DEFAULT",
-  });
-  if (token) {
-    params.append("token", token);
-  }
-  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/security/Menu.html?url=${formPath}&${params.toString()}`;
-};
-
-interface ManualProcessResult {
-  url: string;
-  size: "default" | "large";
-}
+import { useOpenLegacyMenuEntry } from "@/hooks/useOpenLegacyMenuEntry";
 
 const isProcessDefinitionMenuItem = (item: Menu): boolean => {
   return item.type === "ProcessDefinition" && !!item.id;
@@ -122,82 +85,6 @@ const mapMenuToProcessDefinitionButton = (item: Menu): ProcessDefinitionButton |
 };
 
 /**
- * Gets the iframe configuration for legacy manual processes (Process/Form types).
- * Process Definition entries are handled separately via ProcessDefinitionModal.
- */
-const getManualProcessConfig = (
-  item: ExtendedMenu,
-  token: string | null,
-  baseUrl: string
-): ManualProcessResult | null => {
-  if (item.type === MENU_ITEM_TYPES.PROCESS && item.processId) {
-    return {
-      url: buildProcessUrl(item.processId, token, baseUrl),
-      size: "default",
-    };
-  }
-
-  if (item.type === MENU_ITEM_TYPES.FORM && item.formId) {
-    // Prefer formUrl from backend; fall back to data.json for older backend versions
-    const formPath = item.formUrl ?? (formsData as Record<string, FormData>)[item.formId]?.paramUrl;
-    if (!formPath) return null;
-    return { url: buildFormUrl(formPath, token, baseUrl), size: "large" };
-  }
-
-  return null;
-};
-
-const getManualProcessUrl = (item: Menu): string | null => {
-  return item.processUrl || null;
-};
-
-/** ProcessManual and Report entries are opened in Etendo Classic. */
-const isClassicProcessMenuItem = (item: Menu): boolean =>
-  item.type === MENU_ITEM_TYPES.PROCESS_MANUAL || item.type === MENU_ITEM_TYPES.REPORT;
-
-/**
- * Opens the Classic URL of a ProcessManual / Report entry: modal processes in a popup, the rest
- * in a new tab. When the browser blocks it, a notice offers to open it manually.
- */
-const openClassicProcessUrl = (
-  classicUrl: string,
-  isModalProcess: boolean | undefined,
-  popupBlockedTexts: ReportPopupBlockedTexts
-): void => {
-  if (isModalProcess) {
-    if (!tryOpenReportPopup(classicUrl)) {
-      notifyReportPopupBlocked(() => tryOpenReportPopup(classicUrl), popupBlockedTexts);
-    }
-    return;
-  }
-
-  // Fallback: Open in new tab
-  if (!window.open(classicUrl, "_blank")) {
-    notifyReportPopupBlocked(() => window.open(classicUrl, "_blank"), popupBlockedTexts);
-  }
-};
-
-/** Window name and size of the popup that shows the Classic form of a menu entry. */
-const LEGACY_POPUP_TARGET = "Test";
-const LEGACY_POPUP_FEATURES = "width=950,height=700";
-
-/** Opens the Classic popup; false when the browser blocked it. */
-const tryOpenLegacyPopup = (url: string): boolean => {
-  const popup = window.open(url, LEGACY_POPUP_TARGET, LEGACY_POPUP_FEATURES);
-  return Boolean(popup) && !popup?.closed;
-};
-
-/**
- * Opens the Classic form of a menu entry in a popup. When the browser blocks it, a notice offers
- * to open it manually, with the same URL (and so the same token), as reports do.
- */
-const openLegacyManualProcess = (url: string, popupBlockedTexts: ReportPopupBlockedTexts): void => {
-  if (!tryOpenLegacyPopup(url)) {
-    notifyReportPopupBlocked(() => tryOpenLegacyPopup(url), popupBlockedTexts);
-  }
-};
-
-/**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
  *
@@ -242,6 +129,7 @@ export default function Sidebar() {
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
   const openExternalMenuEntry = useOpenExternalMenuEntry();
+  const openLegacyMenuEntry = useOpenLegacyMenuEntry();
   const prefetchWindowData = useMetadataZustandStore((s) => s.prefetchWindowData);
   const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -272,10 +160,6 @@ export default function Sidebar() {
     useState<ProcessDefinitionButton | null>(null);
   const [processType, setProcessType] = useState<ProcessType>("");
 
-  const { config } = useRuntimeConfig();
-
-  const ETENDO_BASE_URL = config?.etendoClassicHost || "";
-
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     const result = filterItems(menu, searchValue, searchIndex);
@@ -302,30 +186,6 @@ export default function Sidebar() {
     setProcessType(processType);
     setShowProcessDefinitionModal(true);
   }, []);
-
-  /**
-   * Opens a ProcessManual / Report menu item in Etendo Classic (popup or new tab).
-   *
-   * @param item - Menu item that was clicked
-   * @param processUrl - Classic manual process URL of the item
-   */
-  const openClassicProcess = useCallback(
-    (item: Menu, processUrl: string) => {
-      const classicUrl = buildEtendoClassicBookmarkUrl({
-        baseUrl: ETENDO_BASE_URL,
-        processUrl,
-        tabTitle: item.name,
-        token: token,
-        kioskMode: true,
-      });
-      const popupBlockedTexts = {
-        title: t("processModal.gridToolbar.openLegacyReport.popupBlockedTitle"),
-        openLabel: t("processModal.gridToolbar.openLegacyReport.openManually"),
-      };
-      openClassicProcessUrl(classicUrl, item.isModalProcess, popupBlockedTexts);
-    },
-    [token, ETENDO_BASE_URL, t]
-  );
 
   /**
    * Opens/activates a Window menu item using the multi-window system, with an optimistic
@@ -386,26 +246,8 @@ export default function Sidebar() {
         return;
       }
 
-      // Handle legacy manual processes (Form) as external popup
-      const processConfig = getManualProcessConfig(item, token, ETENDO_BASE_URL);
-      if (processConfig) {
-        openLegacyManualProcess(processConfig.url, {
-          title: t("drawer.legacyWindowPopupBlocked"),
-          openLabel: t("drawer.openLegacyWindow"),
-        });
-        return;
-      }
-
-      // Handle ProcessManual / Report items - open in Etendo Classic
-      const processUrl = getManualProcessUrl(item);
-      if (isClassicProcessMenuItem(item) && processUrl) {
-        openClassicProcess(item, processUrl);
-        return;
-      }
-
-      // Handle View items — open as OpenUI view in Classic (popup window, same as legacy modal processes)
-      if (item.type === MENU_ITEM_TYPES.VIEW && item.viewId) {
-        openEtendoViewPopup({ baseUrl: ETENDO_BASE_URL, viewId: item.viewId, token });
+      // Handle the entries served by Etendo Classic (Process / Form, ProcessManual / Report, View)
+      if (openLegacyMenuEntry(extendedItem)) {
         return;
       }
 
@@ -413,7 +255,7 @@ export default function Sidebar() {
         openWindowItem(item);
       }
     },
-    [token, ETENDO_BASE_URL, t, openProcessModal, openClassicProcess, openWindowItem, openExternalMenuEntry]
+    [openProcessModal, openLegacyMenuEntry, openWindowItem, openExternalMenuEntry]
   );
 
   /**
