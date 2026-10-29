@@ -71,12 +71,45 @@ function useIsLeaving(isVisible: boolean): boolean {
 }
 
 /**
+ * True for the fade time after `isVisible` turns true: the layer being entered needs a z-index only while
+ * it covers the one being left. Afterwards it must not keep one, because a z-index would make the layer a
+ * stacking context and trap the dialogs of the window (z-5000) below the modals portaled to the body (z-1000).
+ */
+function useIsEntering(isVisible: boolean): boolean {
+  const wasVisibleRef = useRef(isVisible);
+  const isEnteringRef = useRef(false);
+  const [, setTick] = useState(0);
+
+  if (!wasVisibleRef.current && isVisible) isEnteringRef.current = true;
+  if (!isVisible) isEnteringRef.current = false;
+  wasVisibleRef.current = isVisible;
+
+  useEffect(() => {
+    if (!isVisible || !isEnteringRef.current) return;
+    const timer = setTimeout(() => {
+      isEnteringRef.current = false;
+      setTick((tick) => tick + 1);
+    }, LEAVING_FADE_MS);
+    return () => clearTimeout(timer);
+  }, [isVisible]);
+
+  return isEnteringRef.current;
+}
+
+/** The layer on screen has no z-index once it has finished entering, so that it is not a stacking context. */
+function layerZIndex(isVisible: boolean, isEntering: boolean): number | "auto" {
+  if (!isVisible) return 0;
+  return isEntering ? 1 : "auto";
+}
+
+/**
  * Layer for one open window. It subscribes to its own slice of the store, so a change in one
  * window (filters, selection, form state) never re-renders the layers of the other windows.
  */
 const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: WindowSlotProps) {
   const win = useWindowStore((s) => s.windows[windowIdentifier]);
   const isLeaving = useIsLeaving(isVisible);
+  const isEntering = useIsEntering(isVisible);
   if (!win) return null;
   const isShown = isVisible || isLeaving;
   return (
@@ -91,7 +124,7 @@ const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: Win
         backgroundImage: isVisible ? "var(--background-gradient)" : "none",
         backgroundAttachment: "fixed",
         opacity: isVisible ? 1 : 0,
-        zIndex: isVisible ? 1 : 0,
+        zIndex: layerZIndex(isVisible, isEntering),
         transition: isVisible ? "none" : `opacity ${LEAVING_FADE_MS}ms ease-out`,
         pointerEvents: isVisible ? "auto" : "none",
       }}>
