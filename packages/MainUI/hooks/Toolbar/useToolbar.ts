@@ -41,11 +41,14 @@ import {
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
+import { registerSessionReset } from "@/utils/session/resetSessionState";
 
 // NOTE: this need a fix in the future
 // Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
 // This is a problem because save multiple instances of the same toolbar
 const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
+// Cached per window identifier, which the next user reuses: a logout must not serve these buttons
+registerSessionReset(() => toolbarCache.clear());
 
 /**
  * List of process column names that should NOT allow multiple selections

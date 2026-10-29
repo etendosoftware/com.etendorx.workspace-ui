@@ -19,8 +19,10 @@ import { renderHook, act } from "@testing-library/react";
 import { useAutoApplyDefaultView } from "../useAutoApplyDefaultView";
 import { useWindowStore } from "@/stores/windowStore";
 import { loadTabColumnConfiguration } from "@/utils/savedViews/gridConfiguration";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 
 jest.mock("@/utils/logger");
+jest.mock("@/utils/session/resetSessionState");
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (s: any) => any) => selector({ token: "test-token" }),
 }));
@@ -343,6 +345,19 @@ describe("useAutoApplyDefaultView", () => {
       await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
 
       expect(onApplyColumnConfiguration).toHaveBeenCalledTimes(1);
+    });
+
+    it("restores the stored columns again after a logout", async () => {
+      jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
+      const onApplyColumnConfiguration = jest.fn();
+      const windowIdentifier = nextWindow();
+
+      const first = await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
+      first.unmount();
+      resetSessionState();
+      await renderAndWait(jest.fn(), { windowIdentifier, onApplyColumnConfiguration });
+
+      expect(onApplyColumnConfiguration).toHaveBeenCalledTimes(2);
     });
 
     it("applies nothing when no columns were stored", async () => {

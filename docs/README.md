@@ -27,6 +27,8 @@ docs/
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
+│   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role
+│   │   └── README.md                # resetSessionState, token revocation, /meta/login-defaults
 │   ├── match-statement/              # Feature: Match Statement process (Classic parity)
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
