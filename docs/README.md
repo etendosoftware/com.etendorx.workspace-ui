@@ -41,6 +41,8 @@ docs/
 │   │   └── README.md                # Header-only cards, half-row grid, ISCOLLAPSED persistence
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
+│   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
+│   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
 │   └── table-state-persistence/      # Feature: Table state persistence
