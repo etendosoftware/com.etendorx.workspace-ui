@@ -131,20 +131,54 @@ const toSortToken = (field: string, desc: boolean): string => {
 };
 
 /**
+ * Builds the datasource `sortBy` for several sorts, in order, e.g. `-orderDate,documentNo`.
+ *
+ * @param sorts - Sorts with their ids already resolved to properties
+ */
+export const buildMultiSortBy = (sorts: readonly GroupingSort[]): string =>
+  sorts.map((sort) => toSortToken(sort.id, sort.desc)).join(SORT_FIELD_SEPARATOR);
+
+/**
  * Builds the datasource `sortBy` for a grouped grid: the grouped field first (so groups arrive in order)
- * and, when the user sorts by another column, that column next (so rows are sorted inside each group).
+ * and then the user sorts on the other columns (so rows are sorted inside each group). A user sort on the
+ * grouped column only sets the direction of the groups.
+ *
+ * @param groupField - Property (hqlName) of the grouped column
+ * @param userSorts - Current sorts, with their ids already resolved to properties
+ */
+export const buildGroupedMultiSortBy = (groupField: string, userSorts: readonly GroupingSort[]): string => {
+  const groupSort = userSorts.find((sort) => sort.id === groupField);
+  const otherSorts = userSorts.filter((sort) => sort.id !== groupField);
+  return buildMultiSortBy([{ id: groupField, desc: groupSort?.desc ?? false }, ...otherSorts]);
+};
+
+/**
+ * Builds the datasource `sortBy` for a grouped grid sorted by at most one column.
  *
  * @param groupField - Property (hqlName) of the grouped column
  * @param userSort - Current sort, with its id already resolved to a property, if any
  */
-export const buildGroupedSortBy = (groupField: string, userSort?: GroupingSort | null): string => {
-  if (!userSort) {
-    return groupField;
+export const buildGroupedSortBy = (groupField: string, userSort?: GroupingSort | null): string =>
+  buildGroupedMultiSortBy(groupField, userSort ? [userSort] : []);
+
+/**
+ * Sorts the grid requests: the user sorts when there are any, otherwise the tab default sort.
+ *
+ * @param userSorts - Sorts the user set on the grid columns
+ * @param getDefaultSort - Default sort of the tab, only evaluated when the user has not sorted
+ */
+export const resolveEffectiveSorts = (
+  userSorts: readonly GroupingSort[],
+  getDefaultSort: () => GroupingSort | null
+): readonly GroupingSort[] => {
+  if (userSorts.length > 0) {
+    return userSorts;
   }
-  if (userSort.id === groupField) {
-    return toSortToken(groupField, userSort.desc);
+  const defaultSort = getDefaultSort();
+  if (defaultSort) {
+    return [defaultSort];
   }
-  return [groupField, toSortToken(userSort.id, userSort.desc)].join(SORT_FIELD_SEPARATOR);
+  return [];
 };
 
 /**
