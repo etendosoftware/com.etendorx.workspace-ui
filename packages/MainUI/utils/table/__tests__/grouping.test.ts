@@ -154,7 +154,10 @@ describe("grouping utils", () => {
     });
 
     it("takes the group direction from a sort on the grouped field without repeating it", () => {
-      const sorts = [{ id: ORDER_DATE, desc: false }, { id: FIELD, desc: true }];
+      const sorts = [
+        { id: ORDER_DATE, desc: false },
+        { id: FIELD, desc: true },
+      ];
 
       expect(buildGroupedMultiSortBy(FIELD, sorts)).toBe(`-${FIELD},${ORDER_DATE}`);
     });

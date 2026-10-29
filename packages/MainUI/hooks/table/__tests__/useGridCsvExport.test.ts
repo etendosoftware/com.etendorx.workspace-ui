@@ -41,7 +41,9 @@ describe("useGridCsvExport", () => {
 
   it("exports the tab with the grid's current query and table state", async () => {
     const tableState = { sorting: [{ id: "documentNo", desc: true }] };
-    mockGetState.mockReturnValue({ windows: { [WINDOW_IDENTIFIER]: { tabs: { [mockTab.id]: { table: tableState } } } } });
+    mockGetState.mockReturnValue({
+      windows: { [WINDOW_IDENTIFIER]: { tabs: { [mockTab.id]: { table: tableState } } } },
+    });
 
     await renderExport(WINDOW_IDENTIFIER)();
 

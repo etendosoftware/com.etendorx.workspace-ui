@@ -546,7 +546,10 @@ describe("DynamicTable Component", () => {
       render(<DynamicTable setRecordId={mockSetRecordId} isVisible={false} />);
 
       await waitFor(() => {
-        expect(mockRegisterActions).toHaveBeenCalledWith({ exportCSV: expect.any(Function) }, TOOLBAR_ACTION_OWNERS.TAB);
+        expect(mockRegisterActions).toHaveBeenCalledWith(
+          { exportCSV: expect.any(Function) },
+          TOOLBAR_ACTION_OWNERS.TAB
+        );
       });
     });
   });

@@ -40,7 +40,7 @@ const DOCUMENT_NO = "documentNo";
 const BUSINESS_PARTNER = "businessPartner";
 const BP_LABEL = "Business Partner";
 const BACKEND_ERROR = "Boom";
-const VIEW_STATE = "({field:\"[]\"})";
+const VIEW_STATE = '({field:"[]"})';
 const EXPORT_FAILED = "CSV Export failed";
 
 const mockTab = {
