@@ -45,6 +45,9 @@ docs/
 │   │   └── README.md
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
+├── process/                          # Process execution internals
+│   └── legacy/
+│       └── manual-processes.md      # Classic process popups: iframe pipeline, file downloads/uploads
 ├── api/                              # API documentation
 │   ├── metadata-client.md
 │   ├── kernel-servlet.md

@@ -353,3 +353,19 @@ Ordenada por: tipo (special_column → manual_process → standard_button), lueg
 | 268 | 800052 | Work Requirement | 800111 | Header | 5AD878D01A1A441FB43E65E3909068C9 | Create Work Effort | Createworkrequirement | FF808181324D007801324D2AE1130066 | Create Work Effort | S |  | Sin condicion - siempre visible | standard_button |
 | 269 | 800052 | Work Requirement | 800111 | Header | 801862 | Process Work Requirement | Explote | 800103 | Process Work Requirement | S |  | Sin condicion - siempre visible | standard_button |
 | 270 | 800052 | Work Requirement | 800112 | Operation | 801779 | Close Phase | Closed | 800118 | Close Phase | S | @Closed@='N' | @Closed@='N' | standard_button |
+
+## File download and upload checks
+
+Processes whose popup returns or receives a file (behavior in
+[manual-processes.md §3.9](./manual-processes.md#39-file-downloads-and-uploads)).
+Compare every downloaded file with the one Classic produces (name, size and content).
+
+| Process | Window › tab | Classic answer | Expected in the new UI |
+|---|---|---|---|
+| Create Remittance File | Remittance › Remittance | Streamed `application/rtf`, `attachment` | File downloaded, success message, modal closes |
+| Intrastat Generate File | Intrastat Declaration › Intrastat Declaration | Streamed `application/txt` or `zip`, `inline`, form `target=_top` | File downloaded, the new UI does not navigate away |
+| Reconciliation Details / Summary | Financial Account › Reconciliations | `PopUp_Download` → `DownloadReport.html` (PDF) | PDF downloaded, success message, modal closes |
+| Import Statement | Financial Account › Account | Multipart upload (`inpFile`), `PopUp_Response` | Valid file processed with its message; invalid file shows the Classic error |
+| Import Banking Pool | Financial Type Configuration › Header | Multipart CSV upload (`inpFile`), `PopUp_Response` | Same as Import Statement |
+
+Regression: popups that only show messages and `info/*.html` selectors keep working as before.
