@@ -58,6 +58,7 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowStore } from "@/stores/windowStore";
+import { useGridCsvExport } from "@/hooks/table/useGridCsvExport";
 import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
@@ -1065,9 +1066,11 @@ const DynamicTable = ({
     applyQuickFilter,
     fetchSummary,
     handleDateTextFilterChange,
+    getRequestParams,
   } = useTableData({
     isTreeMode,
   });
+  const exportCSV = useGridCsvExport({ tab, windowIdentifier, getRequestParams });
 
   // Auto-open FormView for SR (Single Record) tabs once records are fetched.
   // See getSrAutoOpenDecision for the conditions covered.
@@ -4090,6 +4093,13 @@ const DynamicTable = ({
     handleRestoreSelection,
     isVisible,
   ]);
+
+  // The CSV export belongs to the tab whichever pane is visible (the GRID bucket is cleared while
+  // the form is shown), but only the grid knows the query its records come from, so it registers
+  // the export under the TAB owner and the file always holds what the grid shows.
+  useEffect(() => {
+    registerActions({ exportCSV }, TOOLBAR_ACTION_OWNERS.TAB);
+  }, [registerActions, exportCSV]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView
