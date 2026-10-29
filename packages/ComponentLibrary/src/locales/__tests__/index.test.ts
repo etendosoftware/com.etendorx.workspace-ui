@@ -17,6 +17,8 @@
 
 import translations, { DEFAULT_LANGUAGE } from "../index";
 
+const sortedKeys = (section: object) => Object.keys(section).sort((a, b) => a.localeCompare(b));
+
 describe("locales/index", () => {
   it("should export DEFAULT_LANGUAGE as en_US", () => {
     expect(DEFAULT_LANGUAGE).toBe("en_US");
@@ -43,9 +45,14 @@ describe("locales/index", () => {
   });
 
   it("should define the same auditTrail keys in every language", () => {
-    const sortedKeys = (section: object) => Object.keys(section).sort((a, b) => a.localeCompare(b));
     const enKeys = sortedKeys(translations.en_US.auditTrail);
     expect(enKeys).toEqual(["openPopup", "popupBlocked", "selectOneRecord"]);
     expect(sortedKeys(translations.es_ES.auditTrail)).toEqual(enKeys);
+  });
+
+  it("should define the same print keys in every language", () => {
+    const enKeys = sortedKeys(translations.en_US.print);
+    expect(enKeys).toEqual(["openPopup", "popupBlocked"]);
+    expect(sortedKeys(translations.es_ES.print)).toEqual(enKeys);
   });
 });
