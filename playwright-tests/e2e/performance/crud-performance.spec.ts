@@ -56,7 +56,8 @@ async function openWindowBySearch(page: Page, searchText: string, menuTestId: st
   await new Sidebar(page).openMenuEntry(searchText, menuTestId.replace(MENU_TITLE_PREFIX, ""));
 
   if (readyLocator) {
-    await page.locator(readyLocator).first().waitFor({ state: "visible", timeout: 30_000 });
+    // The first window of a cold CI run loads its metadata and the grid from scratch: it can exceed 30 s
+    await page.locator(readyLocator).first().waitFor({ state: "visible", timeout: 60_000 });
   }
 }
 
