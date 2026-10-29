@@ -26,8 +26,10 @@ jest.mock("@/utils/reportPopup", () => ({
   notifyReportPopupBlocked: (...args: unknown[]) => mockNotifyPopupBlocked(...args),
 }));
 
+const DEFAULT_RUNTIME_CONFIG = { config: { etendoClassicHost: "https://host/etendo" }, loading: false };
+const mockUseRuntimeConfig = jest.fn(() => DEFAULT_RUNTIME_CONFIG);
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
-  useRuntimeConfig: () => ({ config: { etendoClassicHost: "https://host/etendo" }, loading: false }),
+  useRuntimeConfig: () => mockUseRuntimeConfig(),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -62,6 +64,14 @@ describe("useLegacyPrint", () => {
     expect(url.searchParams.get("inphiddenvalue")).toBe(`${SAVED_RECORD.id},${OTHER_SAVED_RECORD.id}`);
     expect(url.searchParams.get("token")).toBe("jwt");
     expect(mockNotifyPopupBlocked).not.toHaveBeenCalled();
+  });
+
+  it("builds a host-relative URL while the runtime config is not loaded", () => {
+    mockUseRuntimeConfig.mockReturnValueOnce({ config: null, loading: true } as never);
+
+    print();
+
+    expect(String(openSpy.mock.calls[0][0]).startsWith("/meta/legacy/")).toBe(true);
   });
 
   it("offers to retry when the browser blocks the window", () => {
