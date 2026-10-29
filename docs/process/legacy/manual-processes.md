@@ -443,6 +443,26 @@ Parameters sent only in the multipart body (e.g. `Command`) are not visible to
 open after the download; in the new UI the modal shows a success message and
 closes. The file itself (name, type and bytes) is the same.
 
+### 3.10 Popups that close when they open
+
+Some manual processes validate their preconditions on the opening request
+(`Command=DEFAULT`) and, instead of rendering their form, store a message for
+the tab and answer with `PopUp_Response` (`printPageClosePopUp`). Example:
+*Import Statement* warns "No file import extension active" when no bank file
+format is installed. In Classic, that page closes the popup and reloads the
+tab, which shows the message. Inside the iframe the page has no Classic shell
+to talk to and stayed blank.
+
+`handleResponse` detects this case with `isClosePopupOnOpen`: the body matches
+`onload="submitThisPage('<url>'|null);"` **and** the request `Command` is
+`DEFAULT`. It answers with `PROCESS_ORDER_FORWARDER_HTML`, which posts
+`processOrder` so the modal reads the tab message through
+`GetTabMessageActionHandler` (see [5.7](#57-message-polling--useprocessmessage))
+and shows it with its type (warning, error, ...). Later submits are excluded
+because the injected submit hook already sent `processOrder` for them, and
+multipart submits expose no `Command` to the servlet. Report URLs
+(`/ad_reports/`) keep the `openLegacyReport` flow, which runs first.
+
 ## 4. Backend — building the iframe parameters
 
 The backend has a single source of truth for *every* parameter the iframe
