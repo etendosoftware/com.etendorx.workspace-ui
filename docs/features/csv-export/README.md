@@ -11,7 +11,7 @@ every filter the user applied, every sorted column, and every row (there is no r
 | Filters | Same as the grid: column filters of every type (text, list, date range, numeric expressions), the quick search, the implicit filter, advanced filters and, for child tabs, the selected parent record |
 | Order | Same as the grid: every sorted column in order, each with its direction. A grouped grid is sorted by the grouped column first |
 | Rows | Every matching record. No paging is sent, so the server writes all of them |
-| Columns | Fields visible in the grid (hidden columns are left out) |
+| Columns | The grid columns, in the grid order (Classic grid sequence, then the order the user gave the columns) and with the grid visibility. Buttons, images and hidden columns are left out |
 | View mode | Works in grid, split and form view. In form view it exports the grid behind the form |
 
 The button stays busy until the file is downloaded. Errors are shown as a toast.
@@ -55,6 +55,13 @@ flowchart LR
 - **The grid registers the action under the `TAB` owner.** The export belongs to the tab whichever
   pane is visible. But only the grid knows its query, and the `GRID` owner bucket is cleared while
   the form is shown (see `utils/toolbar/actionOwnership.ts`).
+- **The columns are the grid columns.** The server takes the exported columns, and their order,
+  from `viewState.field`. The export builds that list with the rules of the grid itself:
+  - the order comes from `sortFieldsByGridOrder` and then `TableState.order`;
+  - fields that are never grid columns are dropped with `isGridRenderableColumn`;
+  - visibility is keyed by the grid column id (`field.name`).
+
+  This matches Classic, which sends the view state of its grid.
 - **No row limit, no warning.** This matches Classic. The server scrolls the results and writes them
   as it reads them (`DefaultJsonDataService.fetch` with `QueryJSONWriterToCSV`).
 - **Every sorted column is sent, by both the grid and the export.** The grid lets the user sort by

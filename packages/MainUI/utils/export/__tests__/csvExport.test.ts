@@ -16,7 +16,8 @@
  */
 
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { DatasourceOptions, Tab } from "@workspaceui/api-client/src/api/types";
+import type { DatasourceOptions, Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import {
   CSV_EXPORT_FORMAT,
   CSV_FILE_NAME,
@@ -28,6 +29,7 @@ import {
   exportGridToCsv,
   extractCSVContent,
   extractErrorFromResponse,
+  getExportFieldNames,
 } from "../csvExport";
 
 jest.mock("@workspaceui/api-client/src/api/datasource", () => ({ datasource: { get: jest.fn() } }));
@@ -118,6 +120,52 @@ describe("csvExport", () => {
       });
       expect(params).not.toHaveProperty("_startRow");
       expect(params).not.toHaveProperty("_endRow");
+    });
+  });
+
+  describe("getExportFieldNames", () => {
+    /** Field of a tab: its grid column id (`name`), grid and form sequences and reference. */
+    const gridField = (name: string, gridPosition: number | null, sequenceNumber: number, reference = "10") =>
+      ({ name, gridPosition, sequenceNumber, column: { reference } }) as unknown as Field;
+
+    const tabFields: Record<string, Field> = {
+      id: gridField("ID", 0, 0),
+      transactionDocument: gridField("Transaction Document", 30, 20),
+      documentNo: gridField("Document No.", 20, 30),
+      bankAccount: gridField("Bank Account", 2100, 55),
+      generatePickingList: gridField("Generate Picking List", 0, 470, FIELD_REFERENCE_CODES.BUTTON.id),
+      logo: gridField("Logo", 10, 10, FIELD_REFERENCE_CODES.IMAGE.id),
+      pendingPickingList: gridField("Pending Picking List", null, 500),
+    };
+
+    it("follows the grid order and leaves out the id and the columns the grid never shows", () => {
+      expect(getExportFieldNames(tabFields)).toEqual([
+        "documentNo",
+        "transactionDocument",
+        "pendingPickingList",
+        "bankAccount",
+      ]);
+    });
+
+    it("follows the order the user gave the columns, keeping the others after them", () => {
+      const columnOrder = ["mrt-row-select", "Bank Account", "Transaction Document"];
+
+      expect(getExportFieldNames(tabFields, columnOrder)).toEqual([
+        "bankAccount",
+        "transactionDocument",
+        "documentNo",
+        "pendingPickingList",
+      ]);
+      const unnamed = { column: { reference: "10" }, gridPosition: 1 } as unknown as Field;
+      expect(getExportFieldNames({ unnamed, ...tabFields }, columnOrder)[2]).toBe("unnamed");
+    });
+
+    it("hides the columns the user hid in the grid, keyed by the column id", () => {
+      const fields = { documentNo: { name: "Document No.", showInGridView: true } };
+
+      expect(buildFieldNameVisibility(["documentNo"], { "Document No.": false }, fields)).toEqual({
+        documentNo: false,
+      });
     });
   });
 

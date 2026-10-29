@@ -16,8 +16,9 @@
  */
 
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { DatasourceOptions, Tab } from "@workspaceui/api-client/src/api/types";
+import type { DatasourceOptions, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { TableState } from "@/utils/window/constants";
+import { isGridRenderableColumn, sortFieldsByGridOrder } from "@/utils/table/utils";
 import { logger } from "@/utils/logger";
 
 /** Format Classic's datasource writes for the "Export to Spreadsheet" toolbar button. */
@@ -65,6 +66,46 @@ export interface ExportSort {
 }
 
 /**
+ * Id of the grid column a field is shown in: its name, as the grid builds its columns
+ * (`parseColumns`), or its label as a fallback. Column visibility and order are keyed by it.
+ */
+const getGridColumnId = (field: { name?: unknown; label?: unknown } | undefined): string | undefined => {
+  if (typeof field?.name === "string") {
+    return field.name;
+  }
+  if (typeof field?.label === "string") {
+    return field.label;
+  }
+  return undefined;
+};
+
+/**
+ * Keys of the tab fields the grid shows as columns, in the grid order: the Classic grid order
+ * (`sortFieldsByGridOrder`) and then the order the user gave the columns, if any. Fields the grid
+ * never renders (buttons, images) and the record id are left out, as Classic does.
+ *
+ * @param tabFields - Fields of the tab, keyed by property name
+ * @param columnOrder - Column ids in the order the user left them (`TableState.order`)
+ */
+export const getExportFieldNames = (tabFields: Record<string, Field>, columnOrder: string[] = []): string[] => {
+  const keyByField = new Map<Field, string>();
+  for (const [key, field] of Object.entries(tabFields)) {
+    if (!EXPORT_SKIP_COLUMNS.has(key) && isGridRenderableColumn(field)) {
+      keyByField.set(field, key);
+    }
+  }
+
+  // Columns the user did not place keep the grid order after the placed ones (stable sort)
+  const userPositions = new Map(columnOrder.map((columnId, index) => [columnId, index]));
+  const getUserPosition = (field: Field): number =>
+    userPositions.get(getGridColumnId(field) ?? "") ?? userPositions.size;
+
+  return sortFieldsByGridOrder([...keyByField.keys()])
+    .toSorted((a, b) => getUserPosition(a) - getUserPosition(b))
+    .map((field) => keyByField.get(field) as string);
+};
+
+/**
  * Builds field name visibility map by combining metadata defaults with user overrides
  */
 export const buildFieldNameVisibility = (
@@ -80,13 +121,10 @@ export const buildFieldNameVisibility = (
     // Check if field has showInGridView property (initial visibility from metadata)
     let isVisible = field?.showInGridView !== false; // Default to visible
 
-    // If field has a label, check tableColumnVisibility for user-set visibility
-    if (field?.label && typeof field.label === "string") {
-      const displayName = field.label;
-      // If the display name exists in tableColumnVisibility, use that value (user override)
-      if (displayName in tableColumnVisibility) {
-        isVisible = tableColumnVisibility[displayName] !== false;
-      }
+    // The visibility the user set on the grid column overrides the metadata one
+    const columnId = getGridColumnId(field);
+    if (columnId !== undefined && columnId in tableColumnVisibility) {
+      isVisible = tableColumnVisibility[columnId] !== false;
     }
 
     fieldNameVisibility[fieldName] = isVisible;
@@ -281,10 +319,10 @@ const validateExportData = (tab: Tab): void => {
   }
 };
 
-/** Columns of the exported file, with the visibility the user gave them in the grid. */
+/** Columns of the exported file: the grid columns, in the grid order and with the grid visibility. */
 const buildExportViewState = (tab: Tab, tableState: Partial<TableState>): string => {
-  const orderedFieldNames = Object.keys(tab.fields).filter((key) => !EXPORT_SKIP_COLUMNS.has(key));
-  // tableState.visibility uses display names (e.g. "Gross Unit Price") as keys, the export field names
+  const orderedFieldNames = getExportFieldNames(tab.fields, tableState.order);
+  // tableState.visibility uses column ids (e.g. "Gross Unit Price") as keys, the export field names
   const fieldNameVisibility = buildFieldNameVisibility(orderedFieldNames, tableState.visibility ?? {}, tab.fields);
   const fieldsArray = buildFieldsArray(orderedFieldNames, fieldNameVisibility, tab.fields);
   return buildViewState(fieldsArray, tableState.sorting ?? []);
