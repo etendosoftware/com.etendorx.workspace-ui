@@ -300,11 +300,21 @@ describe("POST /api/auth/login — Classic failed-attempt protections and sessio
     expect(getErpLoginSessionId(ALIGNED_TOKEN)).toBe(LOGIN_SESSION_ID);
   });
 
-  it("keeps the login when the session cannot be recorded", async () => {
-    const { res } = await loginWith({ [LOGIN_SESSION_URL]: [erpResponse(null, { ok: false })] });
+  it.each([
+    ["fails", [erpResponse(null, { ok: false })]],
+    ["is unreachable", []],
+  ])("keeps the login when the session registry %s", async (_case, sessionResponses) => {
+    const { res } = await loginWith({ [LOGIN_SESSION_URL]: sessionResponses });
 
     expect(res.body).toEqual({ token: FIRST_TOKEN });
     expect(getErpLoginSessionId(FIRST_TOKEN)).toBeNull();
+  });
+
+  it("records no session when the ERP answers without a token", async () => {
+    const { fetchMock, res } = await loginWith({ [LOGIN_URL]: [erpResponse({ roleList: [] })] });
+
+    expect(res.body).toEqual({ roleList: [] });
+    expect(callsTo(fetchMock, LOGIN_SESSION_URL)).toHaveLength(0);
   });
 
   it("uses the session recorded by the /meta/login fallback and does not return its id", async () => {

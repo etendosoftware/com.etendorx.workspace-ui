@@ -291,28 +291,33 @@ async function requestLoginSessionId(token: string): Promise<string | undefined>
  * login endpoints already recorded it; a /sws/login token gets it recorded here. Best-effort: a
  * failure never blocks the login.
  */
-async function rememberLoginSession(login: ErpLoginResponse & { token: string }): Promise<void> {
+async function rememberLoginSession(token: string, recordedSessionId: string | undefined): Promise<void> {
   try {
-    const sessionId = login.sessionId ?? (await requestLoginSessionId(login.token));
-    setErpLoginSessionId(login.token, sessionId);
+    const sessionId = recordedSessionId ?? (await requestLoginSessionId(token));
+    setErpLoginSessionId(token, sessionId);
   } catch (error) {
     console.warn("Could not record the login session:", error);
   }
 }
 
-async function trackLoginSession(login: ErpLoginResponse, body: LoginRequestBody, userToken: string | null) {
-  if (!login.token) {
+async function trackLoginSession(
+  token: string | undefined,
+  recordedSessionId: string | undefined,
+  body: LoginRequestBody,
+  userToken: string | null
+): Promise<void> {
+  if (!token) {
     return;
   }
 
   if (hasCredentials(body)) {
-    await rememberLoginSession({ ...login, token: login.token });
+    await rememberLoginSession(token, recordedSessionId);
     return;
   }
 
   // A role switch keeps the login of the token it replaces
   if (userToken) {
-    carryErpLoginSessionId(userToken, login.token);
+    carryErpLoginSessionId(userToken, token);
   }
 }
 
@@ -325,8 +330,8 @@ async function completeLogin(
   body: LoginRequestBody,
   userToken: string | null
 ): Promise<NextResponse> {
-  await trackLoginSession(login, body, userToken);
-  const { sessionId: _sessionId, ...clientLogin } = login;
+  const { sessionId, ...clientLogin } = login;
+  await trackLoginSession(clientLogin.token, sessionId, body, userToken);
   return NextResponse.json(clientLogin, { status: 200 });
 }
 
