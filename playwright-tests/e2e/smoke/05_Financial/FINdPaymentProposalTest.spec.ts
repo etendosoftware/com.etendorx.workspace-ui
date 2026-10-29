@@ -1,6 +1,7 @@
 import type { App } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
 import type { SampleRecord } from "../../support/registry/data";
+import { TABS } from "../../support/registry/windows";
 import { runAndWaitForDatasource } from "../../support/wait";
 
 const DUE_DATE_OFFSET_DAYS = 120;
@@ -88,8 +89,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // ════════════════════════════════════════════════════════════════════════
     // Invoice B — Vendor B, Raw material B, qty 10
     // ════════════════════════════════════════════════════════════════════════
-    // New record from the header toolbar (form view), without re-navigating to Purchase Invoice
-    await app.toolbar.newRecordInForm();
+    // New record from the header toolbar (form view), without re-navigating to Purchase Invoice. The toolbar
+    // is the header tab's: "the first visible button" can be the child tab's while the header re-renders.
+    await app.toolbar.inTab(TABS.PURCHASE_INVOICE_HEADER).newRecordInForm();
     const invoiceNumberB = await completeInvoice(
       app,
       {
