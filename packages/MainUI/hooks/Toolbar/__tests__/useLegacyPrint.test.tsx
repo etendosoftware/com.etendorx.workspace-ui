@@ -19,12 +19,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useUserStore } from "@/stores/userStore";
 import { useLegacyPrint } from "../useLegacyPrint";
-import {
-  BPARTNER_TAB,
-  NO_PRINT_TAB,
-  OTHER_SAVED_RECORD,
-  SAVED_RECORD,
-} from "@/utils/toolbar/test-utils/printFixtures";
+import { BPARTNER_TAB, NO_PRINT_TAB, OTHER_SAVED_RECORD, SAVED_RECORD } from "@/utils/toolbar/test-utils/printFixtures";
 
 const mockNotifyPopupBlocked = jest.fn();
 jest.mock("@/utils/reportPopup", () => ({

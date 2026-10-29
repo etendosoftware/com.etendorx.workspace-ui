@@ -974,7 +974,11 @@ describe("PRINT_RECORD and SEND_MAIL buttons", () => {
   });
 
   it("disables Print with several Business Partners selected, as classic", () => {
-    const overrides = { tab: BPARTNER_TAB, selectedRecords: [SAVED_RECORD, OTHER_SAVED_RECORD], selectedRecordsLength: 2 };
+    const overrides = {
+      tab: BPARTNER_TAB,
+      selectedRecords: [SAVED_RECORD, OTHER_SAVED_RECORD],
+      selectedRecordsLength: 2,
+    };
     expect(isDisabled(printButton, overrides)).toBe(true);
   });
 

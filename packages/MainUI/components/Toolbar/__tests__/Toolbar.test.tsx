@@ -140,7 +140,11 @@ const mockEmailButton = {
 
 describe("Toolbar - Email Integration", () => {
   const mockToken = "test-token";
-  const mockTab = { id: "tab-id", entityName: "Invoice", printConfig: { ...ORDER_PRINT_CONFIG, url: "../invoices/print.html" } };
+  const mockTab = {
+    id: "tab-id",
+    entityName: "Invoice",
+    printConfig: { ...ORDER_PRINT_CONFIG, url: "../invoices/print.html" },
+  };
   const mockRecord = { id: "record-id" };
 
   beforeEach(() => {
