@@ -65,6 +65,8 @@ export const OFFER_TYPE = {
 export const FINANCIAL_ACCOUNT = {
   /** Bank account of Spain (EUR) with the "Standard" matching algorithm; only FINe changes its statements. */
   SPAIN_BANK: { id: "0D0000E0A27040E383D5B03755249B61", name: "Spain Bank" },
+  /** Account of USA (EUR) with sample reconciliations of July 2011; specs only read it. */
+  ACCOUNTING_DOCUMENTS_EURO: { id: "FF808081328278B50132828AC43D003F", name: "Accounting Documents EURO" },
 } as const satisfies Record<string, SampleRecord>;
 
 /** G/L items of the sample data. */
@@ -120,6 +122,8 @@ export const SAMPLE_DOCUMENT = {
   SALES_INVOICE_PENDING: "I/25",
   /** Accounting period of the sample calendar (Open/Close Period Control). */
   PERIOD_JAN_2011: "Jan-11",
+  /** Reconciliation of "Accounting Documents EURO" (July 2011); Reconciliation Details prints it as a PDF. */
+  RECONCILIATION_JUL_2011: "1000047",
   /** Sales order in Draft with four lines; specs clone it instead of changing it. */
   SALES_ORDER_DRAFT_WITH_LINES: "50014",
   /** Sales order in Draft with six lines (one of them "Transportation"). */
