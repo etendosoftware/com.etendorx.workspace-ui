@@ -541,6 +541,14 @@ both ends to guarantee key parity:
 The mirrored client implementation is `columnNameToInpKey` in
 `packages/MainUI/utils/processes/manual/utils.ts`.
 
+For **Manual** processes (`UIPattern = 'M'`), `withManualProcessId` also adds
+`inpProcessId` with the literal `AD_Process_ID` of the button column, the same
+hidden input Classic submits when it opens the popup (`OBViewTab` →
+`OB.Utilities.openProcessPopup`). Servlets such as *Create Remittance File*
+read the process description from it and fail with a `NullPointerException`
+without it. The client sends literal values as they are, so no client change
+is needed. Other buttons are unchanged.
+
 ### 4.6 Serialization (`LegacyProcessParams.toJson`)
 
 `LegacyProcessParams` is an immutable value object. `toJson()` writes the four
