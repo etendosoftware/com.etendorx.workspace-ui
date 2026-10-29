@@ -125,7 +125,7 @@ incoming path and parameters:
 |---|---|---|
 | **Legacy HTML page** | `path` ends with `.html` | `processLegacyRequest` |
 | **JavaScript proxy** | `path` ends with `.js` | `processJavaScriptRequest` |
-| **File download** | `path` ends with `/download` | `processDownloadRequest` (see [3.9](#39-file-downloads-and-uploads)) |
+| **File download** | `path` ends with `/download` | `LegacyPopupResponses.serveDownload` (see [3.9](#39-file-downloads-and-uploads)) |
 | **Follow-up submit** | request parameter `Command` starts with `BUTTON` | `processLegacyFollowupRequest` |
 | **JWT redirect** | `path` ends with `/redirect` | `processRedirectRequest` |
 
@@ -398,13 +398,14 @@ answers are short-circuited before any decoding.
 | Classic answer | Example | Rule |
 |---|---|---|
 | File streamed in the same response | Remittance (`application/rtf`, `attachment`), Intrastat (`application/txt`/`zip`, `inline`) | `HttpServletResponseLegacyWrapper.isFileResponse()`: the Content-Disposition is `attachment`, or it exists and the Content-Type is not HTML |
-| `PopUp_Download` / `PopUp_DownloadAndRefresh` page (`renderJR` with a non-HTML export) | Reconciliation reports (PDF) | `extractDownloadReportUrl` finds `onLoadDo('<ctx>/utility/DownloadReport.html?report=...')` |
+| `PopUp_Download` / `PopUp_DownloadAndRefresh` page (`renderJR` with a non-HTML export) | Reconciliation reports (PDF) | `LegacyPopupResponses.extractDownloadReportUrl` finds `onLoadDo('<ctx>/utility/DownloadReport.html?report=...')` |
 
 The file check runs first, before the body is decoded and before the redirect
 branch: Intrastat calls `sendRedirect` after streaming its file. Responses
 without Content-Disposition (pages, AJAX, JSON, XML) keep the existing flow.
 
-**Delivery.** Both shapes answer with `FILE_DOWNLOAD_FORWARDER_HTML`, a tiny
+**Delivery.** Both shapes answer with `FILE_DOWNLOAD_FORWARDER_HTML` (in
+`LegacyPopupResponses`, which holds every forwarder of this section), a tiny
 page that:
 
 1. posts the regular `showProcessMessage` action with a `success` payload
@@ -418,7 +419,7 @@ The file URL is:
 
 - for a streamed file, `<ctx>/meta/legacy/download?fileId=<uuid>`. The bytes
   and headers are stored in the HTTP session by `LegacyFileDownload.store` and
-  `processDownloadRequest` serves them once (`LegacyFileDownload.take` removes
+  `LegacyPopupResponses.serveDownload` serves them once (`LegacyFileDownload.take` removes
   them) with the **original** Content-Type, Content-Disposition and bytes. An
   unknown or already used id answers `404`. This mirrors Classic `renderJR` +
   `DownloadReport`: single use and protected by the session.
@@ -453,7 +454,7 @@ format is installed. In Classic, that page closes the popup and reloads the
 tab, which shows the message. Inside the iframe the page has no Classic shell
 to talk to and stayed blank.
 
-`handleResponse` detects this case with `isClosePopupOnOpen`: the body matches
+`handleResponse` detects this case with `LegacyPopupResponses.isClosePopupOnOpen`: the body matches
 `onload="submitThisPage('<url>'|null);"` **and** the request `Command` is
 `DEFAULT`. It answers with `PROCESS_ORDER_FORWARDER_HTML`, which posts
 `processOrder` so the modal reads the tab message through
@@ -934,6 +935,7 @@ the typical workflow only involves verifying it works.
 | `src/com/etendoerp/metadata/http/HttpServletRequestWrapper.java` | Anonymous-subclass helper used for path/header/parameter overrides. |
 | `src/com/etendoerp/metadata/http/HttpServletResponseLegacyWrapper.java` | Captures the response body, absorbs redirects, no-ops `setContentLength`, records Content-Type/Content-Disposition (`isFileResponse`). |
 | `src/com/etendoerp/metadata/http/LegacyFileDownload.java` | File captured from a popup; single-use session storage served by `/meta/legacy/download`. |
+| `src/com/etendoerp/metadata/http/LegacyPopupResponses.java` | Forwarders that replace Classic file answers, `PopUp_Download` pages and popups closed on open; the `/meta/legacy/download` endpoint. |
 | `src/com/etendoerp/metadata/http/LegacyMessageProtocol.java` | Centralized postMessage envelope and action constants. |
 
 ### Frontend (`client/packages/MainUI`)
