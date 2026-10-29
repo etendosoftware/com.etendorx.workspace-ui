@@ -94,6 +94,7 @@ jest.mock("@/screens/Login", () => ({
 // provider's callbacks can be driven directly. It still honours the one part of the hook's
 // contract the provider depends on: an already-expired token is reported on mount.
 jest.mock("@/hooks/useSessionKeepAlive", () => ({ useSessionKeepAlive: jest.fn() }));
+jest.mock("@/utils/session/resetSessionState", () => ({ resetSessionState: jest.fn() }));
 
 const INITIAL_TOKEN = "initial-jwt";
 const RENEWED_TOKEN = "renewed-jwt";

@@ -135,7 +135,7 @@ Tooltips are kept inside the viewport and wrap when wider than it.
 
 | Classic | New UI |
 |---|---|
-| `NavBar_*` shortcuts (`UINAVBA_KeyboardShortcuts`) | Not implemented. Out of the scope of `OBUIAPP_KeyboardShortcuts` |
+| `NavBar_*` shortcuts (`UINAVBA_KeyboardShortcuts`) | Only `F8` (alerts) is implemented. See [Navigation bar shortcuts (pending)](#navigation-bar-shortcuts-pending) |
 | `StatusBar_Maximize-Restore` (`Alt+Shift+Enter`) | Not bound: there is no maximize/restore action for the form. `SHOW_TABLE_AND_FORM` only opens the split |
 | Toolbar shortcuts fire from inside text fields (`Canvas` scope) | Only Save, Save and close, Undo and New fire from a text field |
 | `ToolBar_SaveClose` closes even when the save fails | Stays in the form, so the error can be fixed |
@@ -144,6 +144,34 @@ Tooltips are kept inside the viewport and wrap when wider than it.
 
 Some browser combinations can never reach a web page (`Ctrl+N`, `Ctrl+T`, `Ctrl+W` in Chrome).
 None of the classic defaults use them. A preference that does will not work.
+
+### Navigation bar shortcuts (pending)
+
+Classic defines the navigation bar shortcuts in the System preference `UINAVBA_KeyboardShortcuts`, a
+separate list from `OBUIAPP_KeyboardShortcuts`. Each navbar widget registers its entry through its
+`keyboardShortcutId`. Only the alerts shortcut is implemented in the new UI
+(`utils/alerts/resolveAlertShortcut.ts`); the rest is pending and was postponed:
+
+| Classic default | Opens in Classic | New UI today |
+|---|---|---|
+| `Ctrl+Q` | Quick Create | Nothing |
+| `Ctrl+O` | Quick Launch | Browser "open file" dialog |
+| `Ctrl+M` | Application menu | Toggles the grid/form split view (new UI shortcut) |
+| `F8` | Alerts | Implemented |
+| `Ctrl+H` | Help / About | Browser history |
+| `Ctrl+P` | User profile | Browser print dialog |
+| `Ctrl+Alt+Shift+End` | Logout | Nothing |
+
+Points to settle before implementing them:
+
+- **`Ctrl+M` conflict.** The new UI uses it for the split view, which does not exist in Classic.
+  Following Classic means moving the split view to another combination; otherwise `Ctrl+M` stays
+  as it is and only the other entries are implemented. This is a product decision.
+- **Browser defaults.** `Ctrl+O`, `Ctrl+P` and `Ctrl+H` have a browser action that must be
+  prevented when the shortcut is handled (check `Ctrl+H` in Firefox).
+- **Reuse.** `useShortcutBindings` can read this second preference as another source, with the same
+  grammar and the same per-role / per-user resolution.
+- **Logout.** It must go through the unsaved-changes guard, like the logout button.
 
 ## Main files
 
