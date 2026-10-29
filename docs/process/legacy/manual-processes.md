@@ -118,13 +118,14 @@ The frontend always points the iframe at `<publicHost>/meta/legacy<targetPath>`
 follow-up requests can reconstruct the absolute Classic path even when the
 referer is missing.
 
-`LegacyProcessServlet.service` selects one of four code paths based on the
+`LegacyProcessServlet.service` selects one of five code paths based on the
 incoming path and parameters:
 
 | Branch | Predicate | Method |
 |---|---|---|
 | **Legacy HTML page** | `path` ends with `.html` | `processLegacyRequest` |
 | **JavaScript proxy** | `path` ends with `.js` | `processJavaScriptRequest` |
+| **File download** | `path` ends with `/download` | `processDownloadRequest` (see [3.9](#39-file-downloads-and-uploads)) |
 | **Follow-up submit** | request parameter `Command` starts with `BUTTON` | `processLegacyFollowupRequest` |
 | **JWT redirect** | `path` ends with `/redirect` | `processRedirectRequest` |
 
@@ -192,6 +193,11 @@ sending it to the browser. Notable behaviours:
 - `setContentLength(len)` / `setContentLengthLong` are **no-ops** because
   script injection changes the byte count; the container recomputes the
   correct length from the rewritten body.
+- `setContentType`, `setHeader` and `addHeader` **record** the Content-Type and
+  the Content-Disposition declared by the included servlet (the container
+  ignores headers set inside an `include()`); `isFileResponse()` uses them to
+  detect file answers (see [3.9](#39-file-downloads-and-uploads)). The calls
+  are still delegated, so `getContentType()` is unchanged.
 - The captured encoding is resolved on the first read/write and frozen, so a
   late `setCharacterEncoding` call cannot corrupt the captured bytes
   (commit `fd6ac7016f` ships this fix and prevents the "extraños caracteres"
@@ -377,6 +383,65 @@ function notifyUnload() {
 Any `Command` not in the deny-list causes `iframeUnloaded` to fire as before, which is the conservative default: the fallback warning may appear for unknown custom commands, but the safety net is preserved.
 
 ---
+
+### 3.9 File downloads and uploads
+
+Some popups answer with a **file** instead of a page (e.g. *Create Remittance
+File*, *Intrastat Generate File*, *Reconciliation Details/Summary*) or
+**receive** one (*Import Statement*, *Import Banking Pool*). The capture
+pipeline decodes the body to a `String`, injects scripts and serves it as
+`text/html`, which would corrupt a file and drop its name and type, so file
+answers are short-circuited before any decoding.
+
+**Detection.** Two shapes are recognised in `handleResponse`, in this order:
+
+| Classic answer | Example | Rule |
+|---|---|---|
+| File streamed in the same response | Remittance (`application/rtf`, `attachment`), Intrastat (`application/txt`/`zip`, `inline`) | `HttpServletResponseLegacyWrapper.isFileResponse()`: the Content-Disposition is `attachment`, or it exists and the Content-Type is not HTML |
+| `PopUp_Download` / `PopUp_DownloadAndRefresh` page (`renderJR` with a non-HTML export) | Reconciliation reports (PDF) | `extractDownloadReportUrl` finds `onLoadDo('<ctx>/utility/DownloadReport.html?report=...')` |
+
+The file check runs first, before the body is decoded and before the redirect
+branch: Intrastat calls `sendRedirect` after streaming its file. Responses
+without Content-Disposition (pages, AJAX, JSON, XML) keep the existing flow.
+
+**Delivery.** Both shapes answer with `FILE_DOWNLOAD_FORWARDER_HTML`, a tiny
+page that:
+
+1. posts the regular `showProcessMessage` action with a `success` payload
+   (title from the `Success` AD message, text = file name when known), so the
+   modal shows its success message, auto-closes after 3 s and refreshes the
+   tab (see [5.6](#56-postmessage-protocol-44--56--single-contract));
+2. navigates the iframe with `window.location.replace(<file URL>)`; the
+   browser downloads the attachment without replacing the page.
+
+The file URL is:
+
+- for a streamed file, `<ctx>/meta/legacy/download?fileId=<uuid>`. The bytes
+  and headers are stored in the HTTP session by `LegacyFileDownload.store` and
+  `processDownloadRequest` serves them once (`LegacyFileDownload.take` removes
+  them) with the **original** Content-Type, Content-Disposition and bytes. An
+  unknown or already used id answers `404`. This mirrors Classic `renderJR` +
+  `DownloadReport`: single use and protected by the session.
+- for a `PopUp_Download` page, the Classic `DownloadReport.html` URL itself
+  (same origin and session as the iframe).
+
+**`_top` targets.** Some popups submit with `target="_top"` (Intrastat).
+In Classic `_top` is the popup window; inside the iframe it would be the whole
+new UI. The submit hook of `POST_MESSAGE_SCRIPT` rewrites `_top`/`_parent` to
+`_self`, which is a no-op when the page is not embedded.
+
+**Uploads.** Multipart forms (`enctype="multipart/form-data"`, `inpFile`)
+need no special handling: Tomcat does not consume a multipart body in
+`getParameter` without a `multipart-config`, and core `VariablesBase` parses
+the items once (in `handleRequestContext`) and caches them in a request
+attribute that the included servlet reuses. The answer is the usual
+`PopUp_Response` page handled by the `processOrder`/`showProcessMessage` flow.
+Parameters sent only in the multipart body (e.g. `Command`) are not visible to
+`req.getParameter` in the servlet's own checks, only to the Classic servlet.
+
+**Differences with Classic.** In Classic the Remittance/Intrastat popup stays
+open after the download; in the new UI the modal shows a success message and
+closes. The file itself (name, type and bytes) is the same.
 
 ## 4. Backend — building the iframe parameters
 
@@ -839,7 +904,8 @@ the typical workflow only involves verifying it works.
 | `src/com/etendoerp/metadata/http/MetadataFilter.java` | `/meta/*` filter; routes `*.html` → `LegacyProcessServlet`. |
 | `src/com/etendoerp/metadata/http/LegacyProcessServlet.java` | Iframe HTML pipeline: auth, dispatcher include/forward, capture, inject, popup short-circuit, error forwarder. |
 | `src/com/etendoerp/metadata/http/HttpServletRequestWrapper.java` | Anonymous-subclass helper used for path/header/parameter overrides. |
-| `src/com/etendoerp/metadata/http/HttpServletResponseLegacyWrapper.java` | Captures the response body, absorbs redirects, no-ops `setContentLength`. |
+| `src/com/etendoerp/metadata/http/HttpServletResponseLegacyWrapper.java` | Captures the response body, absorbs redirects, no-ops `setContentLength`, records Content-Type/Content-Disposition (`isFileResponse`). |
+| `src/com/etendoerp/metadata/http/LegacyFileDownload.java` | File captured from a popup; single-use session storage served by `/meta/legacy/download`. |
 | `src/com/etendoerp/metadata/http/LegacyMessageProtocol.java` | Centralized postMessage envelope and action constants. |
 
 ### Frontend (`client/packages/MainUI`)
