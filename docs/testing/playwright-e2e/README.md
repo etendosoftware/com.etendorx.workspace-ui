@@ -129,6 +129,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | GRDc | regression | Saved views: save, standard view, apply, default applied when the window opens | Own view, deleted after the test |
 | GRDd | regression | Count summary and grouping by a column add up to the grid rows | Grouping preference for the user and window, removed after the test |
 | GRDe | regression | Tree view drag and drop: a node dropped in the middle of another becomes its child | Own product categories |
+| GRDf | regression | Export to Spreadsheet of a filtered grid sorted descending: the file holds exactly the grid records, in the grid order (ETP-5998) | Sample sales orders (read-only); the header sort is reset before and after |
 | NAVb | regression | Keyboard shortcuts of the core preference: select/unselect all, refresh, next record, new and save | Own categories |
 | NAVc | regression | Status bar previous/next and its "N / M" counter | Own categories |
 
