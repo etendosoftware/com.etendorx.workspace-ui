@@ -43,6 +43,8 @@ docs/
 │   │   └── README.md
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
+│   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
+│   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
 ├── api/                              # API documentation

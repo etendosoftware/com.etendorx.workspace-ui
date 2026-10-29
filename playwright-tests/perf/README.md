@@ -108,6 +108,18 @@ already busy or some round was much busier than the quietest one. Step failures 
 compared"; `form-next-5` fails with an "Unsaved changes" message when the opened record is marked as modified
 without any edit (a UI bug to report, since the step types nothing before).
 
+The servers run in their own process group and are stopped with it when the run ends, fails or is
+interrupted (Ctrl+C, `kill`), so no `next-server` stays on the ports. The run only measures servers it started
+(`servers.mjs`):
+- It fails before starting when a port is already in use, naming the port and how to find what uses it. It
+  never kills a process it did not start: stop that process, or choose other ports with `BASE_PORT`/`HEAD_PORT`.
+- It fails as soon as a server exits while starting, with the end of its error output.
+- It fails when the page served is not from the build just made (its `.next/BUILD_ID`).
+
+Before this check, a server left running by an interrupted run kept answering on its port. Later runs then
+measured it: the base of that old run, and a head whose static files no longer existed, so every head step
+failed at login.
+
 Options: `ROUNDS`, `EXTRA_ROUNDS` (0 disables the re-measure), `WINDOWS`, `QUICK=1`, `CPU_THROTTLE` (default 1), `BASE_REF`, `BASE_PORT`/`HEAD_PORT`,
 `SKIP_BUILD=1` (reuse existing builds), `PERF_WORKTREES_DIR`. Remove old base worktrees with
 `git worktree prune` after deleting the folders.

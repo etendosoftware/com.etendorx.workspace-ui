@@ -70,6 +70,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
+import { useLegacyPrint } from "@/hooks/Toolbar/useLegacyPrint";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
@@ -541,7 +542,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     [windowIdentifier, tab.id, tab.tabLevel, setTabSplitTableWidth]
   );
 
+  const { printLegacy } = useLegacyPrint({ tab, selectedRecords });
+
   const handlePrintRecord = useCallback(async () => {
+    // Print processes that are not PrintController documents are printed by classic.
+    if (tab.printConfig?.legacy) {
+      printLegacy();
+      return;
+    }
     try {
       // Validate prerequisites
       if (selectedRecords.length === 0) {
@@ -605,7 +613,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.error("Print Record Error:", errorMessage, error);
       throw new Error(`Print failed: ${errorMessage}`);
     }
-  }, [selectedRecords, token, tab.id, config?.etendoClassicHost]);
+  }, [selectedRecords, token, tab.id, tab.printConfig?.legacy, printLegacy, config?.etendoClassicHost]);
   const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
     if (anchorEl) {
       setAdvancedFiltersAnchor(anchorEl);
