@@ -40,6 +40,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "../hooks/useTranslation";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { isTokenExpired } from "@/utils/session/token";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 import { useUserStore } from "@/stores/userStore";
 import { isPasswordExpiredResponse } from "@/utils/session/erpErrorCode";
 import { toast } from "sonner";
@@ -263,14 +264,17 @@ export default function UserProvider(props: React.PropsWithChildren) {
     // asks the backend to revoke the token (closing the reuse window for
     // /sws/com.etendoerp.metadata.meta/* requests), but the call is best-effort:
     // its failure is swallowed and never surfaces as an unhandled rejection.
+    // The token is captured first: the revocation request needs it, and both clears below drop it.
+    const sessionToken = useUserStore.getState().token;
     clearUserData();
+    resetSessionState();
     pendingPasswordRef.current = "";
     Metadata.setToken("");
     datasource.setToken("");
     CopilotClient.setToken("");
 
     try {
-      await doLogout();
+      await doLogout(sessionToken);
     } catch (error) {
       logger.warn("Logout error:", error);
     }

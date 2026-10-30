@@ -53,6 +53,20 @@ const requestPayload = {
 };
 ```
 
+### Launching tab context (Process Definition modal)
+
+`ProcessDefinitionModal` builds the request body with `buildDefaultsRequestPayload`
+(`packages/MainUI/components/ProcessModal/utils/defaultsRequestPayload.ts`), which sends the context of the
+tab the process was launched from, the way Classic sends `buttonOwnerView.getContextInfo()`:
+
+- the tab's standard properties from `buildTabStandardContext` (`packages/MainUI/utils/index.ts`): `inpTabId`,
+  `inpwindowId`, `inpTableId`, `inpkeyColumnId`, `keyProperty`, `inpKeyName`, `keyColumnName`, `keyPropertyType`,
+  and the record id under the key column's DB name and input name;
+- then the record values by input name and the session values, which win on any shared key.
+
+Default and filter expressions that read the window or tab from the context depend on it. For example,
+`MatchStatementFilterExpression` reads `inpwindowId` and returns no filter without it (ETP-5877).
+
 ### Request Headers
 
 ```typescript

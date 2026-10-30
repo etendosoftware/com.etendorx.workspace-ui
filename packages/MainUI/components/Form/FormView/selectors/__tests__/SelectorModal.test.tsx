@@ -136,6 +136,36 @@ describe("SelectorModal", () => {
     buildEtendoContext.mockReturnValue({});
   });
 
+  it("adds the extraParams to the records request", () => {
+    const { buildSelectorDatasourceParams } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorDatasourceParams.mockReturnValue({ windowId: "WIN-1" });
+
+    render(
+      <SelectorModal
+        field={defaultField}
+        isOpen={true}
+        onClose={mockOnClose}
+        onSelect={mockOnSelect}
+        extraParams={{ _processDefinitionId: "PROC-1" }}
+      />
+    );
+
+    const { useDatasource } = require("@/hooks/useDatasource");
+    expect(useDatasource).toHaveBeenLastCalledWith(
+      expect.objectContaining({ params: { windowId: "WIN-1", _processDefinitionId: "PROC-1" } })
+    );
+  });
+
+  it("sends the records request params unchanged without extraParams", () => {
+    const { buildSelectorDatasourceParams } = require("@/utils/form/selectors/selectorColumns");
+    buildSelectorDatasourceParams.mockReturnValue({ windowId: "WIN-1" });
+
+    render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    const { useDatasource } = require("@/hooks/useDatasource");
+    expect(useDatasource).toHaveBeenLastCalledWith(expect.objectContaining({ params: { windowId: "WIN-1" } }));
+  });
+
   it("renders modal dialog when isOpen is true", () => {
     render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
 

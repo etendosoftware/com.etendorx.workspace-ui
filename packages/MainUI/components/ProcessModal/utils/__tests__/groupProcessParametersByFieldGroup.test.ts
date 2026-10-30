@@ -18,6 +18,8 @@ import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import {
   DEFAULT_PROCESS_PARAM_GROUP_ID,
   groupProcessParametersByFieldGroup,
+  hasVisibleParameter,
+  type ProcessParameterGroup,
 } from "../groupProcessParametersByFieldGroup";
 
 const GROUP_ORDER_INVOICE_ID = "0C672A3B7CDF416F9522DF3FA5AE4022";
@@ -397,5 +399,29 @@ describe("groupProcessParametersByFieldGroup", () => {
     expect(groups[0].id).toBe(GROUP_GL_ITEMS_ID);
     expect(groups[0].identifier).toBe(GROUP_GL_ITEMS_LABEL);
     expect(groups[0].fieldGroupCollapsed).toBe(true);
+  });
+});
+
+describe("hasVisibleParameter", () => {
+  const group = (names: string[]) =>
+    ({ id: "G-1", parameters: names.map((name) => ({ name }) as ProcessParameter) }) as ProcessParameterGroup;
+  const notGrid = () => false;
+
+  it("is true when a scalar parameter is displayed", () => {
+    expect(hasVisibleParameter(group(["hidden", "shown"]), notGrid, (name) => name === "shown")).toBe(true);
+  });
+
+  it("is false when every scalar parameter is hidden (Classic hides the section)", () => {
+    expect(hasVisibleParameter(group(["a", "b"]), notGrid, () => false)).toBe(false);
+  });
+
+  it("is true for a grid parameter, already filtered as visible", () => {
+    expect(
+      hasVisibleParameter(
+        group(["grid"]),
+        () => true,
+        () => false
+      )
+    ).toBe(true);
   });
 });

@@ -221,6 +221,20 @@ const en = {
       title: "Recovery Failed",
       description: "Unable to restore window state from URL",
     },
+    boundary: {
+      title: "Something went wrong",
+      description:
+        "An unexpected error interrupted this screen. You can try again or reload the page. Unsaved changes may be lost.",
+      reload: "Reload page",
+      reference: "Error reference",
+    },
+    connection: {
+      offlineTitle: "You are offline",
+      offlineDescription: "Check your internet connection. The application will reconnect automatically.",
+      backOnlineTitle: "Connection restored",
+      timeoutTitle: "The server took too long to respond",
+      timeoutDescription: "Please try again in a moment. If the problem persists, contact your administrator.",
+    },
     accessDenied: {
       title: "Access Denied",
       description: "Your role does not have access to this window. Contact your system administrator if you need it.",
@@ -357,6 +371,7 @@ const en = {
     confirmationMessage: "Want to execute this process?",
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
+    reportTimeout: "The report took too long to run and was cancelled. Try again with narrower filters.",
     processError: "Process failed",
     missingMandatoryFields: "You have not filled in all needed fields",
     warning: "Warning",
@@ -374,6 +389,8 @@ const en = {
     openLink: "Open link",
     reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
+    /** Title of the process a selector's "+" opens (Classic `OBUISEL_AddNewRecord`); %0 is the field. */
+    addNewRecord: "Add %0",
   },
   processModal: {
     gridToolbar: {

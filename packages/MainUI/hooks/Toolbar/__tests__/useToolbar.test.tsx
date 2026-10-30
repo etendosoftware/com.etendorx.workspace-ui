@@ -15,9 +15,11 @@ import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 
 // Mock dependencies
 jest.mock("@workspaceui/api-client/src/api/metadata");
+jest.mock("@/utils/session/resetSessionState");
 jest.mock("@/contexts/tab");
 jest.mock("@/hooks/useSelectedRecords");
 jest.mock("@/hooks/useFormFields", () => ({
@@ -70,6 +72,18 @@ describe("useToolbar", () => {
     });
 
     expect(result.current.buttons).toHaveLength(mockButtons.length);
+  });
+
+  it("loads the toolbar again after a logout instead of serving the cached one", async () => {
+    const first = setup();
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    first.unmount();
+
+    resetSessionState();
+    const { result } = setup();
+
+    expect(result.current.loading).toBe(true);
+    await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
   it("should return all buttons as-is regardless of uIPattern", async () => {

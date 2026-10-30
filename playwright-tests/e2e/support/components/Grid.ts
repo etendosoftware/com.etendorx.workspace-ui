@@ -14,19 +14,26 @@ const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
 const SHOWING_RECORDS = /Showing (\d+) records?/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
+/** Entry of the column actions menu that removes the filter of the column. */
+const CLEAR_FILTER = "Clear filter";
+/** Text the header of a filtered column carries: "Filtering by <column> - …". */
+const FILTERING_BY = "Filtering by";
 
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
   constructor(private readonly page: Page) {}
 
-  /** Column filter input, by column name (placeholder `Filter <column>...`). */
-  filterInput(column: string): Locator {
-    return this.page.locator(`input[placeholder="Filter ${column}..."]`).filter({ visible: true }).first();
+  /**
+   * Column filter input, by column name (placeholder `Filter <column>...`). Pass `scope` (e.g. a
+   * child tab, `Tab__<AD_Tab_ID>`) when another grid on the page has a column with the same name.
+   */
+  filterInput(column: string, scope: Locator | Page = this.page): Locator {
+    return scope.locator(`input[placeholder="Filter ${column}..."]`).filter({ visible: true }).first();
   }
 
   /** Filters a column and waits for the datasource response that applies the filter. */
-  async filter(column: string, value: string): Promise<void> {
-    const input = this.filterInput(column);
+  async filter(column: string, value: string, scope: Locator | Page = this.page): Promise<void> {
+    const input = this.filterInput(column, scope);
     await input.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
     await input.clear();
     await runAndWaitForDatasource(this.page, async () => {
@@ -66,17 +73,37 @@ export class Grid {
   }
 
   /**
+   * Header cell of a column, found by its sort button: "Sort by <column> ascending" or, once
+   * sorted, "Sorted by <column> descending" (the header text also shows filter values and counts).
+   */
+  columnHeader(column: string, scope: Locator | Page = this.page): Locator {
+    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
+    return scope
+      .locator("thead:visible th")
+      .filter({ has: this.page.locator(sortButton) })
+      .first();
+  }
+
+  /**
    * Opens the column actions menu ("Column Actions", three dots) of a column header and clicks an
    * entry by test id (`column-actions-group-by`, `column-actions-set-summary`, …).
    */
   async columnAction(column: string, actionTestId: string): Promise<void> {
-    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
-    const header = this.page
-      .locator("thead:visible th")
-      .filter({ has: this.page.locator(sortButton) })
-      .first();
-    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.columnHeader(column).getByRole("button", { name: "Column Actions" }).click();
     await this.page.getByTestId(actionTestId).click();
+  }
+
+  /**
+   * Removes the filter of a column through its column actions menu ("Clear filter"), e.g. a
+   * filter a process grid applies when it opens. Waits for the header to stop showing the filter,
+   * not for a request: when the grid already fetched the data without that filter (a process grid
+   * can load once before it applies its own), it shows that data again without asking for it.
+   */
+  async clearFilter(column: string, scope: Locator | Page = this.page): Promise<void> {
+    const header = this.columnHeader(column, scope);
+    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.page.getByRole("menuitem", { name: CLEAR_FILTER, exact: true }).click();
+    await expect(header).not.toContainText(`${FILTERING_BY} ${column}`);
   }
 
   /** The "Showing N records" count of the visible grid. */

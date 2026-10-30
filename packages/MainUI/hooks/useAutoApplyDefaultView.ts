@@ -23,6 +23,7 @@ import type { AppliedViewState, MRTViewConfig, RawSavedViewRecord } from "@/util
 import type { TableState } from "@/utils/window/constants";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowStore } from "@/stores/windowStore";
+import { registerSessionReset } from "@/utils/session/resetSessionState";
 
 const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
@@ -43,6 +44,7 @@ interface UseAutoApplyDefaultViewParams {
  * columns of the session instead of reloading the stored ones.
  */
 const restoredColumnConfigurations = new Set<string>();
+registerSessionReset(() => restoredColumnConfigurations.clear());
 
 /** Fetches the default saved view of a tab. Resolves to null when there is none or it cannot be read. */
 async function fetchDefaultViewConfig(tabId: string, token: string): Promise<MRTViewConfig | null> {

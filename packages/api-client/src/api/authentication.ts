@@ -61,13 +61,22 @@ export const refreshToken = async (): Promise<LoginResponse> => {
   return result.data;
 };
 
-export const logout = async (): Promise<void> => {
+/**
+ * Asks the backend to revoke the session token.
+ *
+ * @param token the token to revoke. The caller clears the clients' token before logging out, so it
+ * must hand the token over explicitly or the request would carry an empty Bearer header.
+ */
+export const logout = async (token?: string | null): Promise<void> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   try {
     const result = await Metadata.loginClient.request("/api/auth/logout", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (!result.ok) {

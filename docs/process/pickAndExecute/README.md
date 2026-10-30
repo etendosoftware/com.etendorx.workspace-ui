@@ -410,6 +410,16 @@ otherwise            → fallbackCell  (or InteractiveGridCellRenderer)
 
 The exported pure helper `shouldRenderCellEditor(isSelected, isFieldReadOnly, isLocallyAdded)` encapsulates this decision so it's testable in isolation.
 
+**Client-class columns.** A column with a Classic `clientclass` renders as a navigation link (`useColumns`), and
+`finalColumns` keeps that link Cell instead of `ReadOnlyCellRenderer`. Both checks go through
+`isClientclassLinkColumn` (`utils/table/clientclassLink.ts`): a **Yes/No** column is never a link. Its
+`clientclass` is a Classic cell component the new UI does not render (e.g. `APRMMatchStatGridButtonsComponent` on
+Match Statement's *Match* column), so the column keeps its Yes/No tag and Yes/No filter. Before ETP-5877 the link
+Cell stringified the Yes/No tag into a clickable "[object Object]".
+A level indicator (`OBLevelImg`, e.g. Match Statement's *Affinity*) is not a link either: `useColumns` renders it with
+`LevelIndicatorCell`, and `finalColumns` keeps that Cell (`hasClientclassCell`). See
+[Match Statement: Affinity column](../../features/match-statement/README.md#affinity-column).
+
 **Why `_locallyAdded`?** When `handleCreateRow` confirms a new row, it calls `setRowSelection((prev) => ({ ...prev, [id]: true }))` so the row is immediately selected (the user expects the new row to feel "active"). Without a separate marker, the row would render as an editor — but the requirement is that confirmed local rows stay read-only and can only be removed via the trash icon. Setting `_locallyAdded: true` on `row.original` when the row is added via `addRecordLocally` gives module-level renderers a stable per-row flag they can read from `row.original` without needing closure state.
 
 ### 8.6 `WindowReferenceGridContext` — the bridge
@@ -590,6 +600,13 @@ The previously-existing `handleSaveRow` was removed entirely — MRT's per-row s
 
 `hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow` is passed to both `enableRowActions` and the `renderRowActions` factory. When false, MRT skips the column entirely — no empty header, no padding.
 
+**Script row buttons** (`grid.setRowActions`) also add to the Actions column (`hasRowActions`, 200px width), unless a
+column hosts them: `findRowActionsHostColumnId` picks the first column whose `clientclass` is a Classic cell
+component the new UI does not render, and that column's Cell shows the buttons instead of its value (as in Classic).
+`shouldShowRowActions` and the column size then use `hasLeadingRowActions = hasRowActions && !rowActionsHostColumnId`,
+so no empty Actions column remains. See
+[new-javascript-code §8.4](../definition/new-javascript-code.md#84-per-row-grid-plugin).
+
 The companion change is on `enableEditing`. The previous implementation always passed a callback, which made MRT reserve the Actions column header even when `canAdd = false` (because MRT inserts the column to host edit buttons whenever editing is conceivably possible). The new code passes a literal `false` when `canAdd = false`, suppressing the column header outright. When `canAdd = true`, the predicate is built by `buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap)` — extracted to a pure module-level helper that delegates per-column to the also-exported `isColumnEditable(col, fields, fieldReadOnlyMap)`. `isPersistedRow(row) → false` still gates first, so persisted rows can never enter edit-mode.
 
 The extraction matters for testability: previously the editable-predicate logic was nested inline and untestable; the helpers are now covered by `WindowReferenceGrid.actionsColumn.test.ts`.
@@ -715,6 +732,38 @@ The lupa (magnifying-glass) button next to the dropdown opens the full `Selector
 ### 8.16 Sorting and criteria
 
 `getSortByString(sorting, rawColumns, hasCriteria)` converts MRT's `MRT_SortingState` to the Etendo sortBy query param. Looks up each sort item against `column.filterFieldName`, `column.columnName`, or `column.header`; prefixes with `-` for descending; returns `-documentNo` as a default when there ARE criteria but no explicit sort (matches classic default sort on filtered grids).
+
+**Default filter expressions (`filterExpressions`).** The defaults returned by `DefaultsProcessActionHandler`
+reach the grid twice: as hidden datasource criteria (`buildGridCriteria`) and as the initial MRT column filters
+(the filter reset effect). For a **Yes/No** column the default is applied only as the column filter, the way
+Classic puts it in the filter editor (`setFilterEditorCriteria`):
+
+- `toColumnFilterSeedValue` seeds the Yes/No selection (`["true"]` / `["false"]`, via `toBooleanFilterValue`, which
+  reads `Yes`/`No`/`true`/`false`), so the request carries `equals true|false`.
+- `collectBooleanFilterFields` lists those fields, and `buildGridCriteria` leaves them out of the hidden criteria.
+  The user can clear the filter or switch it to the other value.
+
+Every other default keeps both channels as before. In the current dictionary this affects Match Statement's
+*Match* (`cleared = No`) and Copy from Orders' *Sales Transaction*.
+
+**Mandatory parameters.** The Execute button of a Pick & Execute process is enabled only when every visible mandatory
+parameter holds an actual value (`isMandatoryParameterMissing` with `requireActualValue`, as reports already did),
+following Classic `allRequiredParametersSet`. A default *expression* alone no longer counts, so a default that
+resolved empty keeps the button disabled instead of posting nulls. Grid parameters (validated through their
+selection) and Yes/No parameters (a Classic checkbox always holds a value) are exempt.
+
+**Field-group sections.** A section whose parameters are all hidden by display logic is not shown
+(`hasVisibleParameter`), as Classic `OBSectionItem.showIf`. It stays mounted, hidden, so its parameters register as
+before.
+
+**Accounting dimension display logic.** A parameter whose display logic uses `@ACCT_DIMENSION_DISPLAY@` is evaluated
+with the server-expanded `displayLogicExpression` (`resolveParameterDisplayLogic`), which reads the session's
+dimension values; every other parameter keeps its raw display logic.
+
+**Nested launches.** A grid inside a nested process modal (`view.openProcess`) gets the owner tab as `originTab`
+(so `buttonOwnerViewTabId` and the owner's session keys are sent) and the launch's `externalParams` as request params
+(`applyExternalParams`), mirroring Classic `OBPickAndExecuteGrid.transformRequest`. See
+[new-javascript-code §8.3](../definition/new-javascript-code.md#83-nested-process-modal-stack).
 
 ### 8.17 External grid-selection sync (callouts)
 
@@ -896,6 +945,19 @@ When the modal stays open after a retry-style response (`keepOpen && success`), 
 The earlier behavior fell back to `t("process.completedSuccessfully")` when the server sent nothing, which made every keep-open response paint a banner — wrong on actions like *Search* that intentionally update the grid silently. The current behavior matches Classic: the banner is the server's opt-in, not the client's default.
 
 `responseBanner.test.ts` covers all three input shapes plus the silent-skip invariant.
+
+### 10.5 Success toast on close — server-gated as well
+
+The same rule applies when the modal closes after a standard Java handler response (`executeJavaProcess` →
+`handleJavaProcessResult` in `hooks/useProcessExecution.ts`). Classic `handleResponse`
+(`ob-parameter-window-view.js`) calls `messageBar.setMessage` only `if (message)`. A handler that returns no
+message, such as Match Statement's `OK` (`{ "refreshParent": true }`), therefore closes and refreshes **without**
+a toast. Before ETP-5877 the client showed the generic "Process completed successfully" toast in that case.
+
+Unchanged: responses that carry a message (`message` or `showMsgInProcessView`) keep their toast, `openDirectTab`
+navigation keeps its toast, and errors, `retryExecution` and reports follow their own paths. The script-driven
+path (`onProcess` returning a result) still uses the generic default text.
+`useProcessExecution.responseFlags.test.ts` covers both cases.
 
 ---
 

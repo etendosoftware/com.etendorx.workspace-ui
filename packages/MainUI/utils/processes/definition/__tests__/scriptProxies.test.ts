@@ -2,6 +2,7 @@ import type { UseFormReturn } from "react-hook-form";
 import type { EntityData, ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import {
   buildGridVisibility,
+  clearScriptScope,
   createFormHandle,
   createFormProxy,
   createGridProxy,
@@ -11,6 +12,8 @@ import {
   normalizeValueMapEntries,
   notImplemented,
   resolveFormKey,
+  valuesByColumnName,
+  withScriptScope,
   type FieldController,
   type FooterButtonHandle,
   type FormHandle,
@@ -241,6 +244,21 @@ describe("scriptProxies", () => {
     });
   });
 
+  describe("parameter ids and column-keyed values (Classic)", () => {
+    it("gives an item the id of its parameter, as Classic field.paramId", () => {
+      const { handle } = makeFormHandle();
+      const parameter = { ...param("amount", "amount_col"), id: "PARAM-1" } as ProcessParameter;
+
+      expect(createItemProxy(handle, "amount", {}, undefined, undefined, parameter).paramId).toBe("PARAM-1");
+      expect(createItemProxy(handle, "unknown").paramId).toBeUndefined();
+    });
+
+    it("keys the parameter values by column name, skipping values the form does not hold", () => {
+      expect(valuesByColumnName({ amount: 7 }, PARAMETERS)).toEqual({ amount_col: 7 });
+      expect(valuesByColumnName({ amount: 7 }, undefined)).toEqual({});
+    });
+  });
+
   describe("findParameter", () => {
     const overdue = {
       name: "Number Of Days Overdue: Group Three",
@@ -375,6 +393,94 @@ describe("scriptProxies", () => {
   describe("createViewProxy", () => {
     const messageBar: MessageBarHandle = { setMessage: jest.fn(), hide: jest.fn() };
 
+    describe("shared script scope (Classic single view object)", () => {
+      const UNMATCH_BUTTON = { _buttonValue: "UN" };
+
+      /** Two views of the same modal: they share the scope, as every Classic hook gets the same view. */
+      const makeViews = (scope: Record<string, unknown>) => {
+        const { handle } = makeFormHandle();
+        const onLoadView = createViewProxy(handle, PARAMETERS, { messageBar, data: { scriptScope: scope } });
+        const gridView = createViewProxy(handle, PARAMETERS, { messageBar, data: { scriptScope: scope } });
+        return { onLoadView, gridView };
+      };
+
+      it("reads from one view a property the script assigned on another", () => {
+        const { onLoadView, gridView } = makeViews({});
+
+        onLoadView.unmatchButton = UNMATCH_BUTTON;
+
+        expect(gridView.unmatchButton).toBe(UNMATCH_BUTTON);
+        expect("unmatchButton" in gridView).toBe(true);
+      });
+
+      it("keeps the views' own properties per view", () => {
+        const { handle } = makeFormHandle();
+        const scope = {};
+        const first = createViewProxy(handle, PARAMETERS, {
+          messageBar,
+          data: { scriptScope: scope },
+          hookData: { _buttonValue: "OK" },
+        });
+        const second = createViewProxy(handle, PARAMETERS, {
+          messageBar,
+          data: { scriptScope: scope },
+          hookData: { _buttonValue: "RE" },
+        });
+
+        first._buttonValue = "UN";
+
+        expect(second._buttonValue).toBe("RE");
+        expect(scope).toEqual({});
+      });
+
+      it("returns the shared view from getView and keeps its own keys enumerable only", () => {
+        const { onLoadView } = makeViews({});
+
+        onLoadView.unmatchButton = UNMATCH_BUTTON;
+
+        expect(onLoadView.getView()).toBe(onLoadView);
+        expect(Object.keys(onLoadView)).not.toContain("unmatchButton");
+      });
+
+      it("empties the scope in place when the modal opens again", () => {
+        const scope: Record<string, unknown> = { unmatchButton: UNMATCH_BUTTON };
+
+        clearScriptScope(scope);
+
+        expect(scope).toEqual({});
+      });
+
+      it("shares the properties a script adds to the form across the modal's hooks", () => {
+        const { onLoadView, gridView } = makeViews({});
+
+        onLoadView.theForm._overpaymentOriginalValueMap = { CR: "Credit" };
+
+        expect(gridView.theForm._overpaymentOriginalValueMap).toEqual({ CR: "Credit" });
+      });
+
+      it("empties the form's shared properties too when the modal opens again", () => {
+        const scope: Record<string, unknown> = {};
+        const { onLoadView, gridView } = makeViews(scope);
+        onLoadView.theForm.isCreditAllowed = true;
+
+        clearScriptScope(scope);
+
+        expect(gridView.theForm.isCreditAllowed).toBeUndefined();
+      });
+
+      it("exposes its view as form.paramWindow (Classic)", () => {
+        const { onLoadView } = makeViews({});
+
+        expect(onLoadView.theForm.paramWindow).toBe(onLoadView);
+      });
+
+      it("leaves a view without a scope unwrapped", () => {
+        const view = { messageBar };
+
+        expect(withScriptScope(view)).toBe(view);
+      });
+    });
+
     it("wires theForm and messageBar, and viewGrid only when a grid is given", () => {
       const { handle } = makeFormHandle({ amount: 1 });
       const noGrid = createViewProxy(handle, PARAMETERS, { messageBar });
@@ -427,6 +533,22 @@ describe("scriptProxies", () => {
       expect(() => (view.selectAllRecords as () => void)()).toThrow("view.selectAllRecords is not implemented yet");
     });
 
+    it("adds the grid parameters' values to getContextInfo, as Classic", () => {
+      const { handle } = makeFormHandle({ amount: 7 });
+      const grid = { _selection: [row("trx-1")], _allRows: [row("trx-1")] };
+      const view = createViewProxy(handle, PARAMETERS, {
+        messageBar,
+        data: { activeTabId: "T-1", getGridValues: () => ({ findtransactiontomatch: grid }) },
+      });
+
+      expect(view.getContextInfo()).toEqual({
+        inpTabId: "T-1",
+        amount: 7,
+        amount_col: 7,
+        findtransactiontomatch: grid,
+      });
+    });
+
     it("exposes read-only environment data and the context accessors regardless of controller", () => {
       const { handle } = makeFormHandle({ amount: 7 });
       const data: ViewData = {
@@ -441,7 +563,7 @@ describe("scriptProxies", () => {
       expect(view.callerField?.record).toEqual(row("rec-1"));
       expect(view.activeView?.tabId).toBe("T-1");
       // Context = the launching tab id + parent record overlaid with the live parameter values.
-      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
+      expect(view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7, amount_col: 7 });
       // getView returns this view for the active tab, a minimal handle otherwise.
       expect(view.getView("T-1")).toBe(view);
       expect(view.getView("OTHER")).toEqual({ tabId: "OTHER" });
@@ -459,7 +581,12 @@ describe("scriptProxies", () => {
 
       // Classic idiom `view.parentWindow.view.getContextInfo()` resolves to the same context.
       expect(parentWindow.view.getContextInfo()).toEqual(view.getContextInfo());
-      expect(parentWindow.view.getContextInfo()).toEqual({ inpTabId: "T-1", docStatus: "DR", amount: 7 });
+      expect(parentWindow.view.getContextInfo()).toEqual({
+        inpTabId: "T-1",
+        docStatus: "DR",
+        amount: 7,
+        amount_col: 7,
+      });
       expect(parentWindow.view.getView("T-1")).toBe(view);
       // The original parentWindow data is preserved alongside the injected `view` handle.
       expect(parentWindow.tabTitle).toBe("Business Partner");
@@ -473,7 +600,7 @@ describe("scriptProxies", () => {
       });
       const parentWindow = view.parentWindow as { view: ViewProxy };
 
-      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7 });
+      expect(parentWindow.view.getContextInfo()).toEqual({ docStatus: "CO", amount: 7, amount_col: 7 });
     });
 
     it("exposes the classic two-tier parentWindow.activeView[.parentView].getContextInfo fallback", () => {
@@ -487,7 +614,7 @@ describe("scriptProxies", () => {
         };
       };
 
-      const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7 };
+      const expected = { inpTabId: "T-9", docStatus: "DR", amount: 7, amount_col: 7 };
       expect(parentWindow.activeView.getContextInfo()).toEqual(expected);
       expect(parentWindow.activeView.parentView.getContextInfo()).toEqual(expected);
     });

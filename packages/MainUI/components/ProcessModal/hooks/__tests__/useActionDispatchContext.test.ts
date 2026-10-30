@@ -17,6 +17,7 @@
 import { renderHook } from "@testing-library/react";
 import { useActionDispatchContext } from "../useActionDispatchContext";
 import { getActionDispatchContext } from "@/utils/processes/definition/actionDispatcherStore";
+import type { CallerField } from "@/utils/processes/definition/scriptProxies";
 import { browseReport, downloadReport } from "@/utils/processes/definition/reportActions";
 import { messageBar } from "@/utils/processes/definition/messageBarStore";
 
@@ -41,17 +42,17 @@ const REPORT_PAYLOAD = {
   fileName: "Report.pdf",
 };
 
+const baseParams = () => ({
+  refreshParentGrid: jest.fn(),
+  refreshModalGrid: jest.fn(),
+  navigateToTab: jest.fn(),
+  closeModal: jest.fn(),
+  token: TOKEN,
+});
+
 /** Mounts the hook and returns the context it registered in the dispatch store. */
-const mountContext = () => {
-  renderHook(() =>
-    useActionDispatchContext({
-      refreshParentGrid: jest.fn(),
-      refreshModalGrid: jest.fn(),
-      navigateToTab: jest.fn(),
-      closeModal: jest.fn(),
-      token: TOKEN,
-    })
-  );
+const mountContext = (callerField?: CallerField) => {
+  renderHook(() => useActionDispatchContext({ ...baseParams(), callerField }));
   const ctx = getActionDispatchContext();
   if (!ctx) throw new Error("dispatch context was not registered");
   return ctx;
@@ -85,5 +86,58 @@ describe("useActionDispatchContext — report file errors", () => {
     );
     triggerOnError(downloadReport as jest.Mock, 3);
     expect(messageBar.setMessage).toHaveBeenCalledWith("error", null, "process.reportFileFailed");
+  });
+});
+
+describe("useActionDispatchContext — setSelectorValueFromRecord", () => {
+  const RECORD = { value: "PAY-1", map: "Payment 1" };
+
+  it("writes the record into the selector that launched the process", () => {
+    const setValueFromRecord = jest.fn();
+
+    mountContext({ id: "F-PAYMENT", setValueFromRecord }).setSelectorValueFromRecord({ record: RECORD });
+
+    expect(setValueFromRecord).toHaveBeenCalledWith(RECORD);
+  });
+
+  it("only warns when the process was not launched from a selector", () => {
+    expect(() => mountContext({ id: "BUTTON" }).setSelectorValueFromRecord({ record: RECORD })).not.toThrow();
+  });
+});
+
+describe("useActionDispatchContext — registration", () => {
+  it("registers nothing while the modal is closed, and registers when it opens", () => {
+    const { rerender } = renderHook(({ active }) => useActionDispatchContext({ ...baseParams(), active }), {
+      initialProps: { active: false },
+    });
+    expect(getActionDispatchContext()).toBeNull();
+
+    rerender({ active: true });
+
+    expect(getActionDispatchContext()).not.toBeNull();
+  });
+
+  it("keeps a nested modal on top when the launcher rebuilds its handlers", () => {
+    const launcher = renderHook(({ token }) => useActionDispatchContext({ ...baseParams(), token }), {
+      initialProps: { token: TOKEN },
+    });
+    const nestedRefresh = jest.fn();
+    renderHook(() => useActionDispatchContext({ ...baseParams(), refreshParentGrid: nestedRefresh }));
+
+    launcher.rerender({ token: "tok-new" });
+    getActionDispatchContext()?.refreshParentGrid();
+
+    expect(nestedRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives the launcher its handlers back when the nested modal closes", () => {
+    const launcherRefresh = jest.fn();
+    renderHook(() => useActionDispatchContext({ ...baseParams(), refreshParentGrid: launcherRefresh }));
+    const nested = renderHook(() => useActionDispatchContext(baseParams()));
+
+    nested.unmount();
+    getActionDispatchContext()?.refreshParentGrid();
+
+    expect(launcherRefresh).toHaveBeenCalledTimes(1);
   });
 });

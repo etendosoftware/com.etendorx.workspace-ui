@@ -33,11 +33,19 @@ import { DateSelector } from "../../components/Table/DateSelector";
 import { TextFilter } from "../../components/Table/TextFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
+import type { TranslateFunction } from "../types";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 import { isGridRenderableColumn, sortFieldsByGridOrder } from "@/utils/table/utils";
+import {
+  isClientclassLinkColumn,
+  isLevelImgColumn,
+  readLevelValues,
+  resolveLevel,
+} from "@/utils/table/clientclassLink";
+import { LevelIndicatorCell } from "../../components/Table/Cells/LevelIndicatorCell";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -176,6 +184,34 @@ const extractColorContext = (recordData: EntityData | undefined, column: Column,
   return { rawColor, finalDisplayValue };
 };
 
+/**
+ * Filter state of a column: the persisted one, or, for a boolean column without one, an
+ * initial state with its true/false options.
+ */
+export const resolveColumnFilterState = (
+  column: Column,
+  isBooleanColumn: boolean,
+  columnFilterStates: ColumnFilterState[] | undefined,
+  t: TranslateFunction
+): ColumnFilterState | undefined => {
+  const filterState = columnFilterStates?.find((f) => f.id === column.id);
+  if (!isBooleanColumn || filterState) {
+    return filterState;
+  }
+  return {
+    id: column.id,
+    selectedOptions: [],
+    availableOptions: [
+      { id: "true", label: t("common.trueText"), value: "true" },
+      { id: "false", label: t("common.falseText"), value: "false" },
+    ],
+    loading: false,
+    hasMore: false,
+    searchQuery: "",
+    isMultiSelect: false,
+  };
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect, handleClientclassNavigation } = useRedirect();
   const {
@@ -212,22 +248,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       const supportsDropdownFilter = supportsDropdown(column);
       const isCustomJsColumn = isCustomJsEnabled(column);
 
-      // --- Initialize filterState for booleans if it doesn't exist ---
-      let filterState = columnFilterStates?.find((f) => f.id === column.id);
-      if (isBooleanColumn && !filterState) {
-        filterState = {
-          id: column.id,
-          selectedOptions: [],
-          availableOptions: [
-            { id: "true", label: t("common.trueText"), value: "true" },
-            { id: "false", label: t("common.falseText"), value: "false" },
-          ],
-          loading: false,
-          hasMore: false,
-          searchQuery: "",
-          isMultiSelect: false,
-        };
-      }
+      const filterState = resolveColumnFilterState(column, isBooleanColumn, columnFilterStates, t);
 
       let columnConfig = { ...column };
 
@@ -371,7 +392,24 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             );
           },
         };
-      } else if (column.clientclass) {
+      } else if (isLevelImgColumn(column)) {
+        // Classic OBLevelImg: signal-style level indicator resolved from the raw cell value
+        const valuesList = readLevelValues(column);
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ row }: { row: { original: EntityData } }) => {
+            const record = row.original as Record<string, unknown>;
+            const resolved = resolveLevel(record[column.hqlName as string] ?? record[column.columnName], valuesList);
+            return resolved ? (
+              <LevelIndicatorCell
+                level={resolved.level}
+                max={resolved.max}
+                data-testid="LevelIndicatorCell__useColumns"
+              />
+            ) : null;
+          },
+        };
+      } else if (isClientclassLinkColumn(column)) {
         // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
         const clientclass = column.clientclass as string;
         columnConfig = {

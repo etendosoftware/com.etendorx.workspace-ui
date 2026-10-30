@@ -60,13 +60,17 @@ describe("useProcessExecution — Pick&Execute pre-submit validation", () => {
 
   it("aborts the submit (no Java post) when onProcess returns an error severity", async () => {
     executeStringFunction.mockResolvedValue({ severity: "error", text: "Credit exceeds pending" });
-    const { result } = renderHook(() => useProcessExecution(makePEParams()));
+    const setResult = jest.fn();
+    const { result } = renderHook(() => useProcessExecution(makePEParams({ setResult })));
 
     await result.current.handleExecute("DONE");
     await flushPromises();
 
     expect(executeStringFunction).toHaveBeenCalledTimes(1);
+    expect(setMessage).toHaveBeenCalledTimes(1);
     expect(setMessage).toHaveBeenCalledWith("error", null, "Credit exceeds pending");
+    // Not repeated as a second "Process Error" banner.
+    expect(setResult).not.toHaveBeenCalledWith(expect.objectContaining({ success: false }));
     expect(global.fetch).not.toHaveBeenCalled(); // handleWindowReferenceExecute never ran
   });
 
@@ -102,5 +106,79 @@ describe("useProcessExecution — Pick&Execute pre-submit validation", () => {
 
     expect(executeStringFunction).not.toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalled();
+  });
+
+  describe("onProcess calling view.executeProcess() (Classic actionHandlerCall)", () => {
+    /** onProcess body that submits through the view, as the migrated Find Transactions script does. */
+    const submitThroughView = async (
+      _fn: unknown,
+      _ctx: unknown,
+      _pd: unknown,
+      view: { executeProcess: () => Promise<{ message?: unknown }> }
+    ) => (await view.executeProcess())?.message;
+
+    const mockResponse = (body: unknown) => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        text: jest.fn(),
+        json: jest.fn().mockResolvedValue(body),
+      }) as jest.Mock;
+    };
+
+    const postedBody = () => JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+
+    it("posts once and handles that response as the submit", async () => {
+      executeStringFunction.mockImplementation(submitThroughView);
+      const onClose = jest.fn();
+      const { result } = renderHook(() => useProcessExecution(makePEParams({ onClose })));
+
+      await result.current.handleExecute("DONE");
+      await flushPromises();
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(postedBody()._buttonValue).toBe("DONE");
+      expect(onClose).toHaveBeenCalled(); // `{}` response: success, the modal closes
+    });
+
+    it("keeps the modal open when that response asks to retry", async () => {
+      executeStringFunction.mockImplementation(submitThroughView);
+      mockResponse({
+        responseActions: [{ showMsgInProcessView: { msgType: "error", msgText: "Select a record" } }],
+        retryExecution: true,
+      });
+      const setResult = jest.fn();
+      const { result } = renderHook(() => useProcessExecution(makePEParams({ setResult })));
+
+      await result.current.handleExecute("DONE");
+      await flushPromises();
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true }));
+    });
+
+    it("sends the nested launch's externalParams in _params", async () => {
+      executeStringFunction.mockImplementation(submitThroughView);
+      const { result } = renderHook(() =>
+        useProcessExecution(makePEParams({ externalParams: { bankStatementLineId: "BSL-1" } }))
+      );
+
+      await result.current.handleExecute("DONE");
+      await flushPromises();
+
+      expect(postedBody()._params).toEqual(expect.objectContaining({ bankStatementLineId: "BSL-1" }));
+    });
+  });
+
+  it("aborts silently when onProcess returns an error without text", async () => {
+    executeStringFunction.mockResolvedValue({ severity: "error", text: "" });
+    const setResult = jest.fn();
+    const { result } = renderHook(() => useProcessExecution(makePEParams({ setResult })));
+
+    await result.current.handleExecute("DONE");
+    await flushPromises();
+
+    expect(setMessage).not.toHaveBeenCalled();
+    expect(setResult).not.toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });

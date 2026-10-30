@@ -74,6 +74,9 @@ import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./Wi
 import { getFieldReference } from "@/utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
+import type { OnRefreshFunction } from "./processView";
+import { hasClientclassCell, isClientclassComponentColumn } from "@/utils/table/clientclassLink";
+import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 import {
@@ -751,6 +754,17 @@ export const CreateRowActionButtons = ({ row, table }: CreateRowActionButtonsPro
 export const shouldShowRowActions = (hasAnyActionableRow: boolean, hasRowActions: boolean, canAdd: boolean): boolean =>
   hasAnyActionableRow || hasRowActions || canAdd;
 
+/**
+ * Id of the column that hosts the script row buttons (`grid.setRowActions`):
+ * the first column whose `clientclass` is a Classic cell component the new UI
+ * does not render, as in Classic. `undefined` keeps the buttons in the leading
+ * actions column (no row actions, or no such column).
+ */
+export function findRowActionsHostColumnId(columns: readonly Column[], hasRowActions: boolean): string | undefined {
+  if (!hasRowActions) return undefined;
+  return columns.find(isClientclassComponentColumn)?.id;
+}
+
 interface RenderActionsCellArgs {
   // biome-ignore lint/suspicious/noExplicitAny: MRT row
   row: any;
@@ -1121,6 +1135,33 @@ export const publishDeliveredRows = (
   localRecordsRef.current = rows;
 };
 
+/**
+ * Runs an `onGridLoad` execution so its grid subscriptions (`onDataArrived`,
+ * `onSelectionChanged`, `onRecordChange`, `onSelectionToggle`) replace the ones the
+ * previous execution registered, instead of piling up on every data delivery.
+ * Subscriptions registered outside `onGridLoad` (e.g. from `onLoad`) are kept.
+ *
+ * @param lists The grid's subscription lists (mutated in place).
+ * @param previous What the previous execution registered, per list (null on the first run).
+ * @param run The `onGridLoad` execution.
+ * @returns What this execution registered, per list.
+ */
+export const runWithScopedSubscriptions = (
+  lists: Array<Array<unknown>>,
+  previous: Array<Array<unknown>> | null,
+  run: () => void
+): Array<Array<unknown>> => {
+  lists.forEach((list, index) => {
+    for (const fn of previous?.[index] ?? []) {
+      const position = list.indexOf(fn);
+      if (position >= 0) list.splice(position, 1);
+    }
+  });
+  const lengths = lists.map((list) => list.length);
+  run();
+  return lists.map((list, index) => list.slice(lengths[index]));
+};
+
 // Logic extracted to reduce cognitive complexity of useEffect
 export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
@@ -1230,6 +1271,18 @@ interface DatasourceParams {
 export const applyButtonOwnerViewTabId = (options: DatasourceParams, originTab?: Tab): void => {
   if (!originTab?.id) return;
   options[BUTTON_OWNER_VIEW_TAB_ID_PARAM] = originTab.id;
+};
+
+/**
+ * Mirrors Classic OBPickAndExecuteGrid.transformRequest
+ * (`isc.addProperties(dsRequest.params, view.externalParams)`): the `externalParams`
+ * of a nested launch travel as datasource request params, which backend HQL
+ * transformers read (e.g. `bankStatementLineId`). Empty values are skipped.
+ */
+export const applyExternalParams = (options: DatasourceParams, externalParams?: Record<string, unknown>): void => {
+  for (const [key, value] of Object.entries(externalParams ?? {})) {
+    if (value !== undefined && value !== null) options[key] = value;
+  }
 };
 
 // Standard context variable keys that are always valid filter columns
@@ -1371,20 +1424,111 @@ export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, u
 /**
  * Builds the filter criteria array for a single grid parameter by looking up
  * its column name in the `filterExpressions` config returned by the backend.
+ * Fields in `columnFilterFields` (lower-cased) are skipped: their default is
+ * applied as a removable column filter instead (see `collectBooleanFilterFields`).
  */
 export function buildGridCriteria(
   filterExpressions: Record<string, Record<string, unknown>> | undefined,
-  gridColumnName: string
+  gridColumnName: string,
+  columnFilterFields: ReadonlySet<string> = new Set()
 ): Array<{ fieldName: string; operator: string; value: EntityValue }> {
   if (!filterExpressions) return [];
   const expressions = Object.entries(filterExpressions).find(
     ([key]) => key.toLowerCase() === gridColumnName.toLowerCase()
   )?.[1];
   if (!expressions) return [];
-  return Object.entries(expressions).map(
-    ([fieldName, value]) =>
-      buildFilterCriteriaEntry(fieldName, value) as { fieldName: string; operator: string; value: EntityValue }
+  return Object.entries(expressions)
+    .filter(([fieldName]) => !columnFilterFields.has(fieldName.toLowerCase()))
+    .map(
+      ([fieldName, value]) =>
+        buildFilterCriteriaEntry(fieldName, value) as { fieldName: string; operator: string; value: EntityValue }
+    );
+}
+
+/** Column used to read a filter value with the boolean rules of `formatValueForType`. */
+const BOOLEAN_FILTER_COLUMN: Column = {
+  header: "",
+  id: "",
+  columnName: "",
+  name: "",
+  _identifier: "",
+  referencedTabId: null,
+  accessorFn: () => undefined,
+  type: FieldType.BOOLEAN,
+};
+
+const matchesFieldName = (value: unknown, target: string): boolean =>
+  typeof value === "string" && value.toLowerCase() === target;
+
+/**
+ * Finds the grid column a filter expression targets. Expressions are keyed by
+ * property or DB column name, while MRT column filters use the column `id`.
+ */
+export function findFilterColumn(columns: readonly Column[] | undefined, fieldName: string): Column | undefined {
+  const target = fieldName.toLowerCase();
+  return columns?.find(
+    (col) =>
+      matchesFieldName(col.columnName, target) ||
+      matchesFieldName(col.hqlName, target) ||
+      matchesFieldName(col.id, target)
   );
+}
+
+/** Reads the raw value of a filter expression entry (a plain value or a `{ value }` / `{ values }` object). */
+export function readFilterExpressionValue(logic: unknown): string {
+  if (logic !== null && typeof logic === "object" && !Array.isArray(logic)) {
+    const entry = logic as { value?: unknown; values?: unknown };
+    return (entry.value ?? entry.values ?? "") as string;
+  }
+  if (logic === undefined || logic === null) return "";
+  return String(logic);
+}
+
+/**
+ * Maps a boolean filter expression (`"No"`, `"Yes"`, `"true"`, `false`, …) to
+ * the value the Yes/No column filter holds when the user picks an option:
+ * `["true"]` or `["false"]`. Returns `undefined` for a non-boolean value.
+ */
+export function toBooleanFilterValue(rawValue: unknown): string[] | undefined {
+  const formatted = LegacyColumnFilterUtils.formatValueForType(rawValue, BOOLEAN_FILTER_COLUMN);
+  return formatted === "true" || formatted === "false" ? [formatted] : undefined;
+}
+
+/**
+ * The boolean default a filter expression seeds into a Yes/No column filter,
+ * or `undefined` when the column is not Yes/No or the value is not boolean.
+ */
+function resolveBooleanSeedValue(column: Column | undefined, logic: unknown): string[] | undefined {
+  if (!column || !LegacyColumnFilterUtils.isBooleanField(column)) return undefined;
+  return toBooleanFilterValue(readFilterExpressionValue(logic));
+}
+
+/**
+ * Value seeded into the MRT column filter for a default filter expression. As
+ * in Classic (`setFilterEditorCriteria`), a Yes/No default becomes the column's
+ * Yes/No selection, so the user can clear or change it; any other value is
+ * seeded as before.
+ */
+export function toColumnFilterSeedValue(column: Column | undefined, logic: unknown): unknown {
+  return resolveBooleanSeedValue(column, logic) ?? readFilterExpressionValue(logic);
+}
+
+/**
+ * Lower-cased names of the filter expressions applied as Yes/No column
+ * filters. They are left out of the hidden datasource criteria so the column
+ * filter is the only (removable) place the default lives, as in Classic.
+ */
+export function collectBooleanFilterFields(
+  fieldExpressions: Record<string, unknown> | undefined,
+  columns: readonly Column[] | undefined
+): Set<string> {
+  const fields = new Set<string>();
+  for (const [fieldName, logic] of Object.entries(fieldExpressions ?? {})) {
+    if (resolveBooleanSeedValue(findFilterColumn(columns, fieldName), logic)) {
+      fields.add(fieldName.toLowerCase());
+    }
+  }
+  return fields;
 }
 
 /**
@@ -1464,6 +1608,29 @@ export interface EmbeddedGridSubscriptions {
   selectionToggle: Array<(record: EntityData, state: boolean) => void>;
   columnOnChange: Map<string, ColumnOnChange>;
   columnValidator: Map<string, ColumnValidator>;
+}
+
+/** Dependencies of a script `view` built by the grid (onGridLoad, row actions, cell hooks). */
+type GridScriptViewDeps = Omit<Parameters<typeof createViewProxy>[2], "hookData" | "grid"> & {
+  grid: GridProxy;
+  onRefreshFunction?: OnRefreshFunction;
+};
+
+/**
+ * Builds the `view` a grid script receives and links it back as `grid.view`.
+ * Like the onLoad view, it exposes the process `onRefresh` hook as
+ * `view.onRefreshFunction`, so a row action can call `view.onRefreshFunction(view)`
+ * after its server call (Classic idiom) to refresh the grid.
+ */
+export function createGridScriptView(
+  formHandle: FormHandle,
+  parameters: Parameters<typeof createViewProxy>[1],
+  deps: GridScriptViewDeps
+): ViewProxy {
+  const { onRefreshFunction, ...viewDeps } = deps;
+  const view = createViewProxy(formHandle, parameters, { ...viewDeps, hookData: { onRefreshFunction } });
+  deps.grid.view = view;
+  return view;
 }
 
 export function createEmbeddedGridController(
@@ -1587,6 +1754,8 @@ const WindowReferenceGrid = ({
   onUnregisterGrid,
   fieldController,
   gridResolver,
+  onRefreshFunction,
+  externalParams,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1629,7 +1798,7 @@ const WindowReferenceGrid = ({
   const shouldSendOrg = selectedRecordsCount === 1;
 
   const etendoContext = useMemo(() => {
-    return originTab ? buildEtendoContext(originTab, graph) : {};
+    return originTab && graph ? buildEtendoContext(originTab, graph) : {};
   }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
@@ -1887,6 +2056,17 @@ const WindowReferenceGrid = ({
   // useMemo deps already guarantee).
   const stableRawColumns = rawColumns;
 
+  // Yes/No defaults are seeded as removable column filters (see the filter reset effect),
+  // so they are kept out of the hidden datasource criteria.
+  const booleanColumnFilterFields = useMemo(
+    () =>
+      collectBooleanFilterFields(
+        stableVisualFilterExpressions?.[parameter.dBColumnName || ""] as Record<string, unknown> | undefined,
+        rawColumns
+      ),
+    [stableVisualFilterExpressions, parameter.dBColumnName, rawColumns]
+  );
+
   const datasourceOptions = useMemo(() => {
     const options: DatasourceParams = {
       pageSize: PAGE_SIZE,
@@ -1923,7 +2103,11 @@ const WindowReferenceGrid = ({
     if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
 
     // 7. Build filter criteria (explicit expressions take precedence over base criteria)
-    const filterCriteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
+    const filterCriteria = buildGridCriteria(
+      stableFilterExpressions,
+      parameter.dBColumnName || "",
+      booleanColumnFilterFields
+    );
     const baseCriteria = buildBaseCriteria({
       tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
     });
@@ -1954,6 +2138,7 @@ const WindowReferenceGrid = ({
     options.isPickAndEdit = true;
     // Send the owner tab so backend HQL transformers pick the right query branch (Classic parity)
     applyButtonOwnerViewTabId(options, originTab);
+    applyExternalParams(options, externalParams);
     // Match Classic default: send true unless the user has explicitly toggled the filter off
     options.isImplicitFilterApplied = isImplicitFilterApplied ?? true;
 
@@ -1975,6 +2160,8 @@ const WindowReferenceGrid = ({
     stableRawColumns,
     etendoContext,
     originTab,
+    booleanColumnFilterFields,
+    externalParams,
   ]);
 
   // `datasourceOptions` legitimately changes content on cell edits because
@@ -2353,6 +2540,8 @@ const WindowReferenceGrid = ({
   const selectionToggleSubsRef = useRef<Array<(record: EntityData, state: boolean) => void>>([]);
   const columnOnChangeRef = useRef<Map<string, ColumnOnChange>>(new Map());
   const columnValidatorRef = useRef<Map<string, ColumnValidator>>(new Map());
+  // What the last onGridLoad execution subscribed, replaced on the next execution.
+  const gridLoadSubscriptionsRef = useRef<Array<Array<unknown>> | null>(null);
   // Ids selected as of the last selectionChanged fire, for the onSelectionToggle diff.
   const prevSelectionIdsRef = useRef<Set<string>>(new Set());
   // Guards against the infinite loop when a column onChange calls grid.setEditValue
@@ -2417,20 +2606,31 @@ const WindowReferenceGrid = ({
         gridControllerRef.current ?? undefined,
         fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
       );
-      const view = createViewProxy(gridLoadFormHandle, parameters, {
+      const view = createGridScriptView(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
         controller: fieldController,
         viewController,
         gridResolver,
         data: viewData,
+        onRefreshFunction,
       });
-      grid.view = view;
-      try {
-        onGridLoadHook(grid, view, parameters);
-      } catch (error) {
-        logger.error("[WindowReferenceGrid] onGridLoad failed", error);
-      }
+      gridLoadSubscriptionsRef.current = runWithScopedSubscriptions(
+        [
+          dataArrivedSubsRef.current,
+          selectionChangedSubsRef.current,
+          recordChangeSubsRef.current,
+          selectionToggleSubsRef.current,
+        ],
+        gridLoadSubscriptionsRef.current,
+        () => {
+          try {
+            onGridLoadHook(grid, view, parameters);
+          } catch (error) {
+            logger.error("[WindowReferenceGrid] onGridLoad failed", error);
+          }
+        }
+      );
     }
   }, [
     rawRecords,
@@ -2444,6 +2644,7 @@ const WindowReferenceGrid = ({
     viewData,
     fieldController,
     gridResolver,
+    onRefreshFunction,
   ]);
 
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
@@ -2546,29 +2747,16 @@ const WindowReferenceGrid = ({
     let initialFilters: MRT_ColumnFiltersState = [];
     if (stableVisualFilterExpressions?.[parameter.dBColumnName || ""]) {
       const fieldExpressions = stableVisualFilterExpressions[parameter.dBColumnName || ""];
-      initialFilters = Object.entries(fieldExpressions).map(([fieldName, logic]: [string, any]) => {
-        let filterValue = "";
-
-        if (logic !== null && typeof logic === "object" && !Array.isArray(logic)) {
-          filterValue = logic.value ?? logic.values ?? "";
-        } else if (logic !== undefined && logic !== null) {
-          filterValue = String(logic);
-        }
-
+      initialFilters = Object.entries(fieldExpressions).map(([fieldName, logic]: [string, unknown]) => {
         // MRT columnFilters need to match the exact column `id` (often the Header name in this app)
         // rather than the raw database field name. We look it up in rawColumns.
-        const matchingColumn = rawColumns?.find(
-          (col: Column & { hqlName?: string }) =>
-            col.columnName?.toLowerCase() === fieldName.toLowerCase() ||
-            col.hqlName?.toLowerCase() === fieldName.toLowerCase() ||
-            col.id?.toLowerCase() === fieldName.toLowerCase()
-        );
+        const matchingColumn = findFilterColumn(rawColumns, fieldName);
 
         const columnId = matchingColumn?.id || matchingColumn?.header || fieldName;
 
         return {
           id: columnId,
-          value: filterValue,
+          value: toColumnFilterSeedValue(matchingColumn, logic),
         };
       });
     }
@@ -2869,15 +3057,15 @@ const WindowReferenceGrid = ({
       gridControllerRef.current ?? undefined,
       fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
     );
-    const view = createViewProxy(gridLoadFormHandle, parameters, {
+    const view = createGridScriptView(gridLoadFormHandle, parameters, {
       messageBar,
       grid,
       controller: fieldController,
       viewController,
       gridResolver,
       data: viewData,
+      onRefreshFunction,
     });
-    grid.view = view;
     return { grid, view };
   }, [
     gridLoadFormHandle,
@@ -2888,6 +3076,7 @@ const WindowReferenceGrid = ({
     viewData,
     fieldController,
     gridResolver,
+    onRefreshFunction,
   ]);
 
   // Grid-cell variant of the item proxy passed to a per-column onChange / validator:
@@ -3213,15 +3402,15 @@ const WindowReferenceGrid = ({
         gridControllerRef.current ?? undefined,
         fieldController ? buildGridVisibility(fieldController, parameter.name) : undefined
       );
-      const view = createViewProxy(gridLoadFormHandle, parameters, {
+      const view = createGridScriptView(gridLoadFormHandle, parameters, {
         messageBar,
         grid,
         controller: fieldController,
         viewController,
         gridResolver,
         data: viewData,
+        onRefreshFunction,
       });
-      grid.view = view;
       return { record, view, grid };
     },
     [
@@ -3234,6 +3423,7 @@ const WindowReferenceGrid = ({
       viewController,
       gridResolver,
       viewData,
+      onRefreshFunction,
     ]
   );
 
@@ -3287,6 +3477,23 @@ const WindowReferenceGrid = ({
     [evaluateRowActions, runRowAction]
   );
 
+  // Column hosting the script row buttons (Classic clientclass component column), if any.
+  const rowActionsHostColumnId = useMemo(
+    () => findRowActionsHostColumnId(columns as Column[], hasRowActions),
+    [columns, hasRowActions]
+  );
+  // Script buttons left for the leading actions column (none when a column hosts them).
+  const hasLeadingRowActions = hasRowActions && !rowActionsHostColumnId;
+
+  // Stable host Cell reading the latest renderer, so the columns are not rebuilt on every record change.
+  const rowActionsCellRef = useRef(renderRowActionsCell);
+  rowActionsCellRef.current = renderRowActionsCell;
+  const RowActionsHostCell = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: MRT cell render args
+    ({ row }: any) => (row.original?.id ? rowActionsCellRef.current({ row }) : null),
+    []
+  );
+
   const finalColumns = useMemo(() => {
     const windowReferenceTab = parameter.window?.tabs?.[0];
     let fields: any[] = [];
@@ -3338,7 +3545,7 @@ const WindowReferenceGrid = ({
         if (isReadOnly) {
           // For Read-Only fields, override the Cell renderer
           // Exception: preserve custom Cell renderers from clientclass-based link columns
-          if (!col.clientclass) {
+          if (!hasClientclassCell(col as Column)) {
             newCol.Cell = ReadOnlyCellRenderer;
           }
           // Ensure Edit component is removed so it cannot be triggered
@@ -3348,13 +3555,18 @@ const WindowReferenceGrid = ({
           // Note: columns usually have default or custom cell renderers set in useColumns or earlier logic
         }
 
+        // As in Classic, the clientclass component column shows the row buttons instead of its value.
+        if (col.id === rowActionsHostColumnId) {
+          newCol.Cell = RowActionsHostCell;
+        }
+
         return newCol;
       });
 
-    // The script row-action buttons are rendered inside the leading actions
-    // column (the "mrt-row-actions" Cell override), not as a trailing column.
+    // The script row-action buttons are rendered inside the host column above or,
+    // without one, inside the leading actions column (the "mrt-row-actions" Cell override).
     return mappedColumns;
-  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
+  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap, rowActionsHostColumnId, RowActionsHostCell]);
 
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -3396,7 +3608,7 @@ const WindowReferenceGrid = ({
   const hasAnyDeletableRow = canDelete && (records || []).length > 0;
   const hasAnyActionableRow = hasLocallyAddedRow || hasAnyDeletableRow;
   // Creatable grids must own the create-row chrome too (see shouldShowRowActions).
-  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasRowActions, canAdd);
+  const showRowActions = shouldShowRowActions(hasAnyActionableRow, hasLeadingRowActions, canAdd);
   const enableEditingPredicate = useMemo(
     () => buildEnableEditingPredicate(finalColumns, windowReferenceTab, fieldReadOnlyMap),
     [finalColumns, windowReferenceTab, fieldReadOnlyMap]
@@ -3506,8 +3718,8 @@ const WindowReferenceGrid = ({
       positionActionsColumn: "first",
       displayColumnDefOptions: {
         "mrt-row-actions": {
-          size: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
-          minSize: hasRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          size: hasLeadingRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
+          minSize: hasLeadingRowActions ? ACTIONS_COLUMN_SIZE_WITH_SCRIPT : ACTIONS_COLUMN_SIZE_DEFAULT,
           enableResizing: false,
           // Center the "Actions" header label over the centered icon row.
           muiTableHeadCellProps: {
@@ -3527,7 +3739,7 @@ const WindowReferenceGrid = ({
               onDelete: handleDeleteRow,
               deleteRowLabel,
               // Script buttons render on real (persisted) rows only.
-              leadingActions: row.original?.id ? renderRowActionsCell({ row }) : null,
+              leadingActions: hasLeadingRowActions && row.original?.id ? renderRowActionsCell({ row }) : null,
             }),
         },
       },
@@ -3555,7 +3767,7 @@ const WindowReferenceGrid = ({
       enableRowSelectionFromMetadata,
       enableEditingPredicate,
       showRowActions,
-      hasRowActions,
+      hasLeadingRowActions,
       renderRowActionsCell,
     ]
   );

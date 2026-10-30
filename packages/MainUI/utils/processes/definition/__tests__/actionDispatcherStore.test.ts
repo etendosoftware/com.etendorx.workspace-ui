@@ -18,6 +18,7 @@
 import type { ActionDispatchContext } from "@/components/ProcessModal/utils/responseActionDispatcher";
 import {
   clearActionDispatchContext,
+  delegateActionDispatchContext,
   dispatchBuiltinAction,
   dispatchProcessReturnActions,
   getActionDispatchContext,
@@ -55,6 +56,39 @@ describe("actionDispatcherStore", () => {
     setActionDispatchContext(newCtx);
     clearActionDispatchContext(oldCtx);
     expect(getActionDispatchContext()).toBe(newCtx);
+  });
+
+  it("gives the launcher its context back when the nested modal on top of it clears", () => {
+    const launcherCtx = makeCtxMock();
+    const nestedCtx = makeCtxMock();
+    setActionDispatchContext(launcherCtx);
+    setActionDispatchContext(nestedCtx);
+
+    clearActionDispatchContext(nestedCtx);
+
+    expect(getActionDispatchContext()).toBe(launcherCtx);
+  });
+
+  it("clear without a context removes every registration", () => {
+    setActionDispatchContext(makeCtxMock());
+    setActionDispatchContext(makeCtxMock());
+
+    clearActionDispatchContext();
+
+    expect(getActionDispatchContext()).toBeNull();
+  });
+
+  it("a delegated context runs the handlers its getter returns at call time", () => {
+    const first = makeCtxMock();
+    const latest = makeCtxMock();
+    let current = first;
+    const delegate = delegateActionDispatchContext(() => current);
+
+    current = latest;
+    delegate.refreshParentGrid();
+
+    expect(latest.refreshParentGrid).toHaveBeenCalledTimes(1);
+    expect(first.refreshParentGrid).not.toHaveBeenCalled();
   });
 
   describe("dispatchBuiltinAction", () => {

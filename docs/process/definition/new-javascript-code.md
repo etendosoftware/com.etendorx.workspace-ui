@@ -23,6 +23,9 @@ for two audiences:
   migrated code to paste into the metadata columns. Section 10 is the actionable playbook for that
   audience.
 
+After changing the stored JavaScript of a process, export it to `com.etendoerp.metadata.template` so it reaches
+other environments: see [exporting-process-js.md](./exporting-process-js.md).
+
 **Companion document.** This file describes the *platform*. The per-process inventory — which
 processes are in scope, which hook points each uses, and the QA acceptance criteria — lives in
 [`process-definition-js-testing.md`](./process-definition-js-testing.md) and is the authority for *what
@@ -261,10 +264,19 @@ async (process, view) => {
 };
 ```
 
-Rules for this case: return `{ severity: 'error', text }` (or any `error` severity) to **abort** the
-submit; return `undefined` to **proceed**. Do **not** call `view.executeProcess()` here — the platform
-performs the submit itself, so calling it would double-submit. (On non-Window-Reference processes,
-`onProcess` keeps its full Section 5.2.1 behavior, including `view.executeProcess()`.)
+Rules for this case (`runPreSubmitValidation` + `resolvePreSubmitOutcome`,
+`packages/MainUI/components/ProcessModal/utils/preSubmitOutcome.ts`):
+
+- return `{ severity: 'error', text }` (or any `error` severity) to **abort** the submit and show the text
+  once, in the message bar (as Classic; no second "Process Error" banner);
+  an error **without text** aborts **silently** (Classic `clientSideValidationFail()` with no message,
+  e.g. a declined `confirm`);
+- return `undefined` (or anything that is not an error) to let the platform **proceed** with the submit;
+- calling `view.executeProcess()` is Classic `actionHandlerCall()`: it posts the very same Done payload,
+  and **that** response is handled as any execution (message, close, parent refresh, `retryExecution`). The
+  platform does **not** post again, whatever the script returns. Before ETP-5877 this double-submitted.
+
+(On non-Window-Reference processes, `onProcess` keeps its full Section 5.2.1 behavior.)
 
 ### 5.3 `em_etmeta_on_refresh` — process `onRefresh`
 
@@ -394,12 +406,13 @@ start with declarations.
 
 ### 6.5 Lifecycle & the nested-modal tab gating
 
-`onLoad` runs once per open (tracked by an identity ref) and is gated on `tab`; `onProcess` is gated on
-`tab`. The nested-process stack (Section 8.3) renders its modals from a root-level host that sits
-**outside** the tab context, so a nested modal has `tab === undefined` — meaning **`onLoad`/`onProcess`
-do not run in a nested modal**. By contrast, parameter `onChange` is bound to `form.watch` and is *not*
-tab-gated, so it **does** run inside a nested modal. Migration logic that must execute in a nested
-launch should live in a parameter `onChange`, not in `onLoad`/`onProcess`.
+`onLoad` runs once per open (tracked by an identity ref); `onLoad` and `onProcess` are gated by
+`shouldRunProcessLifecycleHooks` (`tab` present, or no `callerField`). The nested-process stack (Section 8.3)
+renders its modals from a root-level host **outside** the tab context, so a nested modal runs in its
+**owner's** tab and record (`ownerTab` / `ownerRecord`, the tab that launched the outermost process), as
+Classic runs a nested process with the launcher's `buttonOwnerView`. Since ETP-5877 a nested modal therefore
+has a `tab`, and **`onLoad`/`onProcess` run in it** like in Classic. Before, the nested modal had
+`tab === undefined` and both hooks were skipped. Parameter `onChange` is bound to `form.watch` and always runs.
 
 ### 6.6 `onChange` firing semantics
 
@@ -606,6 +619,12 @@ client's `/api` proxy, which injects the CSRF token server-side.
   exposes `getView`), so a migrated script can keep the literal Classic call. `getContextInfo()` returns
   the launching record's fields (keyed by `inputName`, e.g. `inpbpCurrencyId`) overlaid with the current
   parameter values.
+  `view.sourceView` is the launching tab: it keeps every property of the tab metadata and adds the
+  Classic `view.sourceView.getContextInfo()`, built from the launching record by `buildSourceView`
+  (`packages/MainUI/utils/processes/definition/sourceView.ts`). Unlike `view.getContextInfo()` it carries
+  no parameter values, only the record values by `inputName` plus the tab's standard properties
+  (`inpTabId`, `inpwindowId`, `inpTableId`, `inpKeyName`, `keyColumnName`) and the key column under its
+  DB column name (e.g. `Fin_Financial_Account_ID`), as Classic `OBStandardView.getContextInfo()` does.
 - **Action methods — live only when a controller is injected by the modal:** `view.refresh()`,
   `view.handleReadOnlyLogic()`, `view.handleButtonsStatus()`, `view.fireOnPause()`,
   `view.selectAllRecords()`, `view.getSelection()`, `view.openProcess(params)`,
@@ -694,6 +713,34 @@ This deferral is intentional: read-only data is always safe, and any unported ac
       handler doing `jsonData.getBoolean("<key>")` throws `JSONObject["<key>"] not found.`. Any flag a
       script forwards to the backend must be a real boolean — which is exactly why `isVisible()` always
       returns one. When you forward a computed flag, prefer coercing it (`Boolean(...)` / `=== true`).
+- **Script-assigned properties are shared by the modal's views.** Each hook receives its own `view` object,
+  but a property the script adds to it (one the view does not define, e.g. `view.unmatchButton` set in onLoad)
+  is stored in a per-modal scope (`ViewData.scriptScope`, `withScriptScope` in `scriptProxies.ts`) and read
+  back from any other view of the same modal: onLoad, onChange, onProcess, onGridLoad, row actions. This mirrors
+  Classic, where every hook gets the same view object. The view's own properties (platform surface, hook data
+  such as `_buttonValue`) stay per view, and enumeration, spreads and JSON only see them. The scope is emptied
+  when the modal opens, and a nested modal has its own.
+- **The form is shared too, and knows its view.** A property a script adds to `view.theForm` (e.g. Add
+  Payment's `form._overpaymentOriginalValueMap`, set in onLoad and read on a later change) is kept for every
+  hook of the modal, in a form scope tied to the view scope; it is emptied with it. `form.paramWindow` is the
+  view, as Classic, so a helper that only receives the form can still call `view` methods (`fireOnPause`,
+  `getContextInfo`).
+- **Parameter ids and column names, as Classic.** `item.paramId` is the parameter's `OBUIAPP_Parameter_ID`
+  (Classic `form.getField(name).paramId`): handlers such as `AddPaymentDisplayLogicActionHandler` and
+  `AddPaymentReloadLabelsActionHandler` look parameters up by id and fail with a name. `view.getContextInfo()`
+  also keys each parameter value by its `dBColumnName` (besides the form key), as a Classic parameter window
+  does: a handler reading `context.difference` finds it.
+- **Parameters with the same name.** The form keys each field by the parameter name, so two parameters
+  sharing one (Add Payment's visible `difference` and hidden `expectedDifference`, both "There is a difference
+  of") would share a field and its value. The modal keys the later one (by sequence) by its `dBColumnName` and
+  keeps the shared name as its caption (`withUniqueParameterNames`, `uniqueParameterNames.ts`).
+- **`onGridLoad` subscriptions are per execution.** `onGridLoad` runs again on every data delivery. The grid
+  subscriptions it registers (`onDataArrived`, `onSelectionChanged`, `onRecordChange`, `onSelectionToggle`)
+  replace the ones its previous execution registered (`runWithScopedSubscriptions`) instead of piling up.
+  Subscriptions made from other hooks (e.g. onLoad) are kept.
+- **Grid values in the context:** the `onProcess` view's `getContextInfo()` also carries the grid
+  parameters' values, `{ <gridParam>: { _selection, _allRows } }` (`ViewData.getGridValues`), as Classic
+  `getContextInfo()` does.
 - **Grid** (`view.theForm.getItem('<param>').canvas.viewGrid`, or the `grid` argument of `onGridLoad`):
   selection (`getSelectedRecords`, `selectRecord`, `deselectRecord`, `selectSingleRecord`,
   `deselectAllRecords`, `userSelectAllRecords`), row access (`getRecord`, `getRecordIndex`,
@@ -781,10 +828,36 @@ Anything not implemented throws a clear error rather than failing silently.
 - **New UI:** `view.openProcess(params)` (and `view.standardWindow.openProcess`) pushes onto a
   React-free LIFO stack (`packages/MainUI/utils/processes/definition/processStack.ts`); the root-level
   `ProcessStackHost` (`packages/MainUI/components/ProcessModal/ProcessStackHost.tsx`) renders one
-  `ProcessDefinitionModal` per entry (layered by MUI). On child close/success the parent's
-  `onRefreshFunction(parentView)` auto-fires, and `callerField` (with its `view`) is forwarded to the
-  child (Section 7.4). These methods are live only with a `ViewController`.
-- **Note:** recall the tab-gating nuance in Section 6.5 for what runs inside a nested modal.
+  `ProcessDefinitionModal` per entry (layered by MUI). The entry is built by `buildNestedLaunch`
+  (`nestedLaunch.ts`). These methods are live only with a `ViewController`.
+  - **Context:** the child runs in the launcher's tab and record (Section 6.5). Its defaults request, grid
+    datasource (`buttonOwnerViewTabId`, the owner's `@Entity.property@` session keys) and submit carry that
+    context, as Classic's `buttonOwnerView`. The host also provides the launcher's tab selection graph (`ownerGraph`,
+    `SelectContext`), because it renders outside the window providers. The child reads the same selected records
+    as the launcher, and the session keys (e.g. `@FIN_Financial_Account.id@`) resolve.
+  - **`externalParams`:** added to the defaults context, sent as grid datasource request params
+    (`applyExternalParams`) and added to the submit `_params`, as Classic does.
+  - **`callerField`:** the script's own (e.g. `{ record: row, view }`, Classic `callerField: me`), or the
+    launcher's (Section 7.4). Pass it explicitly when the child reads `view.callerField.record`.
+  - **`callerContext`:** the launcher's values, added to the child's defaults context only (after
+    `externalParams`), as Classic adds `callerField.view.getContextInfo()`. A selector's "+" sends the
+    process values by `dBColumnName` ([process parameter selector](../../components/process-parameter-selector.md#selector-search-and-add-buttons)).
+  - **`callerField.setValueFromRecord`:** when the child answers `setSelectorValueFromRecord`, its record
+    (`{value, map}`) is written into the selector that launched it, as Classic `callerField.setValueFromRecord`.
+    Without it the action only logs a warning.
+  - **Response actions:** each open modal registers its action handlers on a stack
+    (`actionDispatcherStore.ts`); the topmost receives the actions, and closing it gives the launcher its
+    handlers back.
+  - **Close:** only a **successful** execution refreshes the caller view
+    (`callerField.view.onRefreshFunction(callerField.view)`, else the launcher's `onRefresh`), once. X /
+    Cancel closes without refreshing, as Classic.
+  - **Dialogs:** only the topmost modal renders the script dialog host (`isTopmostProcessModal`), so a
+    child's `confirm` is drawn once.
+  - **Message bar:** each modal shows only its own messages, as each Classic popup has its own bar. The bar
+    store is a singleton, so a child sets the launcher's message aside when it opens (`isolateMessageBar`) and
+    restores it when it closes, and only the topmost modal renders the bar. A child's error (e.g. "This
+    transaction type must define either a Payment or a G/L Item") no longer shows in the launcher, nor stays
+    there after the child closes.
 
 ### 8.4 Per-row grid plugin
 
@@ -792,9 +865,16 @@ Anything not implemented throws a clear error rather than failing silently.
   per row.
 - **New UI:** declarative `grid.setRowActions(renderer)` (alias `setRecordComponent`). The renderer
   receives `{ record, view, grid }` and returns `{ buttons: [{ icon, prompt, action: (ctx) => void }] }`
-  or `null`. Icon presets: `search`, `add`, `clearRight`. Buttons render in the grid's leading
-  "Actions" column; a click never toggles row selection; throwing renderers/actions are caught and
-  logged. No arbitrary React from compiled strings.
+  or `null`. Icon presets: `search`, `add`, `clearRight`. Buttons render inside the column whose field
+  declares a Classic `clientclass` component the new UI does not render by itself (not a link, not
+  `OBLevelImg`; e.g. Match Statement's `APRMMatchStatGridButtonsComponent` on *Match*), as Classic does
+  (`findRowActionsHostColumnId`); without such a column they render in the grid's leading "Actions"
+  column. A click never toggles row selection; throwing renderers/actions are caught and logged. No
+  arbitrary React from compiled strings.
+- **`view` inside the grid hooks** (`onGridLoad`, row actions, per-column cell hooks) is built by
+  `createGridScriptView` and exposes the process `onRefresh` hook as `view.onRefreshFunction`, like the
+  onLoad view. So the Classic idiom `view.onRefreshFunction(view)` in a row-action callback refreshes the
+  grid. Before ETP-5877 it was `undefined` there and the callback threw before doing anything else.
 
 ### 8.5 Embedded interactive grid
 
@@ -906,6 +986,15 @@ or non-OK HTTP failure it invokes the error callback (or the callback) with `{ s
 script inspects `data`. This adapter is preferred over rewriting every call site to `await`, because
 `new Function`-compiled bodies cannot use top-level `await` cleanly and it enables near line-for-line
 ports.
+
+The arguments keep their Classic transport: `data` (2nd) is the POST body and `requestParams` (3rd)
+travels as URL query parameters, which is where `BaseActionHandler` reads `parameters.get(...)`.
+`encodeRequestParams` mirrors SmartClient `encodeParameter`: strings are sent as-is, any other value is
+JSON-encoded (an object such as `context` arrives as JSON, a boolean as `"true"` / `"false"`), and
+`null` / `undefined` values and the reserved `_action` key are skipped. An empty `requestParams` (`{}`,
+the common case) leaves the kernel URL unchanged. Before ETP-5877 the 3rd argument was dropped, so a
+handler reading it (e.g. `MatchStatementOnLoadActionHandler` and its `context` / `executeMatching`)
+failed.
 
 ### 8.8 `OB.Datasource` access
 

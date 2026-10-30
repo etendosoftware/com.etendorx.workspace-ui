@@ -33,24 +33,45 @@ import {
 } from "@/components/ProcessModal/utils/responseActionDispatcher";
 import { logger } from "@/utils/logger";
 
-let current: ActionDispatchContext | null = null;
+/**
+ * Registered contexts, in mount order. A nested process modal registers on top of
+ * its launcher; the active context is the topmost one, and closing the nested
+ * modal gives the launcher its handlers back.
+ */
+const contexts: ActionDispatchContext[] = [];
 
-/** Registers the modal's handlers as the active dispatch context. */
+/** Registers the modal's handlers as the active dispatch context, on top of the open ones. */
 export function setActionDispatchContext(ctx: ActionDispatchContext): void {
-  current = ctx;
+  contexts.push(ctx);
 }
 
 /**
- * Clears the active context. When a `ctx` is given it only clears if it is still
- * the active one, so a remounting modal does not wipe a newer registration.
+ * Removes `ctx` from the registered contexts, so the one below becomes active
+ * again; a newer registration stays active. Without `ctx`, removes them all.
  */
 export function clearActionDispatchContext(ctx?: ActionDispatchContext): void {
-  if (!ctx || current === ctx) current = null;
+  if (!ctx) {
+    contexts.length = 0;
+  } else {
+    const index = contexts.lastIndexOf(ctx);
+    if (index !== -1) contexts.splice(index, 1);
+  }
 }
 
 /** The active context, or `null` when no process modal is mounted. */
 export function getActionDispatchContext(): ActionDispatchContext | null {
-  return current;
+  return contexts.at(-1) ?? null;
+}
+
+/**
+ * A context that always delegates to the one `getLatest` returns. A modal
+ * registers it once, so its place in the stack does not change when its
+ * handlers are rebuilt.
+ */
+export function delegateActionDispatchContext(getLatest: () => ActionDispatchContext): ActionDispatchContext {
+  return new Proxy({} as ActionDispatchContext, {
+    get: (_target, key) => getLatest()[key as keyof ActionDispatchContext],
+  });
 }
 
 /**
@@ -59,6 +80,7 @@ export function getActionDispatchContext(): ActionDispatchContext | null {
  * classic dispatcher, which returns `false` for an unhandled action name.
  */
 export function dispatchBuiltinAction(name: string, payload: unknown): boolean {
+  const current = getActionDispatchContext();
   if (!current) {
     logger.warn("[ProcessModal] action dispatch with no active context:", name);
     return false;
@@ -77,6 +99,7 @@ export function dispatchBuiltinAction(name: string, payload: unknown): boolean {
  * setSelectorValueFromRecord, report actions) takes effect through this pass.
  */
 export function dispatchProcessReturnActions(rawData: unknown): void {
+  const current = getActionDispatchContext();
   if (!current) return;
   for (const action of dispatchResponseActions(rawData)) {
     if (isHandledByLegacyFlow(action)) continue;
