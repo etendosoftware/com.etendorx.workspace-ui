@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import Page from "@/app/(main)/window/page";
 import { useWindowStore } from "@/stores/windowStore";
 import { IFRAME_SANDBOX_PERMISSIVE } from "@/utils/iframeSandbox";
@@ -198,6 +198,85 @@ describe("Window Page", () => {
       fireEvent.click(screen.getByTestId("AccessDeniedScreen"));
 
       expect(setAccessDeniedWindowCount).toHaveBeenCalledWith(0);
+    });
+  });
+  describe("Window layers", () => {
+    const LEAVING_FADE_MS = 120;
+    const layerOf = (identifier: string) => screen.getByTestId(`Window__${identifier}`).parentElement as HTMLElement;
+    const twoWindows = (active: "A" | "B") => ({
+      A: { windowIdentifier: "A", isActive: active === "A" },
+      B: { windowIdentifier: "B", isActive: active === "B" },
+    });
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("shows the layer of a window that is open from the start without a z-index", () => {
+      mockWindowStore({ windows: twoWindows("A") });
+
+      render(<Page />);
+
+      expect(layerOf("A")).toHaveStyle({ visibility: "visible", opacity: "1", zIndex: "auto" });
+    });
+
+    it("keeps the window being left on screen while it fades out under the one opened for the first time", () => {
+      mockWindowStore({ windows: twoWindows("A") });
+      const { rerender } = render(<Page />);
+
+      mockWindowStore({ windows: twoWindows("B") });
+      rerender(<Page />);
+
+      // A window mounted already visible is not "entering": it needs no z-index, as it follows the other in the DOM
+      expect(layerOf("A")).toHaveStyle({ visibility: "visible", opacity: "0", zIndex: "0", pointerEvents: "none" });
+      expect(layerOf("B")).toHaveStyle({ visibility: "visible", opacity: "1", zIndex: "auto", pointerEvents: "auto" });
+    });
+
+    it("hides the window that was left and frees the one entered from its z-index once the fade is over", () => {
+      mockWindowStore({ windows: twoWindows("A") });
+      const { rerender } = render(<Page />);
+      mockWindowStore({ windows: twoWindows("B") });
+      rerender(<Page />);
+
+      act(() => {
+        jest.advanceTimersByTime(LEAVING_FADE_MS);
+      });
+
+      expect(layerOf("A")).toHaveStyle({ visibility: "hidden", zIndex: "0" });
+      expect(layerOf("B")).toHaveStyle({ visibility: "visible", zIndex: "auto" });
+    });
+
+    it("lets a window go back on top when it is entered again", () => {
+      mockWindowStore({ windows: twoWindows("A") });
+      const { rerender } = render(<Page />);
+      mockWindowStore({ windows: twoWindows("B") });
+      rerender(<Page />);
+      act(() => {
+        jest.advanceTimersByTime(LEAVING_FADE_MS);
+      });
+
+      mockWindowStore({ windows: twoWindows("A") });
+      rerender(<Page />);
+
+      expect(layerOf("A")).toHaveStyle({ visibility: "visible", zIndex: "1" });
+      expect(layerOf("B")).toHaveStyle({ visibility: "visible", opacity: "0", zIndex: "0" });
+    });
+
+    it("does not leave a timer behind when the window is left before its fade ends", () => {
+      mockWindowStore({ windows: twoWindows("A") });
+      const { rerender, unmount } = render(<Page />);
+      mockWindowStore({ windows: twoWindows("B") });
+      rerender(<Page />);
+      mockWindowStore({ windows: twoWindows("A") });
+      rerender(<Page />);
+
+      unmount();
+
+      expect(jest.getTimerCount()).toBe(0);
     });
   });
 });
