@@ -67,4 +67,36 @@ describe("useFrozenWhileHidden", () => {
     rerender({ visible: false, value: "b" });
     expect(result.current).toBe("a");
   });
+
+  describe("with keepWhenUnchanged", () => {
+    const render = (keys: unknown[]) =>
+      renderHook(({ visible, value, keys }) => useFrozenWhileHidden(visible, value, keys, true), {
+        initialProps: { visible: true, value: "a", keys },
+      });
+
+    it("keeps the old value when shown again with the same keys", () => {
+      const rows = ["r1"];
+      const { result, rerender } = render([rows]);
+      rerender({ visible: false, value: "b", keys: [rows] });
+      rerender({ visible: true, value: "c", keys: [rows] });
+      expect(result.current).toBe("a");
+    });
+
+    it("takes the current value when shown again after a key changed", () => {
+      const { result, rerender } = render([["r1"]]);
+      const refetched = ["r1", "r2"];
+      rerender({ visible: false, value: "b", keys: [refetched] });
+      rerender({ visible: true, value: "c", keys: [refetched] });
+      expect(result.current).toBe("b");
+    });
+
+    it("follows every render once the subtree is on screen", () => {
+      const rows = ["r1"];
+      const { result, rerender } = render([rows]);
+      rerender({ visible: false, value: "b", keys: [rows] });
+      rerender({ visible: true, value: "c", keys: [rows] });
+      rerender({ visible: true, value: "d", keys: [rows] });
+      expect(result.current).toBe("d");
+    });
+  });
 });

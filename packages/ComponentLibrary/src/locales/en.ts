@@ -283,6 +283,7 @@ const en = {
       noType: "No type",
       noRecord: "No Row Selected",
       emptyRecords: "No records to show",
+      multipleParentsSelected: "Multiple parent records selected. You can only view children for 1 parent at a time.",
     },
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
@@ -291,6 +292,7 @@ const en = {
       showingRecords: "Showing {count} records",
       showingPartialRecords: "Showing {loaded} of {total} records",
       selectedRecords: "{count} selected",
+      titleCount: "({count} records)",
       recordsLoaded: "Records loaded",
     },
     selectAll: {

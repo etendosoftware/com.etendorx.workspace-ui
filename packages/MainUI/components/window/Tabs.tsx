@@ -26,6 +26,7 @@ import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
 import TabContextProvider from "@/contexts/tab";
+import { ActiveTabProvider } from "@/contexts/ActiveTabContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -46,6 +47,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(initialTab.id);
   const [isPending, startTransition] = useTransition();
+  // A tab the pointer is over is mounted (hidden) before it is clicked, so its grid has been built and has
+  // fetched by the time the click lands. The ref keeps the ids; the state only triggers the render.
+  const [, setPrewarmedCount] = useState(0);
 
   useEffect(() => {
     if (initialActiveTab) {
@@ -80,7 +84,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   useEffect(() => {
     setCustomHeight(storedHeight);
   }, [storedHeight]);
-  const { setFocus } = useFocusContext();
+  // Only moves the focus: an empty scope keeps this tab bar out of the focus re-renders.
+  const { setFocus } = useFocusContext([]);
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
     tabId: "",
@@ -121,6 +126,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     },
     [setActiveLevel, startTransition, setActiveTabsByLevel, current.id, setFocus]
   );
+
+  const handlePrewarm = useCallback((tab: TabType) => {
+    if (mountedTabIdsRef.current.has(tab.id)) return;
+    mountedTabIdsRef.current.add(tab.id);
+    startTransition(() => setPrewarmedCount((count) => count + 1));
+  }, []);
 
   const handleDoubleClick = useCallback(
     (tab: TabType) => {
@@ -169,6 +180,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         isExpanded={isExpanded}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        onPrewarm={collapsed ? undefined : handlePrewarm}
         onClose={handleClose}
         data-testid={`SubTabsSwitch__${current?.id ?? activeTabId ?? "6fa401"}`}
       />
@@ -209,21 +221,30 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         // Render every visited tab and toggle visibility with CSS so that
         // tab state (scroll position, column filters, table data) is preserved
         // across switches without re-mounting or re-fetching data.
-        tabs.map((tab) => {
-          if (!mountedTabIdsRef.current.has(tab.id)) return null;
-          const isActive = tab.id === current.id;
-          return (
-            <div
-              key={tab.id}
-              className={`flex flex-col flex-1 h-full min-h-0${isActive ? "" : " hidden"}`}
-              onClick={() => isActive && setFocus(tab.id)}
-              onKeyDown={(e) => isActive && (e.key === "Enter" || e.key === " ") && setFocus(tab.id)}>
-              <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab?.id ?? activeTabId ?? "6fa401"}`}>
-                <Tab tab={tab} collapsed={collapsed} data-testid={`Tab__${tab?.id ?? activeTabId ?? "6fa401"}`} />
-              </TabContextProvider>
-            </div>
-          );
-        })
+        // The tabs share one grid cell, so a tab measures the same whether it is shown or not: a hidden tab
+        // that changed size would measure its grid again, and redraw it, when shown.
+        <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
+          {tabs.map((tab) => {
+            if (!mountedTabIdsRef.current.has(tab.id)) return null;
+            const isActive = tab.id === current.id;
+            return (
+              <div
+                key={tab.id}
+                className={`flex flex-col col-start-1 row-start-1 min-h-0${isActive ? "" : " invisible pointer-events-none"}`}
+                style={isActive ? undefined : { contentVisibility: "hidden" }}
+                onClick={() => isActive && setFocus(tab.id)}
+                onKeyDown={(e) => isActive && (e.key === "Enter" || e.key === " ") && setFocus(tab.id)}>
+                <ActiveTabProvider value={isActive}>
+                  <TabContextProvider
+                    tab={tab}
+                    data-testid={`TabContextProvider__${tab?.id ?? activeTabId ?? "6fa401"}`}>
+                    <Tab tab={tab} collapsed={collapsed} data-testid={`Tab__${tab?.id ?? activeTabId ?? "6fa401"}`} />
+                  </TabContextProvider>
+                </ActiveTabProvider>
+              </div>
+            );
+          })}
+        </div>
       )}
     </TabContainer>
   );

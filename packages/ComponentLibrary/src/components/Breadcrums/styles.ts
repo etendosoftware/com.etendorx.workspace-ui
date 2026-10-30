@@ -45,8 +45,8 @@ export const useStyle = () => {
           },
         },
         breadcrumbTypography: {
-          fontSize: "1.375rem",
-          fontWeight: "600",
+          fontSize: "1.25rem",
+          fontWeight: "700",
           color: theme.palette.baselineColor.neutral[100],
           "&:hover": {
             textDecoration: "underline",
@@ -66,8 +66,8 @@ export const useStyle = () => {
           display: "flex",
           alignItems: "center",
           padding: "0.25rem 0",
-          fontSize: "1.375rem",
-          fontWeight: "600",
+          fontSize: "1.25rem",
+          fontWeight: "700",
           color: theme.palette.baselineColor.neutral[100],
         },
         textButton: {

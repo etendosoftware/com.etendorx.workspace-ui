@@ -78,9 +78,13 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
 
     await expect(app.grid.row(orderNumber)).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("tbody tr:visible")).toHaveCount(1, { timeout: 10_000 });
-    await expect(page.getByTestId("RecordCounter-simple").filter({ visible: true }).first()).toBeVisible({
-      timeout: 10_000,
-    });
+    // The root grid shows its record count next to the window title: "(1 records)", "(1 registros)"
+    await expect(page.getByTestId("TitleRecordCount__table").filter({ visible: true }).first()).toHaveText(
+      /\(1 \w+\)/,
+      {
+        timeout: 10_000,
+      }
+    );
 
     // ── Step 8: Select row and create Purchase Order ──────────────────────────
     await app.grid.selectRow(orderNumber);

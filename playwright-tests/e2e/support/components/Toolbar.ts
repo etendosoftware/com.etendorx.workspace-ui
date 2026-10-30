@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
+import { runAndWaitForDatasource, runAndWaitForFormInitialization, runAndWaitForResponse } from "../wait";
 import { atLevel, exactText, type TabLevel } from "./level";
 
 /** Toolbar actions; each button carries the semantic class `toolbar-button-<action>`. */
@@ -53,6 +53,12 @@ export class Toolbar {
     return atLevel(this.scope.locator(`button.toolbar-button-${action}:visible`), level);
   }
 
+  /** Closes the record open in form view: its close button sits next to the record pagination. */
+  async closeRecord(level: TabLevel = "header"): Promise<void> {
+    const navigation = atLevel(this.scope.locator('[data-testid="record-navigation"]:visible'), level);
+    await navigation.getByTestId("icon-button").click();
+  }
+
   /** Creates a new record. */
   async newRecord(level: TabLevel = "header"): Promise<void> {
     const button = this.scope === this.page ? this.button("new", level) : this.newRecordInTab();
@@ -72,7 +78,9 @@ export class Toolbar {
    * (In form view `newRecord` reaches the first text button, i.e. the one of the child tab.)
    */
   async newRecordInForm(): Promise<void> {
-    await this.scope.getByTestId(`IconButton__${NEW_RECORD_KEY}`).filter({ visible: true }).first().click();
+    const button = this.scope.getByTestId(`IconButton__${NEW_RECORD_KEY}`).filter({ visible: true }).first();
+    // The form still shows the previous record until the new one is initialized: wait for it
+    await runAndWaitForFormInitialization(this.page, () => button.click());
   }
 
   /**

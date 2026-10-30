@@ -29,7 +29,7 @@ export default function Label({ htmlFor, name, onClick, onKeyDown, link }: Label
   return (
     <label
       htmlFor={htmlFor}
-      className={`overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] ${link ? "text-(--color-dynamic-main) cursor-pointer" : "text-gray-700"}`}
+      className={`overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] ${link ? "text-(--ui-link) cursor-pointer" : "text-gray-700"}`}
       onClick={(e) => onClick?.(e)}
       onKeyDown={(e) => onKeyDown?.(e)}
       {...(link

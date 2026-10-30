@@ -18,6 +18,8 @@
 "use client";
 
 import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useTopBarSlots } from "@/contexts/TitleActionsSlot";
+import { createPortal } from "react-dom";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -183,6 +185,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    */
   const windowIdentifier = useCurrentWindowIdentifier();
   const { getSelectedRecord } = useWindowContext();
+  const topBarSlots = useTopBarSlots();
 
   const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -338,43 +341,49 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     );
   }
 
+  // The breadcrumb always lives in the top bar; inline only when there is no bar (e.g. isolated renders).
+  const breadcrumbElement = <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />;
+  const breadcrumb = topBarSlots.title ? createPortal(breadcrumbElement, topBarSlots.title) : breadcrumbElement;
+
   return (
-    <TabRefreshProvider data-testid="TabRefreshProvider__895626">
-      <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />
-      <div className="flex flex-col flex-1 overflow-hidden w-full">
-        {filteredGroupedTabs.map((tabs, index) => {
-          if (tabs.length === 0) return null;
+    <>
+      <TabRefreshProvider data-testid="TabRefreshProvider__895626">
+        {breadcrumb}
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
+          {filteredGroupedTabs.map((tabs, index) => {
+            if (tabs.length === 0) return null;
 
-          const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
+            const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
-          // Determine the active parent tab
-          // For level 0, there is no parent (null)
-          // For level > 0, get the active tab of the PREVIOUS GROUP's level
-          let activeParentTab = null;
-          if (index > 0) {
-            const parentLevel = groupedTabs[index - 1][0].tabLevel;
-            activeParentTab = getActiveTabForLevel(parentLevel);
-          }
+            // Determine the active parent tab
+            // For level 0, there is no parent (null)
+            // For level > 0, get the active tab of the PREVIOUS GROUP's level
+            let activeParentTab = null;
+            if (index > 0) {
+              const parentLevel = groupedTabs[index - 1][0].tabLevel;
+              activeParentTab = getActiveTabForLevel(parentLevel);
+            }
 
-          // Defer child tab group mount until the user has selected a parent record.
-          // This prevents DynamicTable from firing N+1 fetches before any selection.
-          if (index > 0 && activeParentTab) {
-            const parentSelectedId = getSelectedRecord(windowIdentifier ?? "", activeParentTab.id);
-            if (!parentSelectedId) return null;
-          }
+            // Defer child tab group mount until the user has selected a parent record.
+            // This prevents DynamicTable from firing N+1 fetches before any selection.
+            if (index > 0 && activeParentTab) {
+              const parentSelectedId = getSelectedRecord(windowIdentifier ?? "", activeParentTab.id);
+              if (!parentSelectedId) return null;
+            }
 
-          return (
-            <TabsGroupRenderer
-              key={tabs[0].id}
-              tabs={tabs}
-              activeParentTab={activeParentTab}
-              isTopGroup={isTopGroup}
-              getActiveTabForLevel={getActiveTabForLevel}
-              data-testid="TabsGroupRenderer__895626"
-            />
-          );
-        })}
-      </div>
-    </TabRefreshProvider>
+            return (
+              <TabsGroupRenderer
+                key={tabs[0].id}
+                tabs={tabs}
+                activeParentTab={activeParentTab}
+                isTopGroup={isTopGroup}
+                getActiveTabForLevel={getActiveTabForLevel}
+                data-testid="TabsGroupRenderer__895626"
+              />
+            );
+          })}
+        </div>
+      </TabRefreshProvider>
+    </>
   );
 }

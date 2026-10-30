@@ -16,7 +16,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
 
     // ── Step 2: Create new Purchase Invoice ──────────────────────────────────
     await app.toolbar.newRecord();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
 
     // Business Partner: Vendor A
     const vendor = data.BUSINESS_PARTNER.VENDOR_A;

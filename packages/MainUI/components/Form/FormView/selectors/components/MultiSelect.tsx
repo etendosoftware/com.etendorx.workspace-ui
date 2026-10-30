@@ -335,6 +335,13 @@ const MultiSelect = memo(function MultiSelectCmp({
     t,
   ]);
 
+  let openStyles = "";
+  if (isOpen) {
+    openStyles = enableTextFilterLogic
+      ? "rounded-md border border-(--ui-text-muted)!"
+      : "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light";
+  }
+
   return (
     <div
       ref={wrapperRef}
@@ -343,16 +350,42 @@ const MultiSelect = memo(function MultiSelectCmp({
       <div
         onClick={handleClick}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
+          ${openStyles} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
-        <div
-          className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length
-              ? "text-baseline-90 font-medium placeholder-baseline-90"
-              : "text-baseline-50 font-medium placeholder-baseline-50"
-          }`}>
-          {displayText}
-        </div>
+        {enableTextFilterLogic && selectedLabels.length > 0 ? (
+          // Table filters show the selection as a removable chip, like the column filter design.
+          <div className="flex min-w-0 max-w-[calc(100%-40px)] items-center gap-1" data-testid="MultiSelect__chips">
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-(--ui-chip-bg) px-2 py-0.5 text-xs font-medium text-(--ui-text)">
+              <span className="truncate">{selectedLabels[0]}</span>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  aria-label="Remove"
+                  tabIndex={NOT_TABBABLE}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const firstSelected = options.find((o) => selectedValues.includes(o.id));
+                    if (firstSelected) handleToggle(firstSelected.id);
+                  }}
+                  className={`shrink-0 ${TEXT_MUTED} ${HOVER_TEXT_COLOR}`}>
+                  <CloseIcon className="h-3 w-3" data-testid="CloseIcon__chip" />
+                </button>
+              )}
+            </span>
+            {selectedLabels.length > 1 && (
+              <span className={`shrink-0 text-xs ${TEXT_MUTED}`}>{`+${selectedLabels.length - 1}`}</span>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
+              selectedLabels.length
+                ? "text-baseline-90 font-medium placeholder-baseline-90"
+                : "text-slate-400 font-medium placeholder-slate-400"
+            }`}>
+            {displayText}
+          </div>
+        )}
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
             <button
@@ -376,7 +409,8 @@ const MultiSelect = memo(function MultiSelectCmp({
         isOpen={isOpen}
         triggerRef={wrapperRef as React.RefObject<HTMLElement>}
         portalRef={portalRef as React.RefObject<HTMLDivElement>}
-        minWidth={256}
+        // Table filters: the panel matches its column instead of sticking out of it.
+        minWidth={enableTextFilterLogic ? 0 : 256}
         data-testid="DropdownPortal__cb81f7">
         <SearchInput
           searchTerm={searchTerm}

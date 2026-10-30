@@ -49,7 +49,7 @@ export const TextInput = ({
     const base = `w-full ${paddingLeft} ${paddingRight} rounded-t tracking-normal h-10.5 border-0 
       border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
       text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
-      focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
+      focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none 
       hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)`;
 
     const disabledStyles =

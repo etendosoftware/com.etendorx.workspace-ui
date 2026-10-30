@@ -69,6 +69,7 @@ const renderHeader = () =>
       groups={[sectionOf("Main", 3), sectionOf("Dimensions", 3)]}
       statusModal={{ open: false } as any}
       hideStatusModal={jest.fn()}
+      minSectionsForNavigator={1}
     />
   );
 

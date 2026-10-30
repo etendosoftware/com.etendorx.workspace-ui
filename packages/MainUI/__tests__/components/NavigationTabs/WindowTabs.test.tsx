@@ -407,7 +407,7 @@ describe("WindowTabs", () => {
     expect(mockSetWindowActive).toHaveBeenCalledWith({ windowIdentifier: "window-id" });
   });
 
-  it("renders separator between tabs correctly", () => {
+  it("renders no separators between tabs", () => {
     setWindowStoreState({
       w1: {
         windowIdentifier: "w1",
@@ -440,15 +440,8 @@ describe("WindowTabs", () => {
 
     const { container } = render(<WindowTabs />);
 
-    // We can check for the separator div class
-    // className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5"
-    const separators = container.querySelectorAll(".h-4.w-0\\.5");
-    // activeIndex = 0.
-    // i=0: showSeparator = (0 !== -1 && 0 !== 0) = False.
-    // i=1: showSeparator = (1 !== -1 && 1 !== 0) = True. Separator after W2.
-    // i=2: Last element, never has separator after it.
-
-    expect(separators.length).toBe(1);
+    // The tab bar has no separators between tabs (they used to appear and disappear next to the active one).
+    expect(container.querySelectorAll(".h-4.w-0\\.5")).toHaveLength(0);
   });
 
   it("uses metadata name when window title is empty", () => {

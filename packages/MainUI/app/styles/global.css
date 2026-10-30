@@ -39,10 +39,10 @@
   --color-background: #c6d3ff;
 
   /* Dynamic Colors */
-  --color-dynamic-main: #004aca;
-  --color-dynamic-dark: #00296f;
-  --color-dynamic-light: #d5e3fc;
-  --color-dynamic-contrast-text: #e5efff;
+  --color-dynamic-main: #2a1757;
+  --color-dynamic-dark: #1b0f3a;
+  --color-dynamic-light: #dcd6ec;
+  --color-dynamic-contrast-text: #ece8f6;
 
   /* Baseline Neutral Colors */
   --color-baseline-0: #fcfcfd;
@@ -70,10 +70,10 @@
   --color-transparent-neutral-80: rgba(0, 3, 13, 0.8);
   --color-transparent-neutral-100: rgba(0, 3, 13, 1);
   /* Etendo Primary */
-  --color-etendo-main: #004aca;
-  --color-etendo-dark: #00296f;
-  --color-etendo-contrast-text: #e5efff;
-  --color-etendo-light: rgba(0, 74, 202, 0.05);
+  --color-etendo-main: #2a1757;
+  --color-etendo-dark: #1b0f3a;
+  --color-etendo-contrast-text: #ece8f6;
+  --color-etendo-light: rgba(42, 23, 87, 0.05);
 
   /* Specific Colors */
   --color-success-main: #008000;
@@ -196,7 +196,58 @@ body {
   background-color: #242424;
   font-size: var(--font-size-base);
 
-  --background-gradient: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
+  --background-gradient: linear-gradient(180deg, #cbcffe 0, #f5f6fa 420px, #f5f6fa 100%);
+
+  /* Workspace palette: semantic tokens, with dark values in the data-theme block below */
+  --ui-navy: #0f1a2c;
+  --ui-link: #004aca;
+  --ui-page-bg: #edeef2;
+  --ui-sidebar-bg: #f7f7f9;
+  --ui-topbar-bg: transparent;
+  --ui-topbar-line: transparent;
+  --ui-tabbar-bg: rgba(0, 3, 13, 0.05);
+  --ui-tab-active-bg: #fafafb;
+  --ui-tab-active-line: #2a2b2f;
+  --ui-group-bg: rgba(255, 255, 255, 0.4);
+  --ui-footer-bg: #f5f6fa;
+  --ui-search-bg: #e3e4e9;
+  --ui-selected-bg: #d9d8dd;
+  --ui-chip-bg: #e3e4e6;
+  --ui-chip-hover: #d9d8dd;
+  --ui-hover: rgba(0, 0, 0, 0.05);
+  --ui-nav-btn-bg: #fcfcfd;
+  --ui-nav-btn-hover: #ffffff;
+  --ui-card-bg: #ffffff;
+  --ui-zebra: #f3f4f6;
+  --ui-table-head-bg: #cbcff1;
+  --ui-line-soft: #eff0f1;
+  --ui-head-sep: #b8bada;
+  --ui-child-strip: #c7d1f5;
+  --ui-child-band: #e3e8fe;
+  --ui-child-head: #cbd2ee;
+  --ui-row-selected: #ece8f6;
+  --ui-row-selected-hover: #f4f1fa;
+  --ui-text: #0f172a;
+  --ui-text-soft: #334155;
+  --ui-text-muted: #64748b;
+
+  /* Tailwind blue scale remapped to the workspace purple; links keep --ui-link. */
+  --color-blue-50: #f4f1fa;
+  --color-blue-100: #ece8f6;
+  --color-blue-200: #dcd6ec;
+  --color-blue-300: #b9acd9;
+  --color-blue-400: #8a73bf;
+  --color-blue-500: #4a2f8a;
+  --color-blue-600: #2a1757;
+  --color-blue-700: #1b0f3a;
+  --color-blue-800: #140a2c;
+  --color-blue-900: #0e061f;
+  --ui-accent: var(--color-dynamic-main);
+  --ui-accent-hover: var(--color-dynamic-dark);
+  --ui-accent-dark: var(--color-dynamic-dark);
+  --ui-ink: #0f172a;
+  --ui-line: #e1e1e3;
+  --ui-canvas: hsl(220 14% 95%);
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -442,4 +493,167 @@ button {
 /* Dashboard grid: no text selection inside the widgets while dragging or resizing */
 .react-grid-layout:has(> .resizing, > .react-draggable-dragging) {
   user-select: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark theme. Applied with <html data-theme="dark">. The neutral scales are
+ * inverted (baseline, gray, slate), so utilities built on them flip without
+ * touching each component.
+ * ------------------------------------------------------------------------- */
+/* stylelint-disable-next-line at-rule-no-unknown -- Tailwind v4 directive */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background-gradient: linear-gradient(180deg, #0f1013 0%, #0f1013 100%);
+
+  --ui-page-bg: #0f1013;
+  --ui-sidebar-bg: #16171b;
+  --ui-topbar-bg: #16171b;
+  --ui-topbar-line: #2a2c32;
+  --ui-tabbar-bg: #1b1c21;
+  --ui-tab-active-bg: #25262c;
+  --ui-tab-active-line: #e8e9ef;
+  --ui-group-bg: #25262c;
+  --ui-footer-bg: #16171b;
+  --ui-line: #2a2c32;
+  --ui-search-bg: #25262c;
+  --ui-selected-bg: #2d1f55;
+  --ui-chip-bg: #25262c;
+  --ui-chip-hover: #33353d;
+  --ui-hover: rgba(255, 255, 255, 0.07);
+  --ui-nav-btn-bg: #25262c;
+  --ui-nav-btn-hover: #30323a;
+  --ui-card-bg: #1c1d22;
+  --ui-zebra: #1a1b20;
+  --ui-table-head-bg: #262a45;
+  --ui-line-soft: #25272d;
+  --ui-head-sep: #363b61;
+  --ui-child-strip: #2a2f52;
+  --ui-child-band: #1d1f38;
+  --ui-child-head: #262a45;
+  --ui-row-selected: #2a2150;
+  --ui-row-selected-hover: #30265c;
+  --ui-text: #ececf1;
+  --ui-text-soft: #d4d6df;
+  --ui-text-muted: #9a9ca8;
+  --ui-link: #9bb4ff;
+  --ui-accent: #5a49a8;
+  --ui-accent-hover: #6a58bd;
+  --ui-accent-dark: #3b2d78;
+
+  --color-dynamic-main: #8b7bdc;
+  --color-dynamic-dark: #5a49a8;
+  --color-dynamic-light: #2d2650;
+  --color-dynamic-contrast-text: #e9e6fb;
+  --color-etendo-main: #8b7bdc;
+  --color-etendo-dark: #5a49a8;
+  --color-etendo-contrast-text: #e9e6fb;
+  --color-etendo-light: rgba(139, 123, 220, 0.12);
+  --color-background: #0f1013;
+
+  /* Baseline scale, inverted */
+  --color-baseline-0: #16171b;
+  --color-baseline-10: #1e1f24;
+  --color-baseline-20: #2a2c32;
+  --color-baseline-30: #383a42;
+  --color-baseline-40: #5d606c;
+  --color-baseline-50: #8b8e9a;
+  --color-baseline-60: #a4a7b3;
+  --color-baseline-70: #bdbfca;
+  --color-baseline-80: #d4d6df;
+  --color-baseline-90: #e9eaf0;
+  --color-baseline-100: #f6f6fa;
+  --color-baseline-110: rgba(246, 246, 250, 0.7);
+
+  --color-transparent-neutral-5: rgba(255, 255, 255, 0.05);
+  --color-transparent-neutral-10: rgba(255, 255, 255, 0.1);
+  --color-transparent-neutral-20: rgba(255, 255, 255, 0.2);
+  --color-transparent-neutral-30: rgba(255, 255, 255, 0.3);
+  --color-transparent-neutral-40: rgba(255, 255, 255, 0.4);
+  --color-transparent-neutral-50: rgba(255, 255, 255, 0.5);
+  --color-transparent-neutral-60: rgba(255, 255, 255, 0.6);
+  --color-transparent-neutral-70: rgba(255, 255, 255, 0.7);
+  --color-transparent-neutral-80: rgba(255, 255, 255, 0.8);
+  --color-transparent-neutral-100: rgba(255, 255, 255, 1);
+
+  /* Tailwind neutral palettes, inverted */
+  --color-gray-50: #17181c;
+  --color-gray-100: #1e1f24;
+  --color-gray-200: #2a2c32;
+  --color-gray-300: #383a42;
+  --color-gray-400: #5d606c;
+  --color-gray-500: #8b8e9a;
+  --color-gray-600: #a4a7b3;
+  --color-gray-700: #bdbfca;
+  --color-gray-800: #d4d6df;
+  --color-gray-900: #e9eaf0;
+  --color-gray-950: #f6f6fa;
+  --color-slate-50: #17181c;
+  --color-slate-100: #1e1f24;
+  --color-slate-200: #2a2c32;
+  --color-slate-300: #383a42;
+  --color-slate-400: #5d606c;
+  --color-slate-500: #8b8e9a;
+  --color-slate-600: #a4a7b3;
+  --color-slate-700: #bdbfca;
+  --color-slate-800: #d4d6df;
+  --color-slate-900: #e9eaf0;
+  --color-slate-950: #f6f6fa;
+
+  /* Tinted surfaces that were pastel in the light theme. */
+  --color-secondary-100: #2b2a17;
+  --color-tertiary-50: #1e2236;
+  --color-tertiary-100: #262b45;
+  --color-primary-100: #2d2650;
+
+  /* Tailwind blue/indigo utilities use a lighter lilac ramp. */
+  --color-blue-50: #1d1936;
+  --color-blue-100: #262048;
+  --color-blue-200: #342c63;
+  --color-blue-300: #5d4fb0;
+  --color-blue-400: #7a6bcf;
+  --color-blue-500: #8b7bdc;
+  --color-blue-600: #9d8fe6;
+  --color-blue-700: #b2a7ee;
+  --color-blue-800: #c8bff4;
+  --color-blue-900: #ddd7f9;
+}
+
+/* Literal white surfaces become the dark card color; `text-white` and `bg-white/NN` overlays are left alone. */
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .hover\:bg-white:hover {
+  background-color: var(--ui-card-bg);
+}
+
+/* Dark theme: black base64 icons turn white, and the Tailwind blue/indigo utilities use a lighter lilac ramp. */
+html[data-theme="dark"] .icon-base64 {
+  /* hue-rotate undoes the hue flip of invert, so colored icons (Excel) keep their color */
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Disabled toolbar icons are black images dimmed with grayscale; they need the inversion too. */
+html[data-theme="dark"] button:disabled .icon-base64 {
+  filter: invert(1) grayscale(1);
+}
+
+/* Theme switch animation: cross-fade for browsers with View Transitions, class-based fallback otherwise.*/
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: ease;
+}
+
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease,
+    box-shadow 0.3s ease !important;
 }

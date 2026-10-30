@@ -39,7 +39,7 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
         href={currentValue}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-blue-600 underline hover:text-blue-800 truncate block h-10.5 flex items-center px-3 max-w-full"
+        className="text-sm text-(--ui-link) underline hover:brightness-75 truncate block h-10.5 flex items-center px-3 max-w-full"
         title={currentValue}>
         {currentValue}
       </a>

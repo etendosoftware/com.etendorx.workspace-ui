@@ -29,16 +29,16 @@ export const useStyle = () => {
       styles: {
         containerBox: {
           width: "100%",
-          height: "3rem",
+          height: "2.5rem",
           display: "flex",
-          background: theme.palette.baselineColor.transparentNeutral[5],
-          borderRadius: "6.25rem",
+          background: "var(--ui-group-bg)",
+          borderRadius: "0.625rem",
           alignItems: "center",
           justifyContent: "space-between",
         },
         tabsContainer: {
           flexGrow: 1,
-          maxHeight: "3rem",
+          maxHeight: "2.5rem",
           paddingLeft: "0.25rem",
           paddingRight: "0.25rem",
           overflowX: "auto",
@@ -50,8 +50,8 @@ export const useStyle = () => {
       } as Record<string, SxProps<Theme>>,
       sx: {
         tabs: {
-          minHeight: "3rem",
-          maxHeight: "3rem",
+          minHeight: "2.5rem",
+          maxHeight: "2.5rem",
           "& .MuiTabs-scrollButtons": {
             "&.Mui-disabled": {
               opacity: 0.3,
@@ -63,18 +63,18 @@ export const useStyle = () => {
           "& .MuiTabs-flexContainer": {
             gap: "0.25rem",
             height: "100%",
-            maxHeight: "2.5rem",
+            maxHeight: "2rem",
             alignSelf: "center",
           },
           "& .MuiTab-root": {
-            maxHeight: "2.5rem",
-            minHeight: "2.5rem",
+            maxHeight: "2rem",
+            minHeight: "2rem",
           },
         },
         tab: {
-          maxHeight: "2.5rem",
+          maxHeight: "2rem",
           textTransform: "none",
-          borderRadius: "12.5rem",
+          borderRadius: "0.5rem",
           transition: "background-color 0.3s, color 0.4s",
           color: theme.palette.baselineColor.neutral[90],
           padding: "0.25rem 1rem",

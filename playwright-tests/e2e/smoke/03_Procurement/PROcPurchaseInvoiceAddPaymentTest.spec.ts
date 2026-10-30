@@ -12,7 +12,7 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
 
     // ── Step 2: New Purchase Invoice ─────────────────────────────────────────
     await app.toolbar.newRecord();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
 
     // ── Step 3: Fill Business Partner ────────────────────────────────────────
     await app.field.selectById("Business Partner", data.BUSINESS_PARTNER.VENDOR_A.id);

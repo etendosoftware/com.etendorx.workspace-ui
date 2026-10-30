@@ -31,6 +31,10 @@ export interface RecordCounterBarProps {
   isLoading?: boolean;
   /** Optional actions to render on the right side of the bar */
   actions?: React.ReactNode;
+  /** "inline" drops the bar chrome (padding, background, border) so it can live in a footer. */
+  variant?: "bar" | "inline";
+  /** When false the "Showing N records" counter is omitted (only the selection counter remains). */
+  showTotal?: boolean;
   /** Text labels for internationalization */
   labels?: {
     /** Text for showing records count (e.g., "Showing {count} records") */

@@ -116,7 +116,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       <div
         aria-expanded={isExpanded}
         aria-controls={`section-content-${sectionId}`}
-        className={`w-full h-12 flex justify-between text-gray-900 hover:text-blue-600
+        className={`w-full h-10 flex justify-between text-gray-900 hover:text-blue-600
            items-center p-4 cursor-pointer transition-colors hover:bg-gray-50 bg-gray-50 
            ${isExpanded ? "rounded-t-xl" : "rounded-xl"}`}
         onClick={handleToggle}

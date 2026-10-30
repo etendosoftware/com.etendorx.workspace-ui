@@ -144,7 +144,7 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Tailwind's `checked:` variant is not reliably generated for this file
   // (JIT content-path issue), so the checked state is expressed via inline styles.
-  const accentColor = hasError ? "#dc2626" : "#004ACA";
+  const accentColor = hasError ? "#dc2626" : "#2a1757";
   const borderColor = resolveBorderColor(localValue, !!hasError, accentColor);
   const backgroundColor = localValue ? accentColor : "white";
 

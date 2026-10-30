@@ -20,7 +20,12 @@
  * Everything here is pure so the grid and its hooks only wire state around it.
  */
 
-import type { MRT_ColumnPinningState, MRT_ColumnSizingState, MRT_Updater } from "material-react-table";
+import type {
+  MRT_ColumnPinningState,
+  MRT_ColumnSizingState,
+  MRT_Updater,
+  MRT_VisibilityState,
+} from "material-react-table";
 import { COLUMN_NAMES } from "@/components/Table/constants";
 
 /** Columns always pinned to the left, in this order, whatever the user pins (selection checkbox and actions). */
@@ -35,6 +40,16 @@ export const DEFAULT_COLUMN_PINNING: MRT_ColumnPinningState = { left: [...FIXED_
 /** Resolves a React-style "value or updater function" against the current value. */
 export const resolveUpdater = <T>(updaterOrValue: MRT_Updater<T>, current: T): T =>
   typeof updaterOrValue === "function" ? (updaterOrValue as (previous: T) => T)(current) : updaterOrValue;
+
+/**
+ * Tells whether two visibility states are literally the same. Used to drop the `onColumnVisibilityChange`
+ * calls that re-send the current state (the column menu syncs itself on mount), which are not a change
+ * the user made and must not rewrite the stored configuration.
+ */
+export const isSameColumnVisibility = (a: MRT_VisibilityState, b: MRT_VisibilityState): boolean => {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+};
 
 const isUserColumn = (columnId: string) => !FIXED_PINNED_COLUMNS.includes(columnId);
 

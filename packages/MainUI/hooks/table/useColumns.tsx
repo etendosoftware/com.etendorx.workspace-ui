@@ -338,7 +338,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className={`bg-transparent border-none p-0 text-left pointer-events-auto ${
-                  usePlainLinkStyle ? "text-(--color-dynamic-main) hover:underline" : ""
+                  usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""
                 }`}
                 onClick={(e) => {
                   const selectedId = String(selectedRecordId ?? "");
@@ -422,7 +422,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced record"
-                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--color-dynamic-main) hover:underline"
+                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--ui-link) hover:underline"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();

@@ -259,7 +259,7 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowMoreFields((p) => !p)}
-                  className="text-blue-700 underline text-sm hover:text-blue-900">
+                  className="text-(--ui-link) underline text-sm hover:brightness-75">
                   [ {showMoreFields ? t("email.hideFields") : t("email.showMoreFields")} ]
                 </button>
               </div>

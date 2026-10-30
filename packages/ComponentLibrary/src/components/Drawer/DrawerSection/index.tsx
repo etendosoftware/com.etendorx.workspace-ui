@@ -168,10 +168,11 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleClick]
     );
 
+    const nestedClasses = parentId ? "mx-2 my-0.5 rounded-lg" : "";
     const sectionClasses = [
-      expanded && open ? "bg-(--color-baseline-10)" : "bg-transparent ",
-      open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center",
-      !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
+      "bg-transparent",
+      open ? `${nestedClasses} focus:outline-none focus:ring-2 focus:ring-(--ui-accent)/40` : "flex justify-center",
+      !open && hasActiveChild ? "bg-(--ui-selected-bg) rounded-full" : "",
     ].join(" ");
 
     const shouldShowChildren = isSearchActive || expanded;
@@ -217,6 +218,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         aria-expanded={expanded}
         onKeyDown={handleKeyDown}
         onMouseEnter={handleCombinedMouseEnter}
+        onFocus={handleMouseEnterLeaf}
         onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
@@ -226,6 +228,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           open={open}
           isParentActive={isParentActive}
           isExpandable={isExpandable && !isSearchActive}
+          isTopLevel={!parentId}
         />
         {hasChildren && open && (
           // The children of a collapsed section stay in the DOM, only clipped, so they are
