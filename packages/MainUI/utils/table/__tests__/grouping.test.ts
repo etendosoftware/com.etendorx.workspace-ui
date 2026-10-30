@@ -10,7 +10,9 @@ import {
   MAX_GROUPING_REACHED_LABEL,
   aggregateSummary,
   buildFirstGroupExpandedState,
+  buildGroupedMultiSortBy,
   buildGroupedSortBy,
+  buildMultiSortBy,
   canGroupByColumn,
   exceedsGroupingLimit,
   formatGroupingLabel,
@@ -20,6 +22,7 @@ import {
   getGroupingValue,
   isGroupRow,
   isGroupingEnabled,
+  resolveEffectiveSorts,
   resolveGroupingLabel,
 } from "../grouping";
 
@@ -128,6 +131,44 @@ describe("grouping utils", () => {
     it("sorts inside each group by another column", () => {
       expect(buildGroupedSortBy(FIELD, { id: "documentNo", desc: true })).toBe(`${FIELD},-documentNo`);
       expect(buildGroupedSortBy(FIELD, { id: "documentNo", desc: false })).toBe(`${FIELD},documentNo`);
+    });
+  });
+
+  describe("multi-column sort", () => {
+    const DOCUMENT_NO = "documentNo";
+    const ORDER_DATE = "orderDate";
+    const sortedByDateThenNumber = [
+      { id: ORDER_DATE, desc: true },
+      { id: DOCUMENT_NO, desc: false },
+    ];
+
+    it("joins every sort in order, with the descending prefix", () => {
+      expect(buildMultiSortBy([])).toBe("");
+      expect(buildMultiSortBy([{ id: ORDER_DATE, desc: true }])).toBe(`-${ORDER_DATE}`);
+      expect(buildMultiSortBy(sortedByDateThenNumber)).toBe(`-${ORDER_DATE},${DOCUMENT_NO}`);
+    });
+
+    it("sorts a grouped grid by the grouped field first and then by every other sort", () => {
+      expect(buildGroupedMultiSortBy(FIELD, [])).toBe(FIELD);
+      expect(buildGroupedMultiSortBy(FIELD, sortedByDateThenNumber)).toBe(`${FIELD},-${ORDER_DATE},${DOCUMENT_NO}`);
+    });
+
+    it("takes the group direction from a sort on the grouped field without repeating it", () => {
+      const sorts = [
+        { id: ORDER_DATE, desc: false },
+        { id: FIELD, desc: true },
+      ];
+
+      expect(buildGroupedMultiSortBy(FIELD, sorts)).toBe(`-${FIELD},${ORDER_DATE}`);
+    });
+
+    it("uses the user sorts and only falls back to the default sort without them", () => {
+      const getDefaultSort = jest.fn(() => ({ id: DOCUMENT_NO, desc: false }));
+
+      expect(resolveEffectiveSorts(sortedByDateThenNumber, getDefaultSort)).toBe(sortedByDateThenNumber);
+      expect(getDefaultSort).not.toHaveBeenCalled();
+      expect(resolveEffectiveSorts([], getDefaultSort)).toEqual([{ id: DOCUMENT_NO, desc: false }]);
+      expect(resolveEffectiveSorts([], () => null)).toEqual([]);
     });
   });
 

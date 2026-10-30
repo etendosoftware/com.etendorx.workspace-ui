@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
 import { atLevel, exactText, type TabLevel } from "./level";
@@ -12,7 +13,8 @@ export type ToolbarAction =
   | "filter"
   | "toggle-tree-view"
   | "copy-record"
-  | "save-view";
+  | "save-view"
+  | "export-csv";
 
 const PROCESS_MENU_TEST_ID = "IconButtonWithText__process-menu";
 /** AD key of the toolbar "New Record" button, rendered icon-only (`IconButton__<key>`) in form view. */
@@ -51,6 +53,13 @@ export class Toolbar {
   /** A toolbar button by action. */
   button(action: ToolbarAction, level: TabLevel = "header"): Locator {
     return atLevel(this.scope.locator(`button.toolbar-button-${action}:visible`), level);
+  }
+
+  /** Clicks "Export to Spreadsheet" and returns the text of the CSV file it downloads. */
+  async exportCsv(level: TabLevel = "header"): Promise<string> {
+    const download = this.page.waitForEvent("download");
+    await this.button("export-csv", level).click();
+    return readFile(await (await download).path(), "utf8");
   }
 
   /** Creates a new record. */

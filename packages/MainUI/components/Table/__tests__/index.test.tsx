@@ -43,6 +43,7 @@ import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
 // Mock all the context providers and hooks
 jest.mock("@/hooks/useTranslation", () => ({
@@ -64,9 +65,11 @@ jest.mock("@/contexts/datasourceContext", () => ({
   }),
 }));
 
+const mockRegisterActions = jest.fn();
+
 jest.mock("@/contexts/ToolbarContext", () => {
   const toolbar = () => ({
-    registerActions: jest.fn(),
+    registerActions: mockRegisterActions,
     unregisterActions: jest.fn(),
     registerAttachmentAction: jest.fn(),
     setShouldOpenAttachmentModal: jest.fn(),
@@ -535,6 +538,19 @@ describe("DynamicTable Component", () => {
           expect(component).toBeDefined();
         }
       }).not.toThrow();
+    });
+  });
+
+  describe("Toolbar actions", () => {
+    it("registers the CSV export for the tab even while the grid pane is hidden", async () => {
+      render(<DynamicTable setRecordId={mockSetRecordId} isVisible={false} />);
+
+      await waitFor(() => {
+        expect(mockRegisterActions).toHaveBeenCalledWith(
+          { exportCSV: expect.any(Function) },
+          TOOLBAR_ACTION_OWNERS.TAB
+        );
+      });
     });
   });
 
