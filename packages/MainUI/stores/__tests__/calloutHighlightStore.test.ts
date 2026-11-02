@@ -73,6 +73,15 @@ describe("calloutHighlightStore", () => {
     expect(getHighlights()[SCOPE]).toBeUndefined();
   });
 
+  it("ends a highlight whose scope was already cleared", () => {
+    highlight([PRICE]);
+    useCalloutHighlightStore.setState({ highlights: {} });
+
+    advance(CALLOUT_HIGHLIGHT_DURATION_MS);
+
+    expect(getHighlights()).toEqual({});
+  });
+
   it("does not change the state when no field changed", () => {
     const before = getHighlights();
 
