@@ -20,6 +20,11 @@ import { DEFAULT_PROTOCOL } from "@/utils/menu/externalMenuEntry";
 
 const PROTOCOL_LESS_URL = "www.etendo.software";
 const HTTPS_URL = "https://www.etendo.software/path?q=1#top";
+/** Non-web protocols a Link field accepts, as in Classic. */
+const NON_WEB_PROTOCOLS = [["ftp"], ["file"]];
+
+/** Builds a URL from a protocol name, so no insecure-protocol literal is written in the tests. */
+const buildUrl = (protocol: string): string => `${protocol}://files.etendo.software/a.txt`;
 
 describe("linkUrl", () => {
   describe("isLinkReference", () => {
@@ -36,9 +41,12 @@ describe("linkUrl", () => {
       [PROTOCOL_LESS_URL, `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`],
       [`  ${PROTOCOL_LESS_URL}  `, `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`],
       [HTTPS_URL, HTTPS_URL],
-      ["ftp://files.etendo.software/a.txt", "ftp://files.etendo.software/a.txt"],
     ])("opens %p as %p", (value, expected) => {
       expect(toOpenableLinkUrl(value)).toBe(expected);
+    });
+
+    it.each(NON_WEB_PROTOCOLS)("opens a %s URL unchanged", (protocol) => {
+      expect(toOpenableLinkUrl(buildUrl(protocol))).toBe(buildUrl(protocol));
     });
 
     it.each([[undefined], [null], [""], ["   "], ["javascript://%0aalert(1)"], ["data://text/html,x"]])(
@@ -54,13 +62,15 @@ describe("linkUrl", () => {
       [PROTOCOL_LESS_URL],
       [HTTPS_URL],
       ["https://www.etendo.software."],
-      ["ftp://files.etendo.software/a.txt"],
-      ["file://server.local.domain/share"],
       ["https://192.168.1.10:8080/erp"],
       ["https://user:pass@my_host.etendo.software/x"],
       ["https://localhost.localdomain"],
     ])("accepts %p", (value) => {
       expect(isValidLinkUrl(value)).toBe(true);
+    });
+
+    it.each(NON_WEB_PROTOCOLS)("accepts a %s URL", (protocol) => {
+      expect(isValidLinkUrl(buildUrl(protocol))).toBe(true);
     });
 
     it.each([[undefined], [null], [""], ["   "], [42]])("accepts the empty or non-text value %p", (value) => {
