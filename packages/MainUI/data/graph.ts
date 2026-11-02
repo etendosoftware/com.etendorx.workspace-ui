@@ -116,7 +116,8 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     return this;
   };
 
-  public toJSON = (rootId: string) => {
+  // Not named `toJSON`: JSON.stringify calls that on any object, passing the property key as the argument.
+  public toTree = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
     if (!rootNode) throw new Error("Root node not found");
 

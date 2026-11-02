@@ -104,6 +104,26 @@ describe("Graph Data Structure", () => {
     expect(graph.getParent(tabs[1])?.id).toBe("1");
   });
 
+  describe("Serialization", () => {
+    it("can be stringified without throwing, e.g. when a warning logs it as an argument", () => {
+      const graph = new Graph([createTab("1", "Parent", 0), createTab("2", "Child", 1, 10, "1")]);
+
+      expect(() => JSON.stringify({ emitter: graph })).not.toThrow();
+      expect(() => JSON.stringify(graph)).not.toThrow();
+    });
+
+    it("builds the tree of a root tab", () => {
+      const graph = new Graph([createTab("1", "Parent", 0), createTab("2", "Child", 1, 10, "1")]);
+
+      expect(graph.toTree("1")).toEqual({
+        id: "1",
+        name: "Parent",
+        children: [{ id: "2", name: "Child", children: [] }],
+      });
+      expect(() => graph.toTree("missing")).toThrow("Root node not found");
+    });
+  });
+
   describe("Selection Events", () => {
     it("should emit selected event", () =>
       new Promise<void>((done) => {
