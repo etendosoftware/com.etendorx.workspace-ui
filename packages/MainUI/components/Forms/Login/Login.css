@@ -13,3 +13,10 @@
   background-position: center;
   background-size: cover;
 }
+
+/* Dark theme: the pastel background would glare behind the dark card, so it is tinted down to the page color. */
+html[data-theme="dark"] .bg-login {
+  background-color: var(--ui-page-bg);
+  background-image: linear-gradient(rgba(15, 16, 19, 0.88), rgba(15, 16, 19, 0.88)),
+    url("../../../../ComponentLibrary/src/assets/images/Login.png");
+}

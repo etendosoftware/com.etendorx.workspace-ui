@@ -86,8 +86,8 @@ const OptionItem = memo(
       onClick={() => onSelect(id)}
       onKeyDown={(e) => handleKeyboardActivation(e, () => onSelect(id))}
       className={`${LIST_ITEM_BASE} cursor-pointer flex items-center ${FOCUS_STYLES} 
-        ${isHighlighted ? "bg-baseline-10" : ""} 
-        ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
+        ${isHighlighted ? "bg-baseline-10 dark:bg-(--ui-chip-hover)" : ""} 
+        ${isSelected ? "bg-baseline-10 dark:bg-(--ui-chip-hover) font-medium" : ""} hover:bg-baseline-10 dark:hover:bg-(--ui-chip-hover)`}>
       <CustomCheckbox
         size="small"
         checked={isSelected}
