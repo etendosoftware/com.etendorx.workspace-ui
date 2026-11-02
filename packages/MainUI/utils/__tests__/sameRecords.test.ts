@@ -20,7 +20,7 @@ describe("sameRecord", () => {
 
   it("is false when only one of them is missing", () => {
     expect(sameRecord(undefined, { id: "1" })).toBe(false);
-    expect(sameRecord(undefined, undefined)).toBe(true);
+    expect(sameRecord()).toBe(true);
   });
 });
 
