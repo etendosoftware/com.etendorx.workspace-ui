@@ -65,6 +65,27 @@ const ExecutionSection: React.FC<ExecutionSectionProps> = ({
     return null;
   }
 
+  const body =
+    executions.length === 0 ? (
+      <p className="px-1 py-2 text-sm text-(--color-transparent-neutral-70)">{emptyText}</p>
+    ) : (
+      <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+        {executions.map((execution) => (
+          <li key={execution.id}>
+            <button
+              type="button"
+              onClick={() => onSelect(execution.id)}
+              className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
+              <span className={`text-sm font-medium break-words ${tone}`}>{execution.processName || unnamed}</span>
+              <span className="text-xs text-(--color-transparent-neutral-70)">
+                {formatTimestamp(execution.endTime ?? execution.startTime)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+
   return (
     <section className="px-3 pb-2" data-testid={testId}>
       <h3 className="text-xs font-medium text-(--color-transparent-neutral-70)">
@@ -81,25 +102,7 @@ const ExecutionSection: React.FC<ExecutionSectionProps> = ({
           </span>
         </button>
       </h3>
-      {!open ? null : executions.length === 0 ? (
-        <p className="px-1 py-2 text-sm text-(--color-transparent-neutral-70)">{emptyText}</p>
-      ) : (
-        <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-          {executions.map((execution) => (
-            <li key={execution.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(execution.id)}
-                className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
-                <span className={`text-sm font-medium break-words ${tone}`}>{execution.processName || unnamed}</span>
-                <span className="text-xs text-(--color-transparent-neutral-70)">
-                  {formatTimestamp(execution.endTime ?? execution.startTime)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {open && body}
     </section>
   );
 };
@@ -190,6 +193,7 @@ const ProcessMonitorButton: React.FC = () => {
               unnamed={t("processMonitor.unnamedProcess")}
               testId="process-monitor-running"
               defaultOpen
+              data-testid="ExecutionSection__ca468f"
             />
             <ExecutionSection
               title={t("processMonitor.failed")}
@@ -199,6 +203,7 @@ const ProcessMonitorButton: React.FC = () => {
               unnamed={t("processMonitor.unnamedProcess")}
               emptyText={t("processMonitor.noFailures")}
               testId="process-monitor-failed"
+              data-testid="ExecutionSection__ca468f"
             />
             <ExecutionSection
               title={t("processMonitor.misfired")}
@@ -207,6 +212,7 @@ const ProcessMonitorButton: React.FC = () => {
               onSelect={openDetail}
               unnamed={t("processMonitor.unnamedProcess")}
               testId="process-monitor-misfired"
+              data-testid="ExecutionSection__ca468f"
             />
             <div className="flex flex-col gap-1 border-t border-(--color-transparent-neutral-10) p-3">
               {[
