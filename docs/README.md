@@ -23,6 +23,8 @@ docs/
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
+│   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
+│   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
