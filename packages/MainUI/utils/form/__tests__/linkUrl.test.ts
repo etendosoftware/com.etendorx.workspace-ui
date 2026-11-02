@@ -16,6 +16,7 @@
 
 import { isLinkReference, isValidLinkUrl, toOpenableLinkUrl } from "../linkUrl";
 import { FIELD_REFERENCE_CODES } from "../constants";
+import { DEFAULT_PROTOCOL } from "@/utils/menu/externalMenuEntry";
 
 const PROTOCOL_LESS_URL = "www.etendo.software";
 const HTTPS_URL = "https://www.etendo.software/path?q=1#top";
@@ -25,17 +26,16 @@ describe("linkUrl", () => {
     it("matches the Link reference only", () => {
       expect(isLinkReference(FIELD_REFERENCE_CODES.LINK.id)).toBe(true);
       expect(isLinkReference(FIELD_REFERENCE_CODES.STRING.id)).toBe(false);
-      expect(isLinkReference(undefined)).toBe(false);
+      expect(isLinkReference()).toBe(false);
       expect(isLinkReference(null)).toBe(false);
     });
   });
 
   describe("toOpenableLinkUrl", () => {
     it.each([
-      [PROTOCOL_LESS_URL, `http://${PROTOCOL_LESS_URL}`],
-      [`  ${PROTOCOL_LESS_URL}  `, `http://${PROTOCOL_LESS_URL}`],
+      [PROTOCOL_LESS_URL, `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`],
+      [`  ${PROTOCOL_LESS_URL}  `, `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`],
       [HTTPS_URL, HTTPS_URL],
-      ["http://www.etendo.software", "http://www.etendo.software"],
       ["ftp://files.etendo.software/a.txt", "ftp://files.etendo.software/a.txt"],
     ])("opens %p as %p", (value, expected) => {
       expect(toOpenableLinkUrl(value)).toBe(expected);
@@ -53,12 +53,12 @@ describe("linkUrl", () => {
     it.each([
       [PROTOCOL_LESS_URL],
       [HTTPS_URL],
-      ["http://www.etendo.software."],
+      ["https://www.etendo.software."],
       ["ftp://files.etendo.software/a.txt"],
       ["file://server.local.domain/share"],
-      ["http://192.168.1.10:8080/erp"],
+      ["https://192.168.1.10:8080/erp"],
       ["https://user:pass@my_host.etendo.software/x"],
-      ["http://localhost.localdomain"],
+      ["https://localhost.localdomain"],
     ])("accepts %p", (value) => {
       expect(isValidLinkUrl(value)).toBe(true);
     });
@@ -69,24 +69,24 @@ describe("linkUrl", () => {
 
     it.each([
       ["not a url"],
-      ["http://localhost"],
-      ["http://www.etendo.123"],
-      ["http://-etendo.software"],
-      ["http://etendo-.software"],
-      ["http://www..etendo.software"],
-      ["http://www.etendo.software/a b"],
-      ["http://www.etendo.software/<script>"],
+      ["https://localhost"],
+      ["https://www.etendo.123"],
+      ["https://-etendo.software"],
+      ["https://etendo-.software"],
+      ["https://www..etendo.software"],
+      ["https://www.etendo.software/a b"],
+      ["https://www.etendo.software/<script>"],
       ["mailto://someone"],
       ["file:///etc/passwd"],
-      ["http://www.etendo.software:99999"],
-      ["http://[::1]/"],
+      ["https://www.etendo.software:99999"],
+      ["https://[::1]/"],
     ])("rejects %p", (value) => {
       expect(isValidLinkUrl(value)).toBe(false);
     });
 
     it("answers in linear time on values that make Classic's regular expression backtrack", () => {
       const start = Date.now();
-      expect(isValidLinkUrl(`http://a.${"a.".repeat(5000)}-`)).toBe(false);
+      expect(isValidLinkUrl(`https://a.${"a.".repeat(5000)}-`)).toBe(false);
       expect(Date.now() - start).toBeLessThan(1000);
     });
   });

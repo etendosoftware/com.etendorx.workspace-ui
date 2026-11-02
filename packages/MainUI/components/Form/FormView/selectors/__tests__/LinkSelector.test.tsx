@@ -20,6 +20,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { LinkSelector } from "../LinkSelector";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import en from "@workspaceui/componentlibrary/src/locales/en";
+import { DEFAULT_PROTOCOL } from "@/utils/menu/externalMenuEntry";
 
 jest.mock("@/contexts/language", () => ({
   useLanguage: () => ({ language: "en_US" }),
@@ -85,7 +86,7 @@ describe("LinkSelector", () => {
     });
 
     it.each([
-      [PROTOCOL_LESS_URL, `http://${PROTOCOL_LESS_URL}`],
+      [PROTOCOL_LESS_URL, `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`],
       ["https://example.com", "https://example.com"],
     ])("opens %p as the external address %p", (value, expected) => {
       render(<Wrapper defaultValue={value} />);
@@ -101,7 +102,7 @@ describe("LinkSelector", () => {
     it("links a protocol-less value to the external address in read-only mode", () => {
       render(<Wrapper defaultValue={PROTOCOL_LESS_URL} readOnly />);
       const link = screen.getByRole("link");
-      expect(link).toHaveAttribute("href", `http://${PROTOCOL_LESS_URL}`);
+      expect(link).toHaveAttribute("href", `${DEFAULT_PROTOCOL}${PROTOCOL_LESS_URL}`);
       expect(link).toHaveTextContent(PROTOCOL_LESS_URL);
     });
   });
