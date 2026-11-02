@@ -4,22 +4,26 @@ import {
   isTableDirField,
   processCalloutColumnValues,
   processCalloutAuxiliaryValues,
+  getCalloutChangedFieldNames,
 } from "../calloutUtils";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 
 // Mock external dependencies
 jest.mock("@workspaceui/api-client/src/utils/metadata", () => ({
   getFieldsByColumnName: jest.fn(),
+  getFieldsByHqlName: jest.fn(),
 }));
 
 jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn() },
 }));
 
-import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
+import { getFieldsByColumnName, getFieldsByHqlName } from "@workspaceui/api-client/src/utils/metadata";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
 const mockGetFieldsByColumnName = getFieldsByColumnName as jest.Mock;
+const mockGetFieldsByHqlName = getFieldsByHqlName as jest.Mock;
 
 // Minimal Field factory
 const makeField = (overrides: Partial<Field> = {}): Field =>
@@ -193,5 +197,41 @@ describe("processCalloutAuxiliaryValues", () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({ fieldName: "field1", value: "a" });
     expect(result[1]).toMatchObject({ fieldName: "field2", value: "b" });
+  });
+});
+
+// ─── getCalloutChangedFieldNames ─────────────────────────────────────────────
+
+describe("getCalloutChangedFieldNames", () => {
+  const ROW_VALUES = { priceActual: 10, tax: "TAX1", active: true };
+
+  beforeEach(() => {
+    mockGetFieldsByHqlName.mockReturnValue({
+      priceActual: makeField({ hqlName: "priceActual" }),
+      active: makeField({
+        hqlName: "active",
+        column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } as Field["column"],
+      }),
+    });
+  });
+
+  it("returns only the fields whose value differs from the row value", () => {
+    const updates = [
+      { fieldName: "priceActual", value: "12.5" },
+      { fieldName: "tax", value: "TAX1", identifier: "Tax 1" },
+    ];
+
+    expect(getCalloutChangedFieldNames(ROW_VALUES, updates, EMPTY_TAB)).toEqual(["priceActual"]);
+  });
+
+  it("compares boolean fields once their Classic value is converted", () => {
+    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: "active", value: "Y" }], EMPTY_TAB)).toEqual([]);
+    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: "active", value: "" }], EMPTY_TAB)).toEqual([
+      "active",
+    ]);
+  });
+
+  it("returns nothing when the callout returned no updates", () => {
+    expect(getCalloutChangedFieldNames(ROW_VALUES, [], EMPTY_TAB)).toEqual([]);
   });
 });
