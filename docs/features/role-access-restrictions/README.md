@@ -45,7 +45,9 @@ field list of the tab, as `WindowSettingsActionHandler.getFieldLevelRoles` does:
 - any other field takes the *Editable* value of the Tab Access.
 
 A restricted field is served with `isReadOnly: true` and `isEditable: false`, which the form
-selectors (`BaseSelector`) and inline editing (`isFieldReadOnly`) already honor.
+selectors (`BaseSelector`) and inline editing (`isFieldReadOnly`) already honor. The long text
+selector (`TextLongSelector`, reference 14, e.g. *Description*) used to drop the read-only flag; it
+now forwards it to its textarea like `StringSelector` does.
 
 ### Disabled process buttons
 
