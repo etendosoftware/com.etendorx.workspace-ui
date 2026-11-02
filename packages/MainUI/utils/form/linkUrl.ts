@@ -52,10 +52,10 @@ const isValidHostName = (hostname: string): boolean => {
   const host = hostname.endsWith(HOST_LABEL_SEPARATOR) ? hostname.slice(0, -1) : hostname;
   if (IPV4_HOST.test(host)) return true;
   const labels = host.split(HOST_LABEL_SEPARATOR);
-  const topLevelLabel = labels.pop() ?? "";
+  const topLevelLabel = labels[labels.length - 1];
   return (
-    labels.length > 0 &&
-    labels.every((label) => isHostLabel(label, ALPHANUMERIC_CHAR)) &&
+    labels.length > 1 &&
+    labels.slice(0, -1).every((label) => isHostLabel(label, ALPHANUMERIC_CHAR)) &&
     isHostLabel(topLevelLabel, LETTER_CHAR)
   );
 };
