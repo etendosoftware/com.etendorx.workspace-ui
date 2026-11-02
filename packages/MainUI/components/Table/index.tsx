@@ -41,6 +41,7 @@ import type {
   UIPattern,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
+import { isRecordCreationBlocked, isRecordEditionBlocked } from "./utils/uiPatternPermissions";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -1856,7 +1857,7 @@ const DynamicTable = ({
     async (row: MRT_Row<EntityData>) => {
       // Logic based on uIPattern
       // RO: Disable Inline Edit
-      if (uIPattern === UIPatternEnum.READ_ONLY) {
+      if (isRecordEditionBlocked(uIPattern)) {
         logger.warn("[InlineEditing] Editing blocked due to READ_ONLY UIPattern");
         return;
       }
@@ -1912,11 +1913,7 @@ const DynamicTable = ({
   const handleInsertRow = useCallback(async () => {
     // Logic based on uIPattern
     // RO, SR, ED: Disable Insert
-    if (
-      uIPattern === UIPatternEnum.READ_ONLY ||
-      uIPattern === UIPatternEnum.EDIT_ONLY ||
-      uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY
-    ) {
+    if (isRecordCreationBlocked(uIPattern)) {
       logger.warn("[InlineEditing] Insert blocked due to UIPattern restrictions");
       return;
     }
@@ -2501,9 +2498,14 @@ const DynamicTable = ({
   }, [handleInsertRow]);
 
   const handleContextMenuNewRecord = useCallback(() => {
+    // Same restriction as the inline insert: RO, SR and ED tabs cannot create records
+    if (isRecordCreationBlocked(uIPattern)) {
+      logger.warn("[InlineEditing] New record blocked due to UIPattern restrictions");
+      return;
+    }
     // Open form view in new mode
     setRecordId(NEW_RECORD_ID);
-  }, [setRecordId]);
+  }, [setRecordId, uIPattern]);
 
   const renderFirstColumnCell = useCallback(
     ({
@@ -4245,7 +4247,7 @@ const DynamicTable = ({
         onEditRow={handleContextMenuEditRow}
         onInsertRow={handleContextMenuInsertRow}
         onNewRecord={handleContextMenuNewRecord}
-        canEdit={true}
+        canEdit={!isRecordEditionBlocked(uIPattern)}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
