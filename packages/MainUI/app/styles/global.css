@@ -443,3 +443,28 @@ button {
 .react-grid-layout:has(> .resizing, > .react-draggable-dragging) {
   user-select: none;
 }
+
+/* Brief tint over the fields a callout changed (ETP-4615). Duration matches CALLOUT_HIGHLIGHT_DURATION_MS. */
+.callout-highlight-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 0.25rem;
+  background-color: color-mix(in srgb, var(--color-dynamic-main) 18%, transparent);
+  animation: callout-highlight-fade 1500ms ease-out forwards;
+}
+
+@keyframes callout-highlight-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .callout-highlight-overlay {
+    animation: none;
+  }
+}
