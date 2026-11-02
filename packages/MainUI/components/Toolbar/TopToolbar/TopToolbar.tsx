@@ -37,7 +37,7 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
           data-testid="ToolbarSection__f0537e_2"
         />
       </div>
-      <div className="flex items-center gap-2 [&_button]:h-9 [&_button]:w-9 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-(--ui-nav-btn-bg)!">
+      <div className="flex items-center gap-2 [&_button]:h-9 [&_button]:w-9 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-(--ui-nav-btn-bg)! [&_button:not([style*=background-color]):not(:disabled):hover]:bg-(--color-dynamic-main)!">
         <ToolbarSection {...rightSection} className="flex items-center gap-2" data-testid="ToolbarSection__f0537e_3" />
         <div
           ref={setExtrasSlot}

@@ -63,7 +63,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <div className="shrink-0">
               <ThemeToggle data-testid="ThemeToggle__519d5c" />
             </div>
-            <div className="h-full shrink-0 [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:hover]:bg-(--ui-nav-btn-hover)">
+            <div className="h-full shrink-0 [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:not(:disabled):hover]:bg-(--color-dynamic-main)">
               <Navigation data-testid="Navigation__519d5c" />
             </div>
           </div>
