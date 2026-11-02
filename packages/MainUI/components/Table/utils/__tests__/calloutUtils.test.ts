@@ -203,13 +203,16 @@ describe("processCalloutAuxiliaryValues", () => {
 // ─── getCalloutChangedFieldNames ─────────────────────────────────────────────
 
 describe("getCalloutChangedFieldNames", () => {
-  const ROW_VALUES = { priceActual: 10, tax: "TAX1", active: true };
+  const PRICE = "priceActual";
+  const TAX = "tax";
+  const ACTIVE = "active";
+  const ROW_VALUES = { [PRICE]: 10, [TAX]: "TAX1", [ACTIVE]: true };
 
   beforeEach(() => {
     mockGetFieldsByHqlName.mockReturnValue({
-      priceActual: makeField({ hqlName: "priceActual" }),
-      active: makeField({
-        hqlName: "active",
+      [PRICE]: makeField({ hqlName: PRICE }),
+      [ACTIVE]: makeField({
+        hqlName: ACTIVE,
         column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } as Field["column"],
       }),
     });
@@ -217,18 +220,16 @@ describe("getCalloutChangedFieldNames", () => {
 
   it("returns only the fields whose value differs from the row value", () => {
     const updates = [
-      { fieldName: "priceActual", value: "12.5" },
-      { fieldName: "tax", value: "TAX1", identifier: "Tax 1" },
+      { fieldName: PRICE, value: "12.5" },
+      { fieldName: TAX, value: "TAX1", identifier: "Tax 1" },
     ];
 
-    expect(getCalloutChangedFieldNames(ROW_VALUES, updates, EMPTY_TAB)).toEqual(["priceActual"]);
+    expect(getCalloutChangedFieldNames(ROW_VALUES, updates, EMPTY_TAB)).toEqual([PRICE]);
   });
 
   it("compares boolean fields once their Classic value is converted", () => {
-    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: "active", value: "Y" }], EMPTY_TAB)).toEqual([]);
-    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: "active", value: "" }], EMPTY_TAB)).toEqual([
-      "active",
-    ]);
+    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: ACTIVE, value: "Y" }], EMPTY_TAB)).toEqual([]);
+    expect(getCalloutChangedFieldNames(ROW_VALUES, [{ fieldName: ACTIVE, value: "" }], EMPTY_TAB)).toEqual([ACTIVE]);
   });
 
   it("returns nothing when the callout returned no updates", () => {

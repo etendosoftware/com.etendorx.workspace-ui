@@ -90,11 +90,13 @@ describe("calloutHighlight", () => {
   });
 
   describe("collectChangedFieldNames", () => {
-    it("returns only the fields whose value changed", () => {
-      const previous = { price: 10, tax: "TAX1", active: true, description: "" };
-      const next = { price: "12.5", tax: "TAX1", active: true, description: null };
+    const PRICE = "price";
 
-      expect(collectChangedFieldNames(previous, next)).toEqual(["price"]);
+    it("returns only the fields whose value changed", () => {
+      const previous = { [PRICE]: 10, tax: "TAX1", active: true, description: "" };
+      const next = { [PRICE]: "12.5", tax: "TAX1", active: true, description: null };
+
+      expect(collectChangedFieldNames(previous, next)).toEqual([PRICE]);
     });
 
     it("reports a field the form did not hold yet when its new value is not empty", () => {
@@ -102,7 +104,7 @@ describe("calloutHighlight", () => {
     });
 
     it("returns nothing when there are no new values", () => {
-      expect(collectChangedFieldNames({ price: 10 }, {})).toEqual([]);
+      expect(collectChangedFieldNames({ [PRICE]: 10 }, {})).toEqual([]);
     });
   });
 });
