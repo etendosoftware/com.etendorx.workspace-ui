@@ -91,7 +91,9 @@ export const useFormValidation = (tab: Tab) => {
     if (!tab?.fields) return [];
 
     return Object.values(tab.fields).filter((field: Field) => {
-      return isLinkReference(field.column?.reference) && field.displayed && !field.isReadOnly && !isPropertyField(field);
+      return (
+        isLinkReference(field.column?.reference) && field.displayed && !field.isReadOnly && !isPropertyField(field)
+      );
     });
   }, [tab?.fields]);
 

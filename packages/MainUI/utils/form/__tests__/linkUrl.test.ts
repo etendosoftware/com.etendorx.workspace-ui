@@ -14,7 +14,6 @@
  *************************************************************************
  */
 
-
 import { isLinkReference, isValidLinkUrl, toOpenableLinkUrl } from "../linkUrl";
 import { FIELD_REFERENCE_CODES } from "../constants";
 

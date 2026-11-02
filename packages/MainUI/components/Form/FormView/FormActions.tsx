@@ -204,13 +204,19 @@ export function FormActions({
 
         if (!validationResult.isValid) {
           const missingFields = joinFieldLabels(validationResult.missingFields);
-          reportFieldErrors(`The following required fields are missing: ${missingFields}`, validationResult.missingFields);
+          reportFieldErrors(
+            `The following required fields are missing: ${missingFields}`,
+            validationResult.missingFields
+          );
           return false;
         }
 
         const invalidLinkFields = validateLinkFields();
         if (invalidLinkFields.length > 0) {
-          const message = t("form.link.invalidUrlFields").replace(FIELDS_PLACEHOLDER, joinFieldLabels(invalidLinkFields));
+          const message = t("form.link.invalidUrlFields").replace(
+            FIELDS_PLACEHOLDER,
+            joinFieldLabels(invalidLinkFields)
+          );
           reportFieldErrors(message, invalidLinkFields);
           return false;
         }

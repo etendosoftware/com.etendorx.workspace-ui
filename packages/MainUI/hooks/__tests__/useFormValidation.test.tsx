@@ -482,7 +482,13 @@ describe("useFormValidation", () => {
     const INVALID_URL = "not a url";
 
     const createLinkField = (hqlName: string, overrides: Partial<Field> = {}): Field =>
-      createMockField({ id: hqlName, hqlName, name: `Label ${hqlName}`, column: { reference: LINK_REFERENCE }, ...overrides });
+      createMockField({
+        id: hqlName,
+        hqlName,
+        name: `Label ${hqlName}`,
+        column: { reference: LINK_REFERENCE },
+        ...overrides,
+      });
 
     const renderLinkValidation = (fields: Record<string, Field>, defaultValues: Record<string, unknown>) =>
       renderHook(() => useFormValidation(createMockTab({ fields })), {
@@ -497,7 +503,9 @@ describe("useFormValidation", () => {
         { url: INVALID_URL, site: "www.etendo.software" }
       );
 
-      expect(result.current.validateLinkFields()).toEqual([{ fieldName: "url", fieldLabel: "Label url", isValid: false }]);
+      expect(result.current.validateLinkFields()).toEqual([
+        { fieldName: "url", fieldLabel: "Label url", isValid: false },
+      ]);
     });
 
     test("accepts an empty optional Link field", () => {
@@ -511,7 +519,10 @@ describe("useFormValidation", () => {
       ["not displayed", { displayed: false }],
       ["property", { column: { reference: LINK_REFERENCE, propertyPath: "partner.url" } }],
     ])("skips a %s Link field", (_kind, overrides) => {
-      const { result } = renderLinkValidation({ url: createLinkField("url", overrides as Partial<Field>) }, { url: INVALID_URL });
+      const { result } = renderLinkValidation(
+        { url: createLinkField("url", overrides as Partial<Field>) },
+        { url: INVALID_URL }
+      );
 
       expect(result.current.validateLinkFields()).toEqual([]);
     });
