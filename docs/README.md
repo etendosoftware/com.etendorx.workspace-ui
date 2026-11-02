@@ -22,6 +22,8 @@ docs/
 │   │   (export of stored process JS: ../process/definition/exporting-process-js.md)
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
+│   ├── callout-changed-field-highlight/ # Feature: Brief highlight of the fields a callout changed
+│   │   └── README.md                # Change detection, timing, form and grid inline editing
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
