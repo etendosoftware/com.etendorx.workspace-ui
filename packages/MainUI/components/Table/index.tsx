@@ -331,7 +331,11 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
           data-testid="CellEditorFactory__8ca888"
         />
       </React.Suspense>
-      <CalloutHighlightOverlay scope={getGridHighlightScope(tabId, rowId)} fieldName={fieldKey} />
+      <CalloutHighlightOverlay
+        scope={getGridHighlightScope(tabId, rowId)}
+        fieldName={fieldKey}
+        data-testid="CalloutHighlightOverlay__8ca888"
+      />
     </div>
   );
 };

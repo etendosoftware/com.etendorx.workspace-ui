@@ -593,7 +593,11 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
         </div>
         <div className={`${inputWidthClass(field.obuiappColspan)} relative`}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
-          <CalloutHighlightOverlay scope={getFormHighlightScope(tab.id)} fieldName={field.hqlName} />
+          <CalloutHighlightOverlay
+            scope={getFormHighlightScope(tab.id)}
+            fieldName={field.hqlName}
+            data-testid={"CalloutHighlightOverlay__" + field.id}
+          />
         </div>
       </div>
     );
