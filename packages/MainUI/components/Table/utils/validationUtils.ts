@@ -19,6 +19,7 @@ import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { Field, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { ValidationError, RowValidationResult } from "../types/inlineEditing";
 import { getFieldReference } from "@/utils";
+import { isLinkReference, isValidLinkUrl } from "@/utils/form/linkUrl";
 
 /**
  * Converts a Column to a Field-like object for validation using existing utilities
@@ -91,6 +92,11 @@ export function validateFieldValue(field: Field | Column, value: unknown): strin
   // Skip validation for empty optional fields
   if (!fieldData.isMandatory && (value === null || value === undefined || value === "")) {
     return undefined;
+  }
+
+  // Link fields are TEXT; their reference is read from the original metadata, which the conversion drops
+  if (isLinkReference(field.column?.reference) && !isValidLinkUrl(value)) {
+    return `${fieldData.description || fieldData.name} must be a valid URL`;
   }
 
   // Type-specific validation

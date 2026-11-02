@@ -7,6 +7,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useFormContext } from "react-hook-form";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
+import en from "@workspaceui/componentlibrary/src/locales/en";
 
 /**
  * Test helpers
@@ -84,6 +85,16 @@ const holdGuardTransition = () => {
   });
 };
 
+/** Mocks useFormValidation: by default every required and Link field is valid. */
+const mockFormValidation = (overrides: Record<string, unknown> = {}) => {
+  (useFormValidation as jest.Mock).mockReturnValue({
+    validateRequiredFields: jest.fn(() => ({ isValid: true, missingFields: [] })),
+    validateLinkFields: jest.fn(() => []),
+    requiredFields: [],
+    ...overrides,
+  });
+};
+
 const renderFormActions = (props: ComponentProps<typeof FormActions>) => {
   return render(<FormActions {...props} />);
 };
@@ -145,6 +156,10 @@ jest.mock("@/contexts/UnsavedChangesTabGuard", () => ({
   useUnsavedChangesTabGuard: () => ({ guardTransition: mockGuardTransition }),
 }));
 
+jest.mock("@/contexts/language", () => ({
+  useLanguage: () => ({ language: "en_US" }),
+}));
+
 jest.mock("@/hooks/useFormValidation", () => ({
   useFormValidation: jest.fn(),
 }));
@@ -196,13 +211,7 @@ describe("FormActions", () => {
       formState: { isDirty: false },
       reset: mockReset,
     });
-    (useFormValidation as jest.Mock).mockReturnValue({
-      validateRequiredFields: jest.fn(() => ({
-        isValid: true,
-        missingFields: [],
-      })),
-      requiredFields: [],
-    });
+    mockFormValidation();
   });
 
   it("renders and registers actions under the form owner", () => {
@@ -231,10 +240,7 @@ describe("FormActions", () => {
 
   it("should enable save when NEW mode and defaults are valid", () => {
     // Mock valid form
-    (useFormValidation as jest.Mock).mockReturnValue({
-      validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
-      requiredFields: [{ hqlName: "active" }],
-    });
+    mockFormValidation({ requiredFields: [{ hqlName: "active" }] });
 
     renderFormActions({ ...props, mode: FormMode.NEW });
 
@@ -244,10 +250,7 @@ describe("FormActions", () => {
 
   it("should NOT enable save when EDIT mode even if valid (not dirty)", () => {
     // Mock valid form
-    (useFormValidation as jest.Mock).mockReturnValue({
-      validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
-      requiredFields: [{ hqlName: "active" }],
-    });
+    mockFormValidation({ requiredFields: [{ hqlName: "active" }] });
 
     renderFormActions({ ...props, mode: FormMode.EDIT });
 
@@ -577,7 +580,7 @@ describe("FormActions", () => {
 
   /** Makes the required-field validation fail for the given fields. */
   const mockMissingFields = (missingFields: Array<{ fieldName: string; fieldLabel: string }>) => {
-    (useFormValidation as jest.Mock).mockReturnValue({
+    mockFormValidation({
       validateRequiredFields: jest.fn(() => ({ isValid: false, missingFields })),
       requiredFields: missingFields.map(({ fieldName }) => ({ hqlName: fieldName })),
     });
@@ -619,6 +622,21 @@ describe("FormActions", () => {
 
       await waitFor(() => expect(props.onSave).toHaveBeenCalled());
       expect(onFieldErrors).not.toHaveBeenCalled();
+    });
+
+    it("blocks the save and reveals the Link fields that do not hold a valid URL", async () => {
+      mockFormValidation({
+        validateLinkFields: jest.fn(() => [{ fieldName: "url", fieldLabel: "URL", isValid: false }]),
+      });
+      const mockShowErrorModal = jest.fn();
+      const onFieldErrors = jest.fn();
+      renderFormActions({ ...props, showErrorModal: mockShowErrorModal, onFieldErrors });
+
+      pressSaveShortcut();
+
+      await waitFor(() => expect(onFieldErrors).toHaveBeenCalledWith(["url"]));
+      expect(mockShowErrorModal).toHaveBeenCalledWith(en.form.link.invalidUrlFields.replace("{{fields}}", "URL"));
+      expect(props.onSave).not.toHaveBeenCalled();
     });
 
     it("still shows the error when no handler is provided", async () => {

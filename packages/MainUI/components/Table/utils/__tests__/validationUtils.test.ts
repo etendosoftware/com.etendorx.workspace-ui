@@ -1,5 +1,5 @@
 import { FieldType } from "@workspaceui/api-client/src/api/types";
-import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Column, Field, EntityData } from "@workspaceui/api-client/src/api/types";
 import {
   validateFieldValue,
   validateRowData,
@@ -137,6 +137,25 @@ describe("validationUtils", () => {
 
       it("should reject non-string types", () => {
         expect(validateFieldValue(textField, 123)).toContain("must be text");
+      });
+    });
+
+    describe("link validation", () => {
+      const LINK_REFERENCE = { reference: "800101" };
+      const linkField = makeField({ column: LINK_REFERENCE } as Partial<Field>);
+      const linkColumn = { name: "url", header: "URL", column: LINK_REFERENCE } as unknown as Column;
+
+      it.each([["www.etendo.software"], ["https://www.etendo.software"], [""]])("should accept %p", (value) => {
+        expect(validateFieldValue(linkField, value)).toBeUndefined();
+      });
+
+      it("should reject a value that is not a URL in a field or a grid column", () => {
+        expect(validateFieldValue(linkField, "not a url")).toBe("Test Field must be a valid URL");
+        expect(validateFieldValue(linkColumn, "not a url")).toBe("URL must be a valid URL");
+      });
+
+      it("should not validate other text fields as URLs", () => {
+        expect(validateFieldValue(makeField({ type: FieldType.TEXT }), "not a url")).toBeUndefined();
       });
     });
   });
