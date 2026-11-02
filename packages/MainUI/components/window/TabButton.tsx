@@ -39,7 +39,7 @@ export const TabButton = ({
   const { window } = useMetadataContext();
   // Outside a Window subtree the identifier defaults to "", which is never dirty.
   const windowIdentifier = useCurrentWindowIdentifier();
-  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
+  const isDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
   const recordCount = useTabCountsStore((s) => s.counts[getTabCountKey(windowIdentifier, tab.id)]);
 
   const baseTitle = useMemo(() => {
@@ -59,8 +59,8 @@ export const TabButton = ({
     if (!baseTitle) {
       return baseTitle;
     }
-    return formatDirtyTitle(baseTitle, isTabDirty(dirtyWindows, windowIdentifier, tab.id));
-  }, [baseTitle, dirtyWindows, windowIdentifier, tab.id]);
+    return formatDirtyTitle(baseTitle, isDirty);
+  }, [baseTitle, isDirty]);
 
   const handleClick = useCallback(() => {
     onClick(tab);

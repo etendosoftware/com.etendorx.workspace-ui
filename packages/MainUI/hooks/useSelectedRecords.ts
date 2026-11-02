@@ -18,6 +18,7 @@
 import { useState, useEffect } from "react";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { GraphEventListener } from "@/data/graph";
+import { sameRecords } from "@/utils/sameRecords";
 import { useSelected } from "@/hooks/useSelected";
 
 export const useSelectedRecords = (tab?: Tab) => {
@@ -33,13 +34,13 @@ export const useSelectedRecords = (tab?: Tab) => {
 
     const handleSelectMultiple: GraphEventListener<"selectedMultiple"> = (eventTab, records) => {
       if (tab.id === eventTab.id) {
-        setSelected(records);
+        setSelected((previous) => (sameRecords(previous, records) ? previous : records));
       }
     };
 
     const handleUnselectMultiple: GraphEventListener<"unselectedMultiple"> = (eventTab) => {
       if (tab.id === eventTab.id) {
-        setSelected([]);
+        setSelected((previous) => (previous.length === 0 ? previous : []));
       }
     };
 

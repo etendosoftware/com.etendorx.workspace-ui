@@ -18,6 +18,7 @@
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -104,7 +105,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  // The flag flips twice on every selection and only disables the process button: a hidden tab has none on screen
+  const isActiveTab = useIsActiveTab();
+  const isSessionSyncLoading = useUserStore((s) => isActiveTab && s.isSessionSyncLoading);
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
   const session = useUserStore((s) => s.session);
   const token = useUserStore((s) => s.token);

@@ -29,7 +29,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowStore } from "@/stores/windowStore";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useLiveTabRecord } from "@/hooks/useLiveTabRecord";
 import { useUserStore } from "@/stores/userStore";
@@ -179,12 +179,27 @@ const TabsGroupRenderer = ({
   );
 };
 
+/** One string with the selected record of every tab, so a selector over it only changes when one of them does. */
+const selectedRecordsKey = (tabs?: Record<string, { selectedRecord?: string }>): string =>
+  tabs
+    ? Object.entries(tabs)
+        .map(([id, tab]) => `${id}:${tab.selectedRecord ?? ""}`)
+        .join("|")
+    : "";
+
 export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
   /**
    * Multi-window navigation hook providing access to current window state.
    */
   const windowIdentifier = useCurrentWindowIdentifier();
-  const { getSelectedRecord } = useWindowContext();
+  // Re-render only when a selected record of this window changes (the groups below mount once their parent has one);
+  // subscribing to the whole windows map would re-render every open window's tabs on any store write.
+  useWindowStore((s) => selectedRecordsKey(s.windows[windowIdentifier ?? ""]?.tabs));
+  const getSelectedRecord = useCallback(
+    (identifier: string, tabId: string): string | undefined =>
+      useWindowStore.getState().windows[identifier]?.tabs[tabId]?.selectedRecord,
+    []
+  );
   const topBarSlots = useTopBarSlots();
 
   const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({

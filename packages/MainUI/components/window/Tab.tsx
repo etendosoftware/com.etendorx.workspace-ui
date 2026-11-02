@@ -186,8 +186,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   });
   // Same source of truth as the guard itself: TabContext's `hasFormChanges` is also raised
   // for a pristine NEW record, which must not trigger the prompt.
-  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
-  const isCurrentTabDirty = isTabDirty(dirtyWindows, windowIdentifier, tab.id);
+  // A boolean selector: the whole dirtyWindows map changes for any tab of any window
+  const isCurrentTabDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
   const splitState = useWindowStore((s) => {
     if (!windowIdentifier) return DEFAULT_SPLIT_STATE;
     return s.windows[windowIdentifier]?.tabs[tab.id]?.split ?? DEFAULT_SPLIT_STATE;
