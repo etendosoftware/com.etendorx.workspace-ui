@@ -25,7 +25,8 @@ import { useDrawerHighlight } from "../DrawerHighlightContext";
 import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
 
 /** Ring painted on the entry the keyboard navigation is currently on. */
-const MENU_ITEM_HIGHLIGHT_CLASSES = "ring-2 ring-inset ring-blue-500";
+// Softer in dark: the full-strength lilac ring drew more attention than the entry that is actually open
+const MENU_ITEM_HIGHLIGHT_CLASSES = "ring-2 ring-inset ring-blue-500 dark:ring-blue-500/40";
 
 function getIconSrc(item: { icon?: string | null; type?: string }): string {
   if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;

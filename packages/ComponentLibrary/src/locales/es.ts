@@ -135,7 +135,7 @@ const es = {
       noFileSelected: "Ningún archivo seleccionado",
     },
     statusBar: {
-      closeRecord: "Cerrar registro",
+      closeRecord: "Cerrar registro y volver a la grilla",
       nextRecord: "Siguiente registro",
       previousRecord: "Registro anterior",
     },

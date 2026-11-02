@@ -135,7 +135,7 @@ const en = {
       noFileSelected: "No file selected",
     },
     statusBar: {
-      closeRecord: "Close Record",
+      closeRecord: "Close record and back to the grid",
       nextRecord: "Next Record",
       previousRecord: "Previous Record",
     },

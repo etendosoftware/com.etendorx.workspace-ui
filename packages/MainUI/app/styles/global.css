@@ -318,6 +318,17 @@ select:-webkit-autofill:focus {
   transition: background-color 200ms ease-in-out;
 }
 
+/* The menu search sits on its own container color: autofill must not paint a box of another color inside it.
+   TextInputAutocomplete paints its own autofill fill with !important through emotion, so this one needs the
+   extra class to outrank it. */
+.drawer-search input.MuiOutlinedInput-input:-webkit-autofill,
+.drawer-search input.MuiOutlinedInput-input:-webkit-autofill:hover,
+.drawer-search input.MuiOutlinedInput-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ui-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-search-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--ui-search-bg) inset !important;
+}
+
 .center-all {
   display: flex;
   width: 100%;
@@ -618,6 +629,16 @@ html[data-theme="dark"] {
   --color-blue-700: #b2a7ee;
   --color-blue-800: #c8bff4;
   --color-blue-900: #ddd7f9;
+}
+
+/* The breadcrumb's "..." button takes its background from the accent's contrast text, a light lilac in dark that hid its dots */
+html[data-theme="dark"] button[aria-label="Show hidden breadcrumb items"] {
+  background-color: var(--ui-chip-bg);
+  color: var(--ui-text-soft);
+}
+
+html[data-theme="dark"] button[aria-label="Show hidden breadcrumb items"]:hover {
+  background-color: var(--ui-chip-hover);
 }
 
 /* Literal white surfaces become the dark card color; `text-white` and `bg-white/NN` overlays are left alone. */
