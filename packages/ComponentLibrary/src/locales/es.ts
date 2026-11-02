@@ -531,6 +531,10 @@ const es = {
     select: {
       placeholder: "Seleccione una opción",
     },
+    link: {
+      invalidUrl: "Ingrese una URL válida, p. ej. www.ejemplo.com",
+      invalidUrlFields: "Los siguientes campos no contienen una URL válida: {{fields}}",
+    },
   },
   copilot: {
     copilotProfile: "Perfil Copilot",
