@@ -71,6 +71,7 @@ function columnToFieldForValidation(column: Column): Field {
     refList: (column as any).refList || [],
     isReadOnly: (column as any).isReadOnly || false,
     isUpdatable: (column as any).isUpdatable !== false, // Default to true if not specified
+    column: column.column, // Keeps the reference: a Link field is TEXT, only its reference tells it apart
     // Add other properties as needed for validation
   } as Field;
 }
@@ -94,9 +95,9 @@ export function validateFieldValue(field: Field | Column, value: unknown): strin
     return undefined;
   }
 
-  // Link fields are TEXT; their reference is read from the original metadata, which the conversion drops
-  if (isLinkReference(field.column?.reference) && !isValidLinkUrl(value)) {
-    return `${fieldData.description || fieldData.name} must be a valid URL`;
+  const linkError = validateLinkField(fieldData, value);
+  if (linkError) {
+    return linkError;
   }
 
   // Type-specific validation
@@ -122,6 +123,17 @@ export function validateFieldValue(field: Field | Column, value: unknown): strin
     default:
       return undefined;
   }
+}
+
+/**
+ * Validates the value of a Link (URL) field, which is a TEXT field told apart by its reference
+ * @returns The error message, or undefined when the field is not a Link one or holds a valid URL
+ */
+function validateLinkField(field: Field, value: unknown): string | undefined {
+  if (isLinkReference(field.column?.reference) && !isValidLinkUrl(value)) {
+    return `${field.description || field.name} must be a valid URL`;
+  }
+  return undefined;
 }
 
 /**
@@ -481,6 +493,12 @@ export function validateFieldRealTime(
     }
     // For optional fields or when allowEmpty is true, empty values are valid
     return { isValid: true };
+  }
+
+  // Like Classic, a Link URL is only flagged when leaving the cell or saving, never while typing
+  const linkError = showTypingErrors ? validateLinkField(fieldData, value) : undefined;
+  if (linkError) {
+    return { isValid: false, error: linkError };
   }
 
   // Type-specific real-time validation

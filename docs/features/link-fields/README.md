@@ -23,8 +23,11 @@ so they behave like Classic's `OBLinkItem` (Jira ETP-5981).
   fields (*"The following fields do not contain a valid URL: …"*) and the first one is revealed and
   focused through the same path as missing required fields
   (see [form-validation.md](../form-validation.md#revealing-missing-fields-in-collapsed-sections)).
-- **Grid inline editing**: `validateFieldValue` returns `"<field label> must be a valid URL"`, so the cell
-  shows the error while editing and the row is not saved.
+- **Grid inline editing**: the cell is flagged with `"<field label> must be a valid URL"` when the user
+  leaves it (not while typing), and saving the row is blocked. Both the row validation
+  (`validateFieldValue`) and the real-time/final-save one (`validateFieldRealTime`) run the same check.
+  The Column-to-Field conversion of `validationUtils` keeps `column`: metadata fields carry no `type`, so
+  they are converted, and without it the Link reference was lost and nothing was flagged.
 - An **empty value is valid**; whether it may be empty is decided by the required-field validation.
 
 ### Validation rules

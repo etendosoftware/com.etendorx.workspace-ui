@@ -157,6 +157,36 @@ describe("validationUtils", () => {
       it("should not validate other text fields as URLs", () => {
         expect(validateFieldValue(makeField({ type: FieldType.TEXT }), "not a url")).toBeUndefined();
       });
+
+      it("should flag an invalid URL when leaving the cell, but not while typing", () => {
+        expect(validateFieldRealTime(linkColumn, "not a url", { showTypingErrors: true })).toEqual({
+          isValid: false,
+          error: "URL must be a valid URL",
+        });
+        expect(validateFieldRealTime(linkColumn, "not a url", { showTypingErrors: false }).isValid).toBe(true);
+        expect(validateFieldRealTime(linkColumn, "www.etendo.software", { showTypingErrors: true }).isValid).toBe(true);
+      });
+
+      it("should validate a metadata field, which has no type, when the row is saved", () => {
+        // Fields from the metadata carry no `type`, so they go through the Column-to-Field conversion
+        const metadataField = {
+          name: "URL",
+          hqlName: "url",
+          isUpdatable: true,
+          column: LINK_REFERENCE,
+        } as unknown as Field;
+        const invalidRow = { url: "not a url" } as EntityData;
+
+        expect(validateExistingRowForSave([metadataField], invalidRow, { url: "" } as EntityData).isValid).toBe(false);
+        expect(validateNewRowForSave([metadataField], invalidRow).isValid).toBe(false);
+      });
+
+      it("should block the final save of a row holding an invalid URL", () => {
+        const column = { ...linkColumn, columnName: "url" } as unknown as Column;
+
+        expect(validateRowForSave([column], { url: "not a url" } as EntityData).isValid).toBe(false);
+        expect(validateRowForSave([column], { url: "www.etendo.software" } as EntityData).isValid).toBe(true);
+      });
     });
   });
 
