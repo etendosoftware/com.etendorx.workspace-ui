@@ -55,7 +55,7 @@ import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
 import { isTreeModeSupported } from "@/utils/table/treeMode";
-import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
+import { createProcessMenuButton, isProcessButtonAccessible } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -269,7 +269,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
       const record = selectedRecord || selectedRecords[0];
-      if (!record) return;
+      if (!record || !isProcessButtonAccessible(button)) return;
 
       if (isProcessActionButton(button)) {
         await runProcessAction(button, String(record.id));
