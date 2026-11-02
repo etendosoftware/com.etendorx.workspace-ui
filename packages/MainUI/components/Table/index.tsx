@@ -4385,8 +4385,9 @@ const DynamicTable = ({
   const isActiveTab = useIsActiveTab();
   // A grid shown again is not rendered anew unless something it shows changed: rendering it rebuilds its
   // header, and showing a tab would then redraw the whole grid.
+  // A collapsed tab is display:none too: nothing of its grid is on screen
   const tableElement = useFrozenWhileHidden(
-    isVisible && isWindowActive && isActiveTab,
+    isVisible && isWindowActive && isActiveTab && !isTabCollapsed,
     <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
     [effectiveRecords, table.getState().rowSelection, tableState, columns],
     true
