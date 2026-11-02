@@ -33,6 +33,6 @@ describe("uiPatternPermissions", () => {
   it("blocks record edition only on read-only tabs", () => {
     expect(isRecordEditionBlocked(UIPattern.READ_ONLY)).toBe(true);
     expect(isRecordEditionBlocked(UIPattern.EDIT_ONLY)).toBe(false);
-    expect(isRecordEditionBlocked(undefined)).toBe(false);
+    expect(isRecordEditionBlocked()).toBe(false);
   });
 });
