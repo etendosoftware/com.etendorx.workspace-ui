@@ -43,10 +43,9 @@ function StatusBar({ onFooterRef }: { onFooterRef: (element: HTMLElement | null)
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const [title, setTitle] = useState<HTMLElement | null>(null);
-  const [pagination, setPagination] = useState<HTMLElement | null>(null);
   const [footer, setFooter] = useState<HTMLElement | null>(null);
   const [titleSuffix, setTitleSuffix] = useState<HTMLElement | null>(null);
-  const slots = useMemo(() => ({ title, titleSuffix, footer, pagination }), [title, titleSuffix, footer, pagination]);
+  const slots = useMemo(() => ({ title, titleSuffix, footer }), [title, titleSuffix, footer]);
 
   return (
     <TopBarSlotsContext.Provider value={slots}>
@@ -59,7 +58,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <div ref={setTitle} className="min-w-0" data-testid="TopBarSlot__title" />
               <div ref={setTitleSuffix} className="shrink-0" data-testid="TopBarSlot__titleSuffix" />
             </div>
-            <div ref={setPagination} className="shrink-0 flex items-center" data-testid="TopBarSlot__pagination" />
             <div className="shrink-0">
               <ThemeToggle data-testid="ThemeToggle__519d5c" />
             </div>

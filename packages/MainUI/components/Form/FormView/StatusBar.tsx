@@ -25,8 +25,6 @@ import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
 import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
-import { useTopBarSlots } from "@/contexts/TitleActionsSlot";
-import { useTabContext } from "@/contexts/tab";
 import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 import { createPortal } from "react-dom";
 
@@ -48,11 +46,7 @@ export default function StatusBar({
   const { t } = useTranslation();
   // Same action as Ctrl+Shift+X (classic ToolBar_SaveClose), registered by FormActions.
   const { onSaveAndClose } = useToolbarCommands();
-  const { pagination: topBarPaginationSlot } = useTopBarSlots();
-  const { tab } = useTabContext();
-  const { slot: toolbarExtrasSlot } = useToolbarExtrasSlot();
-  // The root tab's record pagination goes to the top bar; a child tab's goes to its own toolbar.
-  const paginationSlot = tab?.tabLevel === 0 ? topBarPaginationSlot : toolbarExtrasSlot;
+  const { slot: paginationSlot } = useToolbarExtrasSlot();
   const hasStatusFields = Object.keys(fields).length > 0;
 
   const navigation = (
@@ -80,7 +74,7 @@ export default function StatusBar({
     </div>
   );
 
-  // With the top bar available, pagination and close live there and this row only exists for status fields.
+  // With the tab's toolbar available, pagination and close live there and this row only exists for status fields.
   if (paginationSlot) {
     return (
       <>

@@ -21,15 +21,14 @@ import { createContext, useContext } from "react";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 
-/** DOM nodes of the top bar the active window fills: breadcrumb, the record count next to it, record pagination and the footer selection counter. */
+/** DOM nodes of the top bar the active window fills: breadcrumb, the record count next to it and the footer selection counter. */
 export interface TopBarSlots {
   title: HTMLElement | null;
   titleSuffix: HTMLElement | null;
   footer: HTMLElement | null;
-  pagination: HTMLElement | null;
 }
 
-const EMPTY_SLOTS: TopBarSlots = { title: null, titleSuffix: null, footer: null, pagination: null };
+const EMPTY_SLOTS: TopBarSlots = { title: null, titleSuffix: null, footer: null };
 
 export const TopBarSlotsContext = createContext<TopBarSlots>(EMPTY_SLOTS);
 
