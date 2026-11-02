@@ -18,6 +18,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { ProcessExecution } from "@workspaceui/api-client/src/api/processMonitor";
 import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -29,14 +30,84 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { PROCESS_MONITOR_WINDOW_ID, PROCESS_REQUEST_WINDOW_ID } from "@/utils/processMonitor/constants";
-import { isMisfired, recentFailures, runningExecutions } from "@/utils/processMonitor/mergeExecutions";
+import { failedExecutions, misfiredExecutions, runningExecutions } from "@/utils/processMonitor/mergeExecutions";
 import { formatTimestamp } from "@/utils/processMonitor/format";
 import ProcessExecutionDetail from "./ProcessExecutionDetail";
 
+interface ExecutionSectionProps {
+  title: string;
+  executions: ProcessExecution[];
+  /** Text color of the process names, which tells the sections apart. */
+  tone: string;
+  onSelect: (id: string) => void;
+  unnamed: string;
+  /** When set, the section stays visible without executions and shows this text. */
+  emptyText?: string;
+  testId: string;
+  /** Whether the list starts expanded. */
+  defaultOpen?: boolean;
+}
+
+/** One collapsible status group of the popover; hidden while empty unless it has an empty-state text. */
+const ExecutionSection: React.FC<ExecutionSectionProps> = ({
+  title,
+  executions,
+  tone,
+  onSelect,
+  unnamed,
+  emptyText,
+  testId,
+  defaultOpen = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  if (executions.length === 0 && !emptyText) {
+    return null;
+  }
+
+  return (
+    <section className="px-3 pb-2" data-testid={testId}>
+      <h3 className="text-xs font-medium text-(--color-transparent-neutral-70)">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="w-full flex items-center justify-between px-1 pb-1 text-left cursor-pointer">
+          <span>
+            {title} ({executions.length})
+          </span>
+          <span aria-hidden="true" className={`transition-transform ${open ? "rotate-90" : ""}`}>
+            ›
+          </span>
+        </button>
+      </h3>
+      {!open ? null : executions.length === 0 ? (
+        <p className="px-1 py-2 text-sm text-(--color-transparent-neutral-70)">{emptyText}</p>
+      ) : (
+        <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+          {executions.map((execution) => (
+            <li key={execution.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(execution.id)}
+                className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
+                <span className={`text-sm font-medium break-words ${tone}`}>{execution.processName || unnamed}</span>
+                <span className="text-xs text-(--color-transparent-neutral-70)">
+                  {formatTimestamp(execution.endTime ?? execution.startTime)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
+
 /**
  * Header indicator of the background processes. It owns the polling (so failure toasts work with the
- * popover closed), shows a badge with the running count and, in a popover, the most recent failed
- * executions (click opens the error log) plus links to the Process Request / Process Monitor windows.
+ * popover closed), shows the running count in its label and, in a popover, the running, failed and
+ * misfired executions in a section each (click opens the detail) plus links to the Process Request / Process Monitor windows.
  * It disappears when the role has no access to the monitor.
  */
 const ProcessMonitorButton: React.FC = () => {
@@ -56,7 +127,8 @@ const ProcessMonitorButton: React.FC = () => {
 
   useProcessMonitorPolling(Boolean(token && roleId && !passwordExpired), roleId);
 
-  const failures = useMemo(() => recentFailures(executions), [executions]);
+  const failed = useMemo(() => failedExecutions(executions), [executions]);
+  const misfired = useMemo(() => misfiredExecutions(executions), [executions]);
   const running = useMemo(() => runningExecutions(executions), [executions]);
 
   // Same way the sidebar opens a window entry.
@@ -93,13 +165,6 @@ const ProcessMonitorButton: React.FC = () => {
           data-testid="IconButton__process-monitor">
           <ActivityIcon data-testid="Icon__process-monitor" />
         </IconButton>
-        {runningCount > 0 && (
-          <span
-            className="pointer-events-none absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] leading-4 text-center"
-            data-testid="process-monitor-running-badge">
-            {runningCount > 99 ? "99+" : runningCount}
-          </span>
-        )}
       </div>
       {open && (
         <Menu
@@ -117,60 +182,32 @@ const ProcessMonitorButton: React.FC = () => {
                 {t("processMonitor.staleWarning")}
               </output>
             )}
-            {running.length > 0 && (
-              <section className="px-3 pb-2" data-testid="process-monitor-running">
-                <h3 className="px-1 pb-1 text-xs font-medium text-(--color-transparent-neutral-70)">
-                  {t("processMonitor.running")}
-                </h3>
-                <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                  {running.map((execution) => (
-                    <li key={execution.id}>
-                      <button
-                        type="button"
-                        onClick={() => openDetail(execution.id)}
-                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
-                        <span className="text-sm font-medium text-green-700 break-words">
-                          {execution.processName || t("processMonitor.unnamedProcess")}
-                        </span>
-                        <span className="text-xs text-(--color-transparent-neutral-70)">
-                          {formatTimestamp(execution.startTime)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <section className="px-3 pb-3">
-              <h3 className="px-1 pb-1 text-xs font-medium text-(--color-transparent-neutral-70)">
-                {t("processMonitor.recentFailures")}
-              </h3>
-              {failures.length === 0 ? (
-                <p className="px-1 py-2 text-sm text-(--color-transparent-neutral-70)">
-                  {t("processMonitor.noFailures")}
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                  {failures.map((execution) => (
-                    <li key={execution.id}>
-                      <button
-                        type="button"
-                        onClick={() => openDetail(execution.id)}
-                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-(--color-transparent-neutral-5) flex flex-col transition-colors">
-                        <span
-                          className={`text-sm font-medium break-words ${isMisfired(execution) ? "text-amber-700" : "text-red-700"}`}>
-                          {execution.processName || t("processMonitor.unnamedProcess")}
-                          {isMisfired(execution) && ` (${t("processMonitor.misfired")})`}
-                        </span>
-                        <span className="text-xs text-(--color-transparent-neutral-70)">
-                          {formatTimestamp(execution.endTime ?? execution.startTime)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            <ExecutionSection
+              title={t("processMonitor.running")}
+              executions={running}
+              tone="text-green-700"
+              onSelect={openDetail}
+              unnamed={t("processMonitor.unnamedProcess")}
+              testId="process-monitor-running"
+              defaultOpen
+            />
+            <ExecutionSection
+              title={t("processMonitor.failed")}
+              executions={failed}
+              tone="text-red-700"
+              onSelect={openDetail}
+              unnamed={t("processMonitor.unnamedProcess")}
+              emptyText={t("processMonitor.noFailures")}
+              testId="process-monitor-failed"
+            />
+            <ExecutionSection
+              title={t("processMonitor.misfired")}
+              executions={misfired}
+              tone="text-amber-700"
+              onSelect={openDetail}
+              unnamed={t("processMonitor.unnamedProcess")}
+              testId="process-monitor-misfired"
+            />
             <div className="flex flex-col gap-1 border-t border-(--color-transparent-neutral-10) p-3">
               {[
                 [PROCESS_REQUEST_WINDOW_ID, t("processMonitor.requestWindow")],

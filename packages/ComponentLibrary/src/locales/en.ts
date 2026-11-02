@@ -1011,6 +1011,7 @@ const en = {
     buttonLabel: "Background processes",
     buttonLabelRunning: "Background processes (%0 running)",
     recentFailures: "Recent failures",
+    failed: "Failed",
     running: "Running",
     misfired: "Misfired",
     noFailures: "No recent failures",
