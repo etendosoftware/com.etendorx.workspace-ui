@@ -1,4 +1,5 @@
 import { expect, test } from "../../support/fixtures";
+import { runAndWaitForFormInitialization } from "../../support/wait";
 
 const BOM_PRODUCT = "BOM Product";
 const POST_REQUISITION = "Post Requisition";
@@ -17,7 +18,8 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     await app.sidebar.navigateTo("requisition");
 
     // ── Step 2: New Requisition ───────────────────────────────────────────────
-    await app.toolbar.newRecord();
+    // The new record's form initialization re-renders the form: a dropdown opened before it is closed
+    await runAndWaitForFormInitialization(page, () => app.toolbar.newRecord());
     await app.field.selectById("Business Partner", data.BUSINESS_PARTNER.EMPLOYEE_A.id);
     await app.toolbar.save();
     await app.toast.closeAll();
