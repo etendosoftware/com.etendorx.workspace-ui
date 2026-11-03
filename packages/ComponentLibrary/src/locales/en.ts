@@ -135,7 +135,7 @@ const en = {
       noFileSelected: "No file selected",
     },
     statusBar: {
-      closeRecord: "Close Record",
+      closeRecord: "Close record and back to the grid",
       nextRecord: "Next Record",
       previousRecord: "Previous Record",
     },
@@ -283,6 +283,7 @@ const en = {
       noType: "No type",
       noRecord: "No Row Selected",
       emptyRecords: "No records to show",
+      multipleParentsSelected: "Multiple parent records selected. You can only view children for 1 parent at a time.",
     },
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
@@ -291,6 +292,7 @@ const en = {
       showingRecords: "Showing {count} records",
       showingPartialRecords: "Showing {loaded} of {total} records",
       selectedRecords: "{count} selected",
+      titleCount: "({count} records)",
       recordsLoaded: "Records loaded",
     },
     selectAll: {
@@ -389,6 +391,8 @@ const en = {
     openLink: "Open link",
     reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
+    /** Title of the process a selector's "+" opens (Classic `OBUISEL_AddNewRecord`); %0 is the field. */
+    addNewRecord: "Add %0",
   },
   processModal: {
     gridToolbar: {
@@ -1007,6 +1011,7 @@ const en = {
     buttonLabel: "Background processes",
     buttonLabelRunning: "Background processes (%0 running)",
     recentFailures: "Recent failures",
+    failed: "Failed",
     running: "Running",
     misfired: "Misfired",
     noFailures: "No recent failures",

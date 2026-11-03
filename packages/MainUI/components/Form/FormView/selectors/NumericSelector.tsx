@@ -25,18 +25,33 @@ import { TextInput } from "./components/TextInput";
 
 type NumericType = "integer" | "decimal";
 
+/** `setValue` options of a value typed by the user, with `dirtyOnEdit`. */
+const EDITED_VALUE_OPTIONS = { shouldDirty: true } as const;
+
 interface UnifiedNumericSelectorProps extends React.ComponentProps<typeof TextInput> {
   field: Field;
   type?: NumericType;
+  /**
+   * Marks the value the user types as edited (dirty). A process modal sets it, so a later
+   * re-application of the process defaults (`keepDirtyValues`) keeps what the user typed.
+   */
+  dirtyOnEdit?: boolean;
 }
 
 interface NumericSelectorProps extends React.ComponentProps<typeof TextInput> {
   field: Field;
   type?: NumericType;
+  dirtyOnEdit?: boolean;
 }
 
-export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
+export const UnifiedNumericSelector = ({
+  field,
+  type = "decimal",
+  dirtyOnEdit = false,
+  ...props
+}: UnifiedNumericSelectorProps) => {
   const { register, setValue, formState } = useFormContext();
+  const editOptions = dirtyOnEdit ? EDITED_VALUE_OPTIONS : undefined;
   const { language } = useLanguage();
   const formValue = useWatch({ name: field.hqlName });
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
@@ -59,17 +74,22 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     [getDecimalSeparator]
   );
 
-  const formatDisplayValue = useCallback(
-    (value: number): string => {
+  // Thousands separators are presentation only: shown while the field is not being edited, and dropped on
+  // focus so the value can be typed and parsed as before. Integers keep their plain format.
+  const formatValue = useCallback(
+    (value: number, grouped: boolean): string => {
       if (isInteger) {
         return String(value);
       }
       const locale = (language ?? "en_US").replace("_", "-");
       const formatOptions = getNumericFormatOptions(field.column?.reference, field.column?.valueFormat);
-      return new Intl.NumberFormat(locale, { ...formatOptions, useGrouping: false }).format(value);
+      return new Intl.NumberFormat(locale, { ...formatOptions, useGrouping: grouped }).format(value);
     },
     [isInteger, language, field.column]
   );
+
+  const formatDisplayValue = useCallback((value: number): string => formatValue(value, true), [formatValue]);
+  const formatEditValue = useCallback((value: number): string => formatValue(value, false), [formatValue]);
 
   useEffect(() => {
     if (!isFocused) {
@@ -116,12 +136,12 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
   const handleClear = useCallback(() => {
     setLocalValue("");
     const clearedValue = field.isMandatory || props.required ? 0 : null;
-    setValue(field.hqlName, clearedValue);
+    setValue(field.hqlName, clearedValue, editOptions);
 
     if (props.onClear) {
       props.onClear();
     }
-  }, [field.isMandatory, field.hqlName, props, setValue]);
+  }, [field.isMandatory, field.hqlName, props, setValue, editOptions]);
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,22 +171,28 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         }
         if (!isDirty) {
           const parsedValue = parseValue(value);
-          setValue(field.hqlName, parsedValue);
+          setValue(field.hqlName, parsedValue, editOptions);
         }
       }
     },
-    [isInteger, getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue]
+    [isInteger, getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue, editOptions]
   );
 
   const handleFocus = useCallback(
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
 
+      // Back to the editable (ungrouped) format. The grouped text cannot be parsed, so start from the form value.
+      const currentValue = Number(formValue);
+      if (formValue !== null && formValue !== undefined && formValue !== "" && !Number.isNaN(currentValue)) {
+        setLocalValue(formatEditValue(currentValue));
+      }
+
       if (props.onFocus) {
         props.onFocus(event);
       }
     },
-    [props]
+    [props, formValue, formatEditValue]
   );
 
   const handleBlur = useCallback(
@@ -174,7 +200,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       setIsFocused(false);
 
       const parsedValue = parseValue(localValue);
-      setValue(field.hqlName, parsedValue);
+      setValue(field.hqlName, parsedValue, editOptions);
 
       if (parsedValue === null) {
         setLocalValue("");
@@ -186,7 +212,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         props.onBlur(event);
       }
     },
-    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue]
+    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue, editOptions]
   );
 
   const registerProps = register(field.hqlName);

@@ -4,9 +4,11 @@ import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
 import { CreateLinesFrom } from "./CreateLinesFrom";
 import { FormField } from "./FormField";
+import { FormSections } from "./FormSections";
 import { InstancePurpose } from "./InstancePurpose";
 import { Grid } from "./Grid";
 import { LegacyFrame } from "./LegacyFrame";
+import { MatchStatement } from "./MatchStatement";
 import { ProcessModal } from "./ProcessModal";
 import { SavedViews } from "./SavedViews";
 import { SelectorModal } from "./SelectorModal";
@@ -18,6 +20,7 @@ import { WindowTabs } from "./WindowTabs";
 
 export { ATTRIBUTE, type AttributeKey } from "./AttributeSelector";
 export { AUTH_TEST_IDS, type RoleSelection } from "./Auth";
+export { MATCH_ROW_ACTION, type MatchRowAction, SECOND_NESTED_LEVEL } from "./MatchStatement";
 export { PROCESS_MODAL_TEST_IDS } from "./ProcessModal";
 export { SIDEBAR_TEST_IDS } from "./Sidebar";
 export type { TabLevel } from "./level";
@@ -33,6 +36,7 @@ export class App {
   readonly toolbar: Toolbar;
   readonly tabs: Tabs;
   readonly field: FormField;
+  readonly formSections: FormSections;
   readonly grid: Grid;
   readonly toast: Toast;
   readonly processModal: ProcessModal;
@@ -42,6 +46,7 @@ export class App {
   readonly windows: WindowTabs;
   readonly instancePurpose: InstancePurpose;
   readonly savedViews: SavedViews;
+  readonly matchStatement: MatchStatement;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -50,6 +55,7 @@ export class App {
     this.toolbar = new Toolbar(page);
     this.tabs = new Tabs(page);
     this.field = new FormField(page);
+    this.formSections = new FormSections(page);
     this.grid = new Grid(page);
     this.toast = new Toast(page);
     this.processModal = new ProcessModal(page);
@@ -59,6 +65,7 @@ export class App {
     this.windows = new WindowTabs(page);
     this.instancePurpose = new InstancePurpose(page);
     this.savedViews = new SavedViews(page);
+    this.matchStatement = new MatchStatement(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */

@@ -861,3 +861,22 @@ All eight client-side validations run before contacting the server, in this orde
 - [ ] `updateConvertedAmount` divides converted / actual at scale **15**.
 - [ ] Sample test vector (manual): `actual = 100`, `rate = 1.234567890123456`, `precision = 2` → `converted = 123.46` (half-up).
 - [ ] Sample test vector (manual): `converted = 99.99`, `actual = 33.33` → `rate = 3.000000000000000`.
+
+## 4. New UI fixes (ETP-5877)
+
+Found when Add Payment is opened from Financial Account → Transaction with the "+" of Payment (a deposit
+paying an invoice), compared with Classic:
+
+| Problem | Cause | Fix |
+|---|---|---|
+| "There is a difference of" showed the expected difference (e.g. 103.50 with nothing paid) instead of Actual − Total (0.00), and the server received that value as `difference`. | `difference` and `expectedDifference` share their name, which keys the form field. | Unique form keys for parameters sharing a name ([new JavaScript code](../../definition/new-javascript-code.md), "Parameters with the same name"). |
+| Overpayment Action never appeared, and "Credit to use" and the reloaded labels never updated. | `AP.recalcDisplayLogicOrReadOnlyLogic` and `AP.reloadLabels` sent parameter names; the handlers expect ids (`param is null`). | `AP.paramIds` sends `form.getItem(name).paramId`, as Classic `paramId`. |
+| Overpayment Action did not appear after changing Actual Payment. | `AP.updateDifference` recalculated the display logic only when given a view; the Actual Payment path gives none. | It uses `view \|\| form.paramWindow`, as Classic always recalculates. |
+| Overpayment Action showed with no options, so it could not be filled and Execute stayed disabled. | The onLoad kept the original options keyed by `opt.id`; a list option's `id` is its record id, its `value` the search key (`CR`, `RE`) the script looks up. | Keyed by `opt.value`. |
+| The display-logic handler answered "N" with a difference. | `view.getContextInfo()` keyed values by the form key, not by `difference`. | The context also carries the values by column name. |
+| A typed Actual Payment went back to 0 once the overpayment actions were offered. | A script value-map change re-applied the defaults over a value the user typed (not marked as edited). | Process numeric fields mark typed values as edited (`dirtyOnEdit`). |
+
+The stored-script changes are exported to `com.etendoerp.metadata.template` (`configScript.xml`). The flow is
+covered end to end by `FINfTransactionPaysInvoiceTest` (a partial deposit, then the rest plus credit) and
+`FRMeSelectorButtonsTest`.
+

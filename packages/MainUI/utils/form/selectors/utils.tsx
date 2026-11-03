@@ -65,6 +65,29 @@ export const updateSelectorValue = (
   }
 };
 
+/** A record a process sends back to the selector that launched it (Classic `setSelectorValueFromRecord`). */
+export interface SelectorValueRecord {
+  value?: string;
+  map?: string | Record<string, unknown>;
+}
+
+/**
+ * Writes the record a process created from a selector's "+" into that selector, as
+ * Classic `callerField.setValueFromRecord`: `value` is the id and `map` its identifier.
+ */
+export const writeCallerRecord = (
+  setValue: UseFormSetValue<FieldValues>,
+  field: Field,
+  record: SelectorValueRecord
+): void => {
+  if (!record.value) return;
+  const identifier = typeof record.map === "string" ? record.map : record.value;
+  updateSelectorValue(setValue, getSelectorFieldName(field), record.value, {
+    id: record.value,
+    _identifier: identifier,
+  });
+};
+
 export const buildBaseFilterParams = (
   field: Field,
   etendoContext: Record<string, unknown>,

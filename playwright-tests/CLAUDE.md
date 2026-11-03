@@ -159,13 +159,14 @@ await app.processModal.execute();
 await app.processModal.waitForClose();
 ```
 
-**Use a lookup (magnifying glass)**
+**Use a lookup (magnifying glass) or the "+" of a selector**
 
 ```ts
-const lookup = app.selectorModal(data.FIELD.LANDED_COST_RECEIPT_GOODS_RECEIPT);
+const lookup = app.selectorModal(data.FIELD.SALES_ORDER_BUSINESS_PARTNER); // a process parameter id works too
 await lookup.open();
-await lookup.search(receiptNumber);
-await lookup.pick(receiptNumber);
+await lookup.filter("Name", data.BUSINESS_PARTNER.CUSTOMER_A.name); // the column's filter box
+await lookup.pick(data.BUSINESS_PARTNER.CUSTOMER_A.name);
+await lookup.addButton.click(); // "+": opens the process that creates the record (e.g. Add Payment)
 ```
 
 **Create Lines From (legacy popup of shipments and receipts)**

@@ -98,3 +98,22 @@ export function groupProcessParametersByFieldGroup(parameters: ProcessParameter[
 
   return Object.values(buckets).sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 }
+
+/**
+ * Whether a field group has at least one visible parameter, as Classic
+ * `OBSectionItem.showIf` decides: a section whose fields are all hidden by their
+ * display logic is not shown. Grid parameters reaching a group are already
+ * visible (they are filtered before grouping); scalar ones are checked with the
+ * same resolver the rendered selector uses.
+ *
+ * @param group The field group.
+ * @param isGrid Whether a parameter is a window-reference grid.
+ * @param isScalarDisplayed The scalar parameters' visibility resolver (by name).
+ */
+export function hasVisibleParameter(
+  group: ProcessParameterGroup,
+  isGrid: (parameter: ProcessParameter) => boolean,
+  isScalarDisplayed: (name: string) => boolean
+): boolean {
+  return group.parameters.some((parameter) => isGrid(parameter) || isScalarDisplayed(parameter.name));
+}

@@ -166,7 +166,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
           className={`flex items-center w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 transition-colors outline-none ${
             isReadOnly
               ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent"
-              : "bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer"
+              : "bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer"
           }`}
           onClick={handleOpenModal}
           tabIndex={isReadOnly ? NOT_TABBABLE : TABBABLE}

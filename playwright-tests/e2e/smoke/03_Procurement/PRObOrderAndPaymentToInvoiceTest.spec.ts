@@ -3,7 +3,7 @@ import { expect, test } from "../../support/fixtures";
 test.describe("Purchase Order with advance payment flow @smoke", () => {
   test("Processes advance payment and validates Purchase Invoice payments", async ({ app, data, page }) => {
     const vendor = data.BUSINESS_PARTNER.VENDOR_A;
-    const mainSection = page.getByRole("tab", { name: "Main Section" });
+    const mainSection = app.formSections.main;
 
     // ── Step 1: Navigate to Purchase Order ───────────────────────────────────
     await app.sidebar.navigateTo("purchaseOrder");

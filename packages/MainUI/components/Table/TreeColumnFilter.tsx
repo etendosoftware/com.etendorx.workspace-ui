@@ -437,11 +437,11 @@ function TreeColumnFilterCmp({
         onClick={handleClick}
         onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""}
+          ${isOpen ? "rounded-md border border-(--ui-text-muted)!" : ""}
           text-baseline-20 cursor-pointer hover:border-baseline-60 transition-colors outline-none`}>
         <div
           className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length ? "text-baseline-90 font-medium" : "text-baseline-50 font-medium"
+            selectedLabels.length ? "text-baseline-90 font-medium" : "text-slate-400 font-medium"
           }`}>
           {displayText}
         </div>
@@ -464,7 +464,9 @@ function TreeColumnFilterCmp({
         isOpen={isOpen}
         triggerRef={wrapperRef as React.RefObject<HTMLElement>}
         portalRef={portalRef as React.RefObject<HTMLDivElement>}
-        minWidth={256}>
+        // The panel matches its column instead of sticking out of it.
+        minWidth={0}
+      >
         <SearchInput
           searchTerm={searchTerm}
           searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}

@@ -15,7 +15,15 @@ const PASS = process.env.ETENDO_PASS || "admin";
 const RUNS = Number(process.env.RUNS || 3);
 const LABEL = process.env.LABEL || new URL(BASE).hostname;
 const HEADLESS = process.env.HEADED !== "1";
-const WINDOWS = (process.env.WINDOWS || "Sales Order,Sales Invoice,Goods Shipment,Purchase Order").split(",");
+// Names are comma separated; a name that has commas ("Windows, Tabs, and Fields") needs ";" as the separator
+// (a trailing ";" is enough for a single window)
+const WINDOWS_ENV = process.env.WINDOWS || "Sales Order,Sales Invoice,Goods Shipment,Purchase Order";
+const WINDOWS = WINDOWS_ENV.split(WINDOWS_ENV.includes(";") ? ";" : ",")
+  .map((w) => w.trim())
+  .filter(Boolean);
+// TAB_STEPS=1 adds the tab and level steps (parent selection with children, child tab switches, a deeper level).
+// They need a window with child tabs and change what the steps after them measure, so they are off by default.
+const TAB_STEPS = process.env.TAB_STEPS === "1";
 const CPU_THROTTLE = Number(process.env.CPU_THROTTLE || 1);
 const PROFILE = process.env.PROFILE === "1";
 const QUIET_MS = 1000; // flow is "settled" when no API request is in flight for this long
@@ -204,12 +212,15 @@ const unlessUnsavedChangesDialog = (page, pending) =>
       }),
   ]);
 
-const gridReady = (page) => () =>
+// The record count is in the status bar ("Showing N records") or, with the grid docked, in the title ("(N records)")
+const recordCount = (page, digits) =>
   page
-    .getByText(/Showing \d+ records?/)
+    .getByText(new RegExp(`Showing ${digits} records?`))
+    .or(page.getByTestId("TitleRecordCount__table").filter({ hasText: new RegExp(`\\(${digits} \\w+\\)`) }))
     .filter({ visible: true })
-    .first()
-    .waitFor({ timeout: TIMEOUT });
+    .first();
+
+const gridReady = (page) => () => recordCount(page, "\\d+").waitFor({ timeout: TIMEOUT });
 
 async function login(page, rec, tag) {
   return step(
@@ -235,6 +246,62 @@ async function openFromMenu(page, name) {
   await items.last().click();
 }
 
+// Child tab strips on screen, outermost first. Only tabs of level 1 and deeper render a SubTabsSwitch, whose
+// SubTabsSwitch__ test id never reaches the DOM: the row of tab buttons is the scrolling div that sits right
+// before the strip's collapse button (same markup on the base and on the branch).
+const childStrips = (page) => page.locator("div.flex-nowrap.scroll-smooth:has(+ button)").filter({ visible: true });
+
+// Tab and level steps (TAB_STEPS=1): selecting a parent record that has child tabs, switching between the child
+// tabs cold and then warm, and selecting a record of the child to open the next level. Their ready condition is
+// only that the action was sent, so read settledMs / interactiveMs / blockingMs / apiRequests, not visibleMs.
+// Windows without child tabs, or without records, add no steps.
+async function tabSteps(page, rec, tag, steps) {
+  const firstRow = page.locator("table tbody tr td").filter({ visible: true }).nth(3);
+  if (!(await firstRow.isVisible().catch(() => false))) return;
+  const sent = () => Promise.resolve();
+  steps.push(
+    await step(
+      rec,
+      "select-parent-with-children",
+      () => firstRow.click(),
+      () => page.waitForFunction(rowIsSelected, 0, { timeout: TIMEOUT, polling: 100 }),
+      `${tag}-select-parent`
+    )
+  );
+  const strips = childStrips(page);
+  if ((await strips.count()) === 0) return;
+  const tabs = strips.first().locator("> button[aria-label]");
+  const tabCount = await tabs.count();
+  if (tabCount < 2) return;
+  // Cold: every tab after the first one that was never opened. Warm: the same tabs again, already mounted.
+  const visit = (name, indexes) =>
+    step(
+      rec,
+      name,
+      async () => {
+        for (const i of indexes) {
+          await tabs.nth(i).click();
+          await rec.settle();
+        }
+      },
+      sent,
+      `${tag}-${name}`
+    );
+  const others = Array.from({ length: Math.min(tabCount, 4) - 1 }, (_, i) => i + 1);
+  steps.push(await visit("switch-child-tab-cold", others));
+  steps.push(await visit("switch-child-tab-warm", [0, ...others]));
+  // Next level: a record of the child grid that has tabs of its own (back on the first child tab, the one
+  // most likely to have them)
+  await tabs.nth(0).click();
+  await rec.settle();
+  const before = await strips.count();
+  const childRow = page.locator("table").filter({ visible: true }).last().locator("tbody tr td").nth(3);
+  if (await childRow.isVisible().catch(() => false)) {
+    const deeper = await step(rec, "open-deep-tab", () => childRow.click(), sent, `${tag}-open-deep-tab`);
+    if ((await strips.count()) > before) steps.push(deeper);
+  }
+}
+
 // One full pass for a window: cold open from menu, warm reload, unfiltered grid, open first record,
 // type into a form field
 async function windowFlow(browser, winName, run) {
@@ -253,15 +320,11 @@ async function windowFlow(browser, winName, run) {
         rec,
         "load-unfiltered",
         () => page.getByTestId(`IconButton__${FILTER_BUTTON_ID}`).filter({ visible: true }).first().click(),
-        () =>
-          page
-            .getByText(/Showing [1-9]\d* records?/)
-            .filter({ visible: true })
-            .first()
-            .waitFor({ timeout: TIMEOUT }),
+        () => recordCount(page, "[1-9]\\d*").waitFor({ timeout: TIMEOUT }),
         `${tag}-load-unfiltered`
       )
     );
+    if (TAB_STEPS) await tabSteps(page, rec, tag, steps);
     // Keyboard navigation: select the second row, then 5 ArrowDown 100 ms apart. Measures what every
     // selection change costs (child tabs, toolbar, session sync) when moving fast over the grid.
     const navStart = page.locator("table tbody tr").filter({ visible: true }).nth(1).locator("td").nth(3);

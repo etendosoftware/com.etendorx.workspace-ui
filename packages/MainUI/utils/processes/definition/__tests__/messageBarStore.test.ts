@@ -4,6 +4,7 @@ import {
   type MessageBarState,
   messageBar,
   subscribeMessageBar,
+  isolateMessageBar,
 } from "../messageBarStore";
 
 describe("messageBarStore", () => {
@@ -82,5 +83,42 @@ describe("messageBarStore", () => {
   it("setMessage accepts a MESSAGE_BAR_TYPES constant as severity", () => {
     messageBar.setMessage(MESSAGE_BAR_TYPES.TYPE_WARNING, null, "x");
     expect(currentState().severity).toBe("warning");
+  });
+});
+
+describe("isolateMessageBar", () => {
+  afterEach(() => messageBar.hide());
+
+  it("gives the nested modal a clean bar and restores the launcher's message on close", () => {
+    messageBar.setMessage("info", null, "Launcher message");
+
+    const restore = isolateMessageBar();
+    expect(getMessageBarState()).toBeNull();
+
+    messageBar.setMessage("error", null, "Nested error");
+    restore();
+
+    expect(getMessageBarState()).toEqual(expect.objectContaining({ severity: "info", html: "Launcher message" }));
+  });
+
+  it("restores an empty bar when the launcher had no message", () => {
+    const restore = isolateMessageBar();
+    messageBar.setMessage("error", null, "Nested error");
+
+    restore();
+
+    expect(getMessageBarState()).toBeNull();
+  });
+
+  it("notifies the hosts on isolate and on restore", () => {
+    messageBar.setMessage("info", null, "Launcher message");
+    const listener = jest.fn();
+    const unsubscribe = subscribeMessageBar(listener);
+
+    const restore = isolateMessageBar();
+    restore();
+    unsubscribe();
+
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });

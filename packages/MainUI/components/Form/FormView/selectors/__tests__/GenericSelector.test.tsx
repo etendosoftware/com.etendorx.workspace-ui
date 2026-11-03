@@ -89,9 +89,28 @@ jest.mock("../SelectorModal", () => ({
   default: () => <div data-testid="SelectorModal">SelectorModal</div>,
 }));
 
+// The modal hands the record its process creates back through `callerField` (Classic setValueFromRecord).
 jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({
   __esModule: true,
-  default: () => <div data-testid="ProcessDefinitionModal">ProcessDefinitionModal</div>,
+  default: ({ callerField }: { callerField?: { setValueFromRecord?: (record: unknown) => void } }) => (
+    <button
+      type="button"
+      data-testid="ProcessDefinitionModal"
+      onClick={() => callerField?.setValueFromRecord?.({ value: "PAY-1", map: "Payment 1" })}>
+      ProcessDefinitionModal
+    </button>
+  ),
+}));
+
+// Closed by default; a test opens it to reach the modal the "+" renders.
+jest.mock("@/hooks/useProcessDefinitionTrigger", () => ({
+  useProcessDefinitionTrigger: jest.fn(() => ({
+    isProcessModalOpen: false,
+    processButtonData: null,
+    isLoading: false,
+    triggerProcess: jest.fn(),
+    closeProcessModal: jest.fn(),
+  })),
 }));
 
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
@@ -105,6 +124,7 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
 jest.mock("@/utils/form/selectors/utils", () => ({
   getSelectorFieldName: jest.fn((field) => field.hqlName || field.name),
   updateSelectorValue: jest.fn(),
+  writeCallerRecord: jest.fn(),
 }));
 
 describe("GenericSelector", () => {
@@ -262,6 +282,30 @@ describe("GenericSelector", () => {
     // Should render without throwing error
     const { container } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it("writes the record the + process creates into the field", () => {
+    const { useProcessDefinitionTrigger } = require("@/hooks/useProcessDefinitionTrigger");
+    const { writeCallerRecord } = require("@/utils/form/selectors/utils");
+    useProcessDefinitionTrigger.mockReturnValueOnce({
+      isProcessModalOpen: true,
+      processButtonData: { id: "proc-1" },
+      isLoading: false,
+      triggerProcess: jest.fn(),
+      closeProcessModal: jest.fn(),
+    });
+    const field = {
+      id: "field-payment",
+      name: "Payment",
+      hqlName: "payment",
+      column: { reference: "30" },
+      selector: { hasProcessDefinitionRelated: true, processDefinitionId: "proc-1", datasourceName: "FIN_Payment" },
+    } as any;
+
+    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+    fireEvent.click(getByTestId("ProcessDefinitionModal"));
+
+    expect(writeCallerRecord).toHaveBeenCalledWith(setValue, field, { value: "PAY-1", map: "Payment 1" });
   });
 
   it("uses camelCase hqlName when main hqlName is not in formData", () => {

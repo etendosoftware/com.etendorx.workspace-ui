@@ -52,6 +52,11 @@ import {
   applyRecordValues,
   evaluateFieldReadOnlyLogic,
   buildGridCriteria,
+  findFilterColumn,
+  readFilterExpressionValue,
+  toBooleanFilterValue,
+  toColumnFilterSeedValue,
+  collectBooleanFilterFields,
   getSortByString,
   GridCellRenderer,
   shouldRenderCellEditor,
@@ -59,6 +64,10 @@ import {
   CreateRowActionButtons,
   collectEditInputValues,
   shouldShowRowActions,
+  findRowActionsHostColumnId,
+  createGridScriptView,
+  applyExternalParams,
+  runWithScopedSubscriptions,
   isPersistedRow,
   isValidHqlName,
   resolveHqlName,
@@ -66,8 +75,9 @@ import {
   RowActionsCell,
   type EmbeddedGridApi,
 } from "../WindowReferenceGrid";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { RowActionButton } from "@/utils/processes/definition/scriptProxies";
+import { createGridProxy } from "@/utils/processes/definition/scriptProxies";
 
 describe("WindowReferenceGrid Utilities", () => {
   describe("extractActualValue", () => {
@@ -169,6 +179,89 @@ describe("WindowReferenceGrid Utilities", () => {
       const result = buildGridCriteria(filterExpressions, "grid1");
       expect(result).toHaveLength(1);
       expect(result[0].fieldName).toBe("field1");
+    });
+
+    it("skips the fields applied as column filters (case-insensitive)", () => {
+      const filterExpressions = { grid1: { Cleared: "No", field1: "val1" } };
+
+      const result = buildGridCriteria(filterExpressions, "grid1", new Set(["cleared"]));
+
+      expect(result.map((criteria) => criteria.fieldName)).toEqual(["field1"]);
+    });
+  });
+
+  describe("default filter expressions on Yes/No columns", () => {
+    const MATCH_COLUMN = {
+      id: "Match",
+      header: "Match",
+      columnName: "cleared",
+      hqlName: "cleared",
+      type: "boolean",
+    } as unknown as Column;
+    const TEXT_COLUMN = {
+      id: "Description",
+      header: "Description",
+      columnName: "description",
+      type: "text",
+    } as unknown as Column;
+    const COLUMNS = [TEXT_COLUMN, MATCH_COLUMN];
+
+    it.each([
+      ["cleared", "columnName"],
+      ["CLEARED", "case-insensitive name"],
+      ["Match", "column id"],
+    ])("findFilterColumn resolves %p by %s", (fieldName) => {
+      expect(findFilterColumn(COLUMNS, fieldName)).toBe(MATCH_COLUMN);
+    });
+
+    it("findFilterColumn returns undefined for an unknown field or no columns", () => {
+      expect(findFilterColumn(COLUMNS, "amount")).toBeUndefined();
+      expect(findFilterColumn(undefined, "cleared")).toBeUndefined();
+    });
+
+    it.each([
+      ["No", ["false"]],
+      ["Yes", ["true"]],
+      ["true", ["true"]],
+      ["false", ["false"]],
+      [true, ["true"]],
+      [false, ["false"]],
+      ["maybe", undefined],
+      ["", undefined],
+    ])("toBooleanFilterValue(%p) is %p", (rawValue, expected) => {
+      expect(toBooleanFilterValue(rawValue)).toEqual(expected);
+    });
+
+    it.each([
+      ["No", "No"],
+      [{ value: "No" }, "No"],
+      [{ values: "A" }, "A"],
+      [{}, ""],
+      [null, ""],
+      [undefined, ""],
+      [3, "3"],
+    ])("readFilterExpressionValue(%p) is %p", (logic, expected) => {
+      expect(readFilterExpressionValue(logic)).toBe(expected);
+    });
+
+    it("seeds a Yes/No default as the column's boolean selection", () => {
+      expect(toColumnFilterSeedValue(MATCH_COLUMN, "No")).toEqual(["false"]);
+    });
+
+    it("seeds any other default as before", () => {
+      expect(toColumnFilterSeedValue(TEXT_COLUMN, "No")).toBe("No");
+      expect(toColumnFilterSeedValue(MATCH_COLUMN, "maybe")).toBe("maybe");
+      expect(toColumnFilterSeedValue(undefined, { value: "X" })).toBe("X");
+    });
+
+    it("collects only the boolean defaults applied as column filters", () => {
+      const fields = collectBooleanFilterFields({ Cleared: "No", description: "No", missing: "true" }, COLUMNS);
+
+      expect([...fields]).toEqual(["cleared"]);
+    });
+
+    it("collects nothing without expressions", () => {
+      expect(collectBooleanFilterFields(undefined, COLUMNS).size).toBe(0);
     });
   });
 
@@ -699,6 +792,92 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("is false only when none apply", () => {
       expect(shouldShowRowActions(false, false, false)).toBe(false);
+    });
+  });
+
+  describe("runWithScopedSubscriptions", () => {
+    it("replaces the previous execution's subscriptions and keeps the others", () => {
+      const fromOnLoad = jest.fn();
+      const firstRun = jest.fn();
+      const secondRun = jest.fn();
+      const list: unknown[] = [fromOnLoad];
+
+      const first = runWithScopedSubscriptions([list], null, () => list.push(firstRun));
+      const second = runWithScopedSubscriptions([list], first, () => list.push(secondRun));
+
+      expect(list).toEqual([fromOnLoad, secondRun]);
+      expect(second).toEqual([[secondRun]]);
+    });
+
+    it("keeps a subscription the previous execution did not register", () => {
+      const fromOnLoad = jest.fn();
+      const list: unknown[] = [];
+
+      const first = runWithScopedSubscriptions([list], null, () => undefined);
+      list.push(fromOnLoad);
+      runWithScopedSubscriptions([list], first, () => undefined);
+
+      expect(list).toEqual([fromOnLoad]);
+    });
+  });
+
+  describe("applyExternalParams", () => {
+    it("sends the externalParams as datasource params, skipping empty values", () => {
+      const options: Record<string, unknown> = { tabId: "TAB-1" };
+
+      applyExternalParams(options as never, { bankStatementLineId: "BSL-1", transactionDate: undefined, other: null });
+
+      expect(options).toEqual({ tabId: "TAB-1", bankStatementLineId: "BSL-1" });
+    });
+
+    it("does nothing without externalParams", () => {
+      const options: Record<string, unknown> = { tabId: "TAB-1" };
+
+      applyExternalParams(options as never);
+
+      expect(options).toEqual({ tabId: "TAB-1" });
+    });
+  });
+
+  describe("findRowActionsHostColumnId", () => {
+    const column = (id: string, props: Record<string, unknown>) =>
+      ({ id, header: id, columnName: id, ...props }) as unknown as Column;
+    const MATCH = column("Match", { type: "boolean", clientclass: "APRMMatchStatGridButtonsComponent" });
+    const LINK = column("Order", { type: "text", clientclass: "SalesOrderTabLink" });
+    const LEVEL = column("Affinity", { type: "text", clientclass: "OBLevelImg" });
+
+    it("hosts the row buttons in the clientclass component column", () => {
+      expect(findRowActionsHostColumnId([LINK, LEVEL, MATCH], true)).toBe("Match");
+    });
+
+    it("keeps them in the leading column without a component column", () => {
+      expect(findRowActionsHostColumnId([LINK, LEVEL], true)).toBeUndefined();
+    });
+
+    it("hosts nothing without script row actions", () => {
+      expect(findRowActionsHostColumnId([MATCH], false)).toBeUndefined();
+    });
+  });
+
+  describe("createGridScriptView", () => {
+    const formHandle = { getValues: () => ({}), setValue: jest.fn() };
+    const messageBar = { setMessage: jest.fn(), hide: jest.fn() };
+
+    it("exposes the process onRefresh hook and links the view to the grid", () => {
+      const onRefreshFunction = jest.fn();
+      const grid = createGridProxy({ rows: [], selectedRecords: [] });
+
+      const view = createGridScriptView(formHandle, {}, { messageBar, grid, onRefreshFunction });
+      (view as unknown as { onRefreshFunction: (v: unknown) => void }).onRefreshFunction(view);
+
+      expect(onRefreshFunction).toHaveBeenCalledWith(view);
+      expect(grid.view).toBe(view);
+    });
+
+    it("leaves onRefreshFunction undefined when the process has no onRefresh hook", () => {
+      const view = createGridScriptView(formHandle, {}, { messageBar, grid: createGridProxy({ rows: [] }) });
+
+      expect((view as unknown as { onRefreshFunction?: unknown }).onRefreshFunction).toBeUndefined();
     });
   });
 

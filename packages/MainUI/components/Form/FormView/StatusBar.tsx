@@ -25,6 +25,8 @@ import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
 import { SHORTCUT_IDS } from "@/utils/keyboard/shortcutIds";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
+import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
+import { createPortal } from "react-dom";
 
 interface StatusBarProps {
   fields: Record<string, Field>;
@@ -44,38 +46,62 @@ export default function StatusBar({
   const { t } = useTranslation();
   // Same action as Ctrl+Shift+X (classic ToolBar_SaveClose), registered by FormActions.
   const { onSaveAndClose } = useToolbarCommands();
+  const { slot: paginationSlot } = useToolbarExtrasSlot();
+  const hasStatusFields = Object.keys(fields).length > 0;
+
+  const navigation = (
+    <div className="flex items-center gap-2" data-testid="record-navigation">
+      {onNavigateNext && onNavigatePrevious && (
+        <RecordNavigationControls
+          onNext={onNavigateNext}
+          onPrevious={onNavigatePrevious}
+          canNavigateNext={navigationState?.canNavigateNext ?? false}
+          canNavigatePrevious={navigationState?.canNavigatePrevious ?? false}
+          currentIndex={navigationState?.currentIndex ?? -1}
+          totalRecords={navigationState?.totalRecords ?? 0}
+          isNavigating={isNavigating}
+          data-testid="RecordNavigationControls__cfc328"
+        />
+      )}
+      <IconButton
+        data-testid="icon-button"
+        onClick={onSaveAndClose}
+        className="w-8 h-8"
+        tooltip={withShortcutHint(t("forms.statusBar.closeRecord"), SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE)}
+        disabled={false}>
+        <CloseIcon data-testid="CloseIcon__cfc328" />
+      </IconButton>
+    </div>
+  );
+
+  // With the tab's toolbar available, pagination and close live there and this row only exists for status fields.
+  if (paginationSlot) {
+    return (
+      <>
+        {createPortal(navigation, paginationSlot)}
+        {hasStatusFields && (
+          <div
+            data-testid="status-bar-container"
+            className="flex min-h-8 items-center gap-4 overflow-x-auto whitespace-nowrap px-1 py-1 text-sm leading-5 scrollbar-hide">
+            {Object.entries(fields).map(([key, field]) => (
+              <StatusBarField key={key} field={field} data-testid="StatusBarField__cfc328" />
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <div
       data-testid="status-bar-container"
       className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
-      <div className="flex gap-4 text-sm overflow-x-auto whitespace-nowrap min-w-0 scrollbar-hide">
+      <div className="flex gap-4 py-0.5 text-sm leading-5 overflow-x-auto whitespace-nowrap min-w-0 scrollbar-hide">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} data-testid="StatusBarField__cfc328" />
         ))}
       </div>
-      <div className="flex items-center gap-2">
-        {onNavigateNext && onNavigatePrevious && (
-          <RecordNavigationControls
-            onNext={onNavigateNext}
-            onPrevious={onNavigatePrevious}
-            canNavigateNext={navigationState?.canNavigateNext ?? false}
-            canNavigatePrevious={navigationState?.canNavigatePrevious ?? false}
-            currentIndex={navigationState?.currentIndex ?? -1}
-            totalRecords={navigationState?.totalRecords ?? 0}
-            isNavigating={isNavigating}
-            data-testid="RecordNavigationControls__cfc328"
-          />
-        )}
-        <IconButton
-          data-testid="icon-button"
-          onClick={onSaveAndClose}
-          className="w-8 h-8"
-          tooltip={withShortcutHint(t("forms.statusBar.closeRecord"), SHORTCUT_IDS.TOOLBAR_SAVE_CLOSE)}
-          disabled={false}>
-          <CloseIcon data-testid="CloseIcon__cfc328" />
-        </IconButton>
-      </div>
+      {navigation}
     </div>
   );
 }

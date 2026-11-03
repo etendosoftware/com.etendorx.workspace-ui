@@ -44,7 +44,7 @@ export const useStyle = () => {
           display: "flex",
           marginLeft: "auto",
           borderRadius: "6.25rem",
-          background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
+          background: "transparent",
         },
         childBox: {
           display: "flex",

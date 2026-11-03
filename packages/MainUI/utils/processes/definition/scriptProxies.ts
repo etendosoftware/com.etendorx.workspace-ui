@@ -32,6 +32,7 @@ import { isNumericReference } from "@/utils/form/constants";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import { openParameterDialog } from "./parameterDialogStore";
 import type { DynamicParameter } from "./utils";
+import type { SetSelectorValuePayload } from "@/components/ProcessModal/utils/responseActionDispatcher";
 
 // ---------------------------------------------------------------------------
 // Dependencies (structural subsets, so tests can pass plain mocks)
@@ -161,6 +162,11 @@ export interface OpenProcessParams {
   externalParams?: Record<string, unknown>;
   callerField?: CallerField;
   paramWindow?: unknown;
+  /**
+   * Values of the launcher, added to the defaults context only (Classic merges
+   * `callerField.view.getContextInfo()` there), keyed as Classic does (`dBColumnName`).
+   */
+  callerContext?: Record<string, unknown>;
 }
 
 /** Built-in icon presets for a row-action button. */
@@ -262,6 +268,11 @@ export interface CallerField extends Record<string, unknown> {
   record?: EntityData;
   /** The launcher's view, so a nested script can reach `view.callerField.view`. */
   view?: unknown;
+  /**
+   * Writes a record into the selector that launched the process (Classic
+   * `callerField.setValueFromRecord`), run by the `setSelectorValueFromRecord` response action.
+   */
+  setValueFromRecord?: (record: NonNullable<SetSelectorValuePayload["record"]>) => void;
 }
 
 /**
@@ -276,6 +287,17 @@ export interface ViewData {
   sourceView?: unknown;
   parentRecord?: Record<string, unknown>;
   activeTabId?: string;
+  /**
+   * Per-modal store for the properties a script assigns on its `view` (e.g.
+   * `view.unmatchButton`), shared by every view of the modal as Classic has a
+   * single view object (see `withScriptScope`).
+   */
+  scriptScope?: Record<string, unknown>;
+  /**
+   * The grid parameters' values (`{ <param>: { _selection, _allRows } }`), added to
+   * `getContextInfo()` as Classic does for the process view's grids.
+   */
+  getGridValues?: () => Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +312,11 @@ export interface CanvasProxy extends Record<string, unknown> {
 
 export interface ItemProxy extends Record<string, unknown> {
   name: string;
+  /**
+   * Id of the process parameter (`OBUIAPP_Parameter_ID`), Classic `field.paramId`: handlers such as
+   * `AddPaymentDisplayLogicActionHandler` receive parameters by id. Absent for an unknown item.
+   */
+  paramId?: string;
   getValue: () => unknown;
   setValue: (value: unknown) => void;
   /**
@@ -862,6 +889,7 @@ export function createItemProxy(
     getValue: () => coerceParamValue(form.getValues(paramName), parameter),
     setValue: (value: unknown) => applyValue(form, paramName, value),
   };
+  if (parameter?.id) item.paramId = parameter.id;
   if (extras.rowNum !== undefined) item.rowNum = extras.rowNum;
   if (extras.columnName !== undefined) item.columnName = extras.columnName;
   if (controller) {
@@ -1074,22 +1102,51 @@ function buildParentWindow(
   return { ...base, view: accessors, activeView };
 }
 
+/**
+ * The form values keyed by parameter column name (`dBColumnName`), as Classic keys a parameter
+ * window's context: handlers read it so (e.g. `difference` for Add Payment's overpayment action).
+ */
+export function valuesByColumnName(
+  values: Record<string, unknown>,
+  parameters: ParametersMap | undefined
+): Record<string, unknown> {
+  const byColumn: Record<string, unknown> = {};
+  for (const parameter of Object.values(parameters ?? {})) {
+    if (parameter.dBColumnName && parameter.name in values) {
+      byColumn[parameter.dBColumnName] = values[parameter.name];
+    }
+  }
+  return byColumn;
+}
+
 /** Read-only environment data and the always-live context accessors. */
-function assignViewData(view: ViewProxy, form: FormHandle, data: ViewData): void {
+function assignViewData(
+  view: ViewProxy,
+  form: FormHandle,
+  data: ViewData,
+  self: ViewProxy = view,
+  parameters?: ParametersMap
+): void {
   view.windowId = data.windowId;
   view.callerField = data.callerField;
   view.sourceView = data.sourceView;
   view.activeView = { tabId: data.activeTabId };
   // Context map = the launching tab id (so classic `contextInfo.inpTabId` resolves), overlaid with
   // the parent record fields and the current parameter values (real values win over the default).
-  view.getContextInfo = () => ({
-    inpTabId: data.activeTabId,
-    ...(data.parentRecord ?? {}),
-    ...(form.getValues() as Record<string, unknown>),
-  });
+  // The parameter values are also keyed by column name, as Classic does.
+  view.getContextInfo = () => {
+    const values = form.getValues() as Record<string, unknown>;
+    return {
+      inpTabId: data.activeTabId,
+      ...(data.parentRecord ?? {}),
+      ...values,
+      ...valuesByColumnName(values, parameters),
+      ...(data.getGridValues?.() ?? {}),
+    };
+  };
   // Best-effort: only the current view is reachable from the modal. A matching
   // tabId returns this view; any other id returns a minimal read-only handle.
-  view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? view : { tabId });
+  view.getView = (tabId?: string) => (tabId === undefined || tabId === data.activeTabId ? self : { tabId });
   // Classic `view.parentWindow.view.getContextInfo()` idiom (built after the accessors above).
   view.parentWindow = buildParentWindow(data.parentWindow, view);
 }
@@ -1161,6 +1218,64 @@ function assignFooterChrome(view: ViewProxy, controller: ViewController): void {
  * is *also* attached nested as `view.hookData` — the form the migration guide
  * documents. Both spellings resolve to the same fields.
  */
+/**
+ * Shares the properties a script adds to its `view` across every view of the same
+ * modal, as Classic hands every hook the same view object: a property the script
+ * assigns that the view does not define (e.g. `view.unmatchButton` set in onLoad)
+ * is stored in `scope` and read back from any view holding the same scope. The
+ * view's own properties (platform surface, hook data) stay per view. Enumeration,
+ * spreads and JSON only see the view's own properties. Without a scope the view is
+ * returned unchanged.
+ *
+ * @param view The view object (its own keys stay its own).
+ * @param scope The modal's shared store, or undefined.
+ */
+export function withScriptScope<T extends object>(view: T, scope?: Record<string, unknown>): T {
+  if (!scope) return view;
+  return new Proxy(view, {
+    get: (target, key, receiver) =>
+      typeof key === "string" && !Reflect.has(target, key) ? scope[key] : Reflect.get(target, key, receiver),
+    set: (target, key, value, receiver) => {
+      if (typeof key !== "string" || Object.prototype.hasOwnProperty.call(target, key)) {
+        return Reflect.set(target, key, value, receiver);
+      }
+      scope[key] = value;
+      return true;
+    },
+    has: (target, key) => Reflect.has(target, key) || (typeof key === "string" && key in scope),
+  });
+}
+
+/**
+ * The scope of the `form` of each modal, keyed by the modal's view scope: Classic hands every hook
+ * the same form object too, so a property a script adds to it (e.g. Add Payment's
+ * `form._overpaymentOriginalValueMap`, set in onLoad and read on a later change) is kept.
+ */
+const formScopes = new WeakMap<Record<string, unknown>, Record<string, unknown>>();
+
+function formScopeOf(scope?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!scope) return undefined;
+  let formScope = formScopes.get(scope);
+  if (!formScope) {
+    formScope = {};
+    formScopes.set(scope, formScope);
+  }
+  return formScope;
+}
+
+function emptyScope(scope: Record<string, unknown>): void {
+  for (const key of Object.keys(scope)) {
+    delete scope[key];
+  }
+}
+
+/** Empties a modal's shared script scope, and its form's, in place (their identity stays stable). */
+export function clearScriptScope(scope: Record<string, unknown>): void {
+  emptyScope(scope);
+  const formScope = formScopes.get(scope);
+  if (formScope) emptyScope(formScope);
+}
+
 export function createViewProxy(
   form: FormHandle,
   parameters: ParametersMap | undefined,
@@ -1176,17 +1291,23 @@ export function createViewProxy(
     executeProcess?: (actionValue?: string) => Promise<unknown>;
   }
 ): ViewProxy {
+  const formProxy = createFormProxy(form, parameters, deps.controller, deps.gridResolver);
   const view = {
     ...(deps.hookData ?? {}),
     // Declared after the spread so a stray `hookData` key inside the data can
     // never shadow the canonical nested accessor.
     hookData: deps.hookData ?? {},
-    theForm: createFormProxy(form, parameters, deps.controller, deps.gridResolver),
+    // The form shares script-assigned properties across the modal's hooks, as the view does.
+    theForm: withScriptScope(formProxy, formScopeOf(deps.data?.scriptScope)),
     messageBar: deps.messageBar,
   } as ViewProxy;
+  // The returned view: the same object, sharing script-assigned properties across the modal's views.
+  const self = withScriptScope(view, deps.data?.scriptScope);
+  // Classic `form.paramWindow`: the parameter window (view) the form belongs to.
+  formProxy.paramWindow = self;
   if (deps.grid) view.viewGrid = deps.grid;
 
-  assignViewData(view, form, deps.data ?? {});
+  assignViewData(view, form, deps.data ?? {}, self, parameters);
 
   if (deps.viewController) {
     assignViewActions(view, deps.viewController);
@@ -1204,5 +1325,5 @@ export function createViewProxy(
   }
   // Always-live (no controller dependency): opens an action-time dynamic parameter form.
   view.openDynamicForm = openParameterDialog;
-  return view;
+  return self;
 }

@@ -3,6 +3,7 @@ import {
   FIXED_PINNED_COLUMNS,
   getUserPinnedColumns,
   hasUserPinnedColumns,
+  isSameColumnVisibility,
   isUserColumnReorder,
   withFixedPinnedColumns,
 } from "../columnState";
@@ -46,6 +47,23 @@ describe("columnState", () => {
       ["a moved column", [COLUMN_A, COLUMN_B], [COLUMN_B, COLUMN_A], true],
     ])("returns the right value for %s", (_label, previous, next, expected) => {
       expect(isUserColumnReorder(previous, next)).toBe(expected);
+    });
+  });
+  describe("isSameColumnVisibility", () => {
+    it.each([
+      ["two empty states", {}, {}, true],
+      [
+        "the same columns and values",
+        { [COLUMN_A]: true, [COLUMN_B]: false },
+        { [COLUMN_B]: false, [COLUMN_A]: true },
+        true,
+      ],
+      ["a column hidden", { [COLUMN_A]: true }, { [COLUMN_A]: false }, false],
+      ["a column added", { [COLUMN_A]: true }, { [COLUMN_A]: true, [COLUMN_B]: true }, false],
+      ["a column removed", { [COLUMN_A]: true, [COLUMN_B]: true }, { [COLUMN_A]: true }, false],
+      ["a different column with the same count", { [COLUMN_A]: true }, { [COLUMN_B]: true }, false],
+    ])("compares %s", (_label, a, b, expected) => {
+      expect(isSameColumnVisibility(a, b)).toBe(expected);
     });
   });
 });

@@ -13,6 +13,8 @@ const OPTION_ITEM_PREFIX = "OptionItem__";
 const OPTION_ITEMS = `[data-testid^="${OPTION_ITEM_PREFIX}"]`;
 /** Controls of a read-only field: disabled inputs and buttons, and selectors marked aria-disabled. */
 const DISABLED_CONTROLS = 'input:disabled:not([type="hidden"]), button:disabled, [aria-disabled="true"]';
+/** Clickable box of a selector: its tab stop, or the tab stop the form suspended. */
+const SELECTOR_TRIGGER = 'div[tabindex="0"], div[data-original-tab-index="0"]';
 
 /** Options to locate a field when the header and a child tab are both on screen. */
 export interface FieldOptions {
@@ -101,10 +103,15 @@ export class FormField {
     return atLevel(this.page.locator(`input[aria-label="${label}"]:visible`), level);
   }
 
-  /** Dropdown trigger (list, table, search selectors) by label. */
+  /**
+   * Dropdown trigger (list, table, search selectors) by label: its tab stop, also while the form
+   * keeps it suspended (`data-original-tab-index`). A form section that collapses for a moment
+   * while loading suspends the tab stops of the fields inside, and a selector trigger is not
+   * always given it back when the section expands again; a click still opens it.
+   */
   selector(label: string, { level = "header" }: FieldOptions = {}): Locator {
     return atLevel(this.page.locator(`[aria-label="${label}"]:visible`), level)
-      .locator('div[tabindex="0"]')
+      .locator(SELECTOR_TRIGGER)
       .first();
   }
 

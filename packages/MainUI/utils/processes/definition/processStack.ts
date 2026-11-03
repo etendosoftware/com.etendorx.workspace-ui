@@ -29,6 +29,8 @@
  */
 
 import { logger } from "@/utils/logger";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type Graph from "@/data/graph";
 import type { OpenProcessParams } from "@/utils/processes/definition/scriptProxies";
 
 /** Method name exposed on the script-facing view; reused by the proxy wiring. */
@@ -37,11 +39,25 @@ export const OPEN_PROCESS = "openProcess";
 /** Classic alias namespace (`view.standardWindow.openProcess`). */
 export const STANDARD_WINDOW = "standardWindow";
 
-/** A queued nested-process launch awaiting a host to render it. */
-export interface OpenProcessRequest extends OpenProcessParams {
-  id: number;
-  /** Fired after the entry is popped (the launcher's parent-view refresh). */
+/** A nested-process launch as pushed by the launcher (before it gets an id). */
+export interface OpenProcessLaunch extends OpenProcessParams {
+  /** Fired once when the entry is closed without success (X / Cancel). */
   onClose?: () => void;
+  /** Fired once when the entry is closed after a successful execution (the launcher's refresh). */
+  onSuccess?: () => void;
+  /**
+   * The tab (and its record) that launched the outermost process. A nested process runs in its
+   * context, as Classic's `buttonOwnerView`, since the stack host renders outside any tab.
+   */
+  ownerTab?: Tab;
+  ownerRecord?: Record<string, unknown>;
+  /** The owner's tab selection graph, so the nested modal reads the same selection (session context). */
+  ownerGraph?: Graph<Tab>;
+}
+
+/** A queued nested-process launch awaiting a host to render it. */
+export interface OpenProcessRequest extends OpenProcessLaunch {
+  id: number;
 }
 
 const stack: OpenProcessRequest[] = [];
@@ -74,7 +90,7 @@ export function getProcessStack(): readonly OpenProcessRequest[] {
 }
 
 /** Pushes a launch request onto the stack and returns its id. */
-export function pushProcess(request: OpenProcessParams & { onClose?: () => void }): number {
+export function pushProcess(request: OpenProcessLaunch): number {
   const id = nextId++;
   stack.push({ ...request, id });
   if (listeners.size === 0) {
@@ -84,12 +100,24 @@ export function pushProcess(request: OpenProcessParams & { onClose?: () => void 
   return id;
 }
 
-/** Removes the entry with the given id (no-op when not found). */
-export function popProcess(id: number): void {
+/** Removes the entry with the given id. Returns whether it was in the stack (no-op otherwise). */
+export function popProcess(id: number): boolean {
   const index = stack.findIndex((request) => request.id === id);
-  if (index === -1) return;
+  if (index === -1) return false;
   stack.splice(index, 1);
   commit();
+  return true;
+}
+
+/**
+ * Whether a process modal is the topmost one, the only one that may render the
+ * shared script dialogs (`confirm`, `warn`, …). A modal outside the stack
+ * (`stackEntryId` undefined) is topmost while no nested process is open; a
+ * nested one is topmost when it is the last stack entry.
+ */
+export function isTopmostProcessModal(stackSnapshot: readonly OpenProcessRequest[], stackEntryId?: number): boolean {
+  if (stackEntryId === undefined) return stackSnapshot.length === 0;
+  return stackSnapshot.at(-1)?.id === stackEntryId;
 }
 
 /** Empties the stack (called when the host unmounts). No-op when already empty. */

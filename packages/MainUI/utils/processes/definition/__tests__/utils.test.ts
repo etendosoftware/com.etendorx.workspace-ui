@@ -309,6 +309,27 @@ describe("Process Definition Utils", () => {
       );
     });
 
+    describe("OB.RemoteCallManager.call requestParams", () => {
+      const KERNEL_URL = "/api/erp/org.openbravo.client.kernel?_action=com.example.Handler";
+
+      const callAndGetUrl = async (requestParams: unknown): Promise<string> => {
+        (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
+        buildProcessScriptContext(credentials).OB.RemoteCallManager.call("com.example.Handler", {}, requestParams);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return (global.fetch as jest.Mock).mock.calls[0][0];
+      };
+
+      it("sends them as JSON-encoded query parameters, like classic", async () => {
+        const url = await callAndGetUrl({ context: { a: 1 }, executeMatching: true });
+
+        expect(url).toBe(`${KERNEL_URL}&context=%7B%22a%22%3A1%7D&executeMatching=true`);
+      });
+
+      it("keeps the kernel URL unchanged when they are empty", async () => {
+        expect(await callAndGetUrl({})).toBe(KERNEL_URL);
+      });
+    });
+
     it("OB.RemoteCallManager.call should report a transport failure as a negative status", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,

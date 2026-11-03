@@ -5,10 +5,22 @@ import type { WindowKey } from "../../support/registry/windows";
 const DOCUMENT_NO_COLUMN = "Document No.";
 /** Entries of the Linked Items list: `LinkedItem__<record id>`. */
 const LINKED_ITEMS = '[data-testid^="LinkedItem__"]:visible';
+/**
+ * A linked record opens in a new window only once its whole tab hierarchy is restored: up to a
+ * minute on a busy CI.
+ */
+const NAVIGATION_TIMEOUT = 60_000;
+/** The server looks for the linked records in every table that references the record: slow on a busy CI. */
+const CATEGORIES_TIMEOUT = 60_000;
+/** Child tabs of the opened record load after its window is shown. */
+const TAB_TIMEOUT = 30_000;
 
 /** Visible button with exactly `text`: section and category tabs are buttons with role="tab". */
 const buttonWithText = (page: Page, text: string | RegExp) =>
   page.locator("button:visible").filter({ hasText: text }).first();
+
+/** Visible child tab named `name`: its button also holds the record count badge once the tab has loaded. */
+const childTab = (page: Page, name: string) => buttonWithText(page, new RegExp(`^${name}\\d*$`));
 
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -36,25 +48,29 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await app.grid.waitForRow(value);
     };
 
-    const openLinkedItemsTab = async () => {
-      const btn = buttonWithText(page, /^Linked Items$/);
-      await btn.waitFor({ state: "visible", timeout: 15_000 });
-      await btn.scrollIntoViewIfNeeded();
-      await btn.click();
-    };
+    const openLinkedItemsTab = () => app.formSections.open(/^Linked Items$/);
 
+    /** Opens a category of linked records: the categories are asked to the server once the section opens. */
     const clickLinkedItemButton = async (label: string) => {
       const btn = buttonWithText(page, label);
-      await btn.waitFor({ state: "visible", timeout: 15_000 });
+      await btn.waitFor({ state: "visible", timeout: CATEGORIES_TIMEOUT });
       await btn.scrollIntoViewIfNeeded();
       await btn.click();
     };
 
-    const clickParagraphWithText = async (pattern: string | RegExp) => {
-      const el = page.locator("p:visible").filter({ hasText: pattern }).first();
-      await el.waitFor({ state: "visible", timeout: 15_000 });
-      await el.scrollIntoViewIfNeeded();
-      await el.click();
+    /**
+     * Opens the linked record `item` and waits until its window is the active one. Until then the
+     * window it was opened from is still shown, and a window opened meanwhile is discarded when
+     * the linked one is restored.
+     */
+    const openLinkedItem = async (item: string | RegExp) => {
+      const openWindows = await app.windows.closeButtons.count();
+      const entry = page.locator(LINKED_ITEMS).filter({ hasText: item }).first();
+      await entry.waitFor({ state: "visible", timeout: 15_000 });
+      await entry.scrollIntoViewIfNeeded();
+      await entry.click();
+      await expect(app.windows.closeButtons).toHaveCount(openWindows + 1, { timeout: NAVIGATION_TIMEOUT });
+      await app.breadcrumb.waitFor(item, NAVIGATION_TIMEOUT);
     };
 
     // =========================================================================
@@ -66,7 +82,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Sales Quotation - Line Tax");
-    await clickParagraphWithText(/50012.*Exempt.*VAT/);
+    await openLinkedItem(/50012.*Exempt.*VAT/);
 
     await expect(
       page
@@ -74,9 +90,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Sales Quotation$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Line Tax$/)).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(childTab(page, "Line Tax")).toBeVisible({ timeout: TAB_TIMEOUT });
 
     // =========================================================================
     // PART 2: Goods Shipment
@@ -92,7 +106,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Goods Shipment - Lines");
-    await clickParagraphWithText(/500014.*Customer A.*costing Product 2/);
+    await openLinkedItem(/500014.*Customer A.*costing Product 2/);
 
     await expect(
       page
@@ -100,9 +114,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Goods Shipment$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Lines$/)).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(childTab(page, "Lines")).toBeVisible({ timeout: TAB_TIMEOUT });
 
     // =========================================================================
     // PART 3: Purchase Invoice
@@ -113,10 +125,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Purchase Invoice - Basic Discounts");
-    await clickParagraphWithText("10000017");
-
-    // Navigate through the linked record entry
-    await page.locator(LINKED_ITEMS).filter({ hasText: "10000017" }).first().click();
+    await openLinkedItem("10000017");
 
     await expect(
       page
@@ -124,8 +133,6 @@ test.describe("LinkedItems Navigation @smoke", () => {
         .filter({ hasText: /^Purchase Invoice$/ })
         .first()
     ).toBeVisible({ timeout: 15_000 });
-    await expect(buttonWithText(page, /^Basic Discounts$/)).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(childTab(page, "Basic Discounts")).toBeVisible({ timeout: TAB_TIMEOUT });
   });
 });

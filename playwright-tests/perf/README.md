@@ -16,7 +16,8 @@ Chrome DevTools > Performance, or aggregate with `node perf/hotspots.mjs <dir> <
 Profiling adds overhead: keep timing runs and profile runs separate.
 
 Env: `BASE_URL`, `LABEL`, `RUNS` (default 3, median is reported), `WINDOWS` (comma list,
-default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER`/`ETENDO_PASS`
+default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`; a name with commas needs `;` as the separator,
+e.g. `WINDOWS="Windows, Tabs, and Fields;"`), `TAB_STEPS=1` (adds the tab and level steps below), `ETENDO_USER`/`ETENDO_PASS`
 (default admin/admin), `HEADED=1` to watch it.
 
 ## Flows (per window, each in a fresh browser context = empty cache)
@@ -31,6 +32,20 @@ default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER
 | `open-record` | Double click first grid row | URL has the record id |
 | `form-next-5` | Up to 5 clicks on the form's Next button, each as soon as it is enabled, never past the last record | position indicator advanced by the clicks done |
 | `type-10-chars` | Type "perf-check" into the Description textarea (never saved) | keystrokes done (CPU tail counted in `interactiveMs`) |
+
+### Tab and level steps (`TAB_STEPS=1`)
+
+Off by default because they run after `load-unfiltered` and leave child tabs mounted, so the steps after them
+(`arrow-nav-5`, `open-record`, `form-next-5`) measure a window with its child tabs open. Use a window that has
+child tabs; windows without them add no steps. Their ready condition is only that the click was sent: read
+`settledMs`, `interactiveMs`, `blockingMs` and `apiRequests`, not `visibleMs`.
+
+| Step | What it does |
+|---|---|
+| `select-parent-with-children` | Click the first grid row; child tab groups mount and fetch |
+| `switch-child-tab-cold` | Visit the child tabs (up to 3) that were never opened |
+| `switch-child-tab-warm` | Visit them again, already mounted |
+| `open-deep-tab` | Select a record of the child grid; only reported when it opens a deeper tab level |
 
 ## Metrics
 

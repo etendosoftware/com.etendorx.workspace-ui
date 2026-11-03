@@ -1,6 +1,10 @@
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { type createProcessExpressionContext, isParameterDisplayed } from "../processExpressionUtils";
+import {
+  type createProcessExpressionContext,
+  isParameterDisplayed,
+  resolveParameterDisplayLogic,
+} from "../processExpressionUtils";
 
 jest.mock("@/components/Form/FormView/selectors/BaseSelector", () => ({
   compileExpression: jest.fn(),
@@ -103,5 +107,36 @@ describe("isParameterDisplayed", () => {
       parameter: makeParameter({ displayLogic: "@bank_fee@" }),
     });
     expect(result).toBe(true);
+  });
+});
+
+describe("resolveParameterDisplayLogic", () => {
+  const RAW_DIMENSION_LOGIC = "@ACCT_DIMENSION_DISPLAY@ & @trxtype@!''";
+  const SERVER_EXPRESSION = "context.$Element_OO === 'Y'";
+
+  it("uses the server expression when the raw logic uses @ACCT_DIMENSION_DISPLAY@", () => {
+    expect(
+      resolveParameterDisplayLogic({ displayLogic: RAW_DIMENSION_LOGIC, displayLogicExpression: SERVER_EXPRESSION })
+    ).toBe(SERVER_EXPRESSION);
+  });
+
+  it("keeps any other raw logic, even with a server expression", () => {
+    expect(
+      resolveParameterDisplayLogic({ displayLogic: DISPLAY_LOGIC, displayLogicExpression: SERVER_EXPRESSION })
+    ).toBe(DISPLAY_LOGIC);
+  });
+
+  it("keeps the raw logic when the server sent no expression", () => {
+    expect(resolveParameterDisplayLogic({ displayLogic: RAW_DIMENSION_LOGIC })).toBe(RAW_DIMENSION_LOGIC);
+  });
+
+  it("compiles the server expression for an accounting dimension parameter", () => {
+    mockCompile.mockReturnValue(() => true);
+
+    displayedWith({
+      parameter: makeParameter({ displayLogic: RAW_DIMENSION_LOGIC, displayLogicExpression: SERVER_EXPRESSION }),
+    });
+
+    expect(mockCompile).toHaveBeenCalledWith(SERVER_EXPRESSION);
   });
 });
