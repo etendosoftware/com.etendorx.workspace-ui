@@ -5,10 +5,10 @@ const STARTING_DATE = "03/15/2026";
 const ENDING_DATE = "04/30/2026";
 /** List option "Only those defined" (value N); the default is "All excluding defined". */
 const BP_CATEGORIES_ONLY_DEFINED = { value: "N", name: "Only those defined" };
-/** Numbers as typed and as the input shows them back (a price keeps two decimals, no grouping). */
+/** Numbers as typed and as the input shows them back (a price keeps two decimals and groups the thousands). */
 const PRIORITY = { typed: "7", shown: "7" };
 const DISCOUNT_PERCENT = { typed: "12.5", shown: "12.5" };
-const DISCOUNT_AMOUNT = { typed: "1234.5", shown: "1234.50" };
+const DISCOUNT_AMOUNT = { typed: "1234.5", shown: "1,234.50" };
 const MIN_QUANTITY = { typed: "2", shown: "2" };
 /** The record restored from the URL after a reload: up to a minute on a busy CI. */
 const RECOVERY_TIMEOUT = 60_000;
