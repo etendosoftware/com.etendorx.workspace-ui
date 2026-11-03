@@ -55,7 +55,8 @@ export default function RecentDocsRenderer() {
     <div className="flex flex-wrap gap-2" data-testid="RecentDocsRenderer__list">
       {documents.map((doc) => (
         <button
-          key={`${doc.windowId}-${doc.recordId}`}
+          // The store keeps one entry per window, tab and record: the same record seen in two tabs is two chips
+          key={`${doc.windowId}-${doc.tabId}-${doc.recordId}`}
           type="button"
           onClick={(e) => handleClick(e, doc)}
           onMouseEnter={() => prefetchOnHover(doc.windowId)}
