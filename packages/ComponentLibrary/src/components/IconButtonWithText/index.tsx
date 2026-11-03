@@ -21,8 +21,8 @@ import type { ButtonType } from "./types";
 import { FILLED_BUTTON_TYPE, OUTLINED_BUTTON_TYPE } from "./constants";
 
 const FILLED_DEFAULT_STYLES = `
-  bg-[var(--color-baseline-100)]
-  hover:bg-[var(--color-dynamic-main)]
+  bg-(--ui-accent)
+  hover:bg-(--ui-accent-hover)
   disabled:bg-[var(--color-transparent-neutral-20)]
   text-[var(--color-baseline-0)]
   font-medium

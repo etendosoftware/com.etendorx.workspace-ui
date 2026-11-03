@@ -30,6 +30,7 @@ const EmptyState = ({
   onInsertRow,
   uIPattern,
   containerStyle,
+  multipleParents = false,
 }: {
   table?: MRT_TableInstance<EntityData>;
   maxWidth?: number;
@@ -37,6 +38,8 @@ const EmptyState = ({
   onInsertRow?: () => void;
   uIPattern?: UIPattern;
   containerStyle?: React.CSSProperties;
+  /** Several parent records are selected: children cannot be shown, so there is nothing to create here. */
+  multipleParents?: boolean;
 }) => {
   const { t } = useTranslation();
   maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
@@ -51,18 +54,28 @@ const EmptyState = ({
       style={{ maxWidth, ...containerStyle }}
       onContextMenu={onContextMenu}>
       <div className="w-16 h-8 text-gray-300 pointer-events-none" />
-      <h3 className="text-lg font-semibold text-gray-700 mb-2 pointer-events-none">{t("table.labels.emptyRecords")}</h3>
-      <p className="text-sm text-gray-500 mb-4 pointer-events-none">{t("status.noRecords")}</p>
+      {multipleParents ? (
+        <p className="text-sm text-gray-600 pointer-events-none" data-testid="EmptyState__multipleParents">
+          {t("table.labels.multipleParentsSelected")}
+        </p>
+      ) : (
+        <>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2 pointer-events-none">
+            {t("table.labels.emptyRecords")}
+          </h3>
+          <p className="text-sm text-gray-500 mb-4 pointer-events-none">{t("status.noRecords")}</p>
 
-      {onInsertRow && !isCreateDisabled && (
-        <Button
-          variant="filled"
-          style={{ maxWidth: "15rem" }}
-          startIcon={<PlusCircle fill="white" data-testid="PlusCircle__empty-state" />}
-          onClick={onInsertRow}
-          data-testid="Button__insert-row-empty-state">
-          {t("table.actions.createRecordInGrid")}
-        </Button>
+          {onInsertRow && !isCreateDisabled && (
+            <Button
+              variant="filled"
+              style={{ maxWidth: "15rem" }}
+              startIcon={<PlusCircle fill="white" data-testid="PlusCircle__empty-state" />}
+              onClick={onInsertRow}
+              data-testid="Button__insert-row-empty-state">
+              {t("table.actions.createRecordInGrid")}
+            </Button>
+          )}
+        </>
       )}
     </div>
   );

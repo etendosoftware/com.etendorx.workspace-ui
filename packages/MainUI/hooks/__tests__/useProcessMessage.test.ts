@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { useProcessMessage } from "../useProcessMessage";
+import { PROCESS_MESSAGE_FETCH_ATTEMPTS, useProcessMessage } from "../useProcessMessage";
 
 // Mock dependencies
 jest.mock("@/hooks/useTranslation", () => ({
@@ -166,7 +166,7 @@ describe("useProcessMessage", () => {
     });
 
     expect(message).toBeNull();
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch).toHaveBeenCalledTimes(PROCESS_MESSAGE_FETCH_ATTEMPTS);
   });
 
   it("fetchProcessMessage should return null when the backend returns 'No message found' on every attempt", async () => {
@@ -183,7 +183,7 @@ describe("useProcessMessage", () => {
     });
 
     expect(message).toBeNull();
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch).toHaveBeenCalledTimes(PROCESS_MESSAGE_FETCH_ATTEMPTS);
   });
 
   it("fetchProcessMessage should retry and return the message when a later attempt succeeds", async () => {

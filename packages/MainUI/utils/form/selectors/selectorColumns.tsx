@@ -107,7 +107,7 @@ export function buildSelectorColumnDefs(
                 type="checkbox"
                 checked={isTrue}
                 readOnly
-                className="min-w-4 min-h-4 cursor-default rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+                className="min-w-4 min-h-4 cursor-default rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#2a1757] checked:border-[#2a1757]"
               />
               {isTrue && (
                 <CheckIcon

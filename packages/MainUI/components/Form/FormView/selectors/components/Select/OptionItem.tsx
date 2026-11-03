@@ -40,10 +40,10 @@ const OptionItem = memo(
           }
         }}
         onMouseEnter={() => onMouseEnter(index)}
-        className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10
-         ${isHighlighted ? "bg-baseline-10" : ""}
-         ${isSelected ? "bg-baseline-10 font-medium" : ""}
-         hover:bg-baseline-10`}>
+        className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10 dark:focus:bg-(--ui-chip-hover)
+         ${isHighlighted ? "bg-baseline-10 dark:bg-(--ui-chip-hover)" : ""}
+         ${isSelected ? "bg-baseline-10 dark:bg-(--ui-chip-hover) font-medium" : ""}
+         hover:bg-baseline-10 dark:hover:bg-(--ui-chip-hover)`}>
         <span
           className={`truncate mr-2 flex items-center gap-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
           {resolvedColor && (

@@ -28,7 +28,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     // ── Step 2: Create New Sales Invoice ─────────────────────────────────────
     await app.toolbar.newRecord();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
     await app.field.select("Business Partner", customer.name, { search: customer.name });
 
     // Save header to populate defaults
@@ -105,7 +105,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // ── Step 6: Create new Payment In ────────────────────────────────────────
     // The new record's form initialization renders the form again and closes a dropdown opened before it
     await runAndWaitForFormInitialization(page, () => app.toolbar.newRecord());
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
 
     // Received From (Business Partner): Customer A
     await app.field.select("Received From", customer.name, { search: customer.name });

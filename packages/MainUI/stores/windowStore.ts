@@ -76,8 +76,13 @@ function ensureTabExistsDraft(
  * reopening the split restores the width the user had chosen.
  */
 function closeTabFormDraft(tab: TabState): void {
-  tab.form = {};
-  tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), enabled: false };
+  // Assigning new objects over already empty ones would still register as a change and re-render the tab
+  if (!tab.form || Object.keys(tab.form).length > 0) {
+    tab.form = {};
+  }
+  if (!tab.split || tab.split.enabled) {
+    tab.split = { ...(tab.split ?? DEFAULT_SPLIT_STATE), enabled: false };
+  }
 }
 
 /**
