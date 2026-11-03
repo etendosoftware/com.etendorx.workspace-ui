@@ -22,6 +22,8 @@ import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton }: TopToolbarProps) => {
   const { setSlot: setExtrasSlot } = useToolbarExtrasSlot();
   const isCenterSectionsDisabled = centerSection.buttons.every((button) => button.disabled) && processButton?.disabled;
+  // The center group scrolls when the row is too narrow (the right group also holds the record navigation, so a
+  // 1280px screen with the menu open does not fit it all): without that its buttons spilled under the right group.
   return (
     <div className="h-10 flex justify-between items-center gap-2">
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -33,11 +35,11 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
         <ToolbarSection
           {...centerSection}
           processButton={processButton}
-          className={`bg-(--ui-group-bg) rounded-full px-3 flex min-w-0 flex-1 items-center justify-start gap-1.5 [&_button]:bg-transparent [&_button]:border-0 [&_button]:h-9 [&_button]:w-9 ${isCenterSectionsDisabled ? "opacity-40 dark:opacity-90" : ""}`}
+          className={`bg-(--ui-group-bg) rounded-full px-3 flex min-w-0 flex-1 items-center justify-start gap-1.5 overflow-x-auto hide-scrollbar [&_button]:bg-transparent [&_button]:border-0 [&_button]:h-9 [&_button]:w-9 ${isCenterSectionsDisabled ? "opacity-40 dark:opacity-90" : ""}`}
           data-testid="ToolbarSection__f0537e_2"
         />
       </div>
-      <div className="flex items-center gap-2 [&_button]:h-9 [&_button]:w-9 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-(--ui-nav-btn-bg)! [&_button:not([style*=background-color]):not(:disabled):hover]:bg-(--color-dynamic-main)!">
+      <div className="flex shrink-0 items-center gap-2 [&_button]:h-9 [&_button]:w-9 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-(--ui-nav-btn-bg)! [&_button:not([style*=background-color]):not(:disabled):hover]:bg-(--color-dynamic-main)!">
         <ToolbarSection {...rightSection} className="flex items-center gap-2" data-testid="ToolbarSection__f0537e_3" />
         <div
           ref={setExtrasSlot}
