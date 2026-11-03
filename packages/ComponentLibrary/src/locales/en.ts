@@ -22,6 +22,8 @@ const en = {
     cancel: "Cancel",
     confirm: "Confirm",
     close: "Close",
+    scrollTabsBack: "Show the previous tabs",
+    scrollTabsForward: "Show the next tabs",
     closing: "Closing...",
     unsavedChangesCloseMessage:
       "You have unsaved changes that will be lost. Are you sure you want to close this window?",
