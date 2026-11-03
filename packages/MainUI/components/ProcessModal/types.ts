@@ -40,6 +40,7 @@ import type {
 import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
 import type { GridSelectionUpdater, GridSelectionStructure } from "./ProcessDefinitionModal";
 import type { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import type { OnRefreshFunction } from "./processView";
 
 export type ProcessType = (typeof PROCESS_TYPES)[keyof typeof PROCESS_TYPES] | "";
 
@@ -141,6 +142,14 @@ export interface ProcessDefinitionModalProps {
   windowTitle?: string;
   /** Launching field/button forwarded by a nested launch, so a nested script reaches `view.callerField.view`. */
   callerField?: CallerField;
+  /** Tab a nested launch runs in when no TabContext supplies one (Classic `buttonOwnerView`). */
+  ownerTab?: Tab;
+  /** `externalParams` of a nested launch, added to the defaults context, the grid requests and `_params`. */
+  externalParams?: Record<string, unknown>;
+  /** Values of the launcher of a process opened from a selector's "+", added to the defaults context only. */
+  callerContext?: Record<string, unknown>;
+  /** Process-stack entry id of a nested launch (undefined for a modal opened outside the stack). */
+  stackEntryId?: number;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -221,6 +230,10 @@ export interface WindowReferenceGridProps {
   fieldController?: FieldController;
   /** Resolves `view.theForm.getItem('<param>').canvas.viewGrid` inside `onGridLoad`. */
   gridResolver?: GridResolver;
+  /** The process `onRefresh` hook, exposed as `view.onRefreshFunction` to the grid's scripts. */
+  onRefreshFunction?: OnRefreshFunction;
+  /** `externalParams` of a nested launch, sent as datasource request params (Classic parity). */
+  externalParams?: Record<string, unknown>;
 }
 
 export type RowProps = (props: {

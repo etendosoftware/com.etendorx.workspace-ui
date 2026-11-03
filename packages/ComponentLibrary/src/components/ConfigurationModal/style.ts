@@ -119,7 +119,7 @@ export const useStyle = () => {
       } as { [key: string]: CSSProperties },
       sx: {
         hoverStyles: {
-          background: "white",
+          background: theme.palette.baselineColor.neutral[0],
           "&:hover": {
             backgroundColor: theme.palette.dynamicColor.main,
             "& .MuiSvgIcon-root": {

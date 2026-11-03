@@ -82,12 +82,15 @@ interface UseFormFieldsReturn {
   >;
 }
 
+/** Default for `availableFormData`: a new `{}` per call would invalidate every memo that depends on it. */
+const NO_FORM_DATA: { [x: string]: EntityValue } = {};
+
 export default function useFormFields(
   tab: Tab,
   recordId?: string,
   mode: FormMode = FormMode.EDIT,
   hasAuditData = false,
-  availableFormData: { [x: string]: EntityValue } = {}
+  availableFormData: { [x: string]: EntityValue } = NO_FORM_DATA
 ): UseFormFieldsReturn {
   const { t } = useTranslation();
   const { record } = useCurrentRecord({

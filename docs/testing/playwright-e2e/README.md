@@ -69,7 +69,7 @@ inside a project, spec files run in parallel up to the project's `workers`.
 | `suite-01-base` | login, master data, filters, linked items, display logic, `@smoke` feature probes | 3 | Read-only specs, or records with `uniqueValue()` names. |
 | `suite-02-sales` | SALa–SALd | 3 | Customer Barcelona and Customer A; each spec selects only its own orders, shipments and invoices. |
 | `suite-03-procurement` | PROa–PROe | 3 | Vendor A; each spec filters by its own document numbers. PROe runs the client-wide "Costing Background" process, which does not change the others' documents. |
-| `suite-04-financial` | FINb–FINd | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. |
+| `suite-04-financial` | FINb–FINf | 3 | Customer A, Vendor A/B, Spain Cashbook; each spec selects only its own invoices and payments. FINe (Match Statement) is the only spec on Spain Bank: the matching algorithm runs on every unmatched line of the account. Its tests run in order (`mode: "serial"`) on one statement. |
 | `suite-05-regression` | `regression/` | 3 | `@regression` probes, each on its own records or on a window no other spec uses (Currency for saved views, Country and Region for grouping). |
 | `mocked` | `mocked/` | default | Recorded responses only: no ERP needed. Run it alone with `pnpm pw:mocked`. |
 
@@ -118,6 +118,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | FRMa | smoke | Display logic of fields (Product: Stocked, Bill of Materials, Linked To Product, Tax Category) and of a child tab (Bill of Materials) re-evaluated after a field change, unsaved | Sample product, not saved |
 | FRMb | smoke | Editability by document status: a draft sales order is editable, a booked one read-only, "Copy Lines" only while not processed | Sample orders 50015 and 50017 |
 | FRMc | smoke | Save → reload round trip of text, dates, integer, yes/no, list, table, number, price and quantity fields (Discounts and Promotions) | Own record |
+| FRMe | smoke | Selector buttons in a form: the magnifying glass picks a record filtered in its popup (Sales Order business partner); the "+" opens the process that creates the record in the context of the form, and the record comes back to the field (Transaction payment → Add Payment received into the account: the typed Actual Payment is kept, the amount no invoice takes asks for an Overpayment Action and is left as credit, the payment is written into Payment and its callout sets the deposit amount) | Own payment of Customer Germany (nothing pending, left as credit); the transaction is not saved |
 | GRDa | smoke | Child tab follows the header selection, clone with lines, backend sort, inline edit with its callout, refresh after save | Clone of sample order 50014 |
 | GRDb | smoke | Delete one and two records from the grid, unsaved-changes guard when closing a window, no deleted record back after reopening | Own categories (`api`) |
 | NAVa | smoke | Deep link in a fresh session, URL recovery after a reload, switching open windows keeps their record | Sample records |
@@ -180,12 +181,13 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | PurchaseOrderDisplayLogic | mockable | Display logic evaluation of a new record. |
 | FiltersComplete | split | Building the advanced filter is client side; that rows are filtered is server side. |
 | LNKa | split | Linked-items rendering and navigation are client side; the categories come from a server handler. |
-| SALa–SALd, PROa–PROe, FINb–FINd | real backend | Document processing, Classic popups, accounting, background processes. |
+| SALa–SALd, PROa–PROe, FINb–FINf | real backend | Document processing, Classic popups, accounting, background processes. |
 | crud-performance | real backend | Measures real latency. |
 | rendering, stress | split | Page load, Web Vitals and 404 recovery are client side; dashboard timings and login cycles need the server. |
 | PRCb | split | Grid selection and onProcess abort are client side; amounts come from the Add Payment handlers. |
 | FRMa, FRMb, NAVa | mockable | Display/read-only logic and URL state on recorded metadata and records (NAVa is the pilot). |
 | FRMc, SESa | real backend | Save → reload round trip; server-side session and defaults. |
+| FRMe | real backend | Selector popup records, Add Payment defaults and execution, and the transaction callout run on the server. |
 | GRDa, GRDb | split | Child tab, sort and guard are client side; callout, clone, delete and cache are server side. |
 | PRCc, PRCd, FRMd, GRDc, GRDe | real backend | Report generation, Classic handler contract, attachment storage, saved views and tree moves are persisted. |
 | GRDd, NAVb, NAVc | mockable | Client-side grouping, summary, shortcuts and record navigation on recorded data. |

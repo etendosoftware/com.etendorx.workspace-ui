@@ -55,9 +55,10 @@ const buildMenu = (): Menu[] =>
 interface RenderOptions {
   searchValue?: string;
   expandedItems?: Set<string>;
+  onItemHover?: jest.Mock;
 }
 
-const renderDrawer = ({ searchValue = "", expandedItems = new Set<string>() }: RenderOptions = {}) => {
+const renderDrawer = ({ searchValue = "", expandedItems = new Set<string>(), onItemHover }: RenderOptions = {}) => {
   const items = buildMenu();
   const searchIndex = createSearchIndex(items);
   const { filteredItems, searchExpandedItems } = filterItems(items, searchValue, searchIndex);
@@ -72,6 +73,7 @@ const renderDrawer = ({ searchValue = "", expandedItems = new Set<string>() }: R
       onClick={onClick}
       onReportClick={onClick}
       onProcessClick={onClick}
+      onItemHover={onItemHover}
       searchContext={{
         searchValue,
         setSearchValue,
@@ -104,6 +106,32 @@ beforeAll(() => {
   (window.localStorage.getItem as jest.Mock).mockReturnValue("true");
   // jsdom does not implement scrollIntoView, which the highlight calls.
   Element.prototype.scrollIntoView = jest.fn();
+});
+
+describe("Drawer menu search — highlighted entry notification", () => {
+  it("reports the first result so its window can be loaded before Enter", () => {
+    const onItemHover = jest.fn();
+    renderDrawer({ searchValue: SALES_TERM, onItemHover });
+
+    expect(onItemHover).toHaveBeenCalledTimes(1);
+    expect(onItemHover.mock.calls[0][0].id).toBe(SALES_ORDER_ID);
+  });
+
+  it("reports each entry the arrows move the highlight to", () => {
+    const onItemHover = jest.fn();
+    renderDrawer({ searchValue: SALES_TERM, onItemHover });
+
+    pressKey("ArrowDown");
+
+    expect(onItemHover.mock.calls.map(([item]) => item.id)).toEqual([SALES_ORDER_ID, SALES_INVOICE_ID]);
+  });
+
+  it("reports nothing while there is no search term", () => {
+    const onItemHover = jest.fn();
+    renderDrawer({ onItemHover });
+
+    expect(onItemHover).not.toHaveBeenCalled();
+  });
 });
 
 describe("Drawer menu search — keyboard navigation with a search term", () => {

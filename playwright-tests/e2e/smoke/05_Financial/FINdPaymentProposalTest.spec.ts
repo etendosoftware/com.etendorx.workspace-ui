@@ -1,6 +1,7 @@
 import type { App } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
 import type { SampleRecord } from "../../support/registry/data";
+import { TABS } from "../../support/registry/windows";
 import { runAndWaitForDatasource } from "../../support/wait";
 
 const DUE_DATE_OFFSET_DAYS = 120;
@@ -23,7 +24,7 @@ const inputDateInDays = (days: number): string => {
 /** Fills the header and one line of the new purchase invoice, completes it and returns its number. */
 async function completeInvoice(app: App, invoice: InvoiceSpec, fieldIds: { paymentMethod: string; quantity: string }) {
   const { page } = app;
-  await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
+  await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
   // Wait for the business partner callout: it sets the vendor's default payment method
   await app.field.select("Business Partner", invoice.vendor.name, { search: invoice.vendor.name, callout: true });
   if (invoice.paymentMethod) {
@@ -88,8 +89,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // ════════════════════════════════════════════════════════════════════════
     // Invoice B — Vendor B, Raw material B, qty 10
     // ════════════════════════════════════════════════════════════════════════
-    // New record from the header toolbar (form view), without re-navigating to Purchase Invoice
-    await app.toolbar.newRecordInForm();
+    // New record from the header toolbar (form view), without re-navigating to Purchase Invoice. The toolbar
+    // is the header tab's: "the first visible button" can be the child tab's while the header re-renders.
+    await app.toolbar.inTab(TABS.PURCHASE_INVOICE_HEADER).newRecordInForm();
     const invoiceNumberB = await completeInvoice(
       app,
       {

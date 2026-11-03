@@ -95,6 +95,6 @@ describe("Switch keyboard contract", () => {
   it("paints a visible focus ring", () => {
     const { control } = renderSwitch();
 
-    expect(control.className).toContain("focus-visible:ring-[#004ACA]");
+    expect(control.className).toContain("focus-visible:ring-[#2a1757]");
   });
 });

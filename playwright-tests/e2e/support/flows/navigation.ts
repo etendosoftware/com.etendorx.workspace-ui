@@ -10,6 +10,8 @@ const SALES_ORDER = "Sales Order";
 const PRODUCT_WINDOW = "Product";
 /** URL parameters of the deepest tab in form view: window, tab and record of window 0. */
 const RECORD_IN_URL = /[?&]wi_0=[^&]+&ti_0=[^&]+&ri_0=[0-9A-F]{32}/;
+/** A record restored from the URL reloads its window and its parent records: up to a minute on a busy CI. */
+const RECOVERY_TIMEOUT = 60_000;
 
 /** Opens in the form the record of the active grid whose `column` shows exactly `value`. */
 async function openRecord(app: App, column: string, value: string): Promise<void> {
@@ -35,7 +37,9 @@ export async function verifyNavigationState(app: App, newContext: () => Promise<
   const deepLink = app.page.url();
 
   await app.page.reload();
-  await expect(app.breadcrumb.root, "the reload did not restore the record of the URL").toContainText(order);
+  await expect(app.breadcrumb.root, "the reload did not restore the record of the URL").toContainText(order, {
+    timeout: RECOVERY_TIMEOUT,
+  });
   await expect(app.field.byName("documentNo")).toBeVisible();
 
   // A deep link opened in a new browser session, after logging in
@@ -44,7 +48,9 @@ export async function verifyNavigationState(app: App, newContext: () => Promise<
     const fresh = new App(await context.newPage());
     await fresh.auth.login();
     await fresh.page.goto(deepLink);
-    await expect(fresh.breadcrumb.root, "the deep link did not open its record").toContainText(order);
+    await expect(fresh.breadcrumb.root, "the deep link did not open its record").toContainText(order, {
+      timeout: RECOVERY_TIMEOUT,
+    });
   } finally {
     await context.close();
   }

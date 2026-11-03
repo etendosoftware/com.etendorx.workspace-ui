@@ -33,6 +33,12 @@ import { compileExpression } from "./selectors/BaseSelector";
 import { useEvaluationContext } from "@/hooks/evaluation/useEvaluationContext";
 import { useDisplayLogicFormValues } from "@/hooks/evaluation/useDisplayLogicFormValues";
 
+/**
+ * The section navigator (pills + sections menu) is off by default: the collapsible sections already
+ * list the same content. Pass a finite `minSectionsForNavigator` to bring it back.
+ */
+const MIN_SECTIONS_FOR_NAVIGATOR = Number.POSITIVE_INFINITY;
+
 interface FormHeaderProps {
   statusBarFields: Record<string, Field>;
   groups: Array<[string | null, { identifier: string; fields: Record<string, Field> }]>;
@@ -42,6 +48,8 @@ interface FormHeaderProps {
   onNavigateNext?: () => void;
   onNavigatePrevious?: () => void;
   isNavigating?: boolean;
+  /** Fewer sections than this hide the section navigator. */
+  minSectionsForNavigator?: number;
 }
 
 export function FormHeader({
@@ -53,6 +61,7 @@ export function FormHeader({
   onNavigateNext,
   onNavigatePrevious,
   isNavigating,
+  minSectionsForNavigator = MIN_SECTIONS_FOR_NAVIGATOR,
 }: FormHeaderProps) {
   const theme = useTheme();
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
@@ -125,13 +134,15 @@ export function FormHeader({
         isNavigating={isNavigating}
         data-testid="StatusBar__cb26f1"
       />
-      <PrimaryTabs
-        tabs={tabs}
-        onChange={handleTabChange}
-        selectedTab={selectedTab}
-        icon={defaultIcon}
-        data-testid="PrimaryTabs__cb26f1"
-      />
+      {tabs.length >= minSectionsForNavigator && (
+        <PrimaryTabs
+          tabs={tabs}
+          onChange={handleTabChange}
+          selectedTab={selectedTab}
+          icon={defaultIcon}
+          data-testid="PrimaryTabs__cb26f1"
+        />
+      )}
     </>
   );
 }

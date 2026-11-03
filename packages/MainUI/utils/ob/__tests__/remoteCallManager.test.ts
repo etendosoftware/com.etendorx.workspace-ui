@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { createRemoteCallManager } from "../remoteCallManager";
+import { createRemoteCallManager, encodeRequestParams } from "../remoteCallManager";
 
 const HANDLER = "org.openbravo.test.SomeActionHandler";
 
@@ -31,7 +31,7 @@ describe("createRemoteCallManager", () => {
     createRemoteCallManager({ remoteCall }).call(HANDLER, { a: 1 }, {}, callback, callerContext);
     await flush();
 
-    expect(remoteCall).toHaveBeenCalledWith(HANDLER, { a: 1 });
+    expect(remoteCall).toHaveBeenCalledWith(HANDLER, { a: 1 }, {});
     expect(callback).toHaveBeenCalledWith({ status: 0 }, { x: 1 }, { clientContext: callerContext });
   });
 
@@ -63,12 +63,41 @@ describe("createRemoteCallManager", () => {
     createRemoteCallManager({ remoteCall }).call(HANDLER);
     await flush();
 
-    expect(remoteCall).toHaveBeenCalledWith(HANDLER, {});
+    expect(remoteCall).toHaveBeenCalledWith(HANDLER, {}, {});
+  });
+
+  it("forwards the classic requestParams as encoded query parameters", async () => {
+    const remoteCall = jest.fn().mockResolvedValue({ data: null });
+
+    createRemoteCallManager({ remoteCall }).call(HANDLER, {}, { context: { id: "A1" }, executeMatching: false });
+    await flush();
+
+    expect(remoteCall).toHaveBeenCalledWith(HANDLER, {}, { context: '{"id":"A1"}', executeMatching: "false" });
   });
 
   it("throws a traceable error when built without a remoteCall transport", () => {
     expect(() => createRemoteCallManager({}).call(HANDLER, {}, {}, jest.fn())).toThrow(
       /requires a remoteCall dependency/
     );
+  });
+});
+
+describe("encodeRequestParams", () => {
+  it("keeps strings and JSON-encodes every other value, as classic SmartClient does", () => {
+    expect(encodeRequestParams({ name: "x", flag: true, count: 2, context: { a: 1 }, ids: ["1", "2"] })).toEqual({
+      name: "x",
+      flag: "true",
+      count: "2",
+      context: '{"a":1}',
+      ids: '["1","2"]',
+    });
+  });
+
+  it("skips null/undefined values and the reserved _action key", () => {
+    expect(encodeRequestParams({ _action: "other", empty: null, missing: undefined, kept: "" })).toEqual({ kept: "" });
+  });
+
+  it.each([undefined, null, "text", 3, ["a"]])("returns no parameters for a non-object (%p)", (value) => {
+    expect(encodeRequestParams(value)).toEqual({});
   });
 });

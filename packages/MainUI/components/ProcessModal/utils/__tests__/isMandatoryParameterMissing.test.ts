@@ -157,4 +157,14 @@ describe("isMandatoryParameterMissing with requireActualValue", () => {
       })
     ).toBe(false);
   });
+  it("never reports a Yes/No parameter, which always holds a value in Classic", () => {
+    expect(
+      isMandatoryParameterMissing({
+        parameter: makeParam({ reference: FIELD_REFERENCE_CODES.BOOLEAN.id }),
+        formValues: {},
+        isDisplayed: alwaysVisible,
+        requireActualValue: true,
+      })
+    ).toBe(false);
+  });
 });

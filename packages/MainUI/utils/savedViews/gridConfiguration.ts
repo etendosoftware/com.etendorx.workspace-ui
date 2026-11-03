@@ -38,6 +38,7 @@ import { logger } from "@/utils/logger";
 import { getUserPinnedColumns, hasUserPinnedColumns, withFixedPinnedColumns } from "@/utils/table/columnState";
 import type { TableState } from "@/utils/window/constants";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+import { registerSessionReset } from "@/utils/session/resetSessionState";
 
 /** Column configuration of one tab, as stored in the preference. */
 export interface ColumnConfiguration {
@@ -118,6 +119,14 @@ const cancelPendingSave = (key: string) => {
   clearTimeout(pendingSaves.get(key));
   pendingSaves.delete(key);
 };
+
+// Both caches belong to the user who is logging out: the configurations are their preferences
+registerSessionReset(() => {
+  for (const key of pendingSaves.keys()) {
+    cancelPendingSave(key);
+  }
+  windowConfigurations.clear();
+});
 
 const storeTabConfiguration = async (
   windowIdentifier: string,

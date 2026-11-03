@@ -330,7 +330,7 @@ const GridCellEditorBase = ({
       }
       const { defaults, criteria } = await cached;
 
-      const etendoContext = tab ? buildEtendoContext(tab, graph) : {};
+      const etendoContext = tab && graph ? buildEtendoContext(tab, graph) : {};
       const params = buildSelectorDatasourceParams({
         field,
         etendoContext,

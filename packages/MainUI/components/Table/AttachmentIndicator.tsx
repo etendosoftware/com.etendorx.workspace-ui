@@ -71,7 +71,7 @@ export const AttachmentIndicator = ({ record, tab, onClick }: AttachmentIndicato
             },
           }}
           data-testid="Badge__e924b4">
-          <PaperclipIcon className="w-4 h-4" fill="#004ACA" data-testid="paperclip-icon-with-badge" />
+          <PaperclipIcon className="w-4 h-4" fill="#2a1757" data-testid="paperclip-icon-with-badge" />
         </Badge>
       ) : (
         <PaperclipIcon className="w-4 h-4 opacity-30" fill="#6B7280" data-testid="paperclip-icon-no-badge" />

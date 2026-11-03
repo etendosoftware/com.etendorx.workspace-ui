@@ -12,8 +12,6 @@ import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
 import { useMenu } from "@/hooks/useMenu";
-import Version from "@workspaceui/componentlibrary/src/components/Version";
-import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { type ReportPopupBlockedTexts, notifyReportPopupBlocked, tryOpenReportPopup } from "@/utils/reportPopup";
 import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
@@ -195,19 +193,6 @@ const openLegacyManualProcess = (url: string, popupBlockedTexts: ReportPopupBloc
   if (!tryOpenLegacyPopup(url)) {
     notifyReportPopupBlocked(() => tryOpenLegacyPopup(url), popupBlockedTexts);
   }
-};
-
-/**
- * Version component that displays the current application version in the sidebar footer.
- * Renders the version information with internationalization support.
- *
- * @returns A Version component with translated title and current app version
- */
-const VersionComponent: React.FC<VersionProps> = () => {
-  const { t } = useTranslation();
-  return (
-    <Version title={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} data-testid="Version__6c6035" />
-  );
 };
 
 /**
@@ -519,7 +504,6 @@ export default function Sidebar() {
           onItemHover={handleItemHover}
           getTranslatedName={getTranslatedName}
           RecentlyViewedComponent={RecentlyViewed}
-          VersionComponent={VersionComponent}
           searchContext={searchContext}
           data-testid="Drawer__6c6035"
         />

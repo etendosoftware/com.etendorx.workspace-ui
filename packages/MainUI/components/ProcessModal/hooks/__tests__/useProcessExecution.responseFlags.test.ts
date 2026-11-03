@@ -16,7 +16,8 @@
 
 import "../testUtils/useProcessExecution.mocks";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useProcessExecution } from "../useProcessExecution";
+import { toast } from "sonner";
+import { REPORT_EXECUTION_TIMEOUT_MS, useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
 
 const mockFetchJson = (data: unknown) => {
@@ -118,6 +119,32 @@ describe("useProcessExecution — executeJavaProcess response flags", () => {
     );
     expect(keepOpenCall).toBeUndefined();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  describe("success toast (Classic shows a message only when the handler returns one)", () => {
+    beforeEach(() => {
+      (toast.success as jest.Mock).mockClear();
+    });
+
+    it("closes without a toast when the response carries no message", async () => {
+      mockFetchJson({ refreshParent: true });
+      const onClose = jest.fn();
+
+      await runProcess({ onClose });
+
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it("closes with the toast when the response carries a message", async () => {
+      mockFetchJson(SUCCESS_RESPONSE);
+      const onClose = jest.fn();
+
+      await runProcess({ onClose });
+
+      expect(toast.success).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalled();
+    });
   });
 
   it("reads retryExecution nested under response.data", async () => {
@@ -295,5 +322,63 @@ describe("OBUIAPP_Report execution", () => {
     await runProcess({ reportId: REPORT_ID, scriptContext: { OB: { Utilities: { Action: { executeJSON } } } } });
 
     expect(executeJSON).toHaveBeenCalledWith([DOWNLOAD_ACTION]);
+  });
+
+  describe("execution deadline", () => {
+    /** A fetch that never answers and rejects like the browser once its signal is aborted. */
+    const mockHangingFetch = () => {
+      global.fetch = jest.fn().mockImplementation(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          })
+      ) as jest.Mock;
+    };
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("aborts a report that exceeds the deadline and shows the timeout message", async () => {
+      mockHangingFetch();
+      const setResult = jest.fn();
+      const { result } = renderHook(() => useProcessExecution(makeParams({ reportId: REPORT_ID, setResult })));
+
+      const execution = result.current.executeJavaProcess({});
+      await jest.advanceTimersByTimeAsync(REPORT_EXECUTION_TIMEOUT_MS);
+      await execution;
+
+      expect(setResult).toHaveBeenCalledWith({ success: false, error: "process.reportTimeout" });
+    });
+
+    it("keeps waiting until the deadline is reached", async () => {
+      mockHangingFetch();
+      const setResult = jest.fn();
+      const { result } = renderHook(() => useProcessExecution(makeParams({ reportId: REPORT_ID, setResult })));
+
+      result.current.executeJavaProcess({});
+      await jest.advanceTimersByTimeAsync(REPORT_EXECUTION_TIMEOUT_MS - 1);
+
+      expect(setResult).not.toHaveBeenCalled();
+    });
+
+    it("does not apply a deadline to a non-report process", async () => {
+      mockHangingFetch();
+      const { result } = renderHook(() => useProcessExecution(makeParams({})));
+
+      result.current.executeJavaProcess({});
+      await jest.advanceTimersByTimeAsync(REPORT_EXECUTION_TIMEOUT_MS * 2);
+
+      expect((global.fetch as jest.Mock).mock.calls[0][1].signal).toBeUndefined();
+    });
+
+    it("delivers a report that finishes before the deadline", async () => {
+      mockFetchJson(REPORT_RESPONSE);
+      const setResult = jest.fn();
+
+      await runProcess({ reportId: REPORT_ID, setResult });
+
+      expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ keepOpen: true, success: true }));
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 });

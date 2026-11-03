@@ -135,7 +135,7 @@ const es = {
       noFileSelected: "Ningún archivo seleccionado",
     },
     statusBar: {
-      closeRecord: "Cerrar registro",
+      closeRecord: "Cerrar registro y volver a la grilla",
       nextRecord: "Siguiente registro",
       previousRecord: "Registro anterior",
     },
@@ -222,6 +222,20 @@ const es = {
       title: "Error de Recuperación",
       description: "No se pudo restaurar el estado de la ventana desde la URL",
     },
+    boundary: {
+      title: "Algo salió mal",
+      description:
+        "Un error inesperado interrumpió esta pantalla. Puedes intentar de nuevo o recargar la página. Los cambios sin guardar pueden perderse.",
+      reload: "Recargar página",
+      reference: "Referencia del error",
+    },
+    connection: {
+      offlineTitle: "Sin conexión",
+      offlineDescription: "Revisa tu conexión a internet. La aplicación se reconectará automáticamente.",
+      backOnlineTitle: "Conexión restablecida",
+      timeoutTitle: "El servidor tardó demasiado en responder",
+      timeoutDescription: "Inténtalo de nuevo en un momento. Si el problema persiste, contacta al administrador.",
+    },
     accessDenied: {
       title: "Acceso denegado",
       description: "Tu rol no tiene acceso a esta ventana. Contacta al administrador del sistema si necesitas acceso.",
@@ -270,6 +284,8 @@ const es = {
       noType: "Sin tipo",
       noRecord: "Ninguna fila seleccionada",
       emptyRecords: "No hay registros para mostrar",
+      multipleParentsSelected:
+        "Hay varios registros padre seleccionados. Solo se pueden ver los hijos de 1 padre a la vez.",
     },
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
@@ -278,6 +294,7 @@ const es = {
       showingRecords: "Mostrando {count} registros",
       showingPartialRecords: "Mostrando {loaded} de {total} registros",
       selectedRecords: "{count} seleccionados",
+      titleCount: "({count} registros)",
       recordsLoaded: "Registros cargados",
     },
     selectAll: {
@@ -364,6 +381,8 @@ const es = {
     confirmationMessage: "¿Deseas ejecutar este proceso?",
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
+    reportTimeout:
+      "El reporte tardó demasiado en ejecutarse y fue cancelado. Intente nuevamente con filtros más acotados.",
     processError: "Error mientras se cargaba la informacion del proceso",
     missingMandatoryFields: "No ha completado todos los campos requeridos",
     warning: "Advertencia",
@@ -380,6 +399,7 @@ const es = {
     openLink: "Abrir enlace",
     reportFileFailed: "El reporte se generó pero no se pudo abrir ni descargar el archivo.",
     openUrlMissingUrl: "El proceso pidió abrir un enlace pero no devolvió ninguna URL.",
+    addNewRecord: "Añadir %0",
   },
   processModal: {
     gridToolbar: {
@@ -1000,6 +1020,7 @@ const es = {
     buttonLabel: "Procesos en segundo plano",
     buttonLabelRunning: "Procesos en segundo plano (%0 en ejecución)",
     recentFailures: "Errores recientes",
+    failed: "Con error",
     running: "En ejecución",
     misfired: "No se ejecutó",
     noFailures: "No hay errores recientes",

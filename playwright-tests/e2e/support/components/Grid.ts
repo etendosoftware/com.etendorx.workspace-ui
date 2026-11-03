@@ -10,23 +10,32 @@ const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
 const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
 /** The datasource request that saves an inline edit. */
 const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
-/** Record count of the grid toolbar: "Showing 12 records". */
+/** Record count of a grid that keeps its own counter bar: "Showing 12 records". */
 const SHOWING_RECORDS = /Showing (\d+) records?/;
+/** Record count of the root grid, which docks it into the title bar: "(12 records)". */
+const TITLE_RECORD_COUNT = /\((\d+) \w+\)/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
+/** Entry of the column actions menu that removes the filter of the column. */
+const CLEAR_FILTER = "Clear filter";
+/** Text the header of a filtered column carries: "Filtering by <column> - …". */
+const FILTERING_BY = "Filtering by";
 
 /** Data grid of the active tab or of a process modal. */
 export class Grid {
   constructor(private readonly page: Page) {}
 
-  /** Column filter input, by column name (placeholder `Filter <column>...`). */
-  filterInput(column: string): Locator {
-    return this.page.locator(`input[placeholder="Filter ${column}..."]`).filter({ visible: true }).first();
+  /**
+   * Column filter input, by column name (placeholder `Filter <column>...`). Pass `scope` (e.g. a
+   * child tab, `Tab__<AD_Tab_ID>`) when another grid on the page has a column with the same name.
+   */
+  filterInput(column: string, scope: Locator | Page = this.page): Locator {
+    return scope.locator(`input[placeholder="Filter ${column}..."]`).filter({ visible: true }).first();
   }
 
   /** Filters a column and waits for the datasource response that applies the filter. */
-  async filter(column: string, value: string): Promise<void> {
-    const input = this.filterInput(column);
+  async filter(column: string, value: string, scope: Locator | Page = this.page): Promise<void> {
+    const input = this.filterInput(column, scope);
     await input.waitFor({ state: "visible", timeout: ROW_TIMEOUT });
     await input.clear();
     await runAndWaitForDatasource(this.page, async () => {
@@ -66,23 +75,49 @@ export class Grid {
   }
 
   /**
+   * Header cell of a column, found by its sort button: "Sort by <column> ascending" or, once
+   * sorted, "Sorted by <column> descending" (the header text also shows filter values and counts).
+   */
+  columnHeader(column: string, scope: Locator | Page = this.page): Locator {
+    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
+    return scope
+      .locator("thead:visible th")
+      .filter({ has: this.page.locator(sortButton) })
+      .first();
+  }
+
+  /**
    * Opens the column actions menu ("Column Actions", three dots) of a column header and clicks an
    * entry by test id (`column-actions-group-by`, `column-actions-set-summary`, …).
    */
   async columnAction(column: string, actionTestId: string): Promise<void> {
-    const sortButton = `[aria-label^="Sort by ${column} "], [aria-label^="Sorted by ${column} "]`;
-    const header = this.page
-      .locator("thead:visible th")
-      .filter({ has: this.page.locator(sortButton) })
-      .first();
-    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.columnHeader(column).getByRole("button", { name: "Column Actions" }).click();
     await this.page.getByTestId(actionTestId).click();
   }
 
-  /** The "Showing N records" count of the visible grid. */
+  /**
+   * Removes the filter of a column through its column actions menu ("Clear filter"), e.g. a
+   * filter a process grid applies when it opens. Waits for the header to stop showing the filter,
+   * not for a request: when the grid already fetched the data without that filter (a process grid
+   * can load once before it applies its own), it shows that data again without asking for it.
+   */
+  async clearFilter(column: string, scope: Locator | Page = this.page): Promise<void> {
+    const header = this.columnHeader(column, scope);
+    await header.getByRole("button", { name: "Column Actions" }).click();
+    await this.page.getByRole("menuitem", { name: CLEAR_FILTER, exact: true }).click();
+    await expect(header).not.toContainText(`${FILTERING_BY} ${column}`);
+  }
+
+  /** The record count of the visible grid: "(N records)" in the title bar, or "Showing N records" in its counter bar. */
   async shownRecords(): Promise<number> {
-    const text = await this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first().textContent();
-    return Number(SHOWING_RECORDS.exec(text ?? "")?.[1]);
+    const title = this.page.getByTestId("TitleRecordCount__table").filter({ visible: true }).first();
+    const bar = this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first();
+    const counter = title.or(bar);
+    await expect(counter).toHaveText(new RegExp(`${TITLE_RECORD_COUNT.source}|${SHOWING_RECORDS.source}`), {
+      timeout: ROW_TIMEOUT,
+    });
+    const text = (await counter.textContent()) ?? "";
+    return Number((TITLE_RECORD_COUNT.exec(text) ?? SHOWING_RECORDS.exec(text))?.[1]);
   }
 
   /** Visible data rows of the grid in `scope`, in display order. */

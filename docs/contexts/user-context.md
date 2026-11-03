@@ -18,6 +18,14 @@ The UserContext is the central state management system for user-related data in 
 - **Profile Management**: User profile and preferences
 - **Session Sync Loading State**: Loading state for session synchronization operations
 
+## Logout
+
+`logout()` clears the user store and the client tokens, resets every client state tied to the session
+(`resetSessionState()`: open windows, form state, session stores, cached data and the windows kept in the
+URL) and asks the backend to revoke the token it held. Every logout path (user menu, expired session,
+401 interceptor) goes through it, so a new login in the same browser tab starts clean. See
+[Login and Logout](../features/login-logout/README.md).
+
 ## Session Sync Loading State
 
 The UserContext now provides session synchronization loading state management to improve user experience during async operations.
@@ -432,6 +440,7 @@ const handleOperationWithError = async () => {
 
 ## Related Documentation
 
+- [Login and Logout](../features/login-logout/README.md)
 - [Toolbar Component](../components/toolbar.md)
 - [Form Initialization Hook](../hooks/useFormInitialization.md)
 - [Table Selection Hook](../hooks/useTableSelection.md)

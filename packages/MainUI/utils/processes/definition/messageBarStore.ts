@@ -104,6 +104,21 @@ function hide(): void {
 }
 
 /**
+ * Gives a nested process modal its own message bar, as each Classic popup has:
+ * sets the launcher's current message aside and clears the bar. Returns the
+ * restore function, which puts the launcher's message back when the nested modal
+ * closes (whatever the nested modal showed meanwhile).
+ */
+export function isolateMessageBar(): () => void {
+  const launcherMessage = current;
+  hide();
+  return () => {
+    current = launcherMessage;
+    notify();
+  };
+}
+
+/**
  * The `messageBar` handle injected into the script context and the view proxy.
  * A stable singleton so the same banner is reached from every hook.
  */

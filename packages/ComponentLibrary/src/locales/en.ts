@@ -135,7 +135,7 @@ const en = {
       noFileSelected: "No file selected",
     },
     statusBar: {
-      closeRecord: "Close Record",
+      closeRecord: "Close record and back to the grid",
       nextRecord: "Next Record",
       previousRecord: "Previous Record",
     },
@@ -221,6 +221,20 @@ const en = {
       title: "Recovery Failed",
       description: "Unable to restore window state from URL",
     },
+    boundary: {
+      title: "Something went wrong",
+      description:
+        "An unexpected error interrupted this screen. You can try again or reload the page. Unsaved changes may be lost.",
+      reload: "Reload page",
+      reference: "Error reference",
+    },
+    connection: {
+      offlineTitle: "You are offline",
+      offlineDescription: "Check your internet connection. The application will reconnect automatically.",
+      backOnlineTitle: "Connection restored",
+      timeoutTitle: "The server took too long to respond",
+      timeoutDescription: "Please try again in a moment. If the problem persists, contact your administrator.",
+    },
     accessDenied: {
       title: "Access Denied",
       description: "Your role does not have access to this window. Contact your system administrator if you need it.",
@@ -269,6 +283,7 @@ const en = {
       noType: "No type",
       noRecord: "No Row Selected",
       emptyRecords: "No records to show",
+      multipleParentsSelected: "Multiple parent records selected. You can only view children for 1 parent at a time.",
     },
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
@@ -277,6 +292,7 @@ const en = {
       showingRecords: "Showing {count} records",
       showingPartialRecords: "Showing {loaded} of {total} records",
       selectedRecords: "{count} selected",
+      titleCount: "({count} records)",
       recordsLoaded: "Records loaded",
     },
     selectAll: {
@@ -357,6 +373,7 @@ const en = {
     confirmationMessage: "Want to execute this process?",
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
+    reportTimeout: "The report took too long to run and was cancelled. Try again with narrower filters.",
     processError: "Process failed",
     missingMandatoryFields: "You have not filled in all needed fields",
     warning: "Warning",
@@ -374,6 +391,8 @@ const en = {
     openLink: "Open link",
     reportFileFailed: "The report was generated but its file could not be opened or downloaded.",
     openUrlMissingUrl: "The process asked to open a link but returned no URL.",
+    /** Title of the process a selector's "+" opens (Classic `OBUISEL_AddNewRecord`); %0 is the field. */
+    addNewRecord: "Add %0",
   },
   processModal: {
     gridToolbar: {
@@ -993,6 +1012,7 @@ const en = {
     buttonLabel: "Background processes",
     buttonLabelRunning: "Background processes (%0 running)",
     recentFailures: "Recent failures",
+    failed: "Failed",
     running: "Running",
     misfired: "Misfired",
     noFailures: "No recent failures",

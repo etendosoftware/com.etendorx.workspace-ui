@@ -27,6 +27,7 @@ import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { findExternalMenuEntry, isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
 import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
+import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
@@ -34,6 +35,7 @@ export default function RecentlyViewedRenderer() {
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const recentItems = useRecentItemsStore((s) => s.items);
   const openExternalMenuEntry = useOpenExternalMenuEntry();
+  const prefetchOnHover = usePrefetchWindowOnHover();
 
   const items = currentRole?.id ? recentItems : [];
 
@@ -67,6 +69,8 @@ export default function RecentlyViewedRenderer() {
           key={item.id}
           type="button"
           onClick={() => handleClick(item)}
+          onMouseEnter={() => !isExternalMenuEntry(item) && prefetchOnHover(item.windowId ?? item.id)}
+          onFocus={() => !isExternalMenuEntry(item) && prefetchOnHover(item.windowId ?? item.id)}
           className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
           data-testid={`RecentlyViewedRenderer__item_${item.id}`}>
           {item.name}

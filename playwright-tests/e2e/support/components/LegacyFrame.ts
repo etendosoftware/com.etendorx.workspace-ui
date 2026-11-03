@@ -12,7 +12,8 @@ export function isLegacySubmit(response: Response): boolean {
   return response.request().method() === "POST" && response.url().includes(LEGACY_PATH);
 }
 
-const DETACHED_FRAME = /Frame was detached|Target page, context or browser has been closed/;
+/** Playwright words it "Frame was detached" or "Frame has been detached", depending on where the click was. */
+const DETACHED_FRAME = /Frame (?:was|has been) detached|Target page, context or browser has been closed/;
 
 /**
  * Clicks a control whose click may remove its own frame (a legacy popup that closes itself).
