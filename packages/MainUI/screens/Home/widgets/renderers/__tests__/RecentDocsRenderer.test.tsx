@@ -54,6 +54,22 @@ describe("RecentDocsRenderer", () => {
     expect(screen.getByTestId("RecentDocsRenderer__empty")).toBeInTheDocument();
   });
 
+  it("renders the same record opened in two tabs of a window without repeating a key", () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockedUseRecentDocuments.mockReturnValue({
+      documents: [
+        { ...doc, windowId: "109", recordId: "0", identifier: "System", tabId: "tab-a" },
+        { ...doc, windowId: "109", recordId: "0", identifier: "System", tabId: "tab-b" },
+      ],
+    });
+
+    render(<RecentDocsRenderer />);
+
+    expect(screen.getAllByText("System")).toHaveLength(2);
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("same key"), expect.anything());
+    consoleError.mockRestore();
+  });
+
   it("renders one entry per document and navigates via useRedirect on click", () => {
     mockedUseRecentDocuments.mockReturnValue({ documents: [doc] });
     render(<RecentDocsRenderer />);
