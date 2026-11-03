@@ -129,11 +129,11 @@ export const SubTabsSwitch = ({
       onDoubleClick={() => {
         onDoubleClick(current);
       }}
-      className="flex h-10 items-stretch justify-between px-3 bg-(--ui-child-strip)">
+      className="flex h-10 items-stretch justify-between px-3 pt-1 bg-(--ui-tabbar-bg) shadow-[inset_0_-1px_0_var(--color-transparent-neutral-10)]">
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
           ref={stripRef}
-          className="flex items-stretch gap-5 overflow-x-auto flex-nowrap scroll-smooth hide-scrollbar"
+          className="flex items-stretch gap-1 overflow-x-auto flex-nowrap scroll-smooth hide-scrollbar"
           data-testid="SubTabsSwitch__strip"
           style={{ WebkitOverflowScrolling: "touch", maskImage: fadeMask, WebkitMaskImage: fadeMask }}>
           {tabs.map((tab) => (
