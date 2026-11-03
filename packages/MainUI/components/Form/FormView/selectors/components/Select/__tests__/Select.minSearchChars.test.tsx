@@ -44,11 +44,27 @@ const field = {
   helpComment: "",
 } as unknown as Field;
 
-function Harness({ minSearchChars }: { minSearchChars?: number }) {
+const COLUMNS = [
+  { accessorKey: "name", header: "Name" },
+  { accessorKey: "city", header: "City" },
+];
+const ROWS = [
+  { id: "1", label: "Alpha Corp", data: { id: "1", name: "Alpha Corp", city: "Madrid" } },
+  { id: "2", label: "Alpine SA", data: { id: "2", name: "Alpine SA", city: "Lyon" } },
+];
+
+function Harness({ minSearchChars, withColumns = false }: { minSearchChars?: number; withColumns?: boolean }) {
   const methods = useForm({ defaultValues: { [FIELD_NAME]: "" } });
   return (
     <FormProvider {...methods}>
-      <Select name={FIELD_NAME} options={OPTIONS} isReadOnly={false} field={field} minSearchChars={minSearchChars} />
+      <Select
+        name={FIELD_NAME}
+        options={withColumns ? ROWS : OPTIONS}
+        columns={withColumns ? COLUMNS : undefined}
+        isReadOnly={false}
+        field={field}
+        minSearchChars={minSearchChars}
+      />
     </FormProvider>
   );
 }
@@ -127,5 +143,25 @@ describe("Select — minimum search characters", () => {
 
     expect(getSearchInput().placeholder).toBe("Search...");
     expect(screen.getByTestId("OptionItem__1")).toBeInTheDocument();
+  });
+
+  it("shows the column headers and the cells of a multi-column selector", () => {
+    render(<Harness withColumns />);
+    openDropdown();
+
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("City")).toBeInTheDocument();
+    expect(screen.getByText("Madrid")).toBeInTheDocument();
+  });
+
+  it("replaces the headers and the rows with the hint below the minimum on a multi-column selector", () => {
+    render(<Harness withColumns minSearchChars={3} />);
+    openDropdown();
+
+    type("al");
+
+    expect(screen.getByText("Type at least 3 characters to search")).toBeInTheDocument();
+    expect(screen.queryByText("Name")).not.toBeInTheDocument();
+    expect(screen.queryByText("Madrid")).not.toBeInTheDocument();
   });
 });

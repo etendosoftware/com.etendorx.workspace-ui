@@ -113,6 +113,12 @@ describe("useTableDirDatasource — minimum search characters", () => {
     expect(postedCalls()).toHaveLength(1);
   });
 
+  it("does not require a minimum when the field has no selector", () => {
+    const { result } = renderSelector(buildField());
+
+    expect(result.current.minSearchChars).toBe(0);
+  });
+
   it("does not require a minimum on static options", () => {
     const { result } = renderSelector(buildField("BusinessPartnerSelector"), [{ id: "1", name: "One" }]);
 
