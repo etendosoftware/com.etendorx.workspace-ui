@@ -3439,6 +3439,7 @@ const DynamicTable = ({
     () => ({
       ref: tableContainerRef,
       tabIndex: -1,
+      className: "grid-scrollbar",
       // Marks this container as where the grid pane hands the DOM focus over:
       // row arrows and Enter only fire while the focus lives inside it.
       [GRID_FOCUS_TARGET_ATTRIBUTE]: "",

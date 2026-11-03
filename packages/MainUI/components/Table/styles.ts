@@ -35,8 +35,10 @@ export const useStyle = (): StylesType => {
           minHeight: 0,
           height: "100%",
           maxHeight: "100%",
-          border: "1px solid var(--ui-line)",
+          // Design Kit: flat table, 1px line at 10% neutral and no elevation shadow.
+          border: "1px solid var(--color-transparent-neutral-10)",
           borderRadius: "0.75rem",
+          boxShadow: "none",
           overflow: "hidden",
           // The sticky header row ships a drop shadow that smudges the filter band; the design has none.
           "& thead tr": {
@@ -124,7 +126,8 @@ export const useStyle = (): StylesType => {
             },
           "& .Mui-TableHeadCell-Content": {
             boxSizing: "border-box",
-            height: "28px",
+            // Design Kit "Celda/Cabecera": 28px including the 1px bottom border.
+            height: "27px",
             minHeight: 0,
             padding: "0 8px",
             alignItems: "center",
@@ -177,6 +180,9 @@ export const useStyle = (): StylesType => {
           borderRight: "1px solid var(--ui-line-soft)",
           borderBottom: "1px solid var(--ui-line-soft)",
           padding: "2px 8px",
+          // Design Kit "Celda": 32px tall including its 1px bottom border (it was 33px).
+          boxSizing: "border-box",
+          height: "32px",
           fontSize: "0.78rem",
           lineHeight: 1.35,
           "& .text-sm": {
