@@ -41,12 +41,15 @@ export type GraphEventNames = keyof GraphEvents;
 
 export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
   public nodes: Map<string, GraphNode<T>>;
+  /** Parent of every tab that has one, kept by addEdge so getParent does not scan the whole graph. */
+  private parents: Map<string, GraphNode<T>>;
   private activeLevels: number[];
 
   public constructor(tabs: T[]) {
     super();
     this.setMaxListeners(50);
     this.nodes = new Map();
+    this.parents = new Map();
     this.activeLevels = [];
 
     tabs.forEach(this.addNode);
@@ -112,11 +115,15 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     }
 
     sourceNode.neighbors.add(destNode);
+    if (!this.parents.has(destinationId)) {
+      this.parents.set(destinationId, sourceNode);
+    }
 
     return this;
   };
 
-  public toJSON = (rootId: string) => {
+  // Not named `toJSON`: JSON.stringify calls that on any object, passing the property key as the argument.
+  public toTree = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
     if (!rootNode) throw new Error("Root node not found");
 
@@ -166,13 +173,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
   public getParent = (tab?: Tab) => {
     if (tab) {
-      for (const node of this.nodes.values()) {
-        for (const neighbor of node.neighbors) {
-          if (neighbor.value.id === tab.id) {
-            return node.value;
-          }
-        }
-      }
+      return this.parents.get(tab.id)?.value;
     }
   };
 

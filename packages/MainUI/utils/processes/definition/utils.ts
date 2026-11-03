@@ -294,11 +294,13 @@ export function buildProcessScriptContext(credentials: ProcessContextCredentials
   // performed in one hook stay visible to the others. Built-in action types
   // dispatched via OB.Utilities.Action.executeJSON reach the modal's handlers
   // through the dispatch store (registered by the modal while it is mounted).
-  // OB.RemoteCallManager.call runs through the same kernel call as callAction.
+  // OB.RemoteCallManager.call runs through the same kernel call as callAction; its classic
+  // requestParams travel as URL query parameters.
   // OB.Datasource.create runs through the api-client datasource (the same path
   // the grid and selectors use): it builds the full datasource request params
   // and resolves CSRF server-side, which the raw callDatasource proxy does not.
-  const remoteCall = (handler: string, params: Record<string, unknown>) => callAction(handler, params);
+  const remoteCall = (handler: string, params: Record<string, unknown>, queryParams?: Record<string, string>) =>
+    callAction(handler, params, { queryParams });
   const fetchDatasource = (entity: string, payload: Record<string, unknown>) =>
     datasource.get(entity, payload) as Promise<{ data: unknown }>;
   const OB = createOBShim({ getLabel, language, dispatchBuiltinAction, remoteCall, fetchDatasource, user, windowId });

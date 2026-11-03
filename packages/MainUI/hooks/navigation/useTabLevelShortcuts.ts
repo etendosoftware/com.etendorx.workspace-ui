@@ -31,7 +31,8 @@ import { findChildTab, findParentTab } from "@/utils/window/tabNavigation";
  */
 export function useTabLevelShortcuts(tabs: Tab[]): void {
   const windowIdentifier = useCurrentWindowIdentifier();
-  const { activeFocusId, setFocus, hasRegion } = useFocusContext();
+  const tabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
+  const { activeFocusId, setFocus, hasRegion } = useFocusContext(tabIds);
   const { activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
     tabId: "",
@@ -73,7 +74,8 @@ export function useTabLevelShortcuts(tabs: Tab[]): void {
 export function useWindowActivationFocus(tabs: Tab[]): void {
   const windowIdentifier = useCurrentWindowIdentifier();
   const isWindowActive = useIsCurrentWindowActive();
-  const { activeFocusId, setFocus } = useFocusContext();
+  const tabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
+  const { activeFocusId, setFocus } = useFocusContext(tabIds);
   const { activeTabsByLevel } = useTableStatePersistenceTab({ windowIdentifier: windowIdentifier || "", tabId: "" });
 
   const latestRef = useRef({ tabs, activeFocusId, activeTabsByLevel, setFocus });

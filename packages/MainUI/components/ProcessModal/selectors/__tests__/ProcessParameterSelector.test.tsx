@@ -26,7 +26,9 @@ jest.mock("@/components/Form/FormView/selectors/BooleanSelector", () => ({
 }));
 
 jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
-  NumericSelector: ({ field }: any) => <input data-testid="numeric-selector" name={field.hqlName} type="number" />,
+  NumericSelector: ({ field, dirtyOnEdit }: any) => (
+    <input data-testid="numeric-selector" name={field.hqlName} type="number" data-dirty-on-edit={String(dirtyOnEdit)} />
+  ),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
@@ -73,6 +75,21 @@ jest.mock("../LegacySelectorAffix", () => ({
   __esModule: true,
   default: ({ legacySearchUrl, children }: any) => (
     <div data-testid="legacy-affix" data-url={legacySearchUrl}>
+      {children}
+    </div>
+  ),
+}));
+
+// The search / add buttons are exercised in their own test; here we only assert what
+// ProcessParameterSelector hands them.
+jest.mock("../ProcessSelectorActions", () => ({
+  __esModule: true,
+  default: ({ currentTab, processContext, onOpenProcess, children }: any) => (
+    <div
+      data-testid="selector-actions"
+      data-tab={currentTab?.id ?? ""}
+      data-process={processContext?.processId ?? ""}
+      data-can-open={String(Boolean(onOpenProcess))}>
       {children}
     </div>
   ),
@@ -127,6 +144,18 @@ describe("ProcessParameterSelector", () => {
     expect(screen.getByTestId("parameter-label")).toHaveTextContent("Test Parameter");
   });
 
+  it("captions a parameter renamed to be unique with its shared name", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={{ ...baseParameter, name: "expectedDifference", label: "There is a difference of" }}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("parameter-label")).toHaveTextContent("There is a difference of");
+  });
+
   it("should show mandatory indicator when parameter is mandatory", () => {
     const mandatoryParameter = { ...baseParameter, mandatory: true };
 
@@ -176,6 +205,16 @@ describe("ProcessParameterSelector", () => {
 
     expect(screen.getByTestId("numeric-selector")).toBeInTheDocument();
     expect(screen.getByTestId("numeric-selector")).toHaveAttribute("type", "number");
+  });
+
+  it("keeps what the user types in a numeric parameter across a later re-application of the defaults", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={{ ...baseParameter, reference: "Amount" }} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("numeric-selector")).toHaveAttribute("data-dirty-on-edit", "true");
   });
 
   it("should render GenericSelector for unsupported references", () => {
@@ -350,6 +389,48 @@ describe("ProcessParameterSelector", () => {
 
     expect(screen.queryByTestId("legacy-affix")).not.toBeInTheDocument();
     expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("hands the selector to the search and add buttons with the tab, process context and launcher", () => {
+    const selectorParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", hasTableRelated: true },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector
+          parameter={selectorParameter}
+          processId="PROCESS-1"
+          tab={{ id: "TAB-1" } as any}
+          onOpenProcess={jest.fn()}
+        />
+      </TestWrapper>
+    );
+
+    const actions = screen.getByTestId("selector-actions");
+    expect(actions).toHaveAttribute("data-tab", "TAB-1");
+    expect(actions).toHaveAttribute("data-process", "PROCESS-1");
+    expect(actions).toHaveAttribute("data-can-open", "true");
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("keeps the legacy search affix, without the search and add buttons, when legacySearchUrl exists", () => {
+    const searchParameter = {
+      ...baseParameter,
+      reference: "Product",
+      selector: { datasourceName: "C_Order", hasTableRelated: true, legacySearchUrl: "/info/Product.html" },
+    };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={searchParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("legacy-affix")).toBeInTheDocument();
+    expect(screen.queryByTestId("selector-actions")).not.toBeInTheDocument();
   });
 
   it("should render QuantitySelector for quantity references", () => {

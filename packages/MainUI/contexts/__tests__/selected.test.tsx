@@ -29,6 +29,7 @@ import { SelectedProvider, SelectContext } from "../selected";
 import { useContext } from "react";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import WindowProvider from "../window";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 
 // Mock Next.js navigation hooks
 const mockReplace = jest.fn();
@@ -42,6 +43,8 @@ const createMockRouter = () => ({
   refresh: jest.fn(),
   prefetch: jest.fn(),
 });
+
+jest.mock("@/utils/session/resetSessionState");
 
 jest.mock("next/navigation", () => ({
   useRouter: () => createMockRouter(),
@@ -179,6 +182,17 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       const secondGraphId = getGraphId("TestWindow_123456789");
 
       expect(firstGraphId).toBe(secondGraphId);
+    });
+
+    it("should create a new graph instance after a logout", () => {
+      const { unmount } = renderWithWindowProvider(createSelectedProvider("TestWindow_logout"));
+      const firstGraphId = getGraphId("TestWindow_logout");
+      unmount();
+
+      resetSessionState();
+      renderWithWindowProvider(createSelectedProvider("TestWindow_logout"));
+
+      expect(getGraphId("TestWindow_logout")).not.toBe(firstGraphId);
     });
 
     it("should use windowIdentifier as cache key instead of windowId", () => {

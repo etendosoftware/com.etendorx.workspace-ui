@@ -268,10 +268,10 @@ describe("class name helpers", () => {
     expect(getFormPaneClassName(false)).toContain("outline-none");
   });
 
-  it("marks the focused pane with the secondary border colour", () => {
-    expect(getFocusBorderColor(true)).toContain("secondary-500");
+  it("keeps the pane border transparent whether or not the pane is focused", () => {
+    expect(getFocusBorderColor(true)).toBe("border-l-transparent");
     expect(getFocusBorderColor(false)).toBe("border-l-transparent");
-    expect(getFormPaneClassName(true)).toContain("secondary-500");
+    expect(getFormPaneClassName(true)).toContain("border-l-transparent");
   });
 });
 

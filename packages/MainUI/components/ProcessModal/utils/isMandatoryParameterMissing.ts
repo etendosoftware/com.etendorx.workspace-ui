@@ -37,20 +37,31 @@ export interface IsMandatoryParameterMissingOptions {
   requireActualValue?: boolean;
 }
 
+/**
+ * References exempt from the value-only check: grid parameters (Classic skips
+ * `OBPickEditGridItem`; their selection is validated elsewhere) and Yes/No ones (a
+ * Classic checkbox always holds a value, `false` included, even before the form
+ * registers it).
+ */
+const VALUE_CHECK_EXEMPT_REFERENCES: ReadonlySet<string> = new Set([
+  FIELD_REFERENCE_CODES.WINDOW.id,
+  FIELD_REFERENCE_CODES.BOOLEAN.id,
+]);
+
 const isEmptyValue = (value: unknown): boolean =>
   value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
 
 /**
  * Returns true when the parameter must not be checked for a value: a `defaultValue`
  * (or a missing form registration) counts as set in the legacy mode, while the
- * value-only mode exempts grid parameters, whose selection is validated elsewhere.
+ * value-only mode exempts grid and Yes/No parameters (`VALUE_CHECK_EXEMPT_REFERENCES`).
  */
 const isSkippedForValueCheck = (
   parameter: ProcessParameter,
   formValues: Record<string, unknown>,
   requireActualValue: boolean
 ): boolean => {
-  if (requireActualValue) return parameter.reference === FIELD_REFERENCE_CODES.WINDOW.id;
+  if (requireActualValue) return VALUE_CHECK_EXEMPT_REFERENCES.has(parameter.reference);
   if (parameter.defaultValue) return true;
   const isRegisteredByName = parameter.name in formValues;
   const isRegisteredByDBColumn = Boolean(parameter.dBColumnName && parameter.dBColumnName in formValues);

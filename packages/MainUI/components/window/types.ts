@@ -35,12 +35,15 @@ export type TabsSwitchProps = {
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
   onClose: () => void;
+  /** Called when the pointer or the focus reaches a tab, so its content can be mounted before the click. */
+  onPrewarm?: (tab: Tab) => void;
 };
 export type TabSwitchProps = {
   tab: Tab;
   active: boolean;
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
+  onPrewarm?: (tab: Tab) => void;
   isWindow?: boolean;
   showIcon?: boolean;
   onClose?: (e: React.MouseEvent) => void;

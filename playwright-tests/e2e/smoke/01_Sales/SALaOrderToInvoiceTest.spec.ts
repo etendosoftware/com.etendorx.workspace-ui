@@ -122,7 +122,7 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
     await app.toast.closeAll();
 
     // Close the record view
-    await page.getByTestId("status-bar-container").getByTestId("icon-button").click();
+    await app.toolbar.closeRecord();
 
     // ── Step 12: Post Invoice ─────────────────────────────────────────────────
     await app.toolbar.process("Post");

@@ -1102,6 +1102,8 @@ export type ProcessParameter = {
   name: string;
   refList: Array<ListOption>;
   readOnlyLogicExpression?: string;
+  /** Display logic as rewritten by the server (`DynamicExpressionParser`), e.g. with `@ACCT_DIMENSION_DISPLAY@` expanded. */
+  displayLogicExpression?: string;
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
   selector?: SelectorInfo;

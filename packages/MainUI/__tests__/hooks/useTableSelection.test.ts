@@ -169,6 +169,7 @@ beforeEach(() => {
       },
     },
     setSelectedRecord: jest.fn(),
+    setSelectedRecordAndClearChildren: jest.fn(),
     clearSelectedRecord: jest.fn(),
   });
 });
@@ -382,6 +383,44 @@ describe("useTableSelection", () => {
 
       // Now uses atomic update instead of separate clearChildrenSelections
       // expect(mockWindowURL...); // REMOVED: mockWindowURL no longer exists
+    });
+
+    it("clears every level below the tab in the same store write when another record is selected", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+      const grandchildTab = createMockTab({ id: "grandchild", tabLevel: 2, parentTabId: "child" });
+      mockGraph.getChildren.mockImplementation((tab?: { id: string }) => {
+        if (tab?.id === "parent") return [childTab];
+        if (tab?.id === "child") return [grandchildTab];
+        return [];
+      });
+
+      renderHook(() => useTableSelection(parentTab, createMockRecords(3), createMockRowSelection(["1"])));
+
+      const { setSelectedRecordAndClearChildren, setSelectedRecord } = useWindowStore.getState();
+      expect(setSelectedRecordAndClearChildren).toHaveBeenCalledWith("window1_123456789", "parent", "1", [
+        "child",
+        "grandchild",
+      ]);
+      expect(setSelectedRecord).not.toHaveBeenCalled();
+    });
+
+    it("does not clear the levels below when the record is already the selected one", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+      mockGraph.getChildren.mockImplementation((tab?: { id: string }) => (tab?.id === "parent" ? [childTab] : []));
+      useWindowStore.setState((state) => ({
+        windows: {
+          ...state.windows,
+          window1_123456789: { ...state.windows.window1_123456789, tabs: { parent: { selectedRecord: "1" } } },
+        },
+      }));
+
+      renderHook(() => useTableSelection(parentTab, createMockRecords(3), createMockRowSelection(["1"])));
+
+      const { setSelectedRecordAndClearChildren, setSelectedRecord } = useWindowStore.getState();
+      expect(setSelectedRecordAndClearChildren).not.toHaveBeenCalled();
+      expect(setSelectedRecord).toHaveBeenCalledWith("window1_123456789", "parent", "1");
     });
 
     it("should not clear children when they belong to different window", () => {

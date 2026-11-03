@@ -3,7 +3,7 @@
  * Covers getSelectorFieldName and updateSelectorValue
  */
 
-import { getSelectorFieldName, updateSelectorValue } from "../utils";
+import { getSelectorFieldName, updateSelectorValue, writeCallerRecord } from "../utils";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 function createField(overrides: Partial<Field>): Field {
@@ -124,5 +124,35 @@ describe("updateSelectorValue", () => {
   it("sets all three calls when full data is provided: main, _data, and $identifier", () => {
     updateSelectorValue(mockSetValue, "myField", "id-123", { _identifier: "Full Record", name: "Name" });
     expect(mockSetValue).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("writeCallerRecord", () => {
+  const FIELD = { hqlName: "payment", name: "Payment" } as unknown as Field;
+  const DIRTY = { shouldValidate: true, shouldDirty: true };
+
+  it("writes the created record's id and identifier into the selector", () => {
+    const setValue = jest.fn();
+
+    writeCallerRecord(setValue, FIELD, { value: "PAY-1", map: "Payment 1" });
+
+    expect(setValue).toHaveBeenCalledWith("payment", "PAY-1", DIRTY);
+    expect(setValue).toHaveBeenCalledWith("payment$_identifier", "Payment 1", DIRTY);
+  });
+
+  it("uses the id as identifier when the record carries no text", () => {
+    const setValue = jest.fn();
+
+    writeCallerRecord(setValue, FIELD, { value: "PAY-1", map: { id: "PAY-1" } });
+
+    expect(setValue).toHaveBeenCalledWith("payment$_identifier", "PAY-1", DIRTY);
+  });
+
+  it("writes nothing without an id", () => {
+    const setValue = jest.fn();
+
+    writeCallerRecord(setValue, FIELD, {});
+
+    expect(setValue).not.toHaveBeenCalled();
   });
 });

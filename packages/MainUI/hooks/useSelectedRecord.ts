@@ -18,6 +18,7 @@
 import { useState, useEffect } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { GraphEventListener } from "@/data/graph";
+import { sameRecord } from "@/utils/sameRecords";
 import { useSelected } from "./useSelected";
 
 export const useSelectedRecord = (tab?: Tab) => {
@@ -29,7 +30,8 @@ export const useSelectedRecord = (tab?: Tab) => {
 
     const handleSelect: GraphEventListener<"selected"> = (eventTab, record) => {
       if (tab.id === eventTab.id) {
-        setSelected(record);
+        // A record with the same values keeps the same state, so nothing re-renders for a repeated emit
+        setSelected((previous) => (sameRecord(previous, record) ? previous : record));
       }
     };
 

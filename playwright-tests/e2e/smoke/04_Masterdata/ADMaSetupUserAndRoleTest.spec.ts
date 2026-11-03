@@ -3,6 +3,9 @@ import { runAndWaitForFormInitialization } from "../../support/wait";
 
 /** "Sales Management" menu folder: only shown to roles with sales access. */
 const SALES_MANAGEMENT_MENU = { id: "166", name: "Sales Management" };
+/** Time for the typed password to show, and to type it again while a form reload clears it. */
+const PASSWORD_CHECK_TIMEOUT = 2_000;
+const PASSWORD_TIMEOUT = 30_000;
 
 test.describe("User Management - Create user and assign role @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -35,12 +38,14 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     await usernameInput.fill(username);
 
     // Password — type character by character with delay (preserved from Cypress
-    // because validation runs on each keystroke)
+    // because validation runs on each keystroke). Typed again if a late form reload clears it.
     const passwordInput = page.locator('input[name="password"]');
-    await passwordInput.click();
-    await passwordInput.clear();
-    await passwordInput.pressSequentially(pwd, { delay: 120 });
-    await expect(passwordInput).toHaveValue(pwd);
+    await expect(async () => {
+      await passwordInput.click();
+      await passwordInput.clear();
+      await passwordInput.pressSequentially(pwd, { delay: 120 });
+      await expect(passwordInput).toHaveValue(pwd, { timeout: PASSWORD_CHECK_TIMEOUT });
+    }).toPass({ timeout: PASSWORD_TIMEOUT });
     await passwordInput.blur();
 
     // Save header

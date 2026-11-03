@@ -27,6 +27,7 @@ import {
   getMessageType,
   formatLabel,
   buildProcessPayload,
+  buildTabStandardContext,
   buildSingleDeleteQueryString,
   buildDeletePayload,
   buildRequestOptions,
@@ -300,6 +301,52 @@ describe("utils/index", () => {
       expect(result.inpkeyColumnId).toBe("C_Order_ID");
       expect(result.DOCBASETYPE).toBe("");
       expect(result.$Element_BP).toBe("");
+    });
+  });
+
+  describe("buildTabStandardContext", () => {
+    const keyFields = {
+      id: field({
+        columnName: "Fin_Financial_Account_ID",
+        inputName: "inpfinFinancialAccountId",
+        column: { keyColumn: true },
+      }),
+    };
+    const accountTab = tab({
+      id: "tab-1",
+      window: "win-1",
+      table: "table-1",
+      entityName: "FIN_Financial_Account",
+      fields: keyFields,
+    });
+
+    it("returns Classic standard properties with the key column by its DB name", () => {
+      expect(buildTabStandardContext({ id: "FA-1" }, accountTab)).toEqual({
+        inpTabId: "tab-1",
+        inpwindowId: "win-1",
+        inpTableId: "table-1",
+        inpkeyColumnId: "Fin_Financial_Account_ID",
+        keyProperty: "id",
+        inpKeyName: "inpfinFinancialAccountId",
+        keyColumnName: "Fin_Financial_Account_ID",
+        keyPropertyType: "_id_13",
+        Fin_Financial_Account_ID: "FA-1",
+        inpfinFinancialAccountId: "FA-1",
+      });
+    });
+
+    it("falls back to the entityName-based key names when no key column is marked", () => {
+      const result = buildTabStandardContext({ id: "O-1" }, tab({ entityName: "C_Order", fields: {} }));
+
+      expect(result.keyColumnName).toBe("C_Order_ID");
+      expect(result.inpKeyName).toBe("inpC_Order_ID");
+      expect(result.C_Order_ID).toBe("O-1");
+    });
+
+    it("is part of the process payload", () => {
+      const record = { id: "FA-1" };
+
+      expect(buildProcessPayload(record, accountTab)).toMatchObject(buildTabStandardContext(record, accountTab));
     });
   });
 

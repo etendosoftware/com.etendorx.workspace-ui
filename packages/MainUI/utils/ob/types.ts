@@ -45,9 +45,14 @@ export interface OBShimDeps {
   /**
    * Performs the kernel action call backing `OB.RemoteCallManager.call`
    * (e.g. the modal's `callAction`). Injected so `utils/ob` stays free of any
-   * React / fetch layer. Resolves with the parsed response body as `data`.
+   * React / fetch layer. `queryParams` are the encoded classic `requestParams`.
+   * Resolves with the parsed response body as `data`.
    */
-  remoteCall?: (handler: string, params: Record<string, unknown>) => Promise<{ data: unknown }>;
+  remoteCall?: (
+    handler: string,
+    params: Record<string, unknown>,
+    queryParams?: Record<string, string>
+  ) => Promise<{ data: unknown }>;
   /**
    * Performs the datasource fetch backing `OB.Datasource.create(...).fetchData`
    * (e.g. the modal's `callDatasource`). Injected so `utils/ob` stays free of
@@ -152,9 +157,10 @@ export type RemoteCallback = (response: RemoteCallResponse, data: unknown, reque
 export interface OBRemoteCallManager {
   /**
    * Calls a server action handler and invokes `callback(response, data, request)`
-   * with the classic contract. `requestParams` is accepted for compatibility but
-   * not used for routing; `errorCallback` (when a function) receives transport
-   * failures instead of `callback`.
+   * with the classic contract. `data` is the POST body and `requestParams` is
+   * sent as URL query parameters (non-string values JSON-encoded, as classic);
+   * `errorCallback` (when a function) receives transport failures instead of
+   * `callback`.
    */
   call: (
     actionName: string,

@@ -7,6 +7,9 @@ const DO_NOT_USE_CREDIT = /Do not use Credit/i;
 const CREDIT_DIALOG_TIMEOUT = 20_000;
 /** The payment exceeds the invoice by this amount, which must end up as generated credit. */
 const OVERPAYMENT = 1.74;
+/** As Classic, Execute waits until the overpaid amount says what to do with it: left as credit. */
+const OVERPAYMENT_ACTION = "Overpayment Action";
+const LEAVE_AS_CREDIT = "Leave the credit to be used later";
 
 /** Numeric value of an amount input ("26,26" or "26.26"). */
 const readAmount = async (input: Locator): Promise<number> =>
@@ -25,7 +28,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     // ── Step 2: Create New Sales Invoice ─────────────────────────────────────
     await app.toolbar.newRecord();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
     await app.field.select("Business Partner", customer.name, { search: customer.name });
 
     // Save header to populate defaults
@@ -102,7 +105,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // ── Step 6: Create new Payment In ────────────────────────────────────────
     // The new record's form initialization renders the form again and closes a dropdown opened before it
     await runAndWaitForFormInitialization(page, () => app.toolbar.newRecord());
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    await expect(app.formSections.main).toBeVisible({ timeout: 10_000 });
 
     // Received From (Business Partner): Customer A
     await app.field.select("Received From", customer.name, { search: customer.name });
@@ -167,6 +170,8 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     const receivedPayments = page.getByTestId(`OptionItem__${data.LIST_VALUE.PROCESS_RECEIVED_PAYMENTS.id}`);
     await receivedPayments.waitFor({ state: "visible", timeout: 15_000 });
     await receivedPayments.click();
+    await expect(app.processModal.executeButton(), "Execute is enabled with an unhandled overpayment").toBeDisabled();
+    await app.field.select(OVERPAYMENT_ACTION, LEAVE_AS_CREDIT);
 
     // Wait for the API response — the success toast may auto-dismiss before we can catch it.
     // After a successful payment the process modal closes by itself.

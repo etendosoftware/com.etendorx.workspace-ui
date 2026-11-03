@@ -19,13 +19,14 @@ import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   CUSTOM_SELECTORS_IDENTIFIERS,
   FIELD_REFERENCE_CODES,
   PRODUCT_STOCK_VIEW_REFERENCE_IDS,
 } from "@/utils/form/constants";
-import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
+import { getSelectorFieldName, updateSelectorValue, writeCallerRecord } from "@/utils/form/selectors/utils";
+import type { CallerField } from "@/utils/processes/definition/scriptProxies";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import { getSelectorPopupShortcutId, isEventFromDropdownPortal, isSelectorPopupShortcut } from "@/utils/form/keyboard";
 import { toCamelCase } from "@/utils/commons";
@@ -89,6 +90,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     const processId = effectiveField.selector?.processDefinitionId as string | undefined;
     if (processId) triggerProcess(processId);
   }, [effectiveField, triggerProcess]);
+
+  // The "+" process writes the record it creates into this field (Classic `callerField`), e.g. the
+  // payment Add Payment creates from a transaction.
+  const processCallerField = useMemo<CallerField>(
+    () => ({
+      id: effectiveField.id,
+      name: effectiveField.name,
+      setValueFromRecord: (record) => writeCallerRecord(setValue, effectiveField, record),
+    }),
+    [effectiveField, setValue]
+  );
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
   const canOpenSearchModal = Boolean(hasTableRelated) && !isReadOnly;
@@ -347,6 +359,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           onClose={closeProcessModal}
           button={processButtonData}
           contextRecord={getValues()}
+          callerField={processCallerField}
           onSuccess={closeProcessModal}
           data-testid={`ProcessDefinitionModal__${field.id}`}
         />

@@ -2,6 +2,7 @@ import { fetchGridConfiguration, saveGridConfiguration } from "@workspaceui/api-
 import { useWindowStore } from "@/stores/windowStore";
 import { FIXED_PINNED_COLUMNS } from "@/utils/table/columnState";
 import type { TableState } from "@/utils/window/constants";
+import { resetSessionState } from "@/utils/session/resetSessionState";
 import {
   buildColumnConfiguration,
   clearGridConfiguration,
@@ -15,6 +16,8 @@ jest.mock("@workspaceui/api-client/src/api/gridConfiguration", () => ({
   fetchGridConfiguration: jest.fn(),
   saveGridConfiguration: jest.fn(),
 }));
+
+jest.mock("@/utils/session/resetSessionState");
 
 jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn(), error: jest.fn() },
@@ -104,6 +107,17 @@ describe("gridConfiguration", () => {
       expect(mockFetch).toHaveBeenCalledWith(WINDOW_ID);
     });
 
+    it("loads the configuration again after a logout", async () => {
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: {} });
+      const windowIdentifier = nextWindowIdentifier();
+      await loadTabColumnConfiguration(windowIdentifier, TAB_ID);
+
+      resetSessionState();
+      await loadTabColumnConfiguration(windowIdentifier, TAB_ID);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
     it("behaves as nothing stored when the request fails", async () => {
       mockFetch.mockRejectedValue(new Error("boom"));
 
@@ -133,6 +147,17 @@ describe("gridConfiguration", () => {
         order: ORDER,
         sizing: { [COLUMN]: 90 },
       });
+    });
+
+    it("drops the pending saves on logout", () => {
+      const windowIdentifier = nextWindowIdentifier();
+      useWindowStore.getState().setTableOrder(windowIdentifier, TAB_ID, ORDER);
+      scheduleGridConfigurationSave(windowIdentifier, TAB_ID);
+
+      resetSessionState();
+      jest.advanceTimersByTime(GRID_CONFIGURATION_SAVE_DELAY_MS);
+
+      expect(mockSave).not.toHaveBeenCalled();
     });
 
     it("skips the save when the tab is no longer open", () => {

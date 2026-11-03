@@ -133,3 +133,13 @@ export const findAdjacentMenuItem = (
 export const getMenuItemId = (element: HTMLElement | null): string | null => {
   return element?.getAttribute(MENU_ITEM_ID_ATTRIBUTE) ?? null;
 };
+
+/** Finds an entry by id anywhere in the menu tree. */
+export const findMenuItemById = (items: Menu[], id: string): Menu | undefined => {
+  for (const item of items) {
+    if (item.id === id) return item;
+    const found = item.children ? findMenuItemById(item.children, id) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+};

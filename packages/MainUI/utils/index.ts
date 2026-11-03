@@ -430,24 +430,19 @@ export const formatLabel = (label: string, count?: number): string | undefined =
   return undefined;
 };
 
-export const buildProcessPayload = (
-  record: Record<string, unknown>,
-  tab: Tab,
-  processDefaults: Record<string, unknown> = {},
-  userInput: Record<string, unknown> = {}
-) => {
-  // Base record values with input name mapping
-  const recordValues = buildPayloadByInputName(record, tab.fields);
-
+/**
+ * The launching tab's standard context, as Classic `OBStandardView.getContextInfo()`
+ * sends it (its `standardProperties` plus the key column): the tab, window and table
+ * ids, the key column names and the record id under the key column's DB name
+ * (case-sensitive, e.g. `Fin_Financial_Account_ID`) and input name.
+ */
+export const buildTabStandardContext = (record: Record<string, unknown>, tab: Tab) => {
   // Extract the primary key field from tab metadata for precise case-sensitive naming
   const entityKeyColumn = Object.values(tab.fields || {}).find((field) => field?.column?.keyColumn);
   const keyColumnName = entityKeyColumn?.columnName || `${tab.entityName}_ID`;
   const inpKeyName = entityKeyColumn?.inputName || `inp${tab.entityName}_ID`;
 
-  // System context fields that are needed for process execution
-  const systemContext = {
-    // Window/Tab metadata
-    [`inp${tab.entityName?.replace(/^C_/, "")?.toLowerCase() || "record"}Id`]: record.id,
+  return {
     inpTabId: String(tab.id),
     inpwindowId: String(tab.window),
     inpTableId: String(tab.table),
@@ -458,6 +453,23 @@ export const buildProcessPayload = (
     keyPropertyType: "_id_13",
     [keyColumnName]: record.id,
     [inpKeyName]: record.id,
+  };
+};
+
+export const buildProcessPayload = (
+  record: Record<string, unknown>,
+  tab: Tab,
+  processDefaults: Record<string, unknown> = {},
+  userInput: Record<string, unknown> = {}
+) => {
+  // Base record values with input name mapping
+  const recordValues = buildPayloadByInputName(record, tab.fields);
+
+  // System context fields that are needed for process execution
+  const systemContext = {
+    // Window/Tab metadata
+    [`inp${tab.entityName?.replace(/^C_/, "")?.toLowerCase() || "record"}Id`]: record.id,
+    ...buildTabStandardContext(record, tab),
 
     // Process execution fields
     PromotionsDefined: "N",

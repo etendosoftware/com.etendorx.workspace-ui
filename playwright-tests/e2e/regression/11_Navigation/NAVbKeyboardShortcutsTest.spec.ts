@@ -52,6 +52,9 @@ test.describe("Navigation - keyboard shortcuts @regression @nav", () => {
     // The defaults of the new record arrive with its form initialization: values typed before it are reset
     await runAndWaitForFormInitialization(page, () => page.keyboard.press(SHORTCUT.NEW_DOCUMENT));
     await expect(name).toHaveValue("");
+    // An empty Name is also what the form shows before the defaults are applied: the session's organization
+    // tells they are, and what is typed after it is not reset
+    await app.field.expectToContain("Organization", "Spain");
     await app.field.fill("Search Key", created);
     await name.fill(created);
     // The save shortcut does nothing while a callout of the typed values is running: press it again

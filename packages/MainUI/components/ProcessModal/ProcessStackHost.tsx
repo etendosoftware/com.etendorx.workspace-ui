@@ -17,7 +17,10 @@
 
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useMemo, useSyncExternalStore } from "react";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type Graph from "@/data/graph";
+import { SelectContext } from "@/contexts/selected";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import {
   clearProcessStack,
@@ -72,6 +75,42 @@ function buildButtonStub(request: OpenProcessRequest): ProcessDefinitionButton {
 }
 
 /**
+ * One stub per stack entry: the modal re-initializes when its button changes, so a
+ * new stub on every render would reset the modals below whenever another process is
+ * pushed or popped (e.g. the values of Add Transaction while Add Payment opens on top).
+ */
+const buttonStubs = new WeakMap<OpenProcessRequest, ProcessDefinitionButton>();
+
+export function getButtonStub(request: OpenProcessRequest): ProcessDefinitionButton {
+  let stub = buttonStubs.get(request);
+  if (!stub) {
+    stub = buildButtonStub(request);
+    buttonStubs.set(request, stub);
+  }
+  return stub;
+}
+
+/**
+ * Runs a nested modal inside its owner's tab selection: the stack host renders
+ * outside the window providers, so the launching modal's graph is provided
+ * again (Classic runs the nested process with the launcher's `buttonOwnerView`).
+ * Without an owner graph the children render as before.
+ */
+function OwnerSelection({
+  graph,
+  children,
+}: {
+  graph?: Graph<Tab>;
+  children: ReactNode;
+  /** Test id added by the data-testid tooling; the provider renders no element of its own. */
+  "data-testid"?: string;
+}) {
+  const value = useMemo(() => (graph ? { graph } : undefined), [graph]);
+  if (!value) return <>{children}</>;
+  return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
+}
+
+/**
  * Renders the nested-process modal stack requested by migrated scripts via
  * `view.openProcess`. Subscribes to the singleton stack and renders one
  * {@link ProcessDefinitionModal} per entry; MUI layers each modal on top of the
@@ -86,27 +125,35 @@ export default function ProcessStackHost() {
 
   if (stack.length === 0) return null;
 
+  // A success also closes the modal (onSuccess then onClose): only the first pop fires its callback.
   const handleClose = (request: OpenProcessRequest) => {
-    popProcess(request.id);
-    request.onClose?.();
+    if (popProcess(request.id)) request.onClose?.();
+  };
+  const handleSuccess = (request: OpenProcessRequest) => {
+    if (popProcess(request.id)) request.onSuccess?.();
   };
 
   return (
     <>
       {stack.map((request) => (
-        <ProcessDefinitionModal
-          key={request.id}
-          open
-          type={PROCESS_TYPES.PROCESS_DEFINITION}
-          button={buildButtonStub(request)}
-          windowId={request.windowId}
-          windowTitle={request.windowTitle}
-          contextRecord={request.externalParams}
-          callerField={request.callerField}
-          onClose={() => handleClose(request)}
-          onSuccess={() => handleClose(request)}
-          data-testid="ProcessStackHost__ProcessDefinitionModal"
-        />
+        <OwnerSelection key={request.id} graph={request.ownerGraph} data-testid="OwnerSelection__286024">
+          <ProcessDefinitionModal
+            open
+            type={PROCESS_TYPES.PROCESS_DEFINITION}
+            button={getButtonStub(request)}
+            windowId={request.windowId}
+            windowTitle={request.windowTitle}
+            contextRecord={request.ownerRecord}
+            ownerTab={request.ownerTab}
+            externalParams={request.externalParams}
+            callerContext={request.callerContext}
+            stackEntryId={request.id}
+            callerField={request.callerField}
+            onClose={() => handleClose(request)}
+            onSuccess={() => handleSuccess(request)}
+            data-testid="ProcessStackHost__ProcessDefinitionModal"
+          />
+        </OwnerSelection>
       ))}
     </>
   );

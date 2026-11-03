@@ -271,10 +271,10 @@ export const useTreeNodeDragDrop = ({
       ghostImage.style.left = "-1000px";
       ghostImage.style.backgroundColor = "rgba(255, 255, 255, 0.95)";
       ghostImage.style.backdropFilter = "blur(12px)";
-      ghostImage.style.border = "1px solid rgba(0, 74, 202, 0.2)";
+      ghostImage.style.border = "1px solid rgba(42, 23, 87, 0.2)";
       ghostImage.style.padding = "8px 16px";
       ghostImage.style.borderRadius = "8px";
-      ghostImage.style.boxShadow = "0px 10px 20px rgba(0, 0, 0, 0.12), 0px 4px 8px rgba(0, 74, 202, 0.08)";
+      ghostImage.style.boxShadow = "0px 10px 20px rgba(0, 0, 0, 0.12), 0px 4px 8px rgba(42, 23, 87, 0.08)";
       ghostImage.style.fontFamily = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ghostImage.style.fontSize = "13px";
       ghostImage.style.color = "#0F172A"; // deep dark blue/slate
@@ -289,7 +289,7 @@ export const useTreeNodeDragDrop = ({
 
       // Insert SVG icon and text container. We use textContent for safety on the span.
       ghostImage.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#004aca" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a1757" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="12" r="1.5"></circle>
           <circle cx="9" cy="5" r="1.5"></circle>
           <circle cx="9" cy="19" r="1.5"></circle>

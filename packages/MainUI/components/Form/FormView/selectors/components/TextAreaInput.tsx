@@ -52,7 +52,7 @@ export const TextAreaInput = ({
     const baseClasses = `w-full ${paddingLeft} ${paddingRight} py-2 rounded-t tracking-normal resize-none
       border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30)
       text-(--color-transparent-neutral-80) font-medium text-sm leading-5 overflow-y-auto
-      focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none
+      focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none
       hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)`;
 
     const disabledStyles =

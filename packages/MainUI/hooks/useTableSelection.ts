@@ -153,6 +153,26 @@ const isAnyChildInFormView = (
   return graph.getChildren(tab)?.some((child) => getTabFormState(windowIdentifier, child.id)?.mode === "form") ?? false;
 };
 
+/** Ids of every tab below `tab` in its window, at any level. */
+const collectDescendantIds = (graph: ReturnType<typeof useSelected>["graph"], tab: Tab): string[] => {
+  const descendantIds: string[] = [];
+  // Visited ids keep a malformed graph (a tab that is its own descendant) from recursing forever
+  const visited = new Set<string>([tab.id]);
+  const collectDescendants = (parentTab: Tab) => {
+    const kids = graph.getChildren(parentTab);
+    if (!kids) return;
+    for (const child of kids) {
+      if (child.window === tab.window && !visited.has(child.id)) {
+        visited.add(child.id);
+        descendantIds.push(child.id);
+        collectDescendants(child);
+      }
+    }
+  };
+  collectDescendants(tab);
+  return descendantIds;
+};
+
 /**
  * Handles clearing the selected record in context when table selection becomes empty.
  * Guards against clearing parent selection while a child tab is in FormView mode.
@@ -179,18 +199,7 @@ const handleDeselectInContext = (
     clearSelectedRecord(windowIdentifier, tab.id);
 
     // Cascade clear ALL descendant tabs so no stale selection survives in the store
-    const descendantIds: string[] = [];
-    const collectDescendants = (parentTab: Tab) => {
-      const kids = graph.getChildren(parentTab);
-      if (!kids) return;
-      for (const child of kids) {
-        if (child.window === tab.window) {
-          descendantIds.push(child.id);
-          collectDescendants(child);
-        }
-      }
-    };
-    collectDescendants(tab);
+    const descendantIds = collectDescendantIds(graph, tab);
     if (descendantIds.length > 0) {
       clearChildrenSelections(windowIdentifier, descendantIds, true);
     }
@@ -400,7 +409,8 @@ export default function useTableSelection(
 
   // Zustand store — stable action references
   const clearSelectedRecord = useWindowStore((s) => s.clearSelectedRecord);
-  const setSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setPlainSelectedRecord = useWindowStore((s) => s.setSelectedRecord);
+  const setSelectedRecordAndClearChildren = useWindowStore((s) => s.setSelectedRecordAndClearChildren);
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
 
   // Zustand store — imperative getters
@@ -410,6 +420,22 @@ export default function useTableSelection(
   const getSelectedRecord = useCallback((windowIdentifier: string, tabId: string): string | undefined => {
     return useWindowStore.getState().windows[windowIdentifier]?.tabs[tabId]?.selectedRecord;
   }, []);
+
+  // Selecting another record of this tab clears everything below it in the same store write. Left to each child
+  // tab's own effect, every level cleared the levels under it one commit later, once per level. Selecting the
+  // record that is already selected must not clear anything, so that case keeps the plain action.
+  const setSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string, recordId: string) => {
+      const isAnotherRecord = getSelectedRecord(windowIdentifier, tabId) !== recordId;
+      const descendantIds = isAnotherRecord ? collectDescendantIds(graph, tab) : [];
+      if (descendantIds.length > 0) {
+        setSelectedRecordAndClearChildren(windowIdentifier, tabId, recordId, descendantIds);
+      } else {
+        setPlainSelectedRecord(windowIdentifier, tabId, recordId);
+      }
+    },
+    [graph, tab, getSelectedRecord, setPlainSelectedRecord, setSelectedRecordAndClearChildren]
+  );
 
   const setSession = useUserStore((s) => s.setSession);
   const setSessionSyncLoading = useUserStore((s) => s.setSessionSyncLoading);
