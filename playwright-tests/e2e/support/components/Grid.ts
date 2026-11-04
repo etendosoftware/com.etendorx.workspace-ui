@@ -69,6 +69,7 @@ export class Grid {
    */
   async sortBy(column: string): Promise<void> {
     await runAndWaitForDatasource(this.page, () => this.sortButton(column).click());
+    await this.closeSortTooltip(column);
   }
 
   /**
@@ -84,6 +85,16 @@ export class Grid {
       }
       await expect(sortedDescending).toBeVisible({ timeout: SORT_STEP_TIMEOUT });
     }).toPass();
+    await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Moves the mouse off the sort button and waits for its tooltip to close. The tooltip opens above the header
+   * and stays while the mouse is on the button, covering the toolbar buttons ("Export to Spreadsheet").
+   */
+  private async closeSortTooltip(column: string): Promise<void> {
+    await this.page.mouse.move(0, 0);
+    await expect(this.page.getByRole("tooltip").filter({ hasText: `by ${column} ` })).toHaveCount(0);
   }
 
   /**
