@@ -95,13 +95,16 @@ import {
 } from "@/utils/table/utils";
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
-import { processCalloutColumnValues } from "./utils/calloutUtils";
+import { getCalloutChangedFieldNames, processCalloutColumnValues } from "./utils/calloutUtils";
 import {
   ACTION_FORM_INITIALIZATION,
   MODE_CHANGE,
   FIC_ERROR_STATUS,
 } from "@/utils/hooks/useFormInitialization/constants";
 import { showCalloutMessages } from "@/utils/callouts/calloutMessages";
+import { getGridHighlightScope } from "@/utils/callouts/calloutHighlight";
+import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
+import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -227,6 +230,8 @@ interface CellEditingContextProps {
   session: Record<string, unknown> | undefined;
   /** AD window id, so inline-edit readonly logic resolves window-scoped preferences. */
   windowId?: string;
+  /** Tab id, to show the highlight of the cells a callout changed in this tab's rows. */
+  tabId: string;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -281,6 +286,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   loadTableDirOptions,
   isLoadingTableDirOptions,
   windowId,
+  tabId,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -336,6 +342,11 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
           data-testid="CellEditorFactory__8ca888"
         />
       </React.Suspense>
+      <CalloutHighlightOverlay
+        scope={getGridHighlightScope(tabId, rowId)}
+        fieldName={fieldKey}
+        data-testid="CalloutHighlightOverlay__8ca888"
+      />
     </div>
   );
 };
@@ -430,6 +441,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   loadTableDirOptions,
   isLoadingTableDirOptions,
   windowId,
+  tabId,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -460,6 +472,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         loadTableDirOptions={loadTableDirOptions}
         isLoadingTableDirOptions={isLoadingTableDirOptions}
         windowId={windowId}
+        tabId={tabId}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -1187,6 +1200,7 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
+  const highlightCalloutFields = useCalloutHighlightStore((s) => s.highlightFields);
   const { footer: footerSlot, titleSuffix: titleSuffixSlot } = useTopBarSlots();
   const { slot: toolbarExtrasSlot, isGridVisible } = useToolbarExtrasSlot();
   // Only the root tab of the active window writes its record count in the title (the slots are null otherwise).
@@ -1814,6 +1828,8 @@ const DynamicTable = ({
       // Process callout column values using shared utility
       const updates = processCalloutColumnValues(columnValues, tab);
       const fieldsByColumnName = getFieldsByColumnName(tab);
+      // Row values before the callout, to highlight only the cells it actually changed
+      const previousRowValues = { ...editingData.originalData, ...editingData.modifiedData };
 
       // Apply each update to the editing row
       for (const [columnName, _columnValue] of Object.entries(columnValues)) {
@@ -1845,8 +1861,13 @@ const DynamicTable = ({
         // 2. Any pending blur validations will read the new value from state
         // 3. Triggering validation here can interfere with auto-selection logic
       }
+
+      highlightCalloutFields(
+        getGridHighlightScope(tab.id, rowId),
+        getCalloutChangedFieldNames(previousRowValues, updates, tab)
+      );
     },
-    [tab, editingRowUtils, cancelPendingDebouncedValidations]
+    [tab, editingRowUtils, cancelPendingDebouncedValidations, highlightCalloutFields]
   );
 
   // Execute inline callout for a field
@@ -2910,6 +2931,7 @@ const DynamicTable = ({
           loadTableDirOptions={loadTableDirOptions}
           isLoadingTableDirOptions={isLoadingTableDirOptions}
           windowId={tab.window}
+          tabId={tab.id}
           data-testid="DataColumnCell__8ca888"
         />
       );
@@ -2938,6 +2960,7 @@ const DynamicTable = ({
       isLoadingTableDirOptions,
       renderFirstColumnCell,
       tab.window,
+      tab.id,
     ]
   );
 

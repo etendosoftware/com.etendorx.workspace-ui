@@ -22,6 +22,8 @@ docs/
 │   │   (export of stored process JS: ../process/definition/exporting-process-js.md)
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
+│   ├── callout-changed-field-highlight/ # Feature: Brief highlight of the fields a callout changed
+│   │   └── README.md                # Change detection, timing, form and grid inline editing
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
 │   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
 │   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
