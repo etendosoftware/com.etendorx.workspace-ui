@@ -43,7 +43,7 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
         <ToolbarSection {...rightSection} className="flex items-center gap-1" data-testid="ToolbarSection__f0537e_3" />
         <div
           ref={setExtrasSlot}
-          className="flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]!"
+          className="flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]! [&_button]:text-(--color-baseline-70)! [&_button]:transition! [&_button]:duration-400! [&_button:not(:disabled):hover]:text-(--color-baseline-0)!"
           data-testid="ToolbarExtrasSlot__container"
         />
       </div>
