@@ -107,6 +107,13 @@ const ScrollArrow = ({ direction, label, enabled, onPress }: ScrollArrowProps) =
   </button>
 );
 
+/** Fades only the edges that hide tabs, so a strip scrolled to one end keeps that end crisp. */
+function buildFadeMask(overflow: { left: boolean; right: boolean }): string {
+  const leftFade = overflow.left ? EDGE_FADE_PX : 0;
+  const rightFade = overflow.right ? EDGE_FADE_PX : 0;
+  return `linear-gradient(to right, transparent 0, #000 ${leftFade}px, #000 calc(100% - ${rightFade}px), transparent 100%)`;
+}
+
 export const SubTabsSwitch = ({
   tabs,
   current,
@@ -120,9 +127,7 @@ export const SubTabsSwitch = ({
   const { t } = useTranslation();
   const { stripRef, overflow, scrollPage } = useStripOverflow(tabs.length);
   const canScroll = overflow.left || overflow.right;
-  const fadeMask = canScroll
-    ? `linear-gradient(to right, transparent 0, #000 ${overflow.left ? EDGE_FADE_PX : 0}px, #000 calc(100% - ${overflow.right ? EDGE_FADE_PX : 0}px), transparent 100%)`
-    : undefined;
+  const fadeMask = canScroll ? buildFadeMask(overflow) : undefined;
 
   return (
     <div
