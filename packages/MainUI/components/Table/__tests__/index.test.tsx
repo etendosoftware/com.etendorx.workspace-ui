@@ -41,7 +41,8 @@ jest.mock("@/app/actions/revalidate", () => ({
 import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
@@ -424,8 +425,14 @@ jest.mock("@/components/ErrorDisplay", () => ({
   ErrorDisplay: () => <div data-testid="ErrorDisplay__8ca888">Error</div>,
 }));
 
+// Props of the last rendered CellContextMenu, so tests can check the edit permission it receives
+let capturedContextMenuProps: { canEdit?: boolean; onNewRecord?: () => void } = {};
+
 jest.mock("@/components/Table/CellContextMenu", () => ({
-  CellContextMenu: () => <div data-testid="CellContextMenu__8ca888">Context Menu</div>,
+  CellContextMenu: (props: { canEdit?: boolean; onNewRecord?: () => void }) => {
+    capturedContextMenuProps = props;
+    return <div data-testid="CellContextMenu__8ca888">Context Menu</div>;
+  },
 }));
 
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal", () => ({
@@ -597,6 +604,35 @@ describe("DynamicTable Component", () => {
         const statusModals = screen.getAllByTestId("StatusModal__table");
         expect(statusModals.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe("Read-only tabs (role Tab Access)", () => {
+    const renderContextMenu = async (uIPattern: UIPattern) => {
+      const setRecordId = jest.fn();
+      render(<DynamicTable setRecordId={setRecordId} uIPattern={uIPattern} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("CellContextMenu__8ca888")).toBeInTheDocument();
+      });
+      return setRecordId;
+    };
+
+    it("hides the edit actions of the context menu and blocks new records on a read-only tab", async () => {
+      const setRecordId = await renderContextMenu(UIPattern.READ_ONLY);
+
+      capturedContextMenuProps.onNewRecord?.();
+
+      expect(capturedContextMenuProps.canEdit).toBe(false);
+      expect(setRecordId).not.toHaveBeenCalledWith(NEW_RECORD_ID);
+    });
+
+    it("keeps the edit actions and opens a new record on a standard tab", async () => {
+      const setRecordId = await renderContextMenu(UIPattern.STANDARD);
+
+      capturedContextMenuProps.onNewRecord?.();
+
+      expect(capturedContextMenuProps.canEdit).toBe(true);
+      expect(setRecordId).toHaveBeenCalledWith(NEW_RECORD_ID);
     });
   });
 

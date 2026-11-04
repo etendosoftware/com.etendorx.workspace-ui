@@ -22,6 +22,8 @@ docs/
 │   │   (export of stored process JS: ../process/definition/exporting-process-js.md)
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
+│   ├── callout-changed-field-highlight/ # Feature: Brief highlight of the fields a callout changed
+│   │   └── README.md                # Change detection, timing, form and grid inline editing
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
 │   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
 │   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
@@ -35,6 +37,8 @@ docs/
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
+│   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration

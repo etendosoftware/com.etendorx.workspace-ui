@@ -300,6 +300,11 @@ export interface Field {
    * Indicates if the role has access to the window linked to this field.
    */
   isReferencedWindowAccessible?: boolean;
+  /**
+   * Whether the current role can run the process of this button field (Role Process Access).
+   * `false` keeps the button visible but disabled, as Classic does. Absent means accessible.
+   */
+  isProcessAccessible?: boolean;
   isAuditField?: boolean;
   /**
    * The hqlName of the color field in the referenced entity.

@@ -23,6 +23,7 @@ import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { isProcessButtonAccessible } from "@/utils/toolbar/process-button/utils";
 
 /**
  * Resolves the display name for a process action button based on the selected record's state.
@@ -51,6 +52,21 @@ const getProcessButtonName = (
   const matchingOption = refListOptions.find((option) => option.value === formattedRecordValue);
 
   return matchingOption?.label ?? button.name;
+};
+
+const ENABLED_ITEM_CLASSES = "cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)";
+const DISABLED_ITEM_CLASSES = "cursor-not-allowed rounded-lg p-2 opacity-50";
+
+/**
+ * Builds the class list of a process menu item. A disabled item (no selection, or a process the
+ * role cannot run) keeps its place in the menu but loses the hover and pointer affordances.
+ */
+const getMenuItemClassName = (disabled: boolean, className?: string): string => {
+  const baseClasses = disabled ? DISABLED_ITEM_CLASSES : ENABLED_ITEM_CLASSES;
+  if (!className) {
+    return baseClasses;
+  }
+  return `${baseClasses} ${className}`;
 };
 
 type ProcessMenuItemBaseProps<T extends ProcessButton> = {
@@ -101,11 +117,8 @@ const ProcessMenuItemBase = <T extends ProcessButton>({
     <div
       {...divProps}
       onClick={disabled ? undefined : handleClick}
-      className={
-        className
-          ? `cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20) ${className}`
-          : "cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-      }
+      aria-disabled={disabled}
+      className={getMenuItemClassName(disabled, className)}
       onKeyDown={handleKeyDown}>
       {buttonName}
     </div>
@@ -140,6 +153,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
       <div className="rounded-2xl px-2 py-4">
         {processButtons.map((button: ProcessButton, index: number) => {
           const buttonName = getProcessButtonName(button, selectedRecord);
+          const isItemDisabled = isDisabled || !isProcessButtonAccessible(button);
 
           if (isProcessActionButton(button)) {
             return (
@@ -148,7 +162,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
                 button={button}
                 onProcessClick={onProcessClick}
                 buttonName={buttonName}
-                disabled={isDisabled}
+                disabled={isItemDisabled}
                 data-testid="ProcessMenuItem__541926"
               />
             );
@@ -159,7 +173,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               button={button}
               onProcessClick={onProcessClick}
               buttonName={buttonName}
-              disabled={isDisabled}
+              disabled={isItemDisabled}
               data-testid="ProcessDefinitionMenuItem__541926"
             />
           );
