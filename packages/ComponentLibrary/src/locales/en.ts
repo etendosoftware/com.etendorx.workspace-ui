@@ -135,7 +135,7 @@ const en = {
       noFileSelected: "No file selected",
     },
     statusBar: {
-      closeRecord: "Close Record",
+      closeRecord: "Close record and back to the grid",
       nextRecord: "Next Record",
       previousRecord: "Previous Record",
     },
@@ -150,6 +150,10 @@ const en = {
     selectOneRecord: "You must select exactly one record to view the audit trail for it.",
     popupBlocked: "The browser blocked the Audit Trail window.",
     openPopup: "Open Audit Trail",
+  },
+  print: {
+    popupBlocked: "The browser blocked the print window.",
+    openPopup: "Open print window",
   },
   status: {
     deleteSuccess: "has been deleted successfully",
@@ -283,6 +287,7 @@ const en = {
       noType: "No type",
       noRecord: "No Row Selected",
       emptyRecords: "No records to show",
+      multipleParentsSelected: "Multiple parent records selected. You can only view children for 1 parent at a time.",
     },
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
@@ -291,6 +296,7 @@ const en = {
       showingRecords: "Showing {count} records",
       showingPartialRecords: "Showing {loaded} of {total} records",
       selectedRecords: "{count} selected",
+      titleCount: "({count} records)",
       recordsLoaded: "Records loaded",
     },
     selectAll: {
@@ -521,6 +527,10 @@ const en = {
   form: {
     select: {
       placeholder: "Select an option",
+    },
+    link: {
+      invalidUrl: "Enter a valid URL, e.g. www.example.com",
+      invalidUrlFields: "The following fields do not contain a valid URL: {{fields}}",
     },
   },
   copilot: {
@@ -1009,6 +1019,7 @@ const en = {
     buttonLabel: "Background processes",
     buttonLabelRunning: "Background processes (%0 running)",
     recentFailures: "Recent failures",
+    failed: "Failed",
     running: "Running",
     misfired: "Misfired",
     noFailures: "No recent failures",

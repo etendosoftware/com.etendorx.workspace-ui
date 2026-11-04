@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import path from "node:path";
 import analyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 import { generateAppVersion } from "./utils/version";
@@ -55,6 +56,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   cleanDistDir: false,
   output: "standalone",
+  // Standalone output is rooted at the nearest lockfile found going up; pin it to this repo so a parent
+  // package-lock.json (e.g. when cloned inside etendo_core/modules) does not nest the server in dist/.
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   // Opt-in browser source maps for CPU profiling of production builds (SOURCE_MAPS=true pnpm build)
   productionBrowserSourceMaps: process.env.SOURCE_MAPS === "true",
   compiler: {

@@ -26,6 +26,7 @@ import type { EntityData, ISession, Tab } from "@workspaceui/api-client/src/api/
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import { AUDIT_TRAIL_STATUS, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
+import { isEmailUnavailable, isPrintUnavailable } from "@/utils/toolbar/print";
 import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 import { CircularProgress } from "@mui/material";
@@ -46,9 +47,9 @@ const isBase64Image = (str: string): boolean => {
 
 const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-new bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-save bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white",
   [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
     "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
@@ -130,6 +131,14 @@ export interface ToolbarButtonContext {
 const isAuditTrailButtonHidden = (button: ToolbarButtonMetadata, tab?: Tab) =>
   button.action === TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL && !tab?.tableFullyAudited;
 
+/** Classic only offers Print on tabs with a print process (`AD_Tab.AD_Process_ID`). */
+const isPrintButtonHidden = (button: ToolbarButtonMetadata, tab?: Tab) =>
+  button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.printConfig;
+
+/** Classic only offers Email on tabs whose print process is for orders, invoices or payments. */
+const isEmailButtonHidden = (button: ToolbarButtonMetadata, tab?: Tab) =>
+  button.action === TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL && !tab?.printConfig?.hasEmail;
+
 const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContext) => {
   if (!button.active) return false;
 
@@ -141,8 +150,6 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isFilterButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
-  const isPrintButtonInTransactionWindow =
-    button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
   const isSaveViewButtonHidden = !isGridOnScreen && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
   // Personalizing the form only makes sense where a form is on screen.
@@ -167,7 +174,8 @@ const isVisibleButton = (button: ToolbarButtonMetadata, ctx: ToolbarButtonContex
     !isSaveButtonInNonFormView &&
     !isFilterButtonHidden &&
     !isToggleTreeView &&
-    !isPrintButtonInTransactionWindow &&
+    !isPrintButtonHidden(button, tab) &&
+    !isEmailButtonHidden(button, tab) &&
     !isCopilotButtonHidden &&
     !isSaveViewButtonHidden &&
     !isPersonalizeFormButtonHidden &&
@@ -295,6 +303,7 @@ export const createButtonByType = ({
     const isEditAndDeleteOnly = uIPattern === UIPattern.EDIT_AND_DELETE_ONLY;
 
     const isDocumentProcessing = saveButtonState?.isDocumentProcessing ?? false;
+    const printSelection = { tabId: tab.id, selectedRecords, isNewRecord };
 
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () =>
@@ -322,8 +331,10 @@ export const createButtonByType = ({
         const patternDisabled = isReadOnly || isEditOnly;
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled || isDocumentProcessing);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
-      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () =>
+        buildDisableConfig(isPrintUnavailable(printSelection) || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () =>
+        buildDisableConfig(isEmailUnavailable(printSelection) || isDocumentProcessing),
       // Busy while the export request is in flight, so it cannot be triggered twice.
       [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () => buildDisableConfig(!button.active || isExporting),
       [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: () => {
@@ -421,7 +432,7 @@ export const createButtonByType = ({
 
 export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: boolean) => {
   if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW) {
-    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]";
+    return "toolbar-button-new-form bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 rounded-full flex items-center justify-center disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white";
   }
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };

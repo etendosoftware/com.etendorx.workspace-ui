@@ -1,5 +1,5 @@
 import { GET, POST } from "../[...slug]/route";
-import { setErpSessionCookie, setErpCsrfToken } from "@/app/api/_utils/sessionStore";
+import { setErpSessionCookie, setErpCsrfToken, setErpLoginSessionId } from "@/app/api/_utils/sessionStore";
 
 jest.mock("next/server", () => ({
   NextResponse: { json: (body: unknown, init?: { status?: number }) => ({ body, status: init?.status ?? 200 }) },
@@ -7,6 +7,7 @@ jest.mock("next/server", () => ({
 jest.mock("@/app/api/_utils/sessionStore", () => ({
   setErpSessionCookie: jest.fn(),
   setErpCsrfToken: jest.fn(),
+  setErpLoginSessionId: jest.fn(),
 }));
 
 const params = (slug: string[]) => Promise.resolve({ slug });
@@ -69,5 +70,21 @@ describe("SSO proxy route", () => {
     expect(res).toEqual({ body: { error: "no_user_linked" }, status: 404 });
     expect(setErpSessionCookie).not.toHaveBeenCalled();
     expect(setErpCsrfToken).not.toHaveBeenCalled();
+    expect(setErpLoginSessionId).not.toHaveBeenCalled();
+  });
+
+  it("POST keeps the login session id on the server instead of returning it", async () => {
+    (global.fetch as jest.Mock) = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: headers(),
+        json: () => Promise.resolve({ token: "jwt-xyz", username: "admin", sessionId: "ad-session-1" }),
+      })
+    );
+    const request = { text: () => Promise.resolve("{}") };
+    const res = await POST(request as never, { params: params(["callback"]) });
+    expect(res).toEqual({ body: { token: "jwt-xyz", username: "admin" }, status: 200 });
+    expect(setErpLoginSessionId).toHaveBeenCalledWith("jwt-xyz", "ad-session-1");
   });
 });

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { toast } from "sonner";
 import type {
   ProcessExecution,
@@ -93,25 +93,21 @@ const detailOf = (id: string, extra: Partial<Detail> = {}): Detail => ({
   ...extra,
 });
 
+/** Failed and misfired start collapsed: opens one by clicking its header. */
+const expandSection = (testId: string) =>
+  fireEvent.click(within(screen.getByTestId(testId)).getByRole("button", { expanded: false }));
+
 describe("ProcessMonitorButton", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useProcessMonitorStore.getState().reset();
   });
 
-  it("shows the running count badge and caps it at 99+", () => {
+  it("uses the running label, not a badge on the icon, when something is running", () => {
     useProcessMonitorStore.setState({ runningCount: 3 });
-    const { rerender } = render(<ProcessMonitorButton />);
-    expect(screen.getByTestId("process-monitor-running-badge")).toHaveTextContent("3");
-
-    act(() => useProcessMonitorStore.setState({ runningCount: 150 }));
-    rerender(<ProcessMonitorButton />);
-    expect(screen.getByTestId("process-monitor-running-badge")).toHaveTextContent("99+");
-  });
-
-  it("shows no badge when nothing is running", () => {
     render(<ProcessMonitorButton />);
     expect(screen.queryByTestId("process-monitor-running-badge")).toBeNull();
+    expect(screen.getByLabelText("processMonitor.buttonLabelRunning")).toBeInTheDocument();
   });
 
   it("renders nothing when the role has no access", () => {
@@ -128,6 +124,8 @@ describe("ProcessMonitorButton", () => {
     render(<ProcessMonitorButton />);
     fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
 
+    expect(screen.queryByText("Process a")).toBeNull();
+    expandSection("process-monitor-failed");
     expect(screen.getByText("Process a")).toBeInTheDocument();
     expect(screen.queryByText("Process b")).toBeNull();
 
@@ -135,18 +133,31 @@ describe("ProcessMonitorButton", () => {
     expect(useProcessMonitorStore.getState().detailId).toBe("a");
   });
 
-  it("lists the misfired runs with the failures, without treating them as failed", () => {
+  it("lists the misfired runs in their own section, apart from the failed ones", () => {
     useProcessMonitorStore.setState({
       executions: {
         m: { ...build("m", "OTHER", 2), statusCode: "MIS" },
         k: { ...build("k", "OTHER", 3), statusCode: "KIL" },
+        f: build("f", "FAILED", 1),
       },
     });
     render(<ProcessMonitorButton />);
     fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
 
-    expect(screen.getByText(/Process m/)).toHaveTextContent("processMonitor.misfired");
+    expandSection("process-monitor-misfired");
+    expandSection("process-monitor-failed");
+    const misfired = screen.getByTestId("process-monitor-misfired");
+    expect(misfired).toHaveTextContent("Process m");
+    expect(misfired).not.toHaveTextContent("Process f");
+    expect(screen.getByTestId("process-monitor-failed")).toHaveTextContent("Process f");
+    expect(screen.getByTestId("process-monitor-failed")).not.toHaveTextContent("Process m");
     expect(screen.queryByText(/Process k/)).toBeNull();
+  });
+
+  it("hides the misfired section when none misfired", () => {
+    render(<ProcessMonitorButton />);
+    fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
+    expect(screen.queryByTestId("process-monitor-misfired")).toBeNull();
   });
 
   it("lists the running executions in their own section and opens the detail on click", () => {
@@ -158,6 +169,7 @@ describe("ProcessMonitorButton", () => {
     fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
 
     const section = screen.getByTestId("process-monitor-running");
+    expect(within(section).getByRole("button", { expanded: true })).toBeInTheDocument();
     expect(section).toHaveTextContent("Process r");
     expect(section).not.toHaveTextContent("Process a");
 
@@ -176,6 +188,7 @@ describe("ProcessMonitorButton", () => {
     render(<ProcessMonitorButton />);
     fireEvent.click(screen.getByTestId("IconButton__process-monitor"));
 
+    expandSection("process-monitor-failed");
     expect(screen.getByText("processMonitor.noFailures")).toBeInTheDocument();
     expect(screen.getByText("processMonitor.staleWarning")).toBeInTheDocument();
   });

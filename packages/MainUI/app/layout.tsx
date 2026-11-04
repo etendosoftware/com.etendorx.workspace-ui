@@ -55,6 +55,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const setInitialThemeScript = `
+    (function () {
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem("etendo-theme-mode") === "dark" ? "dark" : "light";
+      } catch (e) {}
+    })();
+  `;
   const setInitialDensityScript = `
     (function() {
       try {
@@ -84,6 +91,8 @@ export default async function RootLayout({
          Apply the density class as early as possible to avoid layout shift. 
          This script is 100% safe because it doesn't evaluate user input. */}
         <script dangerouslySetInnerHTML={{ __html: setInitialDensityScript }} />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: Apply the saved theme before first paint to avoid a flash. The script only reads localStorage. */}
+        <script dangerouslySetInnerHTML={{ __html: setInitialThemeScript }} />
       </head>
       <body>
         <RuntimeConfigProvider data-testid="RuntimeConfigProvider__ba7569">

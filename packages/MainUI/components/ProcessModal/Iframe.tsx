@@ -449,7 +449,7 @@ const ProcessIframeOpenModal = ({
           className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
           style={{
             borderColor: messageStyles.borderColor,
-            backgroundColor: "white",
+            backgroundColor: "var(--color-baseline-0)",
           }}>
           <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
             <div className="flex-shrink-0" />
