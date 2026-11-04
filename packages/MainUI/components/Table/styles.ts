@@ -35,9 +35,11 @@ export const useStyle = (): StylesType => {
           minHeight: 0,
           height: "100%",
           maxHeight: "100%",
-          // Design Kit: flat table, 1px line at 10% neutral and no elevation shadow.
-          border: "1px solid var(--color-transparent-neutral-10)",
-          borderRadius: "0.75rem",
+          // Design Kit: only the left side has a 1px line (10% neutral), rounded at the top corner; the right
+          // side and the bottom corners are square and open, and there is no elevation shadow.
+          border: "none",
+          borderLeft: "1px solid var(--color-transparent-neutral-10)",
+          borderRadius: "0.75rem 0 0 0",
           boxShadow: "none",
           overflow: "hidden",
           // The sticky header row ships a drop shadow that smudges the filter band; the design has none.

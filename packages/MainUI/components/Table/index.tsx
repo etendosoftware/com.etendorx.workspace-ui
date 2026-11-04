@@ -4411,7 +4411,7 @@ const DynamicTable = ({
 
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
+      className={`h-full overflow-hidden rounded-tl-xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>

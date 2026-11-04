@@ -380,30 +380,28 @@ select:-webkit-autofill:focus {
   background-color: var(--color-transparent-neutral-50);
 }
 
-/* Grid scroll areas: slim rounded thumb without the native arrow buttons, so the table keeps its rounded corners. */
+/* Grid scroll areas: a slim rounded thumb only (no rail, arrow buttons or corner glyph), so the gutter beside the
+   rows stays as narrow as possible and the table keeps its rounded corners. */
 .grid-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 .grid-scrollbar::-webkit-scrollbar-track,
 .grid-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
 }
-/* Keep the thumb clear of the table's rounded corners. */
-.grid-scrollbar::-webkit-scrollbar-track {
-  margin: 8px;
-}
-.grid-scrollbar::-webkit-scrollbar-button {
+.grid-scrollbar::-webkit-scrollbar-button,
+.grid-scrollbar::-webkit-resizer {
   display: none;
 }
 .grid-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-transparent-neutral-20);
+  min-height: 32px;
+  min-width: 32px;
   border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--ui-text) 25%, transparent);
 }
 .grid-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-transparent-neutral-50);
+  background-color: color-mix(in srgb, var(--ui-text) 50%, transparent);
 }
 
 .cursor-not-allowed-child {
