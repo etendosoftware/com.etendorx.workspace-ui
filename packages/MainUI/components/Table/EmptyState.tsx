@@ -18,7 +18,7 @@
 import type React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { EntityData, UIPattern } from "@workspaceui/api-client/src/api/types";
-import { UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
+import { isRecordCreationBlocked } from "./utils/uiPatternPermissions";
 import type { MRT_TableInstance } from "material-react-table";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import PlusCircle from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
@@ -43,10 +43,7 @@ const EmptyState = ({
 }) => {
   const { t } = useTranslation();
   maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
-  const isCreateDisabled =
-    uIPattern === UIPatternEnum.READ_ONLY ||
-    uIPattern === UIPatternEnum.EDIT_ONLY ||
-    uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY;
+  const isCreateDisabled = isRecordCreationBlocked(uIPattern);
 
   return (
     <div

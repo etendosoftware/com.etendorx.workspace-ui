@@ -19,6 +19,13 @@ import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useUserStore } from "@/stores/userStore";
+import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
+import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
+import {
+  collectChangedFieldNames,
+  getFormHighlightScope,
+  toCalloutFieldValue,
+} from "@/utils/callouts/calloutHighlight";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
@@ -212,6 +219,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     );
   }, [tab.fields]);
   const session = useUserStore((s) => s.session);
+  const highlightCalloutFields = useCalloutHighlightStore((s) => s.highlightFields);
   const parentData = useFormParent();
 
   const getParentId = useCallback(() => {
@@ -293,6 +301,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {
+      // Values before the callout, to highlight only the fields it actually changed
+      const previousValues = getValues();
+      const appliedFieldValues: Record<string, unknown> = {};
+
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         // Regular column lookup first; fall back to property-field key lookup so that
         // FIC responses with "_propertyField_{path}_{col}" keys correctly update the field.
@@ -301,10 +313,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
 
         // Etendo encodes boolean (YES_NO, reference "20") as "" for false and "Y" for true.
         // Convert to JS booleans so SmartContext normalizes them correctly for display logic.
-        let processedValue: string | boolean = value;
-        if (targetField?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id) {
-          if (value === "" || value === "false") processedValue = false;
-          else if (value === "Y" || value === "true") processedValue = true;
+        const processedValue = toCalloutFieldValue(targetField, value);
+
+        if (targetField) {
+          appliedFieldValues[hqlName] = processedValue;
         }
 
         setValue(hqlName, processedValue, { shouldDirty: false });
@@ -327,8 +339,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           );
         }
       }
+
+      highlightCalloutFields(
+        getFormHighlightScope(tab.id),
+        collectChangedFieldNames(previousValues, appliedFieldValues)
+      );
     },
-    [fieldsByColumnName, fieldsByPropertyFieldKey, setValue]
+    [fieldsByColumnName, fieldsByPropertyFieldKey, getValues, setValue, highlightCalloutFields, tab.id]
   );
 
   const applyAuxiliaryInputValues = useCallback(
@@ -574,8 +591,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           )}
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
-        <div className={inputWidthClass(field.obuiappColspan)}>
+        <div className={`${inputWidthClass(field.obuiappColspan)} relative`}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
+          <CalloutHighlightOverlay
+            scope={getFormHighlightScope(tab.id)}
+            fieldName={field.hqlName}
+            data-testid={"CalloutHighlightOverlay__" + field.id}
+          />
         </div>
       </div>
     );

@@ -32,6 +32,7 @@ export const TextLongSelector = (props: { field: Field } & React.ComponentProps<
       {...register(fieldName)}
       field={props.field}
       setValue={handleSetValue}
+      readOnly={props.readOnly}
       showClearButton={true}
       value={currentValue}
       rows={7}
