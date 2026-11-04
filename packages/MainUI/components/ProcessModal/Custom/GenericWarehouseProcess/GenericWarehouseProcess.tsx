@@ -381,7 +381,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                   {
                     type: "button",
                     onClick: () => handleNavigateToTab(parsed.tabId as string, parsed.recordId as string),
-                    className: "text-blue-600 underline hover:text-blue-800 font-medium text-left text-sm mt-1",
+                    className: "text-(--ui-link) underline hover:brightness-75 font-medium text-left text-sm mt-1",
                   },
                   t("packing.checkStatus")
                 )

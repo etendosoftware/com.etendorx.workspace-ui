@@ -56,6 +56,11 @@ jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({
   ProcessDefinitionModal: jest.fn(() => null),
 }));
 
+const mockPrintLegacy = jest.fn();
+jest.mock("@/hooks/Toolbar/useLegacyPrint", () => ({
+  useLegacyPrint: () => ({ printLegacy: mockPrintLegacy }),
+}));
+
 jest.mock("@/components/Toolbar/Toolbar", () => ({
   Toolbar: jest.fn(() => null),
 }));
@@ -232,6 +237,36 @@ describe("Tab - Refresh Registration", () => {
     expect(typeof allRegisteredActions.new).toBe("function");
     expect(typeof allRegisteredActions.back).toBe("function");
     expect(typeof allRegisteredActions.treeView).toBe("function");
+  });
+
+  describe("print record action", () => {
+    const LEGACY_PRINT_CONFIG = {
+      url: "../RptC_Bpartner.html",
+      hasEmail: false,
+      legacy: true,
+      directPrint: false,
+      keyParam: "inpcBpartnerId",
+    };
+
+    const runPrintRecord = async (tab: TabType) => {
+      renderWithTheme(<Tab tab={tab} collapsed={false} />);
+      const actions = mockRegisterActions.mock.calls.reduce((acc, call) => Object.assign(acc, call[0]), {});
+      await act(async () => {
+        await actions.printRecord();
+      });
+    };
+
+    it("prints through classic when the print process is not a PrintController document", async () => {
+      await runPrintRecord({ ...mockTab, printConfig: LEGACY_PRINT_CONFIG });
+
+      expect(mockPrintLegacy).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the document print service for PrintController documents", async () => {
+      await runPrintRecord({ ...mockTab, printConfig: { ...LEGACY_PRINT_CONFIG, legacy: false } });
+
+      expect(mockPrintLegacy).not.toHaveBeenCalled();
+    });
   });
 });
 

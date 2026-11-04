@@ -88,11 +88,11 @@ function SelectCmp({
     if (isReadOnly) {
       return `${baseClasses} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)`;
     }
-    const activeStateClasses = "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]";
+    const activeStateClasses = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
     const hoverStateClasses =
       "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
     const focusStateClasses =
-      "focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer";
+      "focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer";
     const interactiveStateClasses = isFocused || isOpen ? activeStateClasses : hoverStateClasses;
     return `${baseClasses} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactiveStateClasses} ${focusStateClasses}`;
   }, [isReadOnly, isFocused, isOpen]);
@@ -103,7 +103,7 @@ function SelectCmp({
       return `${baseClasses} text-baseline-60`;
     }
     const isActiveState = (isFocused || isOpen) && !isReadOnly;
-    const textColorClass = isActiveState ? "text-[#004ACA]" : "text-(--color-transparent-neutral-80)";
+    const textColorClass = isActiveState ? "text-[#2a1757]" : "text-(--color-transparent-neutral-80)";
     return `${baseClasses} ${textColorClass}`;
   }, [selectedLabel, isFocused, isOpen, isReadOnly]);
 

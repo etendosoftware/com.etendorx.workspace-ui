@@ -79,7 +79,8 @@ export const isRecordNeverModified = (record: EntityData): boolean => {
   return created === updated;
 };
 
-const isUnsavedRow = (record: EntityData): boolean => String(record.id).startsWith(UNSAVED_ROW_ID_PREFIX);
+/** Whether the record is an inline grid row that is not saved yet. */
+export const isUnsavedRow = (record: EntityData): boolean => String(record.id).startsWith(UNSAVED_ROW_ID_PREFIX);
 
 interface AuditTrailStatusParams {
   selectedRecords: EntityData[];

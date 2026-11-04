@@ -11,7 +11,7 @@ const SUCCESS_STATUS = "Success";
 test.describe("Purchase Order to Landed Cost flow @smoke", () => {
   test("Processes Landed Cost from Goods Receipt and validates cost distribution", async ({ app, data, page }) => {
     const vendor = data.BUSINESS_PARTNER.VENDOR_A;
-    const mainSection = page.getByRole("tab", { name: "Main Section" });
+    const mainSection = app.formSections.main;
 
     // ── Step 1: Navigate to Purchase Order ───────────────────────────────────
     await app.sidebar.navigateTo("purchaseOrder");

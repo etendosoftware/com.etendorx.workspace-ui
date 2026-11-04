@@ -32,6 +32,15 @@ TABLE_DIR_18: "18"
 - **UI Behavior**: Dropdown/autocomplete with datasource integration
 - **Usage**: Product selection, entity references, foreign key relationships
 
+### Link Fields
+```typescript
+LINK: { id: "800101", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR }
+```
+- **Component**: `LinkSelector`
+- **UI Behavior**: Text input with an open-link icon; clickable link in read-only mode. Protocol-less
+  values open with `http://` prepended and invalid URLs are flagged and block the save
+- **Details**: [link-fields/README.md](./link-fields/README.md)
+
 ### Window Reference
 ```typescript
 // Window reference

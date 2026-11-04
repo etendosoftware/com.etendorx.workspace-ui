@@ -4,6 +4,14 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AUDITED_TAB, MODIFIED_RECORD, NOT_AUDITED_TAB, UNMODIFIED_RECORD } from "../test-utils/auditTrailFixtures";
+import {
+  BPARTNER_TAB,
+  NO_PRINT_TAB,
+  ORDER_TAB,
+  OTHER_SAVED_RECORD,
+  SAVED_RECORD,
+  UNSAVED_ROW,
+} from "../test-utils/printFixtures";
 import { CircularProgress } from "@mui/material";
 import type React from "react";
 
@@ -93,10 +101,10 @@ describe("Toolbar utils createButtonByType", () => {
     });
 
     it("disables PRINT_RECORD when isDocumentProcessing=true", () => {
-      const tab = { ...defaultTab, process$_identifier: "Print Document" } as Tab;
       const result = createButtonByType({
         ...propsWithRecord,
-        tab,
+        tab: ORDER_TAB,
+        selectedRecords: [SAVED_RECORD],
         button: makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD),
         saveButtonState: processingState,
       });
@@ -241,26 +249,6 @@ describe("organizeButtonsBySection", () => {
     const result = organizeButtonsBySection(buttons, { isFormView: true });
     expect(result.left[0].action).toBe(TOOLBAR_BUTTONS_ACTIONS.NEW);
     expect(result.left[1].action).toBe(TOOLBAR_BUTTONS_ACTIONS.DELETE);
-  });
-
-  it("hides PRINT_RECORD when tab process identifier does not include Print", () => {
-    const tab = { process$_identifier: "SomeOther" } as Tab;
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")], {
-      isFormView: false,
-      isTreeNodeView: false,
-      tab,
-    });
-    expect(result.right).toHaveLength(0);
-  });
-
-  it("shows PRINT_RECORD when tab process identifier includes Print", () => {
-    const tab = { process$_identifier: "Print Document" } as Tab;
-    const result = organizeButtonsBySection([makeBtn(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, "right")], {
-      isFormView: false,
-      isTreeNodeView: false,
-      tab,
-    });
-    expect(result.right).toHaveLength(1);
   });
 
   it("sorts by name when seqno is equal", () => {
@@ -933,5 +921,69 @@ describe("SHOW_AUDIT_TRAIL button", () => {
 
   it("applies its button style", () => {
     expect(getButtonStyles(auditButton, false)).toContain("toolbar-button-show-audit-trail");
+  });
+});
+
+describe("PRINT_RECORD and SEND_MAIL buttons", () => {
+  const printButton = { ...makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD), section: "center" };
+  const emailButton = { ...makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL), section: "center" };
+
+  const visibleActions = (tab: Tab) =>
+    organizeButtonsBySection([printButton, emailButton], { isFormView: false, tab }).center.map(
+      (button) => button.action
+    );
+
+  const isDisabled = (button: ToolbarButtonMetadata, overrides: Partial<Parameters<typeof createButtonByType>[0]>) =>
+    createButtonByType({
+      button,
+      onAction: jest.fn(),
+      isFormView: false,
+      hasFormChanges: false,
+      hasParentRecordSelected: true,
+      tab: ORDER_TAB,
+      selectedRecordsLength: 1,
+      selectedRecords: [SAVED_RECORD],
+      ...overrides,
+    }).disabled;
+
+  it.each([
+    ["an order print process", ORDER_TAB, [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD, TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]],
+    ["a Business Partner print process", BPARTNER_TAB, [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]],
+    ["no print process", NO_PRINT_TAB, []],
+    ["metadata without printConfig", { id: "1" } as Tab, []],
+  ])("shows the classic buttons for a tab with %s", (_label, tab, expected) => {
+    expect(visibleActions(tab)).toEqual(expected);
+  });
+
+  it("does not depend on the (translatable) print process name", () => {
+    const translatedTab = { ...BPARTNER_TAB, process$_identifier: "Impresión de terceros" } as Tab;
+    expect(visibleActions(translatedTab)).toEqual([TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]);
+  });
+
+  it.each([printButton, emailButton])("enables $action with a saved selected record", (button) => {
+    expect(isDisabled(button, {})).toBe(false);
+  });
+
+  it.each([
+    ["nothing is selected", { selectedRecords: [], selectedRecordsLength: 0 }],
+    ["the record is new", { isNewRecord: true }],
+    ["the selected row is not saved", { selectedRecords: [UNSAVED_ROW] }],
+  ])("disables both buttons when %s", (_label, overrides) => {
+    expect(isDisabled(printButton, overrides)).toBe(true);
+    expect(isDisabled(emailButton, overrides)).toBe(true);
+  });
+
+  it("disables Print with several Business Partners selected, as classic", () => {
+    const overrides = {
+      tab: BPARTNER_TAB,
+      selectedRecords: [SAVED_RECORD, OTHER_SAVED_RECORD],
+      selectedRecordsLength: 2,
+    };
+    expect(isDisabled(printButton, overrides)).toBe(true);
+  });
+
+  it("keeps Print enabled with several records selected in other tabs", () => {
+    const overrides = { selectedRecords: [SAVED_RECORD, OTHER_SAVED_RECORD], selectedRecordsLength: 2 };
+    expect(isDisabled(printButton, overrides)).toBe(false);
   });
 });

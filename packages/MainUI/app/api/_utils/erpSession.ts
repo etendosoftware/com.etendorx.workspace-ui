@@ -30,6 +30,7 @@ import {
   getErpSessionCookie,
   getErpCsrfToken,
   clearErpSessionCookie,
+  carryErpLoginSessionId,
 } from "./sessionStore";
 
 const JSESSIONID_PATTERN = /JSESSIONID=([^;]+)/;
@@ -150,6 +151,7 @@ export function handOffErpSession(response: Response, newToken: string, previous
   }
 
   if (previousToken && previousToken !== newToken) {
+    carryErpLoginSessionId(previousToken, newToken);
     clearErpSessionCookie(previousToken);
   }
 }

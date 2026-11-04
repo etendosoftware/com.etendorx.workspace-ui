@@ -16,8 +16,11 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
+import { useState, type FocusEvent } from "react";
 import { TextInput } from "./components/TextInput";
 import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
+import { useTranslation } from "@/hooks/useTranslation";
+import { isValidLinkUrl, toOpenableLinkUrl } from "@/utils/form/linkUrl";
 
 interface LinkSelectorProps {
   field: Field;
@@ -28,6 +31,10 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
   const { register, setValue } = useFormContext<FieldValues>();
   const fieldName = field.hqlName;
   const currentValue = useWatch({ name: fieldName }) as string | undefined;
+  const { t } = useTranslation();
+  // Like Classic's `validateOnExit`, the URL is only flagged once the user leaves the field.
+  const [hasBlurred, setHasBlurred] = useState(false);
+  const openableUrl = toOpenableLinkUrl(currentValue);
 
   if (isReadOnly) {
     if (!currentValue) {
@@ -36,10 +43,10 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
 
     return (
       <a
-        href={currentValue}
+        href={openableUrl ?? undefined}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-blue-600 underline hover:text-blue-800 truncate block h-10.5 flex items-center px-3 max-w-full"
+        className="text-sm text-(--ui-link) underline hover:brightness-75 truncate block h-10.5 flex items-center px-3 max-w-full"
         title={currentValue}>
         {currentValue}
       </a>
@@ -51,12 +58,21 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
   };
 
   const handleOpenLink = () => {
-    if (currentValue) {
-      window.open(currentValue, "_blank", "noopener,noreferrer");
+    if (openableUrl) {
+      window.open(openableUrl, "_blank", "noopener,noreferrer");
     }
   };
 
-  const linkButton = currentValue ? (
+  const registration = register(fieldName);
+
+  const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
+    setHasBlurred(true);
+    return registration.onBlur(event);
+  };
+
+  const errorText = hasBlurred && !isValidLinkUrl(currentValue) ? t("form.link.invalidUrl") : undefined;
+
+  const linkButton = openableUrl ? (
     <button
       type="button"
       onClick={handleOpenLink}
@@ -82,11 +98,13 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
 
   return (
     <TextInput
-      {...register(fieldName)}
+      {...registration}
+      onBlur={handleBlur}
       field={field}
       setValue={handleSetValue}
       showClearButton={true}
       endAdornment={linkButton}
+      errorText={errorText}
       value={currentValue}
       placeholder="https://..."
       data-testid={`LinkSelector__${field.id}`}

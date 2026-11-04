@@ -25,17 +25,21 @@ import type { DrawerHeaderProps } from "../types";
 
 const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
   return (
-    <div className="h-14 min-h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
+    <div className="h-14 min-h-14 flex items-center justify-end p-2 border-b border-(--ui-line)">
       {open && (
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">
             <Logo logo={logo} title={title} />
-            <span className="font-semibold text-(--color-baseline-neutral-90) text-base">{title}</span>
+            <span className="font-bold tracking-tight text-(--ui-text) text-base">{title}</span>
           </a>
         </div>
       )}
       <div>
-        <IconButton onClick={onClick} className="h-9 w-9" tabIndex={tabIndex} data-testid="drawer-toggle-button">
+        <IconButton
+          onClick={onClick}
+          className="h-9 w-9 bg-transparent text-(--ui-text-muted) hover:bg-(--ui-hover) hover:text-(--ui-text)"
+          tabIndex={tabIndex}
+          data-testid="drawer-toggle-button">
           {open ? <MenuClose /> : <MenuOpen />}
         </IconButton>
       </div>

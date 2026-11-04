@@ -20,6 +20,7 @@ import {
   findActive,
   findAdjacentMenuItem,
   findHighlightedMenuItem,
+  findMenuItemById,
   findNavigableMenuItems,
   getMenuItemId,
   isOpenableMenuItem,
@@ -229,6 +230,25 @@ describe("drawerUtils", () => {
   describe("getMenuItemId", () => {
     it("returns null for a missing element", () => {
       expect(getMenuItemId(null)).toBeNull();
+    });
+  });
+
+  describe("findMenuItemById", () => {
+    const tree = [
+      buildItem({ id: "folder", type: FOLDER_TYPE, children: [buildItem({ id: "nested", windowId: "W-2" })] }),
+      buildItem({ id: "top" }),
+    ];
+
+    it("finds a top-level entry", () => {
+      expect(findMenuItemById(tree, "top")?.id).toBe("top");
+    });
+
+    it("finds an entry nested inside a folder", () => {
+      expect(findMenuItemById(tree, "nested")?.windowId).toBe("W-2");
+    });
+
+    it("returns undefined for an unknown id", () => {
+      expect(findMenuItemById(tree, "missing")).toBeUndefined();
     });
   });
 });

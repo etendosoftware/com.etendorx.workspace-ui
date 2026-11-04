@@ -121,6 +121,19 @@ describe("windowStore — split view state", () => {
       expect(getSplit(WINDOW_A, TAB_CHILD)).toEqual({ enabled: false, tableWidth: 35 });
     });
 
+    it("does not change the state of a tab that is already closed, so it does not re-render", () => {
+      seedSplitTabInFormView(WINDOW_A, TAB_CHILD, 30);
+      const store = useWindowStore.getState();
+      store.clearChildrenSelections(WINDOW_A, [TAB_CHILD], true);
+      const windowsAfterFirstClear = useWindowStore.getState().windows;
+      const closedTab = getTab(WINDOW_A, TAB_CHILD);
+
+      store.clearChildrenSelections(WINDOW_A, [TAB_CHILD], true);
+
+      expect(getTab(WINDOW_A, TAB_CHILD)).toBe(closedTab);
+      expect(useWindowStore.getState().windows).toBe(windowsAfterFirstClear);
+    });
+
     it("leaves a child in form view untouched while the parent record does not change", () => {
       seedSplitTabInFormView(WINDOW_A, TAB_CHILD, 45);
       useWindowStore.getState().clearChildrenSelections(WINDOW_A, [TAB_CHILD], false);

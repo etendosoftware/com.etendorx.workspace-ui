@@ -28,6 +28,7 @@ import { useTabContext } from "@/contexts/tab";
 import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
+import { ToolbarExtrasSlotContext } from "@/contexts/ToolbarExtrasSlot";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
@@ -70,6 +71,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
+import { useLegacyPrint } from "@/hooks/Toolbar/useLegacyPrint";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
@@ -185,8 +187,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   });
   // Same source of truth as the guard itself: TabContext's `hasFormChanges` is also raised
   // for a pristine NEW record, which must not trigger the prompt.
-  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
-  const isCurrentTabDirty = isTabDirty(dirtyWindows, windowIdentifier, tab.id);
+  // A boolean selector: the whole dirtyWindows map changes for any tab of any window
+  const isCurrentTabDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
   const splitState = useWindowStore((s) => {
     if (!windowIdentifier) return DEFAULT_SPLIT_STATE;
     return s.windows[windowIdentifier]?.tabs[tab.id]?.split ?? DEFAULT_SPLIT_STATE;
@@ -278,6 +280,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const isTreeSideBySide = isTreeView && shouldShowForm;
   const viewMode = getTabViewMode({ shouldShowForm, isSplitEnabled, isTreeSideBySide });
   const isSplitView = viewMode === TAB_VIEW_MODES.SPLIT;
+  const [toolbarExtrasSlot, setToolbarExtrasSlot] = useState<HTMLElement | null>(null);
+  const toolbarExtras = useMemo(
+    () => ({
+      slot: toolbarExtrasSlot,
+      setSlot: setToolbarExtrasSlot,
+      isGridVisible: viewMode !== TAB_VIEW_MODES.FORM,
+    }),
+    [toolbarExtrasSlot, viewMode]
+  );
 
   // With both panes on screen the keyboard belongs to one of them, so the focus
   // indicator narrows down from the tab to the pane holding the DOM focus.
@@ -541,7 +552,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     [windowIdentifier, tab.id, tab.tabLevel, setTabSplitTableWidth]
   );
 
+  const { printLegacy } = useLegacyPrint({ tab, selectedRecords });
+
   const handlePrintRecord = useCallback(async () => {
+    // Print processes that are not PrintController documents are printed by classic.
+    if (tab.printConfig?.legacy) {
+      printLegacy();
+      return;
+    }
     try {
       // Validate prerequisites
       if (selectedRecords.length === 0) {
@@ -605,7 +623,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.error("Print Record Error:", errorMessage, error);
       throw new Error(`Print failed: ${errorMessage}`);
     }
-  }, [selectedRecords, token, tab.id, config?.etendoClassicHost]);
+  }, [selectedRecords, token, tab.id, tab.printConfig?.legacy, printLegacy, config?.etendoClassicHost]);
   const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
     if (anchorEl) {
       setAdvancedFiltersAnchor(anchorEl);
@@ -1400,99 +1418,102 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const paneTabIndex = getPaneTabIndex(viewMode);
 
   return (
-    <div
-      className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
-        collapsed ? "hidden" : "flex-1 h-full"
-      }`}
-      data-testid={`Tab__${tab.id}`}>
-      <Toolbar
-        windowId={windowIdentifier || tab.window}
-        tabId={tab.id}
-        isFormView={shouldShowForm}
-        isSplitView={isSplitView}
-        isFocused={isFocused}
-        data-testid="Toolbar__5893c8"
-      />
+    <ToolbarExtrasSlotContext.Provider value={toolbarExtras}>
       <div
-        ref={panesRef}
-        className={getPanesContainerClassName(viewMode)}
-        style={getPanesContainerStyle(splitState.tableWidth)}>
-        <div
-          ref={gridPaneRef}
-          tabIndex={paneTabIndex}
-          onFocus={handleGridPaneFocus}
-          className={getGridPaneClassName(viewMode, getFocusBorderColor(isGridPaneFocused))}
-          style={getGridPaneStyle(viewMode)}
-          data-testid={SPLIT_PANE_TEST_IDS.GRID}>
-          <AttachmentProvider data-testid="AttachmentProvider__5893c8">
-            <DynamicTable
-              isTreeMode={isTreeView}
-              setRecordId={handleSetRecordId}
-              onRecordSelection={handleRecordSelection}
-              isVisible={isGridPaneVisible(viewMode)}
-              isPrimaryView={isGridPaneExclusive(viewMode)}
-              isTabCollapsed={collapsed}
-              areFiltersDisabled={advancedFilters.length > 0}
-              uIPattern={tab.uIPattern}
-              isFocused={isFocused}
-              onFocusAcquire={acquire}
-              data-testid="DynamicTable__5893c8"
-            />
-          </AttachmentProvider>
-        </div>
-        {isSplitView && (
-          <ResizeHandle
-            variant="divider"
-            direction="horizontal"
-            containerRef={panesRef}
-            initialWidth={splitState.tableWidth}
-            minWidth={SPLIT_MIN_TABLE_WIDTH}
-            maxWidth={SPLIT_MAX_TABLE_WIDTH}
-            maxOffsetRem={0}
-            onWidthChange={handleSplitDrag}
-            onWidthChangeEnd={handleSplitDragEnd}
-            data-testid="SplitViewDivider__5893c8"
-          />
-        )}
-        {shouldShowForm && (
-          <div
-            ref={formPaneRef}
-            tabIndex={paneTabIndex}
-            onFocus={handleFormPaneFocus}
-            className={getFormPaneClassName(isFormPaneFocused)}
-            data-testid={SPLIT_PANE_TEST_IDS.FORM}>
-            <FormView
-              key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
-              mode={formMode}
-              tab={tab}
-              window={window}
-              recordId={effectiveRecordId}
-              setRecordId={handleSetRecordId}
-              uIPattern={tab.uIPattern}
-              isFocused={isFocused}
-              onFocusAcquire={acquire}
-              canAutoFocus={isFormPaneFocused}
-              data-testid="FormView__5893c8"
-            />
-          </div>
-        )}
-      </div>
-      <Menu
-        anchorEl={advancedFiltersAnchor}
-        onClose={() => setAdvancedFiltersAnchor(null)}
-        className="w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
-        offsetY={8}
-        data-testid="Menu__5893c8">
-        <TableFilter
-          columns={filterColumns}
-          onApplyFilters={handleApplyFilters}
-          onLoadOptions={handleLoadOptions}
-          initialFilters={advancedFilters}
-          t={(k: string) => t(k as any)}
-          data-testid="TableFilter__5893c8"
+        className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex max-w-auto overflow-hidden flex-col min-h-0 ${tab.tabLevel > 0 ? "" : "shadow-lg"} ${
+          // Child tabs sit on a light band with tight spacing, like the design (2nd level).
+          tab.tabLevel > 0 ? "gap-1 bg-(--ui-child-band) px-1 pb-1 [--ui-table-head-bg:var(--ui-child-head)]" : "gap-2"
+        } ${collapsed ? "hidden" : "flex-1 h-full"}`}
+        data-testid={`Tab__${tab.id}`}>
+        <Toolbar
+          windowId={windowIdentifier || tab.window}
+          tabId={tab.id}
+          isFormView={shouldShowForm}
+          isSplitView={isSplitView}
+          isFocused={isFocused}
+          data-testid="Toolbar__5893c8"
         />
-      </Menu>
-    </div>
+        <div
+          ref={panesRef}
+          className={getPanesContainerClassName(viewMode)}
+          style={getPanesContainerStyle(splitState.tableWidth)}>
+          <div
+            ref={gridPaneRef}
+            tabIndex={paneTabIndex}
+            onFocus={handleGridPaneFocus}
+            className={getGridPaneClassName(viewMode, getFocusBorderColor(isGridPaneFocused))}
+            style={getGridPaneStyle(viewMode)}
+            data-testid={SPLIT_PANE_TEST_IDS.GRID}>
+            <AttachmentProvider data-testid="AttachmentProvider__5893c8">
+              <DynamicTable
+                isTreeMode={isTreeView}
+                setRecordId={handleSetRecordId}
+                onRecordSelection={handleRecordSelection}
+                isVisible={isGridPaneVisible(viewMode)}
+                isPrimaryView={isGridPaneExclusive(viewMode)}
+                isTabCollapsed={collapsed}
+                areFiltersDisabled={advancedFilters.length > 0}
+                uIPattern={tab.uIPattern}
+                focusRegionId={tab.id}
+                onFocusAcquire={acquire}
+                data-testid="DynamicTable__5893c8"
+              />
+            </AttachmentProvider>
+          </div>
+          {isSplitView && (
+            <ResizeHandle
+              variant="divider"
+              direction="horizontal"
+              containerRef={panesRef}
+              initialWidth={splitState.tableWidth}
+              minWidth={SPLIT_MIN_TABLE_WIDTH}
+              maxWidth={SPLIT_MAX_TABLE_WIDTH}
+              maxOffsetRem={0}
+              onWidthChange={handleSplitDrag}
+              onWidthChangeEnd={handleSplitDragEnd}
+              data-testid="SplitViewDivider__5893c8"
+            />
+          )}
+          {shouldShowForm && (
+            <div
+              ref={formPaneRef}
+              tabIndex={paneTabIndex}
+              onFocus={handleFormPaneFocus}
+              className={getFormPaneClassName(isFormPaneFocused)}
+              data-testid={SPLIT_PANE_TEST_IDS.FORM}>
+              <FormView
+                key={isSrTab ? `sr-${effectiveRecordId}` : undefined}
+                mode={formMode}
+                tab={tab}
+                window={window}
+                recordId={effectiveRecordId}
+                setRecordId={handleSetRecordId}
+                uIPattern={tab.uIPattern}
+                isFocused={isFocused}
+                onFocusAcquire={acquire}
+                canAutoFocus={isFormPaneFocused}
+                data-testid="FormView__5893c8"
+              />
+            </div>
+          )}
+        </div>
+        <Menu
+          anchorEl={advancedFiltersAnchor}
+          onClose={() => setAdvancedFiltersAnchor(null)}
+          className="w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
+          offsetY={8}
+          data-testid="Menu__5893c8">
+          <TableFilter
+            columns={filterColumns}
+            onApplyFilters={handleApplyFilters}
+            onLoadOptions={handleLoadOptions}
+            initialFilters={advancedFilters}
+            t={(k: string) => t(k as any)}
+            data-testid="TableFilter__5893c8"
+          />
+        </Menu>
+      </div>
+    </ToolbarExtrasSlotContext.Provider>
   );
 }
 

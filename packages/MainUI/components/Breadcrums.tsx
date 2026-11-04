@@ -86,7 +86,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const favoriteWindowIds = useFavoritesStore((s) => s.favoriteWindowIds);
   const toggle = useFavoritesStore((s) => s.toggle);
   const menuIdByWindowId = useFavoritesStore((s) => s.menuIdByWindowId);
-  const { activeFocusId, setFocus } = useFocusContext();
+  const focusScope = useMemo(() => allTabs.flat().map((tab) => tab.id), [allTabs]);
+  const { activeFocusId, setFocus } = useFocusContext(focusScope);
 
   const { setActiveLevel, activeTabsByLevel, activeLevels } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -159,15 +160,22 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
-  // Window-title click only collapses the view to level-0 and transfers focus.
-  // Per spec it MUST NOT touch the selected record (breadcrumb stays) nor the form state.
-  // Calling graph.clear/clearSelected here would emit "unselected", which Table reacts to
-  // by clearing its row selection, which in turn calls clearSelectedRecord in WindowContext
-  // and drops the breadcrumb record + URL ri_N param.
+  // Window-title click goes back to the level-0 grid: it collapses the view to level-0, transfers focus
+  // and, when the level-0 tab is showing a record form, closes that form (like Classic, the grid comes back
+  // with the record still selected). It MUST NOT touch the selected record (breadcrumb stays):
+  // calling graph.clear/clearSelected here would emit "unselected", which Table reacts to by clearing
+  // its row selection, which in turn calls clearSelectedRecord in WindowContext and drops the breadcrumb
+  // record + URL ri_N param. Only the form state is cleared.
   const handleWindowTitleClick = useCallback(() => {
+    if (level0TabId && windowIdentifier) {
+      const formState = getTabFormState(windowIdentifier, level0TabId);
+      if (formState?.mode === TAB_MODES.FORM) {
+        clearTabFormState(windowIdentifier, level0TabId);
+      }
+    }
     setActiveLevel(0);
     if (level0TabId) setFocus(level0TabId);
-  }, [setActiveLevel, setFocus, level0TabId]);
+  }, [setActiveLevel, setFocus, level0TabId, windowIdentifier, getTabFormState, clearTabFormState]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
