@@ -205,7 +205,7 @@ const HelpDrawer: React.FC = () => {
                           key={field.id}
                           type="button"
                           onClick={() => scrollToField(field.id)}
-                          className="text-blue-700 hover:underline"
+                          className="text-(--ui-link) hover:underline"
                           data-testid={`help-field-link-${field.id}`}>
                           [{field.name}]
                         </button>

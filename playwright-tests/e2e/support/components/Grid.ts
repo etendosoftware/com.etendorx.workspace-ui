@@ -10,8 +10,10 @@ const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
 const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
 /** The datasource request that saves an inline edit. */
 const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
-/** Record count of the grid toolbar: "Showing 12 records". */
+/** Record count of a grid that keeps its own counter bar: "Showing 12 records". */
 const SHOWING_RECORDS = /Showing (\d+) records?/;
+/** Record count of the root grid, which docks it into the title bar: "(12 records)". */
+const TITLE_RECORD_COUNT = /\((\d+) \w+\)/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
 /** Entry of the column actions menu that removes the filter of the column. */
@@ -106,10 +108,16 @@ export class Grid {
     await expect(header).not.toContainText(`${FILTERING_BY} ${column}`);
   }
 
-  /** The "Showing N records" count of the visible grid. */
+  /** The record count of the visible grid: "(N records)" in the title bar, or "Showing N records" in its counter bar. */
   async shownRecords(): Promise<number> {
-    const text = await this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first().textContent();
-    return Number(SHOWING_RECORDS.exec(text ?? "")?.[1]);
+    const title = this.page.getByTestId("TitleRecordCount__table").filter({ visible: true }).first();
+    const bar = this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first();
+    const counter = title.or(bar);
+    await expect(counter).toHaveText(new RegExp(`${TITLE_RECORD_COUNT.source}|${SHOWING_RECORDS.source}`), {
+      timeout: ROW_TIMEOUT,
+    });
+    const text = (await counter.textContent()) ?? "";
+    return Number((TITLE_RECORD_COUNT.exec(text) ?? SHOWING_RECORDS.exec(text))?.[1]);
   }
 
   /** Visible data rows of the grid in `scope`, in display order. */

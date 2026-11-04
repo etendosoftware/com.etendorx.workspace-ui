@@ -23,10 +23,14 @@ docs/
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
+│   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
+│   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
+│   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role, login protections
+│   │   └── README.md                # resetSessionState, token revocation, /meta/login-defaults, /meta/login-guard, AD_Session
 │   ├── match-statement/              # Feature: Match Statement process (Classic parity)
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
@@ -45,8 +49,13 @@ docs/
 │   │   └── README.md
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
+│   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
+│   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
+├── process/                          # Process execution internals
+│   └── legacy/
+│       └── manual-processes.md      # Classic process popups: iframe pipeline, file downloads/uploads
 ├── api/                              # API documentation
 │   ├── metadata-client.md
 │   ├── kernel-servlet.md

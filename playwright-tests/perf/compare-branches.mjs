@@ -2,12 +2,13 @@
 // the PR. Builds the base (merge-base with the target branch) in a cached git worktree and the working
 // tree, serves both, runs bench.mjs alternating base and head, and compares with stats.mjs.
 // See README.md ("Comparing a branch with its base").
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { busyRounds, busyPct, cpuTimes, IDLE_MAX_BUSY_PCT, sampleBusyPct } from "./machine.mjs";
+import { startServer, stopServer } from "./servers.mjs";
 import { compareRuns, METRICS, windowsToRemeasure } from "./stats.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -85,27 +86,8 @@ function build(dir, label) {
   run("pnpm", ["build"], { cwd: mainUi, env: childEnv(), stdio: "inherit" });
 }
 
-async function serve(dir, port, label) {
-  const child = spawn("npx", ["next", "start", "-p", String(port)], {
-    cwd: path.join(dir, "packages/MainUI"),
-    env: childEnv(),
-    stdio: "ignore",
-  });
-  const url = `http://localhost:${port}`;
-  for (let i = 0; i < 120; i++) {
-    try {
-      if ((await fetch(`${url}/api/health`)).ok) {
-        log(`${label} served at ${url}`);
-        return { child, url };
-      }
-    } catch {
-      // not up yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  child.kill();
-  throw new Error(`${label} did not start on port ${port}`);
-}
+const serve = (dir, port, label) =>
+  startServer({ mainUiDir: path.join(dir, "packages/MainUI"), port, label, env: childEnv(), log });
 
 /** One bench.mjs run of one side; `windows` limits it (extra rounds), otherwise WINDOWS or all of them. */
 function bench({ url, side, label, outDir, windows, load }) {
@@ -248,12 +230,18 @@ async function main() {
 
   const servers = [];
   const stop = () => {
-    for (const server of servers) server.child.kill();
+    for (const server of servers.splice(0)) stopServer(server.child);
   };
-  process.on("SIGINT", () => {
-    stop();
-    process.exit(130);
-  });
+  // Stop the servers on Ctrl+C or a kill too: they run in their own process group and would outlive the run
+  for (const [signal, code] of [
+    ["SIGINT", 130],
+    ["SIGTERM", 143],
+  ]) {
+    process.on(signal, () => {
+      stop();
+      process.exit(code);
+    });
+  }
   try {
     servers.push(await serve(baseDir, BASE_PORT, "base"));
     servers.push(await serve(ROOT, HEAD_PORT, "head"));

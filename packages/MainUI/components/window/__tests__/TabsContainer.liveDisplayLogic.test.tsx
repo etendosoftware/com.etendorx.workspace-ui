@@ -48,9 +48,15 @@ jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: () => "win-122",
 }));
 
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({ getSelectedRecord: () => "selected-id" }),
-}));
+// Every tab of the window has a selected record, so the child groups mount
+jest.mock("@/stores/windowStore", () => {
+  const tabs = new Proxy({}, { get: () => ({ selectedRecord: "selected-id" }), ownKeys: () => [] });
+  const state = { windows: { "win-122": { tabs } } };
+  const useWindowStore = Object.assign((selector: (s: typeof state) => unknown) => selector(state), {
+    getState: () => state,
+  });
+  return { useWindowStore };
+});
 
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (state: { session: Record<string, unknown> }) => unknown) => selector({ session: {} }),

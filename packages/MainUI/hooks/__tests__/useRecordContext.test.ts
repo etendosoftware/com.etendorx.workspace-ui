@@ -68,6 +68,21 @@ describe("useRecordContext hook", () => {
     expect(result.current.contextString).toBe("built context string");
   });
 
+  it("should not build the payloads until the context is read", () => {
+    (useSelectedRecords as jest.Mock).mockReturnValue([mockRecord]);
+    (buildPayloadByInputName as jest.Mock).mockReturnValue({ inp1: "v1" });
+    (buildContextString as jest.Mock).mockReturnValue("built context string");
+
+    const { result } = renderHook(() => useRecordContext());
+
+    expect(result.current.hasSelectedRecords).toBe(true);
+    expect(buildPayloadByInputName).not.toHaveBeenCalled();
+
+    expect(result.current.contextItems).toHaveLength(1);
+    expect(result.current.contextItems).toBe(result.current.contextItems);
+    expect(buildPayloadByInputName).toHaveBeenCalledTimes(1);
+  });
+
   it("should use tab title if available", () => {
     const tabWithTitle = { ...mockTab, title: "Custom Title" };
     (useTabContext as jest.Mock).mockReturnValue({ tab: tabWithTitle });

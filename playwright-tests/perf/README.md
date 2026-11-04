@@ -16,7 +16,8 @@ Chrome DevTools > Performance, or aggregate with `node perf/hotspots.mjs <dir> <
 Profiling adds overhead: keep timing runs and profile runs separate.
 
 Env: `BASE_URL`, `LABEL`, `RUNS` (default 3, median is reported), `WINDOWS` (comma list,
-default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER`/`ETENDO_PASS`
+default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`; a name with commas needs `;` as the separator,
+e.g. `WINDOWS="Windows, Tabs, and Fields;"`), `TAB_STEPS=1` (adds the tab and level steps below), `ETENDO_USER`/`ETENDO_PASS`
 (default admin/admin), `HEADED=1` to watch it.
 
 ## Flows (per window, each in a fresh browser context = empty cache)
@@ -31,6 +32,20 @@ default `Sales Order,Sales Invoice,Goods Shipment,Purchase Order`), `ETENDO_USER
 | `open-record` | Double click first grid row | URL has the record id |
 | `form-next-5` | Up to 5 clicks on the form's Next button, each as soon as it is enabled, never past the last record | position indicator advanced by the clicks done |
 | `type-10-chars` | Type "perf-check" into the Description textarea (never saved) | keystrokes done (CPU tail counted in `interactiveMs`) |
+
+### Tab and level steps (`TAB_STEPS=1`)
+
+Off by default because they run after `load-unfiltered` and leave child tabs mounted, so the steps after them
+(`arrow-nav-5`, `open-record`, `form-next-5`) measure a window with its child tabs open. Use a window that has
+child tabs; windows without them add no steps. Their ready condition is only that the click was sent: read
+`settledMs`, `interactiveMs`, `blockingMs` and `apiRequests`, not `visibleMs`.
+
+| Step | What it does |
+|---|---|
+| `select-parent-with-children` | Click the first grid row; child tab groups mount and fetch |
+| `switch-child-tab-cold` | Visit the child tabs (up to 3) that were never opened |
+| `switch-child-tab-warm` | Visit them again, already mounted |
+| `open-deep-tab` | Select a record of the child grid; only reported when it opens a deeper tab level |
 
 ## Metrics
 
@@ -107,6 +122,18 @@ others. The report shows the CPU in use before starting and during each round, a
 already busy or some round was much busier than the quietest one. Step failures are listed under "Not
 compared"; `form-next-5` fails with an "Unsaved changes" message when the opened record is marked as modified
 without any edit (a UI bug to report, since the step types nothing before).
+
+The servers run in their own process group and are stopped with it when the run ends, fails or is
+interrupted (Ctrl+C, `kill`), so no `next-server` stays on the ports. The run only measures servers it started
+(`servers.mjs`):
+- It fails before starting when a port is already in use, naming the port and how to find what uses it. It
+  never kills a process it did not start: stop that process, or choose other ports with `BASE_PORT`/`HEAD_PORT`.
+- It fails as soon as a server exits while starting, with the end of its error output.
+- It fails when the page served is not from the build just made (its `.next/BUILD_ID`).
+
+Before this check, a server left running by an interrupted run kept answering on its port. Later runs then
+measured it: the base of that old run, and a head whose static files no longer existed, so every head step
+failed at login.
 
 Options: `ROUNDS`, `EXTRA_ROUNDS` (0 disables the re-measure), `WINDOWS`, `QUICK=1`, `CPU_THROTTLE` (default 1), `BASE_REF`, `BASE_PORT`/`HEAD_PORT`,
 `SKIP_BUILD=1` (reuse existing builds), `PERF_WORKTREES_DIR`. Remove old base worktrees with

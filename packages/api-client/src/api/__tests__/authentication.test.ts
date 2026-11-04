@@ -87,6 +87,17 @@ describe("api/authentication", () => {
       });
     });
 
+    it("sends the token to revoke as a Bearer header", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({ ok: true });
+
+      await logout("session-token");
+
+      expect(Metadata.loginClient.request).toHaveBeenCalledWith("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer session-token" },
+      });
+    });
+
     it("throws error when logout response is not ok", async () => {
       (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
         ok: false,

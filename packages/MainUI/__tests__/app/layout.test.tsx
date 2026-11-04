@@ -88,7 +88,7 @@ describe("Layout Component", () => {
   it("should have navigation container with correct styling", () => {
     const { container } = render(<Layout>{mockChildren}</Layout>);
 
-    const navContainer = container.querySelector(".w-full.h-14.min-h-14.p-1");
+    const navContainer = container.querySelector(".w-full.h-14.min-h-14");
     expect(navContainer).toBeInTheDocument();
   });
 
