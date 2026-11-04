@@ -24,7 +24,7 @@ describe("TabContainer", () => {
   it("has the base layout and no border on the main tab", () => {
     const container = renderContainer({ level: 0 });
 
-    expect(container).toHaveClass("flex", "flex-col", "overflow-hidden", "rounded-xl");
+    expect(container).toHaveClass("flex", "flex-col", "overflow-hidden", "rounded-t-xl");
     expect(container.className).not.toContain("border");
   });
 

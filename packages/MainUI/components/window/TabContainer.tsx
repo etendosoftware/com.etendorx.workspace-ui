@@ -19,7 +19,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-0 mb-2";
 const COLLAPSED_STYLES = "cursor-pointer";
-const MAIN_TAB_STYLES = "rounded-xl";
+const MAIN_TAB_STYLES = "rounded-t-xl";
 // Design Kit "Solapa": rounded on the top corners only.
 const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) flex flex-col rounded-t-xl";
 // Spacing between the tab strip and the content; a collapsed tab has no content, so no gap (it left an empty band).

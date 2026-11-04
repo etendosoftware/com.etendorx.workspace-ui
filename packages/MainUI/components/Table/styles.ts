@@ -142,6 +142,11 @@ export const useStyle = (): StylesType => {
           "&:hover .Mui-TableHeadCell-Content-Actions, &:hover .Mui-TableHeadCell-ResizeHandle-Wrapper": {
             opacity: 1,
           },
+          // The resize handle of the last column sticks 8px out of the grid; that overflow made a horizontal
+          // scrollbar (and its gutter) appear on grids that fit.
+          "&:last-child .Mui-TableHeadCell-ResizeHandle-Wrapper": {
+            marginRight: "0 !important",
+          },
           // Unsorted columns show a generic sort icon; a real sort direction stays visible at all times.
           "& .MuiTableSortLabel-icon[data-testid='SyncAltIcon']": {
             opacity: 0,
