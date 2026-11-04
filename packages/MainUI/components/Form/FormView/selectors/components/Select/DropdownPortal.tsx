@@ -43,7 +43,9 @@ const DropdownPortal = memo(
     const [showAbove, setShowAbove] = useState(false);
     const [isPositioned, setIsPositioned] = useState(false);
 
-    // After each render, measure actual height and decide above/below
+    // Measure the actual height and decide above/below. The options usually arrive after the dropdown opens
+    // (loading row first, then the list), so it measures again whenever the content changes: a decision taken
+    // on the short loading row left the list squeezed under the field, with the sticky header covering its rows.
     useLayoutEffect(() => {
       if (!isOpen) {
         setIsPositioned(false);
@@ -58,7 +60,7 @@ const DropdownPortal = memo(
       const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
       setShowAbove(shouldShowAbove);
       setIsPositioned(true);
-    }, [isOpen, viewportData]);
+    }, [isOpen, viewportData, renderedOptions]);
 
     if (!isOpen) return null;
 
