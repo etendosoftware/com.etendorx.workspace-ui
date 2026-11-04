@@ -37,6 +37,8 @@ docs/
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
+│   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration

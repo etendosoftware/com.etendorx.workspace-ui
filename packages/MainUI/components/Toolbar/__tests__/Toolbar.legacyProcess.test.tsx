@@ -258,4 +258,15 @@ describe("Toolbar — runProcessAction", () => {
     expect(thrownError?.message).toBe("Unexpected failure");
     expect(toast.error).not.toHaveBeenCalled();
   });
+
+  it("does not run a process the role cannot run", async () => {
+    render(<Toolbar windowId="win-1" isFormView={false} />);
+    expect(capturedOnProcessClick).toBeInstanceOf(Function);
+
+    await act(async () => {
+      await capturedOnProcessClick!({ ...processActionButton, isProcessAccessible: false });
+    });
+
+    expect(mockHandleProcessClick).not.toHaveBeenCalled();
+  });
 });
