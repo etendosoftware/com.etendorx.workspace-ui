@@ -58,6 +58,15 @@ const isFieldDisplayed = (field: Field): boolean => {
 - **Rule**: Both true and false are valid, reject null/undefined
 - **Purpose**: Both boolean states represent valid user selections
 
+### Link (URL) Fields (FIELD_REFERENCE_CODES.LINK)
+- **Constants**: `FIELD_REFERENCE_CODES.LINK` ("800101")
+- **Rule**: Format check, not a required check: every displayed, editable Link field with a value must be
+  a valid URL, whether it is mandatory or not. Runs through `validateLinkFields()` after
+  `validateRequiredFields()` passes, with its own message:
+  `"The following fields do not contain a valid URL: URL"` (`form.link.invalidUrlFields`).
+- **Details**: rules, Classic differences and the grid counterpart in
+  [link-fields/README.md](./link-fields/README.md)
+
 ## Error Handling
 
 ### Error Message Format

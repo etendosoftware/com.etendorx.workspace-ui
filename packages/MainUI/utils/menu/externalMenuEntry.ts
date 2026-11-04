@@ -18,9 +18,9 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { MENU_ITEM_TYPES } from "./menuItemTypes";
 
 /** Separator that tells whether a URL already carries a protocol (Classic uses the same check). */
-const PROTOCOL_SEPARATOR = "://";
+export const PROTOCOL_SEPARATOR = "://";
 /** Protocol prepended to protocol-less URLs, as Classic does. */
-const DEFAULT_PROTOCOL = "http://";
+export const DEFAULT_PROTOCOL = "http://";
 /** Only web protocols may be opened, so a `javascript:` or `data:` URL never reaches the browser. */
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
 
