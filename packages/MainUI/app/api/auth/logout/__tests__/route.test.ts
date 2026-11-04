@@ -11,7 +11,7 @@ jest.mock("next/server", () => ({
 
 import type { NextRequest } from "next/server";
 import { POST } from "../route";
-import { getErpSessionCookie, setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getErpSessionCookie, setErpLoginSessionId, setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 describe("POST /api/auth/logout", () => {
   const OLD_ENV = process.env;
@@ -44,6 +44,18 @@ describe("POST /api/auth/logout", () => {
     );
     expect(getErpSessionCookie(TOKEN)).toBeNull();
     expect(res.status).toBe(200);
+  });
+
+  it("asks the ERP to close the login session recorded for the token", async () => {
+    setErpLoginSessionId(TOKEN, "ad-session-1");
+
+    await POST(makeRequest(TOKEN));
+
+    expect(global.fetch).toHaveBeenCalledWith("https://erp.example/etendo/sws/com.etendoerp.metadata.meta/logout", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: "ad-session-1" }),
+    });
   });
 
   it("still clears local state and returns 200 when revocation fails", async () => {
