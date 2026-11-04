@@ -151,6 +151,10 @@ const en = {
     popupBlocked: "The browser blocked the Audit Trail window.",
     openPopup: "Open Audit Trail",
   },
+  print: {
+    popupBlocked: "The browser blocked the print window.",
+    openPopup: "Open print window",
+  },
   status: {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",

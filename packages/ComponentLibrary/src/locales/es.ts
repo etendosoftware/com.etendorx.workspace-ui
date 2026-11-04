@@ -151,6 +151,10 @@ const es = {
     popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
     openPopup: "Abrir historial de auditoría",
   },
+  print: {
+    popupBlocked: "El navegador bloqueó la ventana de impresión.",
+    openPopup: "Abrir ventana de impresión",
+  },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
     deleteError: "Error al eliminar el registro",
