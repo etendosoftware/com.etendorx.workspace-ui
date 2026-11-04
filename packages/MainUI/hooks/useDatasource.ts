@@ -337,8 +337,10 @@ export function useDatasource({
   // a `refetchKey`, honor it: only re-trigger when that key changes
   // (filter/sort/etc.), ignoring rapidly-changing context like
   // payscript-driven form scalars.
-  const stableParamsTriggerKey =
-    !hasFirstFetchCompleted || refetchKey === undefined ? JSON.stringify(params) : refetchKey;
+  // `params` keeps its identity between renders unless the caller rebuilds it, so the serialized key is only
+  // recomputed then, not on every render of every mounted grid.
+  const paramsKey = useMemo(() => JSON.stringify(params), [params]);
+  const stableParamsTriggerKey = !hasFirstFetchCompleted || refetchKey === undefined ? paramsKey : refetchKey;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableParams = useMemo(() => params, [stableParamsTriggerKey]);
 
@@ -412,6 +414,12 @@ export function useDatasource({
         if (!(ok && data.response.data)) {
           throw data;
         }
+        // A page-1 fetch is already waiting for this one to settle (the query changed, e.g. another parent
+        // record was selected): these rows belong to the previous query. Applying them would flash them on screen
+        // until the next response replaces them, so they are dropped and the queued fetch runs right after.
+        if (pendingFetchRef.current === 1) {
+          return;
+        }
         setHasMoreRecords(data.response.data.length >= safePageSize);
         setRecords((prev) => {
           const fetched = data.response.data;
@@ -434,13 +442,20 @@ export function useDatasource({
       } catch (e) {
         logger.warn(e);
 
+        // Same as above: the failure of a superseded request is not the user's to see
+        if (pendingFetchRef.current === 1) {
+          return;
+        }
         if (!isImplicitFilterApplied) {
           setError(e as Error);
         } else {
           setIsImplicitFilterApplied?.(false);
         }
       } finally {
-        setLoading(false);
+        // Keep the loading state while a queued fetch is about to run, so the grid does not flash empty
+        if (pendingFetchRef.current === null) {
+          setLoading(false);
+        }
         fetchInProgressRef.current = false;
         // If a fetch was requested while this one was in flight, run it now with
         // the latest closure (current request params), so the most recent query wins.

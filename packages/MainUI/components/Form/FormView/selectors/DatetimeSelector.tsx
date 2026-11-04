@@ -124,7 +124,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
         bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
         text-(--color-transparent-neutral-80) font-medium text-sm leading-5`;
 
-    const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
+    const focusClass = isFocused && !isReadOnly ? "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]" : "";
 
     const hoverClass = !isReadOnly
       ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"

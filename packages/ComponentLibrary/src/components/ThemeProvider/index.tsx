@@ -15,12 +15,23 @@
  *************************************************************************
  */
 
+"use client";
+
 import { ThemeProvider as MUIThemeProvider, CssBaseline } from "@mui/material";
-import { theme } from "../../theme";
+import { useEffect } from "react";
+import { darkTheme, theme } from "../../theme";
+import { applyThemeMode, useThemeMode } from "../../theme/mode";
 
 export default function ThemeProvider({ children }: React.PropsWithChildren) {
+  const mode = useThemeMode();
+
+  // The root layout sets this before first paint; keep the attribute in sync afterwards.
+  useEffect(() => {
+    applyThemeMode(mode);
+  }, [mode]);
+
   return (
-    <MUIThemeProvider theme={theme}>
+    <MUIThemeProvider theme={mode === "dark" ? darkTheme : theme}>
       <CssBaseline />
       {children}
     </MUIThemeProvider>

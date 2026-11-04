@@ -125,6 +125,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | SESa | smoke | Organization/warehouse switch (context of new records), role switch (menu), defaults kept after a new login | None ("Save as default" never ticked) |
 | PRCc | regression | OBUIAPP_Report from the menu (Payables Aging Schedule): defaults, PDF download, modal kept open | None |
 | PRCd | regression | Manual process (Open Close Periods): "not migrated" message without a script; a migrated script runs with the selection and the `OB` shim | Sample period; scripts set by override, handler blocked |
+| PRCe | regression | Classic popup that answers with a file (Reconciliation Details): success message and an intact PDF download ([ETP-6022](../../process/legacy/manual-processes.md#39-file-downloads-and-uploads)) | Sample reconciliation of Accounting Documents EURO, read only |
 | FRMd | regression | Notes and attachments of a record: add and delete | Own category |
 | GRDc | regression | Saved views: save, standard view, apply, default applied when the window opens | Own view, deleted after the test |
 | GRDd | regression | Count summary and grouping by a column add up to the grid rows | Grouping preference for the user and window, removed after the test |
@@ -189,7 +190,7 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | FRMc, SESa | real backend | Save → reload round trip; server-side session and defaults. |
 | FRMe | real backend | Selector popup records, Add Payment defaults and execution, and the transaction callout run on the server. |
 | GRDa, GRDb | split | Child tab, sort and guard are client side; callout, clone, delete and cache are server side. |
-| PRCc, PRCd, FRMd, GRDc, GRDe | real backend | Report generation, Classic handler contract, attachment storage, saved views and tree moves are persisted. |
+| PRCc, PRCd, PRCe, FRMd, GRDc, GRDe | real backend | Report generation, Classic handler contract, attachment storage, saved views and tree moves are persisted. |
 | GRDd, NAVb, NAVc | mockable | Client-side grouping, summary, shortcuts and record navigation on recorded data. |
 
 **Recommendation.** Extend the layer only to probes of client logic (the "mockable" rows) and keep every flow that

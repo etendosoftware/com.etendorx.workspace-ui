@@ -121,7 +121,7 @@ export const useToolbarConfig = ({
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
-  const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
+  const recordContext = useRecordContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
   const selectedRecordId = useWindowStore((s) => {
@@ -428,9 +428,9 @@ export const useToolbarConfig = ({
       COPILOT: () => {
         const customEvent = new CustomEvent("openCopilotWithContext", {
           detail: {
-            contextString: hasSelectedRecords ? contextString : null,
-            contextItems: hasSelectedRecords ? contextItems : [],
-            hasContext: hasSelectedRecords,
+            contextString: recordContext.hasSelectedRecords ? recordContext.contextString : null,
+            contextItems: recordContext.hasSelectedRecords ? recordContext.contextItems : [],
+            hasContext: recordContext.hasSelectedRecords,
           },
         });
         window.dispatchEvent(customEvent);
@@ -534,9 +534,7 @@ export const useToolbarConfig = ({
       onSave,
       t,
       onRefresh,
-      hasSelectedRecords,
-      contextString,
-      contextItems,
+      recordContext,
       onColumnFilters,
       onToggleTreeView,
       onShowTableAndForm,

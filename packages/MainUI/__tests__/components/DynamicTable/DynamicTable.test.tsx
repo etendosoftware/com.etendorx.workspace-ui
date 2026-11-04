@@ -303,6 +303,9 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => mockTableStatePersistenceTab,
 }));
 
+// Parent selection (multiple parents show a message instead of children); none in these tests.
+jest.mock("@/hooks/useSelectedRecords", () => ({ useSelectedRecords: () => [] }));
+
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => mockSelectedContext,
 }));

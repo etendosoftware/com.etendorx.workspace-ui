@@ -24,7 +24,7 @@ const Version: React.FC<VersionProps> = ({ title, customClassNameSpan }) => {
   return (
     <footer className="cursor-default">
       <span
-        className={`font-inter text-[var(--color-transparent-neutral-70)] font-medium text-xs text-center leading-4 tracking-normal my-4 cursor-default block ${customClassNameSpan}`}>
+        className={`font-inter text-(--ui-text-muted) font-medium text-xs text-center leading-4 tracking-normal my-4 cursor-default block ${customClassNameSpan}`}>
         {title}
       </span>
     </footer>

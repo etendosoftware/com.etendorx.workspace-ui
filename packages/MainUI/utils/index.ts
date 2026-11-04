@@ -185,6 +185,17 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
   );
 };
 
+const fieldReference = (fieldName: string) => `(currentValues["${fieldName}"] ?? context["${fieldName}"])`;
+
+// @Field@^'literal', @Field@^"literal" or @Field@^@OtherField@
+const STARTS_WITH_PATTERN = /@([#$]?[a-zA-Z_]\w*)@\s*\^\s*(?:'([^']*)'|"([^"]*)"|@([#$]?[a-zA-Z_]\w*)@)/g;
+
+// Inlined so the compiled expression has no dependency on the scope it runs in. Booleans are
+// normalized to Y/N like the rest of the display logic values. No assignments here: the '=' to '=='
+// normalization below would rewrite them.
+const STARTS_WITH_FN =
+  '(function(v, p) { function n(x) { return typeof x === "boolean" ? (x ? "Y" : "N") : x; } return n(v) != null && n(v) !== "" && n(p) != null && n(p) !== "" && String(n(v)).startsWith(String(n(p))); })';
+
 /**
  * Transforms Etendo dynamic expression syntax to valid JavaScript code.
  *
@@ -201,6 +212,11 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
  * ### Comparison Operators
  * - `@field@!'Y'` → `...!='Y'` (legacy negation syntax)
  * - `@field@='Y'` → `...=='Y'` (single = converted to ==)
+ *
+ * ### Starts-with operator
+ * - `@field@^'INV'` → true when the field value starts with the literal (`@field@^@other@` compares
+ *   against another field). An empty or missing value on either side is never a match. Without this
+ *   translation JavaScript would read `^` as bitwise XOR.
  *
  * ### Legacy OB Utilities
  * - `OB.Utilities.getValue(obj, 'prop')` → `obj["prop"]`
@@ -230,12 +246,24 @@ export const parseDynamicExpression = (expr: string) => {
   // e.g. @INVENTORYSTATUS@!@To_State_ID@ -> @INVENTORYSTATUS@ != @To_State_ID@
   const exprNormalized = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
 
+  // Translate @Field@^'literal' (starts-with) before the generic field substitution, since JavaScript
+  // would otherwise read ^ as XOR. The call form keeps it a single operand for & and | precedence and
+  // avoids arrow functions, which the '=' normalization below would corrupt.
+  const exprStartsWith = exprNormalized.replace(
+    STARTS_WITH_PATTERN,
+    (_, field, singleQuoted, doubleQuoted, otherField) => {
+      const prefix =
+        otherField === undefined ? JSON.stringify(singleQuoted ?? doubleQuoted) : fieldReference(otherField);
+      return `${STARTS_WITH_FN}(${fieldReference(field)}, ${prefix})`;
+    }
+  );
+
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
   // Use ?? (nullish coalescing) so falsy-but-valid values like 0, false, "" are not
   // shadowed by the context fallback — only null/undefined fall through.
-  let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
-    return `(currentValues["${fieldName}"] ?? context["${fieldName}"])`;
+  let expr0 = exprStartsWith.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+    return fieldReference(fieldName);
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')

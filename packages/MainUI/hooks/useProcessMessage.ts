@@ -33,9 +33,10 @@ export interface ProcessMessage {
 // Retry policy for fetchProcessMessage. Mitigates the race between
 // sendMessage('processOrder') firing before the legacy servlet finishes the
 // submit and writes the OBError to the session under <tabId>|MESSAGE.
-// With 3 attempts spaced 500 ms apart, total worst-case is ~1 s of extra
-// latency before the fallback timer (5 s) takes over.
-const PROCESS_MESSAGE_FETCH_ATTEMPTS = 3;
+// With 8 attempts spaced 500 ms apart the message is asked for during ~3.5 s,
+// so a slow server still delivers it before the fallback timer (5 s) takes
+// over: once the retries end nothing asks again.
+export const PROCESS_MESSAGE_FETCH_ATTEMPTS = 8;
 const PROCESS_MESSAGE_RETRY_DELAY_MS = 500;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

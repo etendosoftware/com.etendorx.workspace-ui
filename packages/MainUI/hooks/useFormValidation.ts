@@ -25,6 +25,7 @@ import { lazyContext } from "@/utils/evaluation/lazyContext";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
+import { isLinkReference, isValidLinkUrl } from "@/utils/form/linkUrl";
 
 /**
  * Interface for validation result of a single field
@@ -53,6 +54,12 @@ interface ValidationSummary {
   missingFieldsCount: number;
 }
 
+/** A field is a property field when it shows a value of a related entity, which is never saved. */
+const isPropertyField = (field: Field): boolean => !!field.column?.propertyPath;
+
+/** Label shown to the user for a field, falling back to its property name. */
+const getFieldLabel = (field: Field): string => field.name || field.hqlName;
+
 /**
  * Custom hook for form validation logic
  * Provides client-side validation for required fields before form submission
@@ -72,10 +79,35 @@ export const useFormValidation = (tab: Tab) => {
     if (!tab?.fields) return [];
 
     return Object.values(tab.fields).filter((field: Field) => {
-      const isPropertyField = !!field.column?.propertyPath;
-      return field.isMandatory && field.displayed && !field.isReadOnly && !isPropertyField;
+      return field.isMandatory && field.displayed && !field.isReadOnly && !isPropertyField(field);
     });
   }, [tab?.fields]);
+
+  /**
+   * Filter and memoize the Link (URL) fields the user can edit
+   * Their value must be a valid URL whether they are mandatory or not
+   */
+  const linkFields = useMemo(() => {
+    if (!tab?.fields) return [];
+
+    return Object.values(tab.fields).filter((field: Field) => {
+      return (
+        isLinkReference(field.column?.reference) && field.displayed && !field.isReadOnly && !isPropertyField(field)
+      );
+    });
+  }, [tab?.fields]);
+
+  /**
+   * Builds the evaluation context of a validation pass on the first field that needs it
+   * (inside isFieldDisplayed's try); a failed build is retried.
+   */
+  const createLazyContext = useCallback(
+    (formValues: Record<string, unknown>) =>
+      lazyContext(() =>
+        getEvaluationContext({ values: formValues, fields: tab?.fields, context: session, windowId: tab?.window })
+      ),
+    [tab, session]
+  );
 
   /**
    * Check if a field should be displayed based on display logic
@@ -119,7 +151,7 @@ export const useFormValidation = (tab: Tab) => {
    * Create field validation result
    */
   const createValidationResult = useCallback((field: Field, isValid: boolean): FieldValidationResult => {
-    const fieldLabel = field.name || field.hqlName;
+    const fieldLabel = getFieldLabel(field);
     return {
       fieldName: field.hqlName,
       fieldLabel,
@@ -253,10 +285,7 @@ export const useFormValidation = (tab: Tab) => {
    */
   const validateRequiredFields = useCallback((): FormValidationResult => {
     const formValues = getValues();
-    // Built on the first field that needs it, inside isFieldDisplayed's try; a failed build is retried.
-    const getContext = lazyContext(() =>
-      getEvaluationContext({ values: formValues, fields: tab?.fields, context: session, windowId: tab?.window })
-    );
+    const getContext = createLazyContext(formValues);
     const missingFields: FieldValidationResult[] = [];
 
     for (const field of requiredFields) {
@@ -277,7 +306,22 @@ export const useFormValidation = (tab: Tab) => {
       isValid: missingFields.length === 0,
       missingFields,
     };
-  }, [requiredFields, getValues, isFieldDisplayed, validateField, tab, session]);
+  }, [requiredFields, getValues, isFieldDisplayed, validateField, createLazyContext]);
+
+  /**
+   * Validate the value of every displayed Link field as a URL, like Classic's OBLinkItem
+   * Empty values pass: whether they are required is checked by validateRequiredFields
+   *
+   * @returns The Link fields whose value is not a valid URL
+   */
+  const validateLinkFields = useCallback((): FieldValidationResult[] => {
+    const formValues = getValues();
+    const getContext = createLazyContext(formValues);
+
+    return linkFields
+      .filter((field) => !isValidLinkUrl(formValues[field.hqlName]) && isFieldDisplayed(field, getContext))
+      .map((field) => ({ fieldName: field.hqlName, fieldLabel: getFieldLabel(field), isValid: false }));
+  }, [linkFields, getValues, isFieldDisplayed, createLazyContext]);
 
   /**
    * Get a user-friendly validation summary with formatted error message
@@ -319,6 +363,7 @@ export const useFormValidation = (tab: Tab) => {
   return {
     // Validation functions
     validateRequiredFields,
+    validateLinkFields,
     validateField,
     getValidationSummary,
     hasValidationErrors,

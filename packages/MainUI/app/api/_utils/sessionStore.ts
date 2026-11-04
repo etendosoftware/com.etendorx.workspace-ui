@@ -8,6 +8,8 @@
 type SessionValue = {
   cookieHeader?: string;
   csrfToken?: string;
+  // AD_Session_ID recorded by the ERP for the login that issued the token, closed on logout
+  loginSessionId?: string;
 };
 
 type SessionMap = Map<string, SessionValue>;
@@ -89,6 +91,31 @@ export function getErpCsrfToken(token: string | null | undefined): string | null
   const v = store.get(keyToken) ?? null;
   if (!v) return null;
   return v.csrfToken ?? null;
+}
+
+/**
+ * Remembers the ERP session registry id (AD_Session) of the login that issued the token, so the
+ * logout can close it. Blank values are ignored: recording the session is best-effort on the ERP.
+ */
+export function setErpLoginSessionId(token: string, loginSessionId: string | null | undefined) {
+  if (!token?.trim() || !loginSessionId?.trim()) {
+    return;
+  }
+  const existing = store.get(token) ?? {};
+  store.set(token, { ...existing, loginSessionId });
+}
+
+export function getErpLoginSessionId(token: string | null | undefined): string | null {
+  if (!token) return null;
+  return store.get(token)?.loginSessionId ?? null;
+}
+
+/**
+ * Keeps the login session id when the token is replaced (renewal or role switch): it is still the
+ * same login.
+ */
+export function carryErpLoginSessionId(previousToken: string, newToken: string) {
+  setErpLoginSessionId(newToken, getErpLoginSessionId(previousToken));
 }
 
 export function clearErpSessionCookie(token: string) {

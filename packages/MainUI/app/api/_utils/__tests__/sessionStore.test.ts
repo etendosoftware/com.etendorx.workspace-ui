@@ -15,7 +15,14 @@
  *************************************************************************
  */
 
-import { setErpSessionCookie, getErpSessionCookie, clearErpSessionCookie } from "../sessionStore";
+import {
+  setErpSessionCookie,
+  getErpSessionCookie,
+  clearErpSessionCookie,
+  setErpLoginSessionId,
+  getErpLoginSessionId,
+  carryErpLoginSessionId,
+} from "../sessionStore";
 
 describe("sessionStore", () => {
   const testToken = "test-jwt-token-12345";
@@ -27,6 +34,62 @@ describe("sessionStore", () => {
     // Clear all stored sessions before each test
     clearErpSessionCookie(testToken);
     clearErpSessionCookie(anotherToken);
+  });
+
+  describe("login session id", () => {
+    const LOGIN_SESSION_ID = "AD-SESSION-1";
+
+    it("stores the login session id next to the cookie of the same token", () => {
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: null });
+      setErpLoginSessionId(testToken, LOGIN_SESSION_ID);
+
+      expect(getErpLoginSessionId(testToken)).toBe(LOGIN_SESSION_ID);
+      expect(getErpSessionCookie(testToken)).toBe(testCookie);
+    });
+
+    it("keeps the login session id when the cookie is stored afterwards", () => {
+      setErpLoginSessionId(testToken, LOGIN_SESSION_ID);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: null });
+
+      expect(getErpLoginSessionId(testToken)).toBe(LOGIN_SESSION_ID);
+    });
+
+    it.each([
+      ["a blank token", "  ", LOGIN_SESSION_ID],
+      ["a missing session id", testToken, undefined],
+      ["a blank session id", testToken, " "],
+    ])("ignores %s", (_case, token, loginSessionId) => {
+      setErpLoginSessionId(token, loginSessionId);
+
+      expect(getErpLoginSessionId(token)).toBeNull();
+    });
+
+    it("returns null for a missing token", () => {
+      expect(getErpLoginSessionId(null)).toBeNull();
+      expect(getErpLoginSessionId(anotherToken)).toBeNull();
+    });
+
+    it("carries the login session id from the previous token to the new one", () => {
+      setErpLoginSessionId(testToken, LOGIN_SESSION_ID);
+
+      carryErpLoginSessionId(testToken, anotherToken);
+
+      expect(getErpLoginSessionId(anotherToken)).toBe(LOGIN_SESSION_ID);
+    });
+
+    it("carries nothing when the previous token has no login session", () => {
+      carryErpLoginSessionId(testToken, anotherToken);
+
+      expect(getErpLoginSessionId(anotherToken)).toBeNull();
+    });
+
+    it("is dropped with the rest of the entry", () => {
+      setErpLoginSessionId(testToken, LOGIN_SESSION_ID);
+
+      clearErpSessionCookie(testToken);
+
+      expect(getErpLoginSessionId(testToken)).toBeNull();
+    });
   });
 
   describe("setErpSessionCookie", () => {
