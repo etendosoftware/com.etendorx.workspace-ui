@@ -98,6 +98,7 @@ import {
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
 import { getCalloutChangedFieldNames, processCalloutColumnValues } from "./utils/calloutUtils";
+import { getRowToSaveOnRowClick, shouldSaveOnRowBlur } from "./utils/rowLeave";
 import {
   ACTION_FORM_INITIALIZATION,
   MODE_CHANGE,
@@ -623,8 +624,12 @@ const addLegacyProductCalloutInputs = (
   }
 };
 
-/** Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. */
-const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"]';
+/**
+ * Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. The
+ * modal root (role "presentation") is included because the focus of a confirmation dialog lands on
+ * its content box, which is not inside a role "dialog": cancelling an edit would save the row instead.
+ */
+const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"], [role="presentation"]';
 
 // Extended Column type with optional metadata properties
 interface ExtendedColumn extends Column {
@@ -3227,17 +3232,15 @@ const DynamicTable = ({
             return;
           }
 
-          // ED: auto-save the currently editing row when the user clicks a different row
-          if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
-            const editingIds = editingRowUtils.getEditingRowIds();
-            if (editingIds.length > 0 && !editingIds.includes(rowId)) {
-              const editingRowId = editingIds[0];
-              const editingRowData = editingRowUtils.getEditingRowData(editingRowId);
-              if (editingRowData?.hasUnsavedChanges) {
-                handleSaveRow(editingRowId);
-                return;
-              }
-            }
+          // Like the classic UI: clicking a different row saves the row being edited, in every tab
+          const rowToSave = getRowToSaveOnRowClick(
+            rowId,
+            editingRowUtils.getEditingRowIds(),
+            (id) => !!editingRowUtils.getEditingRowData(id)?.hasUnsavedChanges
+          );
+          if (rowToSave) {
+            handleSaveRow(rowToSave);
+            return;
           }
 
           // Don't allow row selection changes while editing (to prevent accidental data loss)
@@ -3347,13 +3350,11 @@ const DynamicTable = ({
           const next = e.relatedTarget as Element | null;
           if (e.currentTarget.contains(next) || next?.closest(ROW_POPUP_SELECTOR)) return;
           if (!e.currentTarget.contains(e.target as Node)) return;
-          if (editingData?.isNew) {
+          // An existing row with pending edits is saved when left, whatever the tab's UI pattern
+          if (
+            shouldSaveOnRowBlur(!!editingData?.isNew, !!editingRowUtils.getEditingRowData(rowId)?.hasUnsavedChanges)
+          ) {
             handleSaveRow(rowId);
-          } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
-            const blurEditingData = editingRowUtils.getEditingRowData(rowId);
-            if (blurEditingData?.hasUnsavedChanges) {
-              handleSaveRow(rowId);
-            }
           }
         },
 
@@ -3385,7 +3386,6 @@ const DynamicTable = ({
       dropTarget,
       getNodeDragProps,
       getNodeDropProps,
-      uIPattern,
       handleSaveRow,
     ]
   );
