@@ -186,14 +186,14 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Financial Account - Match Statement @smoke", () => {
   const statementName = data.uniqueValue("FINe");
-  /** Amounts unique to the run (lines are found by amount), below 1000 so they show without a group separator. */
-  const baseAmount = 100 + Math.round(Date.now() % 80_000) / 100;
+  /** Amounts unique to the run (lines are found by amount), exact to the cent: see {@link data.uniqueAmounts}. */
+  const [algorithmAmount, rowButtonsAmount, paymentAmount] = data.uniqueAmounts(3);
   /** Matched by the algorithm (happy path), then unmatched with "Unmatch Selected". */
-  const algorithmLine: MatchPair = { reference: data.uniqueValue("FINe-A"), amount: baseAmount };
+  const algorithmLine: MatchPair = { reference: data.uniqueValue("FINe-A"), amount: algorithmAmount };
   /** Matched and unmatched with the row buttons. */
-  const rowButtonsLine: MatchPair = { reference: data.uniqueValue("FINe-B"), amount: baseAmount + 1 };
+  const rowButtonsLine: MatchPair = { reference: data.uniqueValue("FINe-B"), amount: rowButtonsAmount };
   /** Opens Add Transaction with its Payment field, to create the payment from its "+". */
-  const paymentLine: MatchPair = { reference: data.uniqueValue("FINe-C"), amount: baseAmount + 2, withoutGLItem: true };
+  const paymentLine: MatchPair = { reference: data.uniqueValue("FINe-C"), amount: paymentAmount, withoutGLItem: true };
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
