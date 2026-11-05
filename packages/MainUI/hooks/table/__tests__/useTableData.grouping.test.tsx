@@ -27,7 +27,15 @@ const mockPersistenceSetters = {
   setTableColumnOrder: jest.fn(),
   setIsImplicitFilterApplied: jest.fn(),
 };
-const mockDatasourceResult = { records: [], loading: false, error: null, hasMoreRecords: false, fetchMore: jest.fn() };
+const mockGetRequestParams = jest.fn();
+const mockDatasourceResult = {
+  records: [],
+  loading: false,
+  error: null,
+  hasMoreRecords: false,
+  fetchMore: jest.fn(),
+  getRequestParams: mockGetRequestParams,
+};
 const mockToolbar = { setIsImplicitFilterApplied: jest.fn() };
 const mockSelected = { graph: { getSelected: () => null } };
 const mockColumnFilters = { columnFilters: [], setColumnFilter: jest.fn(), setColumnFilters: jest.fn() };
@@ -110,6 +118,31 @@ describe("useTableData grouping query", () => {
 
     expect(query.pageSize).toBe(DEFAULT_PAGE_SIZE);
     expect(query.sortBy).toBe(`-${SORT_FIELD}`);
+  });
+
+  it("sorts by every sorted column, in order", () => {
+    mockTableState.sorting = [
+      { id: SORT_COLUMN, desc: true },
+      { id: GROUP_COLUMN, desc: false },
+    ];
+
+    expect(renderQuery().sortBy).toBe(`-${SORT_FIELD},${GROUP_FIELD}`);
+  });
+
+  it("sorts inside the groups by every other sorted column", () => {
+    mockTableState.grouping = [GROUP_COLUMN];
+    mockTableState.sorting = [
+      { id: SORT_COLUMN, desc: true },
+      { id: GROUP_COLUMN, desc: true },
+    ];
+
+    expect(renderQuery().sortBy).toBe(`-${GROUP_FIELD},-${SORT_FIELD}`);
+  });
+
+  it("exposes the params of the grid's current query", () => {
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect(result.current.getRequestParams).toBe(mockGetRequestParams);
   });
 
   it("loads up to the grouping limit + 1 sorted by the grouped column", () => {

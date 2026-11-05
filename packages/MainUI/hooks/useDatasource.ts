@@ -551,6 +551,13 @@ export function useDatasource({
     [reinit, fetchData, entity]
   );
 
+  /**
+   * Params of the current query, as the grid sends them (criteria, sort, implicit filter and
+   * context) but without paging. Lets other requests, such as the CSV export, ask for exactly
+   * the records the grid shows.
+   */
+  const getRequestParams = useCallback((): DatasourceOptions => requestParamsRef.current, []);
+
   return {
     loading,
     error,
@@ -565,5 +572,6 @@ export function useDatasource({
     addRecordLocally,
     refetch,
     hasMoreRecords,
+    getRequestParams,
   };
 }

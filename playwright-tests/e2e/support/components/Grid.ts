@@ -16,6 +16,8 @@ const SHOWING_RECORDS = /Showing (\d+) records?/;
 const TITLE_RECORD_COUNT = /\((\d+) \w+\)/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
+/** Time a sort click has to show in the header before {@link Grid.sortDescending} clicks again. */
+const SORT_STEP_TIMEOUT = 2_000;
 /** Entry of the column actions menu that removes the filter of the column. */
 const CLEAR_FILTER = "Clear filter";
 /** Text the header of a filtered column carries: "Filtering by <column> - …". */
@@ -66,12 +68,43 @@ export class Grid {
    * done by the backend). Each click toggles the direction.
    */
   async sortBy(column: string): Promise<void> {
-    // The header text also shows a filter count, so the button is found by its label:
-    // "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending"
-    const button = this.page
+    await runAndWaitForDatasource(this.page, () => this.sortButton(column).click());
+    await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Sorts a column in descending order, clicking its sort button until the header says so: a
+   * column that is already the default sort goes descending with one click, another one with two.
+   * Waits for the header, not for a request: the ascending request can be the cached default one.
+   */
+  async sortDescending(column: string): Promise<void> {
+    const sortedDescending = this.page.locator(`thead:visible [aria-label="Sorted by ${column} descending"]`).first();
+    await expect(async () => {
+      if (!(await sortedDescending.isVisible())) {
+        await this.sortButton(column).click();
+      }
+      await expect(sortedDescending).toBeVisible({ timeout: SORT_STEP_TIMEOUT });
+    }).toPass();
+    await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Moves the mouse off the sort button and waits for its tooltip to close. The tooltip opens above the header
+   * and stays while the mouse is on the button, covering the toolbar buttons ("Export to Spreadsheet").
+   */
+  private async closeSortTooltip(column: string): Promise<void> {
+    await this.page.mouse.move(0, 0);
+    await expect(this.page.getByRole("tooltip").filter({ hasText: `by ${column} ` })).toHaveCount(0);
+  }
+
+  /**
+   * Sort button of a column header. The header text also shows a filter count, so the button is
+   * found by its label: "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending".
+   */
+  private sortButton(column: string): Locator {
+    return this.page
       .locator(`thead:visible [aria-label^="Sort by ${column} "], thead:visible [aria-label^="Sorted by ${column} "]`)
       .first();
-    await runAndWaitForDatasource(this.page, () => button.click());
   }
 
   /**

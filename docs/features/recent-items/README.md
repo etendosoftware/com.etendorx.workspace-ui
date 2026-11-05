@@ -26,6 +26,19 @@ or clicks an entry of the "Recently viewed" list itself:
 
 Windows opened in other ways (Home widgets, breadcrumbs, links, a restored URL) are not added.
 
+## Opening an entry
+
+Both lists open an entry the way the drawer menu does, using the live menu entry with the same id
+and type so its current data is used:
+
+- Windows open as windows, and External entries open their link.
+- In the Home widget, Form, ProcessManual, Report and View entries open in Etendo Classic. The
+  widget uses the same opener as the menu (`useOpenLegacyMenuEntry`). Process-like entries (Process
+  Definition, Report and Process, Pick and Execute) keep their previous navigation there, because
+  the process modal is only hosted by the drawer menu.
+
+See [Application Forms](../application-forms/README.md) for how a form's address is resolved.
+
 ## Storage
 
 The list is persisted server-side as an `AD_Preference`, the same way the classic UI persists its
@@ -154,6 +167,7 @@ sequenceDiagram
 | Pure helpers and cache | `packages/MainUI/utils/recentItems.ts` |
 | Drawer hook | `packages/MainUI/hooks/useRecentItems.ts` |
 | Home widget | `packages/MainUI/screens/Home/widgets/renderers/RecentlyViewedRenderer.tsx` |
+| Classic entry opener | `packages/MainUI/hooks/useOpenLegacyMenuEntry.ts`, `packages/MainUI/utils/menu/legacyMenuEntry.ts` |
 
 ## Known limitations
 

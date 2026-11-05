@@ -37,6 +37,8 @@ docs/
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── application-forms/            # Feature: Classic Application Forms opened from the menu
+│   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
 │   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
@@ -49,6 +51,8 @@ docs/
 │   │   └── README.md                # Header-only cards, half-row grid, ISCOLLAPSED persistence
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
+│   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
+│   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
