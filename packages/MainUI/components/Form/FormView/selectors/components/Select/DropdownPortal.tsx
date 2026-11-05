@@ -46,9 +46,11 @@ const DropdownPortal = memo(
     // Measure the actual height and decide above/below. The options usually arrive after the dropdown opens
     // (loading row first, then the list), so it measures again whenever the content changes: a decision taken
     // on the short loading row left the list squeezed under the field, with the sticky header covering its rows.
+    // showAbove and isPositioned are read only to skip redundant updates; they must not re-run the measurement.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
     useLayoutEffect(() => {
       if (!isOpen) {
-        setIsPositioned(false);
+        if (isPositioned) setIsPositioned(false);
         return;
       }
       const container = containerRef.current;
@@ -58,8 +60,10 @@ const DropdownPortal = memo(
       const { spaceBelow, spaceAbove } = viewportData;
 
       const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
-      setShowAbove(shouldShowAbove);
-      setIsPositioned(true);
+      // Set the state only when it changes: a layout effect that sets state on every run, with a dependency that
+      // changes on every render, re-renders without end ("Maximum update depth exceeded")
+      if (showAbove !== shouldShowAbove) setShowAbove(shouldShowAbove);
+      if (!isPositioned) setIsPositioned(true);
     }, [isOpen, viewportData, renderedOptions]);
 
     if (!isOpen) return null;
