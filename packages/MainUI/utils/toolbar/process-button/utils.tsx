@@ -19,6 +19,17 @@ import ProcessIcon from "@workspaceui/componentlibrary/src/assets/icons/close-re
 import ChevronDownIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import type { TranslateFunction } from "@/hooks/types";
 import type { ProcessAvailableButton } from "@/components/Toolbar/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
+
+/**
+ * Tells whether the role can run the process of a button. Classic keeps the button of a process
+ * the role cannot run visible but disabled, so the button is never filtered out by this flag.
+ *
+ * @param button - The process button field
+ * @returns `false` only when the metadata flags the process as not accessible
+ */
+export const isProcessButtonAccessible = (button: Pick<Field, "isProcessAccessible">): boolean =>
+  button.isProcessAccessible !== false;
 
 const getProcessButtonStyles = (anchorEl: HTMLElement | null): string => {
   const baseClasses =

@@ -103,6 +103,31 @@ describe("useDatasource hook", () => {
     expect(JSON.stringify(secondCallParams)).toContain("Order 1");
   });
 
+  it("exposes the params of the current query without paging", async () => {
+    const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
+    const filterCriterion = { fieldName: "businessPartner", operator: "equals", value: "BP1" };
+    (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockReturnValueOnce([filterCriterion]);
+    const columns = [{ id: "businessPartner", columnName: "businessPartner" }] as unknown as Column[];
+    const filters = [{ id: "businessPartner", value: "BP1" }] as MRT_ColumnFiltersState;
+
+    const { result } = renderHook(() =>
+      useDatasource({
+        entity: mockEntity,
+        params: { sortBy: "-orderDate", pageSize: 100 },
+        columns,
+        activeColumnFilters: filters,
+        isImplicitFilterApplied: true,
+      })
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const params = result.current.getRequestParams();
+    expect(params.criteria).toEqual(filterCriterion);
+    expect(params.sortBy).toBe("-orderDate");
+    expect(params.isImplicitFilterApplied).toBe(true);
+    expect(params).not.toHaveProperty("startRow");
+  });
+
   it("drops the rows of a request that a newer query superseded while it was in flight", async () => {
     const { LegacyColumnFilterUtils } = require("@workspaceui/api-client/src/utils/search-utils");
     (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockImplementation(

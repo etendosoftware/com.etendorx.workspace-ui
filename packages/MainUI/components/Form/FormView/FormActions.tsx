@@ -33,6 +33,18 @@ import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
+import { useTranslation } from "@/hooks/useTranslation";
+
+/** Placeholder of the field list in the invalid-URL message. */
+const FIELDS_PLACEHOLDER = "{{fields}}";
+
+/** Field reported by a validation that blocks the save. */
+interface InvalidField {
+  fieldName: string;
+  fieldLabel: string;
+}
+
+const joinFieldLabels = (fields: InvalidField[]): string => fields.map((field) => field.fieldLabel).join(", ");
 
 interface FormActionsProps {
   tab: Tab;
@@ -44,7 +56,7 @@ interface FormActionsProps {
   mode: FormMode;
   isFocused?: boolean;
   isDocumentProcessing?: boolean;
-  /** Receives the `hqlName` of the required fields left empty when a save is blocked. */
+  /** Receives the `hqlName` of the fields that block a save: required ones left empty or invalid URLs. */
   onFieldErrors?: (fieldNames: string[]) => void;
 }
 
@@ -78,7 +90,17 @@ export function FormActions({
   }, [isDocumentProcessing, setSaveButtonState]);
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
-  const { validateRequiredFields, requiredFields } = useFormValidation(tab);
+  const { validateRequiredFields, validateLinkFields, requiredFields } = useFormValidation(tab);
+  const { t } = useTranslation();
+
+  /** Tells the user why the save is blocked and reveals the offending fields. */
+  const reportFieldErrors = useCallback(
+    (message: string, fields: InvalidField[]) => {
+      showErrorModal(message);
+      onFieldErrors?.(fields.map((field) => field.fieldName));
+    },
+    [showErrorModal, onFieldErrors]
+  );
 
   // Get required field names to watch for changes
   const requiredFieldNames = useMemo(() => requiredFields.map((f) => f.hqlName), [requiredFields]);
@@ -181,9 +203,21 @@ export function FormActions({
         const validationResult = validateRequiredFields();
 
         if (!validationResult.isValid) {
-          const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
-          showErrorModal(`The following required fields are missing: ${missingFields}`);
-          onFieldErrors?.(validationResult.missingFields.map((field) => field.fieldName));
+          const missingFields = joinFieldLabels(validationResult.missingFields);
+          reportFieldErrors(
+            `The following required fields are missing: ${missingFields}`,
+            validationResult.missingFields
+          );
+          return false;
+        }
+
+        const invalidLinkFields = validateLinkFields();
+        if (invalidLinkFields.length > 0) {
+          const message = t("form.link.invalidUrlFields").replace(
+            FIELDS_PLACEHOLDER,
+            joinFieldLabels(invalidLinkFields)
+          );
+          reportFieldErrors(message, invalidLinkFields);
           return false;
         }
 
@@ -198,7 +232,7 @@ export function FormActions({
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [onSave, showErrorModal, onFieldErrors, setSaveButtonState, validateRequiredFields]
+    [onSave, reportFieldErrors, setSaveButtonState, validateRequiredFields, validateLinkFields, t]
   );
 
   const onReset = useCallback(async () => {

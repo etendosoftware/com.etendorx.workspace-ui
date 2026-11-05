@@ -300,6 +300,11 @@ export interface Field {
    * Indicates if the role has access to the window linked to this field.
    */
   isReferencedWindowAccessible?: boolean;
+  /**
+   * Whether the current role can run the process of this button field (Role Process Access).
+   * `false` keeps the button visible but disabled, as Classic does. Absent means accessible.
+   */
+  isProcessAccessible?: boolean;
   isAuditField?: boolean;
   /**
    * The hqlName of the color field in the referenced entity.
@@ -464,6 +469,23 @@ export interface AuxiliaryInput {
   validationCode: string;
 }
 
+/**
+ * Print / Email toolbar configuration of a tab, computed by the metadata backend with the same
+ * rules as the classic UI (`OBViewTab.getIconButtons` and `OBViewTab.PrintButton`).
+ */
+export interface TabPrintConfig {
+  /** Classic print URL of the tab print process (`OBViewTab.getPrintUrl`), e.g. `../orders/print.html`. */
+  url: string;
+  /** Whether the Email button is offered: print processes of orders, invoices and payments. */
+  hasEmail: boolean;
+  /** Whether printing is delegated to the classic `PrinterReports` page (not a PrintController document). */
+  legacy: boolean;
+  /** The print process `isDirectPrint` flag, sent as classic `inpdirectprint`. */
+  directPrint: boolean;
+  /** Request parameter name of the tab key column (classic `inpKeyName`), e.g. `inpcBpartnerId`. */
+  keyParam: string | null;
+}
+
 export interface Tab {
   uIPattern: UIPattern;
   window: string;
@@ -536,6 +558,8 @@ export interface Tab {
   obuiappSelectionType?: "M" | "S" | "N" | null;
   process?: string;
   process$_identifier?: string;
+  /** Print / Email configuration; `null` when the tab has no print process (AD_Tab.AD_Process_ID). */
+  printConfig?: TabPrintConfig | null;
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
   auxiliaryInputs?: AuxiliaryInput[];

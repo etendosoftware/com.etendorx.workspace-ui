@@ -153,6 +153,10 @@ const es = {
     popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
     openPopup: "Abrir historial de auditoría",
   },
+  print: {
+    popupBlocked: "El navegador bloqueó la ventana de impresión.",
+    openPopup: "Abrir ventana de impresión",
+  },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
     deleteError: "Error al eliminar el registro",
@@ -536,6 +540,10 @@ const es = {
     select: {
       placeholder: "Seleccione una opción",
       minCharsHint: "Escribe al menos {{min}} caracteres para buscar",
+    },
+    link: {
+      invalidUrl: "Ingrese una URL válida, p. ej. www.ejemplo.com",
+      invalidUrlFields: "Los siguientes campos no contienen una URL válida: {{fields}}",
     },
   },
   copilot: {

@@ -16,9 +16,10 @@
  */
 
 import type { FormInitializationResponse, Field, Tab } from "@workspaceui/api-client/src/api/types";
-import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
+import { getFieldsByColumnName, getFieldsByHqlName } from "@workspaceui/api-client/src/utils/metadata";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
+import { collectChangedFieldNames, toCalloutFieldValue } from "@/utils/callouts/calloutHighlight";
 
 /**
  * Shared utilities for applying callout responses to inline editing rows
@@ -86,6 +87,23 @@ export function processCalloutColumnValues(
   }
 
   return updates;
+}
+
+/**
+ * Names of the row fields whose value a callout changed, to highlight them briefly.
+ * The FIC returns every field of the tab, so the updates are compared with the row values
+ * the callout started from (boolean values are compared once converted, as the row holds them).
+ */
+export function getCalloutChangedFieldNames(
+  previousRowValues: Record<string, unknown>,
+  updates: CalloutValueUpdate[],
+  tab: Tab
+): string[] {
+  const fieldsByHqlName = getFieldsByHqlName(tab);
+  const appliedValues = Object.fromEntries(
+    updates.map((update) => [update.fieldName, toCalloutFieldValue(fieldsByHqlName[update.fieldName], update.value)])
+  );
+  return collectChangedFieldNames(previousRowValues, appliedValues);
 }
 
 /**

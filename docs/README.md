@@ -22,17 +22,25 @@ docs/
 │   │   (export of stored process JS: ../process/definition/exporting-process-js.md)
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
+│   ├── callout-changed-field-highlight/ # Feature: Brief highlight of the fields a callout changed
+│   │   └── README.md                # Change detection, timing, form and grid inline editing
 │   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
+│   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
+│   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
-│   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role
-│   │   └── README.md                # resetSessionState, token revocation, /meta/login-defaults
+│   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role, login protections
+│   │   └── README.md                # resetSessionState, token revocation, /meta/login-defaults, /meta/login-guard, AD_Session
 │   ├── match-statement/              # Feature: Match Statement process (Classic parity)
 │   │   └── README.md                # Classic analysis, Confirm dialog, request params, context
 │   ├── menu-search-keyboard-navigation/ # Feature: Keyboard navigation of the drawer menu
 │   │   └── README.md                # Arrow/Enter/Escape contract, navigability rule
+│   ├── application-forms/            # Feature: Classic Application Forms opened from the menu
+│   │   └── README.md                # Form address from the default mapping, entry points
+│   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
+│   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
@@ -43,10 +51,17 @@ docs/
 │   │   └── README.md                # Header-only cards, half-row grid, ISCOLLAPSED persistence
 │   ├── data-grids/                   # Feature: Data grids
 │   │   └── README.md
+│   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
+│   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
+│   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
+│   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
+├── process/                          # Process execution internals
+│   └── legacy/
+│       └── manual-processes.md      # Classic process popups: iframe pipeline, file downloads/uploads
 ├── api/                              # API documentation
 │   ├── metadata-client.md
 │   ├── kernel-servlet.md

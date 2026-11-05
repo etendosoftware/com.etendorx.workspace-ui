@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
-import { getErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { carryErpLoginSessionId, getErpSessionCookie, setErpLoginSessionId } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
 import { handOffErpSession, storeErpSession } from "../../_utils/erpSession";
 import { joinUrl } from "../../_utils/url";
@@ -60,6 +60,8 @@ async function fetchErpLogin(
 // change keeps going through /sws/login, which also syncs the classic JSESSIONID that legacy
 // features (attachments, notes, printing) rely on and the fallback endpoint does not.
 const ORG_HAS_NO_WAREHOUSES_ERROR = "SMFSWS_OrgHasNoRole";
+const HTTP_UNAUTHORIZED = 401;
+const DEFAULT_LOGIN_ERROR = "Login failed";
 
 async function fetchChangeProfileFallback(body: any, userToken?: string | null): Promise<Response> {
   const changeProfileUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/sws/com.etendoerp.metadata.meta/change-profile");
@@ -121,11 +123,11 @@ async function handleErpErrorResponse(data: any, body: any, userToken: string | 
   if (data.message === ORG_HAS_NO_WAREHOUSES_ERROR) {
     const fallbackData = await tryFallbackLogin(body, userToken);
     if (fallbackData) {
-      return NextResponse.json(fallbackData, { status: 200 });
+      return await completeLogin(fallbackData, body, userToken);
     }
   }
 
-  return NextResponse.json({ message: data.message || "Login failed" }, { status: 401 });
+  return NextResponse.json({ message: data.message || DEFAULT_LOGIN_ERROR }, { status: HTTP_UNAUTHORIZED });
 }
 
 // /sws/login does not follow the Classic rule when the request names no role: it takes the first
@@ -151,6 +153,8 @@ interface LoginRequestBody {
 interface ErpLoginResponse {
   token?: string;
   message?: string;
+  // AD_Session_ID, returned by the com.etendoerp.metadata login endpoints (not by /sws/login)
+  sessionId?: string;
 }
 
 function isInitialLogin(body: LoginRequestBody | null): boolean {
@@ -237,11 +241,112 @@ async function alignWithClassicDefaults(userToken: string): Promise<ErpLoginResp
   }
 }
 
+// /sws/login (com.smf.securewebservices) only checks the password. The credentials are first sent
+// to com.etendoerp.metadata, which applies the Classic protections: the answer is delayed by the
+// previous failed attempts, a locked user is refused, and a failed attempt is recorded in the
+// Classic session registry and may lock the user.
+const LOGIN_GUARD_PATH = "/sws/com.etendoerp.metadata.meta/login-guard";
+// /sws/login records no session either: the successful login is recorded once the final token exists
+const LOGIN_SESSION_PATH = "/sws/com.etendoerp.metadata.meta/login-session";
+function hasCredentials(body: LoginRequestBody | null): boolean {
+  return Boolean(body?.username && body?.password);
+}
+
+function buildRefusal(data: { error?: string } | null): NextResponse {
+  return NextResponse.json({ message: data?.error || DEFAULT_LOGIN_ERROR }, { status: HTTP_UNAUTHORIZED });
+}
+
+/**
+ * Runs the Classic failed-attempt protections on the credentials.
+ *
+ * Only an explicit refusal stops the login. Any other failure (unreachable endpoint, older module)
+ * lets it go on: /sws/login stays reachable on its own, so failing closed would add no protection
+ * and would lock every user out on a version mismatch.
+ *
+ * @returns the refusal to send back, or null to go on with the login
+ */
+async function runLoginGuard(body: LoginRequestBody): Promise<NextResponse | null> {
+  try {
+    const guardUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, LOGIN_GUARD_PATH);
+    const response = await fetchErpLogin(guardUrl, { username: body.username, password: body.password });
+    if (response.status !== HTTP_UNAUTHORIZED) {
+      return null;
+    }
+
+    return buildRefusal(await response.json().catch(() => null));
+  } catch (error) {
+    console.warn("Could not apply the login attempt protections:", error);
+    return null;
+  }
+}
+
+async function requestLoginSessionId(token: string): Promise<string | undefined> {
+  const sessionUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, LOGIN_SESSION_PATH);
+  const data = await readJson(await fetchErpLogin(sessionUrl, {}, undefined, token));
+  return data?.sessionId;
+}
+
+/**
+ * Remembers the Classic session registry id of a new login so the logout can close it. The metadata
+ * login endpoints already recorded it; a /sws/login token gets it recorded here. Best-effort: a
+ * failure never blocks the login.
+ */
+async function rememberLoginSession(token: string, recordedSessionId: string | undefined): Promise<void> {
+  try {
+    const sessionId = recordedSessionId ?? (await requestLoginSessionId(token));
+    setErpLoginSessionId(token, sessionId);
+  } catch (error) {
+    console.warn("Could not record the login session:", error);
+  }
+}
+
+async function trackLoginSession(
+  token: string | undefined,
+  recordedSessionId: string | undefined,
+  body: LoginRequestBody,
+  userToken: string | null
+): Promise<void> {
+  if (!token) {
+    return;
+  }
+
+  if (hasCredentials(body)) {
+    await rememberLoginSession(token, recordedSessionId);
+    return;
+  }
+
+  // A role switch keeps the login of the token it replaces
+  if (userToken) {
+    carryErpLoginSessionId(userToken, token);
+  }
+}
+
+/**
+ * Tracks the login session and answers with the login, without the session id: it stays on the
+ * server, next to the rest of the ERP session material.
+ */
+async function completeLogin(
+  login: ErpLoginResponse,
+  body: LoginRequestBody,
+  userToken: string | null
+): Promise<NextResponse> {
+  const { sessionId, ...clientLogin } = login;
+  await trackLoginSession(clientLogin.token, sessionId, body, userToken);
+  return NextResponse.json(clientLogin, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
   try {
     validateEnvironment();
 
     const body = await request.json();
+
+    if (hasCredentials(body)) {
+      const refusal = await runLoginGuard(body);
+      if (refusal) {
+        return refusal;
+      }
+    }
     const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, ERP_LOGIN_PATH);
 
     const userToken = extractBearerToken(request);
@@ -266,14 +371,14 @@ export async function POST(request: NextRequest) {
     if (isInitialLogin(body)) {
       const aligned = await alignWithClassicDefaults(data.token);
       if (aligned) {
-        return NextResponse.json(aligned, { status: 200 });
+        return await completeLogin(aligned, body, userToken);
       }
     }
 
     if (!erpResponse.ok) {
-      return NextResponse.json({ error: data.error || "Login failed" }, { status: erpResponse.status });
+      return NextResponse.json({ error: data.error || DEFAULT_LOGIN_ERROR }, { status: erpResponse.status });
     }
-    return NextResponse.json(data, { status: 200 });
+    return await completeLogin(data, body, userToken);
   } catch (error) {
     return handleLoginError(error);
   }

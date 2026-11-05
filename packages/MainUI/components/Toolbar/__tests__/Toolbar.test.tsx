@@ -10,6 +10,7 @@ import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
 import "@testing-library/jest-dom";
 import { AUDITED_TAB, MODIFIED_RECORD } from "@/utils/toolbar/test-utils/auditTrailFixtures";
+import { BPARTNER_PRINT_CONFIG, ORDER_PRINT_CONFIG } from "@/utils/toolbar/test-utils/printFixtures";
 
 // Mocks
 jest.mock("@/contexts/datasourceContext", () => ({
@@ -126,7 +127,7 @@ jest.mock("sonner", () => ({
   },
 }));
 
-// The email button as it comes from the backend for Invoice/Order entities
+// The email button as it comes from the backend (one record for every window)
 const mockEmailButton = {
   id: "send-email",
   action: "SEND_MAIL",
@@ -139,7 +140,11 @@ const mockEmailButton = {
 
 describe("Toolbar - Email Integration", () => {
   const mockToken = "test-token";
-  const mockTab = { id: "tab-id", entityName: "Invoice" };
+  const mockTab = {
+    id: "tab-id",
+    entityName: "Invoice",
+    printConfig: { ...ORDER_PRINT_CONFIG, url: "../invoices/print.html" },
+  };
   const mockRecord = { id: "record-id" };
 
   beforeEach(() => {
@@ -159,19 +164,16 @@ describe("Toolbar - Email Integration", () => {
     global.fetch = jest.fn();
   });
 
-  it("renders email button when entity is Invoice", () => {
+  it("renders email button when the tab print process is for invoices", () => {
     render(<Toolbar windowId="win-id" isFormView={true} />);
     expect(screen.getByTestId("IconButton__send-email")).toBeInTheDocument();
   });
 
-  it("does not render email button when entity is not Invoice/Order", () => {
-    (useTabContext as jest.Mock).mockReturnValue({ tab: { id: "tab-id", entityName: "Product" } });
-    (useToolbar as jest.Mock).mockReturnValue({
-      buttons: [],
-      processButtons: [],
-      loading: false,
-      refetch: jest.fn(),
-    });
+  it.each([
+    ["has no print process", { id: "tab-id", entityName: "Product", printConfig: null }],
+    ["prints a document that is not emailed", { ...mockTab, printConfig: BPARTNER_PRINT_CONFIG }],
+  ])("does not render email button when the tab %s", (_label, tab) => {
+    (useTabContext as jest.Mock).mockReturnValue({ tab });
     render(<Toolbar windowId="win-id" isFormView={true} />);
     expect(screen.queryByTestId("IconButton__send-email")).not.toBeInTheDocument();
   });

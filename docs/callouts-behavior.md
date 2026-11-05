@@ -106,6 +106,12 @@ This document describes how form field callouts run, how results are applied wit
 - `auxiliaryInputValues`: The form sets the raw value for auxiliary inputs.
 - `entries` support: If the backend returns `entries` for a field, the form injects them into `${hqlName}$_entries`. The select hook (`useSelectFieldOptions`) will prefer these entries over remote datasource records for a consistent post-callout UI state.
 
+## Changed-Field Highlight (ETP-4615)
+
+After `columnValues` are applied (form and grid inline editing), the fields whose value actually changed show a
+brief fading tint. The FIC returns every field of the tab, so the client compares each value with the one the field
+held before the callout. See [Callout Changed-Field Highlight](features/callout-changed-field-highlight/README.md).
+
 ## Post-Save Behavior
 
 - After saving, the form applies the server-updated values using a short `isFormInitializing` window to silence callouts during `reset/setValue`. This avoids cascades or refetch loops immediately after a save.
@@ -182,4 +188,7 @@ This logic is in `packages/MainUI/hooks/useFormInitialState.ts` and runs on ever
 - **NEW**: `contexts/__tests__/ToolbarContext.eventBased.test.tsx`: event-based integration
 - `components/Form/FormView/selectors/__tests__/BaseSelector.callout.applyEntries.test.tsx`: end-to-end application of callout results without cascades
 - **NEW**: `__tests__/integration/save-button-complete-flow.test.tsx`: complete flow integration
+- `utils/callouts/__tests__/calloutHighlight.test.ts`, `stores/__tests__/calloutHighlightStore.test.ts`,
+  `components/__tests__/CalloutHighlightOverlay.test.tsx`: changed-field highlight
+- `components/Form/FormView/selectors/__tests__/BaseSelector.calloutHighlight.test.tsx`: only changed form fields are highlighted
 

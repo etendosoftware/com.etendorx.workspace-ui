@@ -153,6 +153,10 @@ const en = {
     popupBlocked: "The browser blocked the Audit Trail window.",
     openPopup: "Open Audit Trail",
   },
+  print: {
+    popupBlocked: "The browser blocked the print window.",
+    openPopup: "Open print window",
+  },
   status: {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",
@@ -526,6 +530,10 @@ const en = {
     select: {
       placeholder: "Select an option",
       minCharsHint: "Type at least {{min}} characters to search",
+    },
+    link: {
+      invalidUrl: "Enter a valid URL, e.g. www.example.com",
+      invalidUrlFields: "The following fields do not contain a valid URL: {{fields}}",
     },
   },
   copilot: {

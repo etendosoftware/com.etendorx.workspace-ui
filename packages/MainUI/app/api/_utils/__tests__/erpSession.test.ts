@@ -22,6 +22,7 @@ import {
   getErpSessionCookie,
   getErpCsrfToken,
   clearErpSessionCookie,
+  carryErpLoginSessionId,
 } from "../sessionStore";
 import { buildErpResponse as buildResponse } from "@/utils/testUtils/erpResponses";
 
@@ -31,6 +32,7 @@ jest.mock("../sessionStore", () => ({
   getErpSessionCookie: jest.fn(),
   getErpCsrfToken: jest.fn(),
   clearErpSessionCookie: jest.fn(),
+  carryErpLoginSessionId: jest.fn(),
 }));
 
 const OLD_TOKEN = "old-jwt";
@@ -194,6 +196,16 @@ describe("_utils/erpSession", () => {
       handOffErpSession(buildResponse(), OLD_TOKEN, OLD_TOKEN);
 
       expect(clearErpSessionCookie).not.toHaveBeenCalled();
+      expect(carryErpLoginSessionId).not.toHaveBeenCalled();
+    });
+
+    it("carries the login session id over to the new token before dropping the previous entry", () => {
+      handOffErpSession(buildResponse(), NEW_TOKEN, OLD_TOKEN);
+
+      expect(carryErpLoginSessionId).toHaveBeenCalledWith(OLD_TOKEN, NEW_TOKEN);
+      expect((carryErpLoginSessionId as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+        (clearErpSessionCookie as jest.Mock).mock.invocationCallOrder[0]
+      );
     });
 
     // There is nothing to clear when the handoff has no predecessor, and clearing the empty key
