@@ -294,7 +294,7 @@ test.describe("Financial Account - Match Statement @smoke", () => {
     await expect(matchStatement.secondNestedTitle).toHaveText(ADD_PAYMENT_TITLE);
     await app.field.expectToContain(DEPOSIT_TO, ACCOUNT.name);
     await app.field.selectById(RECEIVED_FROM, vendor.id, { search: vendor.name });
-    await app.field.select(ACTION_REGARDING_DOCUMENT, PROCESS_MADE_PAYMENT);
+    await app.field.selectAndVerify(ACTION_REGARDING_DOCUMENT, PROCESS_MADE_PAYMENT);
     await matchStatement.executeNested(SECOND_NESTED_LEVEL);
 
     // The created payment is the Payment of the transaction, which then matches the line

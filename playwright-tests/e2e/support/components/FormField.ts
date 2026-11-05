@@ -145,6 +145,24 @@ export class FormField {
     await this.clickOption(this.page.locator(OPTION_ITEMS).filter({ hasText: text }), options.callout);
   }
 
+  /**
+   * Picks the option whose text is `optionText` and verifies the field shows it, retrying both. Use it right after
+   * a field that fires a callout: the form re-renders when the callout answers, which can close the dropdown
+   * before its options are shown or reset what was picked. A dropdown a failed attempt left open is closed first,
+   * so the next attempt does not toggle it shut.
+   */
+  async selectAndVerify(label: string, optionText: string, options: SelectOptions = {}): Promise<void> {
+    await expect(async () => {
+      const search = this.page.locator(OPTION_SEARCH).first();
+      if (await search.isVisible()) {
+        await this.page.keyboard.press("Escape");
+        await expect(search).toBeHidden({ timeout: VERIFY_TIMEOUT });
+      }
+      await this.select(label, optionText, options);
+      await this.expectToContain(label, standaloneText(optionText), { ...options, timeout: VERIFY_TIMEOUT });
+    }).toPass({ timeout: RETRY_TIMEOUT * 2 });
+  }
+
   /** Picks an option by its record id (`OptionItem__<id>`), for records from the data registry. */
   async selectById(label: string, optionId: string, options: SelectOptions = {}): Promise<void> {
     await this.openSelector(label, options);
