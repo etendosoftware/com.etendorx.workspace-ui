@@ -21,7 +21,10 @@ import DropdownPortal from "../DropdownPortal";
 jest.mock("@/utils/form/keyboard", () => ({ DROPDOWN_PORTAL_ATTRIBUTE: "data-dropdown-portal" }));
 
 // A field near the bottom of the viewport: little room below, plenty above.
-const viewportData = { triggerTop: 600, triggerBottom: 630, left: 10, width: 200, spaceAbove: 600, spaceBelow: 20 };
+const viewportData = { triggerTop: 600, triggerBottom: 630, left: 10, width: 200, spaceAbove: 600, spaceBelow: 120 };
+const SEARCH_BOX_HEIGHT = 40;
+// What the capped container reports: the room left below the field minus the gap
+const CAPPED_CONTAINER_HEIGHT = 116;
 
 const renderPortal = (content: React.ReactNode) => (
   <DropdownPortal
@@ -42,11 +45,19 @@ const renderPortal = (content: React.ReactNode) => (
 
 describe("DropdownPortal placement", () => {
   const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
-  let contentHeight = 10;
+  let listHeight = 10;
 
   beforeEach(() => {
-    contentHeight = 10;
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => contentHeight });
+    listHeight = 10;
+    // Like the browser: the container is capped to the room left, the list reports its whole content
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.hasAttribute("data-dropdown-portal")) return CAPPED_CONTAINER_HEIGHT;
+        if (this.tagName === "UL") return listHeight;
+        return SEARCH_BOX_HEIGHT;
+      },
+    });
   });
 
   afterEach(() => {
@@ -64,9 +75,30 @@ describe("DropdownPortal placement", () => {
     const { rerender } = render(renderPortal(<li>Loading...</li>));
     expect(portal().style.transform).toBe("");
 
-    contentHeight = 250;
+    listHeight = 250;
     rerender(renderPortal(<li>BOM Product</li>));
 
     expect(portal().style.transform).toBe("translateY(-100%)");
+  });
+
+  it("moves above even though the capped container reports only the room left below", () => {
+    // The container is capped to the room below (116) and reports exactly that: measuring it could never
+    // ask for the other side. The decision comes from the natural height of its children.
+    listHeight = 250;
+    render(renderPortal(<li>BOM Product</li>));
+
+    expect(portal().scrollHeight).toBe(CAPPED_CONTAINER_HEIGHT);
+    expect(portal().style.transform).toBe("translateY(-100%)");
+  });
+
+  it("goes back below when the list shrinks to fit again", () => {
+    listHeight = 250;
+    const { rerender } = render(renderPortal(<li>BOM Product</li>));
+    expect(portal().style.transform).toBe("translateY(-100%)");
+
+    listHeight = 10;
+    rerender(renderPortal(<li>No results</li>));
+
+    expect(portal().style.transform).toBe("");
   });
 });

@@ -56,7 +56,14 @@ const DropdownPortal = memo(
       const container = containerRef.current;
       if (!container) return;
 
-      const actualHeight = Math.min(container.scrollHeight, MAX_DROPDOWN_HEIGHT);
+      // The natural height of the content, from its children: the container is capped to the room left on its
+      // side and the list shrinks to fit, so the container's own scrollHeight can never exceed that room and
+      // would never ask for the other side (a list that arrives later stayed squeezed under the field).
+      let naturalHeight = 0;
+      for (const child of Array.from(container.children)) {
+        naturalHeight += (child as HTMLElement).scrollHeight;
+      }
+      const actualHeight = Math.min(naturalHeight, MAX_DROPDOWN_HEIGHT);
       const { spaceBelow, spaceAbove } = viewportData;
 
       const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
