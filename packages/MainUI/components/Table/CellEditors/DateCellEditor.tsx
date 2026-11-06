@@ -19,7 +19,12 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
-import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import {
+  formatClassicDate,
+  getLocaleDatePlaceholder,
+  parseOBDate,
+} from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { formatLocalIsoDate } from "@/utils/date/localDate";
 import CalendarIcon from "../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 
 /**
@@ -90,6 +95,13 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
     if (!dateValue) return "";
 
     try {
+      if (!isDateTime) {
+        // A DATE is a calendar day: read it like the text shown in the cell does (a plain yyyy-MM-dd is a local
+        // day) and keep its local day. Going through UTC shifts the day east of UTC for values with a time.
+        const day = parseOBDate(dateValue);
+        return day ? formatLocalIsoDate(day) : "";
+      }
+
       const date = new Date(dateValue as string);
 
       // Check if date is valid
@@ -97,18 +109,13 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
         return "";
       }
 
-      if (isDateTime) {
-        // Format as datetime-local (YYYY-MM-DDTHH:MM)
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-      } else {
-        // Format as date (YYYY-MM-DD)
-        return date.toISOString().split("T")[0];
-      }
+      // Format as datetime-local (YYYY-MM-DDTHH:MM)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
       console.warn("Error formatting date for input:", error);
       return "";

@@ -24,6 +24,21 @@ export function uniqueValue(base: string): string {
   return `${base}-${RUN_ID}${sequence.toString(36)}`;
 }
 
+/**
+ * Returns `count` amounts unique to the run, one unit apart, between 100.00 and 900.99: below 1000, so they show
+ * without a group separator, and with at most two decimals.
+ *
+ * They are built from whole cents and divided once. Adding to a decimal (`269.46 + 2`) leaves binary float noise
+ * (`271.46000000000004`): the grid shows 271.46, but Classic's Add Transaction compares the amount of the
+ * statement line with the one of the transaction strictly and opens its "partial match" confirmation on equal
+ * amounts, so a spec using such a value fails about one run in ten.
+ * @param count - how many amounts, each one unit above the previous.
+ */
+export function uniqueAmounts(count: number): number[] {
+  const cents = 10_000 + Math.round(Date.now() % 80_000);
+  return Array.from({ length: count }, (_, index) => (cents + index * 100) / 100);
+}
+
 /** A record of the QA_Testing sample data: `id` feeds `OptionItem__<id>`, `name` is its display text. */
 export interface SampleRecord {
   readonly id: string;

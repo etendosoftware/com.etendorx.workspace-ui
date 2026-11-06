@@ -33,6 +33,34 @@ test.describe("uniqueValue", () => {
   });
 });
 
+test.describe("uniqueAmounts", () => {
+  test("returns the requested count, one unit apart, below 1000", () => {
+    const amounts = data.uniqueAmounts(3);
+    expect(amounts).toHaveLength(3);
+    expect(amounts[1] - amounts[0]).toBeCloseTo(1, 10);
+    expect(amounts[2] - amounts[1]).toBeCloseTo(1, 10);
+    expect(Math.max(...amounts)).toBeLessThan(1000);
+    expect(Math.min(...amounts)).toBeGreaterThanOrEqual(100);
+  });
+
+  test("never carries float noise, whatever the clock says", () => {
+    const realNow = Date.now;
+    const noisy: number[] = [];
+    try {
+      // 269.46 + 2 gave 271.46000000000004 and 538.68 + 2 gave 540.6800000000001 with the old formula
+      for (let clock = 0; clock < 80_000; clock += 1) {
+        Date.now = () => clock;
+        for (const amount of data.uniqueAmounts(3)) {
+          if (amount !== Number(amount.toFixed(2))) noisy.push(amount);
+        }
+      }
+    } finally {
+      Date.now = realNow;
+    }
+    expect(noisy).toEqual([]);
+  });
+});
+
 test.describe("sample data catalog", () => {
   for (const [catalog, records] of Object.entries(SAMPLE_CATALOGS)) {
     test(`${catalog} entries have a record id and a name`, () => {

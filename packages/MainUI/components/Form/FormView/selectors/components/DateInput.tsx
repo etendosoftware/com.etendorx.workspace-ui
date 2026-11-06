@@ -20,6 +20,7 @@ import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "r
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { autocompleteDate } from "@/utils/dateAutocomplete";
+import { formatLocalIsoDate } from "@/utils/date/localDate";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import {
   getInputClassNames,
@@ -44,7 +45,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [displayValue, setDisplayValue] = useState<string>("");
-    const isTypingRef = useRef(false);
 
     const datePlaceholder = useMemo(() => getLocaleDatePlaceholder(), []);
 
@@ -116,6 +116,22 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
     }, [setNativeInputValue]);
 
+    // A typed date is applied only when the user finishes typing (leaves the field or presses Enter), never
+    // on each keystroke: partial dates such as 15/08/2 would be applied, saved and sent to the callouts.
+    const commitTypedDate = useCallback(() => {
+      if (!isReadOnly && displayValue) {
+        const date = autocompleteDate(displayValue, datePlaceholder);
+        if (date) {
+          // The calendar day typed, not its UTC conversion, which shifts it east of UTC
+          handleValidDateInput(formatLocalIsoDate(date));
+        } else {
+          handleInvalidDateInput();
+        }
+      } else if (!displayValue) {
+        handleEmptyInput();
+      }
+    }, [displayValue, isReadOnly, datePlaceholder, handleValidDateInput, handleInvalidDateInput, handleEmptyInput]);
+
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
         const relatedTarget = e.relatedTarget as HTMLElement;
@@ -123,21 +139,20 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           setIsFocused(false);
         }
 
-        if (!isReadOnly && displayValue) {
-          const date = autocompleteDate(displayValue, datePlaceholder);
-          if (date) {
-            const isoDate = date.toISOString().split("T")[0];
-            handleValidDateInput(isoDate);
-          } else {
-            handleInvalidDateInput();
-          }
-        } else if (!displayValue) {
-          handleEmptyInput();
-        }
+        commitTypedDate();
 
         props.onBlur?.(e);
       },
-      [props, displayValue, isReadOnly, datePlaceholder, handleValidDateInput, handleInvalidDateInput, handleEmptyInput]
+      [props, commitTypedDate]
+    );
+
+    const handleDisplayInputKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+          commitTypedDate();
+        }
+      },
+      [commitTypedDate]
     );
 
     // Sync the hidden date input value with the display value
@@ -190,44 +205,18 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       setIsFocused(true);
     }, []);
 
-    const handleDisplayInputChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setDisplayValue(newValue);
-
-        // Attempt to autocomplete the date as the user types
-        const date = autocompleteDate(newValue, datePlaceholder);
-        if (date) {
-          // Check if the input has at least 3 parts (Day, Month, Year)
-          // This prevents triggering on "1" (Day only) or "10/10" (Day/Month only)
-          // which are valid via autocomplete but likely incomplete during typing.
-          const parts = newValue.trim().split(/[\/\.\-]/);
-          if (parts.length < 3) {
-            return;
-          }
-
-          const isoDate = date.toISOString().split("T")[0];
-          // If we have a valid date, update the hidden input
-          // This will trigger handleHiddenDateChange -> props.onChange -> callout
-          if (hiddenDateInputRef.current && hiddenDateInputRef.current.value !== isoDate) {
-            isTypingRef.current = true;
-            setNativeInputValue(isoDate);
-            isTypingRef.current = false;
-          }
-        }
-      },
-      [datePlaceholder, setNativeInputValue]
-    );
+    // Typing only edits the visible text; the date is applied by commitTypedDate
+    const handleDisplayInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setDisplayValue(e.target.value);
+    }, []);
 
     const handleHiddenDateChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         props.onChange?.(e);
-        if (!isTypingRef.current) {
-          if (e.target.value) {
-            setDisplayValue(formatClassicDate(e.target.value, false));
-          } else {
-            setDisplayValue("");
-          }
+        if (e.target.value) {
+          setDisplayValue(formatClassicDate(e.target.value, false));
+        } else {
+          setDisplayValue("");
         }
       },
       [props]
@@ -250,6 +239,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             onFocus={handleDisplayInputFocus}
             onBlur={handleBlur}
             onChange={handleDisplayInputChange}
+            onKeyDown={handleDisplayInputKeyDown}
             aria-label={field.name}
             aria-readonly={isReadOnly || true}
             aria-required={field.isMandatory}

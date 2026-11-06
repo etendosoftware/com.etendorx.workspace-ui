@@ -25,6 +25,7 @@
     "test:coverage:html": "jest --coverage --coverageReporters=html",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:mainui": "jest --selectProjects MainUI",
+    "test:date-timezones": "for tz in Europe/Madrid UTC America/Argentina/Buenos_Aires; do echo \"TZ=$tz\"; TZ=$tz jest --selectProjects MainUI --testPathPattern 'DateInput.typedDate|DateCellEditor.timeZone' || exit 1; done",
     "check:data-testid": "./scripts/check-add-data-testid.sh",
     "apply:data-testid": "./scripts/apply-add-data-testid.sh",
     "perf:compare": "node playwright-tests/perf/compare-branches.mjs",
