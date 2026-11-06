@@ -24,7 +24,7 @@ import type {
   Tab,
 } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, isNumericReference } from "@/utils/form/constants";
 import { useMemo } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
@@ -135,7 +135,10 @@ function applyStaticDefaults(acc: EntityData, fields: Tab["fields"], ficKeys: Se
     const isBooleanField = field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id;
     const isEmpty = current === undefined || current === "" || (isBooleanField && current === false);
     if (!isEmpty) continue;
-    acc[field.hqlName] = toBooleanEntityValue(dv, field);
+    // AD defaults are strings: a numeric one sent as "0" is rejected by the datasource
+    // for a BigDecimal property, so the save fails.
+    const numericDefault = isNumericReference(field.column?.reference) ? Number(dv) : Number.NaN;
+    acc[field.hqlName] = Number.isNaN(numericDefault) ? toBooleanEntityValue(dv, field) : numericDefault;
   }
 }
 

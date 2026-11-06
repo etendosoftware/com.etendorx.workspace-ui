@@ -243,5 +243,29 @@ describe("useFormInitialState", () => {
       expect(result.current?.qty).toBeUndefined();
       expect(result.current?.ref).toBeUndefined();
     });
+
+    it("applies a numeric static default as a number, not a string", () => {
+      // An AD default is always a string ("0"); sent as-is, the datasource rejects it for a
+      // BigDecimal property and the save fails (e.g. EM_Etgo_Discount on invoice lines).
+      const tabWithNumericDefault = {
+        id: "tabId",
+        fields: {
+          discount: {
+            hqlName: "etgoDiscount",
+            columnName: "EM_Etgo_Discount",
+            column: { defaultValue: "0", reference: "22" },
+          },
+          lineNo: { hqlName: "lineNo", columnName: "Line", column: { defaultValue: "10", reference: "11" } },
+          note: { hqlName: "note", columnName: "Note", column: { defaultValue: "0", reference: "10" } },
+        },
+      } as any;
+      (useTabContext as jest.Mock).mockReturnValue({ tab: tabWithNumericDefault });
+      (getFieldsByColumnName as jest.Mock).mockReturnValue({});
+      const formInit = { columnValues: {} } as any;
+      const { result } = renderHook(() => useFormInitialState(formInit));
+      expect(result.current?.etgoDiscount).toBe(0);
+      expect(result.current?.lineNo).toBe(10);
+      expect(result.current?.note).toBe("0");
+    });
   });
 });
