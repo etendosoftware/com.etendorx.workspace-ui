@@ -93,8 +93,14 @@ export class Grid {
    * and stays while the mouse is on the button, covering the toolbar buttons ("Export to Spreadsheet").
    */
   private async closeSortTooltip(column: string): Promise<void> {
-    await this.page.mouse.move(0, 0);
-    await expect(this.page.getByRole("tooltip").filter({ hasText: `by ${column} ` })).toHaveCount(0);
+    const tooltip = this.page.getByRole("tooltip").filter({ hasText: `by ${column} ` });
+    // The header re-renders when the sorted data arrives and the new button under a still mouse can reopen the
+    // tooltip after the first move, so move away (and dismiss it) again until it is gone.
+    await expect(async () => {
+      await this.page.mouse.move(0, 0);
+      await this.page.keyboard.press("Escape");
+      await expect(tooltip).toHaveCount(0, { timeout: SORT_STEP_TIMEOUT });
+    }).toPass({ timeout: ROW_TIMEOUT });
   }
 
   /**
