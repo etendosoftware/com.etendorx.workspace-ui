@@ -1177,7 +1177,7 @@ const DynamicTable = ({
   }, []);
 
   // Confirmation dialog hook for user confirmations
-  const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
+  const { confirmationState } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
   const { showErrorModal, showSuccessModal, showStatusModal, showWarningModal } = useStatusModal();
@@ -2291,30 +2291,12 @@ const DynamicTable = ({
   );
 
   /**
-   * Format validation errors for display
+   * Handle validation errors before save. No popup: validateRow already stored the errors, so the
+   * invalid cells are marked in red and the row stays in edit.
    */
-  const formatValidationErrors = useCallback((validationErrors: Record<string, string | undefined>): string[] => {
-    return Object.entries(validationErrors)
-      .filter(([_, message]) => message)
-      .map(([field, message]) => (field === "_general" ? message || "" : `${field}: ${message || ""}`));
+  const handleValidationErrors = useCallback((rowId: string, _editingRowData: EditingRowData) => {
+    logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
   }, []);
-
-  /**
-   * Handle validation errors before save
-   */
-  const handleValidationErrors = useCallback(
-    (rowId: string, editingRowData: EditingRowData) => {
-      logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
-      const errorMessages = formatValidationErrors(editingRowData.validationErrors);
-
-      if (errorMessages.length > 0) {
-        confirmSaveWithErrors(errorMessages, () => {
-          // User acknowledged the errors, focus on first error field
-        });
-      }
-    },
-    [formatValidationErrors, confirmSaveWithErrors]
-  );
 
   /**
    * Preserve client-side identifiers when merging server data
@@ -2654,38 +2636,26 @@ const DynamicTable = ({
       const editingRowData = editingRowUtils.getEditingRowData(rowId);
       if (!editingRowData) return;
 
-      // Check if there are unsaved changes
-      const hasUnsavedChanges = editingRowData.hasUnsavedChanges;
+      // Like the classic UI, cancelling (the ✗ button or Escape) drops the row's edits at once, with no
+      // confirmation.
+      try {
+        // Import cancel operations and utility functions dynamically
+        const { handleCancelOperation } = await import("./utils/cancelOperations");
 
-      const performCancel = async () => {
-        try {
-          // Import cancel operations and utility functions dynamically
-          const { handleCancelOperation } = await import("./utils/cancelOperations");
-
-          await handleCancelOperation({
-            rowId,
-            editingRowData,
-            removeEditingRow: editingRowUtils.removeEditingRow,
-            showConfirmation: false, // We handle confirmation ourselves
-            // A cancelled row falls back to its base record (a new row has none and disappears)
-            onConfirm: () => releaseOptimisticRows(rowId),
-          });
-        } catch (error) {
-          // Error occurred during cancel operation
-          logger.error(`[InlineEditing] Error during cancel operation for row ${rowId}:`, error);
-        }
-      };
-
-      // Show confirmation dialog if there are unsaved changes
-      confirmDiscardChanges(
-        performCancel,
-        () => {
-          // User chose to keep editing
-        },
-        hasUnsavedChanges
-      );
+        await handleCancelOperation({
+          rowId,
+          editingRowData,
+          removeEditingRow: editingRowUtils.removeEditingRow,
+          showConfirmation: false,
+          // A cancelled row falls back to its base record (a new row has none and disappears)
+          onConfirm: () => releaseOptimisticRows(rowId),
+        });
+      } catch (error) {
+        // Error occurred during cancel operation
+        logger.error(`[InlineEditing] Error during cancel operation for row ${rowId}:`, error);
+      }
     },
-    [editingRowUtils, releaseOptimisticRows, confirmDiscardChanges]
+    [editingRowUtils, releaseOptimisticRows]
   );
 
   // Applied on every change, never throttled: a throttle dropped the last keystrokes (a barcode
