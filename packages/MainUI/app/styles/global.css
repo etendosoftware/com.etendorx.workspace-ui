@@ -380,6 +380,14 @@ select:-webkit-autofill:focus {
   background-color: var(--color-transparent-neutral-50);
 }
 
+/* Grid scroll areas: a slim thumb with no rail or arrow buttons. The standard properties are the ones that count:
+   the theme sets `scrollbar-width: thin` globally, and Chrome then ignores every ::-webkit-scrollbar rule. The
+   gutter only exists while the grid actually overflows (overflow: auto). */
+.grid-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ui-text) 30%, transparent) transparent;
+}
+
 .cursor-not-allowed-child {
   @apply cursor-not-allowed;
 

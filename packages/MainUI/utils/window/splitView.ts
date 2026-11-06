@@ -235,13 +235,13 @@ const PANE_FOCUS_BORDER_CLASSES = "outline-none transition-[border-left-color] d
 
 export const getGridPaneClassName = (mode: TabViewMode, focusBorderColor: string): string => {
   if (mode === TAB_VIEW_MODES.SPLIT) {
-    return `h-full min-h-0 overflow-hidden rounded-l-3xl shrink-0 ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `h-full min-h-0 overflow-hidden rounded-tl-3xl shrink-0 ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.TREE_SIDE_BY_SIDE) {
-    return `w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `w-[35%] h-full min-h-0 overflow-hidden rounded-tl-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.GRID) {
-    return `flex-1 h-full min-h-0 rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `flex-1 h-full min-h-0 rounded-tl-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   return "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
 };

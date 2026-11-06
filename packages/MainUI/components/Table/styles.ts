@@ -35,8 +35,12 @@ export const useStyle = (): StylesType => {
           minHeight: 0,
           height: "100%",
           maxHeight: "100%",
-          border: "1px solid var(--ui-line)",
-          borderRadius: "0.75rem",
+          // Design Kit: only the left side has a 1px line (10% neutral), rounded at the top corner; the right
+          // side and the bottom corners are square and open, and there is no elevation shadow.
+          border: "none",
+          borderLeft: "1px solid var(--color-transparent-neutral-10)",
+          borderRadius: "0.75rem 0 0 0",
+          boxShadow: "none",
           overflow: "hidden",
           // The sticky header row ships a drop shadow that smudges the filter band; the design has none.
           "& thead tr": {
@@ -124,7 +128,8 @@ export const useStyle = (): StylesType => {
             },
           "& .Mui-TableHeadCell-Content": {
             boxSizing: "border-box",
-            height: "28px",
+            // Design Kit "Celda/Cabecera": 28px including the 1px bottom border.
+            height: "27px",
             minHeight: 0,
             padding: "0 8px",
             alignItems: "center",
@@ -136,6 +141,11 @@ export const useStyle = (): StylesType => {
           },
           "&:hover .Mui-TableHeadCell-Content-Actions, &:hover .Mui-TableHeadCell-ResizeHandle-Wrapper": {
             opacity: 1,
+          },
+          // The resize handle of the last column sticks 8px out of the grid; that overflow made a horizontal
+          // scrollbar (and its gutter) appear on grids that fit.
+          "&:last-child .Mui-TableHeadCell-ResizeHandle-Wrapper": {
+            marginRight: "0 !important",
           },
           // Unsorted columns show a generic sort icon; a real sort direction stays visible at all times.
           "& .MuiTableSortLabel-icon[data-testid='SyncAltIcon']": {
@@ -177,6 +187,9 @@ export const useStyle = (): StylesType => {
           borderRight: "1px solid var(--ui-line-soft)",
           borderBottom: "1px solid var(--ui-line-soft)",
           padding: "2px 8px",
+          // Design Kit "Celda": 32px tall including its 1px bottom border (it was 33px).
+          boxSizing: "border-box",
+          height: "32px",
           fontSize: "0.78rem",
           lineHeight: 1.35,
           "& .text-sm": {

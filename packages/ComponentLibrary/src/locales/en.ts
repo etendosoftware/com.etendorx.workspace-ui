@@ -22,6 +22,8 @@ const en = {
     cancel: "Cancel",
     confirm: "Confirm",
     close: "Close",
+    scrollTabsBack: "Show the previous tabs",
+    scrollTabsForward: "Show the next tabs",
     closing: "Closing...",
     unsavedChangesCloseMessage:
       "You have unsaved changes that will be lost. Are you sure you want to close this window?",
@@ -527,6 +529,7 @@ const en = {
   form: {
     select: {
       placeholder: "Select an option",
+      minCharsHint: "Type at least {{min}} characters to search",
     },
     link: {
       invalidUrl: "Enter a valid URL, e.g. www.example.com",

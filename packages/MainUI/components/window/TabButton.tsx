@@ -106,15 +106,15 @@ export const TabButton = ({
       return `${baseTabClass} text-xl mb-2`;
     }
 
-    // Child tabs are plain text on the strip. The strip stretches them to its full height, so the
+    // Child tabs follow the Design Kit "Solapa": 36px tall, 12px top radius, 2px bottom border when active. The strip stretches them to its full height, so the
     // active underline sits on the strip's bottom edge and cannot be clipped.
     const childClass =
-      "flex items-center px-1 w-auto min-w-max flex-shrink-0 border-b-2 text-sm transition-colors appearance-none whitespace-nowrap";
+      "flex h-9 self-end items-center gap-1 px-1 rounded-t-xl w-auto min-w-max flex-shrink-0 border-b-2 text-sm transition-colors appearance-none whitespace-nowrap";
     if (active) {
-      return `${childClass} border-(--ui-text) font-semibold text-(--ui-text)`;
+      return `${childClass} border-(--ui-tab-active-line) font-semibold text-(--ui-text)`;
     }
 
-    return `${childClass} border-transparent font-medium text-(--ui-text-soft) hover:border-(--ui-text-muted) hover:text-(--ui-text)`;
+    return `${childClass} border-transparent font-medium text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)`;
   };
 
   // Extract close button styling logic
@@ -172,7 +172,7 @@ export const TabButton = ({
       {title}
       {tab.tabLevel > 0 && recordCount !== undefined && (
         <span
-          className="ml-1.5 rounded-full bg-(--ui-card-bg) px-1.5 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
+          className="flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
           data-testid={`TabButton__count_${tab.id}`}>
           {recordCount}
         </span>

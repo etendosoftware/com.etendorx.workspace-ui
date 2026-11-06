@@ -35,6 +35,25 @@ export const normalizeNumericInput = (input: string, decimalSeparator: string): 
   decimalSeparator === "," ? input.replace(/\./g, "").replace(",", ".") : input.replace(/,/g, "");
 
 /**
+ * Format a number value for the HTML input element
+ */
+export const formatNumberForInput = (numValue: unknown): string => {
+  if (numValue === null || numValue === undefined || numValue === "") {
+    return "";
+  }
+
+  // Convert to number if it's a string
+  const num = typeof numValue === "string" ? Number.parseFloat(numValue) : Number(numValue);
+
+  if (Number.isNaN(num)) {
+    return "";
+  }
+
+  // Return as string for input display
+  return String(num);
+};
+
+/**
  * Number input editor for numeric/quantity fields
  * Handles number validation, formatting, decimal places, and numeric constraints
  * Memoized for performance optimization
@@ -52,7 +71,9 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   shouldAutoFocus = false,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState<string>("");
+  // Seeded with the value: the cell that is auto-focused on mount (the first editable column) skips the
+  // sync effect below because it is already focused, so an empty seed left it blank (the Line No. default).
+  const [localValue, setLocalValue] = useState<string>(() => formatNumberForInput(value));
   const [validationError, setValidationError] = useState<string>("");
   const decimalSeparator = getDecimalSeparator(useLanguage().language);
 
@@ -89,25 +110,6 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
     setLocalValue(formatNumberForInput(value));
   }, [value]);
-
-  /**
-   * Format a number value for the HTML input element
-   */
-  const formatNumberForInput = (numValue: unknown): string => {
-    if (numValue === null || numValue === undefined || numValue === "") {
-      return "";
-    }
-
-    // Convert to number if it's a string
-    const num = typeof numValue === "string" ? Number.parseFloat(numValue) : Number(numValue);
-
-    if (Number.isNaN(num)) {
-      return "";
-    }
-
-    // Return as string for input display
-    return String(num);
-  };
 
   /**
    * Parse and validate input value
@@ -316,11 +318,6 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
         <div id={`${field.name}-error`} className="inline-edit-error-message text-xs text-red-600 mt-1">
           {validationError}
         </div>
-      )}
-
-      {/* Show field type hint */}
-      {isQuantity && !hasValidationError && (
-        <div className="text-xs text-gray-500 mt-1">Use ↑↓ arrows to adjust value</div>
       )}
     </div>
   );

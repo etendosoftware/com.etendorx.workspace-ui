@@ -1,5 +1,6 @@
 import { useCallback, useEffect, type RefObject } from "react";
 import useDebounce from "@/hooks/useDebounce";
+import { AD_LIST_DATASOURCE, COMBO_TABLE_DATASOURCE } from "@/hooks/datasource/constants";
 
 export interface Option {
   id: string;
@@ -85,6 +86,28 @@ export const useClickOutside = (
 
   return handleClickOutside;
 };
+
+/**
+ * Whether the typed term is too short to query a selector that requires a minimum length. An empty
+ * term is not "below": it stands for the default, unfiltered list.
+ */
+export const isBelowSearchThreshold = (term: string, minSearchChars = 0): boolean => {
+  const length = term.trim().length;
+  return minSearchChars > 0 && length > 0 && length < minSearchChars;
+};
+
+const NON_SEARCH_DATASOURCES: ReadonlySet<string> = new Set([COMBO_TABLE_DATASOURCE, AD_LIST_DATASOURCE]);
+
+/**
+ * Whether a selector datasource is a search selector (OBUISEL) that can sit on a large table. TableDir
+ * combos and reference lists are small and keep their usual behavior.
+ */
+export const isSearchSelectorDatasource = (datasourceName?: string): boolean =>
+  Boolean(datasourceName) && !NON_SEARCH_DATASOURCES.has(datasourceName as string);
+
+/** Hint telling the user how many characters a search selector needs; empty when there is no minimum. */
+export const getMinCharsHint = (t: (key: "form.select.minCharsHint") => string, minSearchChars = 0): string =>
+  minSearchChars > 0 ? t("form.select.minCharsHint").replace("{{min}}", String(minSearchChars)) : "";
 
 export const useSearchHandler = (onSearch?: (term: string) => void) => {
   const debouncedSetSearchTerm = useDebounce(onSearch);

@@ -8,6 +8,7 @@ const SearchInput = memo(
     handleKeyDown,
     handleSearchBlur,
     handleFocus,
+    placeholder = "Search...",
   }: {
     searchTerm: string;
     searchInputRef: React.RefObject<HTMLInputElement>;
@@ -15,6 +16,7 @@ const SearchInput = memo(
     handleKeyDown: (e: React.KeyboardEvent) => void;
     handleSearchBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
     handleFocus: () => void;
+    placeholder?: string;
   }) => (
     <div className="p-2">
       <input
@@ -23,7 +25,7 @@ const SearchInput = memo(
         onChange={handleSetSearchTerm}
         onKeyDown={handleKeyDown}
         onBlur={handleSearchBlur}
-        placeholder="Search..."
+        placeholder={placeholder}
         className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
         aria-label="Search options"
         onFocus={handleFocus}

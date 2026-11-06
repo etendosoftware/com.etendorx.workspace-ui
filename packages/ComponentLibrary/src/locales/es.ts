@@ -21,6 +21,8 @@ const es = {
     cancel: "Cancelar",
     confirm: "Confirmar",
     close: "Cerrar",
+    scrollTabsBack: "Ver las pestañas anteriores",
+    scrollTabsForward: "Ver las pestañas siguientes",
     closing: "Cerrando...",
     unsavedChangesCloseMessage:
       "Tiene cambios sin guardar que se perderán. ¿Está seguro de que desea cerrar esta ventana?",
@@ -537,6 +539,7 @@ const es = {
   form: {
     select: {
       placeholder: "Seleccione una opción",
+      minCharsHint: "Escribe al menos {{min}} caracteres para buscar",
     },
     link: {
       invalidUrl: "Ingrese una URL válida, p. ej. www.ejemplo.com",

@@ -21,6 +21,9 @@ import type { RefListField } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import { useTranslation } from "@/hooks/useTranslation";
+import { SELECTOR_MIN_SEARCH_CHARS } from "@/hooks/datasource/constants";
+import { getMinCharsHint, isBelowSearchThreshold, isSearchSelectorDatasource } from "@/utils/selectorUtils";
 
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import CheckCircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
@@ -44,12 +47,20 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   isLoadingOptions,
   showTooltip = true,
 }) => {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
   const [dynamicOptions, setDynamicOptions] = useState<RefListField[]>([]);
   const [isLoadingDynamicOptions, setIsLoadingDynamicOptions] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+
+  // Search selectors wait for a minimum of typed characters before querying the backend.
+  const minSearchChars = isSearchSelectorDatasource(field.selector?.datasourceName as string | undefined)
+    ? SELECTOR_MIN_SEARCH_CHARS
+    : 0;
+  const minCharsHint = getMinCharsHint(t, minSearchChars);
+  const isBelowThreshold = isBelowSearchThreshold(searchTerm, minSearchChars);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
@@ -163,6 +174,11 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
       // Skip if we have static options
       if (field.refList && field.refList.length > 0) {
+        return;
+      }
+
+      // Too short to query: the dropdown shows the hint instead
+      if (isBelowThreshold) {
         return;
       }
 
@@ -513,6 +529,43 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     return displayText || getPlaceholderText();
   };
 
+  const renderOptionList = () => {
+    if (isBelowThreshold) {
+      return <div className="px-4 py-2 text-sm text-gray-500">{minCharsHint}</div>;
+    }
+
+    if (filteredOptions.length > 0) {
+      return filteredOptions.map((option, index) => {
+        const isSelected = String(option.id) === localValue || String(option.value) === localValue;
+        return (
+          <div
+            key={option.id || option.value}
+            onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
+            onMouseEnter={() => handleOptionMouseEnter(index)}
+            className={`
+              px-4 py-2 text-sm cursor-pointer flex items-center justify-between
+              ${highlightedIndex === index ? "bg-blue-50" : ""}
+              ${isSelected ? "bg-blue-50 font-medium" : ""}
+              hover:bg-blue-50
+            `}
+            // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
+            role="option"
+            aria-selected={isSelected}
+            tabIndex={-1}>
+            <span className="truncate">{option.label}</span>
+            {isSelected && (
+              <CheckCircleFilledIcon width={16} height={16} aria-label="Selected" data-testid={"Image__" + field.id} />
+            )}
+          </div>
+        );
+      });
+    }
+
+    return (
+      <div className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</div>
+    );
+  };
+
   return (
     <div ref={wrapperRef} className="w-full max-w-full min-w-0 box-border">
       <div
@@ -576,7 +629,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             onKeyDown={handleSearchInputKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            placeholder={`Search ${field.name}...`}
+            placeholder={minCharsHint || `Search ${field.name}...`}
             className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
@@ -608,41 +661,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             </div>
           )}
 
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => {
-              const isSelected = String(option.id) === localValue || String(option.value) === localValue;
-              return (
-                <div
-                  key={option.id || option.value}
-                  onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
-                  onMouseEnter={() => handleOptionMouseEnter(index)}
-                  className={`
-                    px-4 py-2 text-sm cursor-pointer flex items-center justify-between
-                    ${highlightedIndex === index ? "bg-blue-50" : ""}
-                    ${isSelected ? "bg-blue-50 font-medium" : ""}
-                    hover:bg-blue-50
-                  `}
-                  // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={-1}>
-                  <span className="truncate">{option.label}</span>
-                  {isSelected && (
-                    <CheckCircleFilledIcon
-                      width={16}
-                      height={16}
-                      aria-label="Selected"
-                      data-testid={"Image__" + field.id}
-                    />
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <div className="px-4 py-2 text-sm text-gray-500">
-              {isLoading ? "Loading options..." : "No options found"}
-            </div>
-          )}
+          {renderOptionList()}
         </div>
       </Menu>
     </div>

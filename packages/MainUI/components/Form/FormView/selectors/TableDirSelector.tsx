@@ -37,7 +37,7 @@ export const TableDirSelector = ({
   selectedRecordsCount?: number;
   processContext?: ProcessSelectorContext;
 }) => {
-  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({
+  const { records, loading, refetch, loadMore, hasMore, search, minSearchChars } = useTableDirDatasource({
     field,
     isProcessModal,
     staticOptions,
@@ -59,6 +59,7 @@ export const TableDirSelector = ({
       onLoadMore={loadMore}
       loading={loading}
       hasMore={hasMore}
+      minSearchChars={minSearchChars}
       data-testid="Select__2e8a5b"
     />
   );
