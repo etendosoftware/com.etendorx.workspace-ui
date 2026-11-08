@@ -65,6 +65,8 @@ export interface Option {
 export interface ColumnDef {
   accessorKey: string;
   header: string;
+  /** Reference of the column, used to render Yes/No values as a checkbox. */
+  referenceId?: string;
 }
 
 export interface SelectOption {

@@ -535,6 +535,13 @@ const en = {
       invalidUrl: "Enter a valid URL, e.g. www.example.com",
       invalidUrlFields: "The following fields do not contain a valid URL: {{fields}}",
     },
+    integer: {
+      invalidDecimal: "Enter a whole number without decimals",
+      invalidDecimalFields: "The following fields must be whole numbers: {{fields}}",
+    },
+    expression: {
+      invalid: "Enter a valid arithmetic expression, e.g. =2*5",
+    },
   },
   copilot: {
     copilotProfile: "Copilot Profile",

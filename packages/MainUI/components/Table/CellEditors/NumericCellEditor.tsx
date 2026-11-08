@@ -18,6 +18,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { useLanguage } from "@/contexts/language";
+import { evaluateMathExpression, isMathExpression } from "@/utils/form/mathExpression";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 
@@ -33,6 +34,12 @@ export const getDecimalSeparator = (language?: string | null): string => {
  */
 export const normalizeNumericInput = (input: string, decimalSeparator: string): string =>
   decimalSeparator === "," ? input.replace(/\./g, "").replace(",", ".") : input.replace(/,/g, "");
+
+/** Reference id of the Integer columns. */
+const INTEGER_REFERENCE = "11";
+
+/** Keys accepted while the cell holds an arithmetic expression (`=2*5`). */
+const EXPRESSION_KEY = /^[\d.,+\-*/()=\s]$/;
 
 /**
  * Format a number value for the HTML input element
@@ -86,6 +93,8 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Determine if this is a quantity field (might have different formatting rules)
   const isQuantity = field.type === FieldType.QUANTITY;
+  // Integer columns (reference 11) never accept decimals, as in Classic.
+  const isInteger = (field as { column?: { reference?: string } }).column?.reference === INTEGER_REFERENCE;
 
   // Auto-focus only when shouldAutoFocus is true
   useEffect(() => {
@@ -149,6 +158,11 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
       return null;
     }
 
+    if (isInteger && !Number.isInteger(num)) {
+      setValidationError("Enter a whole number");
+      return null;
+    }
+
     // Clear any previous validation errors
     setValidationError("");
     return num;
@@ -158,11 +172,30 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     const newValue = e.target.value;
     setLocalValue(newValue);
 
+    // "=2*5" is evaluated when the cell is left, not on every keystroke.
+    if (isMathExpression(newValue)) {
+      setValidationError("");
+      return;
+    }
+
     const parsedValue = parseInputValue(newValue);
     onChange(parsedValue);
   };
 
   const handleBlur = () => {
+    if (isMathExpression(localValue)) {
+      const result = evaluateMathExpression(localValue, decimalSeparator);
+      const parsed = result === null ? null : parseInputValue(String(result));
+      if (parsed === null) {
+        // Keep the text so it can be corrected; an integer column rejects a result with decimals.
+        setValidationError((current) => current || "Invalid expression");
+      } else {
+        setLocalValue(String(parsed));
+        onChange(parsed);
+      }
+      onBlur();
+      return;
+    }
     // Format the number on blur for better display
     if (localValue && !validationError) {
       const num = Number.parseFloat(normalizeNumericInput(localValue, decimalSeparator));
@@ -188,13 +221,20 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   /**
    * Check if a key should be allowed in numeric input
    */
-  const isKeyAllowed = (key: string): boolean => {
+  const isKeyAllowed = (key: string, input?: HTMLInputElement | null): boolean => {
     const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
+    // The typed key replaces the selection, so a fully selected text counts as empty.
+    const replacesAll = !!input && input.selectionStart === 0 && input.selectionEnd === localValue.length;
+    const isEmpty = localValue.length === 0 || replacesAll;
     const isNumericKey = /^\d$/.test(key);
-    const isDecimalPoint = key === "." && !localValue.includes(".");
-    const isMinusSign = key === "-" && localValue.length === 0;
+    const isDecimalPoint = !isInteger && key === "." && (!localValue.includes(".") || replacesAll);
+    const isMinusSign = key === "-" && isEmpty;
+    const startsExpression = key === "=" && isEmpty;
+    const isExpressionKey = isMathExpression(localValue) && EXPRESSION_KEY.test(key);
 
-    return allowedKeys.includes(key) || isNumericKey || isDecimalPoint || isMinusSign;
+    return (
+      allowedKeys.includes(key) || isNumericKey || isDecimalPoint || isMinusSign || startsExpression || isExpressionKey
+    );
   };
 
   /**
@@ -226,6 +266,8 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // React clears currentTarget once the handler yields, so read the input before awaiting.
+    const input = e.currentTarget;
     // First try keyboard navigation
     const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
 
@@ -248,7 +290,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
         handleArrowKey(e, -1);
         break;
       default:
-        if (!isKeyAllowed(e.key)) {
+        if (!isKeyAllowed(e.key, input)) {
           e.preventDefault();
         }
         break;

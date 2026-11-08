@@ -19,6 +19,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import type { RefListField } from "@workspaceui/api-client/src/api/types";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
+import { filterActiveListOptions, restrictListOptionsToEntries, type ListEntry } from "@/utils/form/listOptions";
+
+/** Allowed values of the field for the edited row (`$_entries`), as the grid stores them on the field. */
+const getFieldEntries = (field: CellEditorProps["field"]): ListEntry[] | undefined => {
+  const record = field as unknown as Record<string, unknown>;
+  const key = field.inputName || field.hqlName || field.columnName || field.name;
+  const entries = record[`${key}$_entries`] ?? record[`${field.hqlName}$_entries`];
+  return Array.isArray(entries) ? (entries as ListEntry[]) : undefined;
+};
 
 /**
  * Dropdown editor for list/select fields using refList data
@@ -155,12 +164,16 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
     loadDynamicOptions();
   }, [field.name, field.type, field.refList, loadOptions]);
 
-  // Combine static and dynamic options
+  const entries = getFieldEntries(field);
+
+  // Combine static and dynamic options. The values the server allows for the row (validation rule applied,
+  // set by the row's initialization and by callouts) restrict the list, keeping the stored value.
   const options = useMemo(() => {
-    const staticOptions = field.refList || [];
+    const activeOptions = filterActiveListOptions(field.refList || [], value);
+    const staticOptions = restrictListOptionsToEntries(activeOptions, entries, value);
     const combinedOptions = [...staticOptions, ...dynamicOptions];
     return combinedOptions;
-  }, [field.refList, dynamicOptions]);
+  }, [field.refList, dynamicOptions, value, entries]);
 
   // Removed debugging logs to improve performance during scrolling
 
@@ -299,7 +312,8 @@ export const SelectCellEditor = React.memo(SelectCellEditorComponent, (prevProps
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
     prevProps.field?.name === nextProps.field?.name &&
-    JSON.stringify(prevProps.field?.refList) === JSON.stringify(nextProps.field?.refList)
+    JSON.stringify(prevProps.field?.refList) === JSON.stringify(nextProps.field?.refList) &&
+    JSON.stringify(getFieldEntries(prevProps.field)) === JSON.stringify(getFieldEntries(nextProps.field))
   );
 });
 

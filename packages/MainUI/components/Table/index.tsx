@@ -111,7 +111,7 @@ import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, isImmediateCalloutReference } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -1754,6 +1754,16 @@ const DynamicTable = ({
     debouncedValidateField.cancel();
   }, [debouncedValidateField]);
 
+  // Cells the user changed whose callout runs when they are left (numbers, text, dates), as in the form view.
+  // Callout-applied values never mark a cell, so leaving it afterwards does not run a callout.
+  const pendingBlurCalloutsRef = useRef<Map<string, { value: unknown; optionData?: Record<string, unknown> }>>(
+    new Map()
+  );
+  // Set once executeInlineCallout is defined below, so the blur validator can run it without a forward reference.
+  const executeInlineCalloutRef = useRef<
+    ((rowId: string, field: Field, value: unknown, optionData?: Record<string, unknown>) => Promise<void>) | null
+  >(null);
+
   // Immediate validation function for blur events with performance monitoring
   const validateFieldOnBlur = useCallback(
     (rowId: string, fieldName: string) => {
@@ -1805,6 +1815,16 @@ const DynamicTable = ({
             ...currentErrors,
             [validationKey]: validationResult.error,
           });
+
+          // Run the callout of a changed cell now that the user has left it, with its final value
+          const calloutKey = `${rowId}:${fieldName}`;
+          if (pendingBlurCalloutsRef.current.has(calloutKey)) {
+            const pending = pendingBlurCalloutsRef.current.get(calloutKey);
+            pendingBlurCalloutsRef.current.delete(calloutKey);
+            executeInlineCalloutRef
+              .current?.(rowId, fieldMapping.field, currentValue, pending?.optionData)
+              ?.catch((error) => logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error));
+          }
         });
       }, 60); // Wait for throttled onChange to complete (50ms + 10ms buffer)
 
@@ -2020,6 +2040,8 @@ const DynamicTable = ({
     },
     [tab, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
   );
+
+  executeInlineCalloutRef.current = executeInlineCallout;
 
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
@@ -2617,6 +2639,19 @@ const DynamicTable = ({
       if (!editingRowData || savingRowIdsRef.current.has(rowId)) return;
       savingRowIdsRef.current.add(rowId);
       try {
+        // A typed cell whose callout waits for its blur (Enter can save before the blur): run it now
+        const rowPrefix = `${rowId}:`;
+        for (const [calloutKey, pending] of Array.from(pendingBlurCalloutsRef.current.entries())) {
+          if (!calloutKey.startsWith(rowPrefix)) continue;
+          pendingBlurCalloutsRef.current.delete(calloutKey);
+          const fieldName = calloutKey.slice(rowPrefix.length);
+          const fieldMapping = columnFieldMappings.get(fieldName);
+          const latest = editingRowUtils.getEditingRowData(rowId);
+          if (!fieldMapping || !latest) continue;
+          const latestValue =
+            fieldName in latest.modifiedData ? latest.modifiedData[fieldName] : latest.originalData[fieldName];
+          await executeInlineCalloutRef.current?.(rowId, fieldMapping.field, latestValue, pending.optionData);
+        }
         // Like the form view, let pending callouts finish first: a save right after picking a product
         // went out without the price, tax and UOM its callout sets.
         const calloutState = globalCalloutManager.getState();
@@ -2628,7 +2663,7 @@ const DynamicTable = ({
         savingRowIdsRef.current.delete(rowId);
       }
     },
-    [editingRowUtils, saveRowOnce]
+    [editingRowUtils, saveRowOnce, columnFieldMappings]
   );
 
   const handleCancelRow = useCallback(
@@ -2705,9 +2740,14 @@ const DynamicTable = ({
         const fieldForCallout = field || getFieldByName(fieldName);
 
         if (fieldForCallout?.column.callout) {
-          executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
-            logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
-          });
+          if (isImmediateCalloutReference(fieldForCallout.column.reference)) {
+            executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
+              logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
+            });
+          } else {
+            // Typed values run their callout once, when the cell is left (see validateFieldOnBlur)
+            pendingBlurCalloutsRef.current.set(`${rowId}:${fieldName}`, { value, optionData });
+          }
         }
       });
     }

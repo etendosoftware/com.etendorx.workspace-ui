@@ -22,10 +22,11 @@ import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
-import { getFieldReference } from "@/utils";
+import { formatNumber, getFieldReference } from "@/utils";
+import { useLanguage } from "@/contexts/language";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, isNumericReference } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
@@ -224,6 +225,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onNavigate,
   } = options || {};
   const { t } = useTranslation();
+  const { language } = useLanguage();
 
   const columns = useMemo(() => {
     // Grid columns follow AD_Field.Grid_Seqno (falling back to seqNo), like Etendo Classic.
@@ -257,7 +259,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         // Include time for audit date columns (creationDate, updated) or datetime type columns
         const includeTime =
           AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
-          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id;
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id ||
+          column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id;
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
@@ -296,6 +299,28 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         columnConfig = {
           ...columnConfig,
           Cell: ({ renderedCellValue }: { renderedCellValue: React.ReactNode }) => renderTextCell(renderedCellValue),
+        };
+      }
+
+      // Numeric columns use the configured mask (thousands separator, fixed decimals) and align to the right,
+      // as in Classic. Values that are not numbers are shown as they are.
+      if (isNumericReference(column.column?.reference) && !isReference) {
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+            let value = cell?.getValue();
+            if (value === undefined || value === null) {
+              value = row?.original?.[column.columnName] ?? row?.original?.[column.name];
+            }
+            const isNumber = typeof value === "number" || (typeof value === "string" && value.trim() !== "");
+            const numeric = isNumber ? Number(value) : Number.NaN;
+            const text = Number.isNaN(numeric)
+              ? value == null
+                ? ""
+                : String(value)
+              : formatNumber(numeric, language ?? undefined, column.column?.reference, column.column?.valueFormat);
+            return <span className="block w-full text-right tabular-nums">{text}</span>;
+          },
         };
       }
 
@@ -591,6 +616,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onLoadMoreFilterOptions,
     tableColumnFilters,
     tab.window,
+    language,
   ]);
 
   return columns;

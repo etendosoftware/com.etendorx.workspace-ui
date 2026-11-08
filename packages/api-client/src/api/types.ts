@@ -129,6 +129,8 @@ export interface RefListField {
   label: string;
   value: string;
   color?: string;
+  /** `false` when the value is inactive in the dictionary; Classic does not offer it in dropdowns. */
+  active?: boolean;
 }
 
 export interface SelectorColumn {
@@ -265,6 +267,8 @@ export interface Field {
     hasTableRelated?: boolean;
     hasProcessDefinitionRelated?: boolean;
     gridColumns?: SelectorColumn[];
+    /** Columns of the dropdown, display field first (Classic "picklist"). */
+    pickListColumns?: SelectorColumn[];
     outFields?: SelectorOutField[];
     [key: string]: unknown;
   };

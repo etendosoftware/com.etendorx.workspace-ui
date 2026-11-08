@@ -39,6 +39,9 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
+  // Classic limits the input to the column length, so a longer text cannot be typed or pasted.
+  const columnLength = Number((field as { column?: { length?: number } }).column?.length);
+  const maxLength = columnLength > 0 ? columnLength : undefined;
   const isUserTyping = useRef<boolean>(false);
   const hasInitialFocus = useRef<boolean>(false);
 
@@ -136,6 +139,7 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
     <input
       ref={inputRef}
       type="text"
+      maxLength={maxLength}
       value={localValue}
       onChange={handleChange}
       onBlur={handleBlur}

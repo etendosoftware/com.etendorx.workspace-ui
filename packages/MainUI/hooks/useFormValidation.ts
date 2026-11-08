@@ -98,6 +98,23 @@ export const useFormValidation = (tab: Tab) => {
   }, [tab?.fields]);
 
   /**
+   * Filter and memoize the Integer fields the user can edit
+   * A value with decimals is not a valid integer, whether the field is mandatory or not
+   */
+  const integerFields = useMemo(() => {
+    if (!tab?.fields) return [];
+
+    return Object.values(tab.fields).filter((field: Field) => {
+      return (
+        field.column?.reference === FIELD_REFERENCE_CODES.INTEGER.id &&
+        field.displayed &&
+        !field.isReadOnly &&
+        !isPropertyField(field)
+      );
+    });
+  }, [tab?.fields]);
+
+  /**
    * Builds the evaluation context of a validation pass on the first field that needs it
    * (inside isFieldDisplayed's try); a failed build is retried.
    */
@@ -324,6 +341,25 @@ export const useFormValidation = (tab: Tab) => {
   }, [linkFields, getValues, isFieldDisplayed, createLazyContext]);
 
   /**
+   * Validate that every displayed Integer field holds a whole number, like Classic
+   * Empty values pass: whether they are required is checked by validateRequiredFields
+   *
+   * @returns The Integer fields whose value has decimals
+   */
+  const validateIntegerFields = useCallback((): FieldValidationResult[] => {
+    const formValues = getValues();
+    const getContext = createLazyContext(formValues);
+
+    return integerFields
+      .filter((field) => {
+        const value = formValues[field.hqlName];
+        const hasDecimals = typeof value === "number" && !Number.isInteger(value);
+        return hasDecimals && isFieldDisplayed(field, getContext);
+      })
+      .map((field) => ({ fieldName: field.hqlName, fieldLabel: getFieldLabel(field), isValid: false }));
+  }, [integerFields, getValues, isFieldDisplayed, createLazyContext]);
+
+  /**
    * Get a user-friendly validation summary with formatted error message
    * Provides actionable feedback for users
    *
@@ -364,6 +400,7 @@ export const useFormValidation = (tab: Tab) => {
     // Validation functions
     validateRequiredFields,
     validateLinkFields,
+    validateIntegerFields,
     validateField,
     getValidationSummary,
     hasValidationErrors,

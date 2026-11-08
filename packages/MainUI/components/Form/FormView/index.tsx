@@ -626,7 +626,9 @@ function FormViewComponent({
       for (const [key, newValue] of Object.entries(processedData)) {
         // Skip dropdown option lists: they are very large arrays that don't change during a
         // record refresh (they are populated on initial load / callout execution only).
-        if (key.endsWith("$_entries")) continue;
+        // The first time a list arrives (a NEW record gets its FIC response after the first render) it must be
+        // applied, or the dropdown never sees the values the server allows for the field.
+        if (key.endsWith("$_entries") && Array.isArray(currentValues[key]) && currentValues[key].length > 0) continue;
 
         // Skip fields absent from the current availableFormData (e.g. session attributes that
         // come only from formInitialization while it is being re-fetched). We'll pick those up

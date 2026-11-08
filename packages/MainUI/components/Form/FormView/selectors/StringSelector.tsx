@@ -28,9 +28,13 @@ export const StringSelector = (props: { field: Field } & React.ComponentProps<ty
   const handleSetValue = (value: string) => {
     setValue(fieldName, value, { shouldValidate: true });
   };
+  // Classic caps the input at the column length; ignore missing or non-positive lengths.
+  const columnLength = Number((props.field as { column?: { length?: number } }).column?.length);
+  const maxLength = columnLength > 0 ? columnLength : undefined;
   return (
     <TextInput
       {...register(fieldName)}
+      maxLength={maxLength}
       field={props.field}
       setValue={handleSetValue}
       readOnly={props.readOnly}

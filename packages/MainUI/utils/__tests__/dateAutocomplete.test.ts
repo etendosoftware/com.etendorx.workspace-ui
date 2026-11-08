@@ -102,3 +102,11 @@ describe("autocompleteDate", () => {
     });
   });
 });
+
+describe("toLocalIsoDate", () => {
+  it("keeps the local day whatever the timezone offset is", () => {
+    const { toLocalIsoDate } = require("../dateAutocomplete");
+    expect(toLocalIsoDate(new Date(2025, 7, 15))).toBe("2025-08-15");
+    expect(toLocalIsoDate(new Date(2025, 0, 1))).toBe("2025-01-01");
+  });
+});
