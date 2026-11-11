@@ -28,30 +28,26 @@ test.describe("Process button read-only logic - disabled entry and selection @sm
     await app.grid.filter("Document No.", `==${disabledInvoice} or ==${enabledInvoice}`);
     const disabledRow = app.grid.rowWithCell(disabledInvoice);
     const enabledRow = app.grid.rowWithCell(enabledInvoice);
-    const addPayment = app.toolbar.processEntry(ADD_PAYMENT);
 
-    // A record whose logic is false: the entry is enabled
+    /** Opens the process menu, checks whether "Add Payment" is disabled and closes the menu. */
+    const expectAddPaymentDisabled = async (disabled: boolean, message: string) => {
+      const addPayment = await app.toolbar.openProcessMenuAt(ADD_PAYMENT);
+      await expect(addPayment, message).toHaveAttribute(ARIA_DISABLED, String(disabled));
+      await page.keyboard.press("Escape");
+    };
+
     await app.grid.setRowSelected(enabledRow, true);
-    await app.toolbar.openProcessMenu();
-    await expect(addPayment).toHaveAttribute(ARIA_DISABLED, "false");
-    await page.keyboard.press("Escape");
+    await expectAddPaymentDisabled(false, "a record whose logic is false disabled the entry");
 
-    // The logic is true only once the record's auxiliary input arrived: shown but disabled
     await app.grid.setRowSelected(enabledRow, false);
     await app.grid.setRowSelected(disabledRow, true);
-    await app.toolbar.openProcessMenu();
-    await expect(addPayment, "the read-only logic did not disable the entry").toHaveAttribute(ARIA_DISABLED, "true");
-    await page.keyboard.press("Escape");
+    await expectAddPaymentDisabled(true, "the read-only logic did not disable the entry");
 
     // Several records (Add Payment is multi-record): disabled while the logic is true for any of them
     await app.grid.setRowSelected(enabledRow, true);
-    await app.toolbar.openProcessMenu();
-    await expect(addPayment, "one read-only record must disable the entry").toHaveAttribute(ARIA_DISABLED, "true");
-    await page.keyboard.press("Escape");
+    await expectAddPaymentDisabled(true, "one read-only record must disable the entry");
 
     await app.grid.setRowSelected(disabledRow, false);
-    await app.toolbar.openProcessMenu();
-    await expect(addPayment).toHaveAttribute(ARIA_DISABLED, "false");
-    await page.keyboard.press("Escape");
+    await expectAddPaymentDisabled(false, "the entry stayed disabled without the read-only record");
   });
 });
