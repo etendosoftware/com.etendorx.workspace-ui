@@ -1,9 +1,9 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import type React from "react";
 // Keep imports for things used in the test body
 import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton, mockFormData } from "../testUtils";
-import { messageBar } from "@/utils/processes/definition/messageBarStore";
+import { getMessageBarState, messageBar } from "@/utils/processes/definition/messageBarStore";
 
 // Mock executeStringFunction
 const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
@@ -448,13 +448,23 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       },
     };
 
-    const executeWithFile = async (size: number) => {
+    const makeFile = (size: number) => {
       const file = new File([], "certificate.p12");
       Object.defineProperty(file, "size", { value: size });
-      mockFileToPick = file;
+      return file;
+    };
+
+    const executeWithFile = async (size: number) => {
+      mockFileToPick = makeFile(size);
       const container = renderModal(certificateButton);
       fireEvent.click(container.getByText("pick-file"));
       await clickExecuteButton(container);
+      return container;
+    };
+
+    const pickAnotherFile = (container: ReturnType<typeof renderModal>) => {
+      mockFileToPick = makeFile(MEGABYTE);
+      fireEvent.click(container.getByText("pick-file"));
     };
 
     afterEach(() => {
@@ -468,6 +478,35 @@ describe("ProcessDefinitionModal Execution Flows", () => {
 
       expect(setMessage).toHaveBeenCalledWith("error", null, "OBUIAPP_ProcessFileMaxSizeExceeded");
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("keeps the maximum size message when another file is chosen, as Classic", async () => {
+      const container = await executeWithFile(15 * MEGABYTE);
+
+      pickAnotherFile(container);
+
+      expect(getMessageBarState()?.html).toBe("OBUIAPP_ProcessFileMaxSizeExceeded");
+    });
+
+    test("hides the maximum size message and runs the process when executed with a file that fits", async () => {
+      const container = await executeWithFile(15 * MEGABYTE);
+
+      pickAnotherFile(container);
+      await clickExecuteButton(container);
+
+      expect(getMessageBarState()?.html).not.toBe("OBUIAPP_ProcessFileMaxSizeExceeded");
+      await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    });
+
+    test("keeps a message shown after the maximum size message when executing again", async () => {
+      const container = await executeWithFile(15 * MEGABYTE);
+      act(() => messageBar.setMessage("info", null, "Shown by the process"));
+      const hide = jest.spyOn(messageBar, "hide");
+
+      pickAnotherFile(container);
+      await clickExecuteButton(container);
+
+      expect(hide).not.toHaveBeenCalled();
     });
 
     test("uploads a file within the limit", async () => {
