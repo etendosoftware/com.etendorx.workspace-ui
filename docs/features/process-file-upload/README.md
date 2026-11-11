@@ -8,6 +8,9 @@ Jira: ETP-5982.
 
 ## Behavior
 
+- **Choosing the file.** The user can pick the file in the browser's dialog or drop it on the field. The field
+  is highlighted while a file is dragged over it. A dropped file replaces the selected one, and when several
+  files are dropped only the first is taken, as with the dialog. A disabled field ignores drops.
 - **When the check runs.** It runs when the user clicks the process's execute button, before the
   `onProcess` script and before the request. Choosing the file does not trigger it, as in Classic.
 - **A file above the limit.**
@@ -41,6 +44,8 @@ changing it takes effect at the next login.
 
 ## Differences with Classic
 
+- **Dropping a file.** Classic's field is the browser's native file input, which accepts a dropped file. The
+  New UI hides that input behind its own button, so the field handles the drop itself.
 - **Preference not set.** Classic's client then reads the limit as `0` and rejects every file with
   "Max size allowed: null MB". The New UI applies the 10 MB the server applies in that case.
 - **The server's own check is unchanged.** `BaseProcessActionHandler` looks the file up by the parameter's
@@ -54,7 +59,7 @@ changing it takes effect at the next login.
 - [`components/ProcessModal/ProcessDefinitionModal.tsx`](../../../packages/MainUI/components/ProcessModal/ProcessDefinitionModal.tsx):
   `handleExecuteGuarded`, the guard in front of `handleExecute`.
 - [`components/ProcessModal/selectors/UploadFileSelector.tsx`](../../../packages/MainUI/components/ProcessModal/selectors/UploadFileSelector.tsx)
-  renders the parameter; it is unchanged.
+  renders the parameter and takes the file from the dialog or from a drop.
 
 The *Añadir Certificado Digital* button itself depends on how auxiliary inputs are read in display logic: see
 [Process Button Read-Only Logic](../process-button-read-only/README.md).
