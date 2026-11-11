@@ -24,18 +24,15 @@ import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
-import { haveSameTabs, getTabDisplayLogic, shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
+import { haveSameTabs, shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
-import { useSelectedRecord } from "@/hooks/useSelectedRecord";
-import { useLiveTabRecord } from "@/hooks/useLiveTabRecord";
+import { useAncestorTabSnapshots } from "@/hooks/useAncestorTabSnapshots";
 import { useUserStore } from "@/stores/userStore";
-import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import { logger } from "@/utils/logger";
-import { toClassicBoolean } from "@/utils/toClassicBoolean";
+import { buildTabDisplayLogicOptions, isTabDisplayed } from "@/utils/tabDisplayLogic/ancestorContext";
 import { useTabLevelShortcuts, useWindowActivationFocus } from "@/hooks/navigation/useTabLevelShortcuts";
 import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 
@@ -61,8 +58,8 @@ const NO_TABS: Tab[] = [];
  */
 /**
  * Component responsible for rendering a group of tabs and filtering them based on Display Logic.
- * This component is necessary to use hooks (useSelectedRecord, useUserContext)
- * needed for evaluating logic against the parent record.
+ * This component is necessary to use hooks (useAncestorTabSnapshots, useUserStore)
+ * needed for evaluating logic against the parent record and every tab above it.
  */
 const TabsGroupRenderer = ({
   tabs,
@@ -76,42 +73,21 @@ const TabsGroupRenderer = ({
   getActiveTabForLevel: (level: number) => Tab | null;
 }) => {
   const session = useUserStore((s) => s.session);
-  // Fetch the record of the parent tab to evaluate THIS level's tabs
-  const parentRecord = useSelectedRecord(activeParentTab || undefined);
-  // Unsaved header edits take part in the evaluation, like Classic's form context
-  const parentValues = useLiveTabRecord(activeParentTab, parentRecord);
+  // Selected record, unsaved values and server-computed context of the parent and of every tab above it,
+  // the context Classic's getContextInfo builds for child tab display logic.
+  const ancestorSnapshots = useAncestorTabSnapshots(activeParentTab);
+  // Every tab in this container belongs to the same window, so one window id scopes them all.
+  const contextWindowId = activeParentTab?.window ?? tabs[0]?.window;
 
-  // FETCH GRANDPARENT CONTEXT to verify PARENT'S visibility (Cascading Hide)
-  // If the parent tab itself is hidden (by its own display logc), we must hide these children
-  // (even if there is a "ghost" selection in the parent).
-  const currentLevel = tabs[0].tabLevel;
-  const grandParentLevel = currentLevel - 2;
-  const grandParentTab = currentLevel > 1 ? getActiveTabForLevel(grandParentLevel) : null;
-  // Verify Parent Visibility against Grandparent Record
-  const grandParentRecord = useSelectedRecord(grandParentTab || undefined);
-  const grandParentValues = useLiveTabRecord(grandParentTab, grandParentRecord);
-
+  // Cascading hide: if the parent tab itself is hidden by its own display logic, its children are hidden
+  // too (even if there is a "ghost" selection in the parent). It is evaluated against the tabs above it.
   const isParentVisible = useMemo(() => {
     if (!activeParentTab) return true;
-    const expression = getTabDisplayLogic(activeParentTab);
-    if (!expression) return true;
-
-    // Shared with any other caller that evaluates against the same values
-    const context = getEvaluationContext({
-      values: grandParentValues,
-      fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
-      context: session,
-      windowId: activeParentTab.window,
-    });
-
-    try {
-      const compiledExpr = compileExpression(expression);
-      // We pass the context (which includes session) as the first argument
-      return toClassicBoolean(compiledExpr(context, context, activeParentTab.window));
-    } catch {
-      return true;
-    }
-  }, [activeParentTab, grandParentValues, grandParentTab, session]);
+    const context = getEvaluationContext(
+      buildTabDisplayLogicOptions(ancestorSnapshots.slice(1), session, contextWindowId)
+    );
+    return isTabDisplayed(activeParentTab, context, true);
+  }, [activeParentTab, ancestorSnapshots, session, contextWindowId]);
 
   const filteredTabs = useMemo(() => {
     // 1. Cascade Check: If Parent is hidden, Children are hidden.
@@ -119,40 +95,12 @@ const TabsGroupRenderer = ({
       return [];
     }
 
-    // 2. Standard Check: If Parent Record is missing (and required), default hide?
-    // (Optional: if (!parentRecord?.id && currentLevel > 0) return []; )
+    // 2. Filter current tabs by their display logic, evaluated against all their ancestors
+    const context = getEvaluationContext(buildTabDisplayLogicOptions(ancestorSnapshots, session, contextWindowId));
+    const result = tabs.filter((tab) => isTabDisplayed(tab, context, false));
 
-    // 3. Filter current tabs
-    // Use createEvaluationContext for robust evaluation (Flat Object with Normalized Values)
-    // Every tab in this container belongs to the same window, so one window id scopes them all.
-    const contextWindowId = activeParentTab?.window ?? tabs[0]?.window;
-
-    const context = getEvaluationContext({
-      values: parentValues,
-      fields: activeParentTab?.fields,
-      context: session,
-      windowId: contextWindowId,
-    });
-
-    const result = tabs.filter((tab) => {
-      const expression = getTabDisplayLogic(tab);
-
-      if (!expression) {
-        return true;
-      }
-
-      try {
-        const compiledExpr = compileExpression(expression);
-        return toClassicBoolean(compiledExpr(context, context, contextWindowId));
-      } catch (error) {
-        logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
-        return false;
-      }
-    });
-
-    const filteredTabs = result.filter((tab) => shouldShowTab(tab, activeParentTab));
-    return filteredTabs;
-  }, [tabs, parentValues, session, activeParentTab, isParentVisible]);
+    return result.filter((tab) => shouldShowTab(tab, activeParentTab));
+  }, [tabs, ancestorSnapshots, session, activeParentTab, isParentVisible, contextWindowId]);
 
   // Live values re-evaluate on every edit of a referenced field; keep the previous list while the
   // visible tabs stay the same so Tabs is not re-rendered for nothing.
