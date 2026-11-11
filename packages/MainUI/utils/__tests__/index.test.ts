@@ -182,6 +182,18 @@ describe("utils/index", () => {
       expect(params.get("_extraProperties")).toBe("amount$amountColor");
     });
 
+    it("requests the property fields that cross a related record", () => {
+      const params = buildQueryString({
+        tab: tab({
+          id: "tab-1",
+          module: "mod-1",
+          fields: { paymentDate: field({ hqlName: "finPayment$paymentDate", column: { propertyPath: "finPayment.paymentDate" } }) },
+        }),
+        mode: FormMode.EDIT,
+      });
+      expect(params.get("_extraProperties")).toBe("finPayment.paymentDate");
+    });
+
     it("builds params for an update with no colored fields", () => {
       const params = buildQueryString({
         tab: tab({ id: "tab-1", module: "mod-1", fields: {} }),

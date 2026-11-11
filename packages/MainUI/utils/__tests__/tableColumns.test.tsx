@@ -312,6 +312,32 @@ describe("tableColumns", () => {
         expect(result[0].accessorFn?.(testData)).toBe("Hello World");
       });
 
+      it("reads a property field value from its related-record datasource key", () => {
+        const fields = createFields([
+          {
+            name: "Payment Date",
+            hqlName: "finPayment$paymentDate",
+            columnName: "PaymentDate",
+            column: { reference: "10", propertyPath: "finPayment.paymentDate" },
+          },
+          {
+            name: "Payment",
+            hqlName: "paymentDetails$finPayment",
+            columnName: "FIN_Payment_ID",
+            column: { reference: "19", propertyPath: "paymentDetails.finPayment" },
+          },
+        ]);
+        const result = parseColumns(fields);
+
+        const testData = {
+          finPayment$paymentDate: "2024-01-31",
+          paymentDetails$finPayment: "payment-id",
+          paymentDetails$finPayment$_identifier: "1000000 - Healthy Food",
+        };
+        expect(result[0].accessorFn?.(testData)).toBe("2024-01-31");
+        expect(result[1].accessorFn?.(testData)).toBe("1000000 - Healthy Food");
+      });
+
       it("should use identifier value when available", () => {
         const fields = createFields([
           {
