@@ -47,9 +47,11 @@ const mockFormFields = {
   fields: {
     actionFields: {
       complete: {
+        id: "F1",
         columnName: "DocAction",
         displayed: true,
         displayLogicExpression: "OB.Utilities.getValue(currentValues,'docStatus') === 'DR'",
+        readOnlyLogicExpression: "OB.Utilities.getValue(currentValues,'processing') === 'Y'",
       },
       post: {
         columnName: "Posted",
@@ -94,5 +96,15 @@ describe("useToolbar process buttons and form values", () => {
     act(() => mockStore.set((prev) => ({ ...prev, cBpartnerId$_identifier: "" })));
 
     expect(result.current.processButtons.map((b) => b.columnName)).toEqual(["DocAction"]);
+  });
+
+  it("re-evaluates the read-only logic of the buttons when a field it reads changes", () => {
+    const { result } = renderHook(() => useToolbar("W1", "tab1"));
+    expect(result.current.readOnlyProcessButtonIds.has("F1")).toBe(false);
+
+    act(() => mockStore.set((prev) => ({ ...prev, processing: "Y" })));
+
+    expect(result.current.readOnlyProcessButtonIds.has("F1")).toBe(true);
+    expect(result.current.processButtons).toHaveLength(2);
   });
 });
