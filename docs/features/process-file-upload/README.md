@@ -18,6 +18,10 @@ Jira: ETP-5982.
     uploaded as its size exceeds our limits. Max size allowed: %1 MB.", where `%0` is the file name and `%1`
     the limit.
   - Nothing is sent to the server, and the modal stays open so the user can pick another file.
+  - The message stays when another file is chosen, and is hidden at the next click on the execute button,
+    before the check runs again. This is Classic's order: its execute button hides the message bar and then
+    validates. The New UI only hides its own size message, so a message shown afterwards (for example by the
+    process's script) is kept.
 - **A file within the limit.** It is sent as before, as a multipart request to the process's Java handler.
 - **Size unit.** A megabyte is 1024 × 1024 bytes, as in Classic and in the server's own check. A file of
   exactly the maximum size is accepted.
