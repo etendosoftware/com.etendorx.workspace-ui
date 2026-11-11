@@ -144,7 +144,11 @@ describe("useTableData grouping query", () => {
 
   it("requests the property fields and sorts by their related-record path, as Classic", () => {
     const fields = mockTab.fields as Record<string, unknown>;
-    fields[PROPERTY_FIELD] = { name: PROPERTY_COLUMN, hqlName: PROPERTY_FIELD, column: { propertyPath: PROPERTY_PATH } };
+    fields[PROPERTY_FIELD] = {
+      name: PROPERTY_COLUMN,
+      hqlName: PROPERTY_FIELD,
+      column: { propertyPath: PROPERTY_PATH },
+    };
     mockTableState.sorting = [{ id: PROPERTY_COLUMN, desc: false }];
 
     try {

@@ -187,7 +187,12 @@ describe("utils/index", () => {
         tab: tab({
           id: "tab-1",
           module: "mod-1",
-          fields: { paymentDate: field({ hqlName: "finPayment$paymentDate", column: { propertyPath: "finPayment.paymentDate" } }) },
+          fields: {
+            paymentDate: field({
+              hqlName: "finPayment$paymentDate",
+              column: { propertyPath: "finPayment.paymentDate" },
+            }),
+          },
         }),
         mode: FormMode.EDIT,
       });
