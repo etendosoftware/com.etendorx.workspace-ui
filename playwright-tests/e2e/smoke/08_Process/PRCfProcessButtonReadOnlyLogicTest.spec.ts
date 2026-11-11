@@ -50,4 +50,32 @@ test.describe("Process button read-only logic - disabled entry and selection @sm
     await app.grid.setRowSelected(disabledRow, false);
     await expectAddPaymentDisabled(false, "the entry stayed disabled without the read-only record");
   });
+
+  /**
+   * An auxiliary input keeps the type the server sends, as in Classic: VoidAutomaticallyCreated runs
+   * `SELECT COUNT(*)` and arrives as the number 0, which `@X@=0`-style logic compares against. Reading it as
+   * the string "0" (the toolbar did) hides the button in table view.
+   */
+  test("shows the entry whose display logic compares a numeric auxiliary input", async ({ app, page, data }) => {
+    const invoice = data.SAMPLE_DOCUMENT.SALES_INVOICE_PENDING;
+    const override = await overrideField(page, WINDOW_IDS.SALES_INVOICE, data.FIELD.SALES_INVOICE_ADD_PAYMENT, {
+      displayLogicExpression: "context.VoidAutomaticallyCreated === 0",
+    });
+
+    await app.sidebar.navigateTo("salesInvoice");
+    expect(override.applied, "the Add Payment field was not found in the window metadata").toBeGreaterThan(0);
+    await app.toolbar.disableImplicitFilter();
+    await app.grid.filter("Document No.", `==${invoice}`);
+    const row = app.grid.rowWithCell(invoice);
+
+    // Table view: the toolbar requests the record's context itself
+    await app.grid.setRowSelected(row, true);
+    await expect(await app.toolbar.openProcessMenuAt(ADD_PAYMENT), "hidden in table view").toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Form view: the context comes from the form's own initialization
+    await app.grid.openRowForm(row);
+    await expect(await app.toolbar.openProcessMenuAt(ADD_PAYMENT), "hidden in form view").toBeVisible();
+    await page.keyboard.press("Escape");
+  });
 });
