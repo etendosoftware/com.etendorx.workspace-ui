@@ -121,6 +121,16 @@ flowchart LR
   that only an auxiliary input defines falls back to the session (as before) and then to `''`.
 - Preferences saved after the window was opened are not re-read until the next evaluation.
 
+## Tests
+
+- Unit tests (Jest) cover the store, the publishers, the ancestor context and the preference option.
+- Playwright smoke probes run on every PR: **GRDg** (an auxiliary input of the selected grid row: Sales Order ›
+  Lines › Related Products) and **FRMf** (a grandparent value, unsaved: Product › Product Categories › Category
+  Price Rule Version). See [Playwright E2E](../../testing/playwright-e2e/README.md).
+- The preference case has no E2E probe: the sample data has no `StockReservations` preference, and creating one
+  changes how every order is booked (`C_ORDER_POST` checks that any such preference exists), which would affect
+  the specs running in parallel. It is covered by unit tests.
+
 ## Configuration
 
 None. Any tab display logic defined in the Application Dictionary is supported.
