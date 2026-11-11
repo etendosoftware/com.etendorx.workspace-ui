@@ -43,6 +43,8 @@ docs/
 │   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
 │   ├── process-button-read-only/     # Feature: Read-only logic of toolbar process buttons
 │   │   └── README.md                # Disabled entries, record context, multi-selection, guard
+│   ├── process-file-upload/          # Feature: Maximum size of files uploaded by processes
+│   │   └── README.md                # OBUIAPP_ProcessFileUploadMaxSize check before sending
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
