@@ -199,3 +199,64 @@ describe("useToolbar read-only logic context", () => {
     expect(fetchCount()).toBe(0);
   });
 });
+
+describe("useToolbar auxiliary input types", () => {
+  const LEGAL_ORG = "ETSG_CheckLegalOrg";
+  // Display logic of "Añadir Certificado Digital": the auxiliary input is also a session attribute.
+  const certificateButton = {
+    columnName: "Add_Certificate",
+    displayed: true,
+    displayLogicExpression: `context.${LEGAL_ORG} === '1'`,
+  };
+  // Display logic comparing an auxiliary input against a number, as `@HASSECONDUOM@=1` does.
+  const linesButton = { columnName: "Lines", displayed: true, displayLogicExpression: "context.HasLines === 1" };
+
+  const renderWithContext = async (response: object) => {
+    (fetchFormInitialization as jest.Mock).mockResolvedValue(response);
+    const hook = renderHook(() => useToolbar("W1", "tab1"));
+    act(() => select(hook.rerender, "R1"));
+    await act(async () => {});
+    return hook.result.current.processButtons.map((button) => button.columnName);
+  };
+
+  beforeEach(() => {
+    mockFormFields.fields.actionFields = { certificate: certificateButton, lines: linesButton };
+    (fetchFormInitialization as jest.Mock).mockReset();
+    useWindowStore.setState({ windows: {} } as never);
+    mockSelected = [];
+  });
+
+  afterEach(() => {
+    mockTabContext.auxiliaryInputs = {};
+  });
+
+  it("keeps the type of an auxiliary input without a session attribute", async () => {
+    const shown = await renderWithContext({ auxiliaryInputValues: { HasLines: { value: 1 } }, sessionAttributes: {} });
+    expect(shown).toEqual(["Lines"]);
+  });
+
+  it("reads an auxiliary input as the session attribute of the same name", async () => {
+    const shown = await renderWithContext({
+      auxiliaryInputValues: { [LEGAL_ORG]: { value: 1 } },
+      sessionAttributes: { [LEGAL_ORG]: "1" },
+    });
+    expect(shown).toEqual(["Add_Certificate"]);
+  });
+
+  it("hides the button when the record is not a legal entity", async () => {
+    const shown = await renderWithContext({ auxiliaryInputValues: {}, sessionAttributes: { [LEGAL_ORG]: "" } });
+    expect(shown).toEqual([]);
+  });
+
+  it("uses the form's auxiliary inputs, with the session attributes applied by TabContext, in form view", () => {
+    useWindowStore.setState({
+      windows: { win1: { tabs: { tab1: { form: { mode: TAB_MODES.FORM, recordId: "R1" } } } } },
+    } as never);
+    mockTabContext.auxiliaryInputs = { [LEGAL_ORG]: "1", HasLines: 1 } as never;
+    const { result, rerender } = renderHook(() => useToolbar("W1", "tab1"));
+    act(() => select(rerender, "R1"));
+
+    expect(result.current.processButtons.map((button) => button.columnName)).toEqual(["Add_Certificate", "Lines"]);
+    expect(fetchCount()).toBe(0);
+  });
+});

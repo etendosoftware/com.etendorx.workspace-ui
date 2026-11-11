@@ -3,8 +3,11 @@ import type { FormInitializationResponse } from "@workspaceui/api-client/src/api
 import {
   buildFormInitializationParams,
   buildFormInitializationPayload,
+  applySessionAttributeOverrides,
+  buildRecordContextValues,
   buildSessionAttributes,
   buildSessionResetPayload,
+  extractAuxiliaryInputValues,
   computeGridVisibleProperties,
   fetchFormInitialization,
   mergeSessionAttributes,
@@ -689,6 +692,72 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         ETSG_CheckLegalOrg: "1",
       });
       expect(result.StaleRecordField).toBeUndefined();
+    });
+  });
+
+  describe("record context (Classic getContextInfo parity)", () => {
+    // The server sends the raw value of the auxiliary input's query: `SELECT 1` arrives as a number.
+    const LEGAL_ORG = "ETSG_CheckLegalOrg";
+    const RAW_ONE = 1 as unknown as string;
+
+    const buildResponse = (
+      auxiliaryInputs: Record<string, string>,
+      sessionAttributes: Record<string, string>
+    ): FormInitializationResponse =>
+      ({
+        columnValues: {},
+        auxiliaryInputValues: Object.fromEntries(
+          Object.entries(auxiliaryInputs).map(([name, value]) => [name, { value, classicValue: value }])
+        ),
+        sessionAttributes,
+        dynamicCols: [],
+        attachmentExists: true,
+      }) as FormInitializationResponse;
+
+    it("extractAuxiliaryInputValues keeps each value's own type", () => {
+      const response = buildResponse({ [LEGAL_ORG]: RAW_ONE, Flag: "Y" }, { [LEGAL_ORG]: "1" });
+
+      expect(extractAuxiliaryInputValues(response)).toEqual({ [LEGAL_ORG]: 1, Flag: "Y" });
+    });
+
+    it("extractAuxiliaryInputValues returns an empty object without a response or auxiliary inputs", () => {
+      expect(extractAuxiliaryInputValues(null)).toEqual({});
+      expect(extractAuxiliaryInputValues({ sessionAttributes: {} } as unknown as FormInitializationResponse)).toEqual(
+        {}
+      );
+    });
+
+    it("applySessionAttributeOverrides reads an auxiliary input as the session attribute of its name", () => {
+      const result = applySessionAttributeOverrides(
+        { [LEGAL_ORG]: RAW_ONE, HasLines: RAW_ONE },
+        {
+          [LEGAL_ORG]: "1",
+          AD_ROLE_ID: "0",
+        }
+      );
+
+      // Other session attributes are not added, and auxiliary inputs without one keep their type
+      expect(result).toEqual({ [LEGAL_ORG]: "1", HasLines: 1 });
+    });
+
+    it("applySessionAttributeOverrides returns the same object when no name matches", () => {
+      const auxiliaryInputs = { HasLines: RAW_ONE };
+
+      expect(applySessionAttributeOverrides(auxiliaryInputs, { AD_ROLE_ID: "0" })).toBe(auxiliaryInputs);
+    });
+
+    it("buildRecordContextValues adds every session attribute after the auxiliary inputs", () => {
+      const response = buildResponse(
+        { [LEGAL_ORG]: RAW_ONE, HasLines: RAW_ONE },
+        { [LEGAL_ORG]: "1", AD_ROLE_ID: "0" }
+      );
+
+      // Attachment information belongs to the session, not to the expression context
+      expect(buildRecordContextValues(response)).toEqual({ [LEGAL_ORG]: "1", HasLines: 1, AD_ROLE_ID: "0" });
+    });
+
+    it("buildRecordContextValues returns an empty object without a response", () => {
+      expect(buildRecordContextValues(null)).toEqual({});
     });
   });
 });

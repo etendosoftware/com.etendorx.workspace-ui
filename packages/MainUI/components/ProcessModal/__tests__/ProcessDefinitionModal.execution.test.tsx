@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import type React from "react";
 // Keep imports for things used in the test body
@@ -78,11 +78,22 @@ jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
 }));
 
 // Mock Components
+// File the parameter selector hands to the modal when its "pick-file" button is clicked.
+let mockFileToPick: File | null = null;
 jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => ({
   __esModule: true,
-  default: () => {
+  default: ({ parameter, onFileChange }: any) => {
     const { MockParamSelector } = require("../testUtils");
-    return <MockParamSelector />;
+    return (
+      <>
+        <MockParamSelector />
+        {mockFileToPick && (
+          <button type="button" onClick={() => onFileChange(parameter.dBColumnName, mockFileToPick)}>
+            pick-file
+          </button>
+        )}
+      </>
+    );
   },
 }));
 
@@ -419,6 +430,55 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       await clickExecuteButton(container);
 
       expect(await container.findByText("process.processError")).toBeInTheDocument();
+    });
+  });
+
+  // Classic's OBProcessFileUpload rejects a file above OBUIAPP_ProcessFileUploadMaxSize (10 MB when the
+  // preference is not set) on click: the message shows and nothing is sent.
+  describe("file upload maximum size", () => {
+    const MEGABYTE = 1024 * 1024;
+    const certificateButton = {
+      name: "Añadir Certificado Digital",
+      processDefinition: {
+        id: "TEST_CERTIFICATE_ID",
+        name: "Add Certificate",
+        javaClassName: "com.test.AddCertificate",
+        parameters: { certificate: { name: "Certificado", dBColumnName: "etsg_certificate_file", reference: "14" } },
+        etmetaOnprocess: null,
+      },
+    };
+
+    const executeWithFile = async (size: number) => {
+      const file = new File([], "certificate.p12");
+      Object.defineProperty(file, "size", { value: size });
+      mockFileToPick = file;
+      const container = renderModal(certificateButton);
+      fireEvent.click(container.getByText("pick-file"));
+      await clickExecuteButton(container);
+    };
+
+    afterEach(() => {
+      mockFileToPick = null;
+    });
+
+    test("shows the maximum size message and sends nothing for a larger file", async () => {
+      const setMessage = jest.spyOn(messageBar, "setMessage");
+
+      await executeWithFile(15 * MEGABYTE);
+
+      expect(setMessage).toHaveBeenCalledWith("error", null, "OBUIAPP_ProcessFileMaxSizeExceeded");
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("uploads a file within the limit", async () => {
+      await executeWithFile(MEGABYTE);
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
+          expect.objectContaining({ body: expect.any(FormData) })
+        );
+      });
     });
   });
 });
