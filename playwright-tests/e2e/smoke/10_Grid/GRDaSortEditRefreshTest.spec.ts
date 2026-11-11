@@ -4,8 +4,11 @@ import { TABS, WINDOW_IDS } from "../../support/registry/windows";
 
 const LINES = "Lines";
 const PRODUCT = "Product";
-/** Lines of the sample draft order 50014: "Final good A" sorts first by product, "Insurance" last. */
-const FIRST_LINE = { product: "Final good A", quantity: "100", netAmount: "200" };
+/**
+ * Lines of the sample draft order 50014: "Final good A" sorts first by product, "Insurance" last.
+ * The grid shows the amounts with the two decimals of their mask ("200.00"); the quantity has none.
+ */
+const FIRST_LINE = { product: "Final good A", quantity: "100", netAmount: "200.00" };
 const LAST_PRODUCT = "Insurance";
 /** A line only the other sample draft order (50013) has. */
 const OTHER_ORDER_ONLY_PRODUCT = "Transportation";
@@ -13,7 +16,7 @@ const OTHER_ORDER_ONLY_PRODUCT = "Transportation";
 const SAMPLE_ORDERS_PREFIX = "5001";
 const SAMPLE_LINE_COUNT = 4;
 /** Quantity typed in the grid: the line amount callout (unit price 2) recalculates the net amount. */
-const EDITED_LINE = { quantity: "50", netAmount: "100" };
+const EDITED_LINE = { quantity: "50", netAmount: "100.00" };
 const ORDERED_QUANTITY = "orderedQuantity";
 
 // The grid saves its sort per user: start from the default order of the lines and leave it so
