@@ -41,6 +41,8 @@ docs/
 │   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
 │   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
+│   ├── process-button-read-only/     # Feature: Read-only logic of toolbar process buttons
+│   │   └── README.md                # Disabled entries, record context, multi-selection, guard
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration

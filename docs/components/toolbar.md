@@ -18,6 +18,11 @@ The Toolbar component is the main navigation and action bar for the Etendo Works
 - **Form Navigation**: Form view specific actions
 - **Session Sync Loading**: Real-time loading states during session operations
 
+## Disabled Process Entries
+
+A process menu entry is shown disabled when the role cannot run its process or when its read-only logic is
+true for the selection. See [Process Button Read-Only Logic](../features/process-button-read-only/README.md).
+
 ## Process Button Loading State
 
 The Available Process button in the toolbar displays a loading state during session synchronization operations, providing better user feedback for async operations.
