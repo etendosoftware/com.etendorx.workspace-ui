@@ -19,6 +19,7 @@ import React, { useEffect, useRef, useState } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
 import { generateAriaAttributes } from "../utils/accessibilityUtils";
+import { getTextMaxLength } from "@/utils/form/columnLength";
 
 /**
  * Text input editor for string fields
@@ -40,8 +41,7 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
   // Classic limits the input to the column length, so a longer text cannot be typed or pasted.
-  const columnLength = Number((field as { column?: { length?: number } }).column?.length);
-  const maxLength = columnLength > 0 ? columnLength : undefined;
+  const maxLength = getTextMaxLength(field, { grid: true });
   const isUserTyping = useRef<boolean>(false);
   const hasInitialFocus = useRef<boolean>(false);
 

@@ -45,6 +45,8 @@ export interface TextAreaInputProps {
   showClearButton?: boolean;
   onClear?: () => void;
   rows?: number;
+  /** Maximum number of characters, passed to the textarea. */
+  maxLength?: number;
   name?: string;
   id?: string;
   value?: string;

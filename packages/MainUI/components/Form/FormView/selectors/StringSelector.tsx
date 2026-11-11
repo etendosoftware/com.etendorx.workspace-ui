@@ -18,6 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
 import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
+import { getTextMaxLength } from "@/utils/form/columnLength";
 
 export const StringSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => {
   const { register, setValue } = useFormContext<FieldValues>();
@@ -28,9 +29,8 @@ export const StringSelector = (props: { field: Field } & React.ComponentProps<ty
   const handleSetValue = (value: string) => {
     setValue(fieldName, value, { shouldValidate: true });
   };
-  // Classic caps the input at the column length; ignore missing or non-positive lengths.
-  const columnLength = Number((props.field as { column?: { length?: number } }).column?.length);
-  const maxLength = columnLength > 0 ? columnLength : undefined;
+  // Classic caps the input at the column length.
+  const maxLength = getTextMaxLength(props.field);
   return (
     <TextInput
       {...register(fieldName)}
