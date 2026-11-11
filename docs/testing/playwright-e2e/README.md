@@ -54,7 +54,7 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
 | Data a probe does not test is created through the datasource (`api` fixture) | Much faster than the UI and it keeps the probe on the behavior it checks. It needs a UI login first: the CSRF token of the server-side session is set by the app's own startup requests. |
 | Read-only probes and probes on their own records go to `suite-01-base` | That project waits for its longest spec (ADMb), so short probes fill idle workers almost for free. |
 | A probe never takes "the first row" and never changes the user's defaults | Projects run 3 specs in parallel on one database: probes filter by their own records or fixed sample documents, and SESa never ticks "Save as default". |
-| Client behavior the bare core has no data for is injected into the metadata (`support/processOverrides.ts`) | The core ships no migrated `em_etmeta_onprocess`; PRCb and PRCd set one in the window/process metadata the UI loads, and block the Java handler so nothing executes. The core has no process button that can be shown read-only either; PRCf sets a read-only logic on a field (`overrideField`). |
+| Client behavior the bare core has no data for is injected into the metadata (`support/processOverrides.ts`) | The core ships no migrated `em_etmeta_onprocess`; PRCb and PRCd set one in the window/process metadata the UI loads, and block the Java handler so nothing executes. The core has no process button that can be shown read-only either; PRCf sets a read-only logic on a field (`overrideField`). Nor a process with a file parameter a probe can run: PRCg gives Add Payment a single Upload File parameter. |
 | Global configuration a probe needs is created for the user and the window only, and removed in `afterEach` | GRDd enables `OBUIAPP_GroupingEnabled` (only the F&B sample client has it); `afterEach` still runs with the page open when a test times out, a `finally` does not. |
 
 ## Grouping and parallelism
@@ -115,7 +115,8 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | Spec | Tier | Checks | Data |
 |---|---|---|---|
 | PRCb | smoke | Pick and Execute grid (Add Payment): selecting allocates the amount, deselecting gives it back, a numeric cell is editable, a migrated onProcess that fails stops the execution | Own payment header; the payment request is blocked |
-| PRCf | smoke | Read-only logic of a process button (injected on Sales Invoice "Add Payment", reading a real auxiliary input of the record): the entry stays in the process menu but disabled, and with several records selected it is disabled while the logic is true for any of them | Sample invoices I/25 and I/27; nothing is run |
+| PRCf | smoke | Read-only logic of a process button (injected on Sales Invoice "Add Payment", reading a real auxiliary input of the record): the entry stays in the process menu but disabled, and with several records selected it is disabled while the logic is true for any of them. A display logic comparing a numeric auxiliary input (`VoidAutomaticallyCreated`, a `COUNT(*)`) against a number shows the entry in table and form view, so the input keeps the type the server sends ([ETP-5982](../../features/process-button-read-only/README.md)) | Sample invoices I/25 and I/27; nothing is run |
+| PRCg | smoke | Maximum size of a file uploaded by a process (`OBUIAPP_ProcessFileUploadMaxSize`): a file one byte above 10 MB is rejected at the execute click with Classic's message and is not sent ([ETP-5982](../../features/process-file-upload/README.md)) | Sample invoice I/25; an Upload File parameter injected into "Add Payment", whose handler is blocked |
 | FRMa | smoke | Display logic of fields (Product: Stocked, Bill of Materials, Linked To Product, Tax Category) and of a child tab (Bill of Materials) re-evaluated after a field change, unsaved | Sample product, not saved |
 | FRMb | smoke | Editability by document status: a draft sales order is editable, a booked one read-only, "Copy Lines" only while not processed | Sample orders 50015 and 50017 |
 | FRMc | smoke | Save → reload round trip of text, dates, integer, yes/no, list, table, number, price and quantity fields (Discounts and Promotions) | Own record |
@@ -189,6 +190,7 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | rendering, stress | split | Page load, Web Vitals and 404 recovery are client side; dashboard timings and login cycles need the server. |
 | PRCb | split | Grid selection and onProcess abort are client side; amounts come from the Add Payment handlers. |
 | PRCf | split | The read-only evaluation is client side; the record context (auxiliary inputs, session attributes) comes from the FormInitialization. |
+| PRCg | split | The check is client side; the limit and the message text come from the server's preferences and translated messages. |
 | FRMa, FRMb, NAVa | mockable | Display/read-only logic and URL state on recorded metadata and records (NAVa is the pilot). |
 | FRMc, SESa | real backend | Save → reload round trip; server-side session and defaults. |
 | FRMe | real backend | Selector popup records, Add Payment defaults and execution, and the transaction callout run on the server. |

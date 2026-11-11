@@ -65,5 +65,9 @@ changing it takes effect at the next login.
 - [`components/ProcessModal/selectors/UploadFileSelector.tsx`](../../../packages/MainUI/components/ProcessModal/selectors/UploadFileSelector.tsx)
   renders the parameter and takes the file from the dialog or from a drop.
 
+E2E: the smoke probe PRCg gives Sales Invoice "Add Payment" a single Upload File parameter and checks that a
+file one byte above 10 MB is rejected with Classic's message and never sent; see
+[Playwright E2E](../../testing/playwright-e2e/README.md).
+
 The *Añadir Certificado Digital* button itself depends on how auxiliary inputs are read in display logic: see
 [Process Button Read-Only Logic](../process-button-read-only/README.md).

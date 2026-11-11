@@ -79,7 +79,8 @@ None. The backend already serves `readOnlyLogicExpression` for every field with 
 - [`components/Toolbar/Toolbar.tsx`](../../../packages/MainUI/components/Toolbar/Toolbar.tsx) holds the execution guard.
 
 E2E: the smoke probe PRCf injects a read-only logic on Sales Invoice "Add Payment" (the core has no button
-that can be shown read-only) and checks the disabled entry with one and several records selected; see
+that can be shown read-only) and checks the disabled entry with one and several records selected. It also shows the entry with a display logic that
+compares the numeric auxiliary input `VoidAutomaticallyCreated` against `0`, in table and form view; see
 [Playwright E2E](../../testing/playwright-e2e/README.md).
 
 Related: [Toolbar](../../components/toolbar.md), [Display logic expression parsing](../display-logic-expression-parsing.md).
