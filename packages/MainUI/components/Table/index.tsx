@@ -2697,6 +2697,26 @@ const DynamicTable = ({
     [editingRowUtils, releaseOptimisticRows]
   );
 
+  // Selections run their callout right away; typed values run it once, when the cell is left (see validateFieldOnBlur).
+  const scheduleCellCallout = useStableCallback(
+    (
+      rowId: string,
+      fieldName: string,
+      field: Field | undefined,
+      value: unknown,
+      optionData?: Record<string, unknown>
+    ) => {
+      if (!field?.column.callout) return;
+      if (isImmediateCalloutReference(field.column.reference)) {
+        executeInlineCallout(rowId, field, value, optionData).catch((error) => {
+          logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
+        });
+        return;
+      }
+      pendingBlurCalloutsRef.current.set(`${rowId}:${fieldName}`, { value, optionData });
+    }
+  );
+
   // Applied on every change, never throttled: a throttle dropped the last keystrokes (a barcode
   // scanner types a whole code and Enter at once) and saved a truncated value.
   const handleCellValueChange = useStableCallback(
@@ -2741,18 +2761,7 @@ const DynamicTable = ({
 
         // Execute callout if field has one
         // Use the provided field object if available, otherwise try to find by name
-        const fieldForCallout = field || getFieldByName(fieldName);
-
-        if (fieldForCallout?.column.callout) {
-          if (isImmediateCalloutReference(fieldForCallout.column.reference)) {
-            executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
-              logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
-            });
-          } else {
-            // Typed values run their callout once, when the cell is left (see validateFieldOnBlur)
-            pendingBlurCalloutsRef.current.set(`${rowId}:${fieldName}`, { value, optionData });
-          }
-        }
+        scheduleCellCallout(rowId, fieldName, field || getFieldByName(fieldName), value, optionData);
       });
     }
   );

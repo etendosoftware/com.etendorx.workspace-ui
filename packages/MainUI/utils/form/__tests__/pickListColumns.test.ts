@@ -4,7 +4,7 @@ describe("getPickListColumns", () => {
   const column = (accessorKey: string) => ({ id: accessorKey, header: accessorKey, accessorKey });
 
   it("returns undefined without extra columns, so the dropdown keeps a single column", () => {
-    expect(getPickListColumns(undefined)).toBeUndefined();
+    expect(getPickListColumns()).toBeUndefined();
     expect(getPickListColumns([])).toBeUndefined();
     expect(getPickListColumns([column("name")])).toBeUndefined();
   });

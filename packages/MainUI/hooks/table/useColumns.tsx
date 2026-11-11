@@ -213,6 +213,49 @@ export const resolveColumnFilterState = (
   };
 };
 
+/**
+ * Text of a numeric grid cell: the number with the configured mask (thousands separator, fixed decimals), or the
+ * value as it is when it is not a number.
+ */
+const getNumericCellText = (
+  cell: MRT_Cell<EntityData, unknown> | undefined,
+  row: { original: EntityData } | undefined,
+  column: Column,
+  language: string | undefined
+): string => {
+  let value = cell?.getValue();
+  if (value === undefined || value === null) {
+    value = row?.original?.[column.columnName] ?? row?.original?.[column.name];
+  }
+  const isNumber = typeof value === "number" || (typeof value === "string" && value.trim() !== "");
+  const numeric = isNumber ? Number(value) : Number.NaN;
+  if (!Number.isNaN(numeric)) {
+    return formatNumber(numeric, language, column.column?.reference, column.column?.valueFormat);
+  }
+  return value == null ? "" : String(value);
+};
+
+/**
+ * Numeric columns (not references) align to the right and use the configured mask, as in Classic. Any other
+ * column is returned unchanged.
+ */
+const withNumericCell = (
+  columnConfig: Column,
+  column: Column,
+  isReference: boolean,
+  language: string | undefined
+): Column => {
+  if (!isNumericReference(column.column?.reference) || isReference) {
+    return columnConfig;
+  }
+  return {
+    ...columnConfig,
+    Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => (
+      <span className="block w-full text-right tabular-nums">{getNumericCellText(cell, row, column, language)}</span>
+    ),
+  };
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect, handleClientclassNavigation } = useRedirect();
   const {
@@ -302,27 +345,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Numeric columns use the configured mask (thousands separator, fixed decimals) and align to the right,
-      // as in Classic. Values that are not numbers are shown as they are.
-      if (isNumericReference(column.column?.reference) && !isReference) {
-        columnConfig = {
-          ...columnConfig,
-          Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
-            let value = cell?.getValue();
-            if (value === undefined || value === null) {
-              value = row?.original?.[column.columnName] ?? row?.original?.[column.name];
-            }
-            const isNumber = typeof value === "number" || (typeof value === "string" && value.trim() !== "");
-            const numeric = isNumber ? Number(value) : Number.NaN;
-            const text = Number.isNaN(numeric)
-              ? value == null
-                ? ""
-                : String(value)
-              : formatNumber(numeric, language ?? undefined, column.column?.reference, column.column?.valueFormat);
-            return <span className="block w-full text-right tabular-nums">{text}</span>;
-          },
-        };
-      }
+      columnConfig = withNumericCell(columnConfig, column, isReference, language ?? undefined);
 
       // Reference columns with navigation
       if (isReference) {

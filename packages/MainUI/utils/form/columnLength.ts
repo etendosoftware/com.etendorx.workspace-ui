@@ -34,12 +34,7 @@ interface ColumnWithLength {
  */
 export const getTextMaxLength = (field: ColumnWithLength, options: { grid?: boolean } = {}): number | undefined => {
   let length = Number(field.column?.length);
-  if (
-    options.grid &&
-    !(length > 0) &&
-    field.column?.dBColumnName?.toLowerCase() === DOCUMENT_NO_COLUMN &&
-    length === 0
-  ) {
+  if (options.grid && length === 0 && field.column?.dBColumnName?.toLowerCase() === DOCUMENT_NO_COLUMN) {
     length = DOCUMENT_NO_DEFAULT_LENGTH;
   }
   return length > 0 ? length : undefined;
