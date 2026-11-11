@@ -159,6 +159,12 @@ import {
 } from "@/utils/processes/definition/processStack";
 import { buildNestedLaunch } from "@/utils/processes/definition/nestedLaunch";
 import {
+  findOversizedFile,
+  getProcessFileUploadMaxSize,
+  PROCESS_FILE_MAX_SIZE_EXCEEDED_MESSAGE,
+} from "@/utils/process/fileUploadMaxSize";
+import { createI18N } from "@/utils/ob/i18n";
+import {
   isDirectExecuteResult,
   shouldFireDirectExecute,
   shouldRenderDirectExecuteOverlay,
@@ -1922,6 +1928,26 @@ function ProcessDefinitionModalContent({
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
   okEnabledRef.current = !isActionButtonDisabled;
 
+  // Classic parity (OBProcessFileUpload): a selected file above the OBUIAPP_ProcessFileUploadMaxSize
+  // preference is rejected on click, with the message in the in-modal banner, and nothing is sent.
+  const handleExecuteGuarded = useCallback(
+    (actionValue?: string) => {
+      const maxSize = getProcessFileUploadMaxSize();
+      const oversizedFile = findOversizedFile(fileParams, maxSize);
+      if (oversizedFile) {
+        const params = [oversizedFile.name, String(maxSize)];
+        messageBar.setMessage(
+          "error",
+          null,
+          createI18N({ getLabel }).getLabel(PROCESS_FILE_MAX_SIZE_EXCEEDED_MESSAGE, params)
+        );
+        return;
+      }
+      handleExecute(actionValue);
+    },
+    [fileParams, getLabel, handleExecute]
+  );
+
   // Classic parity: a Report and Process validates its mandatory parameters on
   // click and shows AD_Message JS1 in the in-modal banner instead of posting when
   // a required field is empty. handleReportProcessExecute does not validate, so we
@@ -2046,7 +2072,7 @@ function ProcessDefinitionModalContent({
               isActionButtonDisabled={Boolean(isActionButtonDisabled)}
               getActionButtonContent={getActionButtonContent}
               onClose={handleClose}
-              onExecute={handleExecute}
+              onExecute={handleExecuteGuarded}
               onReportProcessExecute={handleReportProcessExecuteGuarded}
               t={t}
               getLabel={getLabel}
