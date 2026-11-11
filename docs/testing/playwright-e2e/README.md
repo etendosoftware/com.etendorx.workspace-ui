@@ -54,7 +54,7 @@ _Last updated: 2026-10-21 (ETP-5832: feature probes, regression tier, mocked-bac
 | Data a probe does not test is created through the datasource (`api` fixture) | Much faster than the UI and it keeps the probe on the behavior it checks. It needs a UI login first: the CSRF token of the server-side session is set by the app's own startup requests. |
 | Read-only probes and probes on their own records go to `suite-01-base` | That project waits for its longest spec (ADMb), so short probes fill idle workers almost for free. |
 | A probe never takes "the first row" and never changes the user's defaults | Projects run 3 specs in parallel on one database: probes filter by their own records or fixed sample documents, and SESa never ticks "Save as default". |
-| Client behavior the bare core has no data for is injected into the metadata (`support/processOverrides.ts`) | The core ships no migrated `em_etmeta_onprocess`; PRCb and PRCd set one in the window/process metadata the UI loads, and block the Java handler so nothing executes. The core has no process button that can be shown read-only either; PRCf sets a read-only logic on a field (`overrideField`). Nor a process with a file parameter a probe can run: PRCg gives Add Payment a single Upload File parameter. |
+| Client behavior the bare core has no data for is injected into the metadata (`support/processOverrides.ts`) | The core ships no migrated `em_etmeta_onprocess`; PRCb and PRCd set one in the window/process metadata the UI loads, and block the Java handler so nothing executes. The core has no process button that can be shown read-only either; PRCf sets a read-only logic on a field (`overrideField`). Nor a process with a file parameter a probe can run: PRCg gives Add Payment a single Upload File parameter. Nor a button that runs a multi-record `com.smf.jobs` process (Bulk Completion comes from a module CI does not install): PRCh wires the Sales Invoice "Process Invoices" button to the core "Process Invoices" definition, with the metadata the backend serves for it, and runs the real handler. |
 | Global configuration a probe needs is created for the user and the window only, and removed in `afterEach` | GRDd enables `OBUIAPP_GroupingEnabled` (only the F&B sample client has it); `afterEach` still runs with the page open when a test times out, a `finally` does not. |
 
 ## Grouping and parallelism
@@ -128,6 +128,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 | PRCc | regression | OBUIAPP_Report from the menu (Payables Aging Schedule): defaults, PDF download, modal kept open | None |
 | PRCd | regression | Manual process (Open Close Periods): "not migrated" message without a script; a migrated script runs with the selection and the `OB` shim | Sample period; scripts set by override, handler blocked |
 | PRCe | regression | Classic popup that answers with a file (Reconciliation Details): success message and an intact PDF download ([ETP-6022](../../process/legacy/manual-processes.md#39-file-downloads-and-uploads)) | Sample reconciliation of Accounting Documents EURO, read only |
+| PRCh | regression | Multi-record process ("Process Invoices" of `com.smf.jobs.defaults` on Sales Invoice): one request carries every selected record, and a partial failure is reported once, as a warning ("1 … processed and 2 … failed"); the invoice with a line is completed and the two without lines stay in draft ([ETP-5983](../../features/process-execution/multi-record-processes.md)) | Three own invoices (`api`), copied from sample invoice I/25; the drafts are deleted after the test, the completed one stays |
 | FRMd | regression | Notes and attachments of a record: add and delete | Own category |
 | GRDc | regression | Saved views: save, standard view, apply, default applied when the window opens | Own view, deleted after the test |
 | GRDd | regression | Count summary and grouping by a column add up to the grid rows | Grouping preference for the user and window, removed after the test |
@@ -195,6 +196,7 @@ answer those requests from recordings, so the real UI runs in a real browser wit
 | FRMc, SESa | real backend | Save → reload round trip; server-side session and defaults. |
 | FRMe | real backend | Selector popup records, Add Payment defaults and execution, and the transaction callout run on the server. |
 | GRDa, GRDb | split | Child tab, sort and guard are client side; callout, clone, delete and cache are server side. |
+| PRCh | real backend | The combined message and the completed or failed invoices come from the process handler. |
 | PRCc, PRCd, PRCe, FRMd, GRDc, GRDe | real backend | Report generation, Classic handler contract, attachment storage, saved views and tree moves are persisted. |
 | GRDd, NAVb, NAVc | mockable | Client-side grouping, summary, shortcuts and record navigation on recorded data. |
 

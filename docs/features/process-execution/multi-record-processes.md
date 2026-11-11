@@ -36,6 +36,14 @@ The response is handled by the usual Java process flow; see [ProcessDefinitionMo
 
 - Classic shows the combined success or warning in the message bar of the window. The New UI shows it as a toast, like every other process result.
 
+## Tests
+
+- Jest: `useProcessExecution.responseFlags.test.ts` covers the single request and the combined success, warning and error.
+- Playwright: PRCh (`regression` tier, see [Playwright E2E](../../testing/playwright-e2e/README.md)) runs the real
+  `com.smf.jobs.defaults` "Process Invoices" handler on three own invoices. It checks one request with every id,
+  the combined warning and the final status of each invoice. The bare core attaches that process to no button, so
+  the spec wires the Sales Invoice "Process Invoices" button to it through a metadata override.
+
 ## Configuration
 
 None.
