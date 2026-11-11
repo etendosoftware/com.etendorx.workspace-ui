@@ -30,6 +30,12 @@ jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: () => mockWindowIdentifier,
 }));
 
+let mockAuxiliaryInputs: Record<string, string> = {};
+
+jest.mock("@/contexts/tab", () => ({
+  useTabContext: () => ({ auxiliaryInputs: mockAuxiliaryInputs }),
+}));
+
 const countryTab = {
   id: COUNTRY_TAB_ID,
   tabLevel: 0,
@@ -42,6 +48,8 @@ const countryTab = {
 
 const createChildTab = (displayLogic?: string) =>
   ({ id: "region", tabLevel: 1, parentTabId: COUNTRY_TAB_ID, displayLogic, fields: {} }) as unknown as Tab;
+const createGrandchildTab = (displayLogic: string) =>
+  ({ id: "city", tabLevel: 2, parentTabId: "region", displayLogic, fields: {} }) as unknown as Tab;
 
 const SPAIN = { id: "ES", hasRegion: true, name: "Spain" };
 
@@ -78,13 +86,16 @@ const renderPublisher = (windowTabs: Tab[], isFormInitializing = false) => {
 };
 
 const getPublished = () => useLiveTabValuesStore.getState().entries[WINDOW_IDENTIFIER]?.[COUNTRY_TAB_ID];
+const getSelectionContext = () =>
+  useLiveTabValuesStore.getState().selectionEntries[WINDOW_IDENTIFIER]?.[COUNTRY_TAB_ID];
 
 describe("LiveTabValuesPublisher", () => {
   const regionTab = createChildTab("@HasRegion@='Y'");
 
   beforeEach(() => {
     mockWindowIdentifier = WINDOW_IDENTIFIER;
-    useLiveTabValuesStore.setState({ entries: {} });
+    mockAuxiliaryInputs = {};
+    useLiveTabValuesStore.setState({ entries: {}, selectionEntries: {} });
   });
 
   it("publishes only the fields the child tabs' display logic reads", () => {
@@ -139,6 +150,44 @@ describe("LiveTabValuesPublisher", () => {
     renderPublisher(windowTabs as Tab[]);
 
     expect(useLiveTabValuesStore.getState().entries).toEqual({});
+  });
+
+  it("publishes the auxiliary inputs of the form's record", () => {
+    mockAuxiliaryInputs = { COUNTRYTYPE: "S" };
+
+    renderPublisher([countryTab, regionTab]);
+
+    expect(getSelectionContext()).toEqual({ recordId: "ES", values: { COUNTRYTYPE: "S" } });
+  });
+
+  it("keeps the auxiliary inputs of the record once unmounted", () => {
+    mockAuxiliaryInputs = { COUNTRYTYPE: "S" };
+    const { unmount } = renderPublisher([countryTab, regionTab]);
+
+    unmount();
+
+    expect(getSelectionContext()?.values).toEqual({ COUNTRYTYPE: "S" });
+  });
+
+  it("does not publish auxiliary inputs while the form is initializing", () => {
+    renderPublisher([countryTab, regionTab], true);
+
+    expect(getSelectionContext()).toBeUndefined();
+  });
+
+  it("publishes when the child tabs' display logic reads no field of the form", () => {
+    mockAuxiliaryInputs = { COUNTRYTYPE: "S" };
+
+    renderPublisher([countryTab, createChildTab("@COUNTRYTYPE@='S'")]);
+
+    expect(getPublished()).toEqual({ recordId: "ES", values: {} });
+    expect(getSelectionContext()?.values).toEqual({ COUNTRYTYPE: "S" });
+  });
+
+  it("publishes the fields read by the display logic of tabs further down", () => {
+    renderPublisher([countryTab, createChildTab(), createGrandchildTab("@Name@='Spain'")]);
+
+    expect(getPublished()?.values).toEqual({ name: "Spain" });
   });
 
   it("publishes nothing outside a window", () => {

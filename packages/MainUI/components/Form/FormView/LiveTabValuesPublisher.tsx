@@ -22,8 +22,9 @@ import { useWatch } from "react-hook-form";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
+import { useTabContext } from "@/contexts/tab";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
-import { getChildTabs, getTabDisplayLogicDependencies } from "@/utils/tabUtils";
+import { getDescendantTabs, getTabDisplayLogic, getTabDisplayLogicDependencies } from "@/utils/tabUtils";
 
 /**
  * Form field holding the record id. Watched together with the dependencies so the published
@@ -56,15 +57,18 @@ const toRecordId = (value: unknown): string | undefined => {
 };
 
 /**
- * Watches only the given fields and keeps their current values published for the record.
+ * Watches only the given fields and keeps their current values published for the record, together
+ * with the auxiliary inputs the server computed for it.
  * Split from {@link LiveTabValuesPublisher} so forms with nothing to watch never subscribe.
  */
 const WatchedValuesPublisher = ({ windowIdentifier, tabId, dependencies }: WatchedValuesPublisherProps) => {
   const watchedNames = useMemo(() => [RECORD_ID_FIELD, ...dependencies], [dependencies]);
   const watched: unknown[] = useWatch({ name: watchedNames });
   const { isFormInitializing } = useFormInitializationContext();
+  const { auxiliaryInputs } = useTabContext();
   const publishTabValues = useLiveTabValuesStore((state) => state.publishTabValues);
   const clearTabValues = useLiveTabValuesStore((state) => state.clearTabValues);
+  const publishSelectionContext = useLiveTabValuesStore((state) => state.publishSelectionContext);
   const recordId = toRecordId(watched[0]);
   const values = useMemo(() => toValuesByName(dependencies, watched.slice(1)), [dependencies, watched]);
 
@@ -79,25 +83,36 @@ const WatchedValuesPublisher = ({ windowIdentifier, tabId, dependencies }: Watch
     publishTabValues(windowIdentifier, tabId, { recordId, values });
   }, [isFormInitializing, windowIdentifier, tabId, recordId, values, publishTabValues, clearTabValues]);
 
+  // Auxiliary inputs of the form's record (form initialization and callouts) outlive the form, as
+  // Classic keeps them in the view form shared with the grid until another record is selected.
+  useEffect(() => {
+    if (isFormInitializing || !recordId) {
+      return;
+    }
+    publishSelectionContext(windowIdentifier, tabId, { recordId, values: auxiliaryInputs });
+  }, [isFormInitializing, windowIdentifier, tabId, recordId, auxiliaryInputs, publishSelectionContext]);
+
   useEffect(() => () => clearTabValues(windowIdentifier, tabId), [windowIdentifier, tabId, clearTabValues]);
 
   return null;
 };
 
 /**
- * Publishes the form fields the child tabs' display logic depends on, so tab visibility
- * follows unsaved header edits (Classic calls `updateSubtabVisibility` on every item change).
- * Renders nothing and subscribes to nothing when no child tab has display logic.
+ * Publishes the form fields and auxiliary inputs the display logic of the tabs below depends on,
+ * so tab visibility follows unsaved edits (Classic calls `updateSubtabVisibility` on every item change).
+ * Renders nothing and subscribes to nothing when no tab below has display logic.
  */
 export default function LiveTabValuesPublisher({ tab, windowTabs }: LiveTabValuesPublisherProps) {
   const windowIdentifier = useCurrentWindowIdentifier();
 
+  const descendantTabs = useMemo(() => getDescendantTabs(windowTabs ?? [], tab), [windowTabs, tab]);
   const dependencies = useMemo(
-    () => getTabDisplayLogicDependencies(getChildTabs(windowTabs ?? [], tab), tab.fields),
-    [windowTabs, tab]
+    () => getTabDisplayLogicDependencies(descendantTabs, tab.fields),
+    [descendantTabs, tab.fields]
   );
+  const hasTabDisplayLogic = useMemo(() => descendantTabs.some((child) => getTabDisplayLogic(child)), [descendantTabs]);
 
-  if (!windowIdentifier || dependencies.length === 0) {
+  if (!windowIdentifier || !hasTabDisplayLogic) {
     return null;
   }
 
