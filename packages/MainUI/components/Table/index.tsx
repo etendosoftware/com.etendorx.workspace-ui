@@ -131,6 +131,7 @@ import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
+import { copyColumnLength } from "@/utils/form/columnLength";
 import { applyOutFields, buildGridVisibleProperties } from "@/utils/callouts/calloutPayload";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useColumnLayout } from "./hooks/useColumnLayout";
@@ -1651,6 +1652,9 @@ const DynamicTable = ({
       if (originalField.selector) {
         field.selector = originalField.selector;
       }
+
+      // The editor's column carries no length: text editors need it to cap the input, as in Classic
+      copyColumnLength(field, originalField);
 
       // Use the correct inputName and hqlName from the original field
       field.inputName = originalField.inputName;

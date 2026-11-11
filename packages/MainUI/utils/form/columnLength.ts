@@ -44,3 +44,24 @@ export const getTextMaxLength = (field: ColumnWithLength, options: { grid?: bool
   }
   return length > 0 ? length : undefined;
 };
+
+/**
+ * Copies the column length (and the database column name, used by the `documentno` rule) from the metadata
+ * field of a tab to the field a grid cell editor receives, whose `column` only carries a few properties.
+ * Without it the text editors of the grid cannot cap the input.
+ *
+ * @param editorField - The field built for the cell editor (modified in place)
+ * @param originalField - The field of the tab metadata the editor field comes from
+ */
+export const copyColumnLength = <T extends { column?: object }>(editorField: T, originalField: ColumnWithLength): T => {
+  const { length, dBColumnName } = originalField.column ?? {};
+  if (length === undefined && !dBColumnName) {
+    return editorField;
+  }
+  editorField.column = {
+    ...editorField.column,
+    ...(length !== undefined ? { length } : {}),
+    ...(dBColumnName ? { dBColumnName } : {}),
+  };
+  return editorField;
+};
