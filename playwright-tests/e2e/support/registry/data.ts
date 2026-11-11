@@ -120,6 +120,8 @@ export const PROCESS_PARAMETER = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Sales invoice of Customer B, organization Spain, 258.50 pending; no spec pays it. */
+  SALES_INVOICE_PENDING_CUSTOMER_B: "I/27",
   /** Accounting period of the sample calendar (Open/Close Period Control). */
   PERIOD_JAN_2011: "Jan-11",
   /** Reconciliation of "Accounting Documents EURO" (July 2011); Reconciliation Details prints it as a PDF. */
@@ -167,6 +169,8 @@ export const LOCATOR = {
  */
 export const FIELD = {
   SALES_ORDER_LINE_QUANTITY: "1130",
+  /** "Add Payment" process button of the Sales Invoice header (multi-record process definition). */
+  SALES_INVOICE_ADD_PAYMENT: "AD7C15BA367642AFB471EFAFD768FB2D",
   SALES_INVOICE_LINE_PRODUCT: "2996",
   SALES_INVOICE_LINE_QUANTITY: "2999",
   PURCHASE_ORDER_LINE_QUANTITY: "3389",

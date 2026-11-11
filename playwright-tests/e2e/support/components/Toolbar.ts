@@ -139,10 +139,14 @@ export class Toolbar {
    */
   async process(label: string, level: TabLevel = "header"): Promise<void> {
     await this.openProcessMenu(level);
-    await this.page
+    await this.processEntry(label).click();
+  }
+
+  /** Entry of the open process menu, by label: to assert its state (`aria-disabled`) without running it. */
+  processEntry(label: string): Locator {
+    return this.page
       .locator(PROCESS_MENU_ITEMS)
       .filter({ hasText: exactText(label) })
-      .first()
-      .click();
+      .first();
   }
 }
