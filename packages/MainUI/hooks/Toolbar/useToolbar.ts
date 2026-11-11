@@ -37,7 +37,7 @@ import {
   fetchFormInitialization,
   buildFormInitializationPayload,
   buildFormInitializationParams,
-  buildSessionAttributes,
+  buildRecordContextValues,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
@@ -158,8 +158,9 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       .then((data) => {
         // Discard response if a different record was selected while fetching.
         if (lastFetchedAuxIdRef.current !== capturedId) return;
-        // Classic's context holds both the auxiliary inputs and the session attributes of the record.
-        setToolbarAux({ recordId: capturedId, values: buildSessionAttributes(data) });
+        // Classic's context holds the auxiliary inputs, with their own types, and the session attributes of
+        // the record, which win on duplicate names.
+        setToolbarAux({ recordId: capturedId, values: buildRecordContextValues(data) });
       })
       .catch((err) => logger.warn("Toolbar aux inputs fetch failed:", err));
   }, [contextRecordId, settledSelectedId, isFormView, contextRecord, actionFields, tab, parentRecord]);

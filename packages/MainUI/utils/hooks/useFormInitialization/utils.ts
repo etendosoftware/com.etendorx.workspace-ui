@@ -270,6 +270,60 @@ export const buildSessionAttributes = (data: FormInitializationResponse | null):
 };
 
 /**
+ * Extracts the auxiliary input values of a FormInitialization response, keeping each value's own type.
+ *
+ * The server sends the raw value of the auxiliary input's query (`SELECT 1` arrives as the number `1`),
+ * and Classic evaluates expressions with it as is: `@HASSECONDUOM@=1` compares against that number.
+ *
+ * @param data - Form initialization response
+ * @returns Auxiliary input values by name
+ */
+export const extractAuxiliaryInputValues = (data: FormInitializationResponse | null): Record<string, string> => {
+  const auxiliaryInputs: Record<string, string> = {};
+  for (const [name, { value }] of Object.entries(data?.auxiliaryInputValues ?? {})) {
+    auxiliaryInputs[name] = value;
+  }
+  return auxiliaryInputs;
+};
+
+/**
+ * Gives each auxiliary input the value of the session attribute with its name, when there is one.
+ *
+ * Classic's `getContextInfo` adds the form's session attributes after its auxiliary inputs, so an
+ * auxiliary input that is also a session attribute is read as that attribute's string. For example,
+ * `@ETSG_CheckLegalOrg@='1'` is true because the attribute is `"1"`, while the auxiliary input is `1`.
+ *
+ * @param auxiliaryInputs - Auxiliary input values, with their own types
+ * @param sessionAttributes - Session attributes of the same record
+ * @returns The auxiliary inputs with the overridden values; the same object when nothing changes
+ */
+export const applySessionAttributeOverrides = (
+  auxiliaryInputs: Record<string, string>,
+  sessionAttributes: Record<string, string>
+): Record<string, string> => {
+  const overriddenNames = Object.keys(auxiliaryInputs).filter((name) => Object.hasOwn(sessionAttributes, name));
+  if (overriddenNames.length === 0) return auxiliaryInputs;
+
+  const result = { ...auxiliaryInputs };
+  for (const name of overriddenNames) {
+    result[name] = sessionAttributes[name];
+  }
+  return result;
+};
+
+/**
+ * Builds the record context of a FormInitialization response as Classic's `getContextInfo` does: the
+ * auxiliary inputs with their own types, then the session attributes, which win on duplicate names.
+ *
+ * @param data - Form initialization response
+ * @returns Auxiliary inputs and session attributes by name
+ */
+export const buildRecordContextValues = (data: FormInitializationResponse | null): Record<string, string> => ({
+  ...extractAuxiliaryInputValues(data),
+  ...data?.sessionAttributes,
+});
+
+/**
  * Determines if a session key is a global (login/profile-level) attribute
  * that should be preserved across form initialization calls.
  *
