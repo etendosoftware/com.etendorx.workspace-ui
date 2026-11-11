@@ -15,6 +15,7 @@ docs/
 │   ├── process-execution/            # Feature: Process execution
 │   │   ├── README.md                # Feature overview
 │   │   ├── process-definition-modal.md
+│   │   ├── multi-record-processes.md # One request and one combined result for multi-record processes
 │   │   ├── defaults-action-handler.md
 │   │   └── window-references.md
 │   ├── process-scripts/              # Feature: Dynamic process scripts (onLoad / onProcess / PayScript)
