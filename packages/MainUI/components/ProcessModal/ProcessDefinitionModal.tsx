@@ -150,6 +150,7 @@ import {
   isolateMessageBar,
   messageBar,
   subscribeMessageBar,
+  type MessageBarState,
 } from "@/utils/processes/definition/messageBarStore";
 import {
   getProcessStack,
@@ -464,6 +465,8 @@ function ProcessDefinitionModalContent({
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
   const [fileParams, setFileParams] = useState<Record<string, File>>({});
+  // The file size error this modal showed, so that the next execute click hides that message and no other.
+  const fileSizeMessageRef = useRef<MessageBarState | null>(null);
 
   const handleFileChange = useCallback((paramName: string, file: File | null) => {
     setFileParams((prev) => {
@@ -1932,6 +1935,12 @@ function ProcessDefinitionModalContent({
   // preference is rejected on click, with the message in the in-modal banner, and nothing is sent.
   const handleExecuteGuarded = useCallback(
     (actionValue?: string) => {
+      // Classic hides the message bar when the button is clicked, before validating: a previous size error
+      // goes away once the file fits. Only that message is hidden, so other messages keep their behavior.
+      if (fileSizeMessageRef.current && getMessageBarState() === fileSizeMessageRef.current) {
+        messageBar.hide();
+      }
+      fileSizeMessageRef.current = null;
       const maxSize = getProcessFileUploadMaxSize();
       const oversizedFile = findOversizedFile(fileParams, maxSize);
       if (oversizedFile) {
@@ -1941,6 +1950,7 @@ function ProcessDefinitionModalContent({
           null,
           createI18N({ getLabel }).getLabel(PROCESS_FILE_MAX_SIZE_EXCEEDED_MESSAGE, params)
         );
+        fileSizeMessageRef.current = getMessageBarState();
         return;
       }
       handleExecute(actionValue);
