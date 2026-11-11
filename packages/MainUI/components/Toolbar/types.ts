@@ -80,6 +80,8 @@ export interface ProcessMenuProps {
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: EntityData | undefined;
   hasSelection?: boolean;
+  /** Ids of the buttons whose read-only logic is true for the selection: shown disabled. */
+  readOnlyButtonIds?: ReadonlySet<string>;
 }
 
 export interface BasicToolbarButton {

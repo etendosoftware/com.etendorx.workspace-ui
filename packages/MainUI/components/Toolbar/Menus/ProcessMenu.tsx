@@ -23,7 +23,7 @@ import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import { isProcessButtonAccessible } from "@/utils/toolbar/process-button/utils";
+import { isProcessButtonEnabled } from "@/utils/toolbar/process-button/utils";
 
 /**
  * Resolves the display name for a process action button based on the selected record's state.
@@ -145,6 +145,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   onProcessClick,
   selectedRecord,
   hasSelection,
+  readOnlyButtonIds,
 }) => {
   const isDisabled = hasSelection !== undefined ? !hasSelection : !selectedRecord;
 
@@ -153,7 +154,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
       <div className="rounded-2xl px-2 py-4">
         {processButtons.map((button: ProcessButton, index: number) => {
           const buttonName = getProcessButtonName(button, selectedRecord);
-          const isItemDisabled = isDisabled || !isProcessButtonAccessible(button);
+          const isItemDisabled = isDisabled || !isProcessButtonEnabled(button, readOnlyButtonIds);
 
           if (isProcessActionButton(button)) {
             return (
