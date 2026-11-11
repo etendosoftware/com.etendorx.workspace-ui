@@ -75,6 +75,16 @@ None. A field becomes a property field when its `Property` is set in the Applica
 - `packages/MainUI/hooks/useCurrentRecord.ts`: the record fetch of the form, which already requested
   the paths.
 
+## Tests
+
+- Unit tests: `utils/table/__tests__/extraProperties.test.ts`, the grid query in
+  `hooks/table/__tests__/useTableData.grouping.test.tsx`, `buildQueryString` and the cell accessor in
+  `utils/__tests__/`, and the metadata name and key in `FieldBuilderTest`, `FieldBuilderWithColumnTest`
+  and `TabProcessorTest`.
+- E2E: the `@smoke` spec `SALbAddSalesInvoicePaymentTest` opens Payment Plan › Payment Details of the
+  invoice it pays and expects a cell with exactly the new payment number, which only a property field
+  (`paymentDetails.finPayment.documentNo`) can show.
+
 ## Related
 
 - [CSV export](../csv-export/README.md): the export reuses the grid request.
