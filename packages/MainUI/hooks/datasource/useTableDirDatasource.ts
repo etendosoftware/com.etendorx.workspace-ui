@@ -225,6 +225,10 @@ export const useTableDirDatasource = ({
       const formValues: Record<string, EntityValue> = {};
 
       for (const [key, value] of Object.entries(formData)) {
+        // `<field>$_entries` are the dropdown lists the form keeps for its own selectors, not request parameters:
+        // as arrays they would be sent as "[object Object],…"
+        if (key.endsWith("$_entries")) continue;
+
         const currentField = tab?.fields?.[key];
         const inputName = currentField?.inputName || key;
 

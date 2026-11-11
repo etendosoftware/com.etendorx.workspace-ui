@@ -19,7 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
-import { autocompleteDate } from "@/utils/dateAutocomplete";
+import { autocompleteDate, toLocalIsoDate } from "@/utils/dateAutocomplete";
 import { NOT_TABBABLE } from "@/utils/form/focus";
 import {
   getInputClassNames,
@@ -126,7 +126,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         if (!isReadOnly && displayValue) {
           const date = autocompleteDate(displayValue, datePlaceholder);
           if (date) {
-            const isoDate = date.toISOString().split("T")[0];
+            const isoDate = toLocalIsoDate(date);
             handleValidDateInput(isoDate);
           } else {
             handleInvalidDateInput();
@@ -206,7 +206,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             return;
           }
 
-          const isoDate = date.toISOString().split("T")[0];
+          const isoDate = toLocalIsoDate(date);
           // If we have a valid date, update the hidden input
           // This will trigger handleHiddenDateChange -> props.onChange -> callout
           if (hiddenDateInputRef.current && hiddenDateInputRef.current.value !== isoDate) {

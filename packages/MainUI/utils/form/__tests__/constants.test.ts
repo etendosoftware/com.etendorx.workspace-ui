@@ -123,3 +123,22 @@ describe("form/constants", () => {
     });
   });
 });
+
+describe("isImmediateCalloutReference", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { isImmediateCalloutReference } = require("../constants");
+
+  it("runs the callout on change for selectors, lists and booleans", () => {
+    expect(isImmediateCalloutReference("18")).toBe(true);
+    expect(isImmediateCalloutReference("17")).toBe(true);
+    expect(isImmediateCalloutReference("20")).toBe(true);
+  });
+
+  it("waits for the blur on numbers, text and dates", () => {
+    expect(isImmediateCalloutReference("29")).toBe(false);
+    expect(isImmediateCalloutReference("12")).toBe(false);
+    expect(isImmediateCalloutReference("10")).toBe(false);
+    expect(isImmediateCalloutReference("15")).toBe(false);
+    expect(isImmediateCalloutReference(undefined)).toBe(false);
+  });
+});

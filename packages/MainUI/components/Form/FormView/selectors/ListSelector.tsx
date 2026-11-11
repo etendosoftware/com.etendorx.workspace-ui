@@ -16,21 +16,30 @@
  */
 
 import { useMemo } from "react";
+import { useWatch } from "react-hook-form";
 import type { Field } from "@workspaceui/api-client/src/api/types";
+import { filterActiveListOptions, restrictListOptionsToEntries, type ListEntry } from "@/utils/form/listOptions";
 import Select from "./components/Select/Select";
 import type { SelectProps } from "./components/types";
 
 export const ListSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
+  // `entries` are the values the server allows for the field (validation rule applied), refreshed by callouts.
+  const [currentValue, entries] = useWatch({ name: [field.hqlName, `${field.hqlName}$_entries`] }) as [
+    unknown,
+    ListEntry[] | undefined,
+  ];
+
   const options = useMemo<SelectProps["options"]>(() => {
     if (field.refList) {
-      return Array.from(field.refList).map((item) => ({
+      const active = filterActiveListOptions(Array.from(field.refList), currentValue);
+      return restrictListOptionsToEntries(active, entries, currentValue).map((item) => ({
         id: item.value,
         label: item.label,
       }));
     }
 
     return [];
-  }, [field.refList]);
+  }, [field.refList, currentValue, entries]);
 
   return (
     <Select name={field.hqlName} options={options} isReadOnly={isReadOnly} field={field} data-testid="Select__2483fb" />

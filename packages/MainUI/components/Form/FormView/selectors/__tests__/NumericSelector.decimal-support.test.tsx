@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { fireEvent } from "@testing-library/react";
 import { UnifiedNumericSelector } from "../NumericSelector";
 import {
   createMockField,
@@ -51,9 +52,38 @@ describe("NumericSelector - Decimal Separator Support", () => {
   describe("Integer fields", () => {
     const integerField = createMockField(FIELD_REFERENCES.INTEGER, "integerAmount");
 
-    it("should strip decimal separators for integer fields", () => {
+    it("should keep the decimals typed in an integer field instead of altering them", () => {
       const input = renderWithWrapper(<UnifiedNumericSelector field={integerField} type="integer" />);
-      testDecimalInput(input, "123.45", "12345");
+      testDecimalInput(input, "1.5", "1.5");
+      fireEvent.blur(input);
+      expect(input).toHaveValue("1.5");
+    });
+  });
+
+  describe("Empty and expression entries", () => {
+    const mandatoryField = { ...mockField, isMandatory: true } as typeof mockField;
+
+    it("should keep a cleared mandatory field empty instead of turning it into 0", () => {
+      const input = renderWithWrapper(<UnifiedNumericSelector field={mandatoryField} type="decimal" />);
+      fireEvent.change(input, { target: { value: "5" } });
+      fireEvent.change(input, { target: { value: "" } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue("");
+    });
+
+    it("should evaluate an expression starting with = when the field is left", () => {
+      const input = renderWithWrapper(<UnifiedNumericSelector field={mockField} type="decimal" />);
+      fireEvent.change(input, { target: { value: "=2*5" } });
+      expect(input).toHaveValue("=2*5");
+      fireEvent.blur(input);
+      expect(input).toHaveValue("10.00");
+    });
+
+    it("should keep an invalid expression so it can be corrected", () => {
+      const input = renderWithWrapper(<UnifiedNumericSelector field={mockField} type="decimal" />);
+      fireEvent.change(input, { target: { value: "=2*" } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue("=2*");
     });
   });
 
