@@ -84,6 +84,8 @@ export default defineConfig({
         "**/smoke/08_Process/PRCb*",
         // PRCf only opens the process menu: nothing is run
         "**/smoke/08_Process/PRCf*",
+        // PRCg rejects the file before anything is sent
+        "**/smoke/08_Process/PRCg*",
         "**/smoke/09_Form/**",
         "**/smoke/10_Grid/**",
         "**/smoke/11_Navigation/**",
