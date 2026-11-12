@@ -2,8 +2,8 @@ import type { Locator } from "@playwright/test";
 import { expect, test } from "../../support/fixtures";
 import { blockRequests } from "../../support/network";
 import { overrideProcessDefinition } from "../../support/processOverrides";
-import { WINDOW_IDS } from "../../support/registry/windows";
-import { runAndWaitForFormInitialization } from "../../support/wait";
+import { TABS, WINDOW_IDS } from "../../support/registry/windows";
+import { runAndCaptureGridFetch, runAndWaitForFormInitialization } from "../../support/wait";
 
 const ABORT_MESSAGE = "Aborted by the E2E onProcess";
 /** A migrated onProcess (`em_etmeta_onprocess`) whose validation always fails: `{ severity, text }`. */
@@ -17,6 +17,11 @@ const LINE_AMOUNT = 'input[aria-label="Amount"]';
 /** The 40.00 of the payment no invoice takes: as Classic, Execute waits until it says what to do with it. */
 const OVERPAYMENT_ACTION = "Overpayment Action";
 const LEAVE_AS_CREDIT = "Leave the credit to be used later";
+/**
+ * Classic default sort of the grid (no order-by clause, `OBViewGridComponent.getSortField`): its first identifier
+ * field, Order No., ascending (ETP-4641).
+ */
+const GRID_DEFAULT_SORT = "salesOrderNo";
 
 /** Types an amount in the cell editor of a selected row and leaves the cell. */
 async function editLineAmount(cell: Locator, amount: string): Promise<void> {
@@ -25,8 +30,8 @@ async function editLineAmount(cell: Locator, amount: string): Promise<void> {
 }
 
 /**
- * Pick-and-Execute grid of a process modal: the amount follows the row selection, a numeric cell
- * can be edited, and a migrated onProcess validation stops the execution. The bare core has no
+ * Pick-and-Execute grid of a process modal: it opens sorted by its classic default field, the amount follows
+ * the row selection, a numeric cell can be edited, and a migrated onProcess validation stops the execution. The bare core has no
  * migrated onProcess, so the spec injects one into the Add Payment definition the window
  * metadata carries; the payment request is blocked as a safety net and must never be sent.
  */
@@ -48,7 +53,10 @@ test.describe("Pick and Execute grid - selection, cell edit and onProcess abort 
     await app.toolbar.save();
     await app.toast.closeAll();
 
-    await app.toolbar.process("Add Details");
+    const gridParams = await runAndCaptureGridFetch(page, TABS.ADD_PAYMENT_ORDER_INVOICES, () =>
+      app.toolbar.process("Add Details")
+    );
+    expect(gridParams._sortBy, "the grid is not sorted by its classic default field").toBe(GRID_DEFAULT_SORT);
     expect(override.applied, "the Add Payment definition was not found in the window metadata").toBeGreaterThan(0);
     const modal = app.processModal.root;
     const invoiceNumber = data.SAMPLE_DOCUMENT.SALES_INVOICE_PENDING;

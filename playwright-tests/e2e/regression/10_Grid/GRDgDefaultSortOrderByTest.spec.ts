@@ -44,7 +44,7 @@ test.afterEach(({ api }) => api.resetGridConfigurations(SORTED_TABS));
  * `_sortBy` only carries a manual sort, which takes precedence; a tab without a clause is sorted by the classic
  * default field (`OBViewGridComponent.getSortField`). Read-only, on sample data.
  */
-test.describe("Grid - default sort from the tab order-by clause @regression @grid", () => {
+test.describe("Grid - default sort as classic @regression @grid", () => {
   test("loads a query-based tab sorted by a multi-column clause of aliases", async ({ app, data, page }) => {
     const product = data.PRODUCT.LAPTOP;
     await app.sidebar.navigateTo("product");
