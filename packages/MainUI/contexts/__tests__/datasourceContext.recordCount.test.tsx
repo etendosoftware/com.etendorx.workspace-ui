@@ -12,7 +12,7 @@ describe("useGridHasRows", () => {
 
   it("is unknown outside a provider and without a tab", () => {
     expect(renderHook(() => useGridHasRows("tab-1")).result.current).toBeUndefined();
-    expect(renderHook(() => useGridHasRows(undefined), { wrapper }).result.current).toBeUndefined();
+    expect(renderHook(() => useGridHasRows(), { wrapper }).result.current).toBeUndefined();
   });
 
   it("follows the reported count, re-rendering when the grid loads, empties or reloads", () => {
