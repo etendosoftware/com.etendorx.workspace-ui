@@ -19,8 +19,11 @@ import {
   fetchNotes,
   createNote,
   deleteNote,
-  isNoteDeleteForbiddenError,
-  NOTE_DELETE_FORBIDDEN_ERROR_NAME,
+  getNoteDeleteErrorStatus,
+  HTTP_FORBIDDEN,
+  HTTP_NOT_FOUND,
+  NOTE_DELETE_ERROR_NAME,
+  NoteDeleteError,
 } from "../notes";
 import { Metadata } from "../metadata";
 
@@ -128,34 +131,36 @@ describe("Notes API", () => {
     it("should throw error if deletion fails", async () => {
       jest.spyOn(Metadata.client, "request").mockResolvedValue({
         ok: false,
-        status: 404,
-        data: { error: "Note not found" },
+        status: 500,
+        data: { error: "Error processing request" },
       } as any);
 
-      await expect(deleteNote("invalid-id")).rejects.toThrow("Note not found");
+      await expect(deleteNote("invalid-id")).rejects.toThrow("Error processing request");
     });
 
-    it("should throw a forbidden error when the servlet rejects the deletion", async () => {
-      jest.spyOn(Metadata.client, "request").mockResolvedValue({
-        ok: false,
-        status: 403,
-        data: { error: "ERP request failed: 403 . {}" },
-      } as any);
+    it.each([HTTP_FORBIDDEN, HTTP_NOT_FOUND])(
+      "should throw a NoteDeleteError when the servlet answers %i",
+      async (status) => {
+        jest.spyOn(Metadata.client, "request").mockResolvedValue({
+          ok: false,
+          status,
+          data: { error: `ERP request failed: ${status} . {}` },
+        } as any);
 
-      await expect(deleteNote("note-of-other-user")).rejects.toMatchObject({
-        name: NOTE_DELETE_FORBIDDEN_ERROR_NAME,
-        noteId: "note-of-other-user",
-      });
-    });
+        await expect(deleteNote("note-of-other-user")).rejects.toMatchObject({
+          name: NOTE_DELETE_ERROR_NAME,
+          noteId: "note-of-other-user",
+          status,
+        });
+      }
+    );
   });
 
-  describe("isNoteDeleteForbiddenError", () => {
-    it("should only detect the forbidden deletion error", () => {
-      const forbidden = Object.assign(new Error("denied"), { name: NOTE_DELETE_FORBIDDEN_ERROR_NAME });
-
-      expect(isNoteDeleteForbiddenError(forbidden)).toBe(true);
-      expect(isNoteDeleteForbiddenError(new Error("other"))).toBe(false);
-      expect(isNoteDeleteForbiddenError("denied")).toBe(false);
+  describe("getNoteDeleteErrorStatus", () => {
+    it("should return the status of a NoteDeleteError only", () => {
+      expect(getNoteDeleteErrorStatus(new NoteDeleteError("id", HTTP_FORBIDDEN))).toBe(HTTP_FORBIDDEN);
+      expect(getNoteDeleteErrorStatus(new Error("other"))).toBeUndefined();
+      expect(getNoteDeleteErrorStatus("denied")).toBeUndefined();
     });
   });
 });

@@ -19,33 +19,46 @@ import { Metadata } from "./metadata";
 import type { Note, FetchNotesParams, CreateNoteParams } from "./types";
 
 const NOTES_ENDPOINT = "/notes";
-const HTTP_FORBIDDEN = 403;
+export const HTTP_FORBIDDEN = 403;
+export const HTTP_NOT_FOUND = 404;
 
-export const NOTE_DELETE_FORBIDDEN_ERROR_NAME = "NoteDeleteForbiddenError";
+/** Statuses of a rejected deletion the UI handles on its own instead of showing the raw response. */
+const HANDLED_DELETE_STATUSES = [HTTP_FORBIDDEN, HTTP_NOT_FOUND];
+
+export const NOTE_DELETE_ERROR_NAME = "NoteDeleteError";
 
 /**
- * Thrown when the notes servlet rejects a deletion because the current user is not allowed to
- * delete the note (only its creator can). Lets the UI show a translated message instead of the raw
- * server response.
+ * Thrown when the notes servlet rejects a deletion with a status the UI handles on its own:
+ * 403 when the current user is not allowed to delete the note (only its creator can) and 404 when
+ * the note no longer exists (e.g. it was already deleted from another session).
  */
-export class NoteDeleteForbiddenError extends Error {
+export class NoteDeleteError extends Error {
   public readonly noteId: string;
+  public readonly status: number;
 
-  constructor(noteId: string) {
-    super(`Not allowed to delete note: ${noteId}`);
-    this.name = NOTE_DELETE_FORBIDDEN_ERROR_NAME;
+  constructor(noteId: string, status: number) {
+    super(`Note ${noteId} could not be deleted: ${status}`);
+    this.name = NOTE_DELETE_ERROR_NAME;
     this.noteId = noteId;
+    this.status = status;
     // The build targets ES5, where `super()` returns a plain Error and breaks the prototype chain.
-    Object.setPrototypeOf(this, NoteDeleteForbiddenError.prototype);
+    Object.setPrototypeOf(this, NoteDeleteError.prototype);
   }
 }
 
 /**
- * Detects the error by `name` rather than `instanceof`, so it also works across duplicated module
- * instances (Next bundle vs. ts-jest).
+ * Returns the status of a {@link NoteDeleteError}, detected by `name` rather than `instanceof` so it
+ * also works across duplicated module instances (Next bundle vs. ts-jest).
+ *
+ * @param error - Any thrown value
+ * @returns The rejected deletion status, or undefined when the error is not a NoteDeleteError
  */
-export const isNoteDeleteForbiddenError = (error: unknown): boolean =>
-  error instanceof Error && error.name === NOTE_DELETE_FORBIDDEN_ERROR_NAME;
+export const getNoteDeleteErrorStatus = (error: unknown): number | undefined => {
+  if (error instanceof Error && error.name === NOTE_DELETE_ERROR_NAME) {
+    return (error as NoteDeleteError).status;
+  }
+  return undefined;
+};
 
 /**
  * Fetches the full list of notes for a given record using the custom notes servlet
@@ -113,8 +126,8 @@ export async function deleteNote(noteId: string): Promise<void> {
 
     const response = await client.request(url, { method: "DELETE" });
 
-    if (response.status === HTTP_FORBIDDEN) {
-      throw new NoteDeleteForbiddenError(noteId);
+    if (HANDLED_DELETE_STATUSES.includes(response.status)) {
+      throw new NoteDeleteError(noteId, response.status);
     }
 
     if (!response.ok) {
@@ -125,7 +138,7 @@ export async function deleteNote(noteId: string): Promise<void> {
     // Success response contains { success: true, id: noteId }
     // No need to return anything for void function
   } catch (error) {
-    if (isNoteDeleteForbiddenError(error)) {
+    if (getNoteDeleteErrorStatus(error) !== undefined) {
       throw error;
     }
     throw new Error(`Error deleting note: ${error instanceof Error ? error.message : String(error)}`);

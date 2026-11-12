@@ -15,20 +15,55 @@
  *************************************************************************
  */
 
-import { NoteDeleteForbiddenError } from "@workspaceui/api-client/src/api/notes";
-import { getDeleteNoteErrorMessage, getNoteBackground, isOwnNote } from "../noteUtils";
-import { noteColors } from "../../styles";
+import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, NoteDeleteError } from "@workspaceui/api-client/src/api/notes";
+import {
+  addNoteOnTop,
+  getAuthorInitials,
+  getDeleteNoteErrorMessage,
+  getRequestErrorMessage,
+  isNoteAlreadyDeleted,
+  isOwnNote,
+  isSubmitShortcut,
+  mergeFetchedNotes,
+  toUiNote,
+} from "../noteUtils";
 import type { Note } from "../../types";
 
 const CURRENT_USER_ID = "user-1";
-const OTHER_USER_COLOR = "#F5F6FA";
+const NOTE_ID = "note-1";
+const FALLBACK = "fallback";
 
 /** Builds a UI note created by the given user. */
-const buildNote = (createdById: string): Note => ({
-  id: "note-1",
+const buildNote = (createdById: string, id = NOTE_ID): Note => ({
+  id,
   note: "Some note",
   createdBy: { id: createdById, identifier: "Some user" },
   creationDate: "2026-07-30T10:00:00Z",
+});
+
+describe("toUiNote", () => {
+  it("maps the servlet note to the UI shape", () => {
+    const apiNote = {
+      id: NOTE_ID,
+      note: "text",
+      createdBy: CURRENT_USER_ID,
+      createdBy$_identifier: "Admin",
+      creationDate: "2026-07-30T10:00:00Z",
+    };
+
+    expect(toUiNote(apiNote)).toEqual({
+      id: NOTE_ID,
+      note: "text",
+      createdBy: { id: CURRENT_USER_ID, identifier: "Admin" },
+      creationDate: apiNote.creationDate,
+    });
+  });
+
+  it("defaults missing text and author to empty values", () => {
+    const apiNote = { id: NOTE_ID, creationDate: "" } as unknown as Parameters<typeof toUiNote>[0];
+
+    expect(toUiNote(apiNote)).toMatchObject({ note: "", createdBy: { id: "", identifier: "" } });
+  });
 });
 
 describe("isOwnNote", () => {
@@ -46,14 +81,56 @@ describe("isOwnNote", () => {
   });
 });
 
-describe("getNoteBackground", () => {
-  it("rotates the palette for own notes", () => {
-    expect(getNoteBackground(true, 0, OTHER_USER_COLOR)).toBe(noteColors[0]);
-    expect(getNoteBackground(true, noteColors.length + 1, OTHER_USER_COLOR)).toBe(noteColors[1]);
+describe("getAuthorInitials", () => {
+  it("takes the first letter of up to two words", () => {
+    expect(getAuthorInitials("john ronald tolkien")).toBe("JR");
+    expect(getAuthorInitials("  Admin  ")).toBe("A");
   });
 
-  it("uses the neutral color for notes of other users", () => {
-    expect(getNoteBackground(false, 3, OTHER_USER_COLOR)).toBe(OTHER_USER_COLOR);
+  it("returns a placeholder for an empty name", () => {
+    expect(getAuthorInitials("   ")).toBe("?");
+  });
+});
+
+describe("isSubmitShortcut", () => {
+  it("accepts Enter with Ctrl or Cmd only", () => {
+    expect(isSubmitShortcut({ key: "Enter", ctrlKey: true, metaKey: false })).toBe(true);
+    expect(isSubmitShortcut({ key: "Enter", ctrlKey: false, metaKey: true })).toBe(true);
+    expect(isSubmitShortcut({ key: "Enter", ctrlKey: false, metaKey: false })).toBe(false);
+    expect(isSubmitShortcut({ key: "a", ctrlKey: true, metaKey: false })).toBe(false);
+  });
+});
+
+describe("isNoteAlreadyDeleted", () => {
+  it("only detects a not found deletion", () => {
+    expect(isNoteAlreadyDeleted(new NoteDeleteError(NOTE_ID, HTTP_NOT_FOUND))).toBe(true);
+    expect(isNoteAlreadyDeleted(new NoteDeleteError(NOTE_ID, HTTP_FORBIDDEN))).toBe(false);
+    expect(isNoteAlreadyDeleted(new Error("other"))).toBe(false);
+  });
+});
+
+describe("getRequestErrorMessage", () => {
+  it("uses the error message when there is one, else the fallback", () => {
+    expect(getRequestErrorMessage(new Error("server says"), FALLBACK)).toBe("server says");
+    expect(getRequestErrorMessage(new Error(""), FALLBACK)).toBe(FALLBACK);
+    expect(getRequestErrorMessage("unexpected", FALLBACK)).toBe(FALLBACK);
+  });
+});
+
+describe("mergeFetchedNotes", () => {
+  it("keeps the notes added while loading on top, without duplicates", () => {
+    const fetched = [buildNote(CURRENT_USER_ID, "a"), buildNote(CURRENT_USER_ID, "b")];
+    const current = [buildNote(CURRENT_USER_ID, "new"), buildNote(CURRENT_USER_ID, "a")];
+
+    expect(mergeFetchedNotes(fetched, current).map((note) => note.id)).toEqual(["new", "a", "b"]);
+  });
+});
+
+describe("addNoteOnTop", () => {
+  it("puts the created note first and drops a previous copy of it", () => {
+    const current = [buildNote(CURRENT_USER_ID, "a"), buildNote(CURRENT_USER_ID, "new")];
+
+    expect(addNoteOnTop(buildNote(CURRENT_USER_ID, "new"), current).map((note) => note.id)).toEqual(["new", "a"]);
   });
 });
 
@@ -61,7 +138,7 @@ describe("getDeleteNoteErrorMessage", () => {
   const t = jest.fn((key: string) => key) as unknown as Parameters<typeof getDeleteNoteErrorMessage>[1];
 
   it("returns the translated message when the deletion is forbidden", () => {
-    expect(getDeleteNoteErrorMessage(new NoteDeleteForbiddenError("note-1"), t)).toBe(
+    expect(getDeleteNoteErrorMessage(new NoteDeleteError(NOTE_ID, HTTP_FORBIDDEN), t)).toBe(
       "forms.notes.deleteNoteNotAllowed"
     );
   });

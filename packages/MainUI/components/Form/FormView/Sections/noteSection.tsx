@@ -15,26 +15,34 @@
  *************************************************************************
  */
 
-import { useState, useEffect, useRef } from "react";
-import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from "@mui/material";
-import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
-import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
-import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
-import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
-import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Box, Skeleton, Typography } from "@mui/material";
 import type { Note, NoteSectionProps } from "../types";
-import { useStyle } from "../styles";
-import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { fetchNotes, deleteNote, createNote } from "@workspaceui/api-client/src/api/notes";
-import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
-import { getDeleteNoteErrorMessage, getNoteBackground, isOwnNote } from "./noteUtils";
+import NoteComposer from "./NoteComposer";
+import NoteItem from "./NoteItem";
+import {
+  addNoteOnTop,
+  getDeleteNoteErrorMessage,
+  getRequestErrorMessage,
+  isNoteAlreadyDeleted,
+  isOwnNote,
+  mergeFetchedNotes,
+  toUiNote,
+} from "./noteUtils";
+import { useNoteStyles } from "./noteStyles";
 
+const SKELETON_ROWS = 2;
+const SKELETON_HEIGHT = 72;
+
+/**
+ * Notes section of a record's form: an inline input to add notes and the list of notes, newest first.
+ * Notes are loaded the first time the section is expanded for a record that has notes. Responses of a
+ * record the form no longer shows are ignored.
+ */
 const NoteSection = ({
-  addNoteButtonText,
-  modalTitleText,
-  modalDescriptionText,
   noteInputPlaceholder,
   addNoteSubmitText,
   recordId,
@@ -44,206 +52,141 @@ const NoteSection = ({
   onNotesChange,
   showErrorModal,
 }: NoteSectionProps) => {
-  const { sx } = useStyle();
-  const theme = useTheme();
   const { t } = useTranslation();
+  const sx = useNoteStyles();
   const currentUserId = useUserStore((s) => s.user?.id);
-  const otherUserNoteColor = theme.palette.baselineColor.neutral[10];
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState("");
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const hasLoadedNotesRef = useRef(false);
+  // The record the notes on screen belong to: a late response of a previous record is ignored
+  const currentRecordRef = useRef(recordId);
 
-  const handleAddNote = async () => {
-    if (newNote.trim()) {
-      setIsLoading(true);
-      try {
-        const createdNote = await createNote({
-          recordId,
-          tableId,
-          content: newNote, // API expects 'content' in the request
-        });
+  const reportError = useCallback((message: string) => showErrorModal?.(message), [showErrorModal]);
 
-        // Transform the created note to match our UI Note interface
-        const transformedNote = {
-          id: createdNote.id,
-          note: createdNote.note,
-          createdBy: {
-            id: createdNote.createdBy || "",
-            identifier: createdNote.createdBy$_identifier || "Unknown",
-          },
-          creationDate: createdNote.creationDate,
-        };
-
-        // Add to beginning of array so it shows at top
-        setNotes((prevNotes) => [transformedNote, ...prevNotes]);
-        setNewNote("");
-        onNotesChange();
-
-        // Force a small delay to ensure DOM updates
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 100);
-      } catch (error) {
-        console.error("Failed to add note:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : t("forms.notes.errorAddingNote") || "Failed to add note";
-        if (showErrorModal) {
-          showErrorModal(errorMessage);
-        }
-        setIsLoading(false);
-      }
-    }
-  };
-
-  const confirmDeleteNote = (id: string) => {
-    setShowDeleteConfirmation(id);
-  };
-
-  const executeDeleteNote = async () => {
-    if (!showDeleteConfirmation) return;
-
-    setIsLoading(true);
-    try {
-      await deleteNote(showDeleteConfirmation); // API call to DELETE
-
-      // Update UI by filtering out the deleted note
-      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== showDeleteConfirmation));
-      onNotesChange(); // Notify parent to update the noteCount badge
-    } catch (error) {
-      console.error("Failed to delete note:", error);
-      const errorMessage = getDeleteNoteErrorMessage(error, t);
-      if (showErrorModal) {
-        showErrorModal(errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
-      setShowDeleteConfirmation(null); // Close modal
-    }
-  };
-
-  // Reset hasLoadedNotesRef when recordId changes (navigating to a different record)
+  // Reset when navigating to a different record
   useEffect(() => {
+    currentRecordRef.current = recordId;
     hasLoadedNotesRef.current = false;
     setNotes([]);
+    setIsFetching(false);
   }, [recordId]);
 
   useEffect(() => {
-    if (isSectionExpanded && !hasLoadedNotesRef.current && initialNoteCount > 0) {
-      hasLoadedNotesRef.current = true;
-      const loadNotes = async () => {
-        setIsLoading(true);
-        try {
-          const fetchedNotes = await fetchNotes({ recordId, tableId });
-          // Transform the API response to match our UI Note interface
-          const transformedNotes = fetchedNotes.map((apiNote) => ({
-            id: apiNote.id,
-            note: apiNote.note,
-            createdBy: {
-              id: apiNote.createdBy || "",
-              identifier: apiNote.createdBy$_identifier || "Unknown",
-            },
-            creationDate: apiNote.creationDate,
-          }));
-          setNotes(transformedNotes);
-        } catch (error) {
-          console.error("Failed to fetch notes:", error);
-          const errorMessage =
-            error instanceof Error ? error.message : t("forms.notes.errorLoadingNotes") || "Failed to load notes";
-          if (showErrorModal) {
-            showErrorModal(errorMessage);
-          }
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      loadNotes();
+    if (!isSectionExpanded || hasLoadedNotesRef.current || initialNoteCount <= 0) return;
+    hasLoadedNotesRef.current = true;
+    const requestedRecordId = recordId;
+    const isCurrentRecord = () => currentRecordRef.current === requestedRecordId;
+
+    setIsFetching(true);
+    fetchNotes({ recordId, tableId })
+      .then((fetchedNotes) => {
+        if (isCurrentRecord()) setNotes((current) => mergeFetchedNotes(fetchedNotes.map(toUiNote), current));
+      })
+      .catch((error) => {
+        console.error("Failed to fetch notes:", error);
+        if (isCurrentRecord()) reportError(getRequestErrorMessage(error, t("forms.notes.errorLoadingNotes")));
+      })
+      .finally(() => {
+        if (isCurrentRecord()) setIsFetching(false);
+      });
+  }, [isSectionExpanded, recordId, tableId, initialNoteCount, t, reportError]);
+
+  const removeNote = (noteId: string) => {
+    setNotes((current) => current.filter((note) => note.id !== noteId));
+    onNotesChange(); // Refreshes the note count of the section title
+  };
+
+  const handleAddNote = async (content: string): Promise<boolean> => {
+    const targetRecordId = recordId;
+    try {
+      const createdNote = await createNote({ recordId, tableId, content });
+      if (currentRecordRef.current === targetRecordId) {
+        setNotes((current) => addNoteOnTop(toUiNote(createdNote), current));
+      }
+      onNotesChange();
+      return true;
+    } catch (error) {
+      console.error("Failed to add note:", error);
+      reportError(getRequestErrorMessage(error, t("forms.notes.errorAddingNote")));
+      return false;
     }
-  }, [isSectionExpanded, recordId, tableId, initialNoteCount, t, showErrorModal]);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    setDeletingNoteId(noteId);
+    try {
+      await deleteNote(noteId);
+      removeNote(noteId);
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      // A note that no longer exists (deleted from another session) is just removed from the list
+      if (isNoteAlreadyDeleted(error)) {
+        removeNote(noteId);
+      } else {
+        reportError(getDeleteNoteErrorMessage(error, t));
+      }
+    } finally {
+      setDeletingNoteId(null);
+    }
+  };
+
+  const renderNotes = () => {
+    // Until the first load completes the section shows placeholders instead of the empty message
+    const isWaitingForNotes = isFetching || (initialNoteCount > 0 && !hasLoadedNotesRef.current);
+    if (notes.length === 0 && isWaitingForNotes) {
+      return (
+        <Box aria-busy="true" aria-label={t("forms.notes.loadingNotes")} data-testid="Box__a680f8_loading">
+          {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+            <Skeleton
+              key={index}
+              variant="rounded"
+              height={SKELETON_HEIGHT}
+              sx={sx.skeleton}
+              data-testid="Skeleton__a680f8"
+            />
+          ))}
+        </Box>
+      );
+    }
+    if (notes.length === 0) {
+      return (
+        <Typography variant="body2" sx={sx.empty} data-testid="Typography__a680f8_empty">
+          {t("forms.notes.emptyState")}
+        </Typography>
+      );
+    }
+    return (
+      <Box component="ul" sx={sx.list} data-testid="Box__a680f8_list">
+        {notes.map((note) => (
+          <NoteItem
+            key={note.id}
+            note={note}
+            isOwn={isOwnNote(note, currentUserId)}
+            isDeleting={deletingNoteId === note.id}
+            onDelete={handleDeleteNote}
+            data-testid="NoteItem__a680f8"
+          />
+        ))}
+      </Box>
+    );
+  };
+
+  // The content is only rendered while expanded: the collapsed section keeps its children mounted, and
+  // a hidden note input would still be reachable with Tab
+  if (!isSectionExpanded) {
+    return null;
+  }
 
   return (
-    <Box data-testid="Box__a680f8_1">
-      {isLoading && isSectionExpanded && (
-        <Typography data-testid="Typography__a680f8">{t("forms.notes.loadingNotes")}</Typography>
-      )}
-      <Grid container spacing={2} data-testid="Grid__a680f8_1">
-        <Grid item xs={6} data-testid="Grid__a680f8_trigger">
-          <Modal
-            HeaderIcon={NoteIcon}
-            tittleHeader={modalTitleText || t("forms.notes.addNoteModalTitle")}
-            descriptionText={modalDescriptionText || t("forms.notes.addNoteModalDescription")}
-            customTrigger={
-              <Box sx={sx.addNoteButton} data-testid="Button__a680f8_add">
-                <IconButton data-testid="IconButton__a680f8_add">
-                  <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__a680f8_add" />
-                </IconButton>
-                <Typography variant="body1" sx={sx.addNoteText} data-testid="Typography__a680f8_add">
-                  {addNoteButtonText || t("forms.notes.addNote")}
-                </Typography>
-              </Box>
-            }
-            data-testid="Modal__a680f8_add">
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder={noteInputPlaceholder || t("forms.notes.noteInputPlaceholder")}
-              inputProps={{ maxLength: 2000 }}
-              helperText={`${newNote.length}/2000`}
-              data-testid="TextField__a680f8_input"
-            />
-            <Button onClick={handleAddNote} variant="contained" sx={{ mt: 2 }} data-testid="Button__a680f8_submit">
-              {addNoteSubmitText || t("forms.notes.addNoteSubmit")}
-            </Button>
-          </Modal>
-        </Grid>
-
-        {isSectionExpanded &&
-          notes.map((note, index) => {
-            const isOwn = isOwnNote(note, currentUserId);
-            return (
-              <Grid item xs={6} key={note.id} data-testid={`Grid__a680f8_item_${note.id}`}>
-                <Card
-                  sx={{ ...sx.noteCard, backgroundColor: getNoteBackground(isOwn, index, otherUserNoteColor) }}
-                  data-testid={`Card__a680f8_${note.id}`}>
-                  <CardContent sx={sx.noteCardContent} data-testid={`CardContent__a680f8_${note.id}`}>
-                    <Box sx={sx.noteContentBox} data-testid={`Box__a680f8_${note.id}`}>
-                      <Typography variant="body1" data-testid={`Typography__a680f8_content_${note.id}`}>
-                        {note.note}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={sx.noteDate} data-testid={`Typography__a680f8_date_${note.id}`}>
-                      {`${t("forms.notes.createdBy")}: ${note.createdBy.identifier} - ${formatClassicDate(note.creationDate, true)}`}
-                    </Typography>
-                    {isOwn && (
-                      <Box sx={sx.deleteButtonBox} data-testid={`Box__a680f8_delete_${note.id}`}>
-                        <IconButton
-                          onClick={() => confirmDeleteNote(note.id)}
-                          disabled={isLoading}
-                          data-testid="IconButton__a680f8">
-                          <CloseIcon fontSize="small" data-testid={`CloseIcon__a680f8_${note.id}`} />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-      </Grid>
-      <ConfirmModal
-        open={!!showDeleteConfirmation}
-        confirmText={t("forms.notes.confirmDeleteMessage")}
-        onConfirm={executeDeleteNote}
-        onCancel={() => setShowDeleteConfirmation(null)}
-        saveLabel={t("forms.notes.deleteButton")}
-        secondaryButtonLabel={t("forms.notes.cancelButton")}
-        data-testid="ConfirmModal__a680f8"
+    <Box sx={sx.container} data-testid="Box__a680f8_1">
+      <NoteComposer
+        onSubmit={handleAddNote}
+        placeholder={noteInputPlaceholder}
+        submitLabel={addNoteSubmitText}
+        data-testid="NoteComposer__a680f8"
       />
+      {renderNotes()}
     </Box>
   );
 };
