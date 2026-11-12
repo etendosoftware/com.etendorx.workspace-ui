@@ -49,6 +49,8 @@ export const PRODUCT = {
   RAW_MATERIAL_B: { id: "4028E6C72959682B01295ADC1B800224", name: "Raw material B" },
   FINAL_GOOD_A: { id: "4028E6C72959682B01295ADC1D07022A", name: "Final good A" },
   DISTRIBUTION_GOOD_A: { id: "4028E6C72959682B01295ADC2340023D", name: "Spain-Distribution good A" },
+  /** Service linked to products and price rule based, with three product categories; specs only read it. */
+  WARRANTY: { id: "D67EF9E66FF447E88176DF0C054A9D3F", name: "Warranty" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const PAYMENT_METHOD = {

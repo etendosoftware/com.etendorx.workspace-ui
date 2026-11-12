@@ -32,6 +32,7 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
 import { buildPayloadByInputName } from "@/utils";
+import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
 
 const MULTIPLE_ROW_IDS_KEY = "MULTIPLE_ROW_IDS";
 
@@ -42,6 +43,8 @@ export interface SessionSyncOptions {
   tab: Tab;
   selectedRecords: EntityData[];
   parentId?: string;
+  /** Window the selection belongs to: when given, the computed context is published for that record. */
+  windowIdentifier?: string;
   setSession: (updater: (prev: ISession) => ISession) => void;
   setSessionSyncLoading: (loading: boolean) => void;
 }
@@ -50,6 +53,7 @@ export const syncSelectedRecordsToSession = async ({
   tab,
   selectedRecords,
   parentId,
+  windowIdentifier,
   setSession,
   setSessionSyncLoading,
 }: SessionSyncOptions): Promise<void> => {
@@ -100,9 +104,17 @@ export const syncSelectedRecordsToSession = async ({
 
     // Send single request with all selected record information
     const responseData = await fetchFormInitialization(params, payload);
+    const sessionAttributes = buildSessionAttributes(responseData);
+
+    // Child tabs' display logic reads the auxiliary inputs of the selected record of every
+    // ancestor, as Classic does with each view form's auxInputs after a SETSESSION call.
+    if (windowIdentifier) {
+      useLiveTabValuesStore
+        .getState()
+        .publishSelectionContext(windowIdentifier, tab.id, { recordId: lastSelectedId, values: sessionAttributes });
+    }
 
     if (tab.tabLevel === 0) {
-      const sessionAttributes = buildSessionAttributes(responseData);
       const isRootTabCall = params.get("PARENT_ID") === "null";
       setSession((prev) => mergeSessionAttributes(prev, sessionAttributes, isRootTabCall));
     }

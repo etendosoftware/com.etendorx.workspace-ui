@@ -29,7 +29,7 @@ const clear = (tabId = TAB_ID) => useLiveTabValuesStore.getState().clearTabValue
 
 describe("liveTabValuesStore", () => {
   beforeEach(() => {
-    useLiveTabValuesStore.setState({ entries: {} });
+    useLiveTabValuesStore.setState({ entries: {}, selectionEntries: {} });
   });
 
   it("publishes the values of a tab under its window", () => {
@@ -80,5 +80,60 @@ describe("liveTabValuesStore", () => {
     clear();
 
     expect(getEntries()).toBe(entriesBefore);
+  });
+});
+
+describe("liveTabValuesStore - selection context", () => {
+  const getSelectionEntries = () => useLiveTabValuesStore.getState().selectionEntries;
+  const publishContext = (entry: LiveTabValues) =>
+    useLiveTabValuesStore.getState().publishSelectionContext(WINDOW_IDENTIFIER, TAB_ID, entry);
+
+  beforeEach(() => {
+    useLiveTabValuesStore.setState({ entries: {}, selectionEntries: {} });
+  });
+
+  it("publishes the context of a record under its window and tab", () => {
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "S" } });
+
+    expect(getSelectionEntries()[WINDOW_IDENTIFIER][TAB_ID]).toEqual({
+      recordId: RECORD_ID,
+      values: { PRODUCTTYPE: "S" },
+    });
+  });
+
+  it("adds up the values computed for the same record", () => {
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "I", StockReservations: "Y" } });
+
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "S" } });
+
+    expect(getSelectionEntries()[WINDOW_IDENTIFIER][TAB_ID].values).toEqual({
+      PRODUCTTYPE: "S",
+      StockReservations: "Y",
+    });
+  });
+
+  it("replaces the values of a previous record", () => {
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "S", StockReservations: "Y" } });
+
+    publishContext({ recordId: "R2", values: { PRODUCTTYPE: "I" } });
+
+    expect(getSelectionEntries()[WINDOW_IDENTIFIER][TAB_ID]).toEqual({ recordId: "R2", values: { PRODUCTTYPE: "I" } });
+  });
+
+  it("does not change the state when the values add nothing new", () => {
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "S" } });
+    const entriesBefore = getSelectionEntries();
+
+    publishContext({ recordId: RECORD_ID, values: {} });
+
+    expect(getSelectionEntries()).toBe(entriesBefore);
+  });
+
+  it("keeps the context when the live values of the tab are cleared", () => {
+    publishContext({ recordId: RECORD_ID, values: { PRODUCTTYPE: "S" } });
+
+    clear();
+
+    expect(getSelectionEntries()[WINDOW_IDENTIFIER][TAB_ID]).toBeDefined();
   });
 });
