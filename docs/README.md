@@ -55,6 +55,8 @@ docs/
 │   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── grid-default-sort/            # Feature: Grid default sort from the tab order-by clause
 │   │   └── README.md                # _orderBy as classic, multi-column sort indicator, manual sort precedence
+│   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
+│   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)

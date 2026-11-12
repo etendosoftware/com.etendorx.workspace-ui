@@ -7,10 +7,10 @@ An SR (Single Record) tab is a child tab whose `uIPattern === "SR"` and
 for each parent selection** and, by business rule, the UI must open the form
 view directly (skipping the grid) as soon as the parent record is selected.
 
-## Two variants
+## Variants
 
 Although all SR tabs share the same UX contract, the underlying relation with
-the parent entity can take two structurally different shapes. The
+the parent entity can take several structurally different shapes. The
 disambiguation matters because the auto-open strategy is different for each.
 
 ### 1:1 ID extension
@@ -41,22 +41,48 @@ column. `child.id !== parent.id`.
   calling the `setRecordId` prop (which is wired to `handleSetRecordId` in
   Tab.tsx and triggers the FORM/EDIT transition).
 
-## Discriminating the two variants
+### No link column (filtered by the where clause)
+
+The child table has no column pointing at the parent, so the backend answers
+`parentProperty === ""` (classic `ApplicationUtils.getParentProperty`). The tab
+is filtered by its `hqlwhereclause`, which reads the parent session values.
+
+- **Example**: Window *Sales Invoice* → child tab *Accounting* (table
+  `Fact_Acct`, where clause `e.table.id = '318' and e.recordID = @Invoice.id@`).
+  The 17 Accounting tabs of the posted documents follow this shape.
+- **Tab metadata**: `parentColumns === []`, `parentProperty === ""`.
+- **Criteria**: `_dummy`, as classic `OBViewGrid` sends for subtabs without a
+  parent property; the server filters through the where clause.
+- **Auto-open**: same as the logical relation (`DynamicTable`, first fetched record).
+
+### Same table as the parent
+
+The child tab shows the parent record itself, through another set of fields.
+
+- **Example**: Window *Business Partner* → child tabs *Customer*,
+  *Vendor/Creditor* and *Employee* (table `C_BPartner`).
+- **Rule**: classic `OBViewTab.getParentProperty` filters a RO/SR child tab on
+  its parent's table by `id`, so it is a 1:1 ID extension.
+
+## Discriminating the variants
 
 The variant is decided by the helper
 [`isSrOneToOneExtension`](../../../packages/MainUI/utils/window/utils.ts):
 
 ```ts
-isSrOneToOneExtension(tab)
-// true  → 1:1 ID extension (Tab.tsx path)
-// false → logical relation (DynamicTable path)
+isSrOneToOneExtension(tab, parentTab)
+// true  → 1:1 ID extension (Tab.tsx path, criteria by `id`)
+// false → logical relation or no link column (DynamicTable path, FK or `_dummy` criteria)
 ```
 
-The algorithm:
+The algorithm mirrors classic `OBViewTab.getParentProperty`:
 
-1. If `tab.parentColumns` is empty, treat as 1:1 (legacy behavior: no FK is
-   modelled and `child.id === parent.id` by convention).
-2. Otherwise, locate the child's primary-key field via the project-wide
+1. If the tab is on the same table as `parentTab` (`tab.table`), it is 1:1.
+2. If `tab.parentColumns` is empty: when the backend sent `parentProperty`
+   (always `""` in that case) the tab has no link column and is **not** 1:1;
+   without that key (older metadata, root SR tabs) it is treated as 1:1
+   (legacy behavior: no FK is modelled and `child.id === parent.id` by convention).
+3. Otherwise, locate the child's primary-key field via the project-wide
    convention `field.column.keyColumn` truthy (same pattern used by
    [`useFormInitialization`](../../../packages/MainUI/hooks/useFormInitialization.ts)
    and
@@ -84,6 +110,17 @@ flowchart TD
     J --> K[setRecordId - displayRecords 0 .id]
     K --> L[FormView with real child id]
 ```
+
+## History
+
+- ETP-3740 introduced `isSrOneToOneExtension`, treating every SR tab without
+  link columns as 1:1.
+- ETP-3754 restricted the `id` criteria to true 1:1 tabs (Payment Plan).
+- ETP-4613 added the backend `parentProperty` and the `_dummy` fallback for
+  tabs without a link column, but the SR check ran first and still sent
+  `id = <parent id>` for the Accounting tabs, which then showed no records.
+- ETP-4641 applies the classic rule above, so those tabs reach the `_dummy`
+  path while the Business Partner tabs keep the `id` criteria.
 
 ## Manual-close re-entry
 
