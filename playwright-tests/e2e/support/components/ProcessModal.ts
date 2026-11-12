@@ -14,7 +14,12 @@ export const PROCESS_MODAL_TEST_IDS = {
   resultClose: "close-button",
   /** Message bar of a React process modal (validation messages, script messages). */
   messageBar: "ProcessMessageBar__container",
+  /** Hidden file input of an Upload File parameter. */
+  fileInput: "UploadFileSelector__input",
 } as const;
+
+/** A file built in memory (name, MIME type and contents), as `setInputFiles` takes it. */
+type InMemoryFile = Extract<Parameters<Locator["setInputFiles"]>[0], { buffer: unknown }>;
 
 const OK_TEXT = /^OK$/i;
 /** OK buttons of the legacy (Classic) process popups, most specific first. */
@@ -135,6 +140,11 @@ export class ProcessModal {
       return undefined;
     }
     return button;
+  }
+
+  /** Chooses a file in the Upload File parameter of the open React process modal. */
+  async attachFile(file: InMemoryFile): Promise<void> {
+    await this.root.getByTestId(PROCESS_MODAL_TEST_IDS.fileInput).setInputFiles(file);
   }
 
   /**

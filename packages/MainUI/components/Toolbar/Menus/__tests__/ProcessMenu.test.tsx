@@ -35,7 +35,11 @@ const createButton = (id: string, isProcessAccessible?: boolean): ProcessButton 
     isProcessAccessible,
   }) as unknown as ProcessButton;
 
-const renderMenu = (processButtons: ProcessButton[], onProcessClick = jest.fn()) => {
+const renderMenu = (
+  processButtons: ProcessButton[],
+  onProcessClick = jest.fn(),
+  readOnlyButtonIds?: ReadonlySet<string>
+) => {
   render(
     <ProcessMenu
       anchorEl={document.body}
@@ -43,6 +47,7 @@ const renderMenu = (processButtons: ProcessButton[], onProcessClick = jest.fn())
       processButtons={processButtons}
       onProcessClick={onProcessClick}
       hasSelection
+      readOnlyButtonIds={readOnlyButtonIds}
     />
   );
   return onProcessClick;
@@ -72,5 +77,18 @@ describe("ProcessMenu — role process access", () => {
 
     expect(item).toHaveAttribute("aria-disabled", "false");
     expect(onProcessClick).toHaveBeenCalledWith(button);
+  });
+});
+
+describe("ProcessMenu — read-only logic", () => {
+  it("keeps a process whose read-only logic is true visible but disabled, as Classic does", () => {
+    const onProcessClick = renderMenu([createButton("locked"), createButton("free")], jest.fn(), new Set(["locked"]));
+
+    const locked = getItem("Process locked");
+    fireEvent.click(locked);
+
+    expect(locked).toHaveAttribute("aria-disabled", "true");
+    expect(getItem("Process free")).toHaveAttribute("aria-disabled", "false");
+    expect(onProcessClick).not.toHaveBeenCalled();
   });
 });

@@ -37,11 +37,14 @@ import {
   fetchFormInitialization,
   buildFormInitializationPayload,
   buildFormInitializationParams,
+  buildRecordContextValues,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext";
 import { registerSessionReset } from "@/utils/session/resetSessionState";
+import { buttonNeedsContext } from "@/utils/toolbar/process-button/utils";
+import { collectReadOnlyButtonIds } from "@/utils/toolbar/process-button/readOnlyLogic";
 
 // NOTE: this need a fix in the future
 // Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
@@ -77,19 +80,22 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     fields: { actionFields },
   } = useFormFields(tab);
 
-  // Form values the buttons' display logic reads, plus their identifiers (the context treats a FK whose
-  // identifier is "" as cleared): editing any other field does not re-evaluate them.
-  const displayLogicDependencies = useMemo(
+  // Form values the buttons' display and read-only logic read, plus their identifiers (the context treats a
+  // FK whose identifier is "" as cleared): editing any other field does not re-evaluate them.
+  const buttonLogicDependencies = useMemo(
     () =>
       collectExpressionDependencies(
-        Object.values(actionFields).map((button) => button.displayLogicExpression),
+        Object.values(actionFields).flatMap((button) => [
+          button.displayLogicExpression,
+          button.readOnlyLogicExpression,
+        ]),
         tab?.fields
       ),
     [actionFields, tab?.fields]
   );
-  const formValues = useTabFormValues(displayLogicDependencies);
+  const formValues = useTabFormValues(buttonLogicDependencies);
 
-  // Toolbar-local auxiliary inputs fetched when a single record is selected in table view, tagged
+  // Toolbar-local auxiliary inputs and session attributes fetched for the selection in table view, tagged
   // with the record they belong to. Kept separate from TabContext.auxiliaryInputs so it doesn't
   // interfere with form view.
   const [toolbarAux, setToolbarAux] = useState<{ recordId: string | null; values: Record<string, string> }>({
@@ -99,10 +105,11 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   // Tracks the record ID for which toolbarAux was last fetched.
   const lastFetchedAuxIdRef = useRef<string | null>(null);
 
-  const singleSelected = selectedItems.length === 1 ? selectedItems[0] : null;
-  const singleSelectedId = singleSelected ? String(singleSelected.id) : null;
+  // Like Classic's toolbar refresh, the context of the last selected record is shared by every selected one.
+  const contextRecord = selectedItems.at(-1) ?? null;
+  const contextRecordId = contextRecord ? String(contextRecord.id) : null;
   // Moving fast over records fetches the first and the last one only (Classic waits the same pause).
-  const settledSelectedId = useSettledValue(singleSelectedId, SELECTION_SETTLE_MS);
+  const settledSelectedId = useSettledValue(contextRecordId, SELECTION_SETTLE_MS);
   // The form's own initialization provides the auxiliary inputs in form view.
   // The window store is keyed by the identifier of the window this toolbar lives in.
   const currentWindowIdentifier = useCurrentWindowIdentifier();
@@ -110,24 +117,23 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     (s) => s.windows[currentWindowIdentifier]?.tabs[tabId ?? ""]?.form?.mode === TAB_MODES.FORM
   );
   // Until the selected record's own values arrive, the Classic === '' fallback applies.
-  const toolbarAuxInputs = toolbarAux.recordId === singleSelectedId ? toolbarAux.values : EMPTY_AUX_INPUTS;
+  const toolbarAuxInputs = toolbarAux.recordId === contextRecordId ? toolbarAux.values : EMPTY_AUX_INPUTS;
 
-  // When exactly one record is selected, lazily fetch its auxiliary inputs so that
-  // display logic expressions that reference context.* (e.g. context.APRM_OrderIsPaid)
-  // can be evaluated correctly in both table view and form view.
+  // When records are selected, lazily fetch the auxiliary inputs and session attributes of the last one so
+  // that display and read-only logic referencing context.* (e.g. context.APRM_OrderIsPaid,
+  // context.AD_ROLE_ID) can be evaluated correctly in both table view and form view.
   // In form view, TabContext.auxiliaryInputs (set by FormView) takes priority, so nothing is fetched.
   useEffect(() => {
     // Wait until the selection has settled on this record.
-    if (isFormView || settledSelectedId !== singleSelectedId) return;
+    if (isFormView || settledSelectedId !== contextRecordId) return;
     // Already have fresh data for this record — nothing to do.
-    if (singleSelectedId === lastFetchedAuxIdRef.current) return;
-    lastFetchedAuxIdRef.current = singleSelectedId;
+    if (contextRecordId === lastFetchedAuxIdRef.current) return;
+    lastFetchedAuxIdRef.current = contextRecordId;
 
-    if (!singleSelected || !singleSelectedId) return;
+    if (!contextRecord || !contextRecordId) return;
 
-    // Only fetch if at least one process button has context-dependent display logic.
-    const hasContextLogic = Object.values(actionFields).some((b) => b.displayLogicExpression?.includes("context."));
-    if (!hasContextLogic) return;
+    // Only fetch if at least one process button has context-dependent display or read-only logic.
+    if (!Object.values(actionFields).some(buttonNeedsContext)) return;
 
     const entityKeyColumn = Object.values(tab.fields).find((f) => f?.column?.keyColumn);
     if (!entityKeyColumn) return;
@@ -135,7 +141,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     const params = buildFormInitializationParams({
       tab,
       mode: FormMode.EDIT,
-      recordId: singleSelectedId,
+      recordId: contextRecordId,
       parentId: parentRecord?.id ? String(parentRecord.id) : null,
     });
 
@@ -144,22 +150,20 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       FormMode.EDIT,
       {},
       entityKeyColumn,
-      singleSelected as Record<string, unknown>
+      contextRecord as Record<string, unknown>
     );
 
-    const capturedId = singleSelectedId;
+    const capturedId = contextRecordId;
     fetchFormInitialization(params, payload)
       .then((data) => {
         // Discard response if a different record was selected while fetching.
         if (lastFetchedAuxIdRef.current !== capturedId) return;
-        const aux: Record<string, string> = {};
-        for (const [key, { value }] of Object.entries(data.auxiliaryInputValues || {})) {
-          aux[key] = value;
-        }
-        setToolbarAux({ recordId: capturedId, values: aux });
+        // Classic's context holds the auxiliary inputs, with their own types, and the session attributes of
+        // the record, which win on duplicate names.
+        setToolbarAux({ recordId: capturedId, values: buildRecordContextValues(data) });
       })
       .catch((err) => logger.warn("Toolbar aux inputs fetch failed:", err));
-  }, [singleSelectedId, settledSelectedId, isFormView, singleSelected, actionFields, tab, parentRecord]);
+  }, [contextRecordId, settledSelectedId, isFormView, contextRecord, actionFields, tab, parentRecord]);
 
   // Effective auxiliary inputs for display logic evaluation.
   // TabContext.auxiliaryInputs (form view / callouts) takes priority over the toolbar fetch.
@@ -168,7 +172,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     [toolbarAuxInputs, auxiliaryInputs]
   );
 
-  const processButtons = useMemo(() => {
+  const { processButtons, readOnlyProcessButtonIds } = useMemo(() => {
     const buttons = Object.values(actionFields) || [];
     // One context per selected record, built the first time a button needs it and shared by the
     // rest. Built inside each button's try below, so a failed build keeps that button's fallback.
@@ -184,7 +188,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         windowId: tab.window,
       })
     );
-    return buttons.filter((button) => {
+    const visibleButtons = buttons.filter((button) => {
       if (!button.displayed) return false;
       if (selectedItems?.length === 0) return false;
 
@@ -214,6 +218,11 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         return true;
       }
     }) as ProcessButton[];
+    // Shown but disabled while their read-only logic is true, evaluated with the same context as display logic.
+    return {
+      processButtons: visibleButtons,
+      readOnlyProcessButtonIds: collectReadOnlyButtonIds(visibleButtons, selectedItems, contextForRecord, tab.window),
+    };
   }, [actionFields, selectedItems, session, tab, parentRecord, parentTab, effectiveAuxInputs, formValues]);
 
   const fetchToolbar = useCallback(async () => {
@@ -275,6 +284,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     error,
     buttons,
     processButtons,
+    readOnlyProcessButtonIds,
     refetch,
   };
 }

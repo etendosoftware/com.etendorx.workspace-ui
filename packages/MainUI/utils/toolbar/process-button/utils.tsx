@@ -31,6 +31,34 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 export const isProcessButtonAccessible = (button: Pick<Field, "isProcessAccessible">): boolean =>
   button.isProcessAccessible !== false;
 
+/** Prefix the server-side expression parser gives to session attributes and auxiliary inputs. */
+export const CONTEXT_EXPRESSION_PREFIX = "context.";
+
+/**
+ * Tells whether the display or read-only logic of a button reads the record context (session attributes
+ * or auxiliary inputs), which only the FormInitialization of the selected record provides.
+ *
+ * @param button - The process button field
+ * @returns `true` when either expression reads `context.*`
+ */
+export const buttonNeedsContext = (button: Pick<Field, "displayLogicExpression" | "readOnlyLogicExpression">) =>
+  [button.displayLogicExpression, button.readOnlyLogicExpression].some((expression) =>
+    expression?.includes(CONTEXT_EXPRESSION_PREFIX)
+  );
+
+/**
+ * Tells whether a process button can be run: the role can run its process and its read-only logic is
+ * false. Classic keeps both kinds of buttons visible but disabled.
+ *
+ * @param button - The process button field
+ * @param readOnlyButtonIds - Ids of the buttons whose read-only logic is true for the selection
+ * @returns `true` when the button can be run
+ */
+export const isProcessButtonEnabled = (
+  button: Pick<Field, "id" | "isProcessAccessible">,
+  readOnlyButtonIds?: ReadonlySet<string>
+): boolean => isProcessButtonAccessible(button) && !readOnlyButtonIds?.has(button.id);
+
 const getProcessButtonStyles = (anchorEl: HTMLElement | null): string => {
   const baseClasses =
     "hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-dynamic-contrast-text)] disabled:bg-[var(--color-baseline-70)] disabled:opacity-20 h-8 py-1 px-4";

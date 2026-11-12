@@ -14,6 +14,7 @@ export type WriteOperation = "add" | "remove";
 const DATASOURCE_PATH = "/api/datasource";
 /** Column order, visibility and sort the grid saves per user, window and tab (ETMETA_GridConfiguration). */
 const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
+const PROCESS_METADATA_PATH = "/api/erp/meta/process";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -188,6 +189,20 @@ export class ApiData {
     if (!response.ok()) {
       throw new Error(`Resetting the grid configuration of tab ${tabId} failed: ${response.status()}`);
     }
+  }
+
+  /**
+   * The metadata the backend serves for a process definition (`/meta/process/<id>`), as the process modal
+   * loads it: e.g. to wire a core button to a core process the bare core does not attach to any window.
+   */
+  async processMetadata(processId: string): Promise<RecordValues> {
+    const response = await this.page.request.post(`${PROCESS_METADATA_PATH}/${processId}`, {
+      headers: await this.authHeaders(),
+    });
+    if (!response.ok()) {
+      throw new Error(`Reading the metadata of process ${processId} failed: ${response.status()}`);
+    }
+    return (await response.json()) as RecordValues;
   }
 
   private async authHeaders(): Promise<Record<string, string>> {
