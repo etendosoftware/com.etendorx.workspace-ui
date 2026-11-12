@@ -1,0 +1,98 @@
+import { expect, test } from "../../support/fixtures";
+import { TABS, WINDOW_IDS } from "../../support/registry/windows";
+import { runAndCaptureGridFetch } from "../../support/wait";
+
+/** Datasource params of the default sort (the tab order-by clause) and of a manual sort. */
+const ORDER_BY = "_orderBy";
+const SORT_BY = "_sortBy";
+const NAME = "Name";
+const COSTING = "Costing";
+const AVERAGE_COST_TRANSACTIONS = "Average Cost Transactions";
+const TRANSACTION = "Transaction";
+const DESCRIPTION = "Description";
+const DOCUMENT_NO = "Document No.";
+/** Ending date of the open average costing of the sample Laptop, the one its transactions belong to. */
+const OPEN_COSTING_ENDING_DATE = "12/31/9999";
+
+/** Order-by clauses of the tabs (AD_Tab.HQLOrderByClause), sent untouched as in classic. */
+const CLAUSE = {
+  AVERAGE_COST_TRANSACTIONS: "trx.movementDate, trx.transactionProcessDate",
+  FINANCIAL_ACCOUNT_TRANSACTION: "dateAcct, lineNo",
+  PAYMENT_IN_HEADER: "-documentNo",
+} as const;
+
+/** Tabs whose sort the tests read or change: the grid saves it per user, so start and end from the default. */
+const SORTED_TABS = [
+  [WINDOW_IDS.PRODUCT, TABS.PRODUCT_AVERAGE_COST_TRANSACTIONS],
+  [WINDOW_IDS.FINANCIAL_ACCOUNT, TABS.FINANCIAL_ACCOUNT_TRANSACTION],
+  [WINDOW_IDS.PAYMENT_IN, TABS.PAYMENT_IN_HEADER],
+] as const;
+
+test.beforeEach(async ({ api }) => {
+  for (const [windowId, tabId] of SORTED_TABS) {
+    await api.resetGridConfiguration(windowId, tabId);
+  }
+});
+test.afterEach(async ({ api }) => {
+  for (const [windowId, tabId] of SORTED_TABS) {
+    await api.resetGridConfiguration(windowId, tabId);
+  }
+});
+
+/**
+ * Default sort of a grid from its tab order-by clause (ETP-4641): as classic, the whole clause travels as
+ * `_orderBy` and `_sortBy` only carries a manual sort, which takes precedence. Read-only, on sample data.
+ */
+test.describe("Grid - default sort from the tab order-by clause @regression @grid", () => {
+  test("loads a query-based tab sorted by a multi-column clause of aliases", async ({ app, data, page }) => {
+    const product = data.PRODUCT.LAPTOP;
+    await app.sidebar.navigateTo("product");
+    await app.grid.filter(NAME, product.name);
+    await app.grid.selectRow(product.name);
+    await app.tabs.open(COSTING);
+    const costing = page.getByTestId(`Tab__${TABS.PRODUCT_COSTING}`);
+
+    // The first child tab fetches its records when its parent is selected, before it is opened
+    const params = await runAndCaptureGridFetch(page, TABS.PRODUCT_AVERAGE_COST_TRANSACTIONS, async () => {
+      await app.grid.setRowSelected(app.grid.rowWithCell(OPEN_COSTING_ENDING_DATE, costing), true);
+      await app.tabs.open(AVERAGE_COST_TRANSACTIONS);
+    });
+
+    expect(params[ORDER_BY]).toBe(CLAUSE.AVERAGE_COST_TRANSACTIONS);
+    expect(params[SORT_BY]).toBeUndefined();
+    // The server accepts the clause: the tab shows its transactions instead of an error
+    const transactions = page.getByTestId(`Tab__${TABS.PRODUCT_AVERAGE_COST_TRANSACTIONS}`);
+    await expect(app.grid.rows(transactions).first()).toBeVisible();
+  });
+
+  test("sends every column of the clause and lets a manual sort override it", async ({ app, data, page }) => {
+    const account = data.FINANCIAL_ACCOUNT.ACCOUNTING_DOCUMENTS_DOLLAR;
+    await app.sidebar.navigateTo("financialAccount");
+    await app.grid.filter(NAME, account.name);
+
+    const defaultParams = await runAndCaptureGridFetch(page, TABS.FINANCIAL_ACCOUNT_TRANSACTION, async () => {
+      await app.grid.selectRow(account.name);
+      await app.tabs.open(TRANSACTION);
+    });
+
+    expect(defaultParams[ORDER_BY]).toBe(CLAUSE.FINANCIAL_ACCOUNT_TRANSACTION);
+    expect(defaultParams[SORT_BY]).toBeUndefined();
+
+    const manualParams = await runAndCaptureGridFetch(page, TABS.FINANCIAL_ACCOUNT_TRANSACTION, () =>
+      app.grid.sortBy(DESCRIPTION)
+    );
+
+    expect(manualParams[SORT_BY]).toBe("description");
+    expect(manualParams[ORDER_BY]).toBe(CLAUSE.FINANCIAL_ACCOUNT_TRANSACTION);
+  });
+
+  test("shows the default descending sort on its column", async ({ app, page }) => {
+    const params = await runAndCaptureGridFetch(page, TABS.PAYMENT_IN_HEADER, () =>
+      app.sidebar.navigateTo("paymentIn")
+    );
+
+    expect(params[ORDER_BY]).toBe(CLAUSE.PAYMENT_IN_HEADER);
+    expect(params[SORT_BY]).toBeUndefined();
+    await expect(app.grid.sortIndicator(DOCUMENT_NO, "descending")).toBeVisible();
+  });
+});

@@ -49,6 +49,8 @@ export const PRODUCT = {
   RAW_MATERIAL_B: { id: "4028E6C72959682B01295ADC1B800224", name: "Raw material B" },
   FINAL_GOOD_A: { id: "4028E6C72959682B01295ADC1D07022A", name: "Final good A" },
   DISTRIBUTION_GOOD_A: { id: "4028E6C72959682B01295ADC2340023D", name: "Spain-Distribution good A" },
+  /** Average costing open until 12/31/9999 with sample transactions; specs only read it. */
+  LAPTOP: { id: "901CAFF074954746970719E6A2910638", name: "Laptop" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const PAYMENT_METHOD = {
@@ -67,6 +69,8 @@ export const FINANCIAL_ACCOUNT = {
   SPAIN_BANK: { id: "0D0000E0A27040E383D5B03755249B61", name: "Spain Bank" },
   /** Account of USA (EUR) with sample reconciliations of July 2011; specs only read it. */
   ACCOUNTING_DOCUMENTS_EURO: { id: "FF808081328278B50132828AC43D003F", name: "Accounting Documents EURO" },
+  /** Account of USA (USD) with 18 sample transactions of one date (lines 10–180); specs only read it. */
+  ACCOUNTING_DOCUMENTS_DOLLAR: { id: "FF808081328278B50132828C8AC70058", name: "Accounting Documents DOLLAR" },
 } as const satisfies Record<string, SampleRecord>;
 
 /** G/L items of the sample data. */
