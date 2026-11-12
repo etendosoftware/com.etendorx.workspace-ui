@@ -356,13 +356,14 @@ export function resolveSortBy(
   sorting: MRT_SortingState,
   rawColumns: Column[],
   finalCriteria: unknown[],
-  tabOrderBy: string | undefined,
+  tabOrderBy: string | null | undefined,
   defaultSortField?: string
 ): string | undefined {
   if (sorting.length > 0) {
     return getSortByString(sorting, rawColumns, finalCriteria.length > 0);
   }
-  if (tabOrderBy === undefined && defaultSortField) {
+  // The metadata sends a missing clause as null (or ""): classic then sorts by its default field
+  if (!tabOrderBy && defaultSortField) {
     return defaultSortField;
   }
   const fallback = finalCriteria.length > 0 ? "-documentNo" : undefined;

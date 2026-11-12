@@ -209,6 +209,8 @@ describe("WindowReferenceGrid Coverage Tests", () => {
 
     it("returns the classic default sort field without a tab order-by clause, even with criteria", () => {
       expect(resolveSortBy([], rawColumns, [], undefined, "lineNo")).toBe("lineNo");
+      expect(resolveSortBy([], rawColumns, [], null, "lineNo")).toBe("lineNo");
+      expect(resolveSortBy([], rawColumns, [], "", "lineNo")).toBe("lineNo");
       expect(resolveSortBy([], rawColumns, [{ fieldName: "x" }], undefined, "lineNo")).toBe("lineNo");
     });
 
