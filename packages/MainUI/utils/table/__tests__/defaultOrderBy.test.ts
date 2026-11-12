@@ -179,9 +179,9 @@ describe("defaultOrderBy", () => {
 
       it("does not sort when classic does not, and the HQL clause still wins", () => {
         expect(resolveTabDefaultSorts(makeTab(fields, { defaultSortField: "" }))).toEqual([]);
-        expect(
-          resolveTabDefaultSorts(makeTab(fields, { defaultSortField: "", hqlorderbyclause: "-lineNo" }))
-        ).toEqual([desc(LINE_LABEL)]);
+        expect(resolveTabDefaultSorts(makeTab(fields, { defaultSortField: "", hqlorderbyclause: "-lineNo" }))).toEqual([
+          desc(LINE_LABEL),
+        ]);
       });
     });
 
