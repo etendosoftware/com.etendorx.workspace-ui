@@ -122,6 +122,16 @@ flowchart TD
 - ETP-4641 applies the classic rule above, so those tabs reach the `_dummy`
   path while the Business Partner tabs keep the `id` criteria.
 
+## Tests
+
+- Unit (Jest): `isSrOneToOneExtension` in `utils/window/__tests__/utils.test.ts`, the SR criteria in
+  `utils/__tests__/criteriaUtils.test.ts` and the auto-open decision in
+  `components/Table/utils/__tests__/srAutoOpen.test.ts`.
+- E2E: probe GRDh (`playwright-tests/e2e/regression/10_Grid/GRDhSingleRecordChildTabsTest.spec.ts`,
+  `@regression`): the Accounting tab of a posted invoice and Business Partner › Customer, see
+  [Playwright E2E](../../testing/playwright-e2e/README.md#feature-probes). Payment Plan (logical relation) is
+  already checked by the PROc smoke spec.
+
 ## Manual-close re-entry
 
 Both paths track the last parent id for which auto-open fired via a ref
