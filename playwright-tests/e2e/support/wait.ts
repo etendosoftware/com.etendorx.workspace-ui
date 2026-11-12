@@ -61,6 +61,25 @@ export function gridFetchParams(body: unknown, tabId: string): DatasourceRequest
   return params;
 }
 
+/** A criterion of a datasource request: the field it filters, how and by which value. */
+export interface DatasourceCriterion {
+  fieldName?: string;
+  operator?: string;
+  value?: unknown;
+}
+
+/**
+ * Criteria of datasource request params: the UI posts each criterion as a JSON string, alone or in a list.
+ */
+export function datasourceCriteria(params: DatasourceRequestParams): DatasourceCriterion[] {
+  const criteria = params.criteria;
+  if (criteria === undefined) {
+    return [];
+  }
+  const entries = Array.isArray(criteria) ? criteria : [criteria];
+  return entries.map((entry) => (typeof entry === "string" ? JSON.parse(entry) : entry) as DatasourceCriterion);
+}
+
 /**
  * Runs `action` (e.g. opening a tab) and returns the params of the request that fetches the grid records of
  * `tabId`, to assert what the UI asked the server for (sort, criteria).

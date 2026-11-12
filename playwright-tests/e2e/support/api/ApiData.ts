@@ -190,6 +190,13 @@ export class ApiData {
     }
   }
 
+  /** Resets the stored grid configuration of several tabs, given as `[windowId, tabId]` pairs. */
+  async resetGridConfigurations(tabs: ReadonlyArray<readonly [string, string]>): Promise<void> {
+    for (const [windowId, tabId] of tabs) {
+      await this.resetGridConfiguration(windowId, tabId);
+    }
+  }
+
   private async authHeaders(): Promise<Record<string, string>> {
     const token = await this.page.evaluate((key) => localStorage.getItem(key), TOKEN_STORAGE_KEY);
     if (!token) {

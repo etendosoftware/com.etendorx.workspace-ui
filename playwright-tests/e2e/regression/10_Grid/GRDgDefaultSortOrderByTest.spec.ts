@@ -28,16 +28,8 @@ const SORTED_TABS = [
   [WINDOW_IDS.PAYMENT_IN, TABS.PAYMENT_IN_HEADER],
 ] as const;
 
-test.beforeEach(async ({ api }) => {
-  for (const [windowId, tabId] of SORTED_TABS) {
-    await api.resetGridConfiguration(windowId, tabId);
-  }
-});
-test.afterEach(async ({ api }) => {
-  for (const [windowId, tabId] of SORTED_TABS) {
-    await api.resetGridConfiguration(windowId, tabId);
-  }
-});
+test.beforeEach(({ api }) => api.resetGridConfigurations(SORTED_TABS));
+test.afterEach(({ api }) => api.resetGridConfigurations(SORTED_TABS));
 
 /**
  * Default sort of a grid from its tab order-by clause (ETP-4641): as classic, the whole clause travels as

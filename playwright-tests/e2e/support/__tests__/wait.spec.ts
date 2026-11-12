@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gridFetchParams } from "../wait";
+import { datasourceCriteria, gridFetchParams } from "../wait";
 
 const TAB_ID = "23691259D1BD4496BCC5F32645BCA4B9";
 const OTHER_TAB_ID = "800057";
@@ -21,5 +21,20 @@ test.describe("gridFetchParams", () => {
     expect(gridFetchParams(body({ tabId: TAB_ID, _operationType: FETCH, _summary: "{}" }), TAB_ID)).toBeUndefined();
     expect(gridFetchParams({ entity: "Order" }, TAB_ID)).toBeUndefined();
     expect(gridFetchParams(null, TAB_ID)).toBeUndefined();
+  });
+});
+
+test.describe("datasourceCriteria", () => {
+  const dummy = { fieldName: "_dummy", operator: "equals", value: 1 };
+  const byId = { fieldName: "id", operator: "equals", value: "123" };
+
+  test("parses one criterion or a list of them, posted as JSON strings", () => {
+    expect(datasourceCriteria({ criteria: JSON.stringify(dummy) })).toEqual([dummy]);
+    expect(datasourceCriteria({ criteria: [JSON.stringify(dummy), JSON.stringify(byId)] })).toEqual([dummy, byId]);
+  });
+
+  test("keeps criteria already parsed and returns none without criteria", () => {
+    expect(datasourceCriteria({ criteria: [byId] })).toEqual([byId]);
+    expect(datasourceCriteria({})).toEqual([]);
   });
 });

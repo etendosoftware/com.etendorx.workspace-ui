@@ -124,6 +124,8 @@ export const PROCESS_PARAMETER = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Posted sales invoice of Customer A, organization Spain, with six accounting entries; specs only read it. */
+  SALES_INVOICE_POSTED: "I/26",
   /** Accounting period of the sample calendar (Open/Close Period Control). */
   PERIOD_JAN_2011: "Jan-11",
   /** Reconciliation of "Accounting Documents EURO" (July 2011); Reconciliation Details prints it as a PDF. */
