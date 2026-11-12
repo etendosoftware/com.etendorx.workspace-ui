@@ -19,6 +19,10 @@ user add and delete them. This document covers who can delete a note and how eac
   same formatter used for audit date columns in the grid (see
   [DATE_FORMATTING.md](../../../packages/MainUI/docs/DATE_FORMATTING.md)). The servlet returns
   `creationDate` as an ISO UTC timestamp, so it is shown in the user's local time.
+- **Rejected deletion**: if the servlet still rejects a deletion with `403` (e.g. the list was loaded
+  before a change of user or ownership), `deleteNote` throws a `NoteDeleteForbiddenError` and the
+  section shows the translated message `forms.notes.deleteNoteNotAllowed` ("You can only delete the
+  notes you created.") instead of the raw server response. Other failures keep showing their message.
 - Adding a note puts it on top of the list with the delete option (it belongs to the current user);
   adding and deleting call `onNotesChange()` so the note count in the section title stays correct.
 
@@ -43,6 +47,6 @@ user add and delete them. This document covers who can delete a note and how eac
 ## Main files
 
 - `packages/MainUI/components/Form/FormView/Sections/noteSection.tsx`: Notes section component.
-- `packages/MainUI/components/Form/FormView/Sections/noteUtils.ts`: `isOwnNote` and `getNoteBackground`.
-- `packages/api-client/src/api/notes.ts`: fetch, create and delete requests.
+- `packages/MainUI/components/Form/FormView/Sections/noteUtils.ts`: `isOwnNote`, `getNoteBackground` and `getDeleteNoteErrorMessage`.
+- `packages/api-client/src/api/notes.ts`: fetch, create and delete requests; `NoteDeleteForbiddenError`.
 - `com.etendoerp.metadata` `NotesServlet`: notes endpoint and server-side delete permission check.
