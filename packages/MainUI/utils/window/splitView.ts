@@ -226,12 +226,13 @@ export const getPanesContainerClassName = (mode: TabViewMode): string => {
 };
 
 /**
- * Classes every pane that paints the focus indicator shares. The border is
- * always laid out — transparent when unfocused — so that moving the focus
- * between panes never shifts the divider. `outline-none` keeps the browser's own
- * ring off the pane container: the left border is the indicator.
+ * Classes every pane shares. The left border is always laid out, and always transparent now that the pane
+ * no longer paints a focus indicator, so that moving between panes never shifts the divider. There is no
+ * color transition: a pane that goes from hidden to shown starts with the browser's default (text) border
+ * color, and animating from it to transparent flashed a dark edge on every form-to-grid switch.
+ * `outline-none` keeps the browser's own ring off the pane container.
  */
-const PANE_FOCUS_BORDER_CLASSES = "outline-none transition-[border-left-color] duration-200 border-l-4";
+const PANE_FOCUS_BORDER_CLASSES = "outline-none border-l-4";
 
 export const getGridPaneClassName = (mode: TabViewMode, focusBorderColor: string): string => {
   if (mode === TAB_VIEW_MODES.SPLIT) {
