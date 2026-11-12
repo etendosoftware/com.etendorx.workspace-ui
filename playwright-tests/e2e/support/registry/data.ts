@@ -49,6 +49,8 @@ export const PRODUCT = {
   RAW_MATERIAL_B: { id: "4028E6C72959682B01295ADC1B800224", name: "Raw material B" },
   FINAL_GOOD_A: { id: "4028E6C72959682B01295ADC1D07022A", name: "Final good A" },
   DISTRIBUTION_GOOD_A: { id: "4028E6C72959682B01295ADC2340023D", name: "Spain-Distribution good A" },
+  /** Service linked to products and price rule based, with three product categories; specs only read it. */
+  WARRANTY: { id: "D67EF9E66FF447E88176DF0C054A9D3F", name: "Warranty" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const PAYMENT_METHOD = {
@@ -98,6 +100,8 @@ export const LIST_VALUE = {
 /** Process definitions (OBUIAPP_Process_ID) whose definition a spec overrides. */
 export const PROCESS = {
   ADD_PAYMENT: "9BED7889E1034FE68BD85D5D16857320",
+  /** "Process Invoices" of com.smf.jobs.defaults: multi-record, answers with one combined result. */
+  PROCESS_INVOICES: "272C8D38EF3245BF882E623CE92AB4E7",
   /** Manual (client-side JS) process of the core: its classic handler is `OB.OpenClose.openClose`. */
   OPEN_CLOSE_PERIODS: "A832A5DA28FB4BB391BDE883E928DFC5",
 } as const;
@@ -120,6 +124,8 @@ export const PROCESS_PARAMETER = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Sales invoice of Customer B, organization Spain, 258.50 pending; no spec pays it. */
+  SALES_INVOICE_PENDING_CUSTOMER_B: "I/27",
   /** Accounting period of the sample calendar (Open/Close Period Control). */
   PERIOD_JAN_2011: "Jan-11",
   /** Reconciliation of "Accounting Documents EURO" (July 2011); Reconciliation Details prints it as a PDF. */
@@ -167,6 +173,10 @@ export const LOCATOR = {
  */
 export const FIELD = {
   SALES_ORDER_LINE_QUANTITY: "1130",
+  /** "Add Payment" process button of the Sales Invoice header (multi-record process definition). */
+  SALES_INVOICE_ADD_PAYMENT: "AD7C15BA367642AFB471EFAFD768FB2D",
+  /** "Process Invoices" button of the Sales Invoice header (classic APRM process, one record). */
+  SALES_INVOICE_PROCESS_INVOICES: "8B59A07EB4C2475AE040007F010031CA",
   SALES_INVOICE_LINE_PRODUCT: "2996",
   SALES_INVOICE_LINE_QUANTITY: "2999",
   PURCHASE_ORDER_LINE_QUANTITY: "3389",

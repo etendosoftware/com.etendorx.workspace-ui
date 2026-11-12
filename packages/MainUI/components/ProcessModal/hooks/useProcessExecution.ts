@@ -785,25 +785,19 @@ export function useProcessExecution({
     ]
   );
 
+  /**
+   * Posts the process to its Java handler in a single request, as Classic `doProcess` does.
+   * A multi-record process receives every selected id in `recordIds` and its handler answers
+   * with one combined result (success, error, or a warning when only some records failed).
+   */
   const handleDirectJavaProcessExecute = useCallback(
     async (actionValue?: string) => {
       if (!processId || !javaClassName) return;
       startTransition(async () => {
-        const isMultiRecord =
-          (button?.processDefinition?.isMultiRecord === true || button?.processDefinition?.isMultiRecord === "Y") &&
-          selectedRecords.length > 1;
-
-        if (isMultiRecord) {
-          for (const rec of selectedRecords) {
-            const payload = { ...buildStandardJavaPayload(actionValue), recordIds: [String(rec.id)] };
-            await executeJavaProcess(payload, `direct Java process (record ${String(rec.id)})`);
-          }
-        } else {
-          await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
-        }
+        await executeJavaProcess(buildStandardJavaPayload(actionValue), "direct Java process");
       });
     },
-    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition, button, selectedRecords]
+    [processId, javaClassName, buildStandardJavaPayload, executeJavaProcess, startTransition]
   );
 
   /**

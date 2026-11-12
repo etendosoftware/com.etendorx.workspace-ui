@@ -1,6 +1,7 @@
 import { syncSelectedRecordsToSession, clearRecordContextFromSession } from "../sessionSync";
 import { SessionMode } from "@workspaceui/api-client/src/api/types";
 import * as formUtils from "@/utils/hooks/useFormInitialization/utils";
+import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
 import type {
   Tab,
   EntityData,
@@ -354,6 +355,55 @@ describe("syncSelectedRecordsToSession", () => {
   });
 
   // Loading State Tests
+  describe("selection context publishing", () => {
+    const WINDOW_IDENTIFIER = "win-1";
+    const CONTEXT = { PRODUCTTYPE: "S", StockReservations: "Y" };
+    const childTab: Tab = { ...mockTab, id: "child-tab", tabLevel: 1 };
+
+    const syncWithContext = async (tab: Tab, windowIdentifier?: string) => {
+      jest.spyOn(formUtils, "buildFormInitializationParams").mockReturnValue(new URLSearchParams());
+      jest.spyOn(formUtils, "buildFormInitializationPayload").mockReturnValue({});
+      jest.spyOn(formUtils, "fetchFormInitialization").mockResolvedValue(createMockFormInitializationResponse());
+      jest.spyOn(formUtils, "buildSessionAttributes").mockReturnValue(CONTEXT);
+      const setSession = jest.fn();
+      await syncSelectedRecordsToSession({
+        tab,
+        selectedRecords: mockRecords,
+        windowIdentifier,
+        setSession,
+        setSessionSyncLoading: jest.fn(),
+      });
+      return setSession;
+    };
+
+    const getSelectionContext = (tabId: string) =>
+      useLiveTabValuesStore.getState().selectionEntries[WINDOW_IDENTIFIER]?.[tabId];
+
+    beforeEach(() => {
+      useLiveTabValuesStore.setState({ entries: {}, selectionEntries: {} });
+    });
+
+    it("publishes the context of the last selected record of a child tab without touching the session", async () => {
+      const setSession = await syncWithContext(childTab, WINDOW_IDENTIFIER);
+
+      expect(getSelectionContext(childTab.id)).toEqual({ recordId: "2", values: CONTEXT });
+      expect(setSession).not.toHaveBeenCalled();
+    });
+
+    it("publishes the context of a root tab and still merges it into the session", async () => {
+      const setSession = await syncWithContext(mockTab, WINDOW_IDENTIFIER);
+
+      expect(getSelectionContext(mockTab.id)).toEqual({ recordId: "2", values: CONTEXT });
+      expect(setSession).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it("publishes nothing without a window identifier", async () => {
+      await syncWithContext(childTab);
+
+      expect(useLiveTabValuesStore.getState().selectionEntries).toEqual({});
+    });
+  });
+
   describe("loading state management", () => {
     it("should set loading state to true at start and false on successful completion", async () => {
       const mockSetSessionSyncLoading = jest.fn();

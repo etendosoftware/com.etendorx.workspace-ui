@@ -19,7 +19,7 @@ import { useMemo } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
-import { mergeDefinedValues } from "@/utils/expressions/mergeLiveValues";
+import { overlayLiveValues } from "@/utils/tabDisplayLogic/ancestorContext";
 
 /**
  * Selected record of a tab with the unsaved values its form is showing on top.
@@ -43,10 +43,5 @@ export function useLiveTabRecord(
     return state.entries[windowIdentifier]?.[tab.id];
   });
 
-  return useMemo(() => {
-    if (!record || liveEntry?.recordId !== String(record.id)) {
-      return record;
-    }
-    return mergeDefinedValues(record, liveEntry.values);
-  }, [record, liveEntry]);
+  return useMemo(() => overlayLiveValues(record, liveEntry), [record, liveEntry]);
 }

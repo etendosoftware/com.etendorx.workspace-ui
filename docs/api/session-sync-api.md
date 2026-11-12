@@ -62,8 +62,11 @@ await syncSelectedRecordsToSession({
 3. **API Request Construction**: Builds parameters and payload for SETSESSION mode
 4. **Multiple Selection Support**: Adds `MULTIPLE_ROW_IDS` to payload when multiple records selected
 5. **Response Processing**: Extracts session attributes from API response
-6. **Session Update**: Merges new attributes with existing session state
-7. **Error Handling**: Logs errors without throwing exceptions
+6. **Selection Context**: When `windowIdentifier` is given, publishes the response (auxiliary inputs and
+   session attributes) for the selected record, at any tab level, so child tab display logic can read it.
+   See [Tab Display Logic](../features/tab-display-logic/README.md).
+7. **Session Update**: Merges new attributes with existing session state (root tabs only)
+8. **Error Handling**: Logs errors without throwing exceptions
 
 #### Error Handling
 

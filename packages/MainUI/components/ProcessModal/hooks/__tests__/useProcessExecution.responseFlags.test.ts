@@ -15,7 +15,7 @@
  */
 
 import "../testUtils/useProcessExecution.mocks";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { toast } from "sonner";
 import { REPORT_EXECUTION_TIMEOUT_MS, useProcessExecution } from "../useProcessExecution";
 import { makeParams } from "../testUtils/makeProcessExecutionParams";
@@ -245,31 +245,83 @@ describe("openDirectTab auto-navigation", () => {
 
 describe("multi-record invocation", () => {
   const TWO_RECORDS = [{ id: "REC-1" }, { id: "REC-2" }];
+  const COMBINED_TEXT = "PROCESS EXECUTED: 1 registers successfully processed and 1 registers failed.";
 
-  const renderMultiRecordHook = (isMultiRecord: boolean) => {
-    mockFetchJson(SUCCESS_RESPONSE);
-    return renderHook(() =>
+  /** The combined answer of a `com.smf.jobs` multi-record handler, typed by `msgType`. */
+  const combinedResponse = (msgType: string) => ({
+    responseActions: [{ showMsgInProcessView: { msgType, msgTitle: msgType, msgText: COMBINED_TEXT } }],
+  });
+
+  /** Runs the direct Java execution for `records` and returns the hook params spies. */
+  const runDirectExecution = async (
+    records: Array<{ id: string }>,
+    { isMultiRecord = true, response = SUCCESS_RESPONSE as unknown } = {}
+  ) => {
+    mockFetchJson(response);
+    (toast.success as jest.Mock).mockClear();
+    (toast.warning as jest.Mock).mockClear();
+    const spies = { onClose: jest.fn(), onSuccess: jest.fn(), setResult: jest.fn() };
+    // The hook does not await its transition; keep it to wait for the response handling.
+    let transition: Promise<void> = Promise.resolve();
+    const { result } = renderHook(() =>
       useProcessExecution(
         makeParams({
+          ...spies,
           javaClassName: "com.example.MyProcess",
           button: { processDefinition: { id: "PDef-001", parameters: {}, isMultiRecord } },
-          selectedRecords: TWO_RECORDS,
+          selectedRecords: records,
+          getRecordIds: jest.fn(() => records.map((r) => r.id)),
+          startTransition: (fn: () => Promise<void>) => {
+            transition = fn();
+          },
         })
       )
     );
+    await result.current.handleDirectJavaProcessExecute();
+    await transition;
+    return spies;
   };
 
-  it("sends one request per selected record when isMultiRecord=true", async () => {
-    const { result } = renderMultiRecordHook(true);
-    result.current.handleDirectJavaProcessExecute();
-    // startTransition fires the loop without awaiting it — waitFor flushes the microtasks
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+  const sentRecordIds = () => JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).recordIds;
+
+  it("sends a single request with every selected record id when isMultiRecord=true", async () => {
+    await runDirectExecution(TWO_RECORDS);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(sentRecordIds()).toEqual(["REC-1", "REC-2"]);
   });
 
   it("sends a single request when isMultiRecord=false even with multiple records", async () => {
-    const { result } = renderMultiRecordHook(false);
-    await result.current.handleDirectJavaProcessExecute();
+    await runDirectExecution(TWO_RECORDS, { isMultiRecord: false });
     expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends only the selected record id when one record is selected", async () => {
+    await runDirectExecution([{ id: "REC-1" }]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(sentRecordIds()).toEqual(["REC-1"]);
+  });
+
+  it("shows a combined partial failure once, as a warning, and refreshes once", async () => {
+    const { onClose, onSuccess } = await runDirectExecution(TWO_RECORDS, { response: combinedResponse("warning") });
+    expect(toast.warning).toHaveBeenCalledTimes(1);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect((toast.warning as jest.Mock).mock.calls[0][1].description.props.message).toBe(COMBINED_TEXT);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a combined success once", async () => {
+    const { onSuccess } = await runDirectExecution(TWO_RECORDS, { response: combinedResponse("success") });
+    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a combined error in the modal without a success toast", async () => {
+    const { onClose, setResult } = await runDirectExecution(TWO_RECORDS, { response: combinedResponse("error") });
+    expect(setResult).toHaveBeenLastCalledWith(expect.objectContaining({ messageType: "error", error: COMBINED_TEXT }));
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
 

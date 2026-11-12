@@ -232,4 +232,70 @@ describe("UploadFileSelector", () => {
       expect(onFileChange).toHaveBeenCalledWith("my_col", null);
     });
   });
+
+  describe("drag and drop", () => {
+    const renderDropTarget = (disabled = false) => {
+      const onFileChange = jest.fn();
+      render(
+        <Wrapper>
+          <UploadFileSelector
+            field={makeField({ columnName: "my_col" })}
+            disabled={disabled}
+            onFileChange={onFileChange}
+          />
+        </Wrapper>
+      );
+      return { onFileChange, container: screen.getByTestId("UploadFileSelector__container") };
+    };
+
+    const dropFiles = (target: HTMLElement, files: File[]) => fireEvent.drop(target, { dataTransfer: { files } });
+
+    it("takes a dropped file as the selected file", () => {
+      const { onFileChange, container } = renderDropTarget();
+      const file = makeFile("certificate.p12");
+
+      dropFiles(container, [file]);
+
+      expect(onFileChange).toHaveBeenCalledWith("my_col", file);
+      expect(screen.getByTestId("UploadFileSelector__filename")).toHaveTextContent("certificate.p12");
+    });
+
+    it("highlights the field while a file is dragged over it", () => {
+      const { container } = renderDropTarget();
+
+      fireEvent.dragOver(container);
+      expect(container.className).toContain("ring-2");
+
+      fireEvent.dragLeave(container);
+      expect(container.className).not.toContain("ring-2");
+    });
+
+    it("accepts the drop by preventing the browser's default", () => {
+      const { container } = renderDropTarget();
+      const dragOver = new Event("dragover", { bubbles: true, cancelable: true });
+
+      fireEvent(container, dragOver);
+
+      expect(dragOver.defaultPrevented).toBe(true);
+    });
+
+    it("ignores a drop without files", () => {
+      const { onFileChange, container } = renderDropTarget();
+
+      dropFiles(container, []);
+
+      expect(onFileChange).not.toHaveBeenCalled();
+      expect(screen.getByTestId("UploadFileSelector__select_button")).toBeInTheDocument();
+    });
+
+    it("ignores drag and drop when disabled", () => {
+      const { onFileChange, container } = renderDropTarget(true);
+
+      fireEvent.dragOver(container);
+      dropFiles(container, [makeFile()]);
+
+      expect(container.className).not.toContain("ring-2");
+      expect(onFileChange).not.toHaveBeenCalled();
+    });
+  });
 });

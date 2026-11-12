@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { isProcessButtonAccessible } from "../utils";
+import { buttonNeedsContext, isProcessButtonAccessible, isProcessButtonEnabled } from "../utils";
 
 describe("isProcessButtonAccessible", () => {
   it("is false only when the metadata flags the process as not accessible", () => {
@@ -24,5 +24,37 @@ describe("isProcessButtonAccessible", () => {
 
   it.each([true, undefined])("is true when the flag is %s", (isProcessAccessible) => {
     expect(isProcessButtonAccessible({ isProcessAccessible })).toBe(true);
+  });
+});
+
+describe("buttonNeedsContext", () => {
+  const CONTEXT_LOGIC = "context.AD_ROLE_ID !== '0'";
+  const RECORD_LOGIC = "OB.Utilities.getValue(currentValues,'processed') === 'Y'";
+
+  it.each([
+    ["the display logic", { displayLogicExpression: CONTEXT_LOGIC }],
+    ["the read-only logic", { readOnlyLogicExpression: CONTEXT_LOGIC }],
+  ])("is true when %s reads the context", (_, button) => {
+    expect(buttonNeedsContext(button)).toBe(true);
+  });
+
+  it.each([
+    ["no logic", {}],
+    ["logic on record values", { displayLogicExpression: RECORD_LOGIC, readOnlyLogicExpression: RECORD_LOGIC }],
+  ])("is false with %s", (_, button) => {
+    expect(buttonNeedsContext(button)).toBe(false);
+  });
+});
+
+describe("isProcessButtonEnabled", () => {
+  const READ_ONLY_IDS = new Set(["F1"]);
+
+  it.each([
+    ["accessible and not read-only", { id: "F2" }, READ_ONLY_IDS, true],
+    ["accessible without read-only ids", { id: "F1" }, undefined, true],
+    ["read-only", { id: "F1" }, READ_ONLY_IDS, false],
+    ["not accessible", { id: "F2", isProcessAccessible: false }, READ_ONLY_IDS, false],
+  ])("is %s → %s", (_, button, readOnlyIds, expected) => {
+    expect(isProcessButtonEnabled(button, readOnlyIds)).toBe(expected);
   });
 });

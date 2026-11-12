@@ -57,6 +57,7 @@ const IDENTITY_OPTIONS = [
   "normalizeValues",
   "defaultValue",
   "windowId",
+  "resolveUnprefixedPreferences",
 ] as const satisfies readonly (keyof EvaluationContextOptions)[];
 
 interface Entry {

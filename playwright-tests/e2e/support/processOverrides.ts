@@ -1,5 +1,5 @@
 /**
- * Overrides of a process definition inside the window metadata the UI loads. They let a spec
+ * Overrides of a process definition or of a field inside the window metadata the UI loads. They let a spec
  * reach client behavior the bare core has no data for, e.g. a migrated onProcess
  * (`em_etmeta_onprocess` is empty in every core process): the spec gives the property, the UI
  * runs it as it would run one stored in the database.
@@ -15,8 +15,12 @@ export interface AppliedOverride {
 }
 
 interface FieldMetadata {
+  id?: string;
   processDefinition?: { id?: string } & Record<string, unknown>;
 }
+
+/** Field properties to set, e.g. `{ readOnlyLogicExpression: "…" }`. */
+export type FieldOverrides = Readonly<Record<string, unknown>>;
 
 interface WindowMetadata {
   tabs?: { fields?: Record<string, FieldMetadata> }[];
@@ -42,6 +46,20 @@ export function applyProcessOverrides(
     Object.assign(definition as object, overrides);
   }
   return definitions.length;
+}
+
+/**
+ * Sets `overrides` on every field of `metadata` (`tabs[].fields.<field>`) whose AD_Field_ID is `fieldId`.
+ * @returns the number of fields changed.
+ */
+export function applyFieldOverrides(metadata: WindowMetadata, fieldId: string, overrides: FieldOverrides): number {
+  const fields = (metadata.tabs ?? [])
+    .flatMap((tab) => Object.values(tab.fields ?? {}))
+    .filter((field) => field.id === fieldId);
+  for (const field of fields) {
+    Object.assign(field, overrides);
+  }
+  return fields.length;
 }
 
 /** URL of the metadata request of a window (`/api/erp/meta/window/<id>`, with or without query). */
@@ -88,6 +106,25 @@ export async function overrideProcessDefinition(
   });
   await routeChanged(page, processMetadataUrl(processId), (metadata) => {
     Object.assign(metadata, overrides);
+  });
+  return state;
+}
+
+/**
+ * Applies `overrides` to the field `fieldId` of the window `windowId`, from the next time the page loads
+ * its metadata, e.g. a read-only logic on a process button the bare core has none for. Call it before
+ * opening the window.
+ * @returns the count of changed fields, to assert the override matched.
+ */
+export async function overrideField(
+  page: Page,
+  windowId: string,
+  fieldId: string,
+  overrides: FieldOverrides
+): Promise<AppliedOverride> {
+  const state = { applied: 0 };
+  await routeChanged(page, windowMetadataUrl(windowId), (metadata) => {
+    state.applied += applyFieldOverrides(metadata as WindowMetadata, fieldId, overrides);
   });
   return state;
 }

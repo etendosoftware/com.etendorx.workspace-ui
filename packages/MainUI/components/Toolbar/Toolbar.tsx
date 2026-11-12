@@ -56,7 +56,7 @@ import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
 import { isTreeModeSupported } from "@/utils/table/treeMode";
-import { createProcessMenuButton, isProcessButtonAccessible } from "@/utils/toolbar/process-button/utils";
+import { createProcessMenuButton, isProcessButtonEnabled } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -91,7 +91,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const hasGridRows = useGridHasRows(tab?.id);
-  const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
+  const {
+    buttons,
+    processButtons,
+    readOnlyProcessButtonIds,
+    loading,
+    refetch: refetchToolbar,
+  } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
   const windowIdentifier = useCurrentWindowIdentifier();
@@ -273,7 +279,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
       const record = selectedRecord || selectedRecords[0];
-      if (!record || !isProcessButtonAccessible(button)) return;
+      // Safety net: a disabled menu entry never runs its process (role access or read-only logic).
+      if (!record || !isProcessButtonEnabled(button, readOnlyProcessButtonIds)) return;
 
       if (isProcessActionButton(button)) {
         await runProcessAction(button, String(record.id));
@@ -286,7 +293,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
 
       handleMenuClose();
     },
-    [handleMenuClose, runProcessAction, selectedRecord, selectedRecords]
+    [handleMenuClose, runProcessAction, selectedRecord, selectedRecords, readOnlyProcessButtonIds]
   );
 
   const handleSearchChange = useCallback(
@@ -645,6 +652,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
           hasSelection={!!(selectedRecord || selectedRecords.length > 0)}
+          readOnlyButtonIds={readOnlyProcessButtonIds}
           data-testid="ProcessMenu__a2dd07"
         />
       )}

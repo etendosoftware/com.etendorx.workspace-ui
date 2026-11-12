@@ -24,6 +24,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { createFormValuesStore, type FormValuesStore } from "./tabFormValuesStore";
+import { applySessionAttributeOverrides } from "@/utils/hooks/useFormInitialization/utils";
 
 interface TabContextI {
   tab: Tab;
@@ -34,8 +35,11 @@ interface TabContextI {
   hasFormChanges: boolean;
   markFormAsChanged: () => void;
   resetFormChanges: () => void;
+  /** Auxiliary inputs of the form's record, read as the session attribute of the same name when there is one. */
   auxiliaryInputs: Record<string, string>;
   setAuxiliaryInputs: Dispatch<SetStateAction<Record<string, string>>>;
+  /** Session attributes of the form's record (FormInitialization in NEW/EDIT mode). */
+  setRecordSessionAttributes: Dispatch<SetStateAction<Record<string, string>>>;
   /** Dirty form values, outside the context value so typing does not re-render every consumer. */
   formValuesStore: FormValuesStore;
   setFormValues: FormValuesStore["set"];
@@ -45,7 +49,14 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
-  const [auxiliaryInputs, setAuxiliaryInputs] = useState<Record<string, string>>({});
+  const [rawAuxiliaryInputs, setAuxiliaryInputs] = useState<Record<string, string>>({});
+  const [recordSessionAttributes, setRecordSessionAttributes] = useState<Record<string, string>>({});
+  // Classic keeps the session attributes apart and adds them last: a callout that recomputes an auxiliary
+  // input does not replace the session attribute of the same name.
+  const auxiliaryInputs = useMemo(
+    () => applySessionAttributeOverrides(rawAuxiliaryInputs, recordSessionAttributes),
+    [rawAuxiliaryInputs, recordSessionAttributes]
+  );
   const [formValuesStore] = useState(createFormValuesStore);
 
   const { graph } = useSelected();
@@ -69,6 +80,7 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       resetFormChanges,
       auxiliaryInputs,
       setAuxiliaryInputs,
+      setRecordSessionAttributes,
       formValuesStore,
       setFormValues: formValuesStore.set,
     }),

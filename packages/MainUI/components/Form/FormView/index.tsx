@@ -39,6 +39,7 @@ import { useUserStore } from "@/stores/userStore";
 import { usePersonalizedTab } from "@/hooks/usePersonalizedTab";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
+import { extractAuxiliaryInputValues } from "@/utils/hooks/useFormInitialization/utils";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import LiveTabValuesPublisher from "./LiveTabValuesPublisher";
@@ -74,6 +75,7 @@ import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
 import { getDocumentStatus, getProcessing } from "@/utils/processes/manual/utils";
 import { DEFAULT_DOC_STATUS } from "@/utils/processes/manual/constants";
+import { buildTabExtraProperties } from "@/utils/table/extraProperties";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -183,7 +185,8 @@ function FormViewComponent({
   const revealFieldErrors = useRevealFieldErrors({ fieldsRootRef, fields: tab.fields, setExpandedSections });
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { t } = useTranslation();
-  const { resetFormChanges, parentTab, setAuxiliaryInputs, setFormValues } = useTabContext();
+  const { resetFormChanges, parentTab, setAuxiliaryInputs, setRecordSessionAttributes, setFormValues } =
+    useTabContext();
   // Commands only, plus the one toolbar value the form reads: subscribing to the whole toolbar slot
   // (useToolbarContext) re-rendered the form and all its fields on every save button state change.
   const { registerFormViewRefetch, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarCommands();
@@ -267,19 +270,22 @@ function FormViewComponent({
     }
   }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
 
-  // Sync auxiliary input values from form initialization into tab-scoped context
+  // Sync auxiliary input values and session attributes from form initialization into tab-scoped context
   useEffect(() => {
     if (!formInitialization?.auxiliaryInputValues) return;
-    const aux: Record<string, string> = {};
-    for (const [key, { value }] of Object.entries(formInitialization.auxiliaryInputValues)) {
-      aux[key] = value;
-    }
-    setAuxiliaryInputs(aux);
-  }, [formInitialization, setAuxiliaryInputs]);
+    setAuxiliaryInputs(extractAuxiliaryInputValues(formInitialization));
+    setRecordSessionAttributes(formInitialization.sessionAttributes ?? {});
+  }, [formInitialization, setAuxiliaryInputs, setRecordSessionAttributes]);
 
   // The values belong to the form's record: once the form closes, the grid's toolbar must evaluate display
   // logic with the selected row's own values (it lets TabContext's override them).
-  useEffect(() => () => setAuxiliaryInputs({}), [setAuxiliaryInputs]);
+  useEffect(
+    () => () => {
+      setAuxiliaryInputs({});
+      setRecordSessionAttributes({});
+    },
+    [setAuxiliaryInputs, setRecordSessionAttributes]
+  );
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) {
@@ -288,10 +294,7 @@ function FormViewComponent({
     }
 
     try {
-      const extraProperties = Object.values(tab.fields || {})
-        .filter((f: any) => f.colorFieldName)
-        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-        .join(",");
+      const extraProperties = buildTabExtraProperties(tab.fields);
 
       // Evict the entity from the response cache so the fetch below always
       // returns the post-process/post-save state, not a 30-second-old snapshot.
@@ -994,10 +997,7 @@ function FormViewComponent({
       resetFormChanges();
 
       // Fetch the complete updated record with _extraProperties so the Table can correctly show formatted fields (colors/references).
-      const extraProperties = Object.values(tab.fields || {})
-        .filter((f: any) => f.colorFieldName)
-        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-        .join(",");
+      const extraProperties = buildTabExtraProperties(tab.fields);
 
       let completeRecord = data;
       try {

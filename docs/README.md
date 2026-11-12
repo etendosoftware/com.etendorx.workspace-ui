@@ -15,6 +15,7 @@ docs/
 │   ├── process-execution/            # Feature: Process execution
 │   │   ├── README.md                # Feature overview
 │   │   ├── process-definition-modal.md
+│   │   ├── multi-record-processes.md # One request and one combined result for multi-record processes
 │   │   ├── defaults-action-handler.md
 │   │   └── window-references.md
 │   ├── process-scripts/              # Feature: Dynamic process scripts (onLoad / onProcess / PayScript)
@@ -41,6 +42,10 @@ docs/
 │   │   └── README.md                # Form address from the default mapping, entry points
 │   ├── role-access-restrictions/     # Feature: Role Tab Access, Field Access and Process Access
 │   │   └── README.md                # Read-only tabs/fields, disabled process buttons, Classic rules
+│   ├── process-button-read-only/     # Feature: Read-only logic of toolbar process buttons
+│   │   └── README.md                # Disabled entries, record context, multi-selection, guard
+│   ├── process-file-upload/          # Feature: Maximum size of files uploaded by processes
+│   │   └── README.md                # OBUIAPP_ProcessFileUploadMaxSize check before sending
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
@@ -53,8 +58,10 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
+│   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
+│   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
-│   │   └── README.md
+│   │   └── README.md                # Ancestor values, per-record auxiliary inputs, preferences
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
 │   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence
