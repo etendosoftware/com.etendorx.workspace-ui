@@ -1,4 +1,4 @@
-# Grid default sort (tab order-by clause)
+# Grid default sort
 
 Initial order of a tab grid when the user has not sorted it yet, reproducing the classic UI
 (`OBViewGridComponent` + `ob-view-grid.js`).
@@ -12,12 +12,37 @@ Initial order of a tab grid when the user has not sorted it yet, reproducing the
 | Clause syntax | Several columns, `-column`, `column desc/DESC`, `e.` alias, paths, functions (`abs(debit) desc`), aliases of query-based tabs (`trx.movementDate`) | Same: the server parses the clause (`AdvancedQueryBuilder`, `HQLDataSourceService`) |
 | Manual sort | `_sortBy=<user sorts>`, which takes precedence over `_orderBy` on the server | Same. `_orderBy` is still sent, as in classic |
 | Sort indicator | None when the tab has an order-by clause | Shown on every column of the clause that maps to a grid field, in priority order and with its direction |
-| No order-by clause | Lowest record sort number, otherwise identifier | Unchanged: sent as `_sortBy` |
+| No order-by clause | `OBViewGridComponent.getSortField` (see below) | Same field, from the backend `defaultSortField`; sent as `_sortBy` |
 | Grouping | Grouped column first | Unchanged (`_sortBy`, see [grid grouping](../grid-grouping.md)) |
 | Summaries | — | The summary request drops `_orderBy`, as it already dropped `sortBy` |
 
 The [CSV export](../csv-export/README.md) reuses the grid query, so it carries the same `_orderBy` and
 exports the rows in the same order.
+
+## Tabs without an order-by clause
+
+Classic `OBViewGridComponent.getSortField` picks, in this order:
+
+1. the **last** view field, in sequence order, with a record sort number (`AD_Field.SortNo`), shown in the
+   grid and shorter than 2000. Classic never updates its lowest sort number while looping, so the last
+   qualifying field wins, not the lowest one (Product › Transactions sorts by Movement Date, sort number 2,
+   not by Storage Bin, sort number 1);
+2. the `sequenceNumber` property of the entity, otherwise its `lineNo` property, even when the tab has no
+   field for it;
+3. the first identifier field;
+4. nothing (the server falls back to `id`).
+
+The metadata module computes it with the same rules (`TabDefaultSort`) and emits it as the tab key
+`defaultSortField` (`""` when the tab has an order-by clause or nothing applies). The client:
+
+- sorts window grids by it (`resolveTabDefaultSorts`), ascending, as `_sortBy`;
+- shows the indicator only when the property is a grid field (`getIndicatorSorts`); a property without a
+  field (`sequenceNumber`) is only sent to the server;
+- sorts Pick and Execute grids by it when the tab has no order-by clause and the user has not sorted
+  (`resolveSortBy` in `WindowReferenceGrid`), before the existing `-documentNo` fallback;
+- keeps the previous client rules (lowest sort number, identifier) only for metadata without the key.
+
+Configurations stored before this change keep their stored sort until the user applies Standard view.
 
 ## Decisions
 
@@ -35,7 +60,9 @@ exports the rows in the same order.
 
 ## Differences with classic
 
-- The sort indicator is shown on the default sort columns (classic shows none).
+- Classic hides a field whose server-evaluated display logic is false. `TabDefaultSort` does not evaluate it:
+  no field with a record sort number uses that logic.
+- The sort indicator is shown on the default sort columns of an order-by clause (classic shows none).
 - Columns of the clause that do not map to a grid field (expressions, nested paths like
   `accountingSchema.name`, aliases of query-based tabs) have no indicator, although the server sorts by
   them.
@@ -62,3 +89,5 @@ exports the rows in the same order.
 - `packages/MainUI/hooks/table/useTableData.tsx`: `defaultSorts`, `applyOrderToOptions`, seeding of the
   sort indicator, summary request.
 - `packages/MainUI/utils/table/grouping.ts`: `resolveEffectiveSorts`, `buildMultiSortBy`.
+- `packages/MainUI/components/ProcessModal/WindowReferenceGrid.tsx`: `resolveSortBy` (Pick and Execute grids).
+- `com.etendoerp.metadata`: `builders/TabDefaultSort.java` (`defaultSortField`), emitted by `TabBuilder`.
