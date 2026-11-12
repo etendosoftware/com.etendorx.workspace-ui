@@ -53,6 +53,8 @@ jest.mock("@/hooks/useTranslation", () => ({
   }),
 }));
 
+const mockSetRecordCount = jest.fn();
+
 jest.mock("@/contexts/datasourceContext", () => ({
   useDatasourceContext: () => ({
     registerDatasource: jest.fn(),
@@ -63,7 +65,7 @@ jest.mock("@/contexts/datasourceContext", () => ({
     registerFetchMore: jest.fn(),
     registerUpdateRecord: jest.fn(),
     registerAddRecord: jest.fn(),
-    setRecordCount: jest.fn(),
+    setRecordCount: mockSetRecordCount,
   }),
 }));
 
@@ -562,6 +564,19 @@ describe("DynamicTable Component", () => {
           TOOLBAR_ACTION_OWNERS.TAB
         );
       });
+    });
+  });
+
+  describe("Record count", () => {
+    it("publishes the loaded row count of the tab and clears it on unmount", async () => {
+      const { unmount } = render(<DynamicTable setRecordId={mockSetRecordId} />);
+
+      await waitFor(() => {
+        expect(mockSetRecordCount).toHaveBeenCalledWith(expect.anything(), 0);
+      });
+
+      unmount();
+      expect(mockSetRecordCount).toHaveBeenLastCalledWith(expect.anything(), undefined);
     });
   });
 
