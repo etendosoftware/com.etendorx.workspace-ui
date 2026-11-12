@@ -393,7 +393,7 @@ export const useTableData = ({
   const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
     // True 1:1 SR tabs share the same PK as the parent — filter by "id".
     // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
-    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab)) {
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab, parentTab)) {
       return { fieldName: "id", directReference: true };
     }
 
