@@ -1,7 +1,8 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import type { DatasourceOptions } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { GROUPING_ENABLED_PREFERENCE, getGroupingMaxRecords } from "@/utils/table/grouping";
+import { ORDER_BY_PARAM } from "@/utils/table/defaultOrderBy";
 import { clearPreferences, savePreferences } from "@/utils/propertyStore";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import { useTableData } from "../useTableData";
@@ -10,6 +11,8 @@ const GROUP_COLUMN = "Business Partner";
 const GROUP_FIELD = "businessPartner";
 const SORT_COLUMN = "Document No.";
 const SORT_FIELD = "documentNo";
+const ORDER_BY_CLAUSE = "-documentNo, abs(grandTotalAmount) desc, e.businessPartner";
+const QUERY_TAB_CLAUSE = "trx.movementDate, trx.transactionProcessDate";
 
 const mockTableState = {
   grouping: [] as string[],
@@ -43,8 +46,9 @@ const PROPERTY_FIELD = "finPayment$paymentDate";
 const mockSelected = { graph: { getSelected: () => null } };
 const mockColumnFilters = { columnFilters: [], setColumnFilter: jest.fn(), setColumnFilters: jest.fn() };
 const mockColumns: unknown[] = [];
+const mockDatasourceGet = jest.fn();
 
-const mockTab = {
+const mockTab: { hqlorderbyclause?: string; defaultSortField?: string; [key: string]: unknown } = {
   id: "tab-1",
   window: "143",
   entityName: "Order",
@@ -92,6 +96,9 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilters", () => ({
 }));
 jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
   useColumnFilterData: () => ({ fetchFilterOptions: jest.fn() }),
+}));
+jest.mock("@workspaceui/api-client/src/api/datasource", () => ({
+  datasource: { get: (...args: unknown[]) => mockDatasourceGet(...args) },
 }));
 jest.mock("@/utils/contextUtils", () => ({ buildEtendoContext: () => ({}), buildParentSessionContext: () => ({}) }));
 
@@ -206,5 +213,113 @@ describe("useTableData grouping query", () => {
     savePreferences({ [GROUPING_ENABLED_PREFERENCE]: "Y" });
     mockSupportsTree = true;
     expect(renderQuery(true).pageSize).toBe(DEFAULT_PAGE_SIZE);
+  });
+});
+
+describe("useTableData default order-by clause", () => {
+  beforeEach(() => {
+    mockUseDatasource.mockClear();
+    mockPersistenceSetters.setTableColumnSorting.mockClear();
+    mockTableState.grouping = [];
+    mockTableState.sorting = [];
+    mockSupportsTree = false;
+  });
+
+  afterEach(() => {
+    mockTab.hqlorderbyclause = undefined;
+    mockTab.defaultSortField = undefined;
+    mockColumns.length = 0;
+  });
+
+  it("sends no _orderBy when the tab has no order-by clause", () => {
+    const query = renderQuery();
+
+    expect(query[ORDER_BY_PARAM]).toBeUndefined();
+    expect(mockPersistenceSetters.setTableColumnSorting).not.toHaveBeenCalled();
+  });
+
+  it("sends the whole clause as _orderBy and no sortBy while the default sort is active", () => {
+    mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
+
+    const query = renderQuery();
+
+    expect(query[ORDER_BY_PARAM]).toBe(ORDER_BY_CLAUSE);
+    expect(query.sortBy).toBeUndefined();
+    expect(query.isSorting).toBeUndefined();
+  });
+
+  it("shows the sort indicator on every column of the clause that maps to a field", () => {
+    mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
+
+    renderQuery();
+
+    expect(mockPersistenceSetters.setTableColumnSorting).toHaveBeenCalledWith([
+      { id: SORT_COLUMN, desc: true },
+      { id: GROUP_COLUMN, desc: false },
+    ]);
+  });
+
+  it("keeps relying on _orderBy once the indicator holds the default sorts", () => {
+    mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
+    mockTableState.sorting = [
+      { id: SORT_COLUMN, desc: true },
+      { id: GROUP_COLUMN, desc: false },
+    ];
+
+    expect(renderQuery().sortBy).toBeUndefined();
+  });
+
+  it("lets a manual sort override the default order", () => {
+    mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
+    mockTableState.sorting = [{ id: GROUP_COLUMN, desc: true }];
+
+    const query = renderQuery();
+
+    expect(query.sortBy).toBe(`-${GROUP_FIELD}`);
+    expect(query.isSorting).toBe(true);
+    expect(query[ORDER_BY_PARAM]).toBe(ORDER_BY_CLAUSE);
+  });
+
+  it("loads a query-based tab whose clause maps to no field with the clause alone", () => {
+    mockTab.hqlorderbyclause = QUERY_TAB_CLAUSE;
+
+    const query = renderQuery();
+
+    expect(query[ORDER_BY_PARAM]).toBe(QUERY_TAB_CLAUSE);
+    expect(query.sortBy).toBeUndefined();
+    expect(mockPersistenceSetters.setTableColumnSorting).not.toHaveBeenCalled();
+  });
+
+  it("sorts by the classic default sort field and shows its indicator", () => {
+    mockTab.defaultSortField = SORT_FIELD;
+
+    const query = renderQuery();
+
+    expect(query.sortBy).toBe(SORT_FIELD);
+    expect(query[ORDER_BY_PARAM]).toBeUndefined();
+    expect(mockPersistenceSetters.setTableColumnSorting).toHaveBeenCalledWith([{ id: SORT_COLUMN, desc: false }]);
+  });
+
+  it("sorts by a default sort property without a grid field, without an indicator", () => {
+    mockTab.defaultSortField = "sequenceNumber";
+
+    expect(renderQuery().sortBy).toBe("sequenceNumber");
+    expect(mockPersistenceSetters.setTableColumnSorting).not.toHaveBeenCalled();
+  });
+
+  it("does not send the order-by clause with the summary request", async () => {
+    mockTab.hqlorderbyclause = ORDER_BY_CLAUSE;
+    mockColumns.push({ id: SORT_COLUMN, columnName: SORT_FIELD });
+    mockDatasourceGet.mockResolvedValue({ ok: true, data: { response: { data: [{ [SORT_FIELD]: 2 }] } } });
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    await act(async () => {
+      await result.current.fetchSummary({ [SORT_COLUMN]: "count" });
+    });
+
+    const summaryQuery = mockDatasourceGet.mock.calls.at(-1)?.[1] as DatasourceOptions;
+    expect(summaryQuery._summary).toBeDefined();
+    expect(summaryQuery[ORDER_BY_PARAM]).toBeUndefined();
+    expect(summaryQuery.sortBy).toBeUndefined();
   });
 });

@@ -58,6 +58,10 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
+│   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
+│   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
+│   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
+│   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
 │   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
 │   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)

@@ -37,7 +37,7 @@ The format stays `version: 1`: new parts are optional keys that are only written
   - dragging a column;
   - resizing;
   - pin / unpin from the column menu, which also offers "Reset column size";
-  - sorting from a column header. A tab without a stored sort keeps the default sort of its metadata.
+  - sorting from a column header. A tab without a stored sort keeps the default sort of its metadata (see [grid default sort](../grid-default-sort/README.md)).
 - Saves are debounced (1 s per tab), so a drag makes a single request.
 - The order MRT sets by itself when the number of columns changes is never stored. Neither is the visibility seeded from the metadata, the default sort, or the sort set by grouping.
 - The configuration is restored when the window opens and survives a reload or a new session. While the window stays open, the window store is the source of truth.

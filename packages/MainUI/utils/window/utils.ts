@@ -353,6 +353,13 @@ export const getKeyFieldName = (tab: Tab): string | undefined => {
   return pkEntry?.[0];
 };
 
+/** Backend `parentProperty` of a tab with no link column to its parent (classic `getParentProperty` answer). */
+const NO_PARENT_LINK = "";
+
+/** Whether the child tab is on the same table as its parent (classic filters it by `id`). */
+const sharesParentTable = (tab: Tab, parentTab?: Tab | null): boolean =>
+  Boolean(tab.table) && tab.table === parentTab?.table;
+
 /**
  * Discriminates the two sub-cases of a Single-Record (SR) tab.
  *
@@ -367,15 +374,28 @@ export const getKeyFieldName = (tab: Tab): string | undefined => {
  * parent-selected id must not be forced onto the form. Auto-open for that
  * variant is handled by `DynamicTable` once the child records are fetched.
  *
+ * Mirrors classic `OBViewTab.getParentProperty`:
+ * - a child tab on the same table as its parent (Business Partner › Customer) is filtered by `id` → 1:1;
+ * - `parentColumns` empty and the backend answered `parentProperty === ""` (no link column, e.g. the
+ *   Accounting tabs on `Fact_Acct`) → not 1:1: classic sends `_dummy` and the tab's hqlwhereclause filters
+ *   by the parent session values.
+ *
  * Defensive defaults:
- * - `parentColumns` empty → treat as 1:1 (legacy behavior; no FK modelled).
+ * - `parentColumns` empty without a backend `parentProperty` (older metadata, root SR tabs) → treat as 1:1
+ *   (legacy behavior; no FK modelled).
  * - `fields` not yet loaded → return `false` so the 1:1 auto-open is skipped
  *   until field metadata arrives and the effect re-runs.
+ *
+ * @param tab - The SR tab
+ * @param parentTab - Its parent tab, when known
  */
-export const isSrOneToOneExtension = (tab: Tab): boolean => {
+export const isSrOneToOneExtension = (tab: Tab, parentTab?: Tab | null): boolean => {
+  if (sharesParentTable(tab, parentTab)) {
+    return true;
+  }
   const parentColumns = tab.parentColumns ?? [];
   if (parentColumns.length === 0) {
-    return true;
+    return tab.parentProperty !== NO_PARENT_LINK;
   }
   const keyFieldName = getKeyFieldName(tab);
   if (!keyFieldName) {

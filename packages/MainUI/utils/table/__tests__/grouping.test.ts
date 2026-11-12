@@ -162,13 +162,12 @@ describe("grouping utils", () => {
       expect(buildGroupedMultiSortBy(FIELD, sorts)).toBe(`-${FIELD},${ORDER_DATE}`);
     });
 
-    it("uses the user sorts and only falls back to the default sort without them", () => {
-      const getDefaultSort = jest.fn(() => ({ id: DOCUMENT_NO, desc: false }));
+    it("uses the user sorts and only falls back to the default sorts without them", () => {
+      const defaultSorts = [{ id: DOCUMENT_NO, desc: false }];
 
-      expect(resolveEffectiveSorts(sortedByDateThenNumber, getDefaultSort)).toBe(sortedByDateThenNumber);
-      expect(getDefaultSort).not.toHaveBeenCalled();
-      expect(resolveEffectiveSorts([], getDefaultSort)).toEqual([{ id: DOCUMENT_NO, desc: false }]);
-      expect(resolveEffectiveSorts([], () => null)).toEqual([]);
+      expect(resolveEffectiveSorts(sortedByDateThenNumber, defaultSorts)).toBe(sortedByDateThenNumber);
+      expect(resolveEffectiveSorts([], defaultSorts)).toBe(defaultSorts);
+      expect(resolveEffectiveSorts([], [])).toEqual([]);
     });
   });
 

@@ -206,6 +206,22 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       const result = resolveSortBy([], rawColumns, [], undefined);
       expect(result).toBeUndefined();
     });
+
+    it("returns the classic default sort field without a tab order-by clause, even with criteria", () => {
+      expect(resolveSortBy([], rawColumns, [], undefined, "lineNo")).toBe("lineNo");
+      expect(resolveSortBy([], rawColumns, [], null, "lineNo")).toBe("lineNo");
+      expect(resolveSortBy([], rawColumns, [], "", "lineNo")).toBe("lineNo");
+      expect(resolveSortBy([], rawColumns, [{ fieldName: "x" }], undefined, "lineNo")).toBe("lineNo");
+    });
+
+    it("keeps the tab order-by clause and the user sort over the default sort field", () => {
+      expect(resolveSortBy([], rawColumns, [], "myOrder", "lineNo")).toBe("myOrder");
+      expect(resolveSortBy([{ id: "col1", desc: true }], rawColumns, [], undefined, "lineNo")).toBe("-col1");
+    });
+
+    it("keeps the documentNo fallback when the default sort field is empty", () => {
+      expect(resolveSortBy([], rawColumns, [{ fieldName: "x" }], undefined, "")).toBe("-documentNo");
+    });
   });
 
   describe("buildDeselectedRecord", () => {

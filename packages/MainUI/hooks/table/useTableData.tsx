@@ -60,6 +60,12 @@ import {
   getGroupingMaxRecords,
   resolveEffectiveSorts,
 } from "@/utils/table/grouping";
+import {
+  ORDER_BY_PARAM,
+  getIndicatorSorts,
+  isDefaultSortingActive,
+  resolveTabDefaultSorts,
+} from "@/utils/table/defaultOrderBy";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
@@ -386,74 +392,14 @@ export const useTableData = ({
     tableColumnFilters,
   });
 
-  // Build query
-  // Helper to determine default sort
-  const getDefaultSort = useCallback(() => {
-    if (!tab) return null;
-
-    // 1. Tab Level: Order By Clause
-    const orderByClause = tab.hqlorderbyclause || tab.sQLOrderByClause;
-    if (orderByClause) {
-      const parts = orderByClause.trim().split(/\s+/);
-      const fieldName = parts[0];
-      const desc = parts.length > 1 && parts[1].toUpperCase() === "DESC";
-
-      // Try to find the field to get its UI ID (name)
-      const field = Object.values(tab.fields).find(
-        (f) => f.hqlName === fieldName || f.columnName === fieldName || f.name === fieldName
-      );
-
-      return {
-        id: field?.name ?? fieldName,
-        desc,
-      };
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fields = Object.values(tab.fields) as any[];
-
-    // 2. Field Level: Record Sort No
-    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
-    if (sortNoFields.length > 0) {
-      sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
-      return {
-        id: sortNoFields[0].name,
-        desc: false,
-      };
-    }
-
-    // 3. Field Level: Identifier
-    const identifierFields = fields.filter((field) => {
-      const col = field.column;
-      if (!col) return false;
-      // Check both boolean true and string "true" values
-      return (
-        col?.isIdentifier === true ||
-        col?.isIdentifier === "true" ||
-        col?.identifier === true ||
-        col?.identifier === "true"
-      );
-    });
-
-    if (identifierFields.length > 0) {
-      const sortedIdentifierFields = identifierFields.toSorted(
-        (a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0)
-      );
-      const identifierField = sortedIdentifierFields[0];
-      return {
-        id: identifierField.name,
-        desc: false,
-      };
-    }
-
-    return null;
-  }, [tab]);
+  // Default sorts of the tab (order-by clause, record sort number or identifier), in priority order
+  const defaultSorts = useMemo(() => resolveTabDefaultSorts(tab), [tab]);
 
   // Helper to find parent field name
   const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
     // True 1:1 SR tabs share the same PK as the parent — filter by "id".
     // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
-    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab)) {
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab && isSrOneToOneExtension(tab, parentTab)) {
       return { fieldName: "id", directReference: true };
     }
 
@@ -495,6 +441,23 @@ export const useTableData = ({
       options.isSorting = true;
     },
     [resolveSorts]
+  );
+
+  // Helper to apply the order to query: as classic, the tab order-by clause always travels untouched as
+  // `_orderBy` and `_sortBy` (which takes precedence on the server) only when the user changed the sort.
+  const applyOrderToOptions = useCallback(
+    (options: DatasourceOptions, sorts: readonly GroupingSort[]) => {
+      const orderByClause = tab.hqlorderbyclause;
+      if (!orderByClause) {
+        applySortToOptions(options, sorts);
+        return;
+      }
+      options[ORDER_BY_PARAM] = orderByClause;
+      if (!isDefaultSortingActive(sorts, defaultSorts)) {
+        applySortToOptions(options, sorts);
+      }
+    },
+    [applySortToOptions, defaultSorts, tab.hqlorderbyclause]
   );
 
   // Helper to apply grouping to query: as classic, a grouped grid loads up to the
@@ -584,8 +547,8 @@ export const useTableData = ({
     }
 
     // Apply sorting
-    const currentSorts = resolveEffectiveSorts(tableColumnSorting, getDefaultSort);
-    applySortToOptions(options, currentSorts);
+    const currentSorts = resolveEffectiveSorts(tableColumnSorting, defaultSorts);
+    applyOrderToOptions(options, currentSorts);
 
     // Apply grouping (overrides page size and sort while the grid is grouped)
     if (activeGroupColumnId) {
@@ -604,8 +567,8 @@ export const useTableData = ({
     language,
     tableColumnSorting,
     advancedCriteria,
-    getDefaultSort,
-    applySortToOptions,
+    defaultSorts,
+    applyOrderToOptions,
     graph,
     parentTab,
     getParentFieldName,
@@ -1263,9 +1226,10 @@ export const useTableData = ({
     }
 
     if (sortNeedsInit && tab.fields) {
-      const defaultSort = getDefaultSort();
-      if (defaultSort) {
-        setTableColumnSorting([{ id: defaultSort.id, desc: defaultSort.desc }]);
+      // Only the default sorts on a grid field show the indicator; the rest are only sent to the server
+      const indicatorSorts = getIndicatorSorts(defaultSorts, Object.values(tab.fields));
+      if (indicatorSorts.length > 0) {
+        setTableColumnSorting(indicatorSorts.map((sort) => ({ id: sort.id, desc: sort.desc })));
       }
     }
   }, [
@@ -1274,7 +1238,7 @@ export const useTableData = ({
     tableColumnSorting.length,
     setTableColumnVisibility,
     setTableColumnSorting,
-    getDefaultSort,
+    defaultSorts,
   ]);
 
   // Apply quick filter from context menu
@@ -1363,7 +1327,7 @@ export const useTableData = ({
       if (Object.keys(summaryRequest).length === 0) return null;
 
       const combinedCriteria = getSummaryCriteria(query, tableColumnFilters, baseColumns);
-      const { sortBy: _sortBy, pageSize: _pageSize, ...cleanQuery } = query;
+      const { sortBy: _sortBy, pageSize: _pageSize, [ORDER_BY_PARAM]: _orderBy, ...cleanQuery } = query;
 
       const summaryQuery = {
         ...cleanQuery,
