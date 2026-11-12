@@ -40,6 +40,9 @@ const mockDatasourceResult = {
   getRequestParams: mockGetRequestParams,
 };
 const mockToolbar = { setIsImplicitFilterApplied: jest.fn() };
+const PROPERTY_COLUMN = "Payment Date";
+const PROPERTY_PATH = "finPayment.paymentDate";
+const PROPERTY_FIELD = "finPayment$paymentDate";
 const mockSelected = { graph: { getSelected: () => null } };
 const mockColumnFilters = { columnFilters: [], setColumnFilter: jest.fn(), setColumnFilters: jest.fn() };
 const mockColumns: unknown[] = [];
@@ -144,6 +147,25 @@ describe("useTableData grouping query", () => {
     ];
 
     expect(renderQuery().sortBy).toBe(`-${GROUP_FIELD},-${SORT_FIELD}`);
+  });
+
+  it("requests the property fields and sorts by their related-record path, as Classic", () => {
+    const fields = mockTab.fields as Record<string, unknown>;
+    fields[PROPERTY_FIELD] = {
+      name: PROPERTY_COLUMN,
+      hqlName: PROPERTY_FIELD,
+      column: { propertyPath: PROPERTY_PATH },
+    };
+    mockTableState.sorting = [{ id: PROPERTY_COLUMN, desc: false }];
+
+    try {
+      const query = renderQuery() as DatasourceOptions & { _extraProperties?: string };
+
+      expect(query._extraProperties).toBe(PROPERTY_PATH);
+      expect(query.sortBy).toBe(PROPERTY_FIELD);
+    } finally {
+      delete fields[PROPERTY_FIELD];
+    }
   });
 
   it("exposes the params of the grid's current query", () => {

@@ -24,6 +24,13 @@ export class Toast {
     await expect(this.page.locator(SUCCESS_TOASTS).filter({ hasText: text }).first()).toBeVisible({ timeout });
   }
 
+  /** Waits for a success toast with the given text and returns its whole text. */
+  async successText(text: string | RegExp, timeout = SUCCESS_TIMEOUT): Promise<string> {
+    const toast = this.page.locator(SUCCESS_TOASTS).filter({ hasText: text }).first();
+    await expect(toast).toBeVisible({ timeout });
+    return (await toast.textContent()) ?? "";
+  }
+
   /**
    * Closes the open toasts. Best effort: toasts are housekeeping, not under test, so one that
    * stays (or a new one that replaces it) does not fail the test. No-op when there are none.

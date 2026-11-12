@@ -99,5 +99,6 @@ None. The CSV preferences of Classic (`OBSERDS_CSVFieldSeparator`, `OBSERDS_CSVD
 ## Related
 
 - [Column filters](../column-filters/README.md): how column filters become criteria.
+- [Property fields](../property-fields/README.md): columns of a related record, exported with their values.
 - [Grid grouping](../grid-grouping.md): sort of a grouped grid.
 - [Table state persistence](../table-state-persistence/README.md): where filters, sort and visibility live.

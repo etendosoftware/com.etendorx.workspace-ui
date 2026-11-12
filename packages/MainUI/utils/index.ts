@@ -25,6 +25,7 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "./form/constants";
 import { buildSavePayload } from "@/components/Table/utils/saveOperations";
+import { buildTabExtraProperties } from "@/utils/table/extraProperties";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -322,10 +323,7 @@ export const buildQueryString = ({
   tab: Tab;
   mode: FormMode;
 }) => {
-  const extraProperties = Object.values(tab.fields || {})
-    .filter((f) => f.colorFieldName)
-    .map((f) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-    .join(",");
+  const extraProperties = buildTabExtraProperties(tab.fields);
 
   return new URLSearchParams({
     windowId: String(windowMetadata?.id || tab.window || ""),

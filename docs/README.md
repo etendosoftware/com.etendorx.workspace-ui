@@ -53,12 +53,14 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
-│   ├── grid-default-sort/            # Feature: Grid default sort from the tab order-by clause
-│   │   └── README.md                # _orderBy as classic, multi-column sort indicator, manual sort precedence
+│   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
+│   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
 │   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
+│   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
+│   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
-│   │   └── README.md
+│   │   └── README.md                # Ancestor values, per-record auxiliary inputs, preferences
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
 │   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence

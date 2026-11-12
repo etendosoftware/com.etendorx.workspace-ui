@@ -51,6 +51,8 @@ export const PRODUCT = {
   DISTRIBUTION_GOOD_A: { id: "4028E6C72959682B01295ADC2340023D", name: "Spain-Distribution good A" },
   /** Average costing open until 12/31/9999 with sample transactions; specs only read it. */
   LAPTOP: { id: "901CAFF074954746970719E6A2910638", name: "Laptop" },
+  /** Service linked to products and price rule based, with three product categories; specs only read it. */
+  WARRANTY: { id: "D67EF9E66FF447E88176DF0C054A9D3F", name: "Warranty" },
 } as const satisfies Record<string, SampleRecord>;
 
 export const PAYMENT_METHOD = {

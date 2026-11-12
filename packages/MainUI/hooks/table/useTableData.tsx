@@ -69,6 +69,7 @@ import {
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
+import { buildTabExtraProperties } from "@/utils/table/extraProperties";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -476,10 +477,7 @@ export const useTableData = ({
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
-    const extraProperties = Object.values(tab.fields || {})
-      .filter((f: any) => f.colorFieldName)
-      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-      .join(",");
+    const extraProperties = buildTabExtraProperties(tab.fields);
 
     const options: DatasourceOptions = {
       windowId: tab.window,
