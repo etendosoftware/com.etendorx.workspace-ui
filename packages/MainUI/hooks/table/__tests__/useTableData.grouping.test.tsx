@@ -45,7 +45,7 @@ const mockColumnFilters = { columnFilters: [], setColumnFilter: jest.fn(), setCo
 const mockColumns: unknown[] = [];
 const mockDatasourceGet = jest.fn();
 
-const mockTab: { hqlorderbyclause?: string; [key: string]: unknown } = {
+const mockTab: { hqlorderbyclause?: string; defaultSortField?: string; [key: string]: unknown } = {
   id: "tab-1",
   window: "143",
   entityName: "Order",
@@ -205,6 +205,7 @@ describe("useTableData default order-by clause", () => {
 
   afterEach(() => {
     mockTab.hqlorderbyclause = undefined;
+    mockTab.defaultSortField = undefined;
     mockColumns.length = 0;
   });
 
@@ -264,6 +265,23 @@ describe("useTableData default order-by clause", () => {
 
     expect(query[ORDER_BY_PARAM]).toBe(QUERY_TAB_CLAUSE);
     expect(query.sortBy).toBeUndefined();
+    expect(mockPersistenceSetters.setTableColumnSorting).not.toHaveBeenCalled();
+  });
+
+  it("sorts by the classic default sort field and shows its indicator", () => {
+    mockTab.defaultSortField = SORT_FIELD;
+
+    const query = renderQuery();
+
+    expect(query.sortBy).toBe(SORT_FIELD);
+    expect(query[ORDER_BY_PARAM]).toBeUndefined();
+    expect(mockPersistenceSetters.setTableColumnSorting).toHaveBeenCalledWith([{ id: SORT_COLUMN, desc: false }]);
+  });
+
+  it("sorts by a default sort property without a grid field, without an indicator", () => {
+    mockTab.defaultSortField = "sequenceNumber";
+
+    expect(renderQuery().sortBy).toBe("sequenceNumber");
     expect(mockPersistenceSetters.setTableColumnSorting).not.toHaveBeenCalled();
   });
 

@@ -347,15 +347,23 @@ export function getSortByString(
 /**
  * Resolves the sortBy string for the datasource options.
  * Extracted to reduce cognitive complexity of the datasourceOptions memo.
+ *
+ * Without a user sort: the tab order-by clause, otherwise the classic default sort field of the tab
+ * (`defaultSortField`, from `OBViewGridComponent.getSortField`), otherwise the documentNo fallback when
+ * criteria are active.
  */
 export function resolveSortBy(
   sorting: MRT_SortingState,
   rawColumns: Column[],
   finalCriteria: unknown[],
-  tabOrderBy: string | undefined
+  tabOrderBy: string | undefined,
+  defaultSortField?: string
 ): string | undefined {
   if (sorting.length > 0) {
     return getSortByString(sorting, rawColumns, finalCriteria.length > 0);
+  }
+  if (tabOrderBy === undefined && defaultSortField) {
+    return defaultSortField;
   }
   const fallback = finalCriteria.length > 0 ? "-documentNo" : undefined;
   return tabOrderBy ?? fallback;
@@ -2121,10 +2129,17 @@ const WindowReferenceGrid = ({
 
     // 8. Handle sorting
     // When the user has sorted a column, use that; otherwise fall back to the tab's
-    // defined order-by clause (matching Classic's _orderBy on initial load), and
-    // finally to the documentNo fallback when criteria are active.
+    // defined order-by clause (matching Classic's _orderBy on initial load), then to the
+    // classic default sort field of the tab, and finally to the documentNo fallback when
+    // criteria are active.
     const tabOrderBy = stableWindowReferenceTab?.hqlorderbyclause || stableWindowReferenceTab?.sQLOrderByClause;
-    const sortBy = resolveSortBy(sorting, stableRawColumns, finalCriteria, tabOrderBy);
+    const sortBy = resolveSortBy(
+      sorting,
+      stableRawColumns,
+      finalCriteria,
+      tabOrderBy,
+      stableWindowReferenceTab?.defaultSortField
+    );
     if (sortBy) {
       options.sortBy = sortBy;
       options.isSorting = true;

@@ -52,6 +52,8 @@ export interface DefaultSortField {
 export interface DefaultSortTab {
   hqlorderbyclause?: string;
   sQLOrderByClause?: string;
+  /** Classic default sort property computed by the backend (`OBViewGridComponent.getSortField`); "" for none. */
+  defaultSortField?: string;
   fields: Record<string, DefaultSortField>;
 }
 
@@ -171,8 +173,23 @@ const findFieldDefaultSort = (fields: readonly DefaultSortField[]): DefaultSortF
 };
 
 /**
- * Default sorts of a tab: the columns of its HQL order-by clause, otherwise the first token of its SQL
- * order-by clause, otherwise the field-level default (record sort number or identifier).
+ * Default sort the backend resolved with the classic rules. A property without a grid field (e.g.
+ * `sequenceNumber`) is still sorted by, through `_sortBy`.
+ *
+ * @param defaultSortField - Property name, or "" when classic does not sort the tab
+ * @param fields - Fields of the tab
+ */
+const resolveBackendDefaultSort = (defaultSortField: string, fields: readonly DefaultSortField[]): GroupingSort[] => {
+  if (!defaultSortField) {
+    return [];
+  }
+  return [{ id: findOrderByField(fields, defaultSortField)?.name ?? defaultSortField, desc: false }];
+};
+
+/**
+ * Default sorts of a tab: the columns of its HQL order-by clause, otherwise the classic default sort field
+ * computed by the backend. Older metadata without that key falls back to the first token of the SQL
+ * order-by clause, then the field-level default (record sort number or identifier).
  *
  * @param tab - Tab metadata
  */
@@ -184,6 +201,9 @@ export const resolveTabDefaultSorts = (tab: DefaultSortTab | undefined): Groupin
   if (tab.hqlorderbyclause) {
     return resolveOrderBySorts(tab.hqlorderbyclause, fields);
   }
+  if (typeof tab.defaultSortField === "string") {
+    return resolveBackendDefaultSort(tab.defaultSortField, fields);
+  }
   if (tab.sQLOrderByClause) {
     return [resolveSqlOrderBySort(tab.sQLOrderByClause, fields)];
   }
@@ -192,6 +212,21 @@ export const resolveTabDefaultSorts = (tab: DefaultSortTab | undefined): Groupin
     return [{ id: field.name, desc: false }];
   }
   return [];
+};
+
+/**
+ * Default sorts that can show the sort indicator: those on a grid field. A sort by a property the grid does
+ * not show (e.g. `sequenceNumber`) is only sent to the server.
+ *
+ * @param defaultSorts - Default sorts of the tab
+ * @param fields - Fields of the tab
+ */
+export const getIndicatorSorts = (
+  defaultSorts: readonly GroupingSort[],
+  fields: readonly DefaultSortField[]
+): GroupingSort[] => {
+  const fieldNames = new Set(fields.map((field) => field.name));
+  return defaultSorts.filter((sort) => fieldNames.has(sort.id));
 };
 
 const isSameSort = (sort: GroupingSort, other: GroupingSort | undefined): boolean =>

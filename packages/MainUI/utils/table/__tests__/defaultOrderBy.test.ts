@@ -19,6 +19,7 @@ import {
   type DefaultSortField,
   type DefaultSortTab,
   findOrderByField,
+  getIndicatorSorts,
   isDefaultSortingActive,
   parseOrderByToken,
   resolveOrderBySorts,
@@ -30,6 +31,7 @@ const ACCOUNTING_DATE = "accountingDate";
 const LINE_NO = "lineNo";
 const DOCUMENT_NO = "documentNo";
 const CREDIT = "credit";
+const SEQUENCE_NUMBER = "sequenceNumber";
 const DATE_LABEL = "Accounting Date";
 const LINE_LABEL = "Line No.";
 const DOCUMENT_LABEL = "Document No.";
@@ -157,8 +159,41 @@ describe("defaultOrderBy", () => {
       expect(resolveTabDefaultSorts(makeTab(fields))).toEqual([asc(DOCUMENT_LABEL)]);
     });
 
+    describe("with the backend default sort field", () => {
+      const fields = [
+        makeField(LINE_LABEL, LINE_NO, { recordSortNo: 1 }),
+        makeField(DATE_LABEL, ACCOUNTING_DATE, { recordSortNo: 2 }),
+      ];
+
+      it("sorts by the field of the classic default sort property, over the record sort numbers", () => {
+        expect(resolveTabDefaultSorts(makeTab(fields, { defaultSortField: ACCOUNTING_DATE }))).toEqual([
+          asc(DATE_LABEL),
+        ]);
+      });
+
+      it("sorts by a property the tab has no field for", () => {
+        expect(resolveTabDefaultSorts(makeTab(fields, { defaultSortField: SEQUENCE_NUMBER }))).toEqual([
+          asc(SEQUENCE_NUMBER),
+        ]);
+      });
+
+      it("does not sort when classic does not, and the HQL clause still wins", () => {
+        expect(resolveTabDefaultSorts(makeTab(fields, { defaultSortField: "" }))).toEqual([]);
+        expect(
+          resolveTabDefaultSorts(makeTab(fields, { defaultSortField: "", hqlorderbyclause: "-lineNo" }))
+        ).toEqual([desc(LINE_LABEL)]);
+      });
+    });
+
     it("returns no sort when nothing defines one", () => {
       expect(resolveTabDefaultSorts(makeTab([makeField(LINE_LABEL, LINE_NO)]))).toEqual([]);
+    });
+  });
+
+  describe("getIndicatorSorts", () => {
+    it("keeps only the default sorts on a grid field", () => {
+      expect(getIndicatorSorts([asc(SEQUENCE_NUMBER), desc(LINE_LABEL)], FIELDS)).toEqual([desc(LINE_LABEL)]);
+      expect(getIndicatorSorts([], FIELDS)).toEqual([]);
     });
   });
 

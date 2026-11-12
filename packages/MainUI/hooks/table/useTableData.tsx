@@ -60,7 +60,12 @@ import {
   getGroupingMaxRecords,
   resolveEffectiveSorts,
 } from "@/utils/table/grouping";
-import { ORDER_BY_PARAM, isDefaultSortingActive, resolveTabDefaultSorts } from "@/utils/table/defaultOrderBy";
+import {
+  ORDER_BY_PARAM,
+  getIndicatorSorts,
+  isDefaultSortingActive,
+  resolveTabDefaultSorts,
+} from "@/utils/table/defaultOrderBy";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
@@ -1222,8 +1227,12 @@ export const useTableData = ({
       setTableColumnVisibility(initialVisibility);
     }
 
-    if (sortNeedsInit && tab.fields && defaultSorts.length > 0) {
-      setTableColumnSorting(defaultSorts.map((sort) => ({ id: sort.id, desc: sort.desc })));
+    if (sortNeedsInit && tab.fields) {
+      // Only the default sorts on a grid field show the indicator; the rest are only sent to the server
+      const indicatorSorts = getIndicatorSorts(defaultSorts, Object.values(tab.fields));
+      if (indicatorSorts.length > 0) {
+        setTableColumnSorting(indicatorSorts.map((sort) => ({ id: sort.id, desc: sort.desc })));
+      }
     }
   }, [
     tab.fields,
