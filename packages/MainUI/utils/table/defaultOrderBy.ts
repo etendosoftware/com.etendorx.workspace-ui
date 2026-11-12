@@ -167,9 +167,7 @@ const findFieldDefaultSort = (fields: readonly DefaultSortField[]): DefaultSortF
   if (sortNoFields.length > 0) {
     return sortNoFields.toSorted((a, b) => (a.recordSortNo ?? 0) - (b.recordSortNo ?? 0))[0];
   }
-  return fields
-    .filter(isIdentifierField)
-    .toSorted((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))[0];
+  return fields.filter(isIdentifierField).toSorted((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))[0];
 };
 
 /**
