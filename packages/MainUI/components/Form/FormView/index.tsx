@@ -74,6 +74,7 @@ import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
 import { getDocumentStatus, getProcessing } from "@/utils/processes/manual/utils";
 import { DEFAULT_DOC_STATUS } from "@/utils/processes/manual/constants";
+import { buildTabExtraProperties } from "@/utils/table/extraProperties";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -288,10 +289,7 @@ function FormViewComponent({
     }
 
     try {
-      const extraProperties = Object.values(tab.fields || {})
-        .filter((f: any) => f.colorFieldName)
-        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-        .join(",");
+      const extraProperties = buildTabExtraProperties(tab.fields);
 
       // Evict the entity from the response cache so the fetch below always
       // returns the post-process/post-save state, not a 30-second-old snapshot.
@@ -994,10 +992,7 @@ function FormViewComponent({
       resetFormChanges();
 
       // Fetch the complete updated record with _extraProperties so the Table can correctly show formatted fields (colors/references).
-      const extraProperties = Object.values(tab.fields || {})
-        .filter((f: any) => f.colorFieldName)
-        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-        .join(",");
+      const extraProperties = buildTabExtraProperties(tab.fields);
 
       let completeRecord = data;
       try {

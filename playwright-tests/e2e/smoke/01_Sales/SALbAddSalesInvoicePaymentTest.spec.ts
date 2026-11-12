@@ -1,10 +1,13 @@
 import { expect, test } from "../../support/fixtures";
+import { TABS } from "../../support/registry/windows";
 import { runAndWaitForResponse } from "../../support/wait";
 
 const DEFAULTS_URL = /DefaultsProcessActionHandler/;
 /** Shown by the legacy Process Invoices page when the customer has credit from previous runs. */
 const DO_NOT_USE_CREDIT = /Do not use Credit/i;
 const CREDIT_DIALOG_TIMEOUT = 20_000;
+/** Success toast of Add Payment; the group is the number of the new payment. */
+const CREATED_PAYMENT = /Created Payment:\s*(\d+)\./;
 
 test.describe("Sales Invoice - Add Payment @smoke", () => {
   test("should create a sales invoice, complete it and add payment", async ({ app, data, page }) => {
@@ -74,6 +77,20 @@ test.describe("Sales Invoice - Add Payment @smoke", () => {
     await app.processModal.execute();
 
     // Verify payment transaction toast
-    await app.toast.expectSuccess(/Created Payment:\s*\d+\./);
+    const paymentNumber = CREATED_PAYMENT.exec(await app.toast.successText(CREATED_PAYMENT))?.[1] ?? "";
+    expect(paymentNumber).not.toBe("");
+
+    // ── Step 8: Payment Details shows the payment of the invoice ─────────────
+    // Its columns are property fields (values of the related payment, e.g. finPayment.documentNo):
+    // the payment number can only reach the grid through them.
+    await app.tabs.open("Payment Plan");
+    const paymentPlanRow = app.grid.rows(page.getByTestId(`Tab__${TABS.SALES_INVOICE_PAYMENT_PLAN}`)).first();
+    await paymentPlanRow.waitFor({ state: "visible", timeout: 20_000 });
+    await app.grid.setRowSelected(paymentPlanRow, true);
+
+    // An exact cell: identifiers of other columns (payment plan, payment) also contain the number.
+    await app.tabs.open("Payment Details");
+    const paymentDetails = page.getByTestId(`Tab__${TABS.SALES_INVOICE_PAYMENT_DETAILS}`);
+    await expect(app.grid.rowWithCell(paymentNumber, paymentDetails)).toBeVisible({ timeout: 20_000 });
   });
 });

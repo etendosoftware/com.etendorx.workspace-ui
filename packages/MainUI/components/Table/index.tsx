@@ -170,6 +170,7 @@ import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
+import { buildTabExtraProperties } from "@/utils/table/extraProperties";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -2386,10 +2387,7 @@ const DynamicTable = ({
       // Fetch the updated single record to get color variables and complex fields back
       (async () => {
         try {
-          const extraProperties = Object.values(tab.fields || {})
-            .filter((f: any) => f.colorFieldName)
-            .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-            .join(",");
+          const extraProperties = buildTabExtraProperties(tab.fields);
 
           const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
           if (!fetchId) {
