@@ -53,6 +53,8 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
+│   ├── grid-default-sort/            # Feature: Grid default sort from the tab order-by clause
+│   │   └── README.md                # _orderBy as classic, multi-column sort indicator, manual sort precedence
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
 │   │   └── README.md
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
