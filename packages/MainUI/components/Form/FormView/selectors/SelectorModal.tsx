@@ -31,6 +31,9 @@ import { buildBaseFilterParams, applySelectorSafeParams, applyTabContextParams }
 import { useSelectorDefaultCriteria } from "./hooks/useSelectorDefaultCriteria";
 import { useSelectorFilterHandlers } from "./hooks/useSelectorFilterHandlers";
 
+/** Skeleton rows shown while the selector records load. */
+const SKELETON_ROWS = 2;
+
 interface SelectorModalProps {
   field: Field;
   isOpen: boolean;
@@ -265,14 +268,25 @@ const SelectorModal = ({
     ]
   );
 
-  const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
+  // The datasource is skipped until the selector's default criteria resolve; without this the table would
+  // show "No data available" for that moment and only then switch to its loading state.
+  const waitingForCriteria = isOpen && Boolean(selectorDefinitionId) && defaultCriteria === null;
+
+  const {
+    records,
+    loading: datasourceLoading,
+    error,
+    fetchMore,
+    hasMoreRecords,
+  } = useDatasource({
     entity: targetEntity,
     params: datasourceParams,
     searchQuery: globalFilter,
     activeColumnFilters: columnFilters,
     columns: datasourceColumns,
-    skip: !isOpen || !targetEntity || (Boolean(selectorDefinitionId) && defaultCriteria === null),
+    skip: !isOpen || !targetEntity || waitingForCriteria,
   });
+  const loading = datasourceLoading || waitingForCriteria;
 
   const fetchMoreOnBottomReached = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
@@ -404,7 +418,8 @@ const SelectorModal = ({
       minSize: 60,
       size: 120,
     },
-    initialState: { density: "compact" },
+    // The table has no pagination; its page size only sets how many skeleton rows show while loading.
+    initialState: { density: "compact", pagination: { pageIndex: 0, pageSize: SKELETON_ROWS } },
     ...multiTableOptions,
   });
 
