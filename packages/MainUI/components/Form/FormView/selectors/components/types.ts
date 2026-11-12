@@ -45,6 +45,8 @@ export interface TextAreaInputProps {
   showClearButton?: boolean;
   onClear?: () => void;
   rows?: number;
+  /** Maximum number of characters, passed to the textarea. */
+  maxLength?: number;
   name?: string;
   id?: string;
   value?: string;
@@ -65,6 +67,8 @@ export interface Option {
 export interface ColumnDef {
   accessorKey: string;
   header: string;
+  /** Reference of the column, used to render Yes/No values as a checkbox. */
+  referenceId?: string;
 }
 
 export interface SelectOption {

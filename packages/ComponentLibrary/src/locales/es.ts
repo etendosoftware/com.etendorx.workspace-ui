@@ -545,6 +545,13 @@ const es = {
       invalidUrl: "Ingrese una URL válida, p. ej. www.ejemplo.com",
       invalidUrlFields: "Los siguientes campos no contienen una URL válida: {{fields}}",
     },
+    integer: {
+      invalidDecimal: "Ingrese un número entero sin decimales",
+      invalidDecimalFields: "Los siguientes campos deben ser números enteros: {{fields}}",
+    },
+    expression: {
+      invalid: "Ingrese una expresión aritmética válida, p. ej. =2*5",
+    },
   },
   copilot: {
     copilotProfile: "Perfil Copilot",

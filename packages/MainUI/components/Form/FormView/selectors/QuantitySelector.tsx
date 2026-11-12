@@ -4,6 +4,8 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { useCallback, useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/language";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
+import { useTranslation } from "@/hooks/useTranslation";
+import { evaluateMathExpression, isMathExpression, sanitizeMathExpression } from "@/utils/form/mathExpression";
 
 interface QuantitySelectorProps {
   field: Field;
@@ -16,10 +18,13 @@ interface QuantitySelectorProps {
 export const QuantitySelector = ({ field, min, max, allowNegative = false, isReadOnly }: QuantitySelectorProps) => {
   const { setValue } = useFormContext();
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const fieldName = field.hqlName;
   const formValue = useWatch({ name: fieldName });
   const [localValue, setLocalValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  // Message of the last expression that could not be evaluated or is not allowed in this field.
+  const [entryError, setEntryError] = useState<string | undefined>(undefined);
 
   const getDecimalSeparator = useCallback(() => {
     return language === "es_ES" ? "," : ".";
@@ -38,7 +43,8 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
   );
 
   const getDisplayValue = useCallback(() => {
-    if (isFocused) {
+    // An expression that could not be evaluated keeps the text the user typed, so it can be corrected.
+    if (isFocused || entryError) {
       return localValue;
     }
 
@@ -47,15 +53,15 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
     }
 
     return "";
-  }, [isFocused, localValue, formValue, formatDisplayValue]);
+  }, [isFocused, entryError, localValue, formValue, formatDisplayValue]);
 
   const displayValue = getDisplayValue();
 
   useEffect(() => {
-    if (!isFocused) {
+    if (!isFocused && !entryError) {
       setLocalValue(displayValue);
     }
-  }, [formValue, isFocused, displayValue]);
+  }, [formValue, isFocused, entryError, displayValue]);
 
   const isValidIntermediateValue = useCallback((value: string): boolean => {
     return /^-?\d*[.,]?\d*$/.test(value);
@@ -63,6 +69,14 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
 
   const handleSetValue = useCallback(
     (value: string) => {
+      setEntryError(undefined);
+
+      // "=2*5" is an arithmetic expression, evaluated when the field is left.
+      if (isMathExpression(value)) {
+        setLocalValue(sanitizeMathExpression(value));
+        return;
+      }
+
       const sanitized = value.replace(/[^\d.,-]/g, "");
 
       setLocalValue(sanitized);
@@ -100,7 +114,20 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
   const handleBlur = useCallback(() => {
     setIsFocused(false);
 
-    const normalizedValue = normalizeDecimalInput(localValue);
+    let normalizedValue = normalizeDecimalInput(localValue);
+
+    if (isMathExpression(localValue)) {
+      const result = evaluateMathExpression(localValue, getDecimalSeparator());
+      const minResult = min ? Number(min) : undefined;
+      const maxResult = max ? Number(max) : undefined;
+      if (result === null || !validateNumber(String(result), minResult, maxResult, allowNegative).isValid) {
+        // Keep the text as typed so it can be fixed; the form keeps its previous value.
+        setEntryError(t("form.expression.invalid"));
+        return;
+      }
+      normalizedValue = String(result);
+      setLocalValue(formatDisplayValue(result));
+    }
 
     if (normalizedValue === "" || normalizedValue === "-") {
       setValue(fieldName, null, { shouldValidate: true });
@@ -114,7 +141,18 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
     if (isValid) {
       setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
     }
-  }, [localValue, normalizeDecimalInput, fieldName, setValue, min, max, allowNegative]);
+  }, [
+    localValue,
+    normalizeDecimalInput,
+    getDecimalSeparator,
+    formatDisplayValue,
+    fieldName,
+    setValue,
+    min,
+    max,
+    allowNegative,
+    t,
+  ]);
 
   return (
     <TextInput
@@ -122,6 +160,7 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
       readOnly={isReadOnly}
       value={displayValue}
       setValue={handleSetValue}
+      errorText={entryError}
       onChange={(e) => handleSetValue(e.target.value)}
       onFocus={handleFocus}
       onBlur={handleBlur}

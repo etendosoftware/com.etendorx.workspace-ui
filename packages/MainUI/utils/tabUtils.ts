@@ -152,6 +152,14 @@ export function getChildTabs(tabs: Tab[], parentTab: Tab): Tab[] {
 }
 
 /**
+ * Every tab below `parentTab` (children, grandchildren, ...), whose display logic Classic evaluates
+ * with the values of all their ancestors.
+ */
+export function getDescendantTabs(tabs: Tab[], parentTab: Tab): Tab[] {
+  return getChildTabs(tabs, parentTab).flatMap((child) => [child, ...getDescendantTabs(tabs, child)]);
+}
+
+/**
  * Parent field names the display logic of the given child tabs reads.
  *
  * @param childTabs - Tabs whose display logic is evaluated against the parent record.

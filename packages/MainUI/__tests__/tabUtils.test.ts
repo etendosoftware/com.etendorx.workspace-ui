@@ -17,6 +17,7 @@
 
 import {
   getChildTabs,
+  getDescendantTabs,
   getTabDisplayLogic,
   getTabDisplayLogicDependencies,
   haveSameTabs,
@@ -367,6 +368,25 @@ describe("tabUtils", () => {
         const grandChild = createChildTab({ id: "grand", tabLevel: 2, parentTabId: "region" });
 
         expect(getChildTabs([parentTab, child, otherParentChild, grandChild], parentTab)).toEqual([child]);
+      });
+    });
+
+    describe("getDescendantTabs", () => {
+      it("returns every tab below the parent, each followed by its own descendants", () => {
+        const child = createChildTab();
+        const sibling = createChildTab({ id: "sibling" });
+        const grandChild = createChildTab({ id: "grand", tabLevel: 2, parentTabId: "region" });
+        const otherParentChild = createChildTab({ id: "other", parentTabId: "another-parent" });
+
+        expect(getDescendantTabs([parentTab, child, sibling, grandChild, otherParentChild], parentTab)).toEqual([
+          child,
+          grandChild,
+          sibling,
+        ]);
+      });
+
+      it("returns no tabs for a tab without children", () => {
+        expect(getDescendantTabs([parentTab], parentTab)).toEqual([]);
       });
     });
 

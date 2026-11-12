@@ -90,7 +90,7 @@ export function FormActions({
   }, [isDocumentProcessing, setSaveButtonState]);
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
-  const { validateRequiredFields, validateLinkFields, requiredFields } = useFormValidation(tab);
+  const { validateRequiredFields, validateLinkFields, validateIntegerFields, requiredFields } = useFormValidation(tab);
   const { t } = useTranslation();
 
   /** Tells the user why the save is blocked and reveals the offending fields. */
@@ -221,6 +221,16 @@ export function FormActions({
           return false;
         }
 
+        const invalidIntegerFields = validateIntegerFields?.() ?? [];
+        if (invalidIntegerFields.length > 0) {
+          const message = t("form.integer.invalidDecimalFields").replace(
+            FIELDS_PLACEHOLDER,
+            joinFieldLabels(invalidIntegerFields)
+          );
+          reportFieldErrors(message, invalidIntegerFields);
+          return false;
+        }
+
         // Proceed with save if validation passes
         const succeeded = await onSave(options);
         return succeeded;
@@ -232,7 +242,15 @@ export function FormActions({
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [onSave, reportFieldErrors, setSaveButtonState, validateRequiredFields, validateLinkFields, t]
+    [
+      onSave,
+      reportFieldErrors,
+      setSaveButtonState,
+      validateRequiredFields,
+      validateLinkFields,
+      validateIntegerFields,
+      t,
+    ]
   );
 
   const onReset = useCallback(async () => {

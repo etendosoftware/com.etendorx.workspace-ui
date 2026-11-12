@@ -22,10 +22,11 @@ import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
-import { getFieldReference } from "@/utils";
+import { formatNumber, getFieldReference } from "@/utils";
+import { useLanguage } from "@/contexts/language";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, isNumericReference } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
@@ -212,6 +213,49 @@ export const resolveColumnFilterState = (
   };
 };
 
+/**
+ * Text of a numeric grid cell: the number with the configured mask (thousands separator, fixed decimals), or the
+ * value as it is when it is not a number.
+ */
+const getNumericCellText = (
+  cell: MRT_Cell<EntityData, unknown> | undefined,
+  row: { original: EntityData } | undefined,
+  column: Column,
+  language: string | undefined
+): string => {
+  let value = cell?.getValue();
+  if (value === undefined || value === null) {
+    value = row?.original?.[column.columnName] ?? row?.original?.[column.name];
+  }
+  const isNumber = typeof value === "number" || (typeof value === "string" && value.trim() !== "");
+  const numeric = isNumber ? Number(value) : Number.NaN;
+  if (!Number.isNaN(numeric)) {
+    return formatNumber(numeric, language, column.column?.reference, column.column?.valueFormat);
+  }
+  return value == null ? "" : String(value);
+};
+
+/**
+ * Numeric columns (not references) align to the right and use the configured mask, as in Classic. Any other
+ * column is returned unchanged.
+ */
+const withNumericCell = (
+  columnConfig: Column,
+  column: Column,
+  isReference: boolean,
+  language: string | undefined
+): Column => {
+  if (!isNumericReference(column.column?.reference) || isReference) {
+    return columnConfig;
+  }
+  return {
+    ...columnConfig,
+    Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => (
+      <span className="block w-full text-right tabular-nums">{getNumericCellText(cell, row, column, language)}</span>
+    ),
+  };
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect, handleClientclassNavigation } = useRedirect();
   const {
@@ -224,6 +268,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onNavigate,
   } = options || {};
   const { t } = useTranslation();
+  const { language } = useLanguage();
 
   const columns = useMemo(() => {
     // Grid columns follow AD_Field.Grid_Seqno (falling back to seqNo), like Etendo Classic.
@@ -257,7 +302,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         // Include time for audit date columns (creationDate, updated) or datetime type columns
         const includeTime =
           AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
-          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id;
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id ||
+          column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id;
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
@@ -298,6 +344,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           Cell: ({ renderedCellValue }: { renderedCellValue: React.ReactNode }) => renderTextCell(renderedCellValue),
         };
       }
+
+      columnConfig = withNumericCell(columnConfig, column, isReference, language ?? undefined);
 
       // Reference columns with navigation
       if (isReference) {
@@ -591,6 +639,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onLoadMoreFilterOptions,
     tableColumnFilters,
     tab.window,
+    language,
   ]);
 
   return columns;

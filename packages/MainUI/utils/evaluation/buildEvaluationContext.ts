@@ -26,7 +26,7 @@ export interface EvaluationContextOptions {
   parentFields?: Record<string, Field>;
 
   context?: Record<string, unknown>; // Session/Global context
-  auxiliaryInputs?: Record<string, string>; // Tab-scoped evaluated auxiliary inputs
+  auxiliaryInputs?: Record<string, unknown>; // Tab-scoped evaluated auxiliary inputs
   normalizeValues?: boolean;
   defaultValue?: unknown;
   /**
@@ -34,6 +34,11 @@ export interface EvaluationContextOptions {
    * `OB.PropertyStore.get(key, windowId)` does. When omitted, only global preference keys resolve.
    */
   windowId?: string;
+  /**
+   * Also resolve names without a `#`/`$`/`_` prefix as preferences when nothing else defines them, like
+   * classic tab display logic, which adds `OB.PropertyStore.get(name, windowId)` for every bare token.
+   */
+  resolveUnprefixedPreferences?: boolean;
   /**
    * Called after every write through the returned proxy (set, defineProperty, deleteProperty). Not part
    * of the context: lets a cache drop a shared context as soon as one caller mutates it.
@@ -108,6 +113,7 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     normalizeValues = true,
     defaultValue,
     windowId,
+    resolveUnprefixedPreferences,
     onWrite,
   } = options;
 
@@ -260,6 +266,13 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
     return undefined;
   };
 
+  // Prefixed patterns first; bare names fall back to preferences only when the caller asks for it.
+  const resolveFallback = (target: EvaluationContext, prop: string): unknown => {
+    const prefixed = resolvePrefixed(target, prop);
+    if (prefixed !== undefined || !resolveUnprefixedPreferences) return prefixed;
+    return getFromPrefs(prop);
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
@@ -274,9 +287,9 @@ export const buildEvaluationContext = (options: EvaluationContextOptions): Evalu
 
       if (val !== undefined && val !== null) return val;
 
-      // Handle @property@, #property, $property access patterns
-      const prefixed = resolvePrefixed(target, prop);
-      if (prefixed !== undefined) return prefixed;
+      // Handle @property@, #property, $property access patterns (and bare preferences when enabled)
+      const fallback = resolveFallback(target, prop);
+      if (fallback !== undefined) return fallback;
 
       // Fallback to default value, then empty string (matching Classic behavior).
       // In Classic, unresolved context variables always resolve to '' (empty string).

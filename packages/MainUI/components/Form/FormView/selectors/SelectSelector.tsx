@@ -20,6 +20,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "./components/Select/Select";
 import type { ColumnDef } from "./components/types";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
+import { getPickListColumns } from "@/utils/form/pickListColumns";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 
 export const SelectSelector = ({
@@ -35,7 +36,11 @@ export const SelectSelector = ({
   initialPageSize?: number;
   columns?: ColumnDef[];
 }) => {
-  const { records, loading, refetch, loadMore, hasMore } = useTableDirDatasource({ field, pageSize, initialPageSize });
+  const { records, loading, refetch, loadMore, hasMore, search, minSearchChars } = useTableDirDatasource({
+    field,
+    pageSize,
+    initialPageSize,
+  });
   const options = useSelectFieldOptions(field, records);
 
   return (
@@ -44,11 +49,13 @@ export const SelectSelector = ({
       options={options}
       isReadOnly={isReadOnly}
       onFocus={refetch}
+      onSearch={search}
+      minSearchChars={minSearchChars}
       onLoadMore={loadMore}
       loading={loading}
       hasMore={hasMore}
       field={field}
-      columns={columns}
+      columns={columns ?? getPickListColumns(field.selector?.pickListColumns)}
       data-testid={`Select__${field.id ?? field.hqlName ?? "d5687c"}`}
     />
   );

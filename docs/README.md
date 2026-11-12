@@ -58,8 +58,10 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
+│   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
+│   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
-│   │   └── README.md
+│   │   └── README.md                # Ancestor values, per-record auxiliary inputs, preferences
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
 │   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
 │   └── table-state-persistence/      # Feature: Table state persistence

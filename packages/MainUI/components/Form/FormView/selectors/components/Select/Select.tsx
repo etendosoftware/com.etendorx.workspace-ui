@@ -21,6 +21,7 @@ import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
+import { formatPickListCell } from "@/utils/form/pickListColumns";
 import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
@@ -383,7 +384,11 @@ function SelectCmp({
                     <span
                       key={col.accessorKey}
                       className={`truncate ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
-                      {((ident ?? raw) as string) || "-"}
+                      {formatPickListCell(
+                        raw ?? (col === columns[0] ? option.label : undefined),
+                        ident,
+                        col.referenceId
+                      )}
                     </span>
                   );
                 })}

@@ -456,6 +456,7 @@ export default function useTableSelection(
           tab: payload.tabForSession,
           selectedRecords: payload.selectedRecords,
           parentId: payload.parentId,
+          windowIdentifier: payload.windowIdentifier,
           setSession,
           setSessionSyncLoading,
         });
@@ -575,6 +576,7 @@ export default function useTableSelection(
         tab,
         selectedRecords,
         parentId: tab.parentTabId,
+        windowIdentifier,
         setSession,
         setSessionSyncLoading,
       });

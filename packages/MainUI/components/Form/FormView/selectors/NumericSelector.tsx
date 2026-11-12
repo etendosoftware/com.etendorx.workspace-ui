@@ -20,7 +20,9 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useLanguage } from "@/contexts/language";
+import { useTranslation } from "@/hooks/useTranslation";
 import { getNumericFormatOptions } from "@/utils";
+import { evaluateMathExpression, isMathExpression, sanitizeMathExpression } from "@/utils/form/mathExpression";
 import { TextInput } from "./components/TextInput";
 
 type NumericType = "integer" | "decimal";
@@ -53,9 +55,12 @@ export const UnifiedNumericSelector = ({
   const { register, setValue, formState } = useFormContext();
   const editOptions = dirtyOnEdit ? EDITED_VALUE_OPTIONS : undefined;
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const formValue = useWatch({ name: field.hqlName });
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
+  // Message of the last invalid entry (an expression that cannot be evaluated, or decimals in an Integer).
+  const [entryError, setEntryError] = useState<string | undefined>(undefined);
   const isDirty = formState.isDirty;
 
   const isInteger = type === "integer" || field.column.reference === "11";
@@ -92,73 +97,69 @@ export const UnifiedNumericSelector = ({
   const formatEditValue = useCallback((value: number): string => formatValue(value, false), [formatValue]);
 
   useEffect(() => {
-    if (!isFocused) {
+    // An invalid entry keeps the text the user typed, so it can be corrected instead of silently replaced.
+    if (!isFocused && !entryError) {
       if (formValue === null || formValue === undefined) {
         setLocalValue("");
       } else {
         setLocalValue(formatDisplayValue(Number(formValue)));
       }
     }
-  }, [formValue, isFocused, formatDisplayValue]);
+  }, [formValue, isFocused, formatDisplayValue, entryError]);
 
   const getValidationRegex = useCallback(() => {
-    if (isInteger) {
-      return /^-?\d*$/;
-    }
     return /^-?\d*[.,]?\d*$/;
-  }, [isInteger]);
+  }, []);
 
   const parseValue = useCallback(
     (value: string): number | null => {
+      // An empty entry stays null, also in a mandatory field: the save is blocked with a "required" message
+      // (as in Classic) instead of storing a 0 the user never typed.
       if (value === "" || value === null || value === undefined) {
-        return field.isMandatory || props.required ? 0 : null;
+        return null;
       }
 
       const stringValue = String(value).trim();
 
       if (stringValue === "" || stringValue === "-" || stringValue === "." || stringValue === ",") {
-        return field.isMandatory || props.required ? 0 : null;
+        return null;
       }
 
-      const normalizedValue = normalizeDecimalInput(stringValue);
+      // Integers keep the decimals typed: the entry is reported as invalid, never altered.
+      const numericValue = Number.parseFloat(normalizeDecimalInput(stringValue));
 
-      const numericValue = isInteger ? Number.parseInt(normalizedValue, 10) : Number.parseFloat(normalizedValue);
-
-      if (Number.isNaN(numericValue)) {
-        return field.isMandatory || props.required ? 0 : null;
-      }
-
-      return numericValue;
+      return Number.isNaN(numericValue) ? null : numericValue;
     },
-    [isInteger, field.isMandatory, props.required, normalizeDecimalInput]
+    [normalizeDecimalInput]
   );
 
   const handleClear = useCallback(() => {
     setLocalValue("");
-    const clearedValue = field.isMandatory || props.required ? 0 : null;
-    setValue(field.hqlName, clearedValue, editOptions);
+    setEntryError(undefined);
+    setValue(field.hqlName, null, editOptions);
 
     if (props.onClear) {
       props.onClear();
     }
-  }, [field.isMandatory, field.hqlName, props, setValue, editOptions]);
+  }, [field.hqlName, props, setValue, editOptions]);
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       let value = event.target.value;
+      setEntryError(undefined);
 
-      if (isInteger) {
-        value = value.replace(/[^\d.-]/g, "");
-        value = value.replace(/(?!^)-/g, "");
-        value = value.replace(/[.,]/g, "");
-      } else {
-        value = value.replace(/[^\d.,-]/g, "");
-        value = value.replace(/(?!^)-/g, "");
+      // "=2*5" is an arithmetic expression, evaluated when the field is left.
+      if (isMathExpression(value)) {
+        setLocalValue(sanitizeMathExpression(value));
+        return;
+      }
 
-        const separatorCount = (value.match(/[.,]/g) || []).length;
-        if (separatorCount > 1) {
-          return;
-        }
+      value = value.replace(/[^\d.,-]/g, "");
+      value = value.replace(/(?!^)-/g, "");
+
+      const separatorCount = (value.match(/[.,]/g) || []).length;
+      if (separatorCount > 1) {
+        return;
       }
 
       const regex = getValidationRegex();
@@ -175,12 +176,13 @@ export const UnifiedNumericSelector = ({
         }
       }
     },
-    [isInteger, getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue, editOptions]
+    [getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue, editOptions]
   );
 
   const handleFocus = useCallback(
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
+      setEntryError(undefined);
 
       // Back to the editable (ungrouped) format. The grouped text cannot be parsed, so start from the form value.
       const currentValue = Number(formValue);
@@ -199,10 +201,27 @@ export const UnifiedNumericSelector = ({
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
 
-      const parsedValue = parseValue(localValue);
+      let parsedValue: number | null;
+      if (isMathExpression(localValue)) {
+        parsedValue = evaluateMathExpression(localValue, getDecimalSeparator());
+        if (parsedValue === null) {
+          // Keep the expression as typed so it can be fixed; the form keeps its previous value.
+          setEntryError(t("form.expression.invalid"));
+          if (props.onBlur) {
+            props.onBlur(event);
+          }
+          return;
+        }
+      } else {
+        parsedValue = parseValue(localValue);
+      }
       setValue(field.hqlName, parsedValue, editOptions);
 
-      if (parsedValue === null) {
+      if (isInteger && parsedValue !== null && !Number.isInteger(parsedValue)) {
+        // The save is blocked while the field holds decimals (see validateIntegerFields).
+        setEntryError(t("form.integer.invalidDecimal"));
+        setLocalValue(String(parsedValue));
+      } else if (parsedValue === null) {
         setLocalValue("");
       } else {
         setLocalValue(formatDisplayValue(parsedValue));
@@ -212,7 +231,18 @@ export const UnifiedNumericSelector = ({
         props.onBlur(event);
       }
     },
-    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue, editOptions]
+    [
+      localValue,
+      parseValue,
+      field.hqlName,
+      setValue,
+      props,
+      formatDisplayValue,
+      editOptions,
+      getDecimalSeparator,
+      isInteger,
+      t,
+    ]
   );
 
   const registerProps = register(field.hqlName);
@@ -227,6 +257,7 @@ export const UnifiedNumericSelector = ({
       onFocus={handleFocus}
       onClear={handleClear}
       value={localValue}
+      errorText={entryError ?? props.errorText}
       ref={registerProps.ref}
       data-testid="TextInput__329fab"
     />

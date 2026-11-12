@@ -16,6 +16,7 @@
  */
 
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { savePreferences } from "@/utils/propertyStore";
 import { buildEvaluationContext } from "../buildEvaluationContext";
 
 describe("buildEvaluationContext", () => {
@@ -65,5 +66,34 @@ describe("buildEvaluationContext", () => {
       ]),
     });
     expect(Object.keys(ctx)).not.toContain("__proto__");
+  });
+
+  describe("bare preference names", () => {
+    const WINDOW_ID = "181";
+
+    beforeEach(() => savePreferences({ StockReservations: "Y", [`Scoped_${WINDOW_ID}`]: "window", Scoped: "global" }));
+
+    it("leaves bare names unresolved unless asked to resolve preferences", () => {
+      expect(buildEvaluationContext({ windowId: WINDOW_ID }).StockReservations).toBe("");
+    });
+
+    it("resolves a bare name as a preference when asked to", () => {
+      const ctx = buildEvaluationContext({ windowId: WINDOW_ID, resolveUnprefixedPreferences: true });
+      expect(ctx.StockReservations).toBe("Y");
+      expect(ctx.Scoped).toBe("window");
+    });
+
+    it("prefers any value of the context over the preference", () => {
+      const ctx = buildEvaluationContext({
+        context: { StockReservations: "N" },
+        resolveUnprefixedPreferences: true,
+      });
+      expect(ctx.StockReservations).toBe("N");
+    });
+
+    it("falls back to the default value when no preference matches", () => {
+      const ctx = buildEvaluationContext({ resolveUnprefixedPreferences: true, defaultValue: "none" });
+      expect(ctx.Missing).toBe("none");
+    });
   });
 });

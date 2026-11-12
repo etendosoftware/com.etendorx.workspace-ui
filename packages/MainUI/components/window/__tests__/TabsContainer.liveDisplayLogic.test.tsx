@@ -29,7 +29,11 @@ import type { EntityData, Field, Tab } from "@workspaceui/api-client/src/api/typ
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import TabsContainer from "../TabsContainer";
 import { FocusProvider } from "@/contexts/focus";
+import { SelectContext } from "@/contexts/selected";
+import Graph from "@/data/graph";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
+import { PREFERENCES_KEY } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 
 const WINDOW_IDENTIFIER = "win-122";
 const COUNTRY_TAB_ID = "country";
@@ -37,12 +41,8 @@ const REGION_TAB_ID = "region";
 const CITY_TAB_ID = "city";
 const SPAIN_ID = "ES";
 
-const mockSelectedRecords: Record<string, EntityData | undefined> = {};
 const mockTabsRender = jest.fn();
-
-jest.mock("@/hooks/useSelectedRecord", () => ({
-  useSelectedRecord: (tab?: { id: string }) => (tab ? mockSelectedRecords[tab.id] : undefined),
-}));
+let mockSession: Record<string, unknown> = {};
 
 jest.mock("@/contexts/CurrentWindowContext", () => ({
   useCurrentWindowIdentifier: () => "win-122",
@@ -59,7 +59,8 @@ jest.mock("@/stores/windowStore", () => {
 });
 
 jest.mock("@/stores/userStore", () => ({
-  useUserStore: (selector: (state: { session: Record<string, unknown> }) => unknown) => selector({ session: {} }),
+  useUserStore: (selector: (state: { session: Record<string, unknown> }) => unknown) =>
+    selector({ session: mockSession }),
 }));
 
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
@@ -123,11 +124,22 @@ const translationTab = createTab({
   parentTabId: COUNTRY_TAB_ID,
 });
 const cityTab = createTab({ id: CITY_TAB_ID, name: "City", tabLevel: 2, parentTabId: REGION_TAB_ID });
+// Level 2 tabs whose display logic reads, like Classic's, more than the direct parent's record
+const createRegionChildTab = (name: string, displayLogic: string) =>
+  createTab({ id: name.toLowerCase(), name, tabLevel: 2, parentTabId: REGION_TAB_ID, displayLogic });
+const districtTab = createRegionChildTab("District", "@Name@='Spain'");
+const streetTab = createRegionChildTab("Street", "@REGIONTYPE@='S'");
+const reservationTab = createRegionChildTab("Reservation", "@StockReservations@!''");
 
-const windowData = {
-  id: "122",
-  tabs: [countryTab, regionTab, translationTab, cityTab],
-} as unknown as Etendo.WindowMetadata;
+const allTabs = [countryTab, regionTab, translationTab, cityTab, districtTab, streetTab, reservationTab];
+const windowData = { id: "122", tabs: allTabs } as unknown as Etendo.WindowMetadata;
+
+const SPAIN: EntityData = { id: SPAIN_ID, hasRegion: true, name: "Spain" };
+const REGION: EntityData = { id: "R1", active: true };
+
+let graph: Graph<Tab>;
+
+const select = (tab: Tab, record: EntityData) => act(() => graph.setSelected(tab, record));
 
 const publishCountryValues = (values: Record<string, unknown>, recordId = SPAIN_ID) =>
   act(() => {
@@ -142,21 +154,27 @@ const clearCountryValues = () =>
 // WindowProvider (mocked above) provides the focus context in the app; the tab shortcuts need it
 const renderContainer = () =>
   render(
-    <FocusProvider>
-      <TabsContainer windowData={windowData} />
-    </FocusProvider>
+    <SelectContext.Provider value={{ graph }}>
+      <FocusProvider>
+        <TabsContainer windowData={windowData} />
+      </FocusProvider>
+    </SelectContext.Provider>
   );
 
 const levelOneNames = () => screen.getByTestId("tabs-level-1").textContent;
+const levelTwoNames = () => screen.queryByTestId("tabs-level-2")?.textContent;
+
+beforeEach(() => {
+  useLiveTabValuesStore.setState({ entries: {}, selectionEntries: {} });
+  mockTabsRender.mockClear();
+  mockSession = {};
+  installLocalStorageMock();
+  graph = new Graph(allTabs);
+  graph.setSelected(countryTab, SPAIN);
+  graph.setSelected(regionTab, REGION);
+});
 
 describe("TabsContainer - tab display logic with live header values", () => {
-  beforeEach(() => {
-    useLiveTabValuesStore.setState({ entries: {} });
-    mockTabsRender.mockClear();
-    mockSelectedRecords[COUNTRY_TAB_ID] = { id: SPAIN_ID, hasRegion: true, name: "Spain" };
-    mockSelectedRecords[REGION_TAB_ID] = { id: "R1", active: true };
-  });
-
   it("evaluates the persisted record when the header has no live values", () => {
     renderContainer();
 
@@ -192,7 +210,7 @@ describe("TabsContainer - tab display logic with live header values", () => {
 
   it("cascades the hide to the grandchildren when live values hide their parent", () => {
     renderContainer();
-    expect(screen.getByTestId("tabs-level-2").textContent).toBe("City");
+    expect(levelTwoNames()).toBe("City,District");
 
     publishCountryValues({ hasRegion: false });
 
@@ -209,5 +227,66 @@ describe("TabsContainer - tab display logic with live header values", () => {
 
     expect(levelOneProps().length).toBeGreaterThan(rendersBeforeEdit);
     expect(levelOneProps().at(-1)?.[0].tabs).toBe(tabsBeforeEdit);
+  });
+});
+
+const publishRegionContext = (recordId: string, values: Record<string, unknown>) =>
+  act(() => {
+    useLiveTabValuesStore.getState().publishSelectionContext(WINDOW_IDENTIFIER, REGION_TAB_ID, { recordId, values });
+  });
+
+describe("TabsContainer - tab display logic with the context of every ancestor", () => {
+  it("reads the values of the grandparent record", () => {
+    renderContainer();
+
+    expect(levelTwoNames()).toContain("District");
+
+    select(countryTab, { ...SPAIN, name: "France" });
+    select(regionTab, REGION);
+
+    expect(levelTwoNames()).not.toContain("District");
+  });
+
+  it("reads the auxiliary inputs computed for the selected parent record", () => {
+    renderContainer();
+    expect(levelTwoNames()).not.toContain("Street");
+
+    publishRegionContext("R1", { REGIONTYPE: "S" });
+
+    expect(levelTwoNames()).toContain("Street");
+  });
+
+  it("follows the selected parent record instead of keeping a previous record's context", () => {
+    mockSession = { REGIONTYPE: "S" };
+    publishRegionContext("R1", { REGIONTYPE: "S" });
+    renderContainer();
+    expect(levelTwoNames()).toContain("Street");
+
+    select(regionTab, { id: "R2", active: true });
+    publishRegionContext("R2", { REGIONTYPE: "I" });
+
+    expect(levelTwoNames()).not.toContain("Street");
+  });
+
+  it("ignores auxiliary inputs computed for another record", () => {
+    publishRegionContext("R9", { REGIONTYPE: "S" });
+
+    renderContainer();
+
+    expect(levelTwoNames()).not.toContain("Street");
+  });
+
+  it("reads a preference loaded at login without any form having been opened", () => {
+    window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ StockReservations: "Y" }));
+
+    renderContainer();
+
+    expect(levelTwoNames()).toContain("Reservation");
+  });
+
+  it("hides the tab when the preference is not set", () => {
+    renderContainer();
+
+    expect(levelTwoNames()).not.toContain("Reservation");
   });
 });
