@@ -7,6 +7,7 @@ jest.mock("@/app/actions/revalidate", () => ({ revalidateDopoProcess: jest.fn() 
 jest.mock("react-hook-form");
 
 jest.mock("../SelectSelector", () => ({ SelectSelector: () => <div data-testid="SelectSelector" /> }));
+jest.mock("../LocationSelector", () => ({ __esModule: true, default: () => <div data-testid="LocationSelector" /> }));
 jest.mock("../SelectorModal", () => ({ __esModule: true, default: () => <div data-testid="SelectorModal" /> }));
 jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/hooks/useProcessDefinitionTrigger", () => ({
@@ -60,6 +61,20 @@ describe("GenericSelector legacy Search popup", () => {
       <GenericSelector field={makeField({ legacySearchUrl: LOCATOR_URL, hasTableRelated: true })} isReadOnly={false} />
     );
 
+    expect(queryByTestId("LegacySelectorAffix")).not.toBeInTheDocument();
+  });
+
+  it("gives a Location field its own address editor and no Classic popup button", () => {
+    const field = {
+      id: "f1",
+      hqlName: "locationAddress",
+      column: { reference: "30", referenceSearchKey: "21" },
+      selector: { legacySearchUrl: "/info/Location_F1.html" },
+    } as never;
+
+    const { getByTestId, queryByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+
+    expect(getByTestId("LocationSelector")).toBeInTheDocument();
     expect(queryByTestId("LegacySelectorAffix")).not.toBeInTheDocument();
   });
 

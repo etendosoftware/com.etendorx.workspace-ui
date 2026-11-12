@@ -108,7 +108,12 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   // Legacy Search references (locator, account, invoice, ...) have no native picker: like Classic, they get a
   // magnifier that opens the Classic search popup. Fields with their own picker keep it.
   const legacySearchUrl = effectiveField.selector?.legacySearchUrl;
-  const hasLegacySearchPopup = !hasTableRelated && typeof legacySearchUrl === "string" && legacySearchUrl.length > 0;
+  // Location fields have their own address editor (LocationSelector), so they never get the Classic popup.
+  const isLocationField =
+    effectiveField.column?.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21.id ||
+    effectiveField.column?.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION;
+  const hasLegacySearchPopup =
+    !hasTableRelated && !isLocationField && typeof legacySearchUrl === "string" && legacySearchUrl.length > 0;
   const popupShortcutId = getSelectorPopupShortcutId(effectiveField.column?.reference);
 
   /**
@@ -215,10 +220,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.LIST_13.id:
         return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.SELECT_30.id:
-        if (
-          effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21.id ||
-          effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
-        ) {
+        if (isLocationField) {
           return (
             <LocationSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />
           );
