@@ -58,8 +58,8 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
-│   ├── record-notes/                 # Feature: Notes section of the form (AD_Note)
-│   │   └── README.md                # Delete only own notes, creation date and time, Classic differences
+│   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
+│   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
 │   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
 │   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)
