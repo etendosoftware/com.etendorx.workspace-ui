@@ -114,7 +114,7 @@ The CI job still runs every project (the PR budget below is met). To leave the r
 
 | Spec | Tier | Checks | Data |
 |---|---|---|---|
-| PRCb | smoke | Pick and Execute grid (Add Payment): selecting allocates the amount, deselecting gives it back, a numeric cell is editable, a migrated onProcess that fails stops the execution | Own payment header; the payment request is blocked |
+| PRCb | smoke | Pick and Execute grid (Add Payment): it opens sorted by its classic default field (`salesOrderNo`, [ETP-4641](../../features/grid-default-sort/README.md)), selecting allocates the amount, deselecting gives it back, a numeric cell is editable, a migrated onProcess that fails stops the execution | Own payment header; the payment request is blocked |
 | FRMa | smoke | Display logic of fields (Product: Stocked, Bill of Materials, Linked To Product, Tax Category) and of a child tab (Bill of Materials) re-evaluated after a field change, unsaved | Sample product, not saved |
 | FRMb | smoke | Editability by document status: a draft sales order is editable, a booked one read-only, "Copy Lines" only while not processed | Sample orders 50015 and 50017 |
 | FRMc | smoke | Save → reload round trip of text, dates, integer, yes/no, list, table, number, price and quantity fields (Discounts and Promotions) | Own record |
