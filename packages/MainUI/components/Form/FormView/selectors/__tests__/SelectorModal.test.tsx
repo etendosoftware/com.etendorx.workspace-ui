@@ -166,6 +166,40 @@ describe("SelectorModal", () => {
     expect(useDatasource).toHaveBeenLastCalledWith(expect.objectContaining({ params: { windowId: "WIN-1" } }));
   });
 
+  it("shows the loading state, not an empty table, while the default criteria are resolving", () => {
+    const { useSelectorDefaultCriteria } = require("../hooks/useSelectorDefaultCriteria");
+    useSelectorDefaultCriteria.mockReturnValue({
+      defaultCriteria: null,
+      defaultFilterResponse: null,
+      selectorDefinitionId: "sel-1",
+    });
+    const { useMaterialReactTable } = require("material-react-table");
+
+    render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    const options = useMaterialReactTable.mock.calls.at(-1)[0];
+    expect(options.state.isLoading).toBe(true);
+    expect(options.state.showProgressBars).toBe(true);
+  });
+
+  it("limits the loading skeleton to two rows", () => {
+    const { useMaterialReactTable } = require("material-react-table");
+
+    render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    const options = useMaterialReactTable.mock.calls.at(-1)[0];
+    expect(options.initialState.pagination.pageSize).toBe(2);
+  });
+
+  it("does not show the loading state once the criteria resolved and the datasource is idle", () => {
+    const { useMaterialReactTable } = require("material-react-table");
+
+    render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
+
+    const options = useMaterialReactTable.mock.calls.at(-1)[0];
+    expect(options.state.isLoading).toBe(false);
+  });
+
   it("renders modal dialog when isOpen is true", () => {
     render(<SelectorModal field={defaultField} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
 

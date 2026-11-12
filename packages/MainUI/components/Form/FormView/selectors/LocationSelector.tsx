@@ -20,7 +20,6 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
-import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import LocationIcon from "@workspaceui/componentlibrary/src/assets/icons/map-pin.svg";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Button from "@mui/material/Button";
@@ -379,7 +378,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     <>
       <div className="w-full">
         <div
-          className={`flex items-center justify-between w-full h-10 px-3 border-b transition-colors ${
+          className={`flex items-center justify-between gap-2 w-full min-h-10 px-3 py-1 border-b transition-colors ${
             isReadOnly ? "bg-gray-100 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer border-gray-300"
           }`}
           onClick={handleOpenModal}
@@ -390,13 +389,18 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               handleOpenModal();
             }
           }}>
-          <div className="flex items-center gap-2">
-            <SearchOutlined fill="#6B7280" className="w-4 h-4" data-testid="SearchOutlined__e401ac" />
+          <div className="flex min-w-0 flex-1 items-center">
             <span className={`text-sm ${displayValue ? "text-gray-900" : "text-gray-500"}`}>
               {displayValue || t("location.selector.placeholder")}
             </span>
           </div>
-          {!isReadOnly && <LocationIcon fill="#9CA3AF" className="w-4 h-4" data-testid="LocationIcon__e401ac" />}
+          {!isReadOnly && (
+            <LocationIcon
+              fill="#6B7280"
+              className="w-5 h-5 flex-shrink-0 self-center"
+              data-testid="LocationIcon__e401ac"
+            />
+          )}
         </div>
       </div>
       <Modal

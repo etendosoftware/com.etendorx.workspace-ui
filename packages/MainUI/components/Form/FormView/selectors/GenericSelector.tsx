@@ -48,6 +48,7 @@ import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
+import LegacySelectorAffix from "@/components/ProcessModal/selectors/LegacySelectorAffix";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
 import { ImageSelector } from "./ImageSelector";
 import { UploadFileSelector } from "@/components/ProcessModal/selectors/UploadFileSelector";
@@ -104,6 +105,15 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
   const canOpenSearchModal = Boolean(hasTableRelated) && !isReadOnly;
+  // Legacy Search references (locator, account, invoice, ...) have no native picker: like Classic, they get a
+  // magnifier that opens the Classic search popup. Fields with their own picker keep it.
+  const legacySearchUrl = effectiveField.selector?.legacySearchUrl;
+  // Location fields have their own address editor (LocationSelector), so they never get the Classic popup.
+  const isLocationField =
+    effectiveField.column?.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21.id ||
+    effectiveField.column?.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION;
+  const hasLegacySearchPopup =
+    !hasTableRelated && !isLocationField && typeof legacySearchUrl === "string" && legacySearchUrl.length > 0;
   const popupShortcutId = getSelectorPopupShortcutId(effectiveField.column?.reference);
 
   /**
@@ -210,10 +220,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       case FIELD_REFERENCE_CODES.LIST_13.id:
         return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
       case FIELD_REFERENCE_CODES.SELECT_30.id:
-        if (
-          effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21.id ||
-          effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
-        ) {
+        if (isLocationField) {
           return (
             <LocationSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />
           );
@@ -318,7 +325,19 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       {/* The shortcut is bound to the field as a whole: it must fire wherever the
           focus sits inside it, which is what the bubbling keydown gives us. */}
       <div className="flex w-full items-center gap-1" onKeyDown={handleFieldKeyDown}>
-        <div className="flex-grow min-w-0">{SelectorComponent}</div>
+        <div className="flex-grow min-w-0">
+          {hasLegacySearchPopup ? (
+            <LegacySelectorAffix
+              field={effectiveField}
+              legacySearchUrl={legacySearchUrl}
+              isReadOnly={isReadOnly}
+              data-testid={`LegacySelectorAffix__${field.id}`}>
+              {SelectorComponent}
+            </LegacySelectorAffix>
+          ) : (
+            SelectorComponent
+          )}
+        </div>
         {canOpenSearchModal && (
           <IconButton
             onClick={() => setIsSearchModalOpen(true)}
