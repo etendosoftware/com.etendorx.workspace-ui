@@ -19,12 +19,22 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import NoteSection from "../noteSection";
 import { fetchNotes, createNote, deleteNote } from "@workspaceui/api-client/src/api/notes";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
 jest.mock("@workspaceui/api-client/src/api/notes", () => ({
   fetchNotes: jest.fn(),
   createNote: jest.fn(),
   deleteNote: jest.fn(),
+}));
+
+const CURRENT_USER_ID = "user-1";
+const OTHER_USER_ID = "user-2";
+let mockCurrentUserId: string | undefined = CURRENT_USER_ID;
+
+jest.mock("@/stores/userStore", () => ({
+  useUserStore: (selector: (state: { user: { id?: string } }) => unknown) =>
+    selector({ user: { id: mockCurrentUserId } }),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -72,6 +82,17 @@ const RECORD_ID = "1EB8E3939BA84A41BFFB08D072CEF9B3";
 const TABLE_ID = "2608680639F246B4992EC2BDF88B09CB";
 const EXISTING_NOTE_TEXT = "Existing note";
 const NEW_NOTE_TEXT = "brand new note";
+const OTHER_USER_NOTE_TEXT = "Note of another user";
+const DELETE_BUTTON_ID = "IconButton__a680f8";
+
+/** Builds a note as returned by the notes servlet. */
+const buildApiNote = (id: string, note: string, createdBy: string, creationDate: string) => ({
+  id,
+  note,
+  createdBy,
+  createdBy$_identifier: `Name of ${createdBy}`,
+  creationDate,
+});
 
 describe("NoteSection", () => {
   const showErrorModal = jest.fn();
@@ -92,24 +113,13 @@ describe("NoteSection", () => {
     addNoteSubmitText: undefined,
   };
 
-  const existingNote = {
-    id: "note-1",
-    note: EXISTING_NOTE_TEXT,
-    createdBy: "user-1",
-    createdBy$_identifier: "User One",
-    creationDate: "2026-07-30T10:00:00Z",
-  };
-
-  const createdNote = {
-    id: "note-2",
-    note: NEW_NOTE_TEXT,
-    createdBy: "user-1",
-    createdBy$_identifier: "User One",
-    creationDate: "2026-07-30T11:00:00Z",
-  };
+  const existingNote = buildApiNote("note-1", EXISTING_NOTE_TEXT, CURRENT_USER_ID, "2026-07-30T10:00:00Z");
+  const createdNote = buildApiNote("note-2", NEW_NOTE_TEXT, CURRENT_USER_ID, "2026-07-30T11:00:00Z");
+  const otherUserNote = buildApiNote("note-3", OTHER_USER_NOTE_TEXT, OTHER_USER_ID, "2026-07-29T08:15:00Z");
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCurrentUserId = CURRENT_USER_ID;
     (fetchNotes as jest.Mock).mockResolvedValue([existingNote]);
     (createNote as jest.Mock).mockResolvedValue(createdNote);
     (deleteNote as jest.Mock).mockResolvedValue(undefined);
@@ -190,7 +200,7 @@ describe("NoteSection", () => {
     renderWithTheme(<NoteSection {...defaultProps} />);
     await screen.findByText(EXISTING_NOTE_TEXT);
 
-    fireEvent.click(screen.getByTestId("IconButton__a680f8"));
+    fireEvent.click(screen.getByTestId(DELETE_BUTTON_ID));
     expect(screen.getByTestId("mock-confirm-modal")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("confirm-button"));
@@ -206,11 +216,45 @@ describe("NoteSection", () => {
     renderWithTheme(<NoteSection {...defaultProps} />);
     await screen.findByText(EXISTING_NOTE_TEXT);
 
-    fireEvent.click(screen.getByTestId("IconButton__a680f8"));
+    fireEvent.click(screen.getByTestId(DELETE_BUTTON_ID));
     fireEvent.click(screen.getByTestId("cancel-button"));
 
     expect(deleteNote).not.toHaveBeenCalled();
     expect(screen.getByText(EXISTING_NOTE_TEXT)).toBeInTheDocument();
     expect(screen.queryByTestId("mock-confirm-modal")).not.toBeInTheDocument();
+  });
+
+  it("offers the delete option only on the notes of the current user", async () => {
+    (fetchNotes as jest.Mock).mockResolvedValue([existingNote, otherUserNote]);
+    renderWithTheme(<NoteSection {...defaultProps} />);
+    await screen.findByText(OTHER_USER_NOTE_TEXT);
+
+    expect(screen.getByTestId(`Box__a680f8_delete_${existingNote.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`Box__a680f8_delete_${otherUserNote.id}`)).not.toBeInTheDocument();
+  });
+
+  it("does not offer the delete option when the current user is unknown", async () => {
+    mockCurrentUserId = undefined;
+    renderWithTheme(<NoteSection {...defaultProps} />);
+    await screen.findByText(EXISTING_NOTE_TEXT);
+
+    expect(screen.queryByTestId(DELETE_BUTTON_ID)).not.toBeInTheDocument();
+  });
+
+  it("offers the delete option on a note just created by the current user", async () => {
+    renderWithTheme(<NoteSection {...defaultProps} initialNoteCount={0} />);
+
+    submitNote(NEW_NOTE_TEXT);
+
+    expect(await screen.findByTestId(`Box__a680f8_delete_${createdNote.id}`)).toBeInTheDocument();
+  });
+
+  it("shows the creation date with time", async () => {
+    renderWithTheme(<NoteSection {...defaultProps} />);
+    await screen.findByText(EXISTING_NOTE_TEXT);
+
+    const expectedDateTime = formatClassicDate(existingNote.creationDate, true);
+    expect(expectedDateTime).toMatch(/\d{2}:\d{2}:\d{2}/);
+    expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`)).toHaveTextContent(expectedDateTime);
   });
 });

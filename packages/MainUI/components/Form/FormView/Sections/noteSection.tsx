@@ -23,10 +23,13 @@ import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
 import type { Note, NoteSectionProps } from "../types";
-import { noteColors, useStyle } from "../styles";
+import { useStyle } from "../styles";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { fetchNotes, deleteNote, createNote } from "@workspaceui/api-client/src/api/notes";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useUserStore } from "@/stores/userStore";
+import { getNoteBackground, isOwnNote } from "./noteUtils";
 
 const NoteSection = ({
   addNoteButtonText,
@@ -44,6 +47,8 @@ const NoteSection = ({
   const { sx } = useStyle();
   const theme = useTheme();
   const { t } = useTranslation();
+  const currentUserId = useUserStore((s) => s.user?.id);
+  const otherUserNoteColor = theme.palette.baselineColor.neutral[10];
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
 
@@ -199,32 +204,37 @@ const NoteSection = ({
         </Grid>
 
         {isSectionExpanded &&
-          notes.map((note, index) => (
-            <Grid item xs={6} key={note.id} data-testid={`Grid__a680f8_item_${note.id}`}>
-              <Card
-                sx={{ ...sx.noteCard, backgroundColor: noteColors[index % noteColors.length] }}
-                data-testid={`Card__a680f8_${note.id}`}>
-                <CardContent sx={sx.noteCardContent} data-testid={`CardContent__a680f8_${note.id}`}>
-                  <Box sx={sx.noteContentBox} data-testid={`Box__a680f8_${note.id}`}>
-                    <Typography variant="body1" data-testid={`Typography__a680f8_content_${note.id}`}>
-                      {note.note}
+          notes.map((note, index) => {
+            const isOwn = isOwnNote(note, currentUserId);
+            return (
+              <Grid item xs={6} key={note.id} data-testid={`Grid__a680f8_item_${note.id}`}>
+                <Card
+                  sx={{ ...sx.noteCard, backgroundColor: getNoteBackground(isOwn, index, otherUserNoteColor) }}
+                  data-testid={`Card__a680f8_${note.id}`}>
+                  <CardContent sx={sx.noteCardContent} data-testid={`CardContent__a680f8_${note.id}`}>
+                    <Box sx={sx.noteContentBox} data-testid={`Box__a680f8_${note.id}`}>
+                      <Typography variant="body1" data-testid={`Typography__a680f8_content_${note.id}`}>
+                        {note.note}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={sx.noteDate} data-testid={`Typography__a680f8_date_${note.id}`}>
+                      {`${t("forms.notes.createdBy")}: ${note.createdBy.identifier} - ${formatClassicDate(note.creationDate, true)}`}
                     </Typography>
-                  </Box>
-                  <Typography variant="body2" sx={sx.noteDate} data-testid={`Typography__a680f8_date_${note.id}`}>
-                    {`${t("forms.notes.createdBy")}: ${note.createdBy.identifier} - ${new Date(note.creationDate).toLocaleDateString()}`}
-                  </Typography>
-                  <Box sx={sx.deleteButtonBox} data-testid={`Box__a680f8_delete_${note.id}`}>
-                    <IconButton
-                      onClick={() => confirmDeleteNote(note.id)}
-                      disabled={isLoading}
-                      data-testid="IconButton__a680f8">
-                      <CloseIcon fontSize="small" data-testid={`CloseIcon__a680f8_${note.id}`} />
-                    </IconButton>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    {isOwn && (
+                      <Box sx={sx.deleteButtonBox} data-testid={`Box__a680f8_delete_${note.id}`}>
+                        <IconButton
+                          onClick={() => confirmDeleteNote(note.id)}
+                          disabled={isLoading}
+                          data-testid="IconButton__a680f8">
+                          <CloseIcon fontSize="small" data-testid={`CloseIcon__a680f8_${note.id}`} />
+                        </IconButton>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
       </Grid>
       <ConfirmModal
         open={!!showDeleteConfirmation}
