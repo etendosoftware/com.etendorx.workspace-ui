@@ -78,7 +78,7 @@ Configurations stored before this change keep their stored sort until the user a
 - Unit (Jest): `utils/table/__tests__/defaultOrderBy.test.ts` (clause parsing, default sorts, default vs
   manual sort) and the default order-by block of `hooks/table/__tests__/useTableData.grouping.test.tsx`
   (request params, indicator seeding, summary request).
-- E2E: probe GRDg (`playwright-tests/e2e/regression/10_Grid/GRDgDefaultSortOrderByTest.spec.ts`,
+- E2E: probe GRDi (`playwright-tests/e2e/regression/10_Grid/GRDiDefaultSortOrderByTest.spec.ts`,
   `@regression`), see [Playwright E2E](../../testing/playwright-e2e/README.md#feature-probes). It asserts the
   request params, since the sample rows of a multi-column tab can already be in the same order by id.
 
