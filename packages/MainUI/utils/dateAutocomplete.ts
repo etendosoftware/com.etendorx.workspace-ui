@@ -147,3 +147,14 @@ export const autocompleteDate = (input: string, format = "dd/mm/yyyy") => {
 
   return date;
 };
+
+/**
+ * Formats a local `Date` as `yyyy-MM-dd` using its local year, month and day.
+ * `toISOString()` converts to UTC first, which moves a local-midnight date back one day in timezones east of UTC.
+ */
+export const toLocalIsoDate = (date: Date): string => {
+  const year = String(date.getFullYear()).padStart(4, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};

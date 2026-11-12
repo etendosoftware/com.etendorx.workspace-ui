@@ -17,10 +17,13 @@
 
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
-const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-0 mb-2 rounded-xl";
+const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-0 mb-2";
 const COLLAPSED_STYLES = "cursor-pointer";
-const MAIN_TAB_STYLES = "";
-const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) flex flex-col gap-2";
+const MAIN_TAB_STYLES = "rounded-t-xl";
+// Design Kit "Solapa": rounded on the top corners only.
+const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) flex flex-col rounded-t-xl";
+// Spacing between the tab strip and the content; a collapsed tab has no content, so no gap (it left an empty band).
+const SUB_TAB_EXPANDED_GAP = "gap-1 bg-(--ui-child-band)";
 
 export type ContainerProps = React.PropsWithChildren<
   React.HTMLProps<HTMLDivElement> & {
@@ -61,7 +64,7 @@ export function TabContainer({
   return (
     <div
       {...props}
-      className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${getExpansionStyles()} ${className}`}
+      className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${current.tabLevel !== 0 && !collapsed ? SUB_TAB_EXPANDED_GAP : ""} ${getExpansionStyles()} ${className}`}
       style={{ ...props.style, ...getCustomStyle() }}
     />
   );

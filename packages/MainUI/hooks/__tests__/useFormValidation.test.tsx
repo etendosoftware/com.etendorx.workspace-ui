@@ -476,4 +476,72 @@ describe("useFormValidation", () => {
       expect(() => result.current.validateRequiredFields()).not.toThrow();
     });
   });
+
+  describe("Link Field Validation", () => {
+    const LINK_REFERENCE = "800101";
+    const INVALID_URL = "not a url";
+
+    const createLinkField = (hqlName: string, overrides: Partial<Field> = {}): Field =>
+      createMockField({
+        id: hqlName,
+        hqlName,
+        name: `Label ${hqlName}`,
+        column: { reference: LINK_REFERENCE },
+        ...overrides,
+      });
+
+    const renderLinkValidation = (fields: Record<string, Field>, defaultValues: Record<string, unknown>) =>
+      renderHook(() => useFormValidation(createMockTab({ fields })), {
+        wrapper: ({ children }: { children: React.ReactNode }) => (
+          <TestWrapper defaultValues={defaultValues}>{children}</TestWrapper>
+        ),
+      });
+
+    test("reports the editable Link fields whose value is not a valid URL", () => {
+      const { result } = renderLinkValidation(
+        { url: createLinkField("url"), site: createLinkField("site") },
+        { url: INVALID_URL, site: "www.etendo.software" }
+      );
+
+      expect(result.current.validateLinkFields()).toEqual([
+        { fieldName: "url", fieldLabel: "Label url", isValid: false },
+      ]);
+    });
+
+    test("accepts an empty optional Link field", () => {
+      const { result } = renderLinkValidation({ url: createLinkField("url") }, { url: "" });
+
+      expect(result.current.validateLinkFields()).toEqual([]);
+    });
+
+    test.each([
+      ["read-only", { isReadOnly: true }],
+      ["not displayed", { displayed: false }],
+      ["property", { column: { reference: LINK_REFERENCE, propertyPath: "partner.url" } }],
+    ])("skips a %s Link field", (_kind, overrides) => {
+      const { result } = renderLinkValidation(
+        { url: createLinkField("url", overrides as Partial<Field>) },
+        { url: INVALID_URL }
+      );
+
+      expect(result.current.validateLinkFields()).toEqual([]);
+    });
+
+    test("skips a Link field hidden by its display logic", () => {
+      const { compileExpression } = jest.requireMock("@/components/Form/FormView/selectors/BaseSelector");
+      (compileExpression as jest.Mock).mockImplementationOnce(() => () => false);
+      const { result } = renderLinkValidation(
+        { url: createLinkField("url", { displayLogicExpression: "@isWeb@ = 'Y'" }) },
+        { url: INVALID_URL }
+      );
+
+      expect(result.current.validateLinkFields()).toEqual([]);
+    });
+
+    test("ignores fields of other references", () => {
+      const { result } = renderLinkValidation({ name: createMockField({ hqlName: "name" }) }, { name: INVALID_URL });
+
+      expect(result.current.validateLinkFields()).toEqual([]);
+    });
+  });
 });

@@ -41,8 +41,10 @@ jest.mock("@/app/actions/revalidate", () => ({
 import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
+import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 
 // Mock all the context providers and hooks
 jest.mock("@/hooks/useTranslation", () => ({
@@ -64,9 +66,11 @@ jest.mock("@/contexts/datasourceContext", () => ({
   }),
 }));
 
+const mockRegisterActions = jest.fn();
+
 jest.mock("@/contexts/ToolbarContext", () => {
   const toolbar = () => ({
-    registerActions: jest.fn(),
+    registerActions: mockRegisterActions,
     unregisterActions: jest.fn(),
     registerAttachmentAction: jest.fn(),
     setShouldOpenAttachmentModal: jest.fn(),
@@ -94,6 +98,9 @@ jest.mock("@/contexts/tab", () => ({
     parentRecord: null,
   }),
 }));
+
+// Parent selection (multiple parents show a message instead of children); none in these tests.
+jest.mock("@/hooks/useSelectedRecords", () => ({ useSelectedRecords: () => [] }));
 
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({
@@ -418,8 +425,14 @@ jest.mock("@/components/ErrorDisplay", () => ({
   ErrorDisplay: () => <div data-testid="ErrorDisplay__8ca888">Error</div>,
 }));
 
+// Props of the last rendered CellContextMenu, so tests can check the edit permission it receives
+let capturedContextMenuProps: { canEdit?: boolean; onNewRecord?: () => void } = {};
+
 jest.mock("@/components/Table/CellContextMenu", () => ({
-  CellContextMenu: () => <div data-testid="CellContextMenu__8ca888">Context Menu</div>,
+  CellContextMenu: (props: { canEdit?: boolean; onNewRecord?: () => void }) => {
+    capturedContextMenuProps = props;
+    return <div data-testid="CellContextMenu__8ca888">Context Menu</div>;
+  },
 }));
 
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal", () => ({
@@ -538,6 +551,19 @@ describe("DynamicTable Component", () => {
     });
   });
 
+  describe("Toolbar actions", () => {
+    it("registers the CSV export for the tab even while the grid pane is hidden", async () => {
+      render(<DynamicTable setRecordId={mockSetRecordId} isVisible={false} />);
+
+      await waitFor(() => {
+        expect(mockRegisterActions).toHaveBeenCalledWith(
+          { exportCSV: expect.any(Function) },
+          TOOLBAR_ACTION_OWNERS.TAB
+        );
+      });
+    });
+  });
+
   describe("Component Rendering", () => {
     it("should render without crashing with minimal props", async () => {
       render(<DynamicTable setRecordId={mockSetRecordId} />);
@@ -578,6 +604,35 @@ describe("DynamicTable Component", () => {
         const statusModals = screen.getAllByTestId("StatusModal__table");
         expect(statusModals.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe("Read-only tabs (role Tab Access)", () => {
+    const renderContextMenu = async (uIPattern: UIPattern) => {
+      const setRecordId = jest.fn();
+      render(<DynamicTable setRecordId={setRecordId} uIPattern={uIPattern} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("CellContextMenu__8ca888")).toBeInTheDocument();
+      });
+      return setRecordId;
+    };
+
+    it("hides the edit actions of the context menu and blocks new records on a read-only tab", async () => {
+      const setRecordId = await renderContextMenu(UIPattern.READ_ONLY);
+
+      capturedContextMenuProps.onNewRecord?.();
+
+      expect(capturedContextMenuProps.canEdit).toBe(false);
+      expect(setRecordId).not.toHaveBeenCalledWith(NEW_RECORD_ID);
+    });
+
+    it("keeps the edit actions and opens a new record on a standard tab", async () => {
+      const setRecordId = await renderContextMenu(UIPattern.STANDARD);
+
+      capturedContextMenuProps.onNewRecord?.();
+
+      expect(capturedContextMenuProps.canEdit).toBe(true);
+      expect(setRecordId).toHaveBeenCalledWith(NEW_RECORD_ID);
     });
   });
 

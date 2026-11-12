@@ -29,6 +29,7 @@ jest.mock("@workspaceui/componentlibrary/src/utils/dateFormatter", () => ({
 }));
 
 jest.mock("@/utils/dateAutocomplete", () => ({
+  ...jest.requireActual("@/utils/dateAutocomplete"),
   autocompleteDate: jest.fn(),
 }));
 

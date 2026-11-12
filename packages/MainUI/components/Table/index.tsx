@@ -17,7 +17,6 @@
 
 import {
   MaterialReactTable,
-  MRT_ToggleDensePaddingButton,
   MRT_ToggleFullScreenButton,
   type MRT_Row,
   type MRT_RowVirtualizer,
@@ -38,26 +37,38 @@ import type {
   Field,
   FormInitializationResponse,
   RefListField,
+  Tab,
   UIPattern,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { isRecordCreationBlocked, isRecordEditionBlocked } from "./utils/uiPatternPermissions";
+import type { TranslateFunction } from "@/hooks/types";
+import React, { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { TOOLBAR_ACTION_OWNERS } from "@/utils/toolbar/actionOwnership";
 import useTableSelection from "@/hooks/useTableSelection";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useKeyboardShortcuts, type ShortcutMap } from "@/hooks/useKeyboardShortcuts";
+import { useIsCurrentWindowActive } from "@/hooks/useShortcutBindings";
+import { useFocusContext } from "@/contexts/focus";
 import { useGridShortcuts } from "./hooks/useGridShortcuts";
 import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { TableErrorDisplay } from "./TableErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
+import { useTopBarSlots } from "@/contexts/TitleActionsSlot";
+import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
+import { createPortal } from "react-dom";
+import { getTabCountKey } from "@/stores/tabCountsStore";
+import { useTabRecordCount } from "@/hooks/table/useTabRecordCount";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowStore } from "@/stores/windowStore";
+import { useGridCsvExport } from "@/hooks/table/useGridCsvExport";
 import { useCurrentWindowIdentifier, useCurrentWindowId } from "@/contexts/CurrentWindowContext";
 import { FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
@@ -72,7 +83,9 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
+import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
+import { isSameColumnVisibility, resolveUpdater } from "@/utils/table/columnState";
 import { useUserStore } from "@/stores/userStore";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logoutOnSessionSaveError } from "@/hooks/useFormAction";
@@ -84,17 +97,21 @@ import {
 } from "@/utils/table/utils";
 import { openRecordInForm } from "@/utils/table/openRecordInForm";
 import { scrollRowIntoContainer } from "@/utils/table/scrollRowIntoContainer";
-import { processCalloutColumnValues } from "./utils/calloutUtils";
+import { getCalloutChangedFieldNames, processCalloutColumnValues } from "./utils/calloutUtils";
+import { getRowToSaveOnRowClick, shouldSaveOnRowBlur } from "./utils/rowLeave";
 import {
   ACTION_FORM_INITIALIZATION,
   MODE_CHANGE,
   FIC_ERROR_STATUS,
 } from "@/utils/hooks/useFormInitialization/constants";
 import { showCalloutMessages } from "@/utils/callouts/calloutMessages";
+import { getGridHighlightScope } from "@/utils/callouts/calloutHighlight";
+import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
+import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, isImmediateCalloutReference } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
@@ -114,6 +131,7 @@ import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
+import { copyColumnLength } from "@/utils/form/columnLength";
 import { applyOutFields, buildGridVisibleProperties } from "@/utils/callouts/calloutPayload";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useColumnLayout } from "./hooks/useColumnLayout";
@@ -216,6 +234,8 @@ interface CellEditingContextProps {
   session: Record<string, unknown> | undefined;
   /** AD window id, so inline-edit readonly logic resolves window-scoped preferences. */
   windowId?: string;
+  /** Tab id, to show the highlight of the cells a callout changed in this tab's rows. */
+  tabId: string;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -270,6 +290,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   loadTableDirOptions,
   isLoadingTableDirOptions,
   windowId,
+  tabId,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -325,6 +346,11 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
           data-testid="CellEditorFactory__8ca888"
         />
       </React.Suspense>
+      <CalloutHighlightOverlay
+        scope={getGridHighlightScope(tabId, rowId)}
+        fieldName={fieldKey}
+        data-testid="CalloutHighlightOverlay__8ca888"
+      />
     </div>
   );
 };
@@ -419,6 +445,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   loadTableDirOptions,
   isLoadingTableDirOptions,
   windowId,
+  tabId,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -449,6 +476,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         loadTableDirOptions={loadTableDirOptions}
         isLoadingTableDirOptions={isLoadingTableDirOptions}
         windowId={windowId}
+        tabId={tabId}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -597,8 +625,12 @@ const addLegacyProductCalloutInputs = (
   }
 };
 
-/** Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. */
-const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"]';
+/**
+ * Popups an editing row opens (dropdown menus, confirmation dialogs); they render in a portal. The
+ * modal root (role "presentation") is included because the focus of a confirmation dialog lands on
+ * its content box, which is not inside a role "dialog": cancelling an edit would save the row instead.
+ */
+const ROW_POPUP_SELECTOR = '[role="menu"], [role="listbox"], [role="dialog"], [role="presentation"]';
 
 // Extended Column type with optional metadata properties
 interface ExtendedColumn extends Column {
@@ -794,6 +826,172 @@ const columnToFieldForEditor = (column: Column): Field => {
   return field;
 };
 
+interface GridTopToolbarParams {
+  mrtTable: MRT_TableInstance<EntityData>;
+  displayRecords: EntityData[];
+  hasMoreRecords: boolean;
+  t: TranslateFunction;
+  baseColumns: Column[];
+  tab: Tab;
+  footerSlot: HTMLElement | null;
+  titleSuffixSlot: HTMLElement | null;
+  toolbarExtrasSlot: HTMLElement | null;
+  isGridVisible: boolean;
+  loading: boolean;
+  tableColumnFilters: ColumnFiltersState;
+  handleDateTextFilterChange: (columnId: string, value: string) => void;
+}
+
+/**
+ * Top toolbar of the grid: the record counter and quick filters, or only the exit control while the grid is full
+ * screen. The counter and the view controls move to the footer and the tab toolbar when those slots are there.
+ * Kept out of the component so that its branches do not count towards the component's complexity.
+ */
+const renderGridTopToolbar = ({
+  mrtTable,
+  displayRecords,
+  hasMoreRecords,
+  t,
+  baseColumns,
+  tab,
+  footerSlot,
+  titleSuffixSlot,
+  toolbarExtrasSlot,
+  isGridVisible,
+  loading,
+  tableColumnFilters,
+  handleDateTextFilterChange,
+}: GridTopToolbarParams) => {
+  const isFullScreen = mrtTable.getState().isFullScreen;
+
+  if (isFullScreen) {
+    return (
+      <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+        <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+        <button
+          type="button"
+          onClick={() => mrtTable.setIsFullScreen(false)}
+          className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+          aria-label="Exit fullscreen">
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  const rowSelection = mrtTable.getState().rowSelection;
+  const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+  const loaded = displayRecords.length;
+  const total = hasMoreRecords ? loaded + 1 : loaded;
+  const labels = {
+    showingRecords: t("table.counter.showingRecords"),
+    showingPartialRecords: t("table.counter.showingPartialRecords"),
+    selectedRecords: t("table.counter.selectedRecords"),
+    recordsLoaded: t("table.counter.recordsLoaded"),
+  };
+  // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
+  // that Etendo Classic shows in the quick-filter bar above the grid.
+  const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
+  // The root tab hands its counter to the footer and its view controls to the toolbar, which frees this row.
+  const canDockInChrome = tab.tabLevel === 0 && footerSlot && titleSuffixSlot && toolbarExtrasSlot;
+  // Child tabs: the count goes to the tab badge; the selection and view controls to the tab's own toolbar.
+  const canDockChild = tab.tabLevel > 0 && toolbarExtrasSlot;
+  const counterBar = (
+    <RecordCounterBar
+      totalRecords={total}
+      loadedRecords={loaded}
+      selectedCount={selCount}
+      isLoading={loading}
+      labels={labels}
+      variant={canDockInChrome ? "inline" : "bar"}
+      showTotal={!canDockInChrome}
+      actions={
+        canDockInChrome ? undefined : (
+          <>
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+          </>
+        )
+      }
+      data-testid="RecordCounterBar__8ca888"
+    />
+  );
+  // The full screen control goes to the toolbar slot, while the grid is the pane on screen.
+  const dockFullScreen = (slot: Element) =>
+    isGridVisible
+      ? createPortal(
+          <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />,
+          slot
+        )
+      : null;
+  if (canDockChild) return dockFullScreen(toolbarExtrasSlot);
+
+  return (
+    <>
+      {canDockInChrome ? dockFullScreen(toolbarExtrasSlot) : counterBar}
+      {quickFilterCols.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
+          {quickFilterCols.map((col: Column) => {
+            const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
+            const currentValue = currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
+            return (
+              <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
+                <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">{col.header}:</span>
+                <input
+                  type="text"
+                  value={currentValue}
+                  onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
+                  placeholder="…"
+                  className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+interface TitleRecordCountProps {
+  slot: HTMLElement | null;
+  isGridVisible: boolean;
+  isLoading: boolean;
+  count: number;
+  t: TranslateFunction;
+}
+
+/** Record count of the active grid, shown in the shared title bar through a portal. */
+const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, t }: TitleRecordCountProps) => {
+  if (!slot || !isGridVisible) return null;
+  const label = isLoading ? "" : t("table.counter.titleCount").replace("{count}", String(count));
+  return createPortal(
+    <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
+      <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">{label}</span>
+    </span>,
+    slot
+  );
+};
+
+/** Confirmation dialog of the grid (discard changes, save with errors). */
+const ConfirmationDialog = ({ state }: { state: ReturnType<typeof useTableConfirmation>["confirmationState"] }) => {
+  const isError = state.statusType === "error";
+  return (
+    <StatusModal
+      open={state.isOpen}
+      statusType={state.statusType}
+      statusText={isError ? state.title : `${state.title}\n\n${state.message}`}
+      errorMessage={isError ? state.message : undefined}
+      saveLabel={state.confirmText || "OK"}
+      secondaryButtonLabel={state.showCancel ? state.cancelText : undefined}
+      onSave={state.onConfirm}
+      onCancel={state.onCancel}
+      onClose={state.onCancel}
+      isDeleteSuccess={false}
+      data-testid="ConfirmationDialog__8ca888"
+    />
+  );
+};
+
 interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
@@ -813,6 +1011,8 @@ interface DynamicTableProps {
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
   isFocused?: boolean;
+  /** Focus region of this grid's tab; when set, the grid tracks the focus without re-rendering. */
+  focusRegionId?: string;
   onFocusAcquire?: () => void;
 }
 
@@ -839,9 +1039,9 @@ const getHierarchyIcon = (
       svgContent = atob(eTMETAIcon);
       // Replace black fill with primary blue color to match design system
       // Also handles specific case where fill is set to black or inherited
-      svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
+      svgContent = svgContent.replace(/fill="black"/g, 'fill="#2a1757"');
       // Add logic for paths that might not have fill attribute but rely on default black
-      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
+      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#2a1757"');
     } catch (e) {
       console.error("Error parsing eTMETAIcon SVG", e);
       svgContent = eTMETAIcon; // Fallback to original if decode fails
@@ -860,10 +1060,10 @@ const getHierarchyIcon = (
 
   if (hasChildren) {
     const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-    return <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+    return <Icon className="min-w-5 min-h-5" fill={"#2a1757"} data-testid="HierarchyIcon__8ca888" />;
   }
 
-  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#2a1757"} data-testid="HierarchyIcon__8ca888" />;
 };
 
 /** Stable wrapper for TreeColumnFilter — avoids inline component definitions inside useMemo */
@@ -890,6 +1090,37 @@ const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<Ent
   );
 };
 
+interface GridShortcutsProps {
+  shortcuts: ShortcutMap;
+  gridShortcuts: Omit<Parameters<typeof useGridShortcuts>[0], "enabled">;
+  isGridVisible: boolean;
+  hasEditingRows: boolean;
+  /** Focus region of the grid's tab. Without it, `isFocused` (default: focused) decides. */
+  focusRegionId?: string;
+  isFocused?: boolean;
+}
+
+/**
+ * Binds the keyboard shortcuts of the grid. It renders nothing and reads the focus itself, so that
+ * moving the focus between tabs (every tab switch) re-renders this leaf and not the whole grid.
+ */
+const GridShortcuts = ({
+  shortcuts,
+  gridShortcuts,
+  isGridVisible,
+  hasEditingRows,
+  focusRegionId,
+  isFocused,
+}: GridShortcutsProps) => {
+  const focusScope = useMemo(() => (focusRegionId ? [focusRegionId] : []), [focusRegionId]);
+  const { activeFocusId } = useFocusContext(focusScope);
+  const hasFocus = focusRegionId ? activeFocusId === focusRegionId : (isFocused ?? true);
+
+  useKeyboardShortcuts(shortcuts, !hasEditingRows && hasFocus);
+  useGridShortcuts({ ...gridShortcuts, enabled: isGridVisible && !hasEditingRows && hasFocus });
+  return null;
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -900,6 +1131,7 @@ const DynamicTable = ({
   areFiltersDisabled = false,
   uIPattern,
   isFocused,
+  focusRegionId,
   onFocusAcquire,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
@@ -946,7 +1178,7 @@ const DynamicTable = ({
   }, []);
 
   // Confirmation dialog hook for user confirmations
-  const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
+  const { confirmationState } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
   const { showErrorModal, showSuccessModal, showStatusModal, showWarningModal } = useStatusModal();
@@ -976,6 +1208,11 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
+  const highlightCalloutFields = useCalloutHighlightStore((s) => s.highlightFields);
+  const { footer: footerSlot, titleSuffix: titleSuffixSlot } = useTopBarSlots();
+  const { slot: toolbarExtrasSlot, isGridVisible } = useToolbarExtrasSlot();
+  // Only the root tab of the active window writes its record count in the title (the slots are null otherwise).
+  const titleCountSlot = tab.tabLevel === 0 && footerSlot && toolbarExtrasSlot ? titleSuffixSlot : null;
   const { registerRefresh, triggerParentRefreshes } = useTabRefreshContext();
   const { logout } = useUserContext();
   const setLoginErrorText = useUserStore((s) => s.setLoginErrorText);
@@ -1065,9 +1302,11 @@ const DynamicTable = ({
     applyQuickFilter,
     fetchSummary,
     handleDateTextFilterChange,
+    getRequestParams,
   } = useTableData({
     isTreeMode,
   });
+  const exportCSV = useGridCsvExport({ tab, windowIdentifier, getRequestParams });
 
   // Auto-open FormView for SR (Single Record) tabs once records are fetched.
   // See getSrAutoOpenDecision for the conditions covered.
@@ -1086,6 +1325,19 @@ const DynamicTable = ({
     srAutoOpenedForParentRef.current = decision.trackingKey;
     setRecordId(decision.recordId);
   }, [uIPattern, tab, loading, displayRecords, parentRecord, parentTab, setRecordId]);
+
+  // Child tabs show their record count as a badge on the tab strip instead of a bar above the grid.
+  // Like Classic: with several parent records selected a child tab shows no children, only a message.
+  const selectedParents = useSelectedRecords(parentTab ?? undefined);
+  const hasMultipleParents = tab.tabLevel > 0 && selectedParents.length > 1;
+  const tabCountKey = getTabCountKey(windowIdentifier ?? "", tab.id);
+  useTabRecordCount({
+    tabCountKey,
+    isChildTab: tab.tabLevel > 0,
+    hasMultipleParents,
+    isLoading: loading,
+    loadedRecordsCount: displayRecords.length,
+  });
 
   // Summary State (the summary functions live in the window store so saved views can capture them)
   const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
@@ -1401,6 +1653,9 @@ const DynamicTable = ({
         field.selector = originalField.selector;
       }
 
+      // The editor's column carries no length: text editors need it to cap the input, as in Classic
+      copyColumnLength(field, originalField);
+
       // Use the correct inputName and hqlName from the original field
       field.inputName = originalField.inputName;
       field.hqlName = originalField.hqlName;
@@ -1503,6 +1758,16 @@ const DynamicTable = ({
     debouncedValidateField.cancel();
   }, [debouncedValidateField]);
 
+  // Cells the user changed whose callout runs when they are left (numbers, text, dates), as in the form view.
+  // Callout-applied values never mark a cell, so leaving it afterwards does not run a callout.
+  const pendingBlurCalloutsRef = useRef<Map<string, { value: unknown; optionData?: Record<string, unknown> }>>(
+    new Map()
+  );
+  // Set once executeInlineCallout is defined below, so the blur validator can run it without a forward reference.
+  const executeInlineCalloutRef = useRef<
+    ((rowId: string, field: Field, value: unknown, optionData?: Record<string, unknown>) => Promise<void>) | null
+  >(null);
+
   // Immediate validation function for blur events with performance monitoring
   const validateFieldOnBlur = useCallback(
     (rowId: string, fieldName: string) => {
@@ -1554,6 +1819,16 @@ const DynamicTable = ({
             ...currentErrors,
             [validationKey]: validationResult.error,
           });
+
+          // Run the callout of a changed cell now that the user has left it, with its final value
+          const calloutKey = `${rowId}:${fieldName}`;
+          if (pendingBlurCalloutsRef.current.has(calloutKey)) {
+            const pending = pendingBlurCalloutsRef.current.get(calloutKey);
+            pendingBlurCalloutsRef.current.delete(calloutKey);
+            executeInlineCalloutRef
+              .current?.(rowId, fieldMapping.field, currentValue, pending?.optionData)
+              ?.catch((error) => logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error));
+          }
         });
       }, 60); // Wait for throttled onChange to complete (50ms + 10ms buffer)
 
@@ -1586,6 +1861,8 @@ const DynamicTable = ({
       // Process callout column values using shared utility
       const updates = processCalloutColumnValues(columnValues, tab);
       const fieldsByColumnName = getFieldsByColumnName(tab);
+      // Row values before the callout, to highlight only the cells it actually changed
+      const previousRowValues = { ...editingData.originalData, ...editingData.modifiedData };
 
       // Apply each update to the editing row
       for (const [columnName, _columnValue] of Object.entries(columnValues)) {
@@ -1617,8 +1894,13 @@ const DynamicTable = ({
         // 2. Any pending blur validations will read the new value from state
         // 3. Triggering validation here can interfere with auto-selection logic
       }
+
+      highlightCalloutFields(
+        getGridHighlightScope(tab.id, rowId),
+        getCalloutChangedFieldNames(previousRowValues, updates, tab)
+      );
     },
-    [tab, editingRowUtils, cancelPendingDebouncedValidations]
+    [tab, editingRowUtils, cancelPendingDebouncedValidations, highlightCalloutFields]
   );
 
   // Execute inline callout for a field
@@ -1763,6 +2045,8 @@ const DynamicTable = ({
     [tab, parentRecord, editingRowUtils, applyCalloutValuesToRow, showErrorModal, showStatusModal]
   );
 
+  executeInlineCalloutRef.current = executeInlineCallout;
+
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
       if (columnMenuAnchor) {
@@ -1856,7 +2140,7 @@ const DynamicTable = ({
     async (row: MRT_Row<EntityData>) => {
       // Logic based on uIPattern
       // RO: Disable Inline Edit
-      if (uIPattern === UIPatternEnum.READ_ONLY) {
+      if (isRecordEditionBlocked(uIPattern)) {
         logger.warn("[InlineEditing] Editing blocked due to READ_ONLY UIPattern");
         return;
       }
@@ -1912,11 +2196,7 @@ const DynamicTable = ({
   const handleInsertRow = useCallback(async () => {
     // Logic based on uIPattern
     // RO, SR, ED: Disable Insert
-    if (
-      uIPattern === UIPatternEnum.READ_ONLY ||
-      uIPattern === UIPatternEnum.EDIT_ONLY ||
-      uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY
-    ) {
+    if (isRecordCreationBlocked(uIPattern)) {
       logger.warn("[InlineEditing] Insert blocked due to UIPattern restrictions");
       return;
     }
@@ -2037,30 +2317,12 @@ const DynamicTable = ({
   );
 
   /**
-   * Format validation errors for display
+   * Handle validation errors before save. No popup: validateRow already stored the errors, so the
+   * invalid cells are marked in red and the row stays in edit.
    */
-  const formatValidationErrors = useCallback((validationErrors: Record<string, string | undefined>): string[] => {
-    return Object.entries(validationErrors)
-      .filter(([_, message]) => message)
-      .map(([field, message]) => (field === "_general" ? message || "" : `${field}: ${message || ""}`));
+  const handleValidationErrors = useCallback((rowId: string, _editingRowData: EditingRowData) => {
+    logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
   }, []);
-
-  /**
-   * Handle validation errors before save
-   */
-  const handleValidationErrors = useCallback(
-    (rowId: string, editingRowData: EditingRowData) => {
-      logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
-      const errorMessages = formatValidationErrors(editingRowData.validationErrors);
-
-      if (errorMessages.length > 0) {
-        confirmSaveWithErrors(errorMessages, () => {
-          // User acknowledged the errors, focus on first error field
-        });
-      }
-    },
-    [formatValidationErrors, confirmSaveWithErrors]
-  );
 
   /**
    * Preserve client-side identifiers when merging server data
@@ -2381,6 +2643,19 @@ const DynamicTable = ({
       if (!editingRowData || savingRowIdsRef.current.has(rowId)) return;
       savingRowIdsRef.current.add(rowId);
       try {
+        // A typed cell whose callout waits for its blur (Enter can save before the blur): run it now
+        const rowPrefix = `${rowId}:`;
+        for (const [calloutKey, pending] of Array.from(pendingBlurCalloutsRef.current.entries())) {
+          if (!calloutKey.startsWith(rowPrefix)) continue;
+          pendingBlurCalloutsRef.current.delete(calloutKey);
+          const fieldName = calloutKey.slice(rowPrefix.length);
+          const fieldMapping = columnFieldMappings.get(fieldName);
+          const latest = editingRowUtils.getEditingRowData(rowId);
+          if (!fieldMapping || !latest) continue;
+          const latestValue =
+            fieldName in latest.modifiedData ? latest.modifiedData[fieldName] : latest.originalData[fieldName];
+          await executeInlineCalloutRef.current?.(rowId, fieldMapping.field, latestValue, pending.optionData);
+        }
         // Like the form view, let pending callouts finish first: a save right after picking a product
         // went out without the price, tax and UOM its callout sets.
         const calloutState = globalCalloutManager.getState();
@@ -2392,7 +2667,7 @@ const DynamicTable = ({
         savingRowIdsRef.current.delete(rowId);
       }
     },
-    [editingRowUtils, saveRowOnce]
+    [editingRowUtils, saveRowOnce, columnFieldMappings]
   );
 
   const handleCancelRow = useCallback(
@@ -2400,38 +2675,46 @@ const DynamicTable = ({
       const editingRowData = editingRowUtils.getEditingRowData(rowId);
       if (!editingRowData) return;
 
-      // Check if there are unsaved changes
-      const hasUnsavedChanges = editingRowData.hasUnsavedChanges;
+      // Like the classic UI, cancelling (the ✗ button or Escape) drops the row's edits at once, with no
+      // confirmation.
+      try {
+        // Import cancel operations and utility functions dynamically
+        const { handleCancelOperation } = await import("./utils/cancelOperations");
 
-      const performCancel = async () => {
-        try {
-          // Import cancel operations and utility functions dynamically
-          const { handleCancelOperation } = await import("./utils/cancelOperations");
-
-          await handleCancelOperation({
-            rowId,
-            editingRowData,
-            removeEditingRow: editingRowUtils.removeEditingRow,
-            showConfirmation: false, // We handle confirmation ourselves
-            // A cancelled row falls back to its base record (a new row has none and disappears)
-            onConfirm: () => releaseOptimisticRows(rowId),
-          });
-        } catch (error) {
-          // Error occurred during cancel operation
-          logger.error(`[InlineEditing] Error during cancel operation for row ${rowId}:`, error);
-        }
-      };
-
-      // Show confirmation dialog if there are unsaved changes
-      confirmDiscardChanges(
-        performCancel,
-        () => {
-          // User chose to keep editing
-        },
-        hasUnsavedChanges
-      );
+        await handleCancelOperation({
+          rowId,
+          editingRowData,
+          removeEditingRow: editingRowUtils.removeEditingRow,
+          showConfirmation: false,
+          // A cancelled row falls back to its base record (a new row has none and disappears)
+          onConfirm: () => releaseOptimisticRows(rowId),
+        });
+      } catch (error) {
+        // Error occurred during cancel operation
+        logger.error(`[InlineEditing] Error during cancel operation for row ${rowId}:`, error);
+      }
     },
-    [editingRowUtils, releaseOptimisticRows, confirmDiscardChanges]
+    [editingRowUtils, releaseOptimisticRows]
+  );
+
+  // Selections run their callout right away; typed values run it once, when the cell is left (see validateFieldOnBlur).
+  const scheduleCellCallout = useStableCallback(
+    (
+      rowId: string,
+      fieldName: string,
+      field: Field | undefined,
+      value: unknown,
+      optionData?: Record<string, unknown>
+    ) => {
+      if (!field?.column.callout) return;
+      if (isImmediateCalloutReference(field.column.reference)) {
+        executeInlineCallout(rowId, field, value, optionData).catch((error) => {
+          logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
+        });
+        return;
+      }
+      pendingBlurCalloutsRef.current.set(`${rowId}:${fieldName}`, { value, optionData });
+    }
   );
 
   // Applied on every change, never throttled: a throttle dropped the last keystrokes (a barcode
@@ -2478,13 +2761,7 @@ const DynamicTable = ({
 
         // Execute callout if field has one
         // Use the provided field object if available, otherwise try to find by name
-        const fieldForCallout = field || getFieldByName(fieldName);
-
-        if (fieldForCallout?.column.callout) {
-          executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
-            logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
-          });
-        }
+        scheduleCellCallout(rowId, fieldName, field || getFieldByName(fieldName), value, optionData);
       });
     }
   );
@@ -2501,9 +2778,14 @@ const DynamicTable = ({
   }, [handleInsertRow]);
 
   const handleContextMenuNewRecord = useCallback(() => {
+    // Same restriction as the inline insert: RO, SR and ED tabs cannot create records
+    if (isRecordCreationBlocked(uIPattern)) {
+      logger.warn("[InlineEditing] New record blocked due to UIPattern restrictions");
+      return;
+    }
     // Open form view in new mode
     setRecordId(NEW_RECORD_ID);
-  }, [setRecordId]);
+  }, [setRecordId, uIPattern]);
 
   const renderFirstColumnCell = useCallback(
     ({
@@ -2555,7 +2837,7 @@ const DynamicTable = ({
                   e.stopPropagation();
                   row.toggleSelected();
                 }}
-                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#2a1757] checked:border-[#2a1757]"
               />
               {isSelected && (
                 <CheckIcon
@@ -2594,20 +2876,24 @@ const DynamicTable = ({
    */
   const openRecordInFormView = useCallback(
     (record: EntityData, tableInstance: MRT_TableInstance<EntityData>) => {
-      openRecordInForm({
-        record,
-        tab,
-        graph,
-        windowIdentifier,
-        getSelectedRecord,
-        setRecordId,
-        selectRow: (recordId: string) => {
-          // Mirrors the single click path: flag the change as user driven so the auto scroll effect
-          // does not fight the current viewport, and replace (never merge) the previous selection so
-          // the highlighted row and the opened record can never diverge.
-          isManualSelection.current = true;
-          tableInstance.setRowSelection({ [recordId]: true });
-        },
+      // A transition lets the click return at once while the form renders, instead of blocking the
+      // input until the whole form tree is built.
+      startTransition(() => {
+        openRecordInForm({
+          record,
+          tab,
+          graph,
+          windowIdentifier,
+          getSelectedRecord,
+          setRecordId,
+          selectRow: (recordId: string) => {
+            // Mirrors the single click path: flag the change as user driven so the auto scroll effect
+            // does not fight the current viewport, and replace (never merge) the previous selection so
+            // the highlighted row and the opened record can never diverge.
+            isManualSelection.current = true;
+            tableInstance.setRowSelection({ [recordId]: true });
+          },
+        });
       });
     },
     [tab, graph, windowIdentifier, getSelectedRecord, setRecordId]
@@ -2678,6 +2964,7 @@ const DynamicTable = ({
           loadTableDirOptions={loadTableDirOptions}
           isLoadingTableDirOptions={isLoadingTableDirOptions}
           windowId={tab.window}
+          tabId={tab.id}
           data-testid="DataColumnCell__8ca888"
         />
       );
@@ -2706,19 +2993,25 @@ const DynamicTable = ({
       isLoadingTableDirOptions,
       renderFirstColumnCell,
       tab.window,
+      tab.id,
     ]
   );
 
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
   const effectiveRecords = useMemo(() => {
+    // Several parents selected: like Classic, no children are listed (an empty-state message explains why).
+    if (hasMultipleParents) {
+      return [];
+    }
+
     if (optimisticRecords.length === 0) {
       return displayRecords;
     }
 
     // Use compatibility utility to merge records properly
     return mergeOptimisticRecordsWithSort(displayRecords, optimisticRecords, editingRows);
-  }, [optimisticRecords, displayRecords, editingRows]);
+  }, [hasMultipleParents, optimisticRecords, displayRecords, editingRows]);
 
   const columns = useMemo(() => {
     if (!baseColumns.length) {
@@ -2962,17 +3255,15 @@ const DynamicTable = ({
             return;
           }
 
-          // ED: auto-save the currently editing row when the user clicks a different row
-          if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
-            const editingIds = editingRowUtils.getEditingRowIds();
-            if (editingIds.length > 0 && !editingIds.includes(rowId)) {
-              const editingRowId = editingIds[0];
-              const editingRowData = editingRowUtils.getEditingRowData(editingRowId);
-              if (editingRowData?.hasUnsavedChanges) {
-                handleSaveRow(editingRowId);
-                return;
-              }
-            }
+          // Like the classic UI: clicking a different row saves the row being edited, in every tab
+          const rowToSave = getRowToSaveOnRowClick(
+            rowId,
+            editingRowUtils.getEditingRowIds(),
+            (id) => !!editingRowUtils.getEditingRowData(id)?.hasUnsavedChanges
+          );
+          if (rowToSave) {
+            handleSaveRow(rowToSave);
+            return;
           }
 
           // Don't allow row selection changes while editing (to prevent accidental data loss)
@@ -3082,13 +3373,11 @@ const DynamicTable = ({
           const next = e.relatedTarget as Element | null;
           if (e.currentTarget.contains(next) || next?.closest(ROW_POPUP_SELECTOR)) return;
           if (!e.currentTarget.contains(e.target as Node)) return;
-          if (editingData?.isNew) {
+          // An existing row with pending edits is saved when left, whatever the tab's UI pattern
+          if (
+            shouldSaveOnRowBlur(!!editingData?.isNew, !!editingRowUtils.getEditingRowData(rowId)?.hasUnsavedChanges)
+          ) {
             handleSaveRow(rowId);
-          } else if (uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY) {
-            const blurEditingData = editingRowUtils.getEditingRowData(rowId);
-            if (blurEditingData?.hasUnsavedChanges) {
-              handleSaveRow(rowId);
-            }
           }
         },
 
@@ -3120,7 +3409,6 @@ const DynamicTable = ({
       dropTarget,
       getNodeDragProps,
       getNodeDropProps,
-      uIPattern,
       handleSaveRow,
     ]
   );
@@ -3142,11 +3430,12 @@ const DynamicTable = ({
           onContextMenu={handleTableBodyContextMenu}
           onInsertRow={handleInsertRow}
           uIPattern={uIPattern}
+          multipleParents={hasMultipleParents}
           data-testid="EmptyState__8ca888"
         />
       );
     },
-    [handleTableBodyContextMenu, handleInsertRow, loading]
+    [handleTableBodyContextMenu, handleInsertRow, loading, uIPattern, hasMultipleParents]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -3201,6 +3490,7 @@ const DynamicTable = ({
     () => ({
       ref: tableContainerRef,
       tabIndex: -1,
+      className: "grid-scrollbar",
       // Marks this container as where the grid pane hands the DOM focus over:
       // row arrows and Enter only fire while the focus lives inside it.
       [GRID_FOCUS_TARGET_ATTRIBUTE]: "",
@@ -3267,6 +3557,9 @@ const DynamicTable = ({
         handleMRTColumnVisibilityChange(updaterOrValue);
         return;
       }
+      // The column menu re-sends the current state when it mounts: nothing changed, so there is
+      // nothing to store (it would write the defaults as the user's own configuration).
+      if (isSameColumnVisibility(resolveUpdater(updaterOrValue, tableColumnVisibility), tableColumnVisibility)) return;
       handleMRTColumnVisibilityChange(updaterOrValue);
       scheduleColumnSave();
     },
@@ -3432,80 +3725,22 @@ const DynamicTable = ({
     // cell shows without changing the cell, so cells are not memoized while either is in use.
     memoMode: editingRowsCount === 0 && !shouldUseTreeMode ? "cells" : undefined,
     enableTopToolbar: true,
-    renderTopToolbar: ({ table: mrtTable }) => {
-      const isFullScreen = mrtTable.getState().isFullScreen;
-
-      if (isFullScreen) {
-        return (
-          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
-            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
-            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-            <button
-              type="button"
-              onClick={() => mrtTable.setIsFullScreen(false)}
-              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
-              aria-label="Exit fullscreen">
-              ✕
-            </button>
-          </div>
-        );
-      }
-
-      const rowSelection = mrtTable.getState().rowSelection;
-      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
-      const loaded = displayRecords.length;
-      const total = hasMoreRecords ? loaded + 1 : loaded;
-      const labels = {
-        showingRecords: t("table.counter.showingRecords"),
-        showingPartialRecords: t("table.counter.showingPartialRecords"),
-        selectedRecords: t("table.counter.selectedRecords"),
-        recordsLoaded: t("table.counter.recordsLoaded"),
-      };
-      // isSelectionColumn maps to AD_COLUMN.ISSELECTIONCOLUMN=Y, which marks columns
-      // that Etendo Classic shows in the quick-filter bar above the grid.
-      const quickFilterCols = baseColumns.filter((col: Column) => col.isSelectionColumn);
-      return (
-        <>
-          <RecordCounterBar
-            totalRecords={total}
-            loadedRecords={loaded}
-            selectedCount={selCount}
-            isLoading={loading}
-            labels={labels}
-            actions={
-              <>
-                <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
-                <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
-              </>
-            }
-            data-testid="RecordCounterBar__8ca888"
-          />
-          {quickFilterCols.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-2 py-1 border-b border-transparent-neutral-10 bg-white">
-              {quickFilterCols.map((col: Column) => {
-                const currentFilter = tableColumnFilters.find((f) => f.id === col.id || f.id === col.columnName);
-                const currentValue =
-                  currentFilter && typeof currentFilter.value === "string" ? currentFilter.value : "";
-                return (
-                  <div key={col.id} className="flex items-center gap-1 min-w-[160px] max-w-[240px]">
-                    <span className="text-xs text-transparent-neutral-60 whitespace-nowrap shrink-0">
-                      {col.header}:
-                    </span>
-                    <input
-                      type="text"
-                      value={currentValue}
-                      onChange={(e) => handleDateTextFilterChange(col.id, e.target.value)}
-                      placeholder="…"
-                      className="flex-1 text-sm border border-transparent-neutral-20 rounded px-1 py-0.5 outline-none focus:border-dynamic-main bg-transparent"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      );
-    },
+    renderTopToolbar: ({ table: mrtTable }) =>
+      renderGridTopToolbar({
+        mrtTable,
+        displayRecords,
+        hasMoreRecords,
+        t,
+        baseColumns,
+        tab,
+        footerSlot,
+        titleSuffixSlot,
+        toolbarExtrasSlot,
+        isGridVisible,
+        loading,
+        tableColumnFilters,
+        handleDateTextFilterChange,
+      }),
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     enableGrouping: isGroupingAvailable,
@@ -3588,6 +3823,16 @@ const DynamicTable = ({
     [effectiveRecords, keepRowInView]
   );
 
+  // The corner cell of the grid shows how many rows are selected (instead of the funnel), like Classic.
+  const rowSelectionState = table.getState().rowSelection;
+  const selectedRowsCount = useMemo(() => Object.values(rowSelectionState).filter(Boolean).length, [rowSelectionState]);
+  useEffect(() => {
+    const paper = table.refs?.tablePaperRef?.current;
+    if (!paper) return;
+    paper.dataset.selectedCount = String(selectedRowsCount);
+    paper.style.setProperty("--ui-selected-count", `"${selectedRowsCount}"`);
+  }, [table, selectedRowsCount]);
+
   useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
     isKeyboardNavigationSource,
     onStableSelection: handleStableKeyboardSelection,
@@ -3644,31 +3889,26 @@ const DynamicTable = ({
     [shouldUseTreeMode, effectiveRecords]
   );
 
-  useKeyboardShortcuts(
-    {
-      Enter: { handler: handleEnter },
-      ArrowUp: { handler: handleArrowUp },
-      ArrowDown: { handler: handleArrowDown },
-      ...(shouldUseTreeMode
-        ? {
-            ArrowRight: { handler: handleTreeArrowRight },
-            ArrowLeft: { handler: handleTreeArrowLeft },
-          }
-        : {}),
-    },
-    editingRowsCount === 0 && (isFocused ?? true)
-  );
-
-  // New document (Ctrl+D) and Delete are bound by the toolbar buttons; the grid owns the rest.
-  useGridShortcuts({
+  // The shortcuts read the focus in GridShortcuts, so moving the focus does not re-render the grid.
+  const shortcuts: ShortcutMap = {
+    Enter: { handler: handleEnter },
+    ArrowUp: { handler: handleArrowUp },
+    ArrowDown: { handler: handleArrowDown },
+    ...(shouldUseTreeMode
+      ? {
+          ArrowRight: { handler: handleTreeArrowRight },
+          ArrowLeft: { handler: handleTreeArrowLeft },
+        }
+      : {}),
+  };
+  const gridShortcuts = {
     containerRef: tableContainerRef,
     tableRef,
-    enabled: isVisible && editingRowsCount === 0 && (isFocused ?? true),
     canAddRow: !parentTab || Boolean(parentRecord),
     onNewRow: handleInsertRow,
     onEditRow: handleEditRow,
     onOpenInForm: openRecordInFormView,
-  });
+  };
 
   // When the grid becomes visible again after leaving form view, DOM focus is
   // on <body>. The row-click handler (line ~2594) focuses the table container,
@@ -4091,6 +4331,13 @@ const DynamicTable = ({
     isVisible,
   ]);
 
+  // The CSV export belongs to the tab whichever pane is visible (the GRID bucket is cleared while
+  // the form is shown), but only the grid knows the query its records come from, so it registers
+  // the export under the TAB owner and the file always holds what the grid shows.
+  useEffect(() => {
+    registerActions({ exportCSV }, TOOLBAR_ACTION_OWNERS.TAB);
+  }, [registerActions, exportCSV]);
+
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView
   useEffect(() => {
@@ -4189,12 +4436,20 @@ const DynamicTable = ({
     table,
   ]);
 
-  // Hidden behind the form, the grid skips re-renders that change nothing it shows (cells, date
-  // formatting, row measurement); its rows and selection still update while hidden.
+  // Hidden behind the form, or with its whole window hidden, the grid skips re-renders that change
+  // nothing it shows (cells, date formatting, row measurement); its rows and selection still update
+  // while hidden. Without the window check, a window that stops being the active one would re-render
+  // its whole body on every tab switch.
+  const isWindowActive = useIsCurrentWindowActive();
+  const isActiveTab = useIsActiveTab();
+  // A grid shown again is not rendered anew unless something it shows changed: rendering it rebuilds its
+  // header, and showing a tab would then redraw the whole grid.
+  // A collapsed tab is display:none too: nothing of its grid is on screen
   const tableElement = useFrozenWhileHidden(
-    isVisible,
+    isVisible && isWindowActive && isActiveTab && !isTabCollapsed,
     <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />,
-    [effectiveRecords, table.getState().rowSelection]
+    [effectiveRecords, table.getState().rowSelection, tableState, columns],
+    true
   );
 
   if (error) {
@@ -4214,10 +4469,29 @@ const DynamicTable = ({
 
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
+      className={`h-full overflow-hidden rounded-tl-xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
+      {/* Outside the frozen grid element: it must unmount when the window stops being the active one,
+          or the counters of every open window pile up in the shared title bar. */}
+      <TitleRecordCount
+        slot={titleCountSlot}
+        isGridVisible={isGridVisible}
+        isLoading={loading}
+        count={displayRecords.length}
+        t={t}
+        data-testid="TitleRecordCount__8ca888"
+      />
+      <GridShortcuts
+        shortcuts={shortcuts}
+        gridShortcuts={gridShortcuts}
+        isGridVisible={isVisible}
+        hasEditingRows={editingRowsCount > 0}
+        focusRegionId={focusRegionId}
+        isFocused={isFocused}
+        data-testid="GridShortcuts__8ca888"
+      />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         {tableElement}
       </div>
@@ -4245,28 +4519,12 @@ const DynamicTable = ({
         onEditRow={handleContextMenuEditRow}
         onInsertRow={handleContextMenuInsertRow}
         onNewRecord={handleContextMenuNewRecord}
-        canEdit={true}
+        canEdit={!isRecordEditionBlocked(uIPattern)}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
       />
-      <StatusModal
-        open={confirmationState.isOpen}
-        statusType={confirmationState.statusType}
-        statusText={
-          confirmationState.statusType === "error"
-            ? confirmationState.title
-            : `${confirmationState.title}\n\n${confirmationState.message}`
-        }
-        errorMessage={confirmationState.statusType === "error" ? confirmationState.message : undefined}
-        saveLabel={confirmationState.confirmText || "OK"}
-        secondaryButtonLabel={confirmationState.showCancel ? confirmationState.cancelText : undefined}
-        onSave={confirmationState.onConfirm}
-        onCancel={confirmationState.onCancel}
-        onClose={confirmationState.onCancel}
-        isDeleteSuccess={false}
-        data-testid="ConfirmationDialog__8ca888"
-      />
+      <ConfirmationDialog state={confirmationState} data-testid="ConfirmationDialog__8ca888" />
       <HeaderContextMenu
         anchorEl={headerContextMenuAnchor}
         onClose={handleCloseHeaderContextMenu}

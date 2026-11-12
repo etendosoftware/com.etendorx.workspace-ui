@@ -566,6 +566,47 @@ describe("Cell Editor Components", () => {
       expect(screen.getByDisplayValue("123.45")).toBeInTheDocument();
     });
 
+    it("should not render a keyboard hint under a quantity input", () => {
+      // The hint made the cell taller than its row and got cut off; the arrow keys still work.
+      const field = createMockField({ type: FieldType.QUANTITY });
+
+      render(
+        <NumericCellEditor
+          value={100}
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={field}
+          hasError={false}
+          disabled={false}
+        />
+      );
+
+      expect(screen.getByDisplayValue("100")).toBeInTheDocument();
+      expect(screen.queryByText(/arrows to adjust/i)).not.toBeInTheDocument();
+    });
+
+    it("should show the initial value when it is auto-focused on mount", () => {
+      // The first editable cell of an inline row is focused as it mounts: a new line's Line No. default (50)
+      // must still be shown, even though the value sync skips an input that already has the focus.
+      const field = createMockField({ type: FieldType.NUMBER });
+
+      render(
+        <NumericCellEditor
+          value={50}
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={field}
+          hasError={false}
+          disabled={false}
+          shouldAutoFocus
+        />
+      );
+
+      const input = screen.getByRole("textbox");
+      expect(input).toHaveFocus();
+      expect(input).toHaveValue("50");
+    });
+
     it("should call onChange with parsed number", async () => {
       const user = userEvent.setup();
       const field = createMockField({ type: FieldType.NUMBER });

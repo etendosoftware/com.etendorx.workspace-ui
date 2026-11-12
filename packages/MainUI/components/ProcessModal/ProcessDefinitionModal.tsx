@@ -83,8 +83,6 @@ import {
   OBUIAPP_REPORT_UI_PATTERN,
   getReportActions,
   type ReportOutputFormat,
-  // Components
-  GenericWarehouseProcess,
   createProcessExpressionContext,
   isParameterDisplayed,
   executeStringFunction,
@@ -1709,7 +1707,7 @@ function ProcessDefinitionModalContent({
           <button
             type="button"
             onClick={() => handleNavigateToTab(result.linkTabId as string, result.linkRecordId as string)}
-            className="text-blue-600 underline hover:text-blue-800 font-medium text-sm mt-1">
+            className="text-(--ui-link) underline hover:brightness-75 font-medium text-sm mt-1">
             {t("packing.checkStatus")}
           </button>
         )}

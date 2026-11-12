@@ -21,11 +21,13 @@ import { useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 
 export default function RecentDocsRenderer() {
   const { t } = useTranslation();
   const { documents } = useRecentDocuments();
   const { handleClickRedirect } = useRedirect();
+  const prefetchOnHover = usePrefetchWindowOnHover();
 
   const handleClick = useCallback(
     (e: React.MouseEvent, doc: (typeof documents)[number]) => {
@@ -53,9 +55,12 @@ export default function RecentDocsRenderer() {
     <div className="flex flex-wrap gap-2" data-testid="RecentDocsRenderer__list">
       {documents.map((doc) => (
         <button
-          key={`${doc.windowId}-${doc.recordId}`}
+          // The store keeps one entry per window, tab and record: the same record seen in two tabs is two chips
+          key={`${doc.windowId}-${doc.tabId}-${doc.recordId}`}
           type="button"
           onClick={(e) => handleClick(e, doc)}
+          onMouseEnter={() => prefetchOnHover(doc.windowId)}
+          onFocus={() => prefetchOnHover(doc.windowId)}
           className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
           data-testid={`RecentDocsRenderer__item_${doc.windowId}_${doc.recordId}`}>
           {doc.identifier}

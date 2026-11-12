@@ -33,6 +33,7 @@ import { DropdownPortal } from "./DropdownPortal";
 import SearchInput from "./Select/SearchInput";
 import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
 import { NOT_TABBABLE } from "@/utils/form/focus";
+import { getMinCharsHint, isBelowSearchThreshold } from "@/utils/selectorUtils";
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
@@ -63,6 +64,8 @@ interface MultiSelectProps {
   maxHeight?: number;
   enableTextFilterLogic?: boolean;
   isReadOnly?: boolean;
+  /** Minimum typed characters before `onSearch` queries; 0 (default) means no minimum. */
+  minSearchChars?: number;
 }
 
 const OptionItem = memo(
@@ -86,8 +89,8 @@ const OptionItem = memo(
       onClick={() => onSelect(id)}
       onKeyDown={(e) => handleKeyboardActivation(e, () => onSelect(id))}
       className={`${LIST_ITEM_BASE} cursor-pointer flex items-center ${FOCUS_STYLES} 
-        ${isHighlighted ? "bg-baseline-10" : ""} 
-        ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
+        ${isHighlighted ? "bg-baseline-10 dark:bg-(--ui-chip-hover)" : ""} 
+        ${isSelected ? "bg-baseline-10 dark:bg-(--ui-chip-hover) font-medium" : ""} hover:bg-baseline-10 dark:hover:bg-(--ui-chip-hover)`}>
       <CustomCheckbox
         size="small"
         checked={isSelected}
@@ -118,6 +121,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   maxHeight = 240,
   enableTextFilterLogic = false,
   isReadOnly = false,
+  minSearchChars = 0,
 }: MultiSelectProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -125,6 +129,9 @@ const MultiSelect = memo(function MultiSelectCmp({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
+
+  const minCharsHint = getMinCharsHint(t, minSearchChars);
+  const isBelowThreshold = isBelowSearchThreshold(searchTerm, minSearchChars);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -304,6 +311,10 @@ const MultiSelect = memo(function MultiSelectCmp({
       ));
     }
 
+    if (isBelowThreshold) {
+      return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{minCharsHint}</li>;
+    }
+
     if (filteredOptions.length > 0) {
       return filteredOptions.map((option, index) => (
         <OptionItem
@@ -332,8 +343,17 @@ const MultiSelect = memo(function MultiSelectCmp({
     handleToggle,
     showSkeleton,
     showLoading,
+    isBelowThreshold,
+    minCharsHint,
     t,
   ]);
+
+  let openStyles = "";
+  if (isOpen) {
+    openStyles = enableTextFilterLogic
+      ? "rounded-md border border-(--ui-text-muted)!"
+      : "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light";
+  }
 
   return (
     <div
@@ -343,16 +363,42 @@ const MultiSelect = memo(function MultiSelectCmp({
       <div
         onClick={handleClick}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
+          ${openStyles} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
-        <div
-          className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length
-              ? "text-baseline-90 font-medium placeholder-baseline-90"
-              : "text-baseline-50 font-medium placeholder-baseline-50"
-          }`}>
-          {displayText}
-        </div>
+        {enableTextFilterLogic && selectedLabels.length > 0 ? (
+          // Table filters show the selection as a removable chip, like the column filter design.
+          <div className="flex min-w-0 max-w-[calc(100%-40px)] items-center gap-1" data-testid="MultiSelect__chips">
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-(--ui-chip-bg) px-2 py-0.5 text-xs font-medium text-(--ui-text)">
+              <span className="truncate">{selectedLabels[0]}</span>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  aria-label="Remove"
+                  tabIndex={NOT_TABBABLE}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const firstSelected = options.find((o) => selectedValues.includes(o.id));
+                    if (firstSelected) handleToggle(firstSelected.id);
+                  }}
+                  className={`shrink-0 ${TEXT_MUTED} ${HOVER_TEXT_COLOR}`}>
+                  <CloseIcon className="h-3 w-3" data-testid="CloseIcon__chip" />
+                </button>
+              )}
+            </span>
+            {selectedLabels.length > 1 && (
+              <span className={`shrink-0 text-xs ${TEXT_MUTED}`}>{`+${selectedLabels.length - 1}`}</span>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
+              selectedLabels.length
+                ? "text-baseline-90 font-medium placeholder-baseline-90"
+                : "text-slate-400 font-medium placeholder-slate-400"
+            }`}>
+            {displayText}
+          </div>
+        )}
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
             <button
@@ -376,7 +422,8 @@ const MultiSelect = memo(function MultiSelectCmp({
         isOpen={isOpen}
         triggerRef={wrapperRef as React.RefObject<HTMLElement>}
         portalRef={portalRef as React.RefObject<HTMLDivElement>}
-        minWidth={256}
+        // Table filters: the panel matches its column instead of sticking out of it.
+        minWidth={enableTextFilterLogic ? 0 : 256}
         data-testid="DropdownPortal__cb81f7">
         <SearchInput
           searchTerm={searchTerm}
@@ -385,6 +432,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           handleKeyDown={handleKeyDown}
           handleSearchBlur={handleSearchBlur}
           handleFocus={() => {}}
+          placeholder={minCharsHint || undefined}
           data-testid="SearchInput__cb81f7"
         />
         <ul

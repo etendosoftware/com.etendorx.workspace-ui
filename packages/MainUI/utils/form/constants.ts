@@ -37,6 +37,16 @@ export const CALLOUT_TRIGGERS = {
 export type CalloutTrigger = (typeof CALLOUT_TRIGGERS)[keyof typeof CALLOUT_TRIGGERS];
 
 /**
+ * Whether the callout of a field of the given reference runs as soon as its value changes (selectors,
+ * lists, booleans). Every other reference (numbers, text, dates) runs it when the field is left, so a value
+ * typed key by key triggers one callout with the final value, as in Classic and in the form view.
+ */
+export const isImmediateCalloutReference = (reference?: string): boolean => {
+  const entry = Object.values(FIELD_REFERENCE_CODES).find((code) => code.id === reference);
+  return entry?.calloutTrigger === CALLOUT_TRIGGERS.ON_CHANGE;
+};
+
+/**
  * Field reference codes used in form field type identification
  */
 export const FIELD_REFERENCE_CODES = {

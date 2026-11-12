@@ -18,6 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextAreaInput } from "./components/TextAreaInput";
 import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
+import { getTextMaxLength } from "@/utils/form/columnLength";
 
 export const TextLongSelector = (props: { field: Field } & React.ComponentProps<typeof TextAreaInput>) => {
   const { register, setValue } = useFormContext<FieldValues>();
@@ -32,9 +33,11 @@ export const TextLongSelector = (props: { field: Field } & React.ComponentProps<
       {...register(fieldName)}
       field={props.field}
       setValue={handleSetValue}
+      readOnly={props.readOnly}
       showClearButton={true}
       value={currentValue}
       rows={7}
+      maxLength={getTextMaxLength(props.field)}
       data-testid="TextAreaInput__1e890e"
     />
   );

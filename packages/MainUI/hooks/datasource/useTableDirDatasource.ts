@@ -31,8 +31,10 @@ import {
   INVOICE_FIELD_MAPPINGS,
   COMBO_TABLE_DATASOURCE,
   COMBO_TABLE_SELECTOR_DEFAULTS,
+  SELECTOR_MIN_SEARCH_CHARS,
 } from "./constants";
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
+import { isBelowSearchThreshold, isSearchSelectorDatasource } from "@/utils/selectorUtils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
@@ -176,6 +178,13 @@ export const useTableDirDatasource = ({
     field.column?.reference === "30" ||
     field.selector?.datasourceName === "ProductStockView";
 
+  // Only search selectors (their own datasource) apply the threshold; TableDir combos and static
+  // option lists are small and filtered as before.
+  const minSearchChars =
+    !hasStaticOptions && isSearchSelectorDatasource(field.selector?.datasourceName as string | undefined)
+      ? SELECTOR_MIN_SEARCH_CHARS
+      : 0;
+
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
   const currentWarehouse = useUserStore((s) => s.currentWarehouse);
@@ -216,6 +225,10 @@ export const useTableDirDatasource = ({
       const formValues: Record<string, EntityValue> = {};
 
       for (const [key, value] of Object.entries(formData)) {
+        // `<field>$_entries` are the dropdown lists the form keeps for its own selectors, not request parameters:
+        // as arrays they would be sent as "[object Object],…"
+        if (key.endsWith("$_entries")) continue;
+
         const currentField = tab?.fields?.[key];
         const inputName = currentField?.inputName || key;
 
@@ -714,10 +727,15 @@ export const useTableDirDatasource = ({
 
   const search = useCallback(
     (term: string) => {
+      if (isBelowSearchThreshold(term, minSearchChars)) {
+        // Too short to query: keep the term out of later fetches (focus, pagination) as well.
+        setSearchTerm("");
+        return;
+      }
       setSearchTerm(term);
       fetch(value, true, term);
     },
-    [fetch, value]
+    [fetch, value, minSearchChars]
   );
 
   const loadMore = useCallback(() => {
@@ -743,5 +761,6 @@ export const useTableDirDatasource = ({
     search,
     searchTerm,
     columns,
+    minSearchChars,
   };
 };

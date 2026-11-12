@@ -22,6 +22,7 @@ const DropdownPortal = memo(
     renderedOptions,
     dropdownId,
     minWidth,
+    searchPlaceholder,
   }: {
     isOpen: boolean;
     viewportData: DropdownViewportData;
@@ -36,27 +37,41 @@ const DropdownPortal = memo(
     renderedOptions: React.ReactNode;
     dropdownId: string;
     minWidth?: number;
+    searchPlaceholder?: string;
   }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [showAbove, setShowAbove] = useState(false);
     const [isPositioned, setIsPositioned] = useState(false);
 
-    // After each render, measure actual height and decide above/below
+    // Measure the actual height and decide above/below. The options usually arrive after the dropdown opens
+    // (loading row first, then the list), so it measures again whenever the content changes: a decision taken
+    // on the short loading row left the list squeezed under the field, with the sticky header covering its rows.
+    // showAbove and isPositioned are read only to skip redundant updates; they must not re-run the measurement.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
     useLayoutEffect(() => {
       if (!isOpen) {
-        setIsPositioned(false);
+        if (isPositioned) setIsPositioned(false);
         return;
       }
       const container = containerRef.current;
       if (!container) return;
 
-      const actualHeight = Math.min(container.scrollHeight, MAX_DROPDOWN_HEIGHT);
+      // The natural height of the content, from its children: the container is capped to the room left on its
+      // side and the list shrinks to fit, so the container's own scrollHeight can never exceed that room and
+      // would never ask for the other side (a list that arrives later stayed squeezed under the field).
+      let naturalHeight = 0;
+      for (const child of Array.from(container.children)) {
+        naturalHeight += (child as HTMLElement).scrollHeight;
+      }
+      const actualHeight = Math.min(naturalHeight, MAX_DROPDOWN_HEIGHT);
       const { spaceBelow, spaceAbove } = viewportData;
 
       const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
-      setShowAbove(shouldShowAbove);
-      setIsPositioned(true);
-    }, [isOpen, viewportData]);
+      // Set the state only when it changes: a layout effect that sets state on every run, with a dependency that
+      // changes on every render, re-renders without end ("Maximum update depth exceeded")
+      if (showAbove !== shouldShowAbove) setShowAbove(shouldShowAbove);
+      if (!isPositioned) setIsPositioned(true);
+    }, [isOpen, viewportData, renderedOptions]);
 
     if (!isOpen) return null;
 
@@ -76,6 +91,7 @@ const DropdownPortal = memo(
         handleKeyDown={handleKeyDown}
         handleSearchBlur={handleSearchBlur}
         handleFocus={handleFocus}
+        placeholder={searchPlaceholder}
         data-testid="SearchInput__ff38f9"
       />
     );

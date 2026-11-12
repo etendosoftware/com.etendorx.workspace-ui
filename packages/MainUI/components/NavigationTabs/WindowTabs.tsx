@@ -40,7 +40,7 @@ import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCance
 /** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
 const getIconForWindow = (window: WindowState) => {
   if (!window.externalUrl) return undefined;
-  return <ExternalLinkIcon className="fill-black" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
+  return <ExternalLinkIcon className="fill-(--ui-text)" data-testid={`ExternalLinkIcon__${window.windowIdentifier}`} />;
 };
 
 export default function WindowTabs() {
@@ -160,7 +160,7 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 px-0.5 h-9 min-h-9"
+      className="flex items-center bg-(--ui-tabbar-bg) rounded-none overflow-hidden px-3 h-11 min-h-11 w-full"
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
@@ -181,14 +181,11 @@ export default function WindowTabs() {
         </IconButton>
       )}
       <div
-        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
+        className="w-full flex items-center gap-1 px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
           const title = getTitleForWindow(window, windowsData);
           const isActive = window.isActive;
-
-          const activeIndex = visibleWindows.findIndex((w) => w.isActive);
-          const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
 
           return (
             <div
@@ -210,9 +207,6 @@ export default function WindowTabs() {
                 }}
                 data-testid="WindowTab__c8117d"
               />
-              {showSeparator && index < visibleWindows.length - 1 && (
-                <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
-              )}
             </div>
           );
         })}

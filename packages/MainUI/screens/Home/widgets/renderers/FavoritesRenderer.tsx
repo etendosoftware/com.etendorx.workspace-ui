@@ -22,6 +22,7 @@ import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashbo
 import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
@@ -30,6 +31,7 @@ interface FavoritesRendererProps {
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const seed = useFavoritesStore((s) => s.seed);
+  const prefetchOnHover = usePrefetchWindowOnHover();
 
   useEffect(() => {
     seed(data.items);
@@ -58,6 +60,8 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
           key={item.windowId}
           type="button"
           onClick={() => handleClick(item.windowId, item.label)}
+          onMouseEnter={() => prefetchOnHover(item.windowId)}
+          onFocus={() => prefetchOnHover(item.windowId)}
           className="rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer"
           data-testid={`FavoritesRenderer__item_${item.windowId}`}>
           {item.label}

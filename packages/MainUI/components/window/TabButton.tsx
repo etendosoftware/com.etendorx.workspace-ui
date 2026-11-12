@@ -23,12 +23,14 @@ import type { TabSwitchProps } from "@/components/window/types";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { formatDirtyTitle, isTabDirty } from "@/utils/window/dirtyState";
+import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
 
 export const TabButton = ({
   tab,
   onClick,
   active,
   onDoubleClick,
+  onPrewarm,
   isWindow = false,
   showIcon = false,
   onClose,
@@ -37,7 +39,8 @@ export const TabButton = ({
   const { window } = useMetadataContext();
   // Outside a Window subtree the identifier defaults to "", which is never dirty.
   const windowIdentifier = useCurrentWindowIdentifier();
-  const dirtyWindows = useWindowStore((s) => s.dirtyWindows);
+  const isDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
+  const recordCount = useTabCountsStore((s) => s.counts[getTabCountKey(windowIdentifier, tab.id)]);
 
   const baseTitle = useMemo(() => {
     if (isWindow) {
@@ -56,8 +59,8 @@ export const TabButton = ({
     if (!baseTitle) {
       return baseTitle;
     }
-    return formatDirtyTitle(baseTitle, isTabDirty(dirtyWindows, windowIdentifier, tab.id));
-  }, [baseTitle, dirtyWindows, windowIdentifier, tab.id]);
+    return formatDirtyTitle(baseTitle, isDirty);
+  }, [baseTitle, isDirty]);
 
   const handleClick = useCallback(() => {
     onClick(tab);
@@ -66,6 +69,10 @@ export const TabButton = ({
   const handleDoubleClick = useCallback(() => {
     onDoubleClick(tab);
   }, [onDoubleClick, tab]);
+
+  const handlePrewarm = useCallback(() => {
+    onPrewarm?.(tab);
+  }, [onPrewarm, tab]);
 
   const handleClose = useCallback(
     (e: React.MouseEvent) => {
@@ -99,11 +106,15 @@ export const TabButton = ({
       return `${baseTabClass} text-xl mb-2`;
     }
 
+    // Child tabs follow the Design Kit "Solapa": 36px tall, 12px top radius, 2px bottom border when active. The strip stretches them to its full height, so the
+    // active underline sits on the strip's bottom edge and cannot be clipped.
+    const childClass =
+      "flex h-9 self-end items-center gap-1 px-1 rounded-t-xl w-auto min-w-max flex-shrink-0 border-b-2 text-sm transition-colors appearance-none whitespace-nowrap";
     if (active) {
-      return `${baseTabClass} border-b-(--color-neutral-90)`;
+      return `${childClass} border-(--ui-tab-active-line) font-semibold text-(--ui-text)`;
     }
 
-    return `${baseTabClass} border-b-transparent`;
+    return `${childClass} border-transparent font-medium text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)`;
   };
 
   // Extract close button styling logic
@@ -153,10 +164,19 @@ export const TabButton = ({
       type="button"
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onPointerEnter={handlePrewarm}
+      onFocus={handlePrewarm}
       title={title}
       aria-label={title}
       className={baseClass}>
       {title}
+      {tab.tabLevel > 0 && recordCount !== undefined && (
+        <span
+          className="flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
+          data-testid={`TabButton__count_${tab.id}`}>
+          {recordCount}
+        </span>
+      )}
     </button>
   );
 };

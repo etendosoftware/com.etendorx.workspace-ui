@@ -21,6 +21,7 @@ import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource"
 import { useDefaultFirstOption } from "@/hooks/useDefaultFirstOption";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import type { ProcessSelectorContext } from "@/hooks/types";
+import { getPickListColumns } from "@/utils/form/pickListColumns";
 
 export const TableDirSelector = ({
   field,
@@ -37,7 +38,7 @@ export const TableDirSelector = ({
   selectedRecordsCount?: number;
   processContext?: ProcessSelectorContext;
 }) => {
-  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({
+  const { records, loading, refetch, loadMore, hasMore, search, minSearchChars } = useTableDirDatasource({
     field,
     isProcessModal,
     staticOptions,
@@ -45,6 +46,7 @@ export const TableDirSelector = ({
     processContext,
   });
   const options = useSelectFieldOptions(field, records);
+  const columns = getPickListColumns(field.selector?.pickListColumns);
 
   useDefaultFirstOption({ field, options, loading, enabled: Boolean(isProcessModal) });
 
@@ -56,9 +58,11 @@ export const TableDirSelector = ({
       onSearch={search}
       isReadOnly={isReadOnly}
       field={field}
+      columns={columns}
       onLoadMore={loadMore}
       loading={loading}
       hasMore={hasMore}
+      minSearchChars={minSearchChars}
       data-testid="Select__2e8a5b"
     />
   );

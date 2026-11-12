@@ -85,6 +85,18 @@ export const MISFIRED_STATUS_CODE = "MIS";
 
 export const isMisfired = (execution: ProcessExecution): boolean => execution.statusCode === MISFIRED_STATUS_CODE;
 
+/** Most recent failed executions (the ones that raise a toast). */
+export function failedExecutions(map: ExecutionMap, limit = Number.POSITIVE_INFINITY): ProcessExecution[] {
+  return sortExecutions(map)
+    .filter((execution) => execution.status === "FAILED")
+    .slice(0, limit);
+}
+
+/** Most recent executions that did not fire when scheduled. */
+export function misfiredExecutions(map: ExecutionMap, limit = Number.POSITIVE_INFINITY): ProcessExecution[] {
+  return sortExecutions(map).filter(isMisfired).slice(0, limit);
+}
+
 /** Most recent failed or misfired executions (only FAILED ones raise a toast). */
 export function recentFailures(map: ExecutionMap, limit = Number.POSITIVE_INFINITY): ProcessExecution[] {
   return sortExecutions(map)

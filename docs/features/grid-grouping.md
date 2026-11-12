@@ -12,7 +12,7 @@ Groups the main grid by a column, reproducing the classic UI (`ob-view-grid.js` 
 | Non-groupable columns | Checkbox, edit link, YesNo, Image | Selection, expand, actions, edit link, boolean, image |
 | Grouped column | Moved first and locked | First (`groupedColumnMode: "reorder"`), cannot be hidden or reordered |
 | Previous position | Restored on ungroup/regroup | `columnOrder` is never modified, so it is restored automatically |
-| Order | Sorted by the grouped column | Sort set to the grouped column; datasource `_sortBy` = `group[,otherSort]` |
+| Order | Sorted by the grouped column | Sort set to the grouped column; datasource `_sortBy` = `group[,otherSorts]` (every other sorted column, see [CSV export](csv-export/README.md)) |
 | Groups | Collapsible, first one opened when grouping changes | Same |
 | Subtotals | Summary functions shown in the group header | Same (client side, over the loaded records) |
 | Data loading | Fetches up to limit + 1 records | Same (`pageSize = limit + 1` while grouped) |

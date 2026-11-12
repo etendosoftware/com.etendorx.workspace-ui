@@ -235,13 +235,13 @@ const PANE_FOCUS_BORDER_CLASSES = "outline-none transition-[border-left-color] d
 
 export const getGridPaneClassName = (mode: TabViewMode, focusBorderColor: string): string => {
   if (mode === TAB_VIEW_MODES.SPLIT) {
-    return `h-full min-h-0 overflow-hidden rounded-l-3xl shrink-0 ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `h-full min-h-0 overflow-hidden rounded-tl-3xl shrink-0 ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.TREE_SIDE_BY_SIDE) {
-    return `w-[35%] h-full min-h-0 overflow-hidden rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `w-[35%] h-full min-h-0 overflow-hidden rounded-tl-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   if (mode === TAB_VIEW_MODES.GRID) {
-    return `flex-1 h-full min-h-0 rounded-l-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
+    return `flex-1 h-full min-h-0 rounded-tl-3xl ${PANE_FOCUS_BORDER_CLASSES} ${focusBorderColor}`;
   }
   return "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
 };
@@ -262,12 +262,8 @@ export const getFormPaneClassName = (isFocused: boolean): string => {
   return `flex-1 h-full min-h-0 min-w-0 relative z-10 ${PANE_FOCUS_BORDER_CLASSES} ${borderColor}`;
 };
 
-export const getFocusBorderColor = (isFocused: boolean): string => {
-  if (isFocused) {
-    return "border-l-[var(--color-secondary-500)]";
-  }
-  return "border-l-transparent";
-};
+// The focused pane no longer paints its left border; the transparent border keeps the layout width stable.
+export const getFocusBorderColor = (_isFocused: boolean): string => "border-l-transparent";
 
 /**
  * Record the form pane must switch to so that it keeps following the grid

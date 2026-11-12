@@ -21,6 +21,7 @@ import { useEffect, useMemo } from "react";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
+import { useCurrentWindowId, useCurrentWindowIdentifier } from "./CurrentWindowContext";
 import { mapBy } from "@/utils/structures";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataStore } from "./metadataStore";
@@ -73,17 +74,21 @@ export const MetadataSynchronizer = () => {
 };
 
 export const useMetadataContext = (): IMetadataContext => {
-  const windowsObj = useWindowStore((s) => s.windows);
-  const activeWindow = useMemo(() => {
-    const wins = Object.values(windowsObj);
-    return wins.find((w) => w.isActive) ?? null;
-  }, [windowsObj]);
+  // Inside a window the hook answers for that window, as CurrentWindowContext is meant for; elsewhere
+  // (header, tab bar) it answers for the active one. Following the active window from inside every
+  // mounted window re-renders all of them each time the user switches tabs.
+  const ownWindowId = useCurrentWindowId();
+  const ownWindowIdentifier = useCurrentWindowIdentifier();
+  const currentWindowId = useWindowStore(
+    (s) => ownWindowId || Object.values(s.windows).find((w) => w.isActive)?.windowId
+  );
+  const currentWindowIdentifier = useWindowStore(
+    (s) => ownWindowIdentifier || Object.values(s.windows).find((w) => w.isActive)?.windowIdentifier
+  );
   const { getWindowMetadata, isWindowLoading, getWindowError, loadWindowData, windowsData, loadingWindows, errors } =
     useMetadataStore();
   const { removeRecordFromDatasource } = useDatasourceContext();
 
-  const currentWindowId = activeWindow?.windowId;
-  const currentWindowIdentifier = activeWindow?.windowIdentifier;
   const currentWindow = currentWindowId ? getWindowMetadata(currentWindowId) : undefined;
 
   const currentGroupedTabs = useMemo(() => (currentWindow ? groupTabsByLevel(currentWindow) : []), [currentWindow]);

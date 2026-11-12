@@ -52,7 +52,14 @@ import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/sr
 import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
-import { buildGroupedSortBy, getActiveGroupColumnId, getGroupingMaxRecords } from "@/utils/table/grouping";
+import {
+  type GroupingSort,
+  buildGroupedMultiSortBy,
+  buildMultiSortBy,
+  getActiveGroupColumnId,
+  getGroupingMaxRecords,
+  resolveEffectiveSorts,
+} from "@/utils/table/grouping";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 import { isSrOneToOneExtension } from "@/utils/window/utils";
 import { parseColumns } from "@/utils/tableColumns";
@@ -119,6 +126,8 @@ interface UseTableDataReturn {
   tableColumnFilters: MRT_ColumnFiltersState;
   tableColumnVisibility: MRT_VisibilityState;
   fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
+  /** Params of the grid's current query, without paging (see `useDatasource`). */
+  getRequestParams: () => DatasourceOptions;
 }
 
 export const useTableData = ({
@@ -468,31 +477,35 @@ export const useTableData = ({
     [tab.fields]
   );
 
-  // Helper to apply sort options to query
+  // Helper to resolve the column ids of the sorts to the properties the datasource sorts by
+  const resolveSorts = useCallback(
+    (sorts: readonly GroupingSort[]): GroupingSort[] =>
+      sorts.map((sort) => ({ id: resolveSortField(sort.id), desc: sort.desc })),
+    [resolveSortField]
+  );
+
+  // Helper to apply sort options to query: every sorted column, in order, so the
+  // server returns the rows as the grid (and the CSV export) shows them.
   const applySortToOptions = useCallback(
-    (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
-      if (!sort) return;
+    (options: DatasourceOptions, sorts: readonly GroupingSort[]) => {
+      if (sorts.length === 0) return;
 
-      const sortField = resolveSortField(sort.id);
-
-      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+      options.sortBy = buildMultiSortBy(resolveSorts(sorts));
       options.isSorting = true;
     },
-    [resolveSortField]
+    [resolveSorts]
   );
 
   // Helper to apply grouping to query: as classic, a grouped grid loads up to the
   // grouping limit + 1 records at once (to detect an oversized dataset), sorted by
-  // the grouped column first and by the current sort inside each group.
+  // the grouped column first and by the current sorts inside each group.
   const applyGroupingToOptions = useCallback(
-    (options: DatasourceOptions, groupColumnId: string, sort: ReturnType<typeof getDefaultSort>) => {
-      const userSort = sort ? { id: resolveSortField(sort.id), desc: sort.desc } : null;
-
+    (options: DatasourceOptions, groupColumnId: string, sorts: readonly GroupingSort[]) => {
       options.pageSize = getGroupingMaxRecords(tab.window) + 1;
-      options.sortBy = buildGroupedSortBy(resolveSortField(groupColumnId), userSort);
+      options.sortBy = buildGroupedMultiSortBy(resolveSortField(groupColumnId), resolveSorts(sorts));
       options.isSorting = true;
     },
-    [resolveSortField, tab.window]
+    [resolveSortField, resolveSorts, tab.window]
   );
 
   const query: DatasourceOptions = useMemo(() => {
@@ -573,12 +586,12 @@ export const useTableData = ({
     }
 
     // Apply sorting
-    const currentSort = tableColumnSorting.length > 0 ? tableColumnSorting[0] : getDefaultSort();
-    applySortToOptions(options, currentSort);
+    const currentSorts = resolveEffectiveSorts(tableColumnSorting, getDefaultSort);
+    applySortToOptions(options, currentSorts);
 
     // Apply grouping (overrides page size and sort while the grid is grouped)
     if (activeGroupColumnId) {
-      applyGroupingToOptions(options, activeGroupColumnId, currentSort);
+      applyGroupingToOptions(options, activeGroupColumnId, currentSorts);
     }
 
     return options;
@@ -651,6 +664,7 @@ export const useTableData = ({
     refetch: datasourceRefetch,
     loading,
     hasMoreRecords,
+    getRequestParams,
   } = useDatasource({
     entity: treeEntity,
     params: query,
@@ -1437,5 +1451,6 @@ export const useTableData = ({
     tableColumnVisibility,
     fetchSummary,
     hasMoreRecords,
+    getRequestParams,
   };
 };

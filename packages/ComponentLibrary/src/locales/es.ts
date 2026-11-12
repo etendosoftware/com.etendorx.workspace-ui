@@ -21,6 +21,8 @@ const es = {
     cancel: "Cancelar",
     confirm: "Confirmar",
     close: "Cerrar",
+    scrollTabsBack: "Ver las pestañas anteriores",
+    scrollTabsForward: "Ver las pestañas siguientes",
     closing: "Cerrando...",
     unsavedChangesCloseMessage:
       "Tiene cambios sin guardar que se perderán. ¿Está seguro de que desea cerrar esta ventana?",
@@ -135,7 +137,7 @@ const es = {
       noFileSelected: "Ningún archivo seleccionado",
     },
     statusBar: {
-      closeRecord: "Cerrar registro",
+      closeRecord: "Cerrar registro y volver a la grilla",
       nextRecord: "Siguiente registro",
       previousRecord: "Registro anterior",
     },
@@ -150,6 +152,10 @@ const es = {
     selectOneRecord: "Debe seleccionar exactamente un registro para ver su historial de auditoría.",
     popupBlocked: "El navegador bloqueó la ventana del historial de auditoría.",
     openPopup: "Abrir historial de auditoría",
+  },
+  print: {
+    popupBlocked: "El navegador bloqueó la ventana de impresión.",
+    openPopup: "Abrir ventana de impresión",
   },
   status: {
     deleteSuccess: "ha sido eliminado correctamente",
@@ -284,6 +290,8 @@ const es = {
       noType: "Sin tipo",
       noRecord: "Ninguna fila seleccionada",
       emptyRecords: "No hay registros para mostrar",
+      multipleParentsSelected:
+        "Hay varios registros padre seleccionados. Solo se pueden ver los hijos de 1 padre a la vez.",
     },
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
@@ -292,6 +300,7 @@ const es = {
       showingRecords: "Mostrando {count} registros",
       showingPartialRecords: "Mostrando {loaded} de {total} registros",
       selectedRecords: "{count} seleccionados",
+      titleCount: "({count} registros)",
       recordsLoaded: "Registros cargados",
     },
     selectAll: {
@@ -530,6 +539,18 @@ const es = {
   form: {
     select: {
       placeholder: "Seleccione una opción",
+      minCharsHint: "Escribe al menos {{min}} caracteres para buscar",
+    },
+    link: {
+      invalidUrl: "Ingrese una URL válida, p. ej. www.ejemplo.com",
+      invalidUrlFields: "Los siguientes campos no contienen una URL válida: {{fields}}",
+    },
+    integer: {
+      invalidDecimal: "Ingrese un número entero sin decimales",
+      invalidDecimalFields: "Los siguientes campos deben ser números enteros: {{fields}}",
+    },
+    expression: {
+      invalid: "Ingrese una expresión aritmética válida, p. ej. =2*5",
     },
   },
   copilot: {
@@ -1016,6 +1037,7 @@ const es = {
     buttonLabel: "Procesos en segundo plano",
     buttonLabelRunning: "Procesos en segundo plano (%0 en ejecución)",
     recentFailures: "Errores recientes",
+    failed: "Con error",
     running: "En ejecución",
     misfired: "No se ejecutó",
     noFailures: "No hay errores recientes",

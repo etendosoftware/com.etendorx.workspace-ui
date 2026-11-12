@@ -18,6 +18,7 @@
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -55,7 +56,7 @@ import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { getDefaultImplicitFilter } from "@/utils/table/utils";
 import { isTreeModeSupported } from "@/utils/table/treeMode";
-import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
+import { createProcessMenuButton, isProcessButtonAccessible } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -104,7 +105,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const clearChildrenSelections = useWindowStore((s) => s.clearChildrenSelections);
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const isSessionSyncLoading = useUserStore((s) => s.isSessionSyncLoading);
+  // The flag flips twice on every selection and only disables the process button: a hidden tab has none on screen
+  const isActiveTab = useIsActiveTab();
+  const isSessionSyncLoading = useUserStore((s) => isActiveTab && s.isSessionSyncLoading);
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
   const session = useUserStore((s) => s.session);
   const token = useUserStore((s) => s.token);
@@ -269,7 +272,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
       const record = selectedRecord || selectedRecords[0];
-      if (!record) return;
+      if (!record || !isProcessButtonAccessible(button)) return;
 
       if (isProcessActionButton(button)) {
         await runProcessAction(button, String(record.id));
@@ -584,9 +587,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
   }
 
+  const topToolbar = <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />;
+
   return (
     <>
-      <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
+      {topToolbar}
       {(!isFormView || isSplitView) && tab?.id && (
         <SaveViewMenu
           anchorEl={saveViewAnchorEl}

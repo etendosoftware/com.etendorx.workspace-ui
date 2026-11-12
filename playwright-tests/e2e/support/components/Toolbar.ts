@@ -1,5 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { runAndWaitForDatasource, runAndWaitForResponse } from "../wait";
+import { runAndWaitForDatasource, runAndWaitForFormInitialization, runAndWaitForResponse } from "../wait";
 import { atLevel, exactText, type TabLevel } from "./level";
 
 /** Toolbar actions; each button carries the semantic class `toolbar-button-<action>`. */
@@ -12,7 +13,8 @@ export type ToolbarAction =
   | "filter"
   | "toggle-tree-view"
   | "copy-record"
-  | "save-view";
+  | "save-view"
+  | "export-csv";
 
 const PROCESS_MENU_TEST_ID = "IconButtonWithText__process-menu";
 /** AD key of the toolbar "New Record" button, rendered icon-only (`IconButton__<key>`) in form view. */
@@ -53,6 +55,19 @@ export class Toolbar {
     return atLevel(this.scope.locator(`button.toolbar-button-${action}:visible`), level);
   }
 
+  /** Clicks "Export to Spreadsheet" and returns the text of the CSV file it downloads. */
+  async exportCsv(level: TabLevel = "header"): Promise<string> {
+    const download = this.page.waitForEvent("download");
+    await this.button("export-csv", level).click();
+    return readFile(await (await download).path(), "utf8");
+  }
+
+  /** Closes the record open in form view: its close button sits next to the record pagination. */
+  async closeRecord(level: TabLevel = "header"): Promise<void> {
+    const navigation = atLevel(this.scope.locator('[data-testid="record-navigation"]:visible'), level);
+    await navigation.getByTestId("icon-button").click();
+  }
+
   /** Creates a new record. */
   async newRecord(level: TabLevel = "header"): Promise<void> {
     const button = this.scope === this.page ? this.button("new", level) : this.newRecordInTab();
@@ -72,7 +87,9 @@ export class Toolbar {
    * (In form view `newRecord` reaches the first text button, i.e. the one of the child tab.)
    */
   async newRecordInForm(): Promise<void> {
-    await this.scope.getByTestId(`IconButton__${NEW_RECORD_KEY}`).filter({ visible: true }).first().click();
+    const button = this.scope.getByTestId(`IconButton__${NEW_RECORD_KEY}`).filter({ visible: true }).first();
+    // The form still shows the previous record until the new one is initialized: wait for it
+    await runAndWaitForFormInitialization(this.page, () => button.click());
   }
 
   /**

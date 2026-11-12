@@ -10,10 +10,14 @@ const EDIT_ROW_BUTTON = '[data-testid^="edit-button-"]';
 const SAVE_ROW_BUTTON = '[data-testid^="save-button-"]';
 /** The datasource request that saves an inline edit. */
 const ROW_SAVE_REQUEST = /\/api\/datasource\/.*_operationType=update/;
-/** Record count of the grid toolbar: "Showing 12 records". */
+/** Record count of a grid that keeps its own counter bar: "Showing 12 records". */
 const SHOWING_RECORDS = /Showing (\d+) records?/;
+/** Record count of the root grid, which docks it into the title bar: "(12 records)". */
+const TITLE_RECORD_COUNT = /\((\d+) \w+\)/;
 /** Accessible name of the selection checkbox of a grid row. */
 const ROW_SELECTION_LABEL = "Toggle select row";
+/** Time a sort click has to show in the header before {@link Grid.sortDescending} clicks again. */
+const SORT_STEP_TIMEOUT = 2_000;
 /** Entry of the column actions menu that removes the filter of the column. */
 const CLEAR_FILTER = "Clear filter";
 /** Text the header of a filtered column carries: "Filtering by <column> - …". */
@@ -64,12 +68,49 @@ export class Grid {
    * done by the backend). Each click toggles the direction.
    */
   async sortBy(column: string): Promise<void> {
-    // The header text also shows a filter count, so the button is found by its label:
-    // "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending"
-    const button = this.page
+    await runAndWaitForDatasource(this.page, () => this.sortButton(column).click());
+    await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Sorts a column in descending order, clicking its sort button until the header says so: a
+   * column that is already the default sort goes descending with one click, another one with two.
+   * Waits for the header, not for a request: the ascending request can be the cached default one.
+   */
+  async sortDescending(column: string): Promise<void> {
+    const sortedDescending = this.page.locator(`thead:visible [aria-label="Sorted by ${column} descending"]`).first();
+    await expect(async () => {
+      if (!(await sortedDescending.isVisible())) {
+        await this.sortButton(column).click();
+      }
+      await expect(sortedDescending).toBeVisible({ timeout: SORT_STEP_TIMEOUT });
+    }).toPass();
+    await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Moves the mouse off the sort button and waits for its tooltip to close. The tooltip opens above the header
+   * and stays while the mouse is on the button, covering the toolbar buttons ("Export to Spreadsheet").
+   */
+  private async closeSortTooltip(column: string): Promise<void> {
+    const tooltip = this.page.getByRole("tooltip").filter({ hasText: `by ${column} ` });
+    // The header re-renders when the sorted data arrives and the new button under a still mouse can reopen the
+    // tooltip after the first move, so move away (and dismiss it) again until it is gone.
+    await expect(async () => {
+      await this.page.mouse.move(0, 0);
+      await this.page.keyboard.press("Escape");
+      await expect(tooltip).toHaveCount(0, { timeout: SORT_STEP_TIMEOUT });
+    }).toPass({ timeout: ROW_TIMEOUT });
+  }
+
+  /**
+   * Sort button of a column header. The header text also shows a filter count, so the button is
+   * found by its label: "Sort by <column> ascending" or, once sorted, "Sorted by <column> descending".
+   */
+  private sortButton(column: string): Locator {
+    return this.page
       .locator(`thead:visible [aria-label^="Sort by ${column} "], thead:visible [aria-label^="Sorted by ${column} "]`)
       .first();
-    await runAndWaitForDatasource(this.page, () => button.click());
   }
 
   /**
@@ -106,10 +147,16 @@ export class Grid {
     await expect(header).not.toContainText(`${FILTERING_BY} ${column}`);
   }
 
-  /** The "Showing N records" count of the visible grid. */
+  /** The record count of the visible grid: "(N records)" in the title bar, or "Showing N records" in its counter bar. */
   async shownRecords(): Promise<number> {
-    const text = await this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first().textContent();
-    return Number(SHOWING_RECORDS.exec(text ?? "")?.[1]);
+    const title = this.page.getByTestId("TitleRecordCount__table").filter({ visible: true }).first();
+    const bar = this.page.getByText(SHOWING_RECORDS).filter({ visible: true }).first();
+    const counter = title.or(bar);
+    await expect(counter).toHaveText(new RegExp(`${TITLE_RECORD_COUNT.source}|${SHOWING_RECORDS.source}`), {
+      timeout: ROW_TIMEOUT,
+    });
+    const text = (await counter.textContent()) ?? "";
+    return Number((TITLE_RECORD_COUNT.exec(text) ?? SHOWING_RECORDS.exec(text))?.[1]);
   }
 
   /** Visible data rows of the grid in `scope`, in display order. */

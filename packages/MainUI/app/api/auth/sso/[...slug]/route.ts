@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
-import { setErpSessionCookie, setErpCsrfToken } from "@/app/api/_utils/sessionStore";
+import { setErpSessionCookie, setErpCsrfToken, setErpLoginSessionId } from "@/app/api/_utils/sessionStore";
 import { joinUrl } from "../../../_utils/url";
 
 // SSO endpoints (/meta/sso/*) are unauthenticated — this proxy avoids CORS and,
@@ -55,11 +55,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     });
     const data = await erpResponse.json().catch(() => ({}));
 
+    // The Classic session registry id of an SSO login stays on the server, closed on logout
+    const { sessionId, ...clientData } = data;
     if (erpResponse.ok && data.token) {
       storeCookieForToken(erpResponse, data.token);
+      setErpLoginSessionId(data.token, sessionId);
     }
 
-    return NextResponse.json(data, { status: erpResponse.status });
+    return NextResponse.json(clientData, { status: erpResponse.status });
   } catch (error) {
     console.error("SSO proxy POST error:", error);
     return NextResponse.json({ error: "sso_proxy_error" }, { status: 502 });
