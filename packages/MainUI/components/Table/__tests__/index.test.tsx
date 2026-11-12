@@ -63,6 +63,7 @@ jest.mock("@/contexts/datasourceContext", () => ({
     registerFetchMore: jest.fn(),
     registerUpdateRecord: jest.fn(),
     registerAddRecord: jest.fn(),
+    setRecordCount: jest.fn(),
   }),
 }));
 

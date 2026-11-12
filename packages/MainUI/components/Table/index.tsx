@@ -1193,6 +1193,7 @@ const DynamicTable = ({
     registerUpdateRecord,
     registerAddRecord,
     refetchDatasource,
+    setRecordCount,
   } = useDatasourceContext();
   const { registerActions, unregisterActions, registerAttachmentAction, setShouldOpenAttachmentModal } =
     useToolbarCommands();
@@ -4252,6 +4253,12 @@ const DynamicTable = ({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [editingRowUtils, handleCancelRow, table]);
+
+  // The toolbar enables Export only for a grid with rows (classic `getTotalRows() === 0`).
+  useEffect(() => {
+    setRecordCount(tabId, loading ? undefined : records.length);
+    return () => setRecordCount(tabId, undefined);
+  }, [tabId, loading, records.length, setRecordCount]);
 
   useEffect(() => {
     if (removeRecordLocally) {
