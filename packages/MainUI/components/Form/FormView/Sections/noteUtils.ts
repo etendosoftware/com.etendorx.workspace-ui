@@ -15,8 +15,12 @@
  *************************************************************************
  */
 
+import { isNoteDeleteForbiddenError } from "@workspaceui/api-client/src/api/notes";
+import type { TranslateFunction } from "@/hooks/types";
 import type { Note } from "../types";
 import { noteColors } from "../styles";
+
+const DELETE_NOTE_FALLBACK_MESSAGE = "Failed to delete note";
 
 /**
  * Tells whether the note was created by the current user, the only one allowed to delete it
@@ -44,4 +48,22 @@ export const getNoteBackground = (isOwn: boolean, index: number, otherUserColor:
     return noteColors[index % noteColors.length];
   }
   return otherUserColor;
+};
+
+/**
+ * Resolves the message shown when a note cannot be deleted. A permission rejection from the server
+ * (the note belongs to another user) gets a translated message instead of the raw server response.
+ *
+ * @param error - The error thrown by the delete request
+ * @param t - Translation function
+ * @returns The message to show to the user
+ */
+export const getDeleteNoteErrorMessage = (error: unknown, t: TranslateFunction): string => {
+  if (isNoteDeleteForbiddenError(error)) {
+    return t("forms.notes.deleteNoteNotAllowed");
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return t("forms.notes.errorDeletingNote") || DELETE_NOTE_FALLBACK_MESSAGE;
 };

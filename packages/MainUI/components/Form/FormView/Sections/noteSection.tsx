@@ -29,7 +29,7 @@ import { fetchNotes, deleteNote, createNote } from "@workspaceui/api-client/src/
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
-import { getNoteBackground, isOwnNote } from "./noteUtils";
+import { getDeleteNoteErrorMessage, getNoteBackground, isOwnNote } from "./noteUtils";
 
 const NoteSection = ({
   addNoteButtonText,
@@ -114,8 +114,7 @@ const NoteSection = ({
       onNotesChange(); // Notify parent to update the noteCount badge
     } catch (error) {
       console.error("Failed to delete note:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : t("forms.notes.errorDeletingNote") || "Failed to delete note";
+      const errorMessage = getDeleteNoteErrorMessage(error, t);
       if (showErrorModal) {
         showErrorModal(errorMessage);
       }

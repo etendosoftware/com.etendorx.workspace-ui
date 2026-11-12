@@ -19,6 +19,33 @@ import { Metadata } from "./metadata";
 import type { Note, FetchNotesParams, CreateNoteParams } from "./types";
 
 const NOTES_ENDPOINT = "/notes";
+const HTTP_FORBIDDEN = 403;
+
+export const NOTE_DELETE_FORBIDDEN_ERROR_NAME = "NoteDeleteForbiddenError";
+
+/**
+ * Thrown when the notes servlet rejects a deletion because the current user is not allowed to
+ * delete the note (only its creator can). Lets the UI show a translated message instead of the raw
+ * server response.
+ */
+export class NoteDeleteForbiddenError extends Error {
+  public readonly noteId: string;
+
+  constructor(noteId: string) {
+    super(`Not allowed to delete note: ${noteId}`);
+    this.name = NOTE_DELETE_FORBIDDEN_ERROR_NAME;
+    this.noteId = noteId;
+    // The build targets ES5, where `super()` returns a plain Error and breaks the prototype chain.
+    Object.setPrototypeOf(this, NoteDeleteForbiddenError.prototype);
+  }
+}
+
+/**
+ * Detects the error by `name` rather than `instanceof`, so it also works across duplicated module
+ * instances (Next bundle vs. ts-jest).
+ */
+export const isNoteDeleteForbiddenError = (error: unknown): boolean =>
+  error instanceof Error && error.name === NOTE_DELETE_FORBIDDEN_ERROR_NAME;
 
 /**
  * Fetches the full list of notes for a given record using the custom notes servlet
@@ -86,6 +113,10 @@ export async function deleteNote(noteId: string): Promise<void> {
 
     const response = await client.request(url, { method: "DELETE" });
 
+    if (response.status === HTTP_FORBIDDEN) {
+      throw new NoteDeleteForbiddenError(noteId);
+    }
+
     if (!response.ok) {
       const errorData = response.data as { error?: string };
       throw new Error(errorData?.error || `Failed to delete note: ${response.status}`);
@@ -94,6 +125,9 @@ export async function deleteNote(noteId: string): Promise<void> {
     // Success response contains { success: true, id: noteId }
     // No need to return anything for void function
   } catch (error) {
+    if (isNoteDeleteForbiddenError(error)) {
+      throw error;
+    }
     throw new Error(`Error deleting note: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

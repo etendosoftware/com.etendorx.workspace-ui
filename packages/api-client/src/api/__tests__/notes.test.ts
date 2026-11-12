@@ -15,7 +15,13 @@
  *************************************************************************
  */
 
-import { fetchNotes, createNote, deleteNote } from "../notes";
+import {
+  fetchNotes,
+  createNote,
+  deleteNote,
+  isNoteDeleteForbiddenError,
+  NOTE_DELETE_FORBIDDEN_ERROR_NAME,
+} from "../notes";
 import { Metadata } from "../metadata";
 
 describe("Notes API", () => {
@@ -127,6 +133,29 @@ describe("Notes API", () => {
       } as any);
 
       await expect(deleteNote("invalid-id")).rejects.toThrow("Note not found");
+    });
+
+    it("should throw a forbidden error when the servlet rejects the deletion", async () => {
+      jest.spyOn(Metadata.client, "request").mockResolvedValue({
+        ok: false,
+        status: 403,
+        data: { error: "ERP request failed: 403 . {}" },
+      } as any);
+
+      await expect(deleteNote("note-of-other-user")).rejects.toMatchObject({
+        name: NOTE_DELETE_FORBIDDEN_ERROR_NAME,
+        noteId: "note-of-other-user",
+      });
+    });
+  });
+
+  describe("isNoteDeleteForbiddenError", () => {
+    it("should only detect the forbidden deletion error", () => {
+      const forbidden = Object.assign(new Error("denied"), { name: NOTE_DELETE_FORBIDDEN_ERROR_NAME });
+
+      expect(isNoteDeleteForbiddenError(forbidden)).toBe(true);
+      expect(isNoteDeleteForbiddenError(new Error("other"))).toBe(false);
+      expect(isNoteDeleteForbiddenError("denied")).toBe(false);
     });
   });
 });

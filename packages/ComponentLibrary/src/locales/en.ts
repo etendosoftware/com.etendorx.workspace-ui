@@ -102,6 +102,7 @@ const en = {
       cancelButton: "Cancel",
       errorAddingNote: "Failed to add note. Please try again.",
       errorDeletingNote: "Failed to delete note. Please try again.",
+      deleteNoteNotAllowed: "You can only delete the notes you created.",
       errorLoadingNotes: "Failed to load notes. Please try again.",
     },
     attachments: {

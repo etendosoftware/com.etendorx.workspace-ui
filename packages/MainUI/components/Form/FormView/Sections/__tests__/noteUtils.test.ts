@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { getNoteBackground, isOwnNote } from "../noteUtils";
+import { NoteDeleteForbiddenError } from "@workspaceui/api-client/src/api/notes";
+import { getDeleteNoteErrorMessage, getNoteBackground, isOwnNote } from "../noteUtils";
 import { noteColors } from "../../styles";
 import type { Note } from "../../types";
 
@@ -53,5 +54,23 @@ describe("getNoteBackground", () => {
 
   it("uses the neutral color for notes of other users", () => {
     expect(getNoteBackground(false, 3, OTHER_USER_COLOR)).toBe(OTHER_USER_COLOR);
+  });
+});
+
+describe("getDeleteNoteErrorMessage", () => {
+  const t = jest.fn((key: string) => key) as unknown as Parameters<typeof getDeleteNoteErrorMessage>[1];
+
+  it("returns the translated message when the deletion is forbidden", () => {
+    expect(getDeleteNoteErrorMessage(new NoteDeleteForbiddenError("note-1"), t)).toBe(
+      "forms.notes.deleteNoteNotAllowed"
+    );
+  });
+
+  it("returns the error message for any other error", () => {
+    expect(getDeleteNoteErrorMessage(new Error("Note not found"), t)).toBe("Note not found");
+  });
+
+  it("returns the generic translated message for non-error values", () => {
+    expect(getDeleteNoteErrorMessage("unexpected", t)).toBe("forms.notes.errorDeletingNote");
   });
 });

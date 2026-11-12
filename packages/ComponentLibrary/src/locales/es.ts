@@ -102,6 +102,7 @@ const es = {
       cancelButton: "Cancelar",
       errorAddingNote: "Error al agregar la nota. Por favor intenta de nuevo.",
       errorDeletingNote: "Error al eliminar la nota. Por favor intenta de nuevo.",
+      deleteNoteNotAllowed: "Solo puedes eliminar las notas que creaste.",
       errorLoadingNotes: "Error al cargar las notas. Por favor intenta de nuevo.",
     },
     attachments: {

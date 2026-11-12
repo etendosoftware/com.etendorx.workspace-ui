@@ -18,11 +18,12 @@
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import NoteSection from "../noteSection";
-import { fetchNotes, createNote, deleteNote } from "@workspaceui/api-client/src/api/notes";
+import { fetchNotes, createNote, deleteNote, NoteDeleteForbiddenError } from "@workspaceui/api-client/src/api/notes";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
 jest.mock("@workspaceui/api-client/src/api/notes", () => ({
+  ...jest.requireActual("@workspaceui/api-client/src/api/notes"),
   fetchNotes: jest.fn(),
   createNote: jest.fn(),
   deleteNote: jest.fn(),
@@ -256,5 +257,20 @@ describe("NoteSection", () => {
     const expectedDateTime = formatClassicDate(existingNote.creationDate, true);
     expect(expectedDateTime).toMatch(/\d{2}:\d{2}:\d{2}/);
     expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`)).toHaveTextContent(expectedDateTime);
+  });
+
+  it("shows a translated message when the server forbids the deletion", async () => {
+    (deleteNote as jest.Mock).mockRejectedValue(new NoteDeleteForbiddenError(existingNote.id));
+    renderWithTheme(<NoteSection {...defaultProps} />);
+    await screen.findByText(EXISTING_NOTE_TEXT);
+
+    fireEvent.click(screen.getByTestId(DELETE_BUTTON_ID));
+    fireEvent.click(screen.getByTestId("confirm-button"));
+
+    await waitFor(() => {
+      expect(showErrorModal).toHaveBeenCalledWith("forms.notes.deleteNoteNotAllowed");
+    });
+    expect(screen.getByText(EXISTING_NOTE_TEXT)).toBeInTheDocument();
+    expect(onNotesChange).not.toHaveBeenCalled();
   });
 });
