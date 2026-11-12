@@ -11,6 +11,13 @@ const AVERAGE_COST_TRANSACTIONS = "Average Cost Transactions";
 const TRANSACTION = "Transaction";
 const DESCRIPTION = "Description";
 const DOCUMENT_NO = "Document No.";
+const TRANSACTIONS = "Transactions";
+const MOVEMENT_DATE = "Movement Date";
+/**
+ * Classic default sort of Product › Transactions (no order-by clause): the last grid field with a record sort
+ * number, Movement Date, not the lowest one (Storage Bin).
+ */
+const TRANSACTIONS_DEFAULT_SORT = "movementDate";
 /** Ending date of the open average costing of the sample Laptop, the one its transactions belong to. */
 const OPEN_COSTING_ENDING_DATE = "12/31/9999";
 
@@ -26,14 +33,16 @@ const SORTED_TABS = [
   [WINDOW_IDS.PRODUCT, TABS.PRODUCT_AVERAGE_COST_TRANSACTIONS],
   [WINDOW_IDS.FINANCIAL_ACCOUNT, TABS.FINANCIAL_ACCOUNT_TRANSACTION],
   [WINDOW_IDS.PAYMENT_IN, TABS.PAYMENT_IN_HEADER],
+  [WINDOW_IDS.PRODUCT, TABS.PRODUCT_TRANSACTIONS],
 ] as const;
 
 test.beforeEach(({ api }) => api.resetGridConfigurations(SORTED_TABS));
 test.afterEach(({ api }) => api.resetGridConfigurations(SORTED_TABS));
 
 /**
- * Default sort of a grid from its tab order-by clause (ETP-4641): as classic, the whole clause travels as
- * `_orderBy` and `_sortBy` only carries a manual sort, which takes precedence. Read-only, on sample data.
+ * Default sort of a grid as classic (ETP-4641): the whole tab order-by clause travels as `_orderBy` and
+ * `_sortBy` only carries a manual sort, which takes precedence; a tab without a clause is sorted by the classic
+ * default field (`OBViewGridComponent.getSortField`). Read-only, on sample data.
  */
 test.describe("Grid - default sort from the tab order-by clause @regression @grid", () => {
   test("loads a query-based tab sorted by a multi-column clause of aliases", async ({ app, data, page }) => {
@@ -86,5 +95,20 @@ test.describe("Grid - default sort from the tab order-by clause @regression @gri
     expect(params[ORDER_BY]).toBe(CLAUSE.PAYMENT_IN_HEADER);
     expect(params[SORT_BY]).toBeUndefined();
     await expect(app.grid.sortIndicator(DOCUMENT_NO, "descending")).toBeVisible();
+  });
+
+  test("sorts a tab without an order-by clause by the classic default field", async ({ app, data, page }) => {
+    const product = data.PRODUCT.LAPTOP;
+    await app.sidebar.navigateTo("product");
+    await app.grid.filter(NAME, product.name);
+
+    const params = await runAndCaptureGridFetch(page, TABS.PRODUCT_TRANSACTIONS, async () => {
+      await app.grid.selectRow(product.name);
+      await app.tabs.open(TRANSACTIONS);
+    });
+
+    expect(params[SORT_BY]).toBe(TRANSACTIONS_DEFAULT_SORT);
+    expect(params[ORDER_BY]).toBeUndefined();
+    await expect(app.grid.sortIndicator(MOVEMENT_DATE, "ascending")).toBeVisible();
   });
 });
