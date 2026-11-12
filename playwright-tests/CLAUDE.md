@@ -24,7 +24,7 @@ playwright-tests/
       api/ApiData.ts           `api` fixture: create/delete records through the datasource
       flows/                   flows shared by several specs (navigation state, own categories)
       mock/                    mocked-backend layer: request keys, replay, its fixture
-      processOverrides.ts      override a process definition in the metadata the UI loads
+      processOverrides.ts      override a process definition or a field in the metadata the UI loads
       network.ts               block a request and record that it was attempted
       tags.ts                  tier and area tags
       wait.ts                  network/UI waits (FormInitialization, datasource, overlay)

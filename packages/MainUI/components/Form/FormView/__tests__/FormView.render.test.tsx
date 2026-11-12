@@ -79,11 +79,13 @@ jest.mock("@/hooks/Toolbar/useStatusModal", () => ({
 
 const mockResetFormChanges = jest.fn();
 const mockSetAuxiliaryInputs = jest.fn();
+const mockSetRecordSessionAttributes = jest.fn();
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     resetFormChanges: mockResetFormChanges,
     parentTab: null,
     setAuxiliaryInputs: mockSetAuxiliaryInputs,
+    setRecordSessionAttributes: mockSetRecordSessionAttributes,
     setFormValues: jest.fn(),
   }),
 }));
@@ -290,10 +292,27 @@ describe("FormView", () => {
     });
     const { unmount } = renderFormView();
     expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({ APRM_OrderIsPaid: "Y" });
+    expect(mockSetRecordSessionAttributes).toHaveBeenLastCalledWith({});
 
     unmount();
     // Otherwise the grid's toolbar keeps evaluating display logic with the closed form's values
     expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({});
+    expect(mockSetRecordSessionAttributes).toHaveBeenLastCalledWith({});
+  });
+
+  it("publishes the auxiliary inputs with their own types and the record's session attributes", () => {
+    mockUseFormInitialization.mockReturnValue({
+      formInitialization: {
+        auxiliaryInputValues: { ETSG_CheckLegalOrg: { value: 1 } },
+        sessionAttributes: { ETSG_CheckLegalOrg: "1", AD_ROLE_ID: "0" },
+      },
+      refetch: mockFormInitRefetch,
+      loading: false,
+    });
+    renderFormView();
+
+    expect(mockSetAuxiliaryInputs).toHaveBeenLastCalledWith({ ETSG_CheckLegalOrg: 1 });
+    expect(mockSetRecordSessionAttributes).toHaveBeenLastCalledWith({ ETSG_CheckLegalOrg: "1", AD_ROLE_ID: "0" });
   });
 
   it("renders in NEW mode", () => {

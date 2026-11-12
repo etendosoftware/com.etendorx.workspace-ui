@@ -150,6 +150,7 @@ import {
   isolateMessageBar,
   messageBar,
   subscribeMessageBar,
+  type MessageBarState,
 } from "@/utils/processes/definition/messageBarStore";
 import {
   getProcessStack,
@@ -158,6 +159,12 @@ import {
   subscribeProcessStack,
 } from "@/utils/processes/definition/processStack";
 import { buildNestedLaunch } from "@/utils/processes/definition/nestedLaunch";
+import {
+  findOversizedFile,
+  getProcessFileUploadMaxSize,
+  PROCESS_FILE_MAX_SIZE_EXCEEDED_MESSAGE,
+} from "@/utils/process/fileUploadMaxSize";
+import { createI18N } from "@/utils/ob/i18n";
 import {
   isDirectExecuteResult,
   shouldFireDirectExecute,
@@ -458,6 +465,8 @@ function ProcessDefinitionModalContent({
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
   const [fileParams, setFileParams] = useState<Record<string, File>>({});
+  // The file size error this modal showed, so that the next execute click hides that message and no other.
+  const fileSizeMessageRef = useRef<MessageBarState | null>(null);
 
   const handleFileChange = useCallback((paramName: string, file: File | null) => {
     setFileParams((prev) => {
@@ -1922,6 +1931,33 @@ function ProcessDefinitionModalContent({
   // Mirror the live enabled state for the async view.okButton.isEnabled() reader.
   okEnabledRef.current = !isActionButtonDisabled;
 
+  // Classic parity (OBProcessFileUpload): a selected file above the OBUIAPP_ProcessFileUploadMaxSize
+  // preference is rejected on click, with the message in the in-modal banner, and nothing is sent.
+  const handleExecuteGuarded = useCallback(
+    (actionValue?: string) => {
+      // Classic hides the message bar when the button is clicked, before validating: a previous size error
+      // goes away once the file fits. Only that message is hidden, so other messages keep their behavior.
+      if (fileSizeMessageRef.current && getMessageBarState() === fileSizeMessageRef.current) {
+        messageBar.hide();
+      }
+      fileSizeMessageRef.current = null;
+      const maxSize = getProcessFileUploadMaxSize();
+      const oversizedFile = findOversizedFile(fileParams, maxSize);
+      if (oversizedFile) {
+        const params = [oversizedFile.name, String(maxSize)];
+        messageBar.setMessage(
+          "error",
+          null,
+          createI18N({ getLabel }).getLabel(PROCESS_FILE_MAX_SIZE_EXCEEDED_MESSAGE, params)
+        );
+        fileSizeMessageRef.current = getMessageBarState();
+        return;
+      }
+      handleExecute(actionValue);
+    },
+    [fileParams, getLabel, handleExecute]
+  );
+
   // Classic parity: a Report and Process validates its mandatory parameters on
   // click and shows AD_Message JS1 in the in-modal banner instead of posting when
   // a required field is empty. handleReportProcessExecute does not validate, so we
@@ -2046,7 +2082,7 @@ function ProcessDefinitionModalContent({
               isActionButtonDisabled={Boolean(isActionButtonDisabled)}
               getActionButtonContent={getActionButtonContent}
               onClose={handleClose}
-              onExecute={handleExecute}
+              onExecute={handleExecuteGuarded}
               onReportProcessExecute={handleReportProcessExecuteGuarded}
               t={t}
               getLabel={getLabel}

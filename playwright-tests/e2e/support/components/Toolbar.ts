@@ -22,6 +22,8 @@ const NEW_RECORD_KEY = "33864F5267194AB99C14BD0CE9884FF5";
 /** Process menu entries: `ProcessMenuItem__<process id>`. */
 const PROCESS_MENU_ITEMS = '[data-testid^="ProcessMenuItem__"]:visible';
 const BUTTON_TIMEOUT = 15_000;
+/** How long one opening of the process menu waits for an entry before the menu is opened again. */
+const MENU_ENTRY_TIMEOUT = 2_000;
 const SAVE_TIMEOUT = 60_000;
 /** The request a form save sends: `_operationType=add` for a new record, `update` otherwise. */
 const SAVE_REQUEST = /\/api\/datasource\/.*_operationType=(add|update)/;
@@ -139,10 +141,30 @@ export class Toolbar {
    */
   async process(label: string, level: TabLevel = "header"): Promise<void> {
     await this.openProcessMenu(level);
-    await this.page
+    await this.processEntry(label).click();
+  }
+
+  /**
+   * Opens the process menu until the entry `label` shows and returns it, to assert its state without running
+   * it. While a selection syncs with the session the toolbar renders the menu trigger again, which closes a
+   * menu opened meanwhile: the menu is opened again instead of waited for until the test times out.
+   */
+  async openProcessMenuAt(label: string, level: TabLevel = "header"): Promise<Locator> {
+    const entry = this.processEntry(label);
+    await expect(async () => {
+      if (!(await entry.isVisible())) {
+        await this.openProcessMenu(level);
+      }
+      await expect(entry).toBeVisible({ timeout: MENU_ENTRY_TIMEOUT });
+    }).toPass({ timeout: BUTTON_TIMEOUT });
+    return entry;
+  }
+
+  /** Entry of the open process menu, by label: to assert its state (`aria-disabled`) without running it. */
+  processEntry(label: string): Locator {
+    return this.page
       .locator(PROCESS_MENU_ITEMS)
       .filter({ hasText: exactText(label) })
-      .first()
-      .click();
+      .first();
   }
 }

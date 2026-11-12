@@ -18,23 +18,49 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+/** Highlight of the field while a file is dragged over it. */
+const DRAG_OVER_CLASSES = "ring-2 ring-(--color-etendo-main)";
+
 export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFileSelectorProps) => {
   const { setValue } = useFormContext();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const selectFile = (file: File) => {
+    setSelectedFile(file);
+    setValue(field.hqlName, `C:\\fakepath\\${file.name}`);
+    // Use columnName (dBColumnName) as key for fileParams — the backend expects this as the FormData field name
+    onFileChange?.(field.columnName, file);
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setSelectedFile(file);
-    setValue(field.hqlName, `C:\\fakepath\\${file.name}`);
-    // Use columnName (dBColumnName) as key for fileParams — the backend expects this as the FormData field name
-    onFileChange?.(field.columnName, file);
+    selectFile(file);
 
     // Reset input to allow selecting same file again
     event.target.value = "";
+  };
+
+  // A file dropped on the field is taken as if picked in the dialog, as Classic's native file input does.
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    // Without preventDefault the browser refuses the drop (and opens the file instead)
+    event.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = () => setIsDraggingOver(false);
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    event.preventDefault();
+    setIsDraggingOver(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) selectFile(file);
   };
 
   const handleRemove = () => {
@@ -44,7 +70,12 @@ export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFile
   };
 
   return (
-    <div className="flex items-center h-full w-full" data-testid="UploadFileSelector__container">
+    <div
+      className={`flex items-center h-full w-full rounded-md ${isDraggingOver ? DRAG_OVER_CLASSES : ""}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      data-testid="UploadFileSelector__container">
       <input
         ref={fileInputRef}
         type="file"

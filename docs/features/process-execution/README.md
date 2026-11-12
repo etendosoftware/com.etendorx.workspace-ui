@@ -55,6 +55,7 @@ flowchart TB
 - Have `javaClassName` but no `onProcess`
 - Execute directly via servlet
 - Example: `com.etendoerp.copilot.process.CheckHostsButton`
+- A multi-record process runs in one request for every selected record and shows one combined result ([Multi-Record Processes](./multi-record-processes.md))
 
 ### 3. String Function Processes
 - Have `onProcess` function defined
@@ -91,6 +92,7 @@ sequenceDiagram
 ## Related Documentation
 
 - [ProcessDefinitionModal Detailed](./process-definition-modal.md)
+- [Multi-Record Processes](./multi-record-processes.md)
 - [AD Fields: onLoad and onProcess](./ad-fields-onload-onprocess.md)
 - [DefaultsProcessActionHandler](./defaults-action-handler.md)
 - [Window References](./window-references.md)

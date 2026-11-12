@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { applyProcessOverrides, processMetadataUrl, windowMetadataUrl } from "../processOverrides";
+import { applyFieldOverrides, applyProcessOverrides, processMetadataUrl, windowMetadataUrl } from "../processOverrides";
 
 type WindowMetadata = Parameters<typeof applyProcessOverrides>[0];
 
@@ -50,6 +50,31 @@ test.describe("applyProcessOverrides", () => {
   for (const [name, metadata] of unmatched) {
     test(`changes nothing in metadata with ${name}`, () => {
       expect(applyProcessOverrides(metadata, PROCESS_ID, { etmetaOnprocess: ON_PROCESS })).toBe(0);
+    });
+  }
+});
+
+test.describe("applyFieldOverrides", () => {
+  const FIELD_ID = "AD7C15BA367642AFB471EFAFD768FB2D";
+  const READ_ONLY = { readOnlyLogicExpression: "true" };
+
+  test("sets the overrides on the field with that id and keeps its other properties", () => {
+    const metadata = { tabs: [{ fields: { pay: { id: FIELD_ID, name: "Add Payment" }, other: { id: "OTHER" } } }] };
+    expect(applyFieldOverrides(metadata, FIELD_ID, READ_ONLY)).toBe(1);
+    expect(metadata.tabs[0].fields).toEqual({
+      pay: { id: FIELD_ID, name: "Add Payment", readOnlyLogicExpression: "true" },
+      other: { id: "OTHER" },
+    });
+  });
+
+  const unmatched: [string, WindowMetadata][] = [
+    ["no tabs", {}],
+    ["tabs without fields", { tabs: [{}] }],
+    ["other fields only", { tabs: [{ fields: { other: { id: "OTHER" } } }] }],
+  ];
+  for (const [name, metadata] of unmatched) {
+    test(`changes nothing in metadata with ${name}`, () => {
+      expect(applyFieldOverrides(metadata, FIELD_ID, READ_ONLY)).toBe(0);
     });
   }
 });

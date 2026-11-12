@@ -128,6 +128,8 @@ jest.mock("@/hooks/Toolbar/useToolbar", () => ({
         processAction: { id: "pa-1" },
       },
     ],
+    // A button whose read-only logic is true for the selection
+    readOnlyProcessButtonIds: new Set(["btn-read-only"]),
     loading: false,
     refetch: jest.fn().mockResolvedValue(undefined),
   }),
@@ -265,6 +267,16 @@ describe("Toolbar — runProcessAction", () => {
 
     await act(async () => {
       await capturedOnProcessClick!({ ...processActionButton, isProcessAccessible: false });
+    });
+
+    expect(mockHandleProcessClick).not.toHaveBeenCalled();
+  });
+
+  it("does not run a process whose read-only logic is true", async () => {
+    render(<Toolbar windowId="win-1" isFormView={false} />);
+
+    await act(async () => {
+      await capturedOnProcessClick?.({ ...processActionButton, id: "btn-read-only" });
     });
 
     expect(mockHandleProcessClick).not.toHaveBeenCalled();
