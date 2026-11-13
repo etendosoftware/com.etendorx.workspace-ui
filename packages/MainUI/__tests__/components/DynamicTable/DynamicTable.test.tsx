@@ -81,6 +81,7 @@ const mockDatasourceContext = {
   registerUpdateRecord: jest.fn(),
   updateRecordInDatasource: jest.fn(),
   registerAddRecord: jest.fn(),
+  setRecordCount: jest.fn(),
   addRecordToDatasource: jest.fn(),
 };
 
