@@ -36,8 +36,8 @@ export type SrAutoOpenDecision = { open: false } | { open: true; recordId: strin
  * Decide whether to auto-open FormView for a Single Record (SR) tab.
  *
  * Covers two cases Tab.tsx's 1:1 auto-open does not:
- *   - Logical SR (PK != FK): the parent-selected id is not a valid child id, so we
- *     resolve from fetched records.
+ *   - Logical SR (PK != FK) and SR without a link column (Accounting on Fact_Acct): the
+ *     parent-selected id is not a valid child id, so we resolve from fetched records.
  *   - Root SR (no parent): isSrOneToOneExtension returns true on empty parentColumns
  *     and Tab.tsx requires parentSelectedRecordId, so neither path opens the form.
  *
@@ -53,7 +53,7 @@ export function getSrAutoOpenDecision(inputs: SrAutoOpenInputs): SrAutoOpenDecis
   if (!tab.defaultEditMode) return { open: false };
   if (loading) return { open: false };
   if (displayRecords.length === 0) return { open: false };
-  if (parentTab && isSrOneToOneExtension(tab)) return { open: false };
+  if (parentTab && isSrOneToOneExtension(tab, parentTab)) return { open: false };
   if (parentTab && !parentRecord?.id) return { open: false };
 
   const trackingKey = parentRecord?.id ? String(parentRecord.id) : ROOT_TRACKING_KEY;

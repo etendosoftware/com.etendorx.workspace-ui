@@ -520,6 +520,8 @@ export interface Tab {
    * Absent when the metadata backend predates this key — see `resolveParentFieldName`.
    */
   parentProperty?: string;
+  /** Classic default sort property (`OBViewGridComponent.getSortField`) when the tab has no order-by clause. */
+  defaultSortField?: string;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;

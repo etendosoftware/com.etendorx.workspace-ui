@@ -78,7 +78,7 @@ export class Grid {
    * Waits for the header, not for a request: the ascending request can be the cached default one.
    */
   async sortDescending(column: string): Promise<void> {
-    const sortedDescending = this.page.locator(`thead:visible [aria-label="Sorted by ${column} descending"]`).first();
+    const sortedDescending = this.sortIndicator(column, "descending");
     await expect(async () => {
       if (!(await sortedDescending.isVisible())) {
         await this.sortButton(column).click();
@@ -86,6 +86,14 @@ export class Grid {
       await expect(sortedDescending).toBeVisible({ timeout: SORT_STEP_TIMEOUT });
     }).toPass();
     await this.closeSortTooltip(column);
+  }
+
+  /**
+   * Sort indicator of a column header once the grid is sorted by it ("Sorted by <column> descending"), e.g. the
+   * default sort of the tab, shown without clicking.
+   */
+  sortIndicator(column: string, direction: "ascending" | "descending", scope: Locator | Page = this.page): Locator {
+    return scope.locator(`thead:visible [aria-label="Sorted by ${column} ${direction}"]`).first();
   }
 
   /**
