@@ -16,7 +16,7 @@
  */
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import { FocusProvider } from "@/contexts/focus";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { TabFormState } from "@/utils/url/constants";
@@ -29,6 +29,19 @@ import {
   type WindowPropertyName,
 } from "@/utils/window/constants";
 import { buildWindowsUrlParams } from "@/utils/url/utils";
+import {
+  applyNavigationStep,
+  buildNavigationStep,
+  isSameStep,
+  planRestore,
+  readNavigationEntry,
+  resolveHistoryWrite,
+  withNavigationEntry,
+  wouldDiscardUnsavedForm,
+  type NavigationEntry,
+  type NavigationStep,
+} from "@/utils/window/browserHistory";
+import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { useGlobalUrlStateRecovery } from "@/hooks/useGlobalUrlStateRecovery";
 import { useUnsavedChangesBeforeUnload } from "@/hooks/useUnsavedChangesBeforeUnload";
 import UnsavedChangesWindowsModal from "@/components/UnsavedChanges/UnsavedChangesWindowsModal";
@@ -46,6 +59,10 @@ export type { WindowState, TableState, NavigationState, WindowContextState };
 //  2. Running the URL-sync effect (needs useRouter / useSearchParams).
 //  3. Running the recovery-initialization effect (needs ref guards).
 // ---------------------------------------------------------------------------
+/** Whether the browser has an entry after the current one (Navigation API; where unavailable, it counts as none). */
+const canGoForward = (): boolean =>
+  Boolean((window as unknown as { navigation?: { canGoForward?: boolean } }).navigation?.canGoForward);
+
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery } = useGlobalUrlStateRecovery();
   const router = useRouter();
@@ -92,15 +109,65 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
   }, [isRecoveryLoading, recoveredWindows]);
 
-  // Sync window state to URL
+  // Browser history: the entry the user is on, how many windows there were, and an entry waiting for
+  // the router to finish entering /window (the router creates it, so it can only be tagged afterwards).
+  const entryRef = useRef<NavigationEntry | null>(null);
+  const windowCountRef = useRef(0);
+  const pendingEntryRef = useRef<NavigationEntry | null>(null);
+  // True while a movement that was cancelled is being undone, so its popstate is not treated as a new one.
+  const isRevertingRef = useRef(false);
+  // True while the unsaved changes modal waits for an answer to a Back/Forward: the browser is already on
+  // the other entry but the windows still show the step being left, so nothing may be written to the history.
+  const [isGuardPending, setIsGuardPending] = useState(false);
+
+  /** Writes the entry the user is on (or a new one) tagging it with the step it stands for. */
+  const writeHistory = useCallback((mode: "push" | "replace", step: NavigationStep, url?: string) => {
+    const previous = entryRef.current;
+    if (mode === "push" && previous) {
+      // The router drops the marker when it rewrites an entry (e.g. opening a linked record), so the entry
+      // being left is tagged again before the new one is added: that is what Back will restore.
+      window.history.replaceState(withNavigationEntry(window.history.state, previous), "");
+    }
+    // After a reload the entry still carries the marker of the previous page session: continue from its
+    // position, so the entries before it stay comparable with this one.
+    const base = previous ?? readNavigationEntry(window.history.state);
+    const index = mode === "push" && previous ? previous.index + 1 : (base?.index ?? 0);
+    const entry: NavigationEntry = { ...step, index };
+    const state = withNavigationEntry(window.history.state, entry);
+    if (mode === "push") {
+      window.history.pushState(state, "", url);
+    } else {
+      window.history.replaceState(state, "", url);
+    }
+    entryRef.current = entry;
+  }, []);
+
+  // Sync window state to URL and browser history
   useEffect(() => {
-    if (isRecoveryLoading) return;
+    if (isRecoveryLoading || isGuardPending) return;
 
     if (recoveredWindows.length > 0 && windows.length === 0 && !hasAppliedWindowsRef.current) {
       return;
     }
 
-    const currentParams = searchParams?.toString() ?? "";
+    const isOnWindowRoute = window.location.pathname.endsWith("/window");
+    // On /window the address bar is the truth: useSearchParams can lag behind it after a Back/Forward.
+    const currentParams = isOnWindowRoute
+      ? new URLSearchParams(window.location.search).toString()
+      : (searchParams?.toString() ?? "");
+    const step = buildNavigationStep(windows);
+
+    // The router has just entered /window for a step it created: tag that entry before deciding anything,
+    // so the step is not taken for a new one.
+    if (pendingEntryRef.current && isOnWindowRoute) {
+      const pending = pendingEntryRef.current;
+      pendingEntryRef.current = null;
+      window.history.replaceState(withNavigationEntry(window.history.state, pending), "");
+      entryRef.current = pending;
+    }
+
+    const write = resolveHistoryWrite(entryRef.current, step, windows.length, windowCountRef.current);
+    windowCountRef.current = windows.length;
 
     if (windows.length === 0) {
       if (currentParams) {
@@ -110,23 +177,122 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         // triggers an RSC roundtrip and a full unmount/remount of the page
         // subtree (including <Home>), which we want to avoid.
         router.replace("/window");
+      } else if (write === "replace") {
+        writeHistory("replace", step);
       }
       return;
     }
 
     const newParams = buildWindowsUrlParams(windows);
-    if (newParams !== currentParams) {
-      const newUrl = newParams ? `window?${newParams}` : "window";
-      // Already on /window, the URL only mirrors the window store: the native history API updates
-      // useSearchParams without the RSC round trip router.replace makes (two per form Next, one per
-      // selection). Entering /window from another route still goes through the router.
-      if (window.location.pathname.endsWith("/window")) {
-        window.history.replaceState(null, "", newUrl);
-      } else {
-        router.replace(newUrl);
+    const newUrl = newParams ? `window?${newParams}` : "window";
+
+    if (!isOnWindowRoute) {
+      // Entering /window from another route still goes through the router.
+      if (newParams !== currentParams) {
+        if (write === "push" && entryRef.current) {
+          // Tag the entry being left, then let the router add the next one.
+          window.history.replaceState(withNavigationEntry(window.history.state, entryRef.current), "");
+          pendingEntryRef.current = { ...step, index: entryRef.current.index + 1 };
+          router.push(newUrl);
+        } else {
+          router.replace(newUrl);
+        }
       }
+      return;
     }
-  }, [windows, router, searchParams, isRecoveryLoading, recoveredWindows.length]);
+
+    // Already on /window, the URL only mirrors the window store: the native history API updates
+    // useSearchParams without the RSC round trip router.replace makes (two per form Next, one per
+    // selection).
+    if (write === "push") {
+      writeHistory("push", step, newUrl);
+    } else if (write === "replace") {
+      writeHistory("replace", step, newParams === currentParams ? undefined : newUrl);
+    } else if (newParams !== currentParams) {
+      // Only the URL changes here, never the marker of an entry that already has one. The router handles a
+      // Back/Forward before the listener below does, so this can run while the browser is already on another
+      // entry than the one the windows show: that entry keeps its own step and its own URL.
+      const marker = readNavigationEntry(window.history.state);
+      if (marker && !isSameStep(marker, step)) return;
+      window.history.replaceState(
+        !marker && entryRef.current
+          ? withNavigationEntry(window.history.state, entryRef.current)
+          : window.history.state,
+        "",
+        newUrl
+      );
+    }
+  }, [windows, router, searchParams, isRecoveryLoading, isGuardPending, recoveredWindows.length, writeHistory]);
+
+  // Back / Forward: bring the windows to the step the entry stands for.
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      const target = readNavigationEntry(event.state);
+      const previous = entryRef.current;
+      if (!target || !previous) return;
+
+      const entryBefore = previous;
+      entryRef.current = target;
+      if (isRevertingRef.current) {
+        isRevertingRef.current = false;
+        setIsGuardPending(false);
+        return;
+      }
+
+      const delta = target.index - entryBefore.index;
+      const state = useWindowStore.getState();
+      const plan = planRestore(target, state.windows);
+      // Nothing is held back unless this movement asks for it below.
+      setIsGuardPending(false);
+
+      if (plan.kind === "skip") {
+        // The window of that entry was closed. Keep walking the same way; at the first entry (or going
+        // forward with nothing left to show) fall back to where the user was. While walking, the windows
+        // still show the step being left, so the URL sync must not write anything.
+        if (delta < 0 && target.index > 0) {
+          setIsGuardPending(true);
+          window.history.go(-1);
+        } else if (delta < 0) {
+          applyNavigationStep({ activeWindowIdentifier: null, form: null });
+        } else if (canGoForward()) {
+          setIsGuardPending(true);
+          window.history.go(1);
+        } else {
+          isRevertingRef.current = true;
+          setIsGuardPending(true);
+          window.history.go(-delta);
+        }
+        return;
+      }
+
+      if (plan.kind === "restore" && wouldDiscardUnsavedForm(plan.step, state.windows, state.dirtyWindows)) {
+        // The windows still show the step the user is leaving until the modal is answered: keep it as the
+        // current one, otherwise the URL sync would see a "new" step and push an entry of its own.
+        entryRef.current = entryBefore;
+        setIsGuardPending(true);
+        useUnsavedChangesStore.getState().openRequest({
+          onProceed: () => {
+            entryRef.current = target;
+            setIsGuardPending(false);
+            const latest = useWindowStore.getState();
+            const latestPlan = planRestore(target, latest.windows);
+            if (latestPlan.kind === "restore") applyNavigationStep(latestPlan.step);
+            else if (latestPlan.kind === "home") applyNavigationStep(target);
+          },
+          onCancel: () => {
+            isRevertingRef.current = true;
+            window.history.go(-delta);
+          },
+        });
+        return;
+      }
+
+      applyNavigationStep(target);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   return (
     <FocusProvider data-testid="FocusProvider__77fd99">
