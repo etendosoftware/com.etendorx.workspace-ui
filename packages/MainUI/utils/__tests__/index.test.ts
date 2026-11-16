@@ -24,6 +24,7 @@ import {
   buildFormPayload,
   getNumericFormatOptions,
   formatNumber,
+  formatTime,
   getMessageType,
   formatLabel,
   buildProcessPayload,
@@ -268,6 +269,20 @@ describe("utils/index", () => {
   describe("formatNumber", () => {
     it("formats a number using the given locale and reference", () => {
       expect(formatNumber(1234.5, "en-US", "12")).toBe("1,234.50");
+    });
+  });
+
+  describe("formatTime", () => {
+    it("pads hours and minutes below 10", () => {
+      expect(formatTime(new Date(2026, 0, 1, 7, 5))).toBe("07:05");
+    });
+
+    it("keeps two-digit hours and minutes as they are", () => {
+      expect(formatTime(new Date(2026, 0, 1, 18, 42))).toBe("18:42");
+    });
+
+    it("accepts a date string", () => {
+      expect(formatTime(new Date(2026, 5, 15, 9, 30).toISOString())).toBe("09:30");
     });
   });
 
