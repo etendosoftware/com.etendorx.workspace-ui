@@ -552,6 +552,7 @@ const es = {
     expression: {
       invalid: "Ingrese una expresión aritmética válida, p. ej. =2*5",
     },
+    saving: "Guardando...",
   },
   copilot: {
     copilotProfile: "Perfil Copilot",

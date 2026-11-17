@@ -186,10 +186,17 @@ export function FormActions({
     }
   }, [isFormInitializing]);
 
+  // A save that is waiting for the callouts, or running, is the one the user asked for: another request for it
+  // (a second Ctrl+S, the Save button) must not save again. A ref, not the button state, because two requests can
+  // arrive before the state is rendered.
+  const saveInFlightRef = useRef(false);
+
   const handleSave = useCallback(
     async (options: SaveOptions): Promise<boolean> => {
+      if (saveInFlightRef.current) return false;
+      saveInFlightRef.current = true;
       try {
-        // Set saving state
+        // Set saving state: the Save button shows it while the save waits for the callouts and runs
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
 
         // Wait if any callouts are currently running
@@ -239,6 +246,7 @@ export function FormActions({
         return false;
       } finally {
         // Clear saving state
+        saveInFlightRef.current = false;
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
     },
@@ -282,18 +290,20 @@ export function FormActions({
    * creation: its own message is already on screen.
    */
   const handleNew = useCallback(async () => {
-    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (saveButtonState.isSaving) return;
     if (isDirty) {
+      // While callouts run the save waits for them, as the Save button does
       const saved = await handleSave({ showModal: true });
       if (!saved) return;
     }
     onNew();
-  }, [isDirty, handleSave, onNew, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+  }, [isDirty, handleSave, onNew, saveButtonState.isSaving]);
 
+  // Ctrl+S while callouts are running is not lost: the save waits for them and then saves with the values they left
   const handleKeyboardSave = useCallback(async () => {
-    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (saveButtonState.isSaving) return;
     await handleSave({ showModal: true });
-  }, [handleSave, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+  }, [handleSave, saveButtonState.isSaving]);
 
   const handleKeyboardEscape = useCallback(() => {
     if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
@@ -305,13 +315,13 @@ export function FormActions({
    * pending changes and returns to the grid. A failed save keeps the form open.
    */
   const handleSaveAndClose = useCallback(async () => {
-    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (saveButtonState.isSaving) return;
     if (hasFormChanges) {
       const saved = await handleSave({ skipFormStateUpdate: true });
       if (!saved) return;
     }
     navigateBack();
-  }, [handleSave, hasFormChanges, navigateBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+  }, [handleSave, hasFormChanges, navigateBack, saveButtonState.isSaving]);
 
   // New (Ctrl+D) is bound by the toolbar, whose NEW button resolves to `handleNew` while the form is open.
   useShortcutBindings(

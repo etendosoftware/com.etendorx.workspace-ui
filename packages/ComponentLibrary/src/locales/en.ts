@@ -542,6 +542,7 @@ const en = {
     expression: {
       invalid: "Enter a valid arithmetic expression, e.g. =2*5",
     },
+    saving: "Saving...",
   },
   copilot: {
     copilotProfile: "Copilot Profile",
