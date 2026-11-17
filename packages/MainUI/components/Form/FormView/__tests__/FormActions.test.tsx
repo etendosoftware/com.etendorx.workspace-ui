@@ -366,20 +366,122 @@ describe("FormActions", () => {
       expect(mockOnSave).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+S is a no-op when isCalloutLoading is true", async () => {
-      const mockOnSave = jest.fn().mockResolvedValue(true);
-      toolbarContextMock().mockReturnValue({
-        registerActions: mockRegisterActions,
-        unregisterActions: mockUnregisterActions,
-        setSaveButtonState: mockSetSaveButtonState,
-        saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
+    describe("while callouts are running (ETP-6315)", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: jest require
+      const calloutManager = () => require("@/services/callouts").globalCalloutManager;
+      const RUNNING = { isRunning: true, queueLength: 0, pendingCount: 0 };
+      const IDLE = { isRunning: false, queueLength: 0, pendingCount: 0 };
+      let finishCallouts: () => void;
+
+      beforeEach(() => {
+        calloutManager().getState.mockReturnValue(RUNNING);
+        calloutManager().waitForIdle.mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              finishCallouts = () => {
+                calloutManager().getState.mockReturnValue(IDLE);
+                resolve();
+              };
+            })
+        );
+        toolbarContextMock().mockReturnValue({
+          registerActions: mockRegisterActions,
+          unregisterActions: mockUnregisterActions,
+          setSaveButtonState: mockSetSaveButtonState,
+          saveButtonState: {
+            isSaving: false,
+            isCalloutLoading: true,
+            hasValidationErrors: false,
+            validationErrors: [],
+          },
+        });
       });
-      renderFormActions({ ...props, onSave: mockOnSave });
 
-      fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+      afterEach(() => {
+        calloutManager().getState.mockReturnValue(IDLE);
+        calloutManager().waitForIdle.mockImplementation(() => Promise.resolve());
+      });
 
-      await new Promise((r) => setTimeout(r, 0));
-      expect(mockOnSave).not.toHaveBeenCalled();
+      it("Ctrl+S waits for the callouts and then saves", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+        await waitFor(() => expect(calloutManager().waitForIdle).toHaveBeenCalled());
+        expect(mockOnSave).not.toHaveBeenCalled();
+
+        finishCallouts();
+
+        await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: true }));
+      });
+
+      it("pressing Ctrl+S several times while it waits saves only once", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+        await waitFor(() => expect(calloutManager().waitForIdle).toHaveBeenCalled());
+        finishCallouts();
+
+        await waitFor(() => expect(mockOnSave).toHaveBeenCalledTimes(1));
+        await new Promise((r) => setTimeout(r, 0));
+        expect(mockOnSave).toHaveBeenCalledTimes(1);
+        expect(calloutManager().waitForIdle).toHaveBeenCalledTimes(1);
+      });
+
+      it("shows the saving state on the Save button from the moment it is requested until it ends", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+        await waitFor(() => expect(calloutManager().waitForIdle).toHaveBeenCalled());
+
+        const isSavingUpdates = () =>
+          mockSetSaveButtonState.mock.calls
+            .map(([update]) => update({ isSaving: undefined }).isSaving)
+            .filter((value) => value !== undefined);
+        expect(isSavingUpdates()).toEqual([true]);
+
+        finishCallouts();
+
+        await waitFor(() => expect(isSavingUpdates()).toEqual([true, false]));
+      });
+
+      it("a save that fails after waiting reports its error and can be requested again", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(false);
+        renderFormActions({ ...props, onSave: mockOnSave });
+
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+        await waitFor(() => expect(calloutManager().waitForIdle).toHaveBeenCalled());
+        finishCallouts();
+        await waitFor(() => expect(mockOnSave).toHaveBeenCalledTimes(1));
+        await new Promise((r) => setTimeout(r, 0));
+
+        calloutManager().getState.mockReturnValue(IDLE);
+        fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+        await waitFor(() => expect(mockOnSave).toHaveBeenCalledTimes(2));
+      });
+
+      it("New saves the dirty record after the callouts, then creates the new one", async () => {
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        const mockOnNew = jest.fn();
+        (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true }, reset: mockReset });
+        renderFormActions({ ...props, onSave: mockOnSave, onNew: mockOnNew });
+        const registeredActions = mockRegisterActions.mock.calls.at(-1)[0];
+
+        const done = registeredActions.new();
+        await waitFor(() => expect(calloutManager().waitForIdle).toHaveBeenCalled());
+        expect(mockOnNew).not.toHaveBeenCalled();
+        finishCallouts();
+        await done;
+
+        expect(mockOnSave).toHaveBeenCalledTimes(1);
+        expect(mockOnNew).toHaveBeenCalledTimes(1);
+      });
     });
 
     /** Runs the `new` action FormActions registers for the toolbar NEW button (Ctrl+D). */
