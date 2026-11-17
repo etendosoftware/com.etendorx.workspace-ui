@@ -1,5 +1,5 @@
 /**
- * Overrides of a process definition or of a field inside the window metadata the UI loads. They let a spec
+ * Overrides of a process definition, of a field or of a tab inside the window metadata the UI loads. They let a spec
  * reach client behavior the bare core has no data for, e.g. a migrated onProcess
  * (`em_etmeta_onprocess` is empty in every core process): the spec gives the property, the UI
  * runs it as it would run one stored in the database.
@@ -22,8 +22,16 @@ interface FieldMetadata {
 /** Field properties to set, e.g. `{ readOnlyLogicExpression: "…" }`. */
 export type FieldOverrides = Readonly<Record<string, unknown>>;
 
+/** Tab properties to set, e.g. `{ deletableRecords: false }`. */
+export type TabOverrides = Readonly<Record<string, unknown>>;
+
+interface TabMetadata {
+  id?: string;
+  fields?: Record<string, FieldMetadata>;
+}
+
 interface WindowMetadata {
-  tabs?: { fields?: Record<string, FieldMetadata> }[];
+  tabs?: TabMetadata[];
 }
 
 const SUCCESS_STATUS = 200;
@@ -60,6 +68,18 @@ export function applyFieldOverrides(metadata: WindowMetadata, fieldId: string, o
     Object.assign(field, overrides);
   }
   return fields.length;
+}
+
+/**
+ * Sets `overrides` on the tab of `metadata` (`tabs[]`) whose AD_Tab_ID is `tabId`.
+ * @returns the number of tabs changed.
+ */
+export function applyTabOverrides(metadata: WindowMetadata, tabId: string, overrides: TabOverrides): number {
+  const tabs = (metadata.tabs ?? []).filter((tab) => tab.id === tabId);
+  for (const tab of tabs) {
+    Object.assign(tab, overrides);
+  }
+  return tabs.length;
 }
 
 /** URL of the metadata request of a window (`/api/erp/meta/window/<id>`, with or without query). */
@@ -125,6 +145,25 @@ export async function overrideField(
   const state = { applied: 0 };
   await routeChanged(page, windowMetadataUrl(windowId), (metadata) => {
     state.applied += applyFieldOverrides(metadata as WindowMetadata, fieldId, overrides);
+  });
+  return state;
+}
+
+/**
+ * Applies `overrides` to the tab `tabId` of the window `windowId`, from the next time the page loads its
+ * metadata, e.g. `deletableRecords: false` for a table that does not allow deleting records, which the sample
+ * data has none of. Call it before opening the window.
+ * @returns the count of changed tabs, to assert the override matched.
+ */
+export async function overrideTab(
+  page: Page,
+  windowId: string,
+  tabId: string,
+  overrides: TabOverrides
+): Promise<AppliedOverride> {
+  const state = { applied: 0 };
+  await routeChanged(page, windowMetadataUrl(windowId), (metadata) => {
+    state.applied += applyTabOverrides(metadata as WindowMetadata, tabId, overrides);
   });
   return state;
 }
