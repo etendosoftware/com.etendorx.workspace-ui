@@ -31,6 +31,20 @@ const DISCARD_BUTTON = "SaveDiscardCancelModal__discard";
 const CANCEL_BUTTON = "SaveDiscardCancelModal__cancel";
 const TRIGGER = "trigger";
 
+let mockPreferences: Record<string, string> = {};
+const savePreferences = (prefs: Record<string, string>) => {
+  mockPreferences = prefs;
+};
+const clearPreferences = () => {
+  mockPreferences = {};
+};
+
+jest.mock("@/utils/propertyStore", () => ({
+  // Same lookup as the real resolver: the window-scoped key wins over the global one
+  resolvePreference: (key: string, windowId?: string) =>
+    (windowId ? mockPreferences[`${key}_${windowId}`] : undefined) || mockPreferences[key],
+}));
+
 const mockOnSave = jest.fn();
 const mockOnDiscard = jest.fn();
 
@@ -39,7 +53,7 @@ jest.mock("@/hooks/useTranslation", () => ({
 }));
 
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => ({ tab: { id: "header" } }),
+  useTabContext: () => ({ tab: { id: "header", window: "143" } }),
 }));
 
 jest.mock("@/contexts/ToolbarContext", () => ({
@@ -94,7 +108,11 @@ describe("UnsavedChangesTabGuardProvider", () => {
     jest.clearAllMocks();
     mockOnSave.mockResolvedValue(true);
     useWindowStore.setState({ dirtyWindows: {} });
+    // The prompt is what Autosave off shows; the autosave cases set their own preferences
+    savePreferences({ Autosave: "N" });
   });
+
+  afterAll(() => clearPreferences());
 
   it("runs the transition immediately when the tab is clean", () => {
     renderGuard();
@@ -105,7 +123,7 @@ describe("UnsavedChangesTabGuardProvider", () => {
     expect(screen.queryByTestId(SAVE_BUTTON)).not.toBeInTheDocument();
   });
 
-  it("asks the user instead of running the transition when the tab is dirty", () => {
+  it("with Autosave off, asks the user instead of running the transition when the tab is dirty", () => {
     renderGuard();
     setDirty(true);
 
@@ -162,5 +180,112 @@ describe("UnsavedChangesTabGuardProvider", () => {
     expect(mockOnSave).not.toHaveBeenCalled();
     expect(mockOnDiscard).not.toHaveBeenCalled();
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  describe("with the Autosave preferences (ETP-6302)", () => {
+    it("saves and runs the transition without asking when Autosave is on (the default)", async () => {
+      clearPreferences();
+      renderGuard();
+      setDirty(true);
+
+      triggerTransition();
+
+      await waitFor(() => expect(transition).toHaveBeenCalledTimes(1));
+      expect(mockOnSave).toHaveBeenCalledWith({ showModal: false });
+      expect(screen.queryByTestId(SAVE_BUTTON)).not.toBeInTheDocument();
+    });
+
+    it("stays where it is, with the changes kept, when the automatic save fails", async () => {
+      clearPreferences();
+      mockOnSave.mockResolvedValue(false);
+      renderGuard({ withCancel: true });
+      setDirty(true);
+
+      triggerTransition();
+
+      await waitFor(() => expect(onCancel).toHaveBeenCalledTimes(1));
+      expect(transition).not.toHaveBeenCalled();
+      expect(mockOnDiscard).not.toHaveBeenCalled();
+      expect(screen.queryByTestId(SAVE_BUTTON)).not.toBeInTheDocument();
+    });
+
+    it("saves once when the transition is requested again while the save is running", async () => {
+      clearPreferences();
+      let finishSave: (value: boolean) => void = () => {};
+      mockOnSave.mockReturnValue(
+        new Promise<boolean>((resolve) => {
+          finishSave = resolve;
+        })
+      );
+      renderGuard();
+      setDirty(true);
+
+      triggerTransition();
+      triggerTransition();
+      await act(async () => finishSave(true));
+
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
+      expect(transition).toHaveBeenCalledTimes(1);
+    });
+
+    it("does nothing without changes, whatever the preferences say", () => {
+      clearPreferences();
+      renderGuard();
+
+      triggerTransition();
+
+      expect(transition).toHaveBeenCalledTimes(1);
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+
+    it("asks first, with no discard, when Show Confirmation Default is on; accepting saves and moves", async () => {
+      savePreferences({ Autosave: "Y", ShowConfirmationDefault: "Y" });
+      renderGuard();
+      setDirty(true);
+
+      triggerTransition();
+
+      expect(transition).not.toHaveBeenCalled();
+      expect(screen.getByText("unsavedChanges.autosaveMessage")).toBeInTheDocument();
+      expect(screen.queryByTestId(DISCARD_BUTTON)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId(SAVE_BUTTON));
+      await waitFor(() => expect(transition).toHaveBeenCalledTimes(1));
+      expect(mockOnSave).toHaveBeenCalledWith({ showModal: false });
+    });
+
+    it("stays, without saving, when the confirmation is cancelled", async () => {
+      savePreferences({ Autosave: "Y", ShowConfirmationDefault: "Y" });
+      renderGuard({ withCancel: true });
+      setDirty(true);
+      triggerTransition();
+
+      fireEvent.click(screen.getByTestId(CANCEL_BUTTON));
+
+      await waitFor(() => expect(onCancel).toHaveBeenCalledTimes(1));
+      expect(mockOnSave).not.toHaveBeenCalled();
+      expect(transition).not.toHaveBeenCalled();
+    });
+
+    it("ignores Show Confirmation Default when Autosave is off", () => {
+      savePreferences({ Autosave: "N", ShowConfirmationDefault: "Y" });
+      renderGuard();
+      setDirty(true);
+
+      triggerTransition();
+
+      expect(screen.getByText("unsavedChanges.transitionMessage")).toBeInTheDocument();
+      expect(screen.getByTestId(DISCARD_BUTTON)).toBeInTheDocument();
+    });
+
+    it("follows the preference of the window: off for one window does not change another", () => {
+      savePreferences({ Autosave: "Y", Autosave_143: "N" });
+      renderGuard();
+      setDirty(true);
+
+      triggerTransition();
+
+      expect(screen.getByTestId(SAVE_BUTTON)).toBeInTheDocument();
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
   });
 });

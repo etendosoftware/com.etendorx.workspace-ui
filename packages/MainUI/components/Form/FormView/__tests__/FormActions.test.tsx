@@ -127,6 +127,10 @@ jest.mock("@/contexts/tab", () => ({
   }),
 }));
 
+// The Autosave preferences of the window: Autosave on, no confirmation, unless a test says otherwise
+let mockAutosavePolicy = { autosave: true, confirm: false };
+jest.mock("@/utils/autosave", () => ({ getAutosavePolicy: () => mockAutosavePolicy }));
+
 jest.mock("@/stores/windowStore", () => ({
   useWindowStore: (selector: (s: any) => any) =>
     selector({
@@ -533,6 +537,52 @@ describe("FormActions", () => {
 
       expect(mockOnSave).toHaveBeenCalled();
       expect(mockOnNew).not.toHaveBeenCalled();
+    });
+
+    describe("New with the Autosave preferences (ETP-6302)", () => {
+      afterEach(() => {
+        mockAutosavePolicy = { autosave: true, confirm: false };
+      });
+
+      it("with Autosave off it does not save: the guard asks the user before creating the new record", async () => {
+        mockAutosavePolicy = { autosave: false, confirm: false };
+        (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+        const mockOnNew = jest.fn();
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        mockGuardTransition.mockImplementation(() => {});
+        renderFormActions({ ...props, onNew: mockOnNew, onSave: mockOnSave });
+
+        await runRegisteredNew();
+
+        expect(mockGuardTransition).toHaveBeenCalledWith(mockOnNew);
+        expect(mockOnSave).not.toHaveBeenCalled();
+        expect(mockOnNew).not.toHaveBeenCalled();
+      });
+
+      it("with Show Confirmation Default on it goes through the guard that asks first", async () => {
+        mockAutosavePolicy = { autosave: true, confirm: true };
+        (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+        const mockOnNew = jest.fn();
+        const mockOnSave = jest.fn().mockResolvedValue(true);
+        mockGuardTransition.mockImplementation(() => {});
+        renderFormActions({ ...props, onNew: mockOnNew, onSave: mockOnSave });
+
+        await runRegisteredNew();
+
+        expect(mockGuardTransition).toHaveBeenCalledWith(mockOnNew);
+        expect(mockOnSave).not.toHaveBeenCalled();
+      });
+
+      it("with a clean form it creates the record whatever the preferences say", async () => {
+        mockAutosavePolicy = { autosave: false, confirm: false };
+        const mockOnNew = jest.fn();
+        renderFormActions({ ...props, onNew: mockOnNew });
+
+        await runRegisteredNew();
+
+        expect(mockOnNew).toHaveBeenCalledTimes(1);
+        expect(mockGuardTransition).not.toHaveBeenCalledWith(mockOnNew);
+      });
     });
 
     describe("Ctrl+Shift+X (save and close)", () => {
