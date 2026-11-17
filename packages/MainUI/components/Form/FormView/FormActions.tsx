@@ -23,6 +23,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useTabContext } from "@/contexts/tab";
+import { getAutosavePolicy } from "@/utils/autosave";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -287,17 +288,23 @@ export function FormActions({
   /**
    * New autosaves the record being edited before clearing the form, the way Classic's
    * `newDocument` routes through `doActionAfterAutoSave`. A failed save aborts the
-   * creation: its own message is already on screen.
+   * creation: its own message is already on screen. With Autosave off, or with Show
+   * Confirmation Default on, it follows the preferences like any other way of leaving the record.
    */
   const handleNew = useCallback(async () => {
     if (saveButtonState.isSaving) return;
     if (isDirty) {
+      const policy = getAutosavePolicy(tab.window);
+      if (!policy.autosave || policy.confirm) {
+        guardTransition(onNew);
+        return;
+      }
       // While callouts run the save waits for them, as the Save button does
       const saved = await handleSave({ showModal: true });
       if (!saved) return;
     }
     onNew();
-  }, [isDirty, handleSave, onNew, saveButtonState.isSaving]);
+  }, [isDirty, handleSave, onNew, saveButtonState.isSaving, guardTransition, tab.window]);
 
   // Ctrl+S while callouts are running is not lost: the save waits for them and then saves with the values they left
   const handleKeyboardSave = useCallback(async () => {

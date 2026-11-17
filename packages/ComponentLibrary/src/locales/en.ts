@@ -72,6 +72,7 @@ const en = {
     closeWindowTitle: "Close window",
     closeWindow: "Close window",
     transitionMessage: "This record has unsaved changes. What do you want to do?",
+    autosaveMessage: "There are changes in the current record. Do you want to save the changes?",
     saveFailed: "The changes could not be saved in",
     rowSaveFailed: "The changes could not be saved. Open the window to review the errors.",
     openWindow: "Open window",

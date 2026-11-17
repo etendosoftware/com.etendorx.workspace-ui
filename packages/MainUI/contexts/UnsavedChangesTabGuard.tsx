@@ -17,12 +17,13 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarCommands } from "@/contexts/ToolbarContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { isTabDirty } from "@/utils/window/dirtyState";
+import { getAutosavePolicy } from "@/utils/autosave";
 import { useTranslation } from "@/hooks/useTranslation";
 import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
 
@@ -32,12 +33,17 @@ export type GuardedTransition = () => void | Promise<void>;
 interface PendingTransition {
   run: GuardedTransition;
   onCancel?: () => void;
+  /** Autosave is on and only asks first: the user can save and continue, or stay. There is nothing to discard. */
+  confirmOnly: boolean;
 }
 
 interface UnsavedChangesTabGuardI {
   /**
-   * Runs `transition` straight away when the tab has nothing unsaved; otherwise asks the
-   * user to save, discard or cancel first.
+   * Runs `transition` straight away when the tab has nothing unsaved. Otherwise it follows the
+   * window's Autosave and Show Confirmation Default preferences, like Classic:
+   * - Autosave on: saves, then runs the transition. A failed save keeps the user where they are.
+   * - Autosave and Show Confirmation Default on: asks first, then saves and runs the transition.
+   * - Autosave off: asks the user to save, discard or cancel.
    *
    * @param onCancel - Optional cleanup for the caller when the user backs out, e.g. putting
    *                   a grid selection back where it was.
@@ -68,10 +74,34 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
 
   const [pending, setPending] = useState<PendingTransition | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const autosaveInFlightRef = useRef(false);
 
   // The dirty registry is the source of truth, not TabContext's `hasFormChanges`: that
   // flag is also raised for a pristine NEW record to enable the Save button.
   const isDirty = isTabDirty(dirtyWindows, windowIdentifier, tab?.id ?? "");
+
+  const autosaveThenRun = useCallback(
+    async (transition: GuardedTransition, onCancel?: () => void) => {
+      // A second click while the first save is running must not save twice or queue another move
+      if (autosaveInFlightRef.current) {
+        onCancel?.();
+        return;
+      }
+      autosaveInFlightRef.current = true;
+      try {
+        // A failed save leaves the user on the record: its own error message is already on screen.
+        const succeeded = await onSave({ showModal: false });
+        if (!succeeded) {
+          onCancel?.();
+          return;
+        }
+      } finally {
+        autosaveInFlightRef.current = false;
+      }
+      transition();
+    },
+    [onSave]
+  );
 
   const guardTransition = useCallback(
     (transition: GuardedTransition, onCancel?: () => void) => {
@@ -79,9 +109,14 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
         transition();
         return;
       }
-      setPending({ run: transition, onCancel });
+      const policy = getAutosavePolicy(tab?.window);
+      if (policy.autosave && !policy.confirm) {
+        void autosaveThenRun(transition, onCancel);
+        return;
+      }
+      setPending({ run: transition, onCancel, confirmOnly: policy.autosave });
     },
-    [isDirty]
+    [isDirty, tab?.window, autosaveThenRun]
   );
 
   const runPending = useCallback(() => {
@@ -122,7 +157,8 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
       {children}
       <SaveDiscardCancelModal
         open={pending !== null}
-        message={t("unsavedChanges.transitionMessage")}
+        message={t(pending?.confirmOnly ? "unsavedChanges.autosaveMessage" : "unsavedChanges.transitionMessage")}
+        hideDiscard={pending?.confirmOnly}
         isSaving={isSaving}
         onSave={handleSave}
         onDiscard={handleDiscard}
