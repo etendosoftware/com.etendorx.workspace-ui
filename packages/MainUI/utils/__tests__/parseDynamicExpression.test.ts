@@ -175,52 +175,59 @@ describe("parseDynamicExpression — @field_name@ tokenization", () => {
   });
 });
 
-describe("parseDynamicExpression — ^ (starts-with) operator", () => {
-  it.each([
-    ["INV-001", true],
-    ["INV", true],
-    ["inv-001", false],
-    ["XINV", false],
-    ["", false],
-    [null, false],
-    [undefined, false],
-  ])("evaluates @Name@^'INV' for %p", (name, expected) => {
-    expect(run("@Name@^'INV'", { Name: name })).toBe(expected);
+describe("parseDynamicExpression — ^ and - (not-equals, Classic parity)", () => {
+  it.each(["^", "-", "!"])("evaluates @Name@%s'INV' as not equal to", (op) => {
+    expect(run(`@Name@${op}'INV'`, { Name: "INV" })).toBe(false);
+    expect(run(`@Name@${op}'INV'`, { Name: "INV-001" })).toBe(true);
+    expect(run(`@Name@${op}'INV'`, { Name: "OTHER" })).toBe(true);
+    expect(run(`@Name@${op}'INV'`, { Name: "" })).toBe(true);
+    expect(run(`@Name@${op}'INV'`, { Name: null })).toBe(true);
+    expect(run(`@Name@${op}'INV'`, { Name: undefined })).toBe(true);
   });
 
-  it("accepts a double-quoted literal", () => {
-    expect(run('@Name@^"INV"', { Name: "INV-1" })).toBe(true);
-    expect(run('@Name@^"INV"', { Name: "OTHER" })).toBe(false);
+  it.each(["^", "-"])("accepts a double-quoted literal with %s", (op) => {
+    expect(run(`@Name@${op}"INV"`, { Name: "INV" })).toBe(false);
+    expect(run(`@Name@${op}"INV"`, { Name: "OTHER" })).toBe(true);
   });
 
-  it("tolerates spaces around the operator", () => {
-    expect(run("@Name@ ^ 'INV'", { Name: "INV-1" })).toBe(true);
+  it.each(["^", "-"])("tolerates spaces around %s", (op) => {
+    expect(run(`@Name@ ${op} 'INV'`, { Name: "INV" })).toBe(false);
+    expect(run(`@Name@ ${op} 'INV'`, { Name: "XYZ" })).toBe(true);
   });
 
-  it("compares against another field", () => {
-    expect(run("@Name@^@Prefix@", { Name: "INV-1", Prefix: "INV" })).toBe(true);
-    expect(run("@Name@^@Prefix@", { Name: "INV-1", Prefix: "XYZ" })).toBe(false);
-    expect(run("@Name@^@Prefix@", { Name: "INV-1", Prefix: "" })).toBe(false);
+  it.each(["^", "-"])("compares against another field with %s", (op) => {
+    expect(run(`@Name@${op}@Other@`, { Name: "A", Other: "A" })).toBe(false);
+    expect(run(`@Name@${op}@Other@`, { Name: "A", Other: "B" })).toBe(true);
   });
 
   it("reads session variables", () => {
-    expect(run("@#Prefix@^'AB'", { "#Prefix": "ABC" })).toBe(true);
+    expect(run("@#Org@^'0'", { "#Org": "0" })).toBe(false);
+    expect(run("@#Org@-'0'", { "#Org": "1" })).toBe(true);
   });
 
-  it("normalizes booleans to Y/N like other operators", () => {
-    expect(run("@IsActive@^'Y'", { IsActive: true })).toBe(true);
-    expect(run("@IsActive@^'Y'", { IsActive: false })).toBe(false);
+  it("treats boolean values exactly like !", () => {
+    for (const value of [true, false]) {
+      const expected = run("@IsActive@!'Y'", { IsActive: value });
+      expect(run("@IsActive@^'Y'", { IsActive: value })).toBe(expected);
+      expect(run("@IsActive@-'Y'", { IsActive: value })).toBe(expected);
+    }
+  });
+
+  it("gives the same result as ! for the Region example of the ticket", () => {
+    for (const op of ["^", "-", "!"]) {
+      expect(run(`@HasRegion@${op}'N'`, { HasRegion: "Y" })).toBe(true); // Spain: Region tab shown
+      expect(run(`@HasRegion@${op}'N'`, { HasRegion: "N" })).toBe(false); // Andorra: hidden
+    }
   });
 
   it("combines with & and | respecting precedence", () => {
     const values = { Name: "INV-1", Status: "DR", Org: "0" };
-    expect(run("@Name@^'INV'&@Status@='DR'", values)).toBe(true);
-    expect(run("@Name@^'INV'&@Status@='CO'", values)).toBe(false);
-    expect(run("@Name@^'XYZ'|@Status@='DR'", values)).toBe(true);
-    expect(run("@Name@^'XYZ'|@Status@='CO'&@Org@='0'", values)).toBe(false);
-    expect(run("(@Name@^'XYZ'|@Status@='DR')&@Org@='0'", values)).toBe(true);
-    expect(run("@Name@^'INV'&(@Status@='CO'|@Org@='0')", values)).toBe(true);
-    expect(run("!(@Name@^'INV')", values)).toBe(false);
+    expect(run("@Name@^'XYZ'&@Status@='DR'", values)).toBe(true);
+    expect(run("@Name@^'XYZ'&@Status@='CO'", values)).toBe(false);
+    expect(run("@Name@-'INV-1'|@Status@='DR'", values)).toBe(true);
+    expect(run("@Name@-'INV-1'|@Status@='CO'&@Org@='0'", values)).toBe(false);
+    expect(run("(@Name@-'INV-1'|@Status@='DR')&@Org@='0'", values)).toBe(true);
+    expect(run("!(@Name@^'XYZ')", values)).toBe(false);
   });
 
   it("keeps the other operators unchanged", () => {
@@ -228,9 +235,12 @@ describe("parseDynamicExpression — ^ (starts-with) operator", () => {
     expect(run("@Qty@<=5", { Qty: 6 })).toBe(false);
     expect(run("@Status@!'DR'", { Status: "CO" })).toBe(true);
     expect(run("@Status@='DR'", { Status: "DR" })).toBe(true);
+    expect(run("@Status@='DR'&@Org@='0'", { Status: "DR", Org: "0" })).toBe(true);
   });
 
-  it("does not touch ^ outside a field reference", () => {
+  it("does not touch ^ or - outside a field reference followed by a literal or a field", () => {
     expect(parseDynamicExpression("1^2")).toBe("1^2");
+    expect(run("@Qty@-1=4", { Qty: 5 })).toBe(true);
+    expect(run("@Qty@ - 1 = 4", { Qty: 5 })).toBe(true);
   });
 });

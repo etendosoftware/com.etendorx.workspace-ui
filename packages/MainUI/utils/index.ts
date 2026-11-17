@@ -188,14 +188,10 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 
 const fieldReference = (fieldName: string) => `(currentValues["${fieldName}"] ?? context["${fieldName}"])`;
 
-// @Field@^'literal', @Field@^"literal" or @Field@^@OtherField@
-const STARTS_WITH_PATTERN = /@([#$]?[a-zA-Z_]\w*)@\s*\^\s*(?:'([^']*)'|"([^"]*)"|@([#$]?[a-zA-Z_]\w*)@)/g;
-
-// Inlined so the compiled expression has no dependency on the scope it runs in. Booleans are
-// normalized to Y/N like the rest of the display logic values. No assignments here: the '=' to '=='
-// normalization below would rewrite them.
-const STARTS_WITH_FN =
-  '(function(v, p) { function n(x) { return typeof x === "boolean" ? (x ? "Y" : "N") : x; } return n(v) != null && n(v) !== "" && n(p) != null && n(p) !== "" && String(n(v)).startsWith(String(n(p))); })';
+// Classic spells "not equal to" three ways: !, ^ and -. After a field reference, followed by a quoted literal or
+// another field, ^ and - are the same operator as !. Plain arithmetic (@Qty@-1) and anything that is not
+// right after a field reference is left alone.
+const NOT_EQUALS_ALIAS_PATTERN = /(@[#$]?[a-zA-Z_]\w*@)\s*[\^-]\s*(?=['"@])/g;
 
 /**
  * Transforms Etendo dynamic expression syntax to valid JavaScript code.
@@ -214,10 +210,10 @@ const STARTS_WITH_FN =
  * - `@field@!'Y'` → `...!='Y'` (legacy negation syntax)
  * - `@field@='Y'` → `...=='Y'` (single = converted to ==)
  *
- * ### Starts-with operator
- * - `@field@^'INV'` → true when the field value starts with the literal (`@field@^@other@` compares
- *   against another field). An empty or missing value on either side is never a match. Without this
- *   translation JavaScript would read `^` as bitwise XOR.
+ * ### Not-equals aliases
+ * - `@field@^'A'` and `@field@-'A'` → same as `@field@!'A'` (Classic reads `^` and `-` as "not equal to",
+ *   exactly like `!`; `@field@^@other@` compares against another field). Without this translation
+ *   JavaScript would read `^` as bitwise XOR and `-` as a subtraction.
  *
  * ### Legacy OB Utilities
  * - `OB.Utilities.getValue(obj, 'prop')` → `obj["prop"]`
@@ -243,27 +239,18 @@ export const parseDynamicExpression = (expr: string) => {
   // Replace | with || (unless it's already ||)
   const exprLogic = expr.replace(/(?<!&)&(?!&)/g, "&&").replace(/(?<!\|)\|(?!\|)/g, "||");
 
+  // ^ and - are written as ! so they go through the same translations below.
+  const exprAliased = exprLogic.replace(NOT_EQUALS_ALIAS_PATTERN, "$1!");
+
   // Handle @Var1@!@Var2@ pattern (inequality between two field references, no spaces).
   // e.g. @INVENTORYSTATUS@!@To_State_ID@ -> @INVENTORYSTATUS@ != @To_State_ID@
-  const exprNormalized = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
-
-  // Translate @Field@^'literal' (starts-with) before the generic field substitution, since JavaScript
-  // would otherwise read ^ as XOR. The call form keeps it a single operand for & and | precedence and
-  // avoids arrow functions, which the '=' normalization below would corrupt.
-  const exprStartsWith = exprNormalized.replace(
-    STARTS_WITH_PATTERN,
-    (_, field, singleQuoted, doubleQuoted, otherField) => {
-      const prefix =
-        otherField === undefined ? JSON.stringify(singleQuoted ?? doubleQuoted) : fieldReference(otherField);
-      return `${STARTS_WITH_FN}(${fieldReference(field)}, ${prefix})`;
-    }
-  );
+  const exprNormalized = exprAliased.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
 
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
   // Use ?? (nullish coalescing) so falsy-but-valid values like 0, false, "" are not
   // shadowed by the context fallback — only null/undefined fall through.
-  let expr0 = exprStartsWith.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return fieldReference(fieldName);
   });
 
