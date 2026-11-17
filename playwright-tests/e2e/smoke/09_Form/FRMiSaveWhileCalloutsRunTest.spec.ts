@@ -42,7 +42,9 @@ test.describe("Form - save while the callouts are running @smoke @form", () => {
     });
     page.on("response", async (response) => {
       if (!SAVE_REQUEST.test(response.url())) return;
-      const body = await response.json().catch(() => undefined);
+      // A rejected save has no record to clean up; any other failure to read the answer must show
+      if (!response.ok()) return;
+      const body = await response.json();
       savedOrderId ??= body?.response?.data?.[0]?.id;
     });
 
