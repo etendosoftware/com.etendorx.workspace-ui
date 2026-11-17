@@ -23,6 +23,7 @@ import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNumericFormatOptions } from "@/utils";
 import { evaluateMathExpression, isMathExpression, sanitizeMathExpression } from "@/utils/form/mathExpression";
+import { isSameNumericValue } from "@/utils/form/numericValue";
 import { TextInput } from "./components/TextInput";
 
 type NumericType = "integer" | "decimal";
@@ -172,11 +173,14 @@ export const UnifiedNumericSelector = ({
         }
         if (!isDirty) {
           const parsedValue = parseValue(value);
-          setValue(field.hqlName, parsedValue, editOptions);
+          // The same number typed another way ("2.640" for 2.64) is not an edit
+          if (!isSameNumericValue(formValue, parsedValue)) {
+            setValue(field.hqlName, parsedValue, editOptions);
+          }
         }
       }
     },
-    [getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue, editOptions]
+    [getValidationRegex, props, isDirty, formValue, field.hqlName, parseValue, setValue, editOptions]
   );
 
   const handleFocus = useCallback(
@@ -215,7 +219,10 @@ export const UnifiedNumericSelector = ({
       } else {
         parsedValue = parseValue(localValue);
       }
-      setValue(field.hqlName, parsedValue, editOptions);
+      // Leaving the field without changing its number is not an edit: the form keeps what it holds
+      if (!isSameNumericValue(formValue, parsedValue)) {
+        setValue(field.hqlName, parsedValue, editOptions);
+      }
 
       if (isInteger && parsedValue !== null && !Number.isInteger(parsedValue)) {
         // The save is blocked while the field holds decimals (see validateIntegerFields).
@@ -233,6 +240,7 @@ export const UnifiedNumericSelector = ({
     },
     [
       localValue,
+      formValue,
       parseValue,
       field.hqlName,
       setValue,
