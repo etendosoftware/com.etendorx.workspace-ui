@@ -21,10 +21,15 @@ import { FORM_KEYS } from "@/utils/form/keyboard";
 
 /** Key that flips a boolean field, the one Classic's CycleItem listens to. */
 const TOGGLE_KEY = FORM_KEYS.SPACE;
-/** Same accent as the other switches of the UI. */
-const SWITCH_ON_CLASSES = "bg-(--color-dynamic-main)";
-/** Keeps the "off" track above the 3:1 control contrast on the card, in both themes. */
-const SWITCH_OFF_CLASSES = "bg-(--color-baseline-50)";
+/**
+ * "On": track filled with the accent, white thumb on the right. "Off": empty track with a grey outline and a
+ * smaller grey thumb on the left, so the two states differ by fill and not only by the thumb position. Both
+ * keep 3:1 or more against the card.
+ */
+export const SWITCH_ON_CLASSES = "bg-(--color-dynamic-main) border-(--color-dynamic-main)";
+export const SWITCH_OFF_CLASSES = "bg-transparent border-(--ui-switch-off)";
+export const THUMB_ON_CLASSES = "h-4 w-4 translate-x-5 bg-(--color-baseline-0)";
+export const THUMB_OFF_CLASSES = "h-3 w-3 translate-x-1 bg-(--ui-switch-off)";
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked: boolean;
@@ -77,14 +82,12 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         ref={ref}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${FOCUS_RING_CLASSES} ${
+        className={`relative inline-flex h-6 w-11 items-center rounded-full border-2 transition-colors ${FOCUS_RING_CLASSES} ${
           checked ? SWITCH_ON_CLASSES : SWITCH_OFF_CLASSES
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`}
         {...props}>
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? "translate-x-6" : "translate-x-1"
-          }`}
+          className={`inline-block transform rounded-full transition-all ${checked ? THUMB_ON_CLASSES : THUMB_OFF_CLASSES}`}
         />
       </button>
     );

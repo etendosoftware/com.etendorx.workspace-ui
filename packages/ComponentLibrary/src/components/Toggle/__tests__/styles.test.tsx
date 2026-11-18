@@ -17,7 +17,7 @@
 
 import { renderHook } from "@testing-library/react";
 import { darkTheme, theme } from "../../../theme";
-import { useStyle } from "../styles";
+import { SWITCH_OFF_COLOR, useStyle } from "../styles";
 
 let mockTheme: unknown = theme;
 
@@ -39,14 +39,24 @@ describe("Toggle styles", () => {
   it.each([
     ["light", theme],
     ["dark", darkTheme],
-  ])("uses the accent for the on track and a contrast-safe off track in %s mode", (_mode, activeTheme) => {
+  ])("uses the accent for the on track and an outlined off track in %s mode", (_mode, activeTheme) => {
     const rules = switchRules(activeTheme);
 
     expect(rules["& .MuiSwitch-switchBase"]["&.Mui-checked"]["& + .MuiSwitch-track"].backgroundColor).toBe(
       activeTheme.palette.dynamicColor.main
     );
-    expect((rules["& .MuiSwitch-track"] as unknown as Record<string, unknown>).backgroundColor).toBe(
-      activeTheme.palette.baselineColor.neutral[50]
+    const offTrack = rules["& .MuiSwitch-track"] as unknown as Record<string, string>;
+    expect(offTrack.backgroundColor).toBe("transparent");
+    expect(offTrack.boxShadow).toContain(SWITCH_OFF_COLOR);
+  });
+
+  it("draws the off thumb grey and smaller, and the on track without the outline", () => {
+    const base = switchRules(theme)["& .MuiSwitch-switchBase"] as unknown as Record<string, unknown>;
+
+    expect(base.color).toBe(SWITCH_OFF_COLOR);
+    expect(base["&:not(.Mui-checked) .MuiSwitch-thumb"]).toEqual({ transform: "scale(0.75)" });
+    expect((base["&.Mui-checked"] as Record<string, Record<string, unknown>>)["& + .MuiSwitch-track"].boxShadow).toBe(
+      "none"
     );
   });
 });

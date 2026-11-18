@@ -17,7 +17,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { Switch } from "../Switch";
+import { Switch, SWITCH_OFF_CLASSES, SWITCH_ON_CLASSES, THUMB_OFF_CLASSES, THUMB_ON_CLASSES } from "../Switch";
 import { findFocusableFields } from "@/utils/form/focus";
 
 const FIELD_LABEL = "Active";
@@ -99,16 +99,19 @@ describe("Switch keyboard contract", () => {
   });
 });
 
-describe("Switch track colours", () => {
-  it("uses the contrast-safe track when off", () => {
-    const { control } = renderSwitch({ checked: false });
+describe("Switch on and off states", () => {
+  it.each([
+    [false, SWITCH_OFF_CLASSES, THUMB_OFF_CLASSES],
+    [true, SWITCH_ON_CLASSES, THUMB_ON_CLASSES],
+  ])("checked=%s draws its own track and thumb", (checked, track, thumb) => {
+    const { control } = renderSwitch({ checked });
 
-    expect(control.className).toContain("bg-(--color-baseline-50)");
+    expect(control.className).toContain(track);
+    expect(control.firstElementChild?.className).toContain(thumb);
   });
 
-  it("uses the accent track when on", () => {
-    const { control } = renderSwitch({ checked: true });
-
-    expect(control.className).toContain("bg-(--color-dynamic-main)");
+  it("leaves the off track empty, so only the on state is filled", () => {
+    expect(SWITCH_OFF_CLASSES).toContain("bg-transparent");
+    expect(SWITCH_ON_CLASSES).toContain("bg-(--color-dynamic-main)");
   });
 });
