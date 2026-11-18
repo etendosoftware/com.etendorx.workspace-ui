@@ -15,10 +15,9 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { MenuTitle } from "../index";
+import { MENU_ROW_SHAPE_CLASSES, MenuTitle, getMenuButtonClassName } from "../index";
 import { DEFAULT_B64, EXTERNAL_LINK_B64 } from "../constants";
 import { DrawerHighlightContext } from "../../DrawerHighlightContext";
-import { MENU_ROW_SHAPE_CLASSES, getMenuButtonClassName } from "../index";
 import { MENU_ICON_SLOT_OPEN_CLASS, getMenuRowIndentStyle } from "../../spacing";
 
 const SVG_PREFIX = "data:image/svg+xml;base64,";

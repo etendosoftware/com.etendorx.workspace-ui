@@ -37,12 +37,14 @@ const FIELD = {
   helpComment: "",
 } as unknown as Field;
 
+/** Stable context value: defined once, so the provider does not change on every render. */
+const TRAILING_ACTION = { action: <button type="button" data-testid={ACTION_TEST_ID} />, setHosted: jest.fn() };
+
 function Harness() {
   const methods = useForm({ defaultValues: { [FIELD_NAME]: "HF" } });
   return (
     <FormProvider {...methods}>
-      <FieldTrailingActionContext.Provider
-        value={{ action: <button type="button" data-testid={ACTION_TEST_ID} />, setHosted: jest.fn() }}>
+      <FieldTrailingActionContext.Provider value={TRAILING_ACTION}>
         <Select name={FIELD_NAME} options={[{ id: "HF", label: "Healthy Food" }]} isReadOnly={false} field={FIELD} />
       </FieldTrailingActionContext.Provider>
     </FormProvider>

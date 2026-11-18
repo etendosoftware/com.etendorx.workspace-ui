@@ -27,7 +27,7 @@ import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 // that `muiTableBodyCellProps` sets on the table cell (Table/index.tsx), so no
 // extra tooltip is wrapped here to avoid showing two tooltips at once.
 /** Tags inside grid cells use the dense size, which matches the grid text. */
-export const GRID_TAG_SIZE = "small" as const;
+export const GRID_TAG_SIZE = "small";
 
 /** Content of a grid cell that cuts a long value with an ellipsis inside the flex cell. */
 export const TRUNCATED_CELL_CLASSES = "block min-w-0 max-w-full truncate";

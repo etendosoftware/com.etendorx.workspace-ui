@@ -139,6 +139,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     [canOpenSearchModal, popupShortcutId]
   );
 
+  // The magnifier sits inside the input box when the input can host it (FK selects), so the field keeps the
+  // width of its column; any other input keeps it outside, as before.
+  // Declared before the early returns, like every Hook here.
+  const openSearchModal = useCallback(() => setIsSearchModalOpen(true), []);
+  const search = useFieldSearchAction({
+    enabled: canOpenSearchModal,
+    fieldId: field.id,
+    onOpen: openSearchModal,
+    tabIndex: NOT_TABBABLE,
+  });
+
   const { reference } = effectiveField.column;
 
   const isProductStockModal =
@@ -307,16 +318,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }
   })();
-
-  // The magnifier sits inside the input box when the input can host it (FK selects), so the field keeps the
-  // width of its column; any other input keeps it outside, as before.
-  const openSearchModal = useCallback(() => setIsSearchModalOpen(true), []);
-  const search = useFieldSearchAction({
-    enabled: canOpenSearchModal,
-    fieldId: field.id,
-    onOpen: openSearchModal,
-    tabIndex: NOT_TABBABLE,
-  });
 
   const handleSelect = (record: EntityData) => {
     // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID
