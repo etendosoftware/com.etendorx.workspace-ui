@@ -26,6 +26,14 @@ import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 export const LEFT_GROUP_CLASSES =
   "flex items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_.toolbar-button-refresh:not(:hover)]:bg-transparent [&_.toolbar-button-refresh]:border-0 [&_.toolbar-button-refresh]:h-8 [&_.toolbar-button-refresh]:w-8";
 
+/**
+ * Grid extras (fullscreen, record navigation): the ink of the toolbar icons only for enabled buttons. Forcing it
+ * on every button made a disabled "previous" or "next" record button look exactly like an enabled one; disabled
+ * buttons keep the faded disabled colour of `IconButton`.
+ */
+export const EXTRAS_SLOT_CLASSES =
+  "flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]! [&_button:not(:disabled)]:text-(--ui-text)! [&_button]:transition! [&_button]:duration-400! [&_button:not(:disabled):hover]:text-(--color-baseline-0)!";
+
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton, rootRef }: TopToolbarProps) => {
   const { setSlot: setExtrasSlot } = useToolbarExtrasSlot();
   // The process button belonged to the center section, which renders nothing without buttons.
@@ -57,11 +65,7 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
       </div>
       <div className="flex shrink-0 items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_button]:h-8 [&_button]:w-8 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-transparent! [&_button:not([style*=background-color]):not(:disabled):hover]:bg-(--color-dynamic-main)!">
         <ToolbarSection {...rightSection} className="flex items-center gap-1" data-testid="ToolbarSection__f0537e_3" />
-        <div
-          ref={setExtrasSlot}
-          className="flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]! [&_button]:text-(--ui-text)! [&_button]:transition! [&_button]:duration-400! [&_button:not(:disabled):hover]:text-(--color-baseline-0)!"
-          data-testid="ToolbarExtrasSlot__container"
-        />
+        <div ref={setExtrasSlot} className={EXTRAS_SLOT_CLASSES} data-testid="ToolbarExtrasSlot__container" />
       </div>
     </div>
   );

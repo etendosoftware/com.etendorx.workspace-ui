@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import TopToolbar, { LEFT_GROUP_CLASSES } from "../TopToolbar/TopToolbar";
+import TopToolbar, { EXTRAS_SLOT_CLASSES, LEFT_GROUP_CLASSES } from "../TopToolbar/TopToolbar";
 import type { ToolbarButton, TopToolbarProps } from "../types";
 
 const button = (key: string): ToolbarButton =>
@@ -73,6 +73,12 @@ describe("TopToolbar layout", () => {
   it("draws the grid extras (fullscreen, record navigation) with the same ink as the toolbar icons", () => {
     renderToolbar();
 
-    expect(screen.getByTestId("ToolbarExtrasSlot__container")).toHaveClass("[&_button]:text-(--ui-text)!");
+    expect(screen.getByTestId("ToolbarExtrasSlot__container")).toHaveClass(
+      "[&_button:not(:disabled)]:text-(--ui-text)!"
+    );
+  });
+
+  it("leaves disabled extras (previous / next record at the ends) with the disabled colour", () => {
+    expect(EXTRAS_SLOT_CLASSES).not.toContain("[&_button]:text-");
   });
 });
