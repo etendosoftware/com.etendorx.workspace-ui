@@ -28,6 +28,7 @@ import {
 } from "@workspaceui/api-client/src/api/notes";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { formatRelativeTime } from "../noteUtils";
+import { useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
 import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
 const CURRENT_USER_ID = "user-1";
@@ -123,6 +124,7 @@ describe("NoteSection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUserId = CURRENT_USER_ID;
+    useNotesPreferencesStore.setState(useNotesPreferencesStore.getInitialState(), true);
     (fetchNotes as jest.Mock).mockResolvedValue([existingNote]);
     (createNote as jest.Mock).mockResolvedValue(createdNote);
     (deleteNote as jest.Mock).mockResolvedValue(undefined);
@@ -177,6 +179,23 @@ describe("NoteSection", () => {
 
       fireEvent.click(toggle);
       expect(date()).toHaveTextContent(formatRelativeTime(existingNote.creationDate, Date.now(), "en-US"));
+    });
+
+    it("shows the chosen mode in the notes of every window at once", async () => {
+      renderWithTheme(
+        <>
+          <NoteSection {...defaultProps} />
+          <NoteSection {...defaultProps} recordId={OTHER_RECORD_ID} />
+        </>
+      );
+      await waitFor(() => expect(screen.getAllByText(EXISTING_NOTE_TEXT)).toHaveLength(2));
+
+      fireEvent.click(screen.getAllByTestId("Button__a680f8_date_display")[0]);
+
+      const exactDate = formatClassicDate(existingNote.creationDate, true);
+      for (const date of screen.getAllByTestId(`Typography__a680f8_date_${existingNote.id}`)) {
+        expect(date).toHaveTextContent(exactDate);
+      }
     });
 
     it("refreshes the elapsed time every minute", async () => {

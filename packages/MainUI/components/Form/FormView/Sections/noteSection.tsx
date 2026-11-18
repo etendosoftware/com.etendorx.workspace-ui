@@ -19,18 +19,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, Skeleton, Typography } from "@mui/material";
 import type { Note, NoteSectionProps } from "../types";
 import { fetchNotes, deleteNote, createNote } from "@workspaceui/api-client/src/api/notes";
-import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import CalendarIcon from "@workspaceui/componentlibrary/src/assets/icons/calendar.svg";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
+import { DATE_DISPLAY, useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
 import { useUserStore } from "@/stores/userStore";
 import { toLocale } from "@/utils/ob/format";
 import NoteComposer from "./NoteComposer";
 import NoteItem from "./NoteItem";
 import {
-  DATE_DISPLAY,
-  toDateDisplay,
   addNoteOnTop,
   getDeleteNoteErrorMessage,
   getRequestErrorMessage,
@@ -43,7 +41,6 @@ import { useNoteStyles } from "./noteStyles";
 
 const SKELETON_ROWS = 2;
 const SKELETON_HEIGHT = 72;
-const DATE_DISPLAY_STORAGE_KEY = "notes.dateDisplay";
 /** How often the elapsed times in words are refreshed. */
 const RELATIVE_TIME_REFRESH_MS = 60_000;
 
@@ -84,11 +81,8 @@ const NoteSection = ({
   const currentUserId = useUserStore((s) => s.user?.id);
   const { language } = useLanguage();
   const locale = toLocale(language);
-  const [storedDateDisplay, setStoredDateDisplay] = useLocalStorage<string>(
-    DATE_DISPLAY_STORAGE_KEY,
-    DATE_DISPLAY.RELATIVE
-  );
-  const dateDisplay = toDateDisplay(storedDateDisplay);
+  const dateDisplay = useNotesPreferencesStore((state) => state.dateDisplay);
+  const setDateDisplay = useNotesPreferencesStore((state) => state.setDateDisplay);
   const isRelativeDate = dateDisplay === DATE_DISPLAY.RELATIVE;
   const now = useCurrentTime(isSectionExpanded && isRelativeDate);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -167,7 +161,7 @@ const NoteSection = ({
     }
   };
 
-  const toggleDateDisplay = () => setStoredDateDisplay(isRelativeDate ? DATE_DISPLAY.ABSOLUTE : DATE_DISPLAY.RELATIVE);
+  const toggleDateDisplay = () => setDateDisplay(isRelativeDate ? DATE_DISPLAY.ABSOLUTE : DATE_DISPLAY.RELATIVE);
 
   const renderDateDisplayToggle = () => {
     const label = isRelativeDate ? t("forms.notes.showExactDates") : t("forms.notes.showRelativeDates");

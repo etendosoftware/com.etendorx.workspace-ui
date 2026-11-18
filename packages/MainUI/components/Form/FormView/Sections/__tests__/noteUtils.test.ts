@@ -18,9 +18,7 @@
 import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, NoteDeleteError } from "@workspaceui/api-client/src/api/notes";
 import {
   addNoteOnTop,
-  DATE_DISPLAY,
   formatRelativeTime,
-  toDateDisplay,
   getDeleteNoteErrorMessage,
   getRequestErrorMessage,
   isNoteAlreadyDeleted,
@@ -109,15 +107,6 @@ describe("formatRelativeTime", () => {
   it("reads a date ahead of the clock as now and an invalid date as empty", () => {
     expect(formatRelativeTime(new Date(NOW + DAY).toISOString(), NOW, "en-US")).toBe("now");
     expect(formatRelativeTime("not a date", NOW, "en-US")).toBe("");
-  });
-});
-
-describe("toDateDisplay", () => {
-  it("keeps the absolute mode and defaults anything else to relative", () => {
-    expect(toDateDisplay(DATE_DISPLAY.ABSOLUTE)).toBe(DATE_DISPLAY.ABSOLUTE);
-    expect(toDateDisplay(DATE_DISPLAY.RELATIVE)).toBe(DATE_DISPLAY.RELATIVE);
-    expect(toDateDisplay("garbage")).toBe(DATE_DISPLAY.RELATIVE);
-    expect(toDateDisplay(undefined)).toBe(DATE_DISPLAY.RELATIVE);
   });
 });
 

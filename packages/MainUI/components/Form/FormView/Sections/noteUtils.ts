@@ -26,10 +26,6 @@ export const NOTE_MAX_LENGTH = 2000;
 
 const DELETE_NOTE_FALLBACK_MESSAGE = "Failed to delete note";
 
-/** How the creation date of the notes is shown: time elapsed in words, or the exact date and time. */
-export const DATE_DISPLAY = { RELATIVE: "relative", ABSOLUTE: "absolute" } as const;
-export type DateDisplay = (typeof DATE_DISPLAY)[keyof typeof DATE_DISPLAY];
-
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -106,19 +102,6 @@ export const formatRelativeTime = (isoDate: string, now: number, locale?: string
   }
   const [unitName, duration] = unit;
   return formatter.format(-Math.floor(elapsed / duration), unitName);
-};
-
-/**
- * Reads the stored date display mode, ignoring any value that is not a known mode.
- *
- * @param stored - The value read from the browser storage
- * @returns The stored mode, or the relative one by default
- */
-export const toDateDisplay = (stored: unknown): DateDisplay => {
-  if (stored === DATE_DISPLAY.ABSOLUTE) {
-    return DATE_DISPLAY.ABSOLUTE;
-  }
-  return DATE_DISPLAY.RELATIVE;
 };
 
 /**

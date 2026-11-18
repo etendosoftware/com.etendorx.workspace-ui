@@ -22,7 +22,8 @@ import TrashIcon from "@workspaceui/componentlibrary/src/assets/icons/trash.svg"
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { Note } from "../types";
-import { DATE_DISPLAY, formatRelativeTime, type DateDisplay } from "./noteUtils";
+import { DATE_DISPLAY, type DateDisplay } from "@/stores/notesPreferencesStore";
+import { formatRelativeTime } from "./noteUtils";
 import { DELETE_ICON_BUTTON_CLASS, useNoteStyles } from "./noteStyles";
 
 interface NoteItemProps {
