@@ -2,6 +2,7 @@ import { useState, useMemo, type ChangeEvent } from "react";
 import X from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
 import { NOT_TABBABLE, focusOwningField } from "@/utils/form/focus";
 import type { TextInputProps } from "./types";
+import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 export const TextInput = ({
   leftIcon,
@@ -132,7 +133,10 @@ export const TextInput = ({
             onClick={handleClear}
             tabIndex={NOT_TABBABLE}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
-            <X className="h-4 w-4 text-gray-400" data-testid={`X__${field.id}`} />
+            <X
+              className={`h-4 w-4 ${isFocused ? ACTIVE_ICON_COLOR : "text-gray-400"}`}
+              data-testid={`X__${field.id}`}
+            />
           </button>
         )}
 
