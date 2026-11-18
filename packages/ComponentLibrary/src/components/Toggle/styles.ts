@@ -40,10 +40,7 @@ export const useStyle = (): StylesType => {
               transform: "translateX(1.25rem)",
               color: theme.palette.baselineColor.neutral[0],
               "& + .MuiSwitch-track": {
-                backgroundColor:
-                  theme.palette.mode === "dark"
-                    ? theme.palette.specificColor.warning
-                    : theme.palette.baselineColor.neutral[80],
+                backgroundColor: theme.palette.dynamicColor.main,
                 opacity: 1,
                 border: 0,
               },
@@ -52,7 +49,7 @@ export const useStyle = (): StylesType => {
               },
             },
             "&.Mui-focusVisible .MuiSwitch-thumb": {
-              color: theme.palette.specificColor.warning,
+              color: theme.palette.dynamicColor.main,
               border: `0.375rem solid ${theme.palette.baselineColor.neutral[0]}`,
             },
             "&.Mui-disabled .MuiSwitch-thumb": {
@@ -70,10 +67,8 @@ export const useStyle = (): StylesType => {
           },
           "& .MuiSwitch-track": {
             borderRadius: "1.625rem",
-            backgroundColor:
-              theme.palette.mode === "light"
-                ? theme.palette.baselineColor.neutral[30]
-                : theme.palette.specificColor.draft.contrastText,
+            // neutral[50] keeps the "off" track above the 3:1 control contrast in both themes.
+            backgroundColor: theme.palette.baselineColor.neutral[50],
             opacity: 1,
             transition: theme.transitions.create(["background-color"], {
               duration: 500,

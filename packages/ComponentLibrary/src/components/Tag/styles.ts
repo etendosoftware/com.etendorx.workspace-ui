@@ -18,13 +18,21 @@
 import React, { type CSSProperties, type ReactElement, useMemo } from "react";
 import { type Theme, useTheme, type SxProps } from "@mui/material";
 
+export type TagSize = "small" | "medium";
+
+/** Dimensions per size: `small` matches the text of dense rows such as grid cells. */
+const TAG_DIMENSIONS: Record<TagSize, { height: string; padding: string; fontSize: string; fontWeight: number; lineHeight: string }> = {
+  medium: { height: "1.5rem", padding: "0 0.5rem", fontSize: "0.875rem", fontWeight: 500, lineHeight: "1.25rem" },
+  small: { height: "1.25rem", padding: "0 0.375rem", fontSize: "0.75rem", fontWeight: 400, lineHeight: "1rem" },
+};
+
 type StylesType = {
   getColor: (customColor?: string) => string;
   getTextColor: (customColor?: string, customTextColor?: string) => string;
   getColoredIcon: (icon: ReactElement, customColor?: string, customTextColor?: string) => ReactElement;
-  getChipStyles: (customColor?: string, customTextColor?: string) => CSSProperties;
+  getChipStyles: (customColor?: string, customTextColor?: string, size?: TagSize) => CSSProperties;
   sx: {
-    chipLabel: (icon?: ReactElement) => SxProps<Theme>;
+    chipLabel: (icon?: ReactElement, size?: TagSize) => SxProps<Theme>;
   };
 };
 
@@ -46,23 +54,23 @@ export const useStyle = (): StylesType => {
 
         return theme.palette.baselineColor.neutral[100];
       },
-      getChipStyles: (customColor?: string, customTextColor?: string): CSSProperties => ({
+      getChipStyles: (customColor?: string, customTextColor?: string, size: TagSize = "medium"): CSSProperties => ({
         backgroundColor: self.getColor(customColor),
         color: self.getTextColor(customTextColor),
-        height: "1.5rem",
-        fontWeight: 500,
+        height: TAG_DIMENSIONS[size].height,
+        fontWeight: TAG_DIMENSIONS[size].fontWeight,
         cursor: "default",
-        padding: "0 0.5rem",
+        padding: TAG_DIMENSIONS[size].padding,
         fontFamily: "Inter, sans-serif",
         border: "none",
       }),
       sx: {
-        chipLabel: (icon?: ReactElement): SxProps<Theme> => ({
+        chipLabel: (icon?: ReactElement, size: TagSize = "medium"): SxProps<Theme> => ({
           "& .MuiChip-label": {
             fontFamily: "Inter",
-            fontWeight: 500,
-            fontSize: "0.875rem",
-            lineHeight: "1.25rem",
+            fontWeight: TAG_DIMENSIONS[size].fontWeight,
+            fontSize: TAG_DIMENSIONS[size].fontSize,
+            lineHeight: TAG_DIMENSIONS[size].lineHeight,
             padding: "0",
             margin: "0",
             paddingLeft: icon ? "0.25rem" : "0",

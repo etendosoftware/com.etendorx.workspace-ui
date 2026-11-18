@@ -98,3 +98,17 @@ describe("Switch keyboard contract", () => {
     expect(control.className).toContain("focus-visible:ring-[#2a1757]");
   });
 });
+
+describe("Switch track colours", () => {
+  it("uses the contrast-safe track when off", () => {
+    const { control } = renderSwitch({ checked: false });
+
+    expect(control.className).toContain("bg-(--color-baseline-50)");
+  });
+
+  it("uses the accent track when on", () => {
+    const { control } = renderSwitch({ checked: true });
+
+    expect(control.className).toContain("bg-(--color-dynamic-main)");
+  });
+});

@@ -21,6 +21,10 @@ import { FORM_KEYS } from "@/utils/form/keyboard";
 
 /** Key that flips a boolean field, the one Classic's CycleItem listens to. */
 const TOGGLE_KEY = FORM_KEYS.SPACE;
+/** Same accent as the other switches of the UI. */
+const SWITCH_ON_CLASSES = "bg-(--color-dynamic-main)";
+/** Keeps the "off" track above the 3:1 control contrast on the card, in both themes. */
+const SWITCH_OFF_CLASSES = "bg-(--color-baseline-50)";
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked: boolean;
@@ -74,7 +78,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
         onKeyDown={handleKeyDown}
         ref={ref}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${FOCUS_RING_CLASSES} ${
-          checked ? "bg-blue-600" : "bg-gray-300"
+          checked ? SWITCH_ON_CLASSES : SWITCH_OFF_CLASSES
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`}
         {...props}>
         <span

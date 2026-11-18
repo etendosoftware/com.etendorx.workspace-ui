@@ -33,14 +33,10 @@ const getButtonClasses = ({
   const styles: Record<ButtonVariant, (args: { disabled?: boolean }) => string> = {
     filled: ({ disabled }) =>
       clsx(
-        "text-(--color-etendo-contrast-text) dark:text-[#16171b]",
+        "text-(--color-etendo-contrast-text)",
         disabled
-          ? "bg-(--color-transparent-neutral-100) opacity-20"
-          : [
-              "bg-(--color-baseline-100)",
-              "hover:bg-(--color-dynamic-main)",
-              "hover:[&>span>svg]:fill-white dark:hover:[&>span>svg]:fill-[#16171b]",
-            ]
+          ? "bg-(--color-transparent-neutral-100) opacity-20 dark:text-[#16171b]"
+          : ["bg-(--ui-accent)", "hover:bg-(--ui-accent-hover)", "hover:[&>span>svg]:fill-white"]
       ),
     outlined: ({ disabled }) =>
       clsx(
