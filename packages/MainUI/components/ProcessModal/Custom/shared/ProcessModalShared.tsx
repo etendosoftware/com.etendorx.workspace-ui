@@ -126,6 +126,9 @@ interface ResultMessageModalProps {
   testIdPrefix?: string;
 }
 
+/** Surface of the process result card. */
+export const RESULT_CARD_CLASSES = "rounded-2xl p-6 shadow-xl relative max-w-sm w-full bg-(--ui-card-bg)";
+
 export const ResultMessageModal: React.FC<ResultMessageModalProps> = ({
   result,
   closeLabel,
@@ -135,10 +138,6 @@ export const ResultMessageModal: React.FC<ResultMessageModalProps> = ({
 }) => {
   const isWarning = result.type === "warning";
   const isError = result.type === "error";
-
-  let bgGradient = "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
-  if (isWarning) bgGradient = "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)";
-  else if (isError) bgGradient = "#fff";
 
   let titleColor = "text-(--color-success-main)";
   if (isWarning) titleColor = "text-amber-600";
@@ -152,13 +151,12 @@ export const ResultMessageModal: React.FC<ResultMessageModalProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-      <div
-        className="rounded-2xl p-6 shadow-xl relative max-w-sm w-full"
-        style={{ background: isError ? "#fff" : bgGradient }}>
+      {/* Flat card surface like the rest of the UI; the coloured icon and title carry the result type. */}
+      <div className={RESULT_CARD_CLASSES}>
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors">
+          className="absolute top-4 right-4 p-1 rounded-full hover:bg-(--color-transparent-neutral-10) transition-colors">
           <CloseIcon className="w-5 h-5" data-testid={`CloseIcon__${testIdPrefix}_result`} />
         </button>
         <div className="flex flex-col items-center gap-4">

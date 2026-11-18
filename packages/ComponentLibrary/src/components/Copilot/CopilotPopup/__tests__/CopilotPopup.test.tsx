@@ -16,7 +16,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import CopilotPopup from "../index";
+import CopilotPopup, { COLLAPSED_PANEL_POSITION, COLLAPSED_PANEL_SIZE, PANEL_SURFACE } from "../index";
 import type { CopilotPopupProps } from "../../types";
 
 jest.mock("../ChatInterface", () => ({
@@ -53,10 +53,11 @@ const renderPopup = (isExpanded = false) => {
 };
 
 describe("CopilotPopup", () => {
-  it("keeps the collapsed panel above the status bar and inside the right margin", () => {
-    const { frame } = renderPopup();
+  it("anchors the collapsed panel to the content area, from below the top bar to above the status bar", () => {
+    const { frame, panel } = renderPopup();
 
-    expect(frame).toHaveClass("right-4", "bottom-9");
+    expect(frame).toHaveClass(...COLLAPSED_PANEL_POSITION.split(" "));
+    expect(panel).toHaveClass(...COLLAPSED_PANEL_SIZE.split(" "));
   });
 
   it("fills the screen with its inset when expanded", () => {
@@ -65,9 +66,10 @@ describe("CopilotPopup", () => {
     expect(frame).toHaveClass("inset-4");
   });
 
-  it("uses the card surface instead of the pastel gradient in dark mode", () => {
+  it("uses the flat card surface in both themes instead of the pastel gradient", () => {
     const { panel } = renderPopup();
 
-    expect(panel).toHaveClass("dark:bg-none", "dark:bg-(--ui-card-bg)");
+    expect(panel).toHaveClass(PANEL_SURFACE);
+    expect(panel.className).not.toContain("gradient");
   });
 });

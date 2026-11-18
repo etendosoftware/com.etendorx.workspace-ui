@@ -26,10 +26,12 @@ jest.mock(
   { virtual: true }
 );
 
+const mockModalProps = jest.fn(() => true);
+
 // Mock Modal component from the parent directory
 jest.mock("../../index", () => ({
-  Modal: ({ children, open, saveButtonLabel, secondaryButtonLabel, onSave, onCancel, autoFocusSave }: any) =>
-    open ? (
+  Modal: ({ children, open, saveButtonLabel, secondaryButtonLabel, onSave, onCancel, autoFocusSave, ...rest }: any) =>
+    mockModalProps(rest) && open ? (
       <div data-testid="mock-modal" data-autofocus-save={String(Boolean(autoFocusSave))}>
         <button onClick={onSave}>{saveButtonLabel}</button>
         <button onClick={onCancel}>{secondaryButtonLabel}</button>
@@ -45,6 +47,7 @@ jest.mock("@mui/material", () => ({
   ...jest.requireActual("@mui/material"),
   useTheme: () => ({
     palette: {
+      baselineColor: { neutral: { 0: "#fcfcfd" } },
       specificColor: {
         warning: {
           light: "#fff5f5",
@@ -60,6 +63,7 @@ jest.mock("../../StatusModal/styles", () => ({
     sx: {
       statusModalContainer: {},
       statusText: {},
+      statusIcon: {},
     },
   }),
 }));
@@ -102,5 +106,13 @@ describe("ConfirmModal", () => {
   it("focuses the confirm button so Enter confirms", () => {
     render(<ConfirmModal {...defaultProps} />);
     expect(screen.getByTestId("mock-modal")).toHaveAttribute("data-autofocus-save", "true");
+  });
+
+  it("shows a warning badge on a flat surface instead of a tinted gradient", () => {
+    mockModalProps.mockClear();
+    render(<ConfirmModal {...defaultProps} />);
+
+    expect(screen.getByTestId("StatusIconBadge__confirm")).toBeInTheDocument();
+    expect(mockModalProps).toHaveBeenCalledWith(expect.not.objectContaining({ backgroundGradient: expect.anything() }));
   });
 });
