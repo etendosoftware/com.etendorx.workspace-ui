@@ -507,7 +507,6 @@ function SelectCmp({
             </span>
           )}
           <div className="flex items-center flex-shrink-0 ml-2">
-            {trailingAction}
             {shouldShowClearButton && (
               <button
                 type="button"
@@ -519,6 +518,9 @@ function SelectCmp({
                 <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
             )}
+            {/* After the clear icon: that one appears on focus, and anything to its right keeps its place, so a
+                press on the action is not moved away between mouse down and up. */}
+            {trailingAction}
             {!isReadOnly && (
               <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
             )}
