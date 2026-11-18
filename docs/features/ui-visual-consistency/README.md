@@ -85,6 +85,25 @@ the same ink as the other database icons. They render through the same `<img cla
 so hover, disabled and dark mode keep working through the existing global rules. Any other button,
 including module buttons, keeps its database icon. Refresh no longer has a filled circle.
 
+### Grid filters look like fields
+
+Each column filter is a filled, rounded box (the fill of the sidebar search, `--ui-search-bg`) inset in
+the filter band, with an outline on hover and the accent outline while typing or open
+(`FILTER_FIELD_SX` in `components/Table/styles.ts`, shared with process grids). Empty filters at rest had
+no box and the band looked like blank header space.
+
+### Disabled icons look disabled
+
+The grid extras of the toolbar (fullscreen, previous / next record) take the toolbar ink only when
+enabled (`EXTRAS_SLOT_CLASSES`); forcing it on every button made a disabled "previous record" on the
+first record look exactly like the enabled "next".
+
+### Home buttons
+
+"Add widget" is filled with the accent, like "New Record" (a 5% grey chip was about 1.2:1 against the
+page). "Read more" is a light button with dark text on the dark banner (`--ui-banner-cta`,
+`--ui-banner-cta-fg`): 11.5:1 against the banner, where the violet one was 1.4:1.
+
 ### Disabled filled buttons stay readable
 
 New, Save Changes and Available Process were the accent faded to 20% when disabled (about 1.3:1). They
