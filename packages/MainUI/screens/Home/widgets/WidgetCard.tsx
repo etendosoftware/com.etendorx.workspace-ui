@@ -31,8 +31,9 @@ interface WidgetTheme {
   skeleton: string;
 }
 
+// Card surface with a border: the old baseline-10 fill matched the bottom of the page gradient and faded out.
 const DEFAULT_THEME: WidgetTheme = {
-  card: "bg-baseline-10",
+  card: "bg-(--ui-card-bg) border border-(--ui-line)",
   title: "text-baseline-100",
   icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
   iconHover: "text-baseline-50",
@@ -48,7 +49,8 @@ const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
     skeleton: "bg-transparent-neutral-20",
   },
   FAVORITES: {
-    card: "bg-[#0A0F1E]",
+    // In dark mode the near-black fill matched the page; the lifted surface and border keep the card visible.
+    card: "bg-[#0A0F1E] dark:bg-(--color-baseline-10) dark:border dark:border-(--ui-line)",
     title: "text-white",
     icon: "text-white/50 hover:text-white hover:bg-white/10",
     iconHover: "text-white/50",
@@ -247,7 +249,7 @@ export default function WidgetCard({
       {/* Content — scrollable area that fills remaining card height; not mounted while collapsed */}
       {!isCollapsed && (
         <div
-          className={`flex-1 min-h-0 overflow-y-auto transition-opacity ${bodyStateClass}`}
+          className={`grid-scrollbar flex-1 min-h-0 overflow-y-auto transition-opacity ${bodyStateClass}`}
           data-testid={`WidgetCard__body_${instance.instanceId}`}>
           {isUnavailable && (
             <p

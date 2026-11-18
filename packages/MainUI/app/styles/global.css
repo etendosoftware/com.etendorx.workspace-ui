@@ -247,6 +247,10 @@ body {
   --ui-accent: var(--color-dynamic-main);
   --ui-accent-hover: var(--color-dynamic-dark);
   --ui-accent-dark: var(--color-dynamic-dark);
+  /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
+  --ui-banner-accent: #b9acd9;
+  --ui-banner-cta: #4a2f8a;
+  --ui-banner-cta-hover: #6a4fb0;
   --ui-ink: #0f172a;
   --ui-line: #e1e1e3;
   --ui-canvas: hsl(220 14% 95%);

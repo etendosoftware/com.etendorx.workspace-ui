@@ -51,6 +51,14 @@ describe("FavoritesRenderer", () => {
     expect(screen.getByTestId("FavoritesRenderer__item_140")).toHaveTextContent("Product");
   });
 
+  it("keeps a long label on one line and shows it whole on hover", () => {
+    render(<FavoritesRenderer data={dataWith([{ windowId: "143", label: "Sales Order" }])} />);
+
+    const item = screen.getByTestId("FavoritesRenderer__item_143");
+    expect(item).toHaveClass("truncate", "whitespace-nowrap");
+    expect(item).toHaveAttribute("title", "Sales Order");
+  });
+
   it("seeds the favorites store with the items", () => {
     const data = dataWith([{ windowId: "143", label: "Sales Order" }]);
 

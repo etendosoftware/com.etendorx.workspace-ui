@@ -23,6 +23,7 @@ import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
+import { WIDGET_CHIP_LAYOUT_CLASSES } from "./chipClasses";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
@@ -62,7 +63,8 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
           onClick={() => handleClick(item.windowId, item.label)}
           onMouseEnter={() => prefetchOnHover(item.windowId)}
           onFocus={() => prefetchOnHover(item.windowId)}
-          className="rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer"
+          className={`${WIDGET_CHIP_LAYOUT_CLASSES} rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer`}
+          title={item.label}
           data-testid={`FavoritesRenderer__item_${item.windowId}`}>
           {item.label}
         </button>

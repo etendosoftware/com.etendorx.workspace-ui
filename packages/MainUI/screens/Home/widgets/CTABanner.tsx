@@ -56,12 +56,12 @@ export default function CTABanner() {
         aria-hidden="true"
       />
       {/* Icon */}
-      <div className="shrink-0 w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-blue-300 z-10">
+      <div className="shrink-0 w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-(--ui-banner-accent) z-10">
         <BookIcon data-testid="BookIcon__514220" />
       </div>
       {/* Content */}
       <div className="flex flex-col gap-0.5 flex-1 min-w-0 z-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-300">
+        <p className="text-xs font-semibold uppercase tracking-widest text-(--ui-banner-accent)">
           {t("dashboard.ctaBanner.badge")}
         </p>
         <p className="text-base font-semibold text-white leading-snug">{t("dashboard.ctaBanner.title")}</p>
@@ -73,7 +73,7 @@ export default function CTABanner() {
           href="https://docs.etendo.software/whats-new/etendo-news/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-sm font-medium text-white transition-colors duration-200 cursor-pointer">
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-(--ui-banner-cta) hover:bg-(--ui-banner-cta-hover) text-sm font-medium text-white transition-colors duration-200 cursor-pointer">
           {t("dashboard.ctaBanner.learnMore")}
           <ArrowIcon data-testid="ArrowIcon__514220" />
         </a>

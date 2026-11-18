@@ -17,7 +17,8 @@
 
 import { render } from "@testing-library/react";
 import type { WidgetInstance } from "@workspaceui/api-client/src/api/dashboard";
-import DashboardGrid from "@/screens/Home/widgets/DashboardGrid";
+import DashboardGrid, { closeHorizontalGaps } from "@/screens/Home/widgets/DashboardGrid";
+import type { LayoutItem } from "react-grid-layout";
 
 const mockWidgetCard = jest.fn();
 const mockGridLayout = jest.fn();
@@ -131,5 +132,32 @@ describe("DashboardGrid", () => {
         { instanceId: "w2", col: 0, row: 0.5, width: 4, height: 2.5, isVisible: true, isCollapsed: false },
       ]);
     });
+  });
+});
+
+/** One-unit-wide layout item at the given column and row. */
+const cell = (i: string, x: number, y = 0, w = 1, h = 4): LayoutItem => ({ i, x, y, w, h });
+
+/** Column of each item after closing the gaps, keyed by id. */
+const columnsAfterClosing = (items: LayoutItem[]) =>
+  Object.fromEntries(closeHorizontalGaps(items).map((item) => [item.i, item.x]));
+
+describe("closeHorizontalGaps", () => {
+  it("moves a widget left over the column a hidden widget left empty", () => {
+    expect(columnsAfterClosing([cell("a", 0), cell("b", 1), cell("c", 3)])).toEqual({ a: 0, b: 1, c: 2 });
+  });
+
+  it("keeps a layout without gaps unchanged", () => {
+    expect(columnsAfterClosing([cell("a", 0), cell("b", 1, 0, 2)])).toEqual({ a: 0, b: 1 });
+  });
+
+  it("does not move a widget over a taller widget of a previous row", () => {
+    const tall = cell("tall", 0, 0, 1, 8);
+    expect(columnsAfterClosing([tall, cell("below", 1, 4)])).toEqual({ tall: 0, below: 1 });
+  });
+
+  it("keeps the row of every widget", () => {
+    const rows = closeHorizontalGaps([cell("a", 2, 0), cell("b", 3, 6)]).map((item) => item.y);
+    expect(rows).toEqual([0, 6]);
   });
 });

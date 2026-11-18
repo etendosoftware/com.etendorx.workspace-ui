@@ -202,3 +202,17 @@ describe("WidgetCard manual refresh", () => {
     });
   });
 });
+
+describe("WidgetCard surface", () => {
+  it("fills the whole card with the card surface and a border", () => {
+    renderCard();
+
+    expect(screen.getByTestId(`WidgetCard__${INSTANCE_ID}`)).toHaveClass("bg-(--ui-card-bg)", "border");
+  });
+
+  it("shows a visible scrollbar on the body so long lists read as scrollable", () => {
+    renderCard();
+
+    expect(screen.getByTestId(BODY_TEST_ID)).toHaveClass("grid-scrollbar", "overflow-y-auto");
+  });
+});
