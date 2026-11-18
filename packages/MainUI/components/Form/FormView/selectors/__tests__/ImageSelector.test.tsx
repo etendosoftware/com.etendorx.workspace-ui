@@ -192,6 +192,18 @@ describe("ImageSelector", () => {
     expect(thumbnail.src).toBe("blob:http://localhost/existing-img-id");
   });
 
+  it("does not render an <img> with an empty src while the image is still loading", () => {
+    watchMock.mockReturnValue("existing-img-id");
+    (useAuthenticatedImage as jest.Mock).mockReturnValue(null);
+
+    const { container } = renderSelector();
+
+    expect(screen.getByTestId("ImageSelector__filled__col-1")).toBeInTheDocument();
+    expect(screen.queryByTestId("ImageSelector__thumbnail__col-1")).not.toBeInTheDocument();
+    expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+  });
+
   it("should call uploadImage and set value on valid file selection", async () => {
     watchMock.mockReturnValue(null);
     uploadImageMock.mockResolvedValue(createUploadResult({ imageId: "new-img-id" }));
