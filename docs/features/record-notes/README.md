@@ -11,16 +11,27 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
   servlet of the metadata module (`GET /notes?table=…&record=…`, newest first). While they load the
   section shows placeholders; a record without notes shows *"No notes yet. Write the first one above."*
 - Each note is a row of a vertical list with:
-  - the author initials, the author name (*"Unknown user"* when the server sends none) and, on own notes,
-    a **You** badge;
-  - the **creation date and time** (hours, minutes, seconds) in the browser locale, through
-    `formatClassicDate(value, true)`, the same formatter used by the audit date columns of the grid (see
-    [DATE_FORMATTING.md](../../../packages/MainUI/docs/DATE_FORMATTING.md)). The servlet sends an ISO UTC
-    timestamp, so it is shown in local time; an invalid date is not shown;
+  - the author name (*"Unknown user"* when the server sends none) and, on own notes, a **You** badge;
+  - the **creation date**, in one of two modes the user switches with the button above the list
+    (*"Show exact dates"* / *"Show time elapsed"*, calendar and clock icons):
+    - **time elapsed** (default): in words and in the user language through `Intl.RelativeTimeFormat`
+      (*"5 minutes ago"*, *"yesterday"*, *"2 weeks ago"*, *"hace 5 minutos"*): minutes, hours, days, weeks,
+      months and years; less than a minute (or a date ahead of the clock) reads as *"now"*. It is refreshed
+      every minute while the section is open;
+    - **exact date and time** (hours, minutes, seconds) in the browser locale, through
+      `formatClassicDate(value, true)`, the same formatter used by the audit date columns of the grid (see
+      [DATE_FORMATTING.md](../../../packages/MainUI/docs/DATE_FORMATTING.md)).
+
+    The other format is always available as the tooltip of the date. The chosen mode is remembered per
+    browser (`localStorage` key `notes.dateDisplay`; an unknown stored value falls back to time elapsed). The
+    servlet sends an ISO UTC timestamp, so dates are shown in local time; an invalid date is not shown;
   - the **full text with its line breaks**. Notes longer than 6 lines are cut, with a **Show more /
     Show less** toggle that only appears when the text does not fit (re-measured when the note is resized).
-- Own notes have an accent bar in the dynamic (primary) color; notes of other users have a neutral one.
-  Every color comes from the theme palette, so the section is readable in the light and dark themes.
+- Own notes have a faint tint of the primary color (10% of `dynamicColor.main`); notes of other users keep
+  the neutral surface. Every color comes from the theme palette, so the section is readable in the light and
+  dark themes. Measured contrasts (WCAG): text over 12:1, dates over 7.5:1, **You** badge 9:1, own notes'
+  delete icon at least 4:1 (light) and 5:1 (dark), note input border 3.9:1 (3:1 is the minimum for a control).
+  The border of the notes (30%) is decorative: notes are not interactive controls.
 - The content is only rendered while the section is expanded: the collapsible keeps its children mounted,
   and a hidden note input would otherwise still be reachable with Tab.
 
@@ -34,7 +45,8 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
   the next one. When adding fails, the error is shown and **the text is kept**.
 
 ### Deleting notes
-- The delete button (trash icon, labelled *"Delete note"*, reachable with the keyboard) is rendered only on
+- The delete button (red trash icon with a faint red background on hover, like the destructive actions of
+  the Attachments section; labelled *"Delete note"*, reachable with the keyboard) is rendered only on
   notes whose creator (`createdBy`) is the logged user (`useUserStore` → `user.id`, the `AD_User_ID`).
   Without a known current user no note offers it.
 - Deleting asks for an **inline confirmation inside the note** (*"Delete this note?"*). The focus moves to
@@ -73,8 +85,13 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
 - **Inline delete confirmation instead of the shared `ConfirmModal`.** The shared modal does not close with
   Escape and does not show which note is deleted; changing it would affect every confirmation of the
   application, so the section confirms inside the note instead.
-- **Absolute date and time.** Classic shows how long ago the note was written ("2 hours ago by …"); the task
-  asks for the full creation date and time, which is unambiguous and consistent with the audit fields.
+- **Time elapsed by default, exact date on demand.** Classic shows how long ago the note was written
+  ("2 hours ago by …"), which reads naturally; the task also asks for the full creation date and time. Both
+  are offered: the elapsed time by default, the exact date with one click, and the other format in the
+  tooltip.
+- **Tint instead of an accent bar for own notes.** A colored side bar read as a generic decoration; a faint
+  tint of the primary color, plus the **You** badge, tells own notes apart without an extra element.
+- **No author avatar.** The initials repeated the author name next to them without adding information.
 - **The server check is kept.** Hiding the delete button is a usability fix, not the security boundary.
 
 ## Differences with Classic
@@ -83,8 +100,8 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
 |---|---|---|
 | Delete option | `[ delete ]` link only on own notes | Trash button only on own notes, keyboard reachable |
 | Delete confirmation | Modal dialog | Inline, inside the note; Escape cancels |
-| Own vs. other notes | Different color bar per row | Accent bar vs. neutral bar, **You** badge |
-| Date | Relative interval ("2 hours ago") | Creation date and time in the browser locale |
+| Own vs. other notes | Different color bar per row | Primary color tint, **You** badge |
+| Date | Relative interval ("2 hours ago") | Time elapsed in words or exact date and time, switchable |
 | Long notes | Full text in the grid row | Cut after 6 lines with Show more / Show less |
 | Note organization | Organization of the record | Same (previously the session organization) |
 
