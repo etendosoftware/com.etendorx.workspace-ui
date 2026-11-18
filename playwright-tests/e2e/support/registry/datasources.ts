@@ -33,6 +33,7 @@ export const DATASOURCE = {
   PREFERENCE: { entity: "ADPreference", windowId: "129", tabId: "156" },
   PRODUCT_CATEGORY: { entity: "ProductCategory", windowId: "144", tabId: "189" },
   SALES_ORDER: { entity: "Order", windowId: WINDOW_IDS.SALES_ORDER, tabId: TABS.SALES_ORDER_HEADER },
+  PURCHASE_ORDER: { entity: "Order", windowId: "181", tabId: "294" },
   SALES_INVOICE: { entity: "Invoice", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_HEADER },
   SALES_INVOICE_LINE: { entity: "InvoiceLine", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_LINES },
 } as const satisfies Record<string, DatasourceTarget>;
