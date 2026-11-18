@@ -44,12 +44,14 @@ export const TextInput = ({
 
   const inputBaseClassNames = useMemo(() => {
     const paddingLeft = leftIcon ? "pl-10" : "pl-3";
-    const paddingRight = showClearButton || rightIcon ? "pr-10" : "pr-3";
+    // The clear icon ends 36px from the right edge: 44px keep an 8px gap between the text and the icon.
+    const paddingRight = showClearButton || rightIcon ? "pr-11" : "pr-3";
 
-    const base = `w-full ${paddingLeft} ${paddingRight} rounded-t tracking-normal h-10.5 border-0 
+    // A long value ends in an ellipsis before the icon instead of being cut mid-letter.
+    const base = `w-full ${paddingLeft} ${paddingRight} text-ellipsis rounded-t tracking-normal h-10.5 border-0 
       border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
       text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
-      focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none 
+      focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none 
       hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)`;
 
     const disabledStyles =

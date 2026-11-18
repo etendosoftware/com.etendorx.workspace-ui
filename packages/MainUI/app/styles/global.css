@@ -249,6 +249,10 @@ body {
   --ui-accent: var(--color-dynamic-main);
   --ui-accent-hover: var(--color-dynamic-dark);
   --ui-accent-dark: var(--color-dynamic-dark);
+  /* Focused or open form field: tinted background, accent text and border. */
+  --ui-field-focus-bg: #ece8f6;
+  --ui-field-focus-fg: #2a1757;
+  --ui-field-focus-border: #2a1757;
   /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
   --ui-banner-accent: #b9acd9;
   --ui-banner-cta: #4a2f8a;
@@ -616,6 +620,10 @@ html[data-theme="dark"] {
   --color-dynamic-dark: #5a49a8;
   --color-dynamic-light: #2d2650;
   --color-dynamic-contrast-text: #e9e6fb;
+  /* Focused field: dark lilac tint with a light lilac text (8:1). */
+  --ui-field-focus-bg: #2d2650;
+  --ui-field-focus-fg: #c8bff4;
+  --ui-field-focus-border: #8b7bdc;
   --color-etendo-main: #8b7bdc;
   --color-etendo-dark: #5a49a8;
   --color-etendo-contrast-text: #e9e6fb;

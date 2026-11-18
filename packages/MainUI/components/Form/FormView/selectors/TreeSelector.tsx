@@ -46,6 +46,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 import { TREE_TRIGGER_ACTIONS, buildDropdownPortalSelector, getTreeTriggerAction } from "@/utils/form/keyboard";
+import { SELECTED_CHECK_CLASSES } from "@/utils/iconClasses";
 
 interface TreeSelectorProps {
   field: Field;
@@ -314,9 +315,9 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     if (isReadOnly) {
       return `${base} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)`;
     }
-    const active = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
+    const active = "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)";
     const hover = "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
-    const focus = "focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer";
+    const focus = "focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none cursor-pointer";
     const interactive = isFocused || isOpen ? active : hover;
     return `${base} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactive} ${focus}`;
   }, [isReadOnly, isFocused, isOpen]);
@@ -325,7 +326,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     const base = "text-sm truncate max-w-[calc(100%-40px)] font-medium";
     if (!selectedLabel) return `${base} text-baseline-60`;
     const isActive = (isFocused || isOpen) && !isReadOnly;
-    return `${base} ${isActive ? "text-[#2a1757]" : "text-(--color-transparent-neutral-80)"}`;
+    return `${base} ${isActive ? "text-(--ui-field-focus-fg)" : "text-(--color-transparent-neutral-80)"}`;
   }, [selectedLabel, isFocused, isOpen, isReadOnly]);
 
   const chevronClassNames = useMemo(() => {
@@ -401,7 +402,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
             {!node.hasChildren && <span className="w-4 flex-shrink-0" />}
             <span className={`truncate ${getNodeTextClass(selectable, isSelected)}`}>{identifier}</span>
           </span>
-          {isSelected && <CheckIcon className="fade-in-left flex-shrink-0" height={16} width={16} />}
+          {isSelected && <CheckIcon className={`fade-in-left flex-shrink-0 ${SELECTED_CHECK_CLASSES}`} height={16} width={16} />}
         </li>
       );
     });

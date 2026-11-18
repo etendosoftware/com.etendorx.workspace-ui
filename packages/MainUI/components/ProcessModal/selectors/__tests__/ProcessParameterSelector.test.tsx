@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ProcessParameterSelector } from "../ProcessParameterSelector";
+import { REQUIRED_MARK_LABEL } from "@/components/Form/FormView/selectors/components/FieldLabelRow";
 
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
@@ -165,7 +166,7 @@ describe("ProcessParameterSelector", () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText("*")).toBeInTheDocument();
+    expect(screen.getByLabelText(REQUIRED_MARK_LABEL)).toBeInTheDocument();
   });
 
   it("should render PasswordSelector for password reference", () => {

@@ -5,6 +5,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import type React from "react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import StatusBar from "@/components/Form/FormView/StatusBar";
+import { ToolbarExtrasSlotContext } from "@/contexts/ToolbarExtrasSlot";
 
 // Mock the toolbar context with custom implementation
 const mockToolbarContext = {
@@ -438,4 +439,28 @@ describe("StatusBar", () => {
       expect(screen.getByTestId("icon-button")).toBeInTheDocument();
     });
   });
+
+  describe("Inside the tab toolbar", () => {
+    /** Renders the status bar with a toolbar slot, which is how forms show it under the tab toolbar. */
+    const renderInToolbar = () => {
+      const slot = document.createElement("div");
+      document.body.appendChild(slot);
+      render(
+        <ToolbarExtrasSlotContext.Provider value={{ slot, setSlot: jest.fn() }}>
+          <TestWrapper>
+            <StatusBar fields={mockFields} />
+          </TestWrapper>
+        </ToolbarExtrasSlotContext.Provider>
+      );
+      return screen.getByTestId("status-bar-container");
+    };
+
+    it("wraps the status fields instead of hiding the ones past the right edge", () => {
+      const container = renderInToolbar();
+
+      expect(container).toHaveClass("flex-wrap", "gap-y-1");
+      expect(container).not.toHaveClass("overflow-x-auto");
+    });
+  });
 });
+

@@ -5,6 +5,7 @@
 import { render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ProcessParameterSelector } from "../selectors/ProcessParameterSelector";
+import { REQUIRED_MARK_LABEL } from "@/components/Form/FormView/selectors/components/FieldLabelRow";
 
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
@@ -105,7 +106,7 @@ describe("ProcessParameterSelector Integration", () => {
       expect(screen.getByTestId("field-label")).toHaveTextContent("User Password");
       expect(screen.getByTestId("password-field")).toBeInTheDocument();
       expect(screen.getByTestId("password-field")).toHaveAttribute("type", "password");
-      expect(screen.getByText("*")).toBeInTheDocument(); // Mandatory indicator
+      expect(screen.getByLabelText(REQUIRED_MARK_LABEL)).toBeInTheDocument(); // Mandatory indicator
     });
 
     it("should render Boolean field correctly", () => {
@@ -151,7 +152,7 @@ describe("ProcessParameterSelector Integration", () => {
       expect(screen.getByTestId("field-label")).toHaveTextContent("Payment Amount");
       expect(screen.getByTestId("numeric-field")).toBeInTheDocument();
       expect(screen.getByTestId("numeric-field")).toHaveAttribute("type", "number");
-      expect(screen.getByText("*")).toBeInTheDocument(); // Mandatory indicator
+      expect(screen.getByLabelText(REQUIRED_MARK_LABEL)).toBeInTheDocument(); // Mandatory indicator
     });
 
     it("should handle Integer reference as numeric", () => {

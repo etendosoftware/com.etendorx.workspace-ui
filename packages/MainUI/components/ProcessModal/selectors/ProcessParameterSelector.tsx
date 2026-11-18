@@ -68,6 +68,7 @@ interface ProcessParameterSelectorProps {
 import { createProcessExpressionContext, isParameterDisplayed } from "../utils/processExpressionUtils";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import FieldLabelRow from "@/components/Form/FormView/selectors/components/FieldLabelRow";
 
 // ... imports remain the same
 
@@ -378,19 +379,18 @@ const ProcessParameterSelectorImpl = ({
 
   return (
     <div className="h-12 flex items-center" title={parameter.description}>
-      <div className="w-1/3 flex items-center gap-2 pr-2">
-        <Label
-          htmlFor={parameter.name}
-          name={labelOverrides?.[parameter.name] ?? parameterLabel(parameter)}
-          data-testid="Label__dac06b"
-        />
-        {parameter.mandatory && (
-          <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
-            *
-          </span>
-        )}
-        <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
-      </div>
+      <FieldLabelRow
+        label={
+          <Label
+            htmlFor={parameter.name}
+            name={labelOverrides?.[parameter.name] ?? parameterLabel(parameter)}
+            data-testid="Label__dac06b"
+          />
+        }
+        mandatory={Boolean(parameter.mandatory)}
+        widthClassName="w-1/3"
+        data-testid="FieldLabelRow__dac06b"
+      />
       <div className="w-2/3">{renderSelector()}</div>
     </div>
   );

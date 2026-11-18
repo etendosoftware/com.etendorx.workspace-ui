@@ -99,4 +99,10 @@ describe("date/constants", () => {
       expect(result).toContain(HELPER_TEXT_DEFAULT_CLASS);
     });
   });
+
+  it("styles the focused input with the theme focus tokens instead of light-only colours", () => {
+    expect(INPUT_FOCUS_CLASS).toBe(
+      "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)"
+    );
+  });
 });

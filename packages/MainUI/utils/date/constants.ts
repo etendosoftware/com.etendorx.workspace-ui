@@ -22,7 +22,8 @@ export const INPUT_BASE_CLASS = `w-full pl-3 pr-10 rounded-t tracking-normal h-1
   [&::-webkit-calendar-picker-indicator]:hidden
   [&::-moz-calendar-picker-indicator]:hidden`;
 
-export const INPUT_FOCUS_CLASS = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
+// Theme tokens: the focused input stays readable in dark mode.
+export const INPUT_FOCUS_CLASS = "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)";
 
 export const INPUT_HOVER_CLASS =
   "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
