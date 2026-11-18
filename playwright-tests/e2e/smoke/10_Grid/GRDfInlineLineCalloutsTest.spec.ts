@@ -254,7 +254,10 @@ test.describe("Grid - callouts in the inline editing of document lines @smoke @g
 
     // Its read-only rule (@Processed@='Y') applies: nothing in the row can be changed, and nothing is saved
     await expect(cell(app, editing, INVOICED_QUANTITY)).toBeDisabled();
-    await expect(editing.locator(`[data-column-id="${PRODUCT_COLUMN}"]`)).toHaveAttribute("tabindex", "-1");
+    const productCell = editing.locator(`[data-column-id="${PRODUCT_COLUMN}"]`);
+    await expect(productCell).toHaveAttribute("tabindex", "-1");
+    // Escape cancels the edit only from inside the grid, and nothing in a read-only row takes the focus by itself
+    await productCell.focus();
     await page.keyboard.press("Escape");
     await expect(page.locator('[data-testid^="save-button-"]')).toHaveCount(0);
   });

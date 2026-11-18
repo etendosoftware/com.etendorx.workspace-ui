@@ -87,11 +87,13 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
     await app.sidebar.navigateTo("salesOrder");
     await app.toolbar.newRecord();
     await app.field.selectById(BUSINESS_PARTNER, data.BUSINESS_PARTNER.CUSTOMER_A.id);
-    await app.page.keyboard.press("Control+s");
+    // The toolbar save returns once a new record is reloaded into the form: a slower reload would overwrite the
+    // value typed next
+    await app.toolbar.save();
     await app.breadcrumb.documentNumber();
     await app.formSections.open(MORE_INFORMATION);
     await app.field.fill(ORDER_REFERENCE, FIRST_REFERENCE);
-    await app.page.keyboard.press("Control+s");
+    await app.toolbar.save();
     // Saved: both saves answered, and the form has taken the saved record back as its reference
     await expect.poll(() => answered.length).toBe(2);
     await expect(app.toolbar.button("save")).toBeDisabled();
