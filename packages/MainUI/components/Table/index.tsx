@@ -2247,7 +2247,8 @@ const DynamicTable = ({
       const fieldsArray = tab.fields ? Object.values(tab.fields) : [];
       const session = useUserStore.getState().session;
       const isHidden = (field: Field | Column) =>
-        "displayLogicExpression" in field && isHiddenByDisplayLogic(field, currentData, session, tab.window, tab.fields);
+        "displayLogicExpression" in field &&
+        isHiddenByDisplayLogic(field, currentData, session, tab.window, tab.fields);
 
       if (editingRowData.isNew) {
         // Use stricter validation for new rows

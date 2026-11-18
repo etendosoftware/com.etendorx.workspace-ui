@@ -139,6 +139,7 @@ export function useTabSwitchGuard(windowIdentifier: string | undefined, windowId
       onSave={handleSave}
       onDiscard={handleDiscard}
       onCancel={() => setPending(null)}
+      data-testid="SaveDiscardCancelModal__6dde0c"
     />
   );
 

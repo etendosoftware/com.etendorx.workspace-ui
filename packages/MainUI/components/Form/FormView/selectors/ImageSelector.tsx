@@ -383,7 +383,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         ) : (
           // The image id is known but its URL is not ready yet: an <img> with an empty src would make the browser
           // download the whole page again
-          <Spinner size={28} />
+          <Spinner size={28} data-testid={"Spinner__" + field.id} />
         )}
       </button>
 
