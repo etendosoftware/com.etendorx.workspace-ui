@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { act, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import NoteSection from "../noteSection";
 import {
@@ -27,6 +27,7 @@ import {
   HTTP_NOT_FOUND,
 } from "@workspaceui/api-client/src/api/notes";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { formatRelativeTime } from "../noteUtils";
 import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
 const CURRENT_USER_ID = "user-1";
@@ -43,6 +44,10 @@ jest.mock("@workspaceui/api-client/src/api/notes", () => ({
 jest.mock("@/stores/userStore", () => ({
   useUserStore: (selector: (state: { user: { id?: string } }) => unknown) =>
     selector({ user: { id: mockCurrentUserId } }),
+}));
+
+jest.mock("@/contexts/language", () => ({
+  useLanguage: () => ({ language: "en_US" }),
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -147,15 +152,50 @@ describe("NoteSection", () => {
 
       expect(fetchNotes).toHaveBeenCalledWith({ recordId: RECORD_ID, tableId: TABLE_ID });
       expect(screen.getByText(`Name of ${CURRENT_USER_ID}`)).toBeInTheDocument();
-      expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`)).toHaveTextContent(
-        formatClassicDate(existingNote.creationDate, true)
-      );
+      expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`)).toBeInTheDocument();
     });
 
-    it("shows the creation date with time", async () => {
+    it("shows the elapsed time in words, with the exact date and time in its tooltip", async () => {
       await renderWithNote();
+      const date = screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`);
 
-      expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`).textContent).toMatch(/\d{2}:\d{2}:\d{2}/);
+      expect(date).toHaveTextContent(formatRelativeTime(existingNote.creationDate, Date.now(), "en-US"));
+      expect(date).toHaveAttribute("title", formatClassicDate(existingNote.creationDate, true));
+    });
+
+    it("switches between the elapsed time and the exact date and time", async () => {
+      await renderWithNote();
+      const toggle = screen.getByTestId("Button__a680f8_date_display");
+      const date = () => screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`);
+
+      expect(toggle).toHaveTextContent("forms.notes.showExactDates");
+      fireEvent.click(toggle);
+
+      expect(date()).toHaveTextContent(formatClassicDate(existingNote.creationDate, true));
+      expect(date().textContent).toMatch(/\d{2}:\d{2}:\d{2}/);
+      expect(toggle).toHaveTextContent("forms.notes.showRelativeDates");
+
+      fireEvent.click(toggle);
+      expect(date()).toHaveTextContent(formatRelativeTime(existingNote.creationDate, Date.now(), "en-US"));
+    });
+
+    it("refreshes the elapsed time every minute", async () => {
+      jest.useFakeTimers({ doNotFake: ["queueMicrotask", "nextTick", "setImmediate"] });
+      try {
+        const justNow = new Date().toISOString();
+        (fetchNotes as jest.Mock).mockResolvedValue([{ ...existingNote, creationDate: justNow }]);
+        await renderWithNote();
+        const date = screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`);
+        expect(date).toHaveTextContent("now");
+
+        act(() => {
+          jest.advanceTimersByTime(2 * 60_000);
+        });
+
+        expect(date).toHaveTextContent("2 minutes ago");
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("hides the date when the server sends an invalid one", async () => {
@@ -217,7 +257,11 @@ describe("NoteSection", () => {
     it("ignores the notes of a record the form no longer shows", async () => {
       let resolveFirstFetch: (notes: unknown[]) => void = () => {};
       (fetchNotes as jest.Mock)
-        .mockReturnValueOnce(new Promise((resolve) => (resolveFirstFetch = resolve)))
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveFirstFetch = resolve;
+          })
+        )
         .mockResolvedValueOnce([otherUserNote]);
       const { rerender } = renderWithTheme(<NoteSection {...defaultProps} />);
 

@@ -18,7 +18,9 @@
 import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, NoteDeleteError } from "@workspaceui/api-client/src/api/notes";
 import {
   addNoteOnTop,
-  getAuthorInitials,
+  DATE_DISPLAY,
+  formatRelativeTime,
+  toDateDisplay,
   getDeleteNoteErrorMessage,
   getRequestErrorMessage,
   isNoteAlreadyDeleted,
@@ -81,14 +83,41 @@ describe("isOwnNote", () => {
   });
 });
 
-describe("getAuthorInitials", () => {
-  it("takes the first letter of up to two words", () => {
-    expect(getAuthorInitials("john ronald tolkien")).toBe("JR");
-    expect(getAuthorInitials("  Admin  ")).toBe("A");
+describe("formatRelativeTime", () => {
+  const NOW = Date.parse("2026-07-30T12:00:00Z");
+  const MINUTE = 60_000;
+  const DAY = 24 * 60 * MINUTE;
+  const isoAgo = (ms: number) => new Date(NOW - ms).toISOString();
+
+  it.each([
+    [30_000, "now"],
+    [5 * MINUTE, "5 minutes ago"],
+    [3 * 60 * MINUTE, "3 hours ago"],
+    [DAY, "yesterday"],
+    [3 * DAY, "3 days ago"],
+    [14 * DAY, "2 weeks ago"],
+    [60 * DAY, "2 months ago"],
+    [800 * DAY, "2 years ago"],
+  ])("describes %i ms ago as '%s'", (elapsed, expected) => {
+    expect(formatRelativeTime(isoAgo(elapsed), NOW, "en-US")).toBe(expected);
   });
 
-  it("returns a placeholder for an empty name", () => {
-    expect(getAuthorInitials("   ")).toBe("?");
+  it("uses the language of the user", () => {
+    expect(formatRelativeTime(isoAgo(5 * MINUTE), NOW, "es-ES")).toBe("hace 5 minutos");
+  });
+
+  it("reads a date ahead of the clock as now and an invalid date as empty", () => {
+    expect(formatRelativeTime(new Date(NOW + DAY).toISOString(), NOW, "en-US")).toBe("now");
+    expect(formatRelativeTime("not a date", NOW, "en-US")).toBe("");
+  });
+});
+
+describe("toDateDisplay", () => {
+  it("keeps the absolute mode and defaults anything else to relative", () => {
+    expect(toDateDisplay(DATE_DISPLAY.ABSOLUTE)).toBe(DATE_DISPLAY.ABSOLUTE);
+    expect(toDateDisplay(DATE_DISPLAY.RELATIVE)).toBe(DATE_DISPLAY.RELATIVE);
+    expect(toDateDisplay("garbage")).toBe(DATE_DISPLAY.RELATIVE);
+    expect(toDateDisplay(undefined)).toBe(DATE_DISPLAY.RELATIVE);
   });
 });
 

@@ -16,14 +16,14 @@
  */
 
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
-import { Avatar, Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import TrashIcon from "@workspaceui/componentlibrary/src/assets/icons/trash.svg";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { Note } from "../types";
-import { getAuthorInitials } from "./noteUtils";
-import { useNoteStyles } from "./noteStyles";
+import { DATE_DISPLAY, formatRelativeTime, type DateDisplay } from "./noteUtils";
+import { DELETE_ICON_BUTTON_CLASS, useNoteStyles } from "./noteStyles";
 
 interface NoteItemProps {
   note: Note;
@@ -32,6 +32,12 @@ interface NoteItemProps {
   /** Whether the deletion of this note is in progress. */
   isDeleting: boolean;
   onDelete: (noteId: string) => Promise<void>;
+  /** Whether the creation date is shown as elapsed time in words or as the exact date and time. */
+  dateDisplay: DateDisplay;
+  /** Current time, in milliseconds, the elapsed time is measured against. */
+  now: number;
+  /** BCP-47 locale of the user language, used for the elapsed time in words. */
+  locale: string;
 }
 
 /**
@@ -57,11 +63,12 @@ const useIsTextCut = (ref: RefObject<HTMLElement | null>, isCollapsed: boolean, 
 };
 
 /**
- * One note of the Notes section: author, creation date and time, and the full text (line breaks
- * kept). Long notes are cut with a "Show more" toggle. Own notes are highlighted and can be deleted
- * after an inline confirmation, which Escape cancels.
+ * One note of the Notes section: author, creation date (elapsed time in words or exact date and
+ * time, the other format in its tooltip) and the full text (line breaks kept). Long notes are cut with
+ * a "Show more" toggle. Own notes are tinted and can be deleted after an inline confirmation, which
+ * Escape cancels.
  */
-const NoteItem = ({ note, isOwn, isDeleting, onDelete }: NoteItemProps) => {
+const NoteItem = ({ note, isOwn, isDeleting, onDelete, dateDisplay, now, locale }: NoteItemProps) => {
   const { t } = useTranslation();
   const sx = useNoteStyles();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -69,7 +76,11 @@ const NoteItem = ({ note, isOwn, isDeleting, onDelete }: NoteItemProps) => {
   const bodyRef = useRef<HTMLParagraphElement>(null);
   const isTextCut = useIsTextCut(bodyRef, !isExpanded, note.note);
   const author = note.createdBy.identifier || t("forms.notes.unknownAuthor");
-  const creationDate = formatClassicDate(note.creationDate, true);
+  const exactDate = formatClassicDate(note.creationDate, true);
+  const relativeDate = formatRelativeTime(note.creationDate, now, locale);
+  const isRelative = dateDisplay === DATE_DISPLAY.RELATIVE;
+  const shownDate = isRelative ? relativeDate : exactDate;
+  const alternativeDate = isRelative ? exactDate : relativeDate;
 
   const confirmDelete = async () => {
     await onDelete(note.id);
@@ -86,9 +97,6 @@ const NoteItem = ({ note, isOwn, isDeleting, onDelete }: NoteItemProps) => {
   return (
     <Box component="li" sx={isOwn ? sx.ownItem : sx.item} data-testid={`Card__a680f8_${note.id}`}>
       <Box sx={sx.itemHeader} data-testid="Box__ae57cf">
-        <Avatar sx={sx.avatar} aria-hidden="true" data-testid="Avatar__ae57cf">
-          {getAuthorInitials(author)}
-        </Avatar>
         <Typography variant="body2" sx={sx.author} data-testid="Typography__ae57cf">
           {author}
         </Typography>
@@ -97,14 +105,15 @@ const NoteItem = ({ note, isOwn, isDeleting, onDelete }: NoteItemProps) => {
             {t("forms.notes.youLabel")}
           </Typography>
         )}
-        {creationDate && (
+        {shownDate && (
           <Typography
             variant="caption"
             component="time"
             dateTime={note.creationDate}
+            title={alternativeDate}
             sx={sx.date}
             data-testid={`Typography__a680f8_date_${note.id}`}>
-            {creationDate}
+            {shownDate}
           </Typography>
         )}
         {isOwn && !isConfirming && (
@@ -114,6 +123,7 @@ const NoteItem = ({ note, isOwn, isDeleting, onDelete }: NoteItemProps) => {
               tooltip={t("forms.notes.deleteNote")}
               onClick={() => setIsConfirming(true)}
               disabled={isDeleting}
+              className={DELETE_ICON_BUTTON_CLASS}
               data-testid="IconButton__a680f8">
               <TrashIcon width={16} height={16} data-testid="TrashIcon__ae57cf" />
             </IconButton>

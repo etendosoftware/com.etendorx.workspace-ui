@@ -112,6 +112,8 @@ const es = {
       emptyState: "Todavía no hay notas. Escribe la primera arriba.",
       deleteNote: "Eliminar nota",
       confirmDeleteInline: "¿Eliminar esta nota?",
+      showExactDates: "Mostrar fechas exactas",
+      showRelativeDates: "Mostrar tiempo transcurrido",
       errorLoadingNotes: "Error al cargar las notas. Por favor intenta de nuevo.",
     },
     attachments: {

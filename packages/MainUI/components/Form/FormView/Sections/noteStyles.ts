@@ -16,13 +16,25 @@
  */
 
 import { useMemo } from "react";
-import { useTheme, type SxProps, type Theme } from "@mui/material";
+import { alpha, useTheme, type SxProps, type Theme } from "@mui/material";
 
 /** Lines of a note shown before it is cut and the "Show more" toggle appears. */
 export const NOTE_COLLAPSED_LINES = 6;
 
 const CARD_RADIUS = "0.75rem";
-const ACCENT_WIDTH = "4px";
+/** Opacity of the primary color tint of own notes: visible on the light and dark surfaces. */
+const OWN_NOTE_TINT = 0.1;
+/** Opacity of the "You" badge background, a step stronger than the tint of the note it sits on. */
+const YOU_BADGE_TINT = 0.18;
+
+/**
+ * Classes of the delete button of a note: the red of the theme, with a faint red background on hover,
+ * like the destructive actions of the Attachments section. CSS variables follow the dark theme.
+ */
+export const DELETE_ICON_BUTTON_CLASS =
+  "text-(--color-error-main) bg-transparent hover:bg-(--color-error-contrast-text) hover:text-(--color-error-main) " +
+  // The theme red is below 3:1 on the dark surfaces: a lighter red keeps the icon visible
+  "dark:text-red-400 dark:hover:text-red-400";
 
 /**
  * Styles of the Notes section. Every color comes from the theme palette, which the dark theme
@@ -35,7 +47,7 @@ export const useNoteStyles = (): Record<string, SxProps<Theme>> => {
     const { baselineColor, dynamicColor, specificColor, common } = theme.palette;
     const card = {
       backgroundColor: baselineColor.neutral[0],
-      border: `1px solid ${baselineColor.transparentNeutral[10]}`,
+      border: `1px solid ${baselineColor.transparentNeutral[30]}`,
       borderRadius: CARD_RADIUS,
     };
     const item = { ...card, padding: "0.75rem 1rem" };
@@ -48,7 +60,13 @@ export const useNoteStyles = (): Record<string, SxProps<Theme>> => {
 
     return {
       container: { display: "flex", flexDirection: "column", gap: "0.75rem" },
-      composer: { ...card, padding: "0.75rem" },
+      // The input is a control: its border is stronger than the one of the notes, and focus shows the primary color
+      composer: {
+        ...card,
+        padding: "0.75rem",
+        borderColor: baselineColor.transparentNeutral[50],
+        "&:focus-within": { borderColor: dynamicColor.main },
+      },
       composerInput: {
         "& .MuiInputBase-root": { padding: 0, color: baselineColor.neutral[90] },
         "& .MuiOutlinedInput-notchedOutline": { border: "none" },
@@ -76,25 +94,28 @@ export const useNoteStyles = (): Record<string, SxProps<Theme>> => {
         },
       },
       list: { display: "flex", flexDirection: "column", gap: "0.5rem", margin: 0, padding: 0, listStyle: "none" },
-      item: { ...item, borderLeft: `${ACCENT_WIDTH} solid ${baselineColor.transparentNeutral[10]}` },
-      ownItem: { ...item, borderLeft: `${ACCENT_WIDTH} solid ${dynamicColor.main}` },
-      itemHeader: { display: "flex", alignItems: "center", gap: "0.5rem", minHeight: "2rem" },
-      avatar: {
-        width: "1.75rem",
-        height: "1.75rem",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        backgroundColor: dynamicColor.light,
-        color: dynamicColor.main,
+      listHeader: { display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "-0.5rem" },
+      dateToggleButton: {
+        padding: "0.125rem 0.5rem",
+        minWidth: 0,
+        textTransform: "none",
+        fontWeight: 500,
+        color: baselineColor.transparentNeutral[70],
+        "& svg": { fill: "currentColor" },
+        "&:hover": { color: dynamicColor.main },
       },
+      item,
+      // Own notes get a faint tint of the primary color (the highlight tone of the application)
+      ownItem: { ...item, backgroundColor: alpha(dynamicColor.main, OWN_NOTE_TINT) },
+      itemHeader: { display: "flex", alignItems: "center", gap: "0.5rem", minHeight: "2rem" },
       author: { fontWeight: 600, color: baselineColor.neutral[90], overflowWrap: "anywhere" },
       youBadge: {
         padding: "0 0.5rem",
         borderRadius: "1rem",
         fontSize: "0.75rem",
         fontWeight: 600,
-        backgroundColor: dynamicColor.light,
-        color: dynamicColor.main,
+        backgroundColor: alpha(dynamicColor.main, YOU_BADGE_TINT),
+        color: baselineColor.neutral[90],
       },
       date: { color: baselineColor.transparentNeutral[70], whiteSpace: "nowrap" },
       deleteSlot: { marginLeft: "auto" },

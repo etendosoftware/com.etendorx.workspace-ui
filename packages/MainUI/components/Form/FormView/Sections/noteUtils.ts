@@ -25,8 +25,36 @@ import type { Note } from "../types";
 export const NOTE_MAX_LENGTH = 2000;
 
 const DELETE_NOTE_FALLBACK_MESSAGE = "Failed to delete note";
-const UNKNOWN_INITIALS = "?";
-const MAX_INITIALS = 2;
+
+/** How the creation date of the notes is shown: time elapsed in words, or the exact date and time. */
+export const DATE_DISPLAY = { RELATIVE: "relative", ABSOLUTE: "absolute" } as const;
+export type DateDisplay = (typeof DATE_DISPLAY)[keyof typeof DATE_DISPLAY];
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** Units of a relative time, largest first, with the milliseconds each one lasts. */
+const RELATIVE_TIME_UNITS: ReadonlyArray<[Intl.RelativeTimeFormatUnit, number]> = [
+  ["year", 365 * DAY_MS],
+  ["month", 30 * DAY_MS],
+  ["week", 7 * DAY_MS],
+  ["day", DAY_MS],
+  ["hour", HOUR_MS],
+  ["minute", MINUTE_MS],
+];
+
+// Building a formatter costs far more than using it: one per locale is reused across notes and renders
+const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+
+const getRelativeTimeFormatter = (locale = ""): Intl.RelativeTimeFormat => {
+  let formatter = relativeTimeFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale || undefined, { numeric: "auto" });
+    relativeTimeFormatters.set(locale, formatter);
+  }
+  return formatter;
+};
 
 /**
  * Converts a note returned by the notes servlet into the shape the section renders.
@@ -57,20 +85,40 @@ export const isOwnNote = (note: Note, currentUserId?: string): boolean =>
   Boolean(currentUserId) && note.createdBy.id === currentUserId;
 
 /**
- * Builds the initials shown in the author avatar: the first letter of up to two words of the name.
+ * Describes in words how long ago a note was created ("5 minutes ago", "yesterday", "2 weeks ago"),
+ * in the given locale. Less than a minute (or a date ahead of the clock) reads as "now".
  *
- * @param name - The author name
- * @returns Up to two uppercase initials, or "?" when the name is empty
+ * @param isoDate - The creation date sent by the server
+ * @param now - Current time, in milliseconds
+ * @param locale - BCP-47 locale of the user language
+ * @returns The elapsed time in words, or an empty string when the date is invalid
  */
-export const getAuthorInitials = (name: string): string => {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, MAX_INITIALS)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
-  return initials || UNKNOWN_INITIALS;
+export const formatRelativeTime = (isoDate: string, now: number, locale?: string): string => {
+  const time = Date.parse(isoDate);
+  if (Number.isNaN(time)) {
+    return "";
+  }
+  const elapsed = Math.max(0, now - time);
+  const formatter = getRelativeTimeFormatter(locale);
+  const unit = RELATIVE_TIME_UNITS.find(([, duration]) => elapsed >= duration);
+  if (!unit) {
+    return formatter.format(0, "second");
+  }
+  const [unitName, duration] = unit;
+  return formatter.format(-Math.floor(elapsed / duration), unitName);
+};
+
+/**
+ * Reads the stored date display mode, ignoring any value that is not a known mode.
+ *
+ * @param stored - The value read from the browser storage
+ * @returns The stored mode, or the relative one by default
+ */
+export const toDateDisplay = (stored: unknown): DateDisplay => {
+  if (stored === DATE_DISPLAY.ABSOLUTE) {
+    return DATE_DISPLAY.ABSOLUTE;
+  }
+  return DATE_DISPLAY.RELATIVE;
 };
 
 /**

@@ -16,14 +16,21 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Skeleton, Typography } from "@mui/material";
+import { Box, Button, Skeleton, Typography } from "@mui/material";
 import type { Note, NoteSectionProps } from "../types";
 import { fetchNotes, deleteNote, createNote } from "@workspaceui/api-client/src/api/notes";
+import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
+import CalendarIcon from "@workspaceui/componentlibrary/src/assets/icons/calendar.svg";
+import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
+import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
+import { toLocale } from "@/utils/ob/format";
 import NoteComposer from "./NoteComposer";
 import NoteItem from "./NoteItem";
 import {
+  DATE_DISPLAY,
+  toDateDisplay,
   addNoteOnTop,
   getDeleteNoteErrorMessage,
   getRequestErrorMessage,
@@ -36,6 +43,26 @@ import { useNoteStyles } from "./noteStyles";
 
 const SKELETON_ROWS = 2;
 const SKELETON_HEIGHT = 72;
+const DATE_DISPLAY_STORAGE_KEY = "notes.dateDisplay";
+/** How often the elapsed times in words are refreshed. */
+const RELATIVE_TIME_REFRESH_MS = 60_000;
+
+/**
+ * Current time, refreshed every minute while `isTicking`, so elapsed times in words stay current
+ * while the section is open.
+ */
+const useCurrentTime = (isTicking: boolean): number => {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isTicking) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), RELATIVE_TIME_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [isTicking]);
+
+  return now;
+};
 
 /**
  * Notes section of a record's form: an inline input to add notes and the list of notes, newest first.
@@ -55,6 +82,15 @@ const NoteSection = ({
   const { t } = useTranslation();
   const sx = useNoteStyles();
   const currentUserId = useUserStore((s) => s.user?.id);
+  const { language } = useLanguage();
+  const locale = toLocale(language);
+  const [storedDateDisplay, setStoredDateDisplay] = useLocalStorage<string>(
+    DATE_DISPLAY_STORAGE_KEY,
+    DATE_DISPLAY.RELATIVE
+  );
+  const dateDisplay = toDateDisplay(storedDateDisplay);
+  const isRelativeDate = dateDisplay === DATE_DISPLAY.RELATIVE;
+  const now = useCurrentTime(isSectionExpanded && isRelativeDate);
   const [notes, setNotes] = useState<Note[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
@@ -131,6 +167,26 @@ const NoteSection = ({
     }
   };
 
+  const toggleDateDisplay = () => setStoredDateDisplay(isRelativeDate ? DATE_DISPLAY.ABSOLUTE : DATE_DISPLAY.RELATIVE);
+
+  const renderDateDisplayToggle = () => {
+    const label = isRelativeDate ? t("forms.notes.showExactDates") : t("forms.notes.showRelativeDates");
+    const Icon = isRelativeDate ? CalendarIcon : ClockIcon;
+    return (
+      <Box sx={sx.listHeader} data-testid="Box__a680f8_list_header">
+        <Button
+          size="small"
+          variant="text"
+          startIcon={<Icon width={14} height={14} data-testid="Icon__a680f8" />}
+          onClick={toggleDateDisplay}
+          sx={sx.dateToggleButton}
+          data-testid="Button__a680f8_date_display">
+          {label}
+        </Button>
+      </Box>
+    );
+  };
+
   const renderNotes = () => {
     // Until the first load completes the section shows placeholders instead of the empty message
     const isWaitingForNotes = isFetching || (initialNoteCount > 0 && !hasLoadedNotesRef.current);
@@ -157,18 +213,24 @@ const NoteSection = ({
       );
     }
     return (
-      <Box component="ul" sx={sx.list} data-testid="Box__a680f8_list">
-        {notes.map((note) => (
-          <NoteItem
-            key={note.id}
-            note={note}
-            isOwn={isOwnNote(note, currentUserId)}
-            isDeleting={deletingNoteId === note.id}
-            onDelete={handleDeleteNote}
-            data-testid="NoteItem__a680f8"
-          />
-        ))}
-      </Box>
+      <>
+        {renderDateDisplayToggle()}
+        <Box component="ul" sx={sx.list} data-testid="Box__a680f8_list">
+          {notes.map((note) => (
+            <NoteItem
+              key={note.id}
+              note={note}
+              isOwn={isOwnNote(note, currentUserId)}
+              isDeleting={deletingNoteId === note.id}
+              onDelete={handleDeleteNote}
+              dateDisplay={dateDisplay}
+              now={now}
+              locale={locale}
+              data-testid="NoteItem__a680f8"
+            />
+          ))}
+        </Box>
+      </>
     );
   };
 
