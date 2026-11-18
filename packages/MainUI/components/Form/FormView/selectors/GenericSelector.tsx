@@ -16,7 +16,6 @@
  */
 
 import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
-import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { memo, useCallback, useMemo, useState } from "react";
@@ -60,7 +59,7 @@ import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { useFormContext } from "react-hook-form";
-import { FieldTrailingActionContext, getSearchActionClassName } from "./components/Select/FieldTrailingAction";
+import { FieldTrailingActionContext, useFieldSearchAction } from "./components/Select/FieldTrailingAction";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -311,24 +310,13 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   // The magnifier sits inside the input box when the input can host it (FK selects), so the field keeps the
   // width of its column; any other input keeps it outside, as before.
-  const [isSearchActionHosted, setSearchActionHosted] = useState(false);
-  const openSearchModal = useCallback((e: React.MouseEvent) => {
-    // Inside the select, the click must not also toggle its dropdown.
-    e.stopPropagation();
-    setIsSearchModalOpen(true);
-  }, []);
-  const searchAction = canOpenSearchModal ? (
-    <IconButton
-      onClick={openSearchModal}
-      className={getSearchActionClassName(isSearchActionHosted)}
-      tooltip="Search"
-      tooltipPosition="top"
-      tabIndex={NOT_TABBABLE}
-      data-testid={`IconButton__${field.id}`}>
-      <SearchIcon className="w-5 h-5 fill-current" data-testid={`SearchIcon__${field.id}`} />
-    </IconButton>
-  ) : null;
-  const trailingActionValue = searchAction ? { action: searchAction, setHosted: setSearchActionHosted } : null;
+  const openSearchModal = useCallback(() => setIsSearchModalOpen(true), []);
+  const search = useFieldSearchAction({
+    enabled: canOpenSearchModal,
+    fieldId: field.id,
+    onOpen: openSearchModal,
+    tabIndex: NOT_TABBABLE,
+  });
 
   const handleSelect = (record: EntityData) => {
     // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID
@@ -348,7 +336,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           focus sits inside it, which is what the bubbling keydown gives us. */}
       <div className="flex w-full items-center gap-1" onKeyDown={handleFieldKeyDown}>
         <div className="flex-grow min-w-0">
-          <FieldTrailingActionContext.Provider value={trailingActionValue}>
+          <FieldTrailingActionContext.Provider value={search.contextValue}>
             {hasLegacySearchPopup ? (
               <LegacySelectorAffix
                 field={effectiveField}
@@ -362,7 +350,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             )}
           </FieldTrailingActionContext.Provider>
         </div>
-        {!isSearchActionHosted && searchAction}
+        {!search.isHosted && search.action}
         {hasProcessDefinitionRelated && !isReadOnly && (
           <IconButton
             onClick={handleProcessClick}

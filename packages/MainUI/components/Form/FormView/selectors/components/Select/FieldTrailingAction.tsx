@@ -22,7 +22,9 @@
  */
 
 import type React from "react";
-import { createContext, useContext, useLayoutEffect } from "react";
+import { createContext, useCallback, useContext, useLayoutEffect, useState } from "react";
+import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 export interface FieldTrailingActionValue {
   /** The action to show at the end of the input box. */
@@ -66,3 +68,44 @@ const SEARCH_ACTION_INSIDE_CLASSES = "w-7 h-7 flex-shrink-0 bg-transparent";
  */
 export const getSearchActionClassName = (hosted: boolean): string =>
   hosted ? SEARCH_ACTION_INSIDE_CLASSES : SEARCH_ACTION_OUTSIDE_CLASSES;
+
+interface FieldSearchActionOptions {
+  /** Whether the field offers the search at all. */
+  enabled: boolean;
+  fieldId: string;
+  onOpen: () => void;
+  tabIndex?: number;
+}
+
+/**
+ * Search magnifier of a field, offered to the input box through `FieldTrailingActionContext`.
+ *
+ * @returns the action, whether an input shows it inside its box (the field then must not show it outside), and
+ *   the context value to provide around the input
+ */
+export const useFieldSearchAction = ({ enabled, fieldId, onOpen, tabIndex }: FieldSearchActionOptions) => {
+  const [isHosted, setHosted] = useState(false);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Inside the select, the click must not also toggle its dropdown.
+      e.stopPropagation();
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  if (!enabled) return { action: null, isHosted, contextValue: null };
+
+  const action = (
+    <IconButton
+      onClick={handleClick}
+      className={getSearchActionClassName(isHosted)}
+      tooltip="Search"
+      tooltipPosition="top"
+      tabIndex={tabIndex}
+      data-testid={`IconButton__${fieldId}`}>
+      <SearchIcon className="h-5 w-5 fill-current" data-testid={`SearchIcon__${fieldId}`} />
+    </IconButton>
+  );
+  return { action, isHosted, contextValue: { action, setHosted } };
+};
