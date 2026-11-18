@@ -21,6 +21,7 @@
  */
 
 import type { TranslationKeys } from "@workspaceui/componentlibrary/src/locales/types";
+import { type CatalogLabelResolvers, resolveCatalogLabel } from "./catalogLabel";
 
 /**
  * Local translations for ERP message codes, used only as a fallback: the ERP message catalog
@@ -34,6 +35,9 @@ export const PASSWORD_ERROR_TRANSLATION_KEYS: Record<string, TranslationKeys> = 
   UINAVBA_UnequalPwd: "navigation.profile.errorUnequalPwd",
   CPPasswordNotStrongEnough: "navigation.profile.errorNotStrongEnough",
 };
+
+/** `AD_MESSAGE` Classic shows after a successful password change from the user profile widget. */
+export const PASSWORD_CHANGED_MESSAGE_CODE = "UINAVBA_PasswordChanged";
 
 const GENERIC_ERROR_KEY: TranslationKeys = "navigation.profile.errorGeneric";
 const REQUIRED_FIELDS_KEY: TranslationKeys = "navigation.profile.passwordRequired";
@@ -63,12 +67,7 @@ interface ErpError {
 export type PasswordChangeError = ValidationError | ErpError;
 
 /** Resolvers needed to turn an error into user-facing text. */
-export interface PasswordErrorResolvers {
-  /** Resolves an ERP message code against the backend catalog; returns the code when unknown. */
-  getLabel: (code: string) => string;
-  /** Resolves a local translation key. */
-  t: (key: TranslationKeys) => string;
-}
+export type PasswordErrorResolvers = CatalogLabelResolvers;
 
 /**
  * Turns a message code reported by the ERP into user-facing text, preferring the backend message
@@ -78,12 +77,8 @@ export interface PasswordErrorResolvers {
  * @param resolvers the backend catalog and local translation resolvers
  * @returns the text to display
  */
-function resolveErpMessage(messageCode: string, { getLabel, t }: PasswordErrorResolvers): string {
-  const label = getLabel(messageCode);
-  if (label && label !== messageCode) {
-    return label;
-  }
-  return t(PASSWORD_ERROR_TRANSLATION_KEYS[messageCode] ?? GENERIC_ERROR_KEY);
+function resolveErpMessage(messageCode: string, resolvers: PasswordErrorResolvers): string {
+  return resolveCatalogLabel(messageCode, PASSWORD_ERROR_TRANSLATION_KEYS[messageCode] ?? GENERIC_ERROR_KEY, resolvers);
 }
 
 /**

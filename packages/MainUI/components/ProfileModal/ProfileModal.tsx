@@ -21,6 +21,7 @@ import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@mui/material";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
@@ -40,7 +41,9 @@ import { useSSO } from "@/hooks/useSSO";
 import ProviderIconButtons from "../SSO/ProviderIconButtons";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
-import { resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
+import { PASSWORD_CHANGED_MESSAGE_CODE, resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
+import { resolveCatalogLabel } from "@/utils/catalogLabel";
+import { buildProfileContextTooltip } from "./profileContext";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -333,8 +336,28 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setCurrentPwd("");
     setNewPwd("");
     setConfirmPwd("");
+    // Parity with Classic, which confirms the change with the UINAVBA_PasswordChanged message.
+    toast.success(
+      resolveCatalogLabel(PASSWORD_CHANGED_MESSAGE_CODE, "navigation.profile.passwordChangedSuccess", { getLabel, t })
+    );
     handleClose();
   }, [currentPwd, newPwd, confirmPwd, onPasswordChange, getLabel, t, handleClose]);
+
+  /** Current working context shown on hover of the profile button, as the Classic user button does. */
+  const contextTooltip = useMemo(
+    () =>
+      buildProfileContextTooltip(
+        {
+          userName,
+          role: currentRole,
+          client: currentClient,
+          organization: currentOrganization,
+          warehouse: currentWarehouse,
+        },
+        { getLabel, t }
+      ),
+    [userName, currentRole, currentClient, currentOrganization, currentWarehouse, getLabel, t]
+  );
 
   /**
    * Applies the role / organization / warehouse / language selection.
@@ -442,9 +465,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton onClick={handleClick} className="w-10 h-10" data-testid="profile-menu-button">
-        {icon}
-      </IconButton>
+      <Tooltip title={contextTooltip} multiline disabled={Boolean(anchorEl)} data-testid="Tooltip__75987a">
+        <IconButton onClick={handleClick} className="w-10 h-10" ariaLabel={userName} data-testid="profile-menu-button">
+          {icon}
+        </IconButton>
+      </Tooltip>
       <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]" data-testid="Menu__75987a">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} data-testid="UserProfile__75987a" />
         <div style={styles.toggleSectionStyles}>
