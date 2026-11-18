@@ -28,7 +28,7 @@ import {
 } from "@workspaceui/api-client/src/api/notes";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { formatRelativeTime } from "../noteUtils";
-import { useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
+import { DATE_DISPLAY, getDateDisplayStorageKey, useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
 import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
 const CURRENT_USER_ID = "user-1";
@@ -179,6 +179,22 @@ describe("NoteSection", () => {
 
       fireEvent.click(toggle);
       expect(date()).toHaveTextContent(formatRelativeTime(existingNote.creationDate, Date.now(), "en-US"));
+    });
+
+    it("shows the mode the current user chose in a previous session", async () => {
+      const getItem = window.localStorage.getItem as jest.Mock;
+      getItem.mockImplementation((key: string) =>
+        key === getDateDisplayStorageKey(CURRENT_USER_ID) ? DATE_DISPLAY.ABSOLUTE : null
+      );
+      try {
+        await renderWithNote();
+
+        expect(screen.getByTestId(`Typography__a680f8_date_${existingNote.id}`)).toHaveTextContent(
+          formatClassicDate(existingNote.creationDate, true)
+        );
+      } finally {
+        getItem.mockReset();
+      }
     });
 
     it("shows the chosen mode in the notes of every window at once", async () => {

@@ -15,51 +15,103 @@
  *************************************************************************
  */
 
+import { resetSessionState } from "@/utils/session/resetSessionState";
 import {
   DATE_DISPLAY,
-  NOTES_PREFERENCES_STORAGE_KEY,
+  getDateDisplayStorageKey,
   toDateDisplay,
   useNotesPreferencesStore,
 } from "../notesPreferencesStore";
 
-/** Makes the session storage return the given stored preferences. */
-const storePreferences = (dateDisplay: unknown) =>
-  (window.sessionStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify({ state: { dateDisplay }, version: 0 }));
+jest.mock("@workspaceui/api-client/src/api/datasource", () => ({ datasource: { clearCache: jest.fn() } }));
+
+const USER_A = "user-a";
+const USER_B = "user-b";
+
+const getItem = window.localStorage.getItem as jest.Mock;
+const setItem = window.localStorage.setItem as jest.Mock;
+
+/** Makes the browser storage hold the given mode for each user. */
+const storeModes = (modes: Record<string, string>) =>
+  getItem.mockImplementation((key: string) => {
+    const userId = Object.keys(modes).find((id) => getDateDisplayStorageKey(id) === key);
+    return userId ? modes[userId] : null;
+  });
+
+const getState = () => useNotesPreferencesStore.getState();
 
 describe("notesPreferencesStore", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getItem.mockReset();
+    setItem.mockReset();
     useNotesPreferencesStore.setState(useNotesPreferencesStore.getInitialState(), true);
   });
 
   it("shows the time elapsed by default", () => {
-    expect(useNotesPreferencesStore.getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
   });
 
-  it("keeps the chosen mode in the session storage", () => {
-    useNotesPreferencesStore.getState().setDateDisplay(DATE_DISPLAY.ABSOLUTE);
+  it("loads the mode stored for the user", () => {
+    storeModes({ [USER_A]: DATE_DISPLAY.ABSOLUTE });
 
-    expect(useNotesPreferencesStore.getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
-    expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
-      NOTES_PREFERENCES_STORAGE_KEY,
-      expect.stringContaining(DATE_DISPLAY.ABSOLUTE)
-    );
+    getState().loadForUser(USER_A);
+
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
   });
 
-  it("restores the mode of the session after a reload", async () => {
-    storePreferences(DATE_DISPLAY.ABSOLUTE);
+  it("stores the chosen mode under the key of the user", () => {
+    getState().loadForUser(USER_A);
 
-    await useNotesPreferencesStore.persist.rehydrate();
+    getState().setDateDisplay(DATE_DISPLAY.ABSOLUTE);
 
-    expect(useNotesPreferencesStore.getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
+    expect(setItem).toHaveBeenCalledWith(getDateDisplayStorageKey(USER_A), DATE_DISPLAY.ABSOLUTE);
   });
 
-  it("falls back to the default when the stored mode is unknown", async () => {
-    storePreferences("garbage");
+  it("does not store the mode while no user is known", () => {
+    getState().setDateDisplay(DATE_DISPLAY.ABSOLUTE);
 
-    await useNotesPreferencesStore.persist.rehydrate();
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
+    expect(setItem).not.toHaveBeenCalled();
+  });
 
-    expect(useNotesPreferencesStore.getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
+  it("reads the storage once per user and keeps each account's own mode", () => {
+    storeModes({ [USER_A]: DATE_DISPLAY.ABSOLUTE });
+
+    getState().loadForUser(USER_A);
+    getState().loadForUser(USER_A);
+    expect(getItem).toHaveBeenCalledTimes(1);
+
+    getState().loadForUser(USER_B);
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
+  });
+
+  it("keeps the stored mode after logout and restores it on the next login", () => {
+    storeModes({ [USER_A]: DATE_DISPLAY.ABSOLUTE });
+    getState().loadForUser(USER_A);
+
+    resetSessionState();
+
+    expect(getState()).toMatchObject({ userId: null, dateDisplay: DATE_DISPLAY.RELATIVE });
+    expect(setItem).not.toHaveBeenCalled();
+    getState().loadForUser(USER_A);
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
+  });
+
+  it("falls back to the default when the storage cannot be used", () => {
+    getItem.mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    setItem.mockImplementation(() => {
+      throw new Error("blocked");
+    });
+
+    getState().loadForUser(USER_A);
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
+
+    expect(() => getState().setDateDisplay(DATE_DISPLAY.ABSOLUTE)).not.toThrow();
+    expect(getState().dateDisplay).toBe(DATE_DISPLAY.ABSOLUTE);
   });
 });
 
@@ -68,6 +120,6 @@ describe("toDateDisplay", () => {
     expect(toDateDisplay(DATE_DISPLAY.ABSOLUTE)).toBe(DATE_DISPLAY.ABSOLUTE);
     expect(toDateDisplay(DATE_DISPLAY.RELATIVE)).toBe(DATE_DISPLAY.RELATIVE);
     expect(toDateDisplay("garbage")).toBe(DATE_DISPLAY.RELATIVE);
-    expect(toDateDisplay(undefined)).toBe(DATE_DISPLAY.RELATIVE);
+    expect(toDateDisplay(null)).toBe(DATE_DISPLAY.RELATIVE);
   });
 });

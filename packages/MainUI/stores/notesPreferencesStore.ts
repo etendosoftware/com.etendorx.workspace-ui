@@ -18,14 +18,20 @@
 "use client";
 
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 
 /** How the creation date of the notes is shown: time elapsed in words, or the exact date and time. */
 export const DATE_DISPLAY = { RELATIVE: "relative", ABSOLUTE: "absolute" } as const;
 export type DateDisplay = (typeof DATE_DISPLAY)[keyof typeof DATE_DISPLAY];
 
-/** Key of the session storage entry that keeps the preferences across page reloads. */
-export const NOTES_PREFERENCES_STORAGE_KEY = "notes-preferences";
+const STORAGE_KEY_PREFIX = "notes-preferences.dateDisplay.";
+
+/**
+ * Builds the browser storage key of a user's date display mode: each account keeps its own choice.
+ *
+ * @param userId - The AD_User_ID of the user
+ * @returns The storage key
+ */
+export const getDateDisplayStorageKey = (userId: string): string => `${STORAGE_KEY_PREFIX}${userId}`;
 
 /**
  * Reads a stored date display mode, ignoring any value that is not a known mode.
@@ -40,31 +46,51 @@ export const toDateDisplay = (stored: unknown): DateDisplay => {
   return DATE_DISPLAY.RELATIVE;
 };
 
+/** Reads the stored mode of a user; storage failures (private mode, blocked storage) read as the default. */
+const readDateDisplay = (userId: string): DateDisplay => {
+  try {
+    return toDateDisplay(window.localStorage.getItem(getDateDisplayStorageKey(userId)));
+  } catch {
+    return DATE_DISPLAY.RELATIVE;
+  }
+};
+
+/** Stores the mode of a user; a storage failure only means the choice is not remembered. */
+const writeDateDisplay = (userId: string, dateDisplay: DateDisplay): void => {
+  try {
+    window.localStorage.setItem(getDateDisplayStorageKey(userId), dateDisplay);
+  } catch {
+    // The mode still applies to the current session
+  }
+};
+
 interface NotesPreferencesStore {
+  /** The user whose preferences are loaded, null before any user is known. */
+  userId: string | null;
   dateDisplay: DateDisplay;
+  /** Loads the stored preferences of the user, once per user. */
+  loadForUser: (userId: string) => void;
   setDateDisplay: (dateDisplay: DateDisplay) => void;
 }
 
 /**
  * Preferences of the Notes section of the forms, shared by every window of the application: a change in
- * one window shows at once in the others. They last for the session: kept in the session storage across
- * page reloads, and reset on logout (see `resetSessionState`), so the next user starts from the defaults.
+ * one window shows at once in the others. They are remembered per account in the browser storage, so they
+ * survive logout and each user keeps their own choice. On logout only the loaded state is reset (see
+ * `resetSessionState`); the stored choice stays for the next login of that user.
  */
-export const useNotesPreferencesStore = create<NotesPreferencesStore>()(
-  persist(
-    (set) => ({
-      dateDisplay: DATE_DISPLAY.RELATIVE,
-      setDateDisplay: (dateDisplay) => set({ dateDisplay }),
-    }),
-    {
-      name: NOTES_PREFERENCES_STORAGE_KEY,
-      storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({ dateDisplay: state.dateDisplay }),
-      // A tampered or outdated stored value falls back to the default mode
-      merge: (persisted, current) => ({
-        ...current,
-        dateDisplay: toDateDisplay((persisted as Partial<NotesPreferencesStore> | undefined)?.dateDisplay),
-      }),
+export const useNotesPreferencesStore = create<NotesPreferencesStore>()((set, get) => ({
+  userId: null,
+  dateDisplay: DATE_DISPLAY.RELATIVE,
+  loadForUser: (userId) => {
+    if (get().userId === userId) return;
+    set({ userId, dateDisplay: readDateDisplay(userId) });
+  },
+  setDateDisplay: (dateDisplay) => {
+    set({ dateDisplay });
+    const { userId } = get();
+    if (userId) {
+      writeDateDisplay(userId, dateDisplay);
     }
-  )
-);
+  },
+}));

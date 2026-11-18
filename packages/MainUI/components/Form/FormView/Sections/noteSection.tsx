@@ -83,6 +83,7 @@ const NoteSection = ({
   const locale = toLocale(language);
   const dateDisplay = useNotesPreferencesStore((state) => state.dateDisplay);
   const setDateDisplay = useNotesPreferencesStore((state) => state.setDateDisplay);
+  const loadNotesPreferences = useNotesPreferencesStore((state) => state.loadForUser);
   const isRelativeDate = dateDisplay === DATE_DISPLAY.RELATIVE;
   const now = useCurrentTime(isSectionExpanded && isRelativeDate);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -91,6 +92,11 @@ const NoteSection = ({
   const hasLoadedNotesRef = useRef(false);
   // The record the notes on screen belong to: a late response of a previous record is ignored
   const currentRecordRef = useRef(recordId);
+
+  // The preferences of each account are loaded once, when its user is known
+  useEffect(() => {
+    if (currentUserId) loadNotesPreferences(currentUserId);
+  }, [currentUserId, loadNotesPreferences]);
 
   const reportError = useCallback((message: string) => showErrorModal?.(message), [showErrorModal]);
 
