@@ -24,12 +24,14 @@ import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
 }
 
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
+  const { t } = useTranslation();
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const seed = useFavoritesStore((s) => s.seed);
   const prefetchOnHover = usePrefetchWindowOnHover();
@@ -49,7 +51,7 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
   if (data.items.length === 0) {
     return (
       <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="FavoritesRenderer__empty">
-        —
+        {t("dashboard.widget.emptyFavorites")}
       </p>
     );
   }

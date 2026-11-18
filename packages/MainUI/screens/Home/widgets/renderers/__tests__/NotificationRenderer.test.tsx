@@ -98,6 +98,7 @@ describe("NotificationRenderer", () => {
   it("opens Alert Management from View all, also when there is nothing pending", () => {
     render(<NotificationRenderer data={dataWith([])} />);
 
+    expect(screen.getByTestId("NotificationRenderer__empty")).toHaveTextContent("dashboard.widget.emptyNotifications");
     expect(screen.queryByTestId("NotificationRenderer__mark_all")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("NotificationRenderer__view_all"));
     expect(mockOpenAlertManagement).toHaveBeenCalled();

@@ -98,7 +98,7 @@ export default function NotificationRenderer({ data, onDataChanged }: Notificati
       </div>
       {data.items.length === 0 ? (
         <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="NotificationRenderer__empty">
-          —
+          {t("dashboard.widget.emptyNotifications")}
         </p>
       ) : (
         <ul className="flex flex-col gap-2" data-testid="NotificationRenderer__list">

@@ -17,6 +17,7 @@
 
 import type { StockAlertWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface StockAlertRendererProps {
   data: StockAlertWidgetData;
@@ -37,10 +38,11 @@ function StockLevelBar({ current, minimum }: { current: number; minimum: number 
 }
 
 export default function StockAlertRenderer({ data }: StockAlertRendererProps) {
+  const { t } = useTranslation();
   if (data.items.length === 0) {
     return (
       <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="StockAlertRenderer__empty">
-        —
+        {t("dashboard.widget.emptyStockAlerts")}
       </p>
     );
   }

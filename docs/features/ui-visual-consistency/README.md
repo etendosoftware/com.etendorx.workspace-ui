@@ -42,7 +42,9 @@ outline and a smaller grey thumb (`--ui-switch-off`). A filled bluish "off" trac
   fallback of the color-tag wrapper in `useColumns` and the link buttons of reference columns.
 - Text inputs reserve 44px on the right for the clear icon and use `text-ellipsis`.
 - Home widget chips stay on one line and show the full name in their `title`.
-- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on the card).
+- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on the card) and say why
+  the widget is empty in the user's language (`dashboard.widget.empty*`, for example "No pending alerts.
+  You're all caught up."), instead of a lone dash.
 - Every home widget uses the same card surface (`WIDGET_CARD_THEME`) in both themes; a coloured icon of
   its type (`WidgetTypeIcon`, same icons and colours as the "Add widget" dialog) tells them apart.
   Coloured cards (near-black, then lilac favorites, yellow recent documents) blended with the page
