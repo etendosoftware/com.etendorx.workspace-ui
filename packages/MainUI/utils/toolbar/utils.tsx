@@ -286,6 +286,11 @@ export const createButtonByType = ({
         return {};
       }
 
+      // The save waits for the running callouts and then runs: the button says so while it is disabled
+      if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isSaving && t) {
+        return { iconText: t("form.saving") };
+      }
+
       return { iconText: button.name };
     }
 

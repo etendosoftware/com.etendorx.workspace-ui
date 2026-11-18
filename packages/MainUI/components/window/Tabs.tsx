@@ -30,6 +30,7 @@ import { ActiveTabProvider } from "@/contexts/ActiveTabContext";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useTabSwitchGuard } from "@/hooks/useTabSwitchGuard";
 import { useWindowStore } from "@/stores/windowStore";
 import { DEFAULT_SPLIT_HEIGHT } from "@/utils/window/constants";
 interface ExtendedTabsProps extends TabsProps {
@@ -97,9 +98,11 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
 
   const isExpanded = activeLevels.length === 1 && activeLevels[0] === current.tabLevel && current.tabLevel > 0;
 
-  const handleClick = useCallback(
+  // Moving to another tab saves, asks or warns about the tab being left, per the Autosave preferences
+  const { guardTabSwitch, prompt: tabSwitchPrompt } = useTabSwitchGuard(windowIdentifier, current.window);
+
+  const switchToTab = useCallback(
     (tab: TabType) => {
-      // Transfer focus (triggers onBlur/auto-save on the previously focused tab)
       setFocus(tab.id);
 
       // Immediate visual feedback
@@ -127,13 +130,22 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     [setActiveLevel, startTransition, setActiveTabsByLevel, current.id, setFocus]
   );
 
+  // Also for the tab already on screen: the header form and its child tab are shown together, so clicking the
+  // child tab moves away from the header, which is the tab that may have unsaved changes
+  const handleClick = useCallback(
+    (tab: TabType) => {
+      guardTabSwitch(tab.id, () => switchToTab(tab));
+    },
+    [guardTabSwitch, switchToTab]
+  );
+
   const handlePrewarm = useCallback((tab: TabType) => {
     if (mountedTabIdsRef.current.has(tab.id)) return;
     mountedTabIdsRef.current.add(tab.id);
     startTransition(() => setPrewarmedCount((count) => count + 1));
   }, []);
 
-  const handleDoubleClick = useCallback(
+  const expandTab = useCallback(
     (tab: TabType) => {
       setActiveTabId(tab.id);
       const currentIsExpanded = activeLevels.length === 1 && activeLevels[0] === tab.tabLevel;
@@ -148,6 +160,13 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       });
     },
     [activeLevels, setActiveLevel, setActiveTabsByLevel]
+  );
+
+  const handleDoubleClick = useCallback(
+    (tab: TabType) => {
+      guardTabSwitch(tab.id, () => expandTab(tab));
+    },
+    [guardTabSwitch, expandTab]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -211,6 +230,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       customHeight={customHeight}
       data-testid="TabContainer__6fa401">
       {renderTabContent()}
+      {tabSwitchPrompt}
       {isPending && !mountedTabIdsRef.current.has(activeTabId) ? (
         <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
           <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />

@@ -71,6 +71,7 @@ const es = {
     closeWindowTitle: "Cerrar ventana",
     closeWindow: "Cerrar ventana",
     transitionMessage: "Este registro tiene cambios sin guardar. ¿Qué desea hacer?",
+    autosaveMessage: "Hay cambios en el registro actual. ¿Desea guardar los cambios?",
     saveFailed: "No se pudieron guardar los cambios en",
     rowSaveFailed: "No se pudieron guardar los cambios. Abra la ventana para revisar los errores.",
     openWindow: "Abrir ventana",
@@ -571,6 +572,7 @@ const es = {
     expression: {
       invalid: "Ingrese una expresión aritmética válida, p. ej. =2*5",
     },
+    saving: "Guardando...",
   },
   copilot: {
     copilotProfile: "Perfil Copilot",
