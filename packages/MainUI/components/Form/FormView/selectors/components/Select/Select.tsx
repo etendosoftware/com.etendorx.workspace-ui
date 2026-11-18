@@ -27,6 +27,7 @@ import DropdownPortal from "@/components/Form/FormView/selectors/components/Sele
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
+import { useFieldTrailingAction } from "./FieldTrailingAction";
 
 const resolveOptionColor = (color?: string) => {
   if (!color) return { tagColor: undefined, textColor: undefined };
@@ -88,6 +89,9 @@ function SelectCmp({
     triggerRef as React.RefObject<HTMLDivElement>,
     columnsMinWidth
   );
+
+  // Field action shown inside the box (the search magnifier of FK fields).
+  const trailingAction = useFieldTrailingAction();
 
   const mainDivClassNames = useMemo(() => {
     const baseClasses =
@@ -503,6 +507,7 @@ function SelectCmp({
             </span>
           )}
           <div className="flex items-center flex-shrink-0 ml-2">
+            {trailingAction}
             {shouldShowClearButton && (
               <button
                 type="button"

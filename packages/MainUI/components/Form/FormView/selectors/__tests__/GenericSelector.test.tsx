@@ -33,9 +33,14 @@ jest.mock("../NumericSelector", () => ({
   NumericSelector: () => <div data-testid="NumericSelector">NumericSelector</div>,
 }));
 
-jest.mock("../TableDirSelector", () => ({
-  TableDirSelector: () => <div data-testid="TableDirSelector">TableDirSelector</div>,
-}));
+// Like the real one (a Select), it shows the field action inside its own box.
+jest.mock("../TableDirSelector", () => {
+  const { useFieldTrailingAction } = jest.requireActual("../components/Select/FieldTrailingAction");
+  const TableDirSelector = () => <div data-testid="TableDirSelector">TableDirSelector{useFieldTrailingAction()}</div>;
+  return {
+  TableDirSelector,
+};
+});
 
 jest.mock("../DateSelector", () => ({
   DateSelector: () => <div data-testid="DateSelector">DateSelector</div>,
@@ -265,6 +270,20 @@ describe("GenericSelector", () => {
     // Should render without throwing error
     const { container } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it("shows the magnifier inside a select field once, so the field keeps the width of its column", () => {
+    const field = {
+      id: "field-fk",
+      hqlName: "businessPartner",
+      column: { reference: "19" },
+      selector: { hasTableRelated: true, datasourceName: "BusinessPartner" },
+    } as any;
+
+    const { getAllByTestId, getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+
+    expect(getAllByTestId("icon-button")).toHaveLength(1);
+    expect(getByTestId("TableDirSelector")).toContainElement(getByTestId("icon-button"));
   });
 
   it("handles field with processDefinitionRelated selector property", () => {
