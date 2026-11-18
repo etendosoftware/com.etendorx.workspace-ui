@@ -610,6 +610,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
               return (
                 <Tag
+                  size="small"
                   label={displayValue}
                   tagColor={normalizedColor}
                   textColor={getContrastTextColor(normalizedColor)}

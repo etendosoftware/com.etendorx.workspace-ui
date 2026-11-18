@@ -42,7 +42,7 @@ const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: T
 
   const config = fieldValue ? yesNoConfig.Y : yesNoConfig.N;
 
-  return <Tag icon={config.icon} label={fieldValue ? yesText : noText} data-testid="Tag__2b5175" />;
+  return <Tag size="small" icon={config.icon} label={fieldValue ? yesText : noText} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to process and validate tag colors
@@ -75,7 +75,7 @@ const renderColoredFkField = (value: Record<string, unknown>, column: Field) => 
   const color = value[colorKey] as string | undefined;
   const { tagColor, textColor } = processTagColors(color);
 
-  return <Tag label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+  return <Tag size="small" label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to handle list field rendering
@@ -99,7 +99,7 @@ const renderListField = (value: Record<string, unknown>, column: Field) => {
   const config = statusConfig[itemValue] || DEFAULT_STATUS_CONFIG;
   const { tagColor, textColor } = processTagColors(color);
 
-  return <Tag icon={config.icon} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+  return <Tag size="small" icon={config.icon} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to get raw cell value

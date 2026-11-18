@@ -372,7 +372,8 @@ describe("tableColumns", () => {
 
       // These invoke accessorFn to exercise the render helpers; we assert on the returned
       // React element's props (no DOM render needed) to avoid coupling to the Tag internals.
-      const tagProps = (node: unknown) => (node as React.ReactElement<{ label?: string; tagColor?: string }>).props;
+      const tagProps = (node: unknown) =>
+        (node as React.ReactElement<{ label?: string; tagColor?: string; size?: string }>).props;
 
       it("returns a Yes/No tag for boolean fields", () => {
         const fields = createFields([{ name: "active", hqlName: "active", column: { reference: "20" } }]);
@@ -380,6 +381,16 @@ describe("tableColumns", () => {
 
         expect(tagProps(result[0].accessorFn?.({ active: true })).label).toBe("Yes");
         expect(tagProps(result[0].accessorFn?.({ active: false })).label).toBe("No");
+      });
+
+      it("uses the dense tag size, which matches the grid text", () => {
+        const booleanField = createFields([{ name: "active", hqlName: "active", column: { reference: "20" } }]);
+        const listField = createFields([
+          { name: "status", hqlName: "status", column: { reference: "17" }, refList: [{ value: "A", label: "Active" }] },
+        ]);
+
+        expect(tagProps(parseColumns(booleanField)[0].accessorFn?.({ active: true })).size).toBe("small");
+        expect(tagProps(parseColumns(listField)[0].accessorFn?.({ status: "A" })).size).toBe("small");
       });
 
       it("returns the refList label for list fields", () => {
