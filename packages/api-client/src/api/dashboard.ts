@@ -139,6 +139,8 @@ export interface NotificationItem {
   text: string;
   priority: "normal" | "high" | "success";
   time: string;
+  /** Source of the item, such as the alert rule of an alert. When present it is shown instead of the priority. */
+  title?: string;
 }
 
 export interface NotificationWidgetData {

@@ -173,9 +173,10 @@ window grid height.
   The keyboard highlight looks like a hovered entry, so only the open window looks selected.
 - Home: the default layout comes from the SYSTEM rows of `ETMETA_DASHBOARD_WIDGET` in
   `com.etendoerp.metadata`, not from the client. It fills the four columns: Recently Viewed (1), Recent
-  Documents (2, document identifiers are long) and My Favorites (1). The Notifications widget is not in
-  the default: its resolver reads an `AN_Note` entity that no Etendo module provides, so it always shows
-  "Module not installed".
+  Documents (2, document identifiers are long) and My Favorites (1). Notifications spans the second row:
+  it lists the pending alerts of the user, with the same rule as the bell of the header (the resolver
+  used to read an `AN_Note` entity no module provides, so it always showed "Module not installed"). Each
+  alert shows its rule name, description and local time.
 - Home: widgets move left into columns left empty by hidden or unavailable widgets
   (`closeHorizontalGaps`, render only; positions are stored only when the user moves a widget).
 - The status bar of the form wraps instead of hiding the fields past the right edge.

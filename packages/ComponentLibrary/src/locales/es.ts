@@ -917,6 +917,7 @@ const es = {
     },
     widget: {
       unavailable: "Módulo no instalado",
+      more: "+{{count}} más",
       refresh: "Actualizar",
       collapse: "Contraer",
       expand: "Expandir",

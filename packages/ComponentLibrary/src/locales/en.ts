@@ -911,6 +911,7 @@ const en = {
     },
     widget: {
       unavailable: "Module not installed",
+      more: "+{{count}} more",
       refresh: "Refresh",
       collapse: "Collapse",
       expand: "Expand",
