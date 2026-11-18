@@ -851,9 +851,11 @@ const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
  * @param field the field of the referenced tab
  * @returns its `column`, completed with the field reference when it lacks one
  */
-export const withColumnReference = (field: { column?: Field["column"]; reference?: string }): Field["column"] => {
-  if (field.column?.reference || !field.reference) return field.column as Field["column"];
-  return { ...field.column, reference: field.reference } as Field["column"];
+type FieldColumn = Field["column"];
+
+export const withColumnReference = (field: { column?: FieldColumn; reference?: string }): FieldColumn => {
+  if (field.column?.reference || !field.reference) return field.column as FieldColumn;
+  return { ...field.column, reference: field.reference } as FieldColumn;
 };
 
 /**

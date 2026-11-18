@@ -20,6 +20,9 @@ import { type Theme, useTheme, type SxProps } from "@mui/material";
 
 export type TagSize = "small" | "medium";
 
+/** Size of a tag that does not ask for one. */
+export const DEFAULT_TAG_SIZE: TagSize = "medium";
+
 /** Dimensions per size: `small` matches the text of dense rows such as grid cells. */
 const TAG_DIMENSIONS: Record<
   TagSize,
@@ -57,7 +60,11 @@ export const useStyle = (): StylesType => {
 
         return theme.palette.baselineColor.neutral[100];
       },
-      getChipStyles: (customColor?: string, customTextColor?: string, size: TagSize = "medium"): CSSProperties => ({
+      getChipStyles: (
+        customColor?: string,
+        customTextColor?: string,
+        size: TagSize = DEFAULT_TAG_SIZE
+      ): CSSProperties => ({
         backgroundColor: self.getColor(customColor),
         color: self.getTextColor(customTextColor),
         height: TAG_DIMENSIONS[size].height,
@@ -68,7 +75,7 @@ export const useStyle = (): StylesType => {
         border: "none",
       }),
       sx: {
-        chipLabel: (icon?: ReactElement, size: TagSize = "medium"): SxProps<Theme> => ({
+        chipLabel: (icon?: ReactElement, size: TagSize = DEFAULT_TAG_SIZE): SxProps<Theme> => ({
           "& .MuiChip-label": {
             fontFamily: "Inter",
             fontWeight: TAG_DIMENSIONS[size].fontWeight,
