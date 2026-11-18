@@ -28,6 +28,13 @@ import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from 
 import { getMergedRowData } from "./editingRowUtils";
 import { validateRowForSave } from "./validationUtils";
 import type { TranslateFunction } from "@/hooks/types";
+import {
+  type ServerFieldErrors,
+  extractServerFieldErrors,
+  indexFieldsByHqlName,
+  joinServerFieldErrors,
+  labelServerFieldErrors,
+} from "@/utils/form/serverFieldErrors";
 
 /**
  * Detects stale-object (optimistic lock) errors returned by Etendo Classic.
@@ -316,6 +323,19 @@ function prepareSaveData(
 }
 
 /**
+ * Cell errors of the field errors the server returned, keyed by `field.name` as every other
+ * inline-editing validation error. A property the tab has no field for keeps its own name.
+ */
+function toCellValidationErrors(errors: ServerFieldErrors, fields: Tab["fields"] | undefined): ValidationError[] {
+  const fieldsByHqlName = indexFieldsByHqlName(fields);
+  return Object.entries(errors).map(([propertyName, message]) => ({
+    field: fieldsByHqlName.get(propertyName)?.name ?? propertyName,
+    message,
+    type: "server" as const,
+  }));
+}
+
+/**
  * Handles the response from the save operation.
  *
  * On a version conflict, com.etendoerp.metadata's ForwarderServlet returns a distinct,
@@ -325,7 +345,11 @@ function prepareSaveData(
  * (isStaleObjectError, Table/index.tsx) don't need to know about the
  * two response shapes.
  */
-function handleSaveResponse(response: { status?: number; data?: any }, saveOperation: SaveOperation): SaveResult {
+function handleSaveResponse(
+  response: { status?: number; data?: any },
+  saveOperation: SaveOperation,
+  fields?: Tab["fields"]
+): SaveResult {
   const { data, status } = response;
 
   if (data?.response?.status === 0) {
@@ -338,18 +362,19 @@ function handleSaveResponse(response: { status?: number; data?: any }, saveOpera
 
   const isStructuredConflict = status === 409 && data?.code === "STALE_OBJECT";
   // Conversion errors (status -4) come as a map of property -> message, like the form view reads them
-  const errorsMap = data?.response?.errors as Record<string, unknown> | undefined;
-  const errorsMapMessage = errorsMap
-    ? Object.entries(errorsMap)
-        .map(([field, message]) => `${field}: ${String(message)}`)
-        .join("; ")
-    : "";
+  const serverFieldErrors = labelServerFieldErrors(extractServerFieldErrors(data?.response), fields);
+  const errorsMapMessage = joinServerFieldErrors(serverFieldErrors, fields);
   const errorMessage = isStructuredConflict
     ? (data.error as string)
     : data?.response?.error?.message || errorsMapMessage || "Unknown server error";
   const parsedErrors = isStructuredConflict ? [] : parseServerValidationErrors(data?.response?.error);
   const validationErrors =
-    parsedErrors.length > 0 ? parsedErrors : [{ field: "_general", message: errorMessage, type: "server" as const }];
+    parsedErrors.length > 0
+      ? parsedErrors
+      : [
+          ...toCellValidationErrors(serverFieldErrors, fields),
+          { field: "_general", message: errorMessage, type: "server" as const },
+        ];
 
   logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
     rowId: saveOperation.rowId,
@@ -434,7 +459,7 @@ export async function saveRecord({
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
-    const result = handleSaveResponse({ data, status }, saveOperation);
+    const result = handleSaveResponse({ data, status }, saveOperation, tab.fields);
     if (result.success) {
       // Cached responses of the entity still hold the record as it was before the save
       datasource.clearCacheForEntity(tab.entityName);

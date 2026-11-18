@@ -20,6 +20,7 @@ import { FormProvider, useForm, useFormContext, type UseFormReturn } from "react
 import { BaseSelector } from "@/components/Form/FormView/selectors/BaseSelector";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
+import { useServerFieldErrorsStore } from "@/stores/serverFieldErrorsStore";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
 import { getFormHighlightScope } from "@/utils/callouts/calloutHighlight";
@@ -169,5 +170,37 @@ describe("BaseSelector callout highlight", () => {
     const overlay = container.querySelector(".callout-highlight-overlay");
     expect(overlay?.parentElement).toHaveClass("relative");
     expect(overlay?.parentElement?.querySelector('[data-testid="generic-selector"]')).not.toBeNull();
+  });
+});
+
+describe("BaseSelector server field errors", () => {
+  const SCOPE = getFormHighlightScope(TAB_ID);
+  const TOO_LONG = "Value too long";
+
+  const renderWithServerError = () => {
+    useServerFieldErrorsStore.setState({ errors: { [SCOPE]: { [PRODUCT]: TOO_LONG } } });
+    return render(
+      <Wrapper>
+        <BaseSelector field={TRIGGER_FIELD as never} />
+      </Wrapper>
+    );
+  };
+
+  const getServerError = () => useServerFieldErrorsStore.getState().errors[SCOPE]?.[PRODUCT];
+
+  it("keeps the error of a field mounted after the rejected save and marks it", () => {
+    const { container } = renderWithServerError();
+
+    expect(getServerError()).toBe(TOO_LONG);
+    expect(container.querySelector(".server-field-error-overlay")?.parentElement).toHaveClass("relative");
+  });
+
+  it("clears the error once the value of the field changes", () => {
+    const { container } = renderWithServerError();
+
+    act(() => formMethods.setValue(PRODUCT, "PROD1", { shouldDirty: true }));
+
+    expect(getServerError()).toBeUndefined();
+    expect(container.querySelector(".server-field-error-overlay")).toBeNull();
   });
 });

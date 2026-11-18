@@ -21,6 +21,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useUserStore } from "@/stores/userStore";
 import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
 import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
+import { useServerFieldErrorsStore } from "@/stores/serverFieldErrorsStore";
+import { ServerFieldErrorOverlay } from "../ServerFieldErrorOverlay";
 import {
   collectChangedFieldNames,
   getFormHighlightScope,
@@ -246,6 +248,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = useWatch({ name: field.hqlName });
   const previousValue = useRef(value);
+  const clearServerFieldError = useServerFieldErrorsStore((s) => s.clearFieldError);
+  const lastWatchedValueRef = useRef(value);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = useWatch({ name: `${field.hqlName}_data` });
 
@@ -542,6 +546,15 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
     }
   }, [isFormInitializing, isSettingInitialValues, value, field.column.reference, runCallout]);
 
+  // A new value, typed or set by a callout or a discard, clears the error the server gave the field.
+  // The first run is skipped: a field mounted after a failed save (e.g. in a section the error
+  // expanded) must keep its error.
+  useEffect(() => {
+    if (Object.is(lastWatchedValueRef.current, value)) return;
+    lastWatchedValueRef.current = value;
+    clearServerFieldError(getFormHighlightScope(tab.id), field.hqlName);
+  }, [value, clearServerFieldError, tab.id, field.hqlName]);
+
   useEffect(() => {
     if (isFormInitializing) {
       setIsSettingInitialValues(true);
@@ -597,6 +610,11 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
             scope={getFormHighlightScope(tab.id)}
             fieldName={field.hqlName}
             data-testid={"CalloutHighlightOverlay__" + field.id}
+          />
+          <ServerFieldErrorOverlay
+            scope={getFormHighlightScope(tab.id)}
+            fieldName={field.hqlName}
+            data-testid={`ServerFieldErrorOverlay__${field.id}`}
           />
         </div>
       </div>

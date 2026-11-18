@@ -30,6 +30,13 @@ import { isStaleObjectError } from "@/components/Table/utils/saveOperations";
 import { useTranslation } from "./useTranslation";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
 import type { TranslateFunction } from "@/hooks/types";
+import {
+  type ServerFieldErrors,
+  extractServerFieldErrors,
+  hasServerFieldErrors,
+  joinServerFieldErrors,
+  labelServerFieldErrors,
+} from "@/utils/form/serverFieldErrors";
 
 /**
  * Extracts a human-readable error message from the datasource servlet response.
@@ -108,6 +115,26 @@ function resolveSaveErrorMessage(status: number, data: Record<string, unknown> |
     : extractServerErrorMessage(data?.response as Record<string, unknown> | undefined);
 }
 
+/**
+ * Hands the field errors of a rejected save, with the property names replaced by the field
+ * labels, to {@code onServerFieldErrors}.
+ *
+ * @returns The general message listing them, or undefined when the response has no field errors
+ */
+function reportServerFieldErrors(
+  data: Record<string, unknown> | undefined,
+  tab: Tab,
+  onServerFieldErrors: ((errors: ServerFieldErrors) => void) | undefined
+): string | undefined {
+  const fieldErrors = extractServerFieldErrors(data?.response as Record<string, unknown> | undefined);
+  if (!hasServerFieldErrors(fieldErrors)) {
+    return undefined;
+  }
+  const labelledErrors = labelServerFieldErrors(fieldErrors, tab.fields);
+  onServerFieldErrors?.(labelledErrors);
+  return joinServerFieldErrors(labelledErrors, tab.fields);
+}
+
 interface SaveErrorHandlers {
   logout: () => void;
   setLoginErrorText: (text: string) => void;
@@ -171,6 +198,8 @@ export interface UseFormActionParams {
   submit: UseFormHandleSubmit<EntityData>;
   /** Called to refresh the record when the user chooses to reload after a stale-object conflict. */
   onStaleObjectReload?: () => void | Promise<void>;
+  /** Receives the field errors of a save the server rejected, keyed by `hqlName`, with labelled messages. */
+  onServerFieldErrors?: (errors: ServerFieldErrors) => void;
 }
 
 export const useFormAction = ({
@@ -182,6 +211,7 @@ export const useFormAction = ({
   initialState,
   submit,
   onStaleObjectReload,
+  onServerFieldErrors,
 }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
@@ -226,7 +256,8 @@ export const useFormAction = ({
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
-          throw new Error(resolveSaveErrorMessage(status, data));
+          const fieldErrorsMessage = reportServerFieldErrors(data, tab, onServerFieldErrors);
+          throw new Error(fieldErrorsMessage ?? resolveSaveErrorMessage(status, data));
         }
       } catch (err) {
         setLoading(false);
@@ -253,6 +284,7 @@ export const useFormAction = ({
       setLoginErrorText,
       setLoginErrorDescription,
       onStaleObjectReload,
+      onServerFieldErrors,
     ]
   );
 

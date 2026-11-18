@@ -541,6 +541,24 @@ button {
   }
 }
 
+/* Field rejected by the server on save (ETP-6000): red border and error icon with the message. */
+.server-field-error-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid var(--color-error-main);
+  border-radius: 0.25rem;
+}
+
+.server-field-error-icon {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  display: flex;
+  border-radius: 9999px;
+  background-color: var(--color-baseline-0);
+}
+
 /* ---------------------------------------------------------------------------
  * Dark theme. Applied with <html data-theme="dark">. The neutral scales are
  * inverted (baseline, gray, slate), so utilities built on them flip without
