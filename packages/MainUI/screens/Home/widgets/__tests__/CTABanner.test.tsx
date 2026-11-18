@@ -28,5 +28,8 @@ describe("CTABanner", () => {
 
     expect(screen.getByText("dashboard.ctaBanner.badge")).toHaveClass("text-(--ui-banner-accent)");
     expect(screen.getByRole("link")).toHaveClass("bg-(--ui-banner-cta)", "hover:bg-(--ui-banner-cta-hover)");
+    // Light button with dark text: the white-on-violet one blended into the dark banner.
+    expect(screen.getByRole("link")).toHaveClass("text-(--ui-banner-cta-fg)");
+    expect(screen.getByRole("link")).not.toHaveClass("text-white");
   });
 });

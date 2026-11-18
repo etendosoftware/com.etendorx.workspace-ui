@@ -73,7 +73,7 @@ export default function CTABanner() {
           href="https://docs.etendo.software/whats-new/etendo-news/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-(--ui-banner-cta) hover:bg-(--ui-banner-cta-hover) text-sm font-medium text-white transition-colors duration-200 cursor-pointer">
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-(--ui-banner-cta) hover:bg-(--ui-banner-cta-hover) text-sm font-medium text-(--ui-banner-cta-fg) transition-colors duration-200 cursor-pointer">
           {t("dashboard.ctaBanner.learnMore")}
           <ArrowIcon data-testid="ArrowIcon__514220" />
         </a>

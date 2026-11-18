@@ -274,8 +274,10 @@ body {
   --ui-field-focus-border: #2a1757;
   /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
   --ui-banner-accent: #b9acd9;
-  --ui-banner-cta: #4a2f8a;
-  --ui-banner-cta-hover: #6a4fb0;
+  /* Light button on the dark banner: 11.5:1 against it (the violet one was 1.4:1 and blended in), 12.5:1 text. */
+  --ui-banner-cta: #e9e4fa;
+  --ui-banner-cta-hover: #ffffff;
+  --ui-banner-cta-fg: #2a1757;
   --ui-ink: #0f172a;
   --ui-line: #e1e1e3;
   --ui-canvas: hsl(220 14% 95%);

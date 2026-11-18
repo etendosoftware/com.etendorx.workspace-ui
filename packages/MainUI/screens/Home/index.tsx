@@ -28,6 +28,7 @@ import AddWidgetDialog from "./widgets/AddWidgetDialog";
 import EditWidgetParamsDialog from "./widgets/EditWidgetParamsDialog";
 import DashboardGrid from "./widgets/DashboardGrid";
 import { HOME_CONTENT_PADDING_CLASS } from "@/utils/workspaceEdge";
+import { ADD_WIDGET_BUTTON_CLASSES } from "./widgets/buttonClasses";
 
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -194,7 +195,7 @@ export default function Home() {
           <button
             type="button"
             onClick={handleOpenDialog}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-transparent-neutral-5 hover:bg-transparent-neutral-10 border border-transparent-neutral-10 text-baseline-100 transition-colors cursor-pointer"
+            className={ADD_WIDGET_BUTTON_CLASSES}
             data-testid="Home__add_widget_btn">
             <PlusIcon data-testid="PlusIcon__3ef224" />
             {t("dashboard.addWidget.button")}
