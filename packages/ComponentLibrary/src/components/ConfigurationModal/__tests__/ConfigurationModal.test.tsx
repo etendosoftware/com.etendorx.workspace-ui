@@ -16,7 +16,7 @@
  */
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import ConfigurationModal from "../index";
+import ConfigurationModal, { OPTION_BASE_CLASSES, OPTION_IDLE_CLASSES, OPTION_SELECTED_CLASSES } from "../index";
 import type { ISection } from "../types";
 
 describe("ConfigurationModal", () => {
@@ -139,8 +139,21 @@ describe("ConfigurationModal", () => {
     await waitFor(() => {
       // The first item (selected) should have the selected styling class
       const item1Button = screen.getByText("Item 1").closest("button");
-      expect(item1Button).toHaveClass("border-2");
-      expect(item1Button?.className).toContain("border-[var(--color-etendo-main)]");
+      expect(item1Button?.className).toContain(OPTION_SELECTED_CLASSES);
+    });
+  });
+
+  it("keeps the same 1px border on selected and idle tiles, so the selected one does not grow", async () => {
+    render(<ConfigurationModal {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => {
+      const selected = screen.getByText("Item 1").closest("button");
+      const idle = screen.getByText("Item 2").closest("button");
+      expect(selected).not.toHaveClass("border-2");
+      expect(idle?.className).toContain(OPTION_IDLE_CLASSES);
+      expect(selected?.className).toContain(OPTION_BASE_CLASSES);
     });
   });
 
