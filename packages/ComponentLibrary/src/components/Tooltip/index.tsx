@@ -127,7 +127,8 @@ const Tooltip: React.FC<TooltipProps> = ({
       ref={wrapperRef}
       className={`relative group ${containerClassName ?? ""}`}
       onMouseEnter={showTooltip}
-      onMouseLeave={hideTooltip}>
+      onMouseLeave={hideTooltip}
+      onMouseDown={hideTooltip}>
       {children}
       {visible &&
         ReactDOM.createPortal(

@@ -73,6 +73,40 @@ describe("Tooltip", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
+  it("hides a visible tooltip when the trigger is pressed", () => {
+    render(
+      <Tooltip title="Test tooltip">
+        <button>Hover me</button>
+      </Tooltip>
+    );
+
+    const wrapper = screen.getByRole("button").parentElement!;
+    fireEvent.mouseEnter(wrapper);
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    fireEvent.mouseDown(screen.getByRole("button"));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("does not open the tooltip when the trigger is pressed before the delay ends", () => {
+    render(
+      <Tooltip title="Test tooltip">
+        <button>Hover me</button>
+      </Tooltip>
+    );
+
+    const wrapper = screen.getByRole("button").parentElement!;
+    fireEvent.mouseEnter(wrapper);
+    fireEvent.mouseDown(screen.getByRole("button"));
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
   it("does not show tooltip when disabled", () => {
     render(
       <Tooltip title="Disabled tooltip" disabled>
