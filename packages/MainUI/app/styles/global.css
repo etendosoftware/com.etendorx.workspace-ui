@@ -141,7 +141,9 @@
 .toolbar-button-advanced-filters:hover .icon-base64,
 .toolbar-button-send-mail:hover .icon-base64,
 .toolbar-button-show-audit-trail:hover .icon-base64,
-.toolbar-button-save-view:hover .icon-base64 {
+.toolbar-button-save-view:hover .icon-base64,
+.toolbar-button-export-csv:hover .icon-base64,
+.toolbar-button-show-table-and-form:hover .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
 }

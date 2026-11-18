@@ -88,9 +88,10 @@ export const useStyle = () => {
           flex: 1,
           minWidth: 0,
         },
+        // No fixed width: the name takes the whole row up to the switch and only then ends in an ellipsis.
         sortableItemLabel: {
           display: "inline-block",
-          maxWidth: "8rem",
+          marginRight: "0.5rem",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",

@@ -16,34 +16,47 @@
  */
 
 import type { TopToolbarProps } from "../types";
-import ToolbarSection from "../ToolbarSection";
+import ToolbarSection, { ToolbarProcessButton } from "../ToolbarSection";
 import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 
-export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton }: TopToolbarProps) => {
+export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton, rootRef }: TopToolbarProps) => {
   const { setSlot: setExtrasSlot } = useToolbarExtrasSlot();
+  // The process button belonged to the center section, which renders nothing without buttons.
+  const hasCenterButtons = centerSection.buttons.length > 0;
   const isCenterSectionsDisabled = centerSection.buttons.every((button) => button.disabled) && processButton?.disabled;
   // The center group scrolls when the row is too narrow (the right group also holds the record navigation, so a
   // 1280px screen with the menu open does not fit it all): without that its buttons spilled under the right group.
   return (
-    <div className="h-11 p-1 flex justify-between items-center gap-0.5">
+    <div ref={rootRef} className="h-11 p-1 flex justify-between items-center gap-0.5">
       <div className="flex min-w-0 flex-1 items-center gap-0.5">
         <ToolbarSection
           {...leftSection}
-          className="flex items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_.toolbar-button-refresh]:bg-(--ui-table-head-bg) [&_.toolbar-button-refresh]:border-0 [&_.toolbar-button-refresh]:h-8 [&_.toolbar-button-refresh]:w-8"
+          className="flex items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_.toolbar-button-refresh]:bg-transparent [&_.toolbar-button-refresh]:border-0 [&_.toolbar-button-refresh]:h-8 [&_.toolbar-button-refresh]:w-8"
           data-testid="ToolbarSection__f0537e_1"
         />
-        <ToolbarSection
-          {...centerSection}
-          processButton={processButton}
-          className={`bg-(--ui-group-bg) rounded-full p-0.5 flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto hide-scrollbar [&_button]:bg-transparent [&_button]:border-0 [&_button]:h-8 [&_button]:w-8 ${isCenterSectionsDisabled ? "opacity-40 dark:opacity-90" : ""}`}
-          data-testid="ToolbarSection__f0537e_2"
-        />
+        {/* Only the icons scroll: the process button sits beside them, so a narrow row never cuts it. */}
+        <div
+          className={`bg-(--ui-group-bg) rounded-full p-0.5 flex min-w-0 flex-1 items-center gap-1 [&_button]:bg-transparent [&_button]:border-0 [&_button]:h-8 [&_button]:w-8 ${isCenterSectionsDisabled ? "opacity-40 dark:opacity-90" : ""}`}
+          data-testid="TopToolbar__center">
+          <ToolbarSection
+            {...centerSection}
+            className="flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto hide-scrollbar"
+            data-testid="ToolbarSection__f0537e_2"
+          />
+          {hasCenterButtons && (
+            <ToolbarProcessButton
+              processButton={processButton}
+              className="shrink-0"
+              data-testid="ToolbarProcessButton__f0537e"
+            />
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_button]:h-8 [&_button]:w-8 [&_button]:rounded-full [&_button]:border-0 [&_button:not([style*=background-color])]:bg-transparent! [&_button:not([style*=background-color]):not(:disabled):hover]:bg-(--color-dynamic-main)!">
         <ToolbarSection {...rightSection} className="flex items-center gap-1" data-testid="ToolbarSection__f0537e_3" />
         <div
           ref={setExtrasSlot}
-          className="flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]! [&_button]:text-(--color-baseline-70)! [&_button]:transition! [&_button]:duration-400! [&_button:not(:disabled):hover]:text-(--color-baseline-0)!"
+          className="flex items-center gap-1 [&_button]:p-0 [&_svg]:text-[1.125rem]! [&_button:last-child_svg]:text-[1.375rem]! [&_button]:text-(--ui-text)! [&_button]:transition! [&_button]:duration-400! [&_button:not(:disabled):hover]:text-(--color-baseline-0)!"
           data-testid="ToolbarExtrasSlot__container"
         />
       </div>

@@ -34,6 +34,7 @@ import {
   isExportBlocked,
 } from "@/utils/toolbar/enablement";
 import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
+import { resolveToolbarIcon } from "@/utils/toolbar/actionIcons";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 import { CircularProgress } from "@mui/material";
 
@@ -269,7 +270,7 @@ export const createButtonByType = ({
       isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ? (
         <PlusIcon className="w-4 h-4" data-testid="PlusIcon__5aeccd" />
       ) : (
-        <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />
+        <IconComponent iconKey={resolveToolbarIcon(button.action, button.icon)} data-testid="IconComponent__5aeccd" />
       ),
     tooltip: buttonTooltip,
     disabled: !button.active,

@@ -16,7 +16,7 @@
  */
 
 // @data-testid-ignore
-import type { ToolbarSectionConfig } from "../types";
+import type { ProcessAvailableButton, ToolbarSectionConfig } from "../types";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import IconButtonWithText from "@workspaceui/componentlibrary/src/components/IconButtonWithText";
 import {
@@ -24,6 +24,35 @@ import {
   OUTLINED_BUTTON_TYPE,
 } from "@workspaceui/componentlibrary/src/components/IconButtonWithText/constants";
 import { Badge, Tooltip } from "@mui/material";
+
+/**
+ * "Available Process" button with its separator. Renders nothing while there is no enabled process button.
+ */
+export const ToolbarProcessButton = ({
+  processButton,
+  className = "",
+}: {
+  processButton?: ProcessAvailableButton;
+  className?: string;
+}) => {
+  if (!processButton || processButton.disabled) return null;
+
+  return (
+    <div className={`h-full flex items-center ${className}`.trim()}>
+      <div className="h-5 w-0.5 bg-[var(--color-transparent-neutral-20)] mx-0.5" />
+      <IconButtonWithText
+        buttonType={OUTLINED_BUTTON_TYPE}
+        leftIcon={processButton.leftIcon}
+        rightIcon={processButton.rightIcon}
+        text={processButton.text}
+        onClick={processButton.onClick}
+        disabled={processButton.disabled}
+        customContainerStyles={processButton.customContainerStyles}
+        data-testid={`IconButtonWithText__${processButton.key ?? processButton.text?.replace(/\s+/g, "-").toLowerCase() ?? "2bded0"}`}
+      />
+    </div>
+  );
+};
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
   if (!buttons.length) return null;
@@ -123,21 +152,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
           return buttonElement;
         }
       )}
-      {processButton && !processButton.disabled && (
-        <div className="h-full flex items-center">
-          <div className="h-5 w-0.5 bg-[var(--color-transparent-neutral-20)] mx-0.5" />
-          <IconButtonWithText
-            buttonType={OUTLINED_BUTTON_TYPE}
-            leftIcon={processButton.leftIcon}
-            rightIcon={processButton.rightIcon}
-            text={processButton.text}
-            onClick={processButton.onClick}
-            disabled={processButton.disabled}
-            customContainerStyles={processButton.customContainerStyles}
-            data-testid={`IconButtonWithText__${processButton.key ?? processButton.text?.replace(/\s+/g, "-").toLowerCase() ?? "2bded0"}`}
-          />
-        </div>
-      )}
+      <ToolbarProcessButton processButton={processButton} />
     </div>
   );
 };
