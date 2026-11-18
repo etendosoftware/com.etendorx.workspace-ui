@@ -235,6 +235,12 @@ const getNumericCellText = (
   return value == null ? "" : String(value);
 };
 
+/** Link-like buttons of grid cells: they cut long values with an ellipsis, like plain text cells. */
+const CELL_LINK_CLASSES = "block max-w-full truncate bg-transparent border-none p-0 text-left pointer-events-auto";
+
+/** Header props of numeric columns: the label sits on the right, over its values. */
+export const NUMERIC_HEADER_CELL_PROPS = { align: "right" } as const;
+
 /**
  * Numeric columns (not references) align to the right and use the configured mask, as in Classic. Any other
  * column is returned unchanged.
@@ -250,6 +256,8 @@ const withNumericCell = (
   }
   return {
     ...columnConfig,
+    // The header follows its values; MRT merges this shallowly with the grid-level header props.
+    muiTableHeadCellProps: NUMERIC_HEADER_CELL_PROPS,
     Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => (
       <span className="block w-full text-right tabular-nums">{getNumericCellText(cell, row, column, language)}</span>
     ),
@@ -385,7 +393,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className={`bg-transparent border-none p-0 text-left pointer-events-auto ${
+                className={`${CELL_LINK_CLASSES} ${
                   usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""
                 }`}
                 onClick={(e) => {
@@ -470,7 +478,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced record"
-                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--ui-link) hover:underline"
+                className={`${CELL_LINK_CLASSES} text-(--ui-link) hover:underline`}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();

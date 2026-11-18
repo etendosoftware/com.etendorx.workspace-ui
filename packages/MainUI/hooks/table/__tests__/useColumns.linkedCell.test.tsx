@@ -113,6 +113,11 @@ describe("useColumns - clientclass cell rendering", () => {
     expect(screen.getByText("SO/00042")).toBeInTheDocument();
   });
 
+  it("cuts a long value with an ellipsis instead of overflowing the cell", () => {
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: /navigate to referenced record/i })).toHaveClass("block", "truncate");
+  });
+
   it("calls handleClientclassNavigation with correct clientclass and row id on click", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: /navigate to referenced record/i }));

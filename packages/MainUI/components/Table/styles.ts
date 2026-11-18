@@ -195,11 +195,18 @@ export const useStyle = (): StylesType => {
           "& .text-sm": {
             fontSize: "0.78rem",
           },
-          "&:first-of-type": {
+          // Only the selection column is centered: a grid without it starts with a data column.
+          "&:first-of-type:has(input[type='checkbox'])": {
             textAlign: "center",
           },
           "&:has(.MuiCheckbox-root)": {
             justifyContent: "center",
+          },
+          // Long values end in an ellipsis; cells being edited keep their overflow for the inline error.
+          "&:not(:has(input, textarea, select))": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           },
           "&::before": {
             boxShadow: "none !important",

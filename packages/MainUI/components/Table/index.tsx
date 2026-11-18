@@ -2846,7 +2846,7 @@ const DynamicTable = ({
               )}
             </div>
             {HierarchyIcon}
-            <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
+            <span className={`flex-1 min-w-0 truncate ${isSummary ? "font-bold" : ""}`}>
               {originalCell && typeof originalCell === "function"
                 ? originalCell({ renderedCellValue, row, table })
                 : renderedCellValue}
@@ -2856,7 +2856,7 @@ const DynamicTable = ({
       }
 
       return (
-        <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
+        <span className={`flex-1 min-w-0 truncate ${isSummary ? "font-bold" : ""}`}>
           {originalCell && typeof originalCell === "function"
             ? originalCell({ renderedCellValue, row, table })
             : renderedCellValue}
