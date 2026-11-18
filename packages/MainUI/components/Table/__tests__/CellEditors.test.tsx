@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
@@ -727,6 +728,112 @@ describe("Cell Editor Components", () => {
       await user.keyboard("{ArrowUp}");
 
       expect(mockOnChange).toHaveBeenCalledWith(11);
+    });
+
+    it("accepts a negative value in a Number column (reference 22), like Discount %", async () => {
+      const user = userEvent.setup();
+      const field = createMockField({
+        type: FieldType.QUANTITY,
+        column: { reference: "22" } as Field["column"],
+      });
+
+      render(
+        <NumericCellEditor
+          value={null}
+          onChange={mockOnChange}
+          onBlur={mockOnBlur}
+          field={field}
+          hasError={false}
+          disabled={false}
+        />
+      );
+      await user.type(screen.getByRole("textbox"), "-50");
+
+      expect(mockOnChange).toHaveBeenLastCalledWith(-50);
+      expect(screen.queryByText("Quantity cannot be negative")).not.toBeInTheDocument();
+    });
+
+    it("keeps every digit typed in a cell that was focused automatically (ETP-6334)", async () => {
+      const user = userEvent.setup();
+      const field = createMockField({ type: FieldType.NUMBER });
+      const Row = () => {
+        const [value, setValue] = React.useState<number | null>(10);
+        return (
+          <NumericCellEditor
+            value={value}
+            onChange={setValue}
+            onBlur={mockOnBlur}
+            field={field}
+            hasError={false}
+            disabled={false}
+            shouldAutoFocus
+          />
+        );
+      };
+
+      render(<Row />);
+      const input = screen.getByRole("textbox");
+      expect(input).toHaveFocus();
+      // The cell starts with its text selected, so the first digit replaces it; the next ones must add to it
+      await user.keyboard("45");
+
+      expect(input).toHaveValue("45");
+    });
+
+    describe("a value set from outside while the cell has the focus (ETP-6334)", () => {
+      const renderEditor = (value: number | null) => {
+        const field = createMockField({ type: FieldType.NUMBER });
+        const element = (current: number | null) => (
+          <NumericCellEditor
+            value={current}
+            onChange={mockOnChange}
+            onBlur={mockOnBlur}
+            field={field}
+            hasError={false}
+            disabled={false}
+          />
+        );
+        const view = render(element(value));
+        return { ...view, rerenderWith: (next: number | null) => view.rerender(element(next)) };
+      };
+
+      it("shows the value a callout fills in, as the line amount after a price change", async () => {
+        const user = userEvent.setup();
+        const { rerenderWith } = renderEditor(2);
+        const input = screen.getByRole("textbox");
+        await user.click(input);
+
+        rerenderWith(15);
+
+        expect(input).toHaveFocus();
+        expect(input).toHaveValue("15");
+      });
+
+      it("does not reformat what the user is typing when the row hands the same number back", async () => {
+        const user = userEvent.setup();
+        const { rerenderWith } = renderEditor(null);
+        const input = screen.getByRole("textbox");
+        await user.click(input);
+        await user.type(input, "01");
+
+        // The row stores what the editor emitted (1) and passes it back down
+        rerenderWith(1);
+
+        expect(input).toHaveValue("01");
+      });
+
+      it("shows the value of a callout after the user has typed in the cell", async () => {
+        const user = userEvent.setup();
+        const { rerenderWith } = renderEditor(null);
+        const input = screen.getByRole("textbox");
+        await user.click(input);
+        await user.type(input, "5");
+        rerenderWith(5);
+
+        rerenderWith(7);
+
+        expect(input).toHaveValue("7");
+      });
     });
   });
 
