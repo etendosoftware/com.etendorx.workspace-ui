@@ -76,7 +76,7 @@ describe("isOwnNote", () => {
   });
 
   it("returns false when the current user is unknown", () => {
-    expect(isOwnNote(buildNote(""), undefined)).toBe(false);
+    expect(isOwnNote(buildNote(""))).toBe(false);
     expect(isOwnNote(buildNote(""), "")).toBe(false);
   });
 });
