@@ -29,6 +29,12 @@ import ChevronUpIcon from "@workspaceui/componentlibrary/src/assets/icons/chevro
 
 const ACTIVE_TAB_THRESHOLD_PX = 16;
 const PANEL_WIDTH = "42rem";
+/**
+ * Below 1440px the panel floats over the workspace instead of pushing it: pushing would leave the window
+ * too narrow for its header, toolbar and form. From 1440px on it sits beside the workspace as before.
+ */
+const PANEL_LAYOUT_CLASSES =
+  "absolute right-0 top-0 z-40 shadow-xl min-[1440px]:relative min-[1440px]:z-auto min-[1440px]:shadow-none";
 
 /**
  * Right-hand panel showing contextual Help for the active window: window-level
@@ -132,11 +138,11 @@ const HelpDrawer: React.FC = () => {
 
   return (
     <div
-      className="h-full shrink-0 overflow-hidden transition-all duration-500 ease-in-out bg-white border-l border-gray-200 flex flex-col"
+      className={`${PANEL_LAYOUT_CLASSES} h-full max-w-[90vw] shrink-0 overflow-hidden transition-all duration-500 ease-in-out bg-white border-l border-gray-200 flex flex-col`}
       style={{ width: isOpen ? PANEL_WIDTH : "0" }}
       data-testid="help-drawer-panel">
       {isOpen && (
-        <div className="w-[42rem] h-full flex flex-col min-h-0">
+        <div className="w-[42rem] max-w-[90vw] h-full flex flex-col min-h-0">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h2 className="text-lg font-bold">
               {t("common.helpFor")} {window?.name}

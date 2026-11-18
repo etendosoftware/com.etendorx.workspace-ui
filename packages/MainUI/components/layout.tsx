@@ -32,7 +32,7 @@ function StatusBar({ onFooterRef }: { onFooterRef: (element: HTMLElement | null)
   const name = useUserStore((s) => s.profile.name);
   return (
     <div
-      className="flex h-7 min-h-7 w-full items-center justify-end gap-6 border-t border-(--ui-line) bg-(--ui-footer-bg) px-4 text-xs text-(--ui-text-muted)"
+      className="flex h-7 min-h-7 w-full items-center justify-end gap-6 border-t border-(--ui-line) bg-(--ui-footer-bg) px-4 text-xs text-(--ui-text-soft)"
       data-testid="StatusBar__container">
       <div ref={onFooterRef} className="mr-auto flex items-center" data-testid="FooterSlot__counter" />
       <span>Version: {process.env.NEXT_PUBLIC_APP_VERSION}</span>
@@ -58,11 +58,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <div ref={setTitle} className="min-w-0" data-testid="TopBarSlot__title" />
               <div ref={setTitleSuffix} className="shrink-0" data-testid="TopBarSlot__titleSuffix" />
             </div>
-            <div className="shrink-0">
+            {/* One group, so the toggle keeps the same 4px gap as the navigation buttons. */}
+            <div className="flex h-full shrink-0 items-center" data-testid="TopBar__actions">
               <ThemeToggle data-testid="ThemeToggle__519d5c" />
-            </div>
-            <div className="h-full shrink-0 [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:not(:disabled):hover]:bg-(--color-dynamic-main)">
-              <Navigation data-testid="Navigation__519d5c" />
+              <div className="h-full [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:not(:disabled):hover]:bg-(--color-dynamic-main)">
+                <Navigation data-testid="Navigation__519d5c" />
+              </div>
             </div>
           </div>
           <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>

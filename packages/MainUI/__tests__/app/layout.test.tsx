@@ -151,4 +151,18 @@ describe("Layout Component", () => {
     const mainContainer = container.firstChild;
     expect(mainContainer).toHaveClass("overflow-hidden");
   });
+
+  it("keeps the theme toggle in the same group as the navigation buttons", () => {
+    render(<Layout>{mockChildren}</Layout>);
+
+    const group = screen.getByTestId("TopBar__actions");
+    expect(group).toContainElement(screen.getByTestId("ThemeToggle__button"));
+    expect(group).toHaveTextContent("Navigation");
+  });
+
+  it("shows the footer text with the readable soft colour", () => {
+    render(<Layout>{mockChildren}</Layout>);
+
+    expect(screen.getByTestId("StatusBar__container")).toHaveClass("text-(--ui-text-soft)");
+  });
 });
