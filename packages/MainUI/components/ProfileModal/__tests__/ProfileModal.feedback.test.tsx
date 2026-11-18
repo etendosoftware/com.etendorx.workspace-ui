@@ -23,6 +23,7 @@ import ProfileModal from "../ProfileModal";
 import type { ProfileModalProps } from "../types";
 import { createProfileModalProps } from "../test-utils/profileModalProps";
 
+const NEW_PASSWORD = "New1234!";
 const PASSWORD_CHANGED_TEXT = "Your password has been changed!";
 const FALLBACK_KEY = "navigation.profile.passwordChangedSuccess";
 const PROFILE_BUTTON = "profile-menu-button";
@@ -133,8 +134,8 @@ const renderModal = (overrides: Partial<ProfileModalProps> = {}) => {
 const submitPasswordChange = () => {
   fireEvent.click(screen.getByText("password section"));
   fireEvent.change(screen.getByLabelText("current"), { target: { value: "old" } });
-  fireEvent.change(screen.getByLabelText("new"), { target: { value: "New1234!" } });
-  fireEvent.change(screen.getByLabelText("confirm"), { target: { value: "New1234!" } });
+  fireEvent.change(screen.getByLabelText("new"), { target: { value: NEW_PASSWORD } });
+  fireEvent.change(screen.getByLabelText("confirm"), { target: { value: NEW_PASSWORD } });
   fireEvent.click(screen.getByText("common.save"));
 };
 
@@ -165,7 +166,11 @@ describe("ProfileModal — password change confirmation", () => {
     submitPasswordChange();
 
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(PASSWORD_CHANGED_TEXT));
-    expect(onPasswordChange).toHaveBeenCalledWith({ currentPwd: "old", newPwd: "New1234!", confirmPwd: "New1234!" });
+    expect(onPasswordChange).toHaveBeenCalledWith({
+      currentPwd: "old",
+      newPwd: NEW_PASSWORD,
+      confirmPwd: NEW_PASSWORD,
+    });
   });
 
   it("falls back to the local text when the catalog has no message", async () => {
