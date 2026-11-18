@@ -54,6 +54,12 @@ export const ToolbarProcessButton = ({
   );
 };
 
+/**
+ * Common class of the round icon buttons of the toolbar. Their hover and pressed fill is the dark accent, so a
+ * global rule turns their database icon white then, whatever the action (see `global.css`).
+ */
+export const TOOLBAR_ICON_BUTTON_CLASS = "toolbar-icon-button";
+
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
   if (!buttons.length) return null;
 
@@ -89,7 +95,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
                 tooltip={innerTooltip}
                 onClick={onClick}
                 disabled={disabled}
-                className={className}
+                className={className ? `${TOOLBAR_ICON_BUTTON_CLASS} ${className}` : TOOLBAR_ICON_BUTTON_CLASS}
                 iconText={iconText}
                 isPressed={isPressed}
                 data-testid={`IconButton__${key ?? "2bded0"}`}>

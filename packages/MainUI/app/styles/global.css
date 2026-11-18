@@ -148,6 +148,16 @@
   opacity: 1;
 }
 
+/*
+ * Every round toolbar icon button fills with the dark accent on hover, so its icon turns white, like the enabled
+ * ones listed above. It also covers the actions without their own class (Personalize Form, Tab control) and the
+ * buttons added by modules, whose icon was left dark on the dark fill.
+ */
+.toolbar-icon-button:hover:not(:disabled) .icon-base64 {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
 .toolbar-button-new:disabled,
 .toolbar-button-save:disabled,
 .toolbar-button-refresh:disabled,
@@ -251,6 +261,10 @@ body {
   --ui-accent-dark: var(--color-dynamic-dark);
   /* Focused or open form field: tinted background, accent text and border. */
   --ui-field-focus-bg: #ece8f6;
+  /* Outline and thumb of an "off" switch: neutral grey (4.5:1 on the card), so it never reads as the accent "on". */
+  --ui-switch-off: #74777f;
+  /* Surface of the "My Favorites" home widget. */
+  --ui-widget-favorites-bg: #e9e4fa;
   --ui-field-focus-fg: #2a1757;
   --ui-field-focus-border: #2a1757;
   /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
@@ -622,6 +636,8 @@ html[data-theme="dark"] {
   --color-dynamic-contrast-text: #e9e6fb;
   /* Focused field: dark lilac tint with a light lilac text (8:1). */
   --ui-field-focus-bg: #2d2650;
+  --ui-switch-off: #8b8e9a;
+  --ui-widget-favorites-bg: #2d2650;
   --ui-field-focus-fg: #c8bff4;
   --ui-field-focus-border: #8b7bdc;
   --color-etendo-main: #8b7bdc;

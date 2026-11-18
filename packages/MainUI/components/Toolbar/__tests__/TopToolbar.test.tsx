@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import TopToolbar from "../TopToolbar/TopToolbar";
+import TopToolbar, { LEFT_GROUP_CLASSES } from "../TopToolbar/TopToolbar";
 import type { ToolbarButton, TopToolbarProps } from "../types";
 
 const button = (key: string): ToolbarButton =>
@@ -63,7 +63,11 @@ describe("TopToolbar layout", () => {
   it("paints the refresh button like its neighbours instead of a filled circle", () => {
     const { leftAndCenter } = renderToolbar();
 
-    expect(leftAndCenter.firstElementChild).toHaveClass("[&_.toolbar-button-refresh]:bg-transparent");
+    expect(leftAndCenter.firstElementChild).toHaveClass("[&_.toolbar-button-refresh:not(:hover)]:bg-transparent");
+  });
+
+  it("keeps the accent fill of refresh on hover, where its icon turns white", () => {
+    expect(LEFT_GROUP_CLASSES).not.toContain("[&_.toolbar-button-refresh]:bg-transparent");
   });
 
   it("draws the grid extras (fullscreen, record navigation) with the same ink as the toolbar icons", () => {

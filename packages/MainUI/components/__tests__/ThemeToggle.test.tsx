@@ -38,6 +38,15 @@ describe("ThemeToggle", () => {
     expect(screen.getByTestId("ThemeToggle__button")).toHaveClass("h-10", "w-10");
   });
 
+  it.each(["light", "dark"])("draws the %s mode icon in the 24px box of the other header icons", (mode) => {
+    mockMode = mode;
+    render(<ThemeToggle />);
+
+    const icon = screen.getByTestId("ThemeToggle__button").querySelector("svg");
+    expect(icon).toHaveAttribute("width", "24");
+    expect(icon).toHaveAttribute("height", "24");
+  });
+
   it("switches to the opposite mode", () => {
     mockMode = "dark";
     render(<ThemeToggle />);

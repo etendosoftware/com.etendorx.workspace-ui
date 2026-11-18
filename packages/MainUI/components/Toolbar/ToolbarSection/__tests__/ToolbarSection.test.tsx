@@ -16,7 +16,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import ToolbarSection from "../index";
+import ToolbarSection, { TOOLBAR_ICON_BUTTON_CLASS } from "../index";
 
 const SAVE_TOOLTIP = "Save Changes (Ctrl+S)";
 
@@ -29,5 +29,18 @@ describe("ToolbarSection", () => {
     );
 
     expect(screen.getByRole("button", { name: "Save Changes" })).toHaveAttribute("title", SAVE_TOOLTIP);
+  });
+
+  it.each([
+    ["an action with its own class", "toolbar-button-refresh"],
+    ["an action without a class, such as Personalize Form", undefined],
+  ])("marks the icon button of %s so its icon turns white on hover", (_case, className) => {
+    render(
+      <ToolbarSection buttons={[{ key: "action", tooltip: "Action", icon: <span />, onClick: jest.fn(), className }]} />
+    );
+
+    const button = screen.getByTestId("icon-button");
+    expect(button).toHaveClass(TOOLBAR_ICON_BUTTON_CLASS);
+    expect(button).toHaveClass(className ?? TOOLBAR_ICON_BUTTON_CLASS);
   });
 });

@@ -19,6 +19,13 @@ import type { TopToolbarProps } from "../types";
 import ToolbarSection, { ToolbarProcessButton } from "../ToolbarSection";
 import { useToolbarExtrasSlot } from "@/contexts/ToolbarExtrasSlot";
 
+/**
+ * Left group (New / Save, Refresh). Refresh has no filled circle at rest, like its neighbours, but keeps the
+ * accent fill on hover: its icon turns white then, and on the transparent pill it would disappear.
+ */
+export const LEFT_GROUP_CLASSES =
+  "flex items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_.toolbar-button-refresh:not(:hover)]:bg-transparent [&_.toolbar-button-refresh]:border-0 [&_.toolbar-button-refresh]:h-8 [&_.toolbar-button-refresh]:w-8";
+
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton, rootRef }: TopToolbarProps) => {
   const { setSlot: setExtrasSlot } = useToolbarExtrasSlot();
   // The process button belonged to the center section, which renders nothing without buttons.
@@ -29,11 +36,7 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
   return (
     <div ref={rootRef} className="h-11 p-1 flex justify-between items-center gap-0.5">
       <div className="flex min-w-0 flex-1 items-center gap-0.5">
-        <ToolbarSection
-          {...leftSection}
-          className="flex items-center gap-1 rounded-full bg-(--ui-group-bg) p-0.5 [&_.toolbar-button-refresh]:bg-transparent [&_.toolbar-button-refresh]:border-0 [&_.toolbar-button-refresh]:h-8 [&_.toolbar-button-refresh]:w-8"
-          data-testid="ToolbarSection__f0537e_1"
-        />
+        <ToolbarSection {...leftSection} className={LEFT_GROUP_CLASSES} data-testid="ToolbarSection__f0537e_1" />
         {/* Only the icons scroll: the process button sits beside them, so a narrow row never cuts it. */}
         <div
           className={`bg-(--ui-group-bg) rounded-full p-0.5 flex min-w-0 flex-1 items-center gap-1 [&_button]:bg-transparent [&_button]:border-0 [&_button]:h-8 [&_button]:w-8 ${isCenterSectionsDisabled ? "opacity-40 dark:opacity-90" : ""}`}
