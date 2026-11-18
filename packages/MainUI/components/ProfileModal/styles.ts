@@ -70,7 +70,8 @@ export const useStyle = () => {
           color: theme.palette.baselineColor.neutral[0],
           backgroundColor: theme.palette.baselineColor.neutral[80],
           fontWeight: "bold",
-          fontSize: "1rem",
+          // 13px keeps the logo text clear of the circle edge (at 16px it touched it).
+          fontSize: "0.8125rem",
         },
         svgContainerStyles: {
           display: "flex",

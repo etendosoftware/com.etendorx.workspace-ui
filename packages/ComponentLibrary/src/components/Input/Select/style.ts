@@ -38,9 +38,10 @@ export const useStyle = () => {
               borderColor: theme.palette.baselineColor.transparentNeutral[20],
               borderWidth: "0 0 1px",
             },
+            // Disabled like the read-only form fields: no fill, the dotted underline marks it.
             "&.Mui-disabled": {
               color: theme.palette.baselineColor.transparentNeutral[50],
-              backgroundColor: theme.palette.baselineColor.transparentNeutral[10],
+              backgroundColor: "transparent",
               "&:before": {
                 borderColor: theme.palette.baselineColor.transparentNeutral[10],
               },

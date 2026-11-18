@@ -87,6 +87,8 @@ export default function Login({ title, onSubmit }: LoginProps) {
 
   return (
     <div className="bg-login flex flex-1 items-center justify-center pb-[10vh] flex-column">
+      {/* Only the card is centered: the error hangs below it, so showing it does not move the card. */}
+      <div className="relative" data-testid="Login__cardAnchor">
       <div className="w-100 bg-(--color-baseline-0) border border-(--color-transparent-neutral-10) rounded-xl overflow-hidden shadow-[0px_4px_10px_0px_var(--color-transparent-neutral-10)]">
         <div className="h-14 flex items-center gap-2 pl-6 bg-(--color-baseline-10) border-b border-(--color-transparent-neutral-10)">
           <div className="logo h-8 w-8" />
@@ -176,7 +178,8 @@ export default function Login({ title, onSubmit }: LoginProps) {
         />
       </div>
       {showErrorMessage && (
-        <div className="w-100 mt-4 p-4 bg-(--color-baseline-0) border border-(--color-error-main) rounded-lg max-w-md shadow-[0px_4px_10px_0px_var(--color-transparent-neutral-10)]">
+        <div
+          className="absolute left-0 top-full w-100 mt-4 p-4 bg-(--color-baseline-0) border border-(--color-error-main) rounded-lg max-w-md shadow-[0px_4px_10px_0px_var(--color-transparent-neutral-10)]">
           <div className="font-inter font-semibold text-sm text-(--color-error-main) leading-5 mb-2">
             {loginErrorText}
           </div>
@@ -191,6 +194,7 @@ export default function Login({ title, onSubmit }: LoginProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

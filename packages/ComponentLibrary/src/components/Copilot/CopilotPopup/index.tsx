@@ -25,6 +25,11 @@ import BackIcon from "../../../assets/icons/arrow-left.svg";
 import SparksIcon from "../../../assets/icons/sparks.svg";
 import type { CopilotPopupProps } from "../types";
 
+/** Collapsed panel: above the 28px status bar and on the 16px right margin of the content. */
+const COLLAPSED_PANEL_POSITION = "right-4 bottom-9";
+/** The pastel gradient does not flip with the theme; in dark mode the panel uses the card surface instead. */
+const DARK_PANEL_SURFACE = "dark:bg-none dark:bg-(--ui-card-bg)";
+
 const CopilotPopup: React.FC<CopilotPopupProps> = ({
   open,
   onClose,
@@ -88,9 +93,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   const isHeaderClickable = selectedAssistant !== null && selectedAssistant !== undefined;
 
   return (
-    <div className={`fixed z-500 ${isExpanded ? "inset-4" : "right-2 bottom-2"}`}>
+    <div className={`fixed z-500 ${isExpanded ? "inset-4" : COLLAPSED_PANEL_POSITION}`}>
       <div
-        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-1  border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
+        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 ${DARK_PANEL_SURFACE} rounded-lg border-1  border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
         <div className="flex justify-between items-center p-4 pb-2 border-b border-(--color-transparent-neutral-20)">
           <div className="flex-1 pr-2 min-w-0">
             <button
