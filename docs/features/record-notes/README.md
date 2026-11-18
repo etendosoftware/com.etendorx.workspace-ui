@@ -22,8 +22,11 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
       `formatClassicDate(value, true)`, the same formatter used by the audit date columns of the grid (see
       [DATE_FORMATTING.md](../../../packages/MainUI/docs/DATE_FORMATTING.md)).
 
-    The other format is always available as the tooltip of the date. The chosen mode is remembered per
-    browser (`localStorage` key `notes.dateDisplay`; an unknown stored value falls back to time elapsed). The
+    The other format is always available as the tooltip of the date. The chosen mode is a **session
+    preference** (`useNotesPreferencesStore`): every window of the application shows the same mode, and a
+    change shows at once in the other open windows. It is kept in the session storage (key
+    `notes-preferences`) so it survives a page reload, and it is reset on logout through `resetSessionState`,
+    so the next user starts with time elapsed. An unknown stored value also falls back to time elapsed. The
     servlet sends an ISO UTC timestamp, so dates are shown in local time; an invalid date is not shown;
   - the **full text with its line breaks**. Notes longer than 6 lines are cut, with a **Show more /
     Show less** toggle that only appears when the text does not fit (re-measured when the note is resized).
@@ -114,6 +117,7 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
   delete confirmation.
 - `packages/MainUI/components/Form/FormView/Sections/noteUtils.ts` and `noteStyles.ts`: pure helpers and
   theme-based styles.
+- `packages/MainUI/stores/notesPreferencesStore.ts`: session preference of the date mode.
 - `packages/api-client/src/api/notes.ts`: fetch, create and delete requests; `NoteDeleteError`.
 - `com.etendoerp.metadata` `NotesServlet`: notes endpoint, validation, organization and delete permission.
 - `playwright-tests/e2e/regression/09_Form/FRMdNotesAndAttachmentsTest.spec.ts`: add and delete flow.
