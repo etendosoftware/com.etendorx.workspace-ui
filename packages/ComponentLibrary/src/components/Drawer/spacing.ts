@@ -26,6 +26,17 @@ export const SIDEBAR_GUTTER_CLASS = "mx-3";
 export const SIDEBAR_GUTTER_PADDING_CLASS = "px-3";
 /** Inner padding of a menu entry, the same on both sides (8px): icon on the left, chevron on the right. */
 export const MENU_ROW_PADDING_REM = 0.5;
+/**
+ * Width of the icon slot of an expanded entry: the 20px icon itself. It was a 32px slot, which added 6px of
+ * empty space on each side of the icon on top of the row padding.
+ */
+export const MENU_ICON_SLOT_OPEN_CLASS = "w-5";
+/**
+ * Search box: its inner left padding matches a menu entry (8px), so the magnifier sits on the same column as the
+ * menu icons.
+ */
+export const SIDEBAR_SEARCH_INSET_CLASS = "[&_.MuiInputBase-root]:pl-2!";
+
 /** Extra left padding per menu level (8px); entries only indent on the left, never shrink on the right. */
 export const MENU_LEVEL_INDENT_REM = 0.5;
 

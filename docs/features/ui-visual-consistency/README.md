@@ -146,14 +146,17 @@ window grid height.
   The first child tab starts on the left edge of the child toolbar and grid (`SUB_TABS_BAR_PADDING`).
 - Sidebar (`ComponentLibrary/.../Drawer/spacing.ts`): every box keeps the same 12px gutter on both sides
   (header, search box, "Recently Viewed" and its chips, hover and selected backgrounds). Entries have 8px
-  of inner padding on both sides at every level; each level adds 8px on the left only
+  of inner padding on both sides at every level and an icon slot as wide as the icon, so the search
+  magnifier, the menu icons and the "Recently Viewed" chips share one column; the chips are compact (12px)
+  so several fit per line; each level adds 8px on the left only
   (`getMenuRowIndentStyle`), so icons step in and chevrons stay in one column. Nested sections used to take
   8px per level from both sides, which moved the chevrons of deep levels and narrowed their background.
   The keyboard highlight looks like a hovered entry, so only the open window looks selected.
 - Home: the default layout comes from the SYSTEM rows of `ETMETA_DASHBOARD_WIDGET` in
   `com.etendoerp.metadata`, not from the client. It fills the four columns: Recently Viewed (1), Recent
-  Documents (2, document identifiers are long), My Favorites (1), and Notifications across the second
-  row, which is useful to any user and role.
+  Documents (2, document identifiers are long) and My Favorites (1). The Notifications widget is not in
+  the default: its resolver reads an `AN_Note` entity that no Etendo module provides, so it always shows
+  "Module not installed".
 - Home: widgets move left into columns left empty by hidden or unavailable widgets
   (`closeHorizontalGaps`, render only; positions are stored only when the user moves a widget).
 - The status bar of the form wraps instead of hiding the fields past the right edge.

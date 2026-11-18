@@ -19,7 +19,7 @@ import { MenuTitle } from "../index";
 import { DEFAULT_B64, EXTERNAL_LINK_B64 } from "../constants";
 import { DrawerHighlightContext } from "../../DrawerHighlightContext";
 import { MENU_ROW_SHAPE_CLASSES, getMenuButtonClassName } from "../index";
-import { getMenuRowIndentStyle } from "../../spacing";
+import { MENU_ICON_SLOT_OPEN_CLASS, getMenuRowIndentStyle } from "../../spacing";
 
 const SVG_PREFIX = "data:image/svg+xml;base64,";
 
@@ -72,6 +72,12 @@ describe("MenuTitle layout", () => {
   it("uses the same rounded shape and right padding at every level", () => {
     expect(getMenuButtonClassName(true)).toContain(MENU_ROW_SHAPE_CLASSES);
     expect(getMenuRowIndentStyle(0)).toEqual({ paddingLeft: "0.5rem" });
+  });
+
+  it("fits the icon slot to the 20px icon, with no extra space around it", () => {
+    const icon = renderEntry().querySelector("img");
+
+    expect(icon?.parentElement?.parentElement).toHaveClass(MENU_ICON_SLOT_OPEN_CLASS);
   });
 
   it("leaves a gap between a long label and the chevron", () => {

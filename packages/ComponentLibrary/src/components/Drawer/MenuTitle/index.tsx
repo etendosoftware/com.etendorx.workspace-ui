@@ -19,7 +19,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
-import { getMenuRowIndentStyle } from "../spacing";
+import { MENU_ICON_SLOT_OPEN_CLASS, getMenuRowIndentStyle } from "../spacing";
 import { DEFAULT_B64, EXTERNAL_LINK_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
@@ -138,7 +138,8 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}
         style={open ? getMenuRowIndentStyle(depth) : undefined}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
-          <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+          <div
+            className={`${open ? MENU_ICON_SLOT_OPEN_CLASS : "w-full h-full"} shrink-0 flex justify-center items-center`}>
             <span className="text-base">
               <img
                 alt={item.icon ? "img" : item.type || "icon"}

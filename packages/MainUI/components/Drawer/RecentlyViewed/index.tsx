@@ -26,7 +26,10 @@ import ChevronDown from "../../../../ComponentLibrary/src/assets/icons/chevron-d
 import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import { CLOCK_B64 } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle/constants";
 import MenuLibrary from "../../../../ComponentLibrary/src/components/Menu";
-import { SIDEBAR_GUTTER_CLASS } from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
+import {
+  MENU_ICON_SLOT_OPEN_CLASS,
+  SIDEBAR_GUTTER_CLASS,
+} from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
 import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle";
 
 /**
@@ -36,8 +39,16 @@ import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/compon
  * @param open whether the sidebar is expanded
  * @returns the class list
  */
-/** Chips start on the gutter, like the search box, and wrap inside it instead of overflowing on the right. */
-export const RECENT_CHIPS_CLASSES = "py-2 flex flex-wrap gap-2 min-w-0";
+/**
+ * Chips start on the column of the menu icons (8px inside the gutter) and may reach the gutter on the right, like
+ * the entry backgrounds; they wrap there instead of overflowing.
+ */
+export const RECENT_CHIPS_CLASSES = "py-2 pl-2 flex flex-wrap gap-1.5 min-w-0";
+/**
+ * Compact chip: 12px text and 8px side padding, so two or three short window names fit per line instead of one
+ * chip per line.
+ */
+export const RECENT_CHIP_SHAPE_CLASSES = "max-w-full truncate rounded-full px-2 py-0.5 text-xs font-medium border";
 
 export const getSectionClassName = (open: boolean): string => {
   if (open) return `py-2 rounded-lg ${SIDEBAR_GUTTER_CLASS}`;
@@ -177,7 +188,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
             ${getButtonShapeClassName(open)}
              text-xl justify-between gap-2 text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)`}>
           <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
-            <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+            <div
+              className={`${open ? MENU_ICON_SLOT_OPEN_CLASS : "w-full h-full"} shrink-0 flex justify-center items-center`}>
               <img
                 alt="img"
                 src={`data:image/svg+xml;base64,${CLOCK_B64}`}
@@ -207,8 +219,9 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
                 key={recentItem.id}
                 type="button"
                 onClick={() => handleRecentItemClick(recentItem)}
+                title={recentItem.name}
                 className={clsx(
-                  "rounded-full px-2.5 py-1 text-[13px] font-medium border",
+                  RECENT_CHIP_SHAPE_CLASSES,
                   "bg-(--ui-chip-bg) text-(--ui-text) border-transparent hover:bg-(--ui-chip-hover) transition"
                 )}>
                 {recentItem.name}

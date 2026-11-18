@@ -17,7 +17,12 @@
 
 import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle";
 import { SIDEBAR_GUTTER_CLASS } from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
-import { RECENT_CHIPS_CLASSES, getButtonShapeClassName, getSectionClassName } from "../index";
+import {
+  RECENT_CHIPS_CLASSES,
+  RECENT_CHIP_SHAPE_CLASSES,
+  getButtonShapeClassName,
+  getSectionClassName,
+} from "../index";
 
 jest.mock("../../../../hooks/useRecentItems", () => ({ useRecentItems: jest.fn() }));
 jest.mock("../../../../hooks/useTranslation", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -27,7 +32,13 @@ describe("RecentlyViewed layout", () => {
     expect(getSectionClassName(true)).toContain(SIDEBAR_GUTTER_CLASS);
   });
 
-  it("starts the chips on the gutter and wraps them inside it", () => {
+  it("uses compact chips that end in an ellipsis when a name is longer than the sidebar", () => {
+    expect(RECENT_CHIP_SHAPE_CLASSES).toContain("text-xs");
+    expect(RECENT_CHIP_SHAPE_CLASSES).toContain("truncate");
+  });
+
+  it("starts the chips on the column of the menu icons and wraps them inside it", () => {
+    expect(RECENT_CHIPS_CLASSES).toContain("pl-2");
     expect(RECENT_CHIPS_CLASSES).toContain("flex-wrap");
     expect(RECENT_CHIPS_CLASSES).not.toMatch(/\b(pl-4|w-full)\b/);
   });
