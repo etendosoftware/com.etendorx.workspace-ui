@@ -118,11 +118,7 @@ export const useStyle = () => {
   );
 };
 
+/** Scroll container of a process grid; the rest of its look comes from the window grid (processGridStyles.ts). */
 export const tableStyles = {
-  paper: "rounded-lg overflow-hidden border-2 border-gray-200 flex flex-col shadow-none",
-  headCell:
-    "whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 bg-gray-50 font-medium text-gray-800 text-sm py-2 px-3 last:border-r-0",
-  bodyCell: "border-r border-gray-200 first:text-center py-1 px-3 text-sm last:border-r-0",
-  body: "min-h-min cursor-pointer h-full",
   container: "flex-1 overflow-auto",
 };

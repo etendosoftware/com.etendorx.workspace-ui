@@ -38,7 +38,6 @@ import {
 import {
   MaterialReactTable,
   MRT_ShowHideColumnsButton,
-  MRT_ToggleDensePaddingButton,
   MRT_ToggleFiltersButton,
   MRT_ToggleFullScreenButton,
   useMaterialReactTable,
@@ -62,6 +61,8 @@ import { ErrorDisplay } from "../ErrorDisplay";
 import EmptyState from "../Table/EmptyState";
 import Loading from "../loading";
 import { tableStyles } from "./styles";
+import { useStyle as useWindowGridStyle } from "@/components/Table/styles";
+import { GRID_BAR_BUTTON_SX, GRID_BAR_CLASSES, getProcessGridRowSx, getProcessGridSx } from "./processGridStyles";
 import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 import { useUserStore } from "@/stores/userStore";
@@ -837,7 +838,7 @@ const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
       ? formatClassicDate(renderedCellValue, false) || renderedCellValue
       : renderedCellValue;
   return (
-    <span className="text-gray-700 block truncate" title={String(displayValue ?? "")}>
+    <span className="block truncate" title={String(displayValue ?? "")}>
       {displayValue}
     </span>
   );
@@ -3660,20 +3661,23 @@ const WindowReferenceGrid = ({
     [finalColumns, windowReferenceTab, fieldReadOnlyMap]
   );
 
+  const { sx: windowGridSx } = useWindowGridStyle();
+  const gridSx = useMemo(() => getProcessGridSx(windowGridSx, TABLE_PAPER_HEIGHT), [windowGridSx]);
+
   const tableOptions: MRT_TableOptions<EntityData> = useMemo(
     () => ({
+      // Same look as the window grid (see processGridStyles.ts); only the height is the modal's own.
       muiTablePaperProps: {
-        className: tableStyles.paper,
-        style: { height: `${TABLE_PAPER_HEIGHT}px`, maxHeight: `${TABLE_PAPER_HEIGHT}px` },
+        sx: gridSx.paper,
       },
       muiTableHeadCellProps: {
-        className: tableStyles.headCell,
+        sx: gridSx.headCell,
       },
       muiTableBodyCellProps: {
-        className: tableStyles.bodyCell,
+        sx: gridSx.bodyCell,
       },
       muiTableBodyProps: {
-        className: tableStyles.body,
+        sx: gridSx.body,
       },
       muiTableBodyRowProps: ({ row }) => {
         // When the tab disables selection (obuiappShowSelect=false), rows are
@@ -3682,13 +3686,11 @@ const WindowReferenceGrid = ({
         // them — selection here is purely cosmetic and would otherwise paint
         // every row blue (the datasource pre-fills `obSelected=true`).
         if (!enableRowSelectionFromMetadata) {
-          return { className: "hover:bg-gray-50" };
+          return {};
         }
         return {
           onClick: (event) => handleRowClick(row, event),
-          className: rowSelection[row.id]
-            ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
-            : "hover:bg-gray-50 cursor-pointer",
+          sx: getProcessGridRowSx(windowGridSx, Boolean(rowSelection[row.id])),
         };
       },
       muiTableContainerProps: {
@@ -3796,6 +3798,8 @@ const WindowReferenceGrid = ({
       },
     }),
     [
+      gridSx,
+      windowGridSx,
       finalColumns,
       records,
       rowSelection,
@@ -3912,28 +3916,32 @@ export const GridTopToolbar = ({
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
+    <div className={GRID_BAR_CLASSES}>
       <div className="flex items-center px-2">
-        {showTitle && <div className="text-base font-medium text-gray-800 mr-4">{parameterName}</div>}
+        {showTitle && <div className="text-base font-medium mr-4">{parameterName}</div>}
         {enableRowSelection !== false && selectedCount > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-(--ui-text-soft)">
               {selectedCount} {t("table.selection.multiple")}
             </span>
             <button
               type="button"
               onClick={handleClearSelections}
-              className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
+              className="px-3 py-1 text-sm cursor-pointer text-(--ui-text) border border-(--color-transparent-neutral-20) rounded-full hover:bg-(--color-dynamic-main) hover:text-(--color-baseline-0) transition-colors">
               {t("common.clear")}
             </button>
           </div>
         )}
       </div>
-      <div className="flex items-center">
+      <div className="flex items-center gap-1 px-1">
         {canAdd && (
           <Tooltip title={addRowLabel} data-testid="Tooltip__ce8544">
             <span>
-              <IconButton onClick={handleAddRow} aria-label={addRowLabel} data-testid="GridTopToolbar__AddRowButton">
+              <IconButton
+                onClick={handleAddRow}
+                aria-label={addRowLabel}
+                sx={GRID_BAR_BUTTON_SX}
+                data-testid="GridTopToolbar__AddRowButton">
                 <PlusIcon className="h-4 w-4" data-testid="PlusIcon__ce8544" />
               </IconButton>
             </span>
@@ -3948,7 +3956,7 @@ export const GridTopToolbar = ({
                 onClick={() => setIsImplicitFilterApplied(false)}
                 disabled={!effectiveImplicitFilter}
                 size="small"
-                sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+                sx={GRID_BAR_BUTTON_SX}
                 data-testid="implicit-filter-button">
                 {effectiveImplicitFilter ? (
                   <FilterAlt fontSize="small" data-testid="FilterAlt__ce8544" />
@@ -3959,10 +3967,18 @@ export const GridTopToolbar = ({
             </span>
           </Tooltip>
         )}
-        <MRT_ToggleFiltersButton table={table} data-testid="MRT_ToggleFiltersButton__ce8544" />
-        <MRT_ShowHideColumnsButton table={table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
-        <MRT_ToggleDensePaddingButton table={table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
-        <MRT_ToggleFullScreenButton table={table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
+        {/* Rows keep the fixed 32px height of the window grid, so there is no density toggle. */}
+        <MRT_ToggleFiltersButton table={table} sx={GRID_BAR_BUTTON_SX} data-testid="MRT_ToggleFiltersButton__ce8544" />
+        <MRT_ShowHideColumnsButton
+          table={table}
+          sx={GRID_BAR_BUTTON_SX}
+          data-testid="MRT_ShowHideColumnsButton__ce8544"
+        />
+        <MRT_ToggleFullScreenButton
+          table={table}
+          sx={GRID_BAR_BUTTON_SX}
+          data-testid="MRT_ToggleFullScreenButton__ce8544"
+        />
       </div>
     </div>
   );
