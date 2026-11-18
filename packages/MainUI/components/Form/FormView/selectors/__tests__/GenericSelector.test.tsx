@@ -3,6 +3,7 @@ import { GenericSelector } from "../GenericSelector";
 import { useFormContext } from "react-hook-form";
 import { FIELD_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
 import { DROPDOWN_PORTAL_ATTRIBUTE } from "@/utils/form/keyboard";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
@@ -278,7 +279,7 @@ describe("GenericSelector", () => {
       hqlName: "businessPartner",
       column: { reference: "19" },
       selector: { hasTableRelated: true, datasourceName: "BusinessPartner" },
-    } as any;
+    } as unknown as Field;
 
     const { getAllByTestId, getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
 

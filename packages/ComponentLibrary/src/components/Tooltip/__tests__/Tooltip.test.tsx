@@ -73,36 +73,35 @@ describe("Tooltip", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
-  it("hides a visible tooltip when the trigger is pressed", () => {
+  /** Renders a tooltip around a button and moves the pointer onto it. */
+  const renderHovered = () => {
     render(
       <Tooltip title="Test tooltip">
-        <button>Hover me</button>
+        <button type="button">Hover me</button>
       </Tooltip>
     );
+    const trigger = screen.getByRole("button");
+    fireEvent.mouseEnter(trigger.parentElement as HTMLElement);
+    return trigger;
+  };
 
-    const wrapper = screen.getByRole("button").parentElement!;
-    fireEvent.mouseEnter(wrapper);
+  const waitShowDelay = () =>
     act(() => {
       jest.advanceTimersByTime(600);
     });
 
-    fireEvent.mouseDown(screen.getByRole("button"));
+  it("hides a visible tooltip when the trigger is pressed", () => {
+    const trigger = renderHovered();
+    waitShowDelay();
+
+    fireEvent.mouseDown(trigger);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
   it("does not open the tooltip when the trigger is pressed before the delay ends", () => {
-    render(
-      <Tooltip title="Test tooltip">
-        <button>Hover me</button>
-      </Tooltip>
-    );
-
-    const wrapper = screen.getByRole("button").parentElement!;
-    fireEvent.mouseEnter(wrapper);
-    fireEvent.mouseDown(screen.getByRole("button"));
-    act(() => {
-      jest.advanceTimersByTime(600);
-    });
+    const trigger = renderHovered();
+    fireEvent.mouseDown(trigger);
+    waitShowDelay();
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });

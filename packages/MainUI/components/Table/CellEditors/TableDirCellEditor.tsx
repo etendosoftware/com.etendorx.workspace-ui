@@ -560,7 +560,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                 height={16}
                 className={SELECTED_CHECK_CLASSES}
                 aria-label="Selected"
-                data-testid={"Image__" + field.id}
+                data-testid={`Image__${field.id}`}
               />
             )}
           </div>

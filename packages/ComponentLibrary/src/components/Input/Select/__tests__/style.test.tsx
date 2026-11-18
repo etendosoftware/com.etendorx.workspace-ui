@@ -32,7 +32,7 @@ jest.mock("@mui/material", () => ({
 describe("Select style", () => {
   it("shows a disabled select without a fill, like the read-only form fields", () => {
     const { result } = renderHook(() => useStyle());
-    const inputRules = (result.current.sx.root as Record<string, Record<string, Record<string, unknown>>>)[
+    const inputRules = (result.current.sx.root as unknown as Record<string, Record<string, Record<string, unknown>>>)[
       "& .MuiInput-root"
     ];
 

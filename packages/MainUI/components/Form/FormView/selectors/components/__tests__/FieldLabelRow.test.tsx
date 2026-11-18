@@ -21,7 +21,7 @@ import { FIELD_LEADER_CLASSES, FieldLabelRow, REQUIRED_MARK_LABEL } from "../Fie
 const LABEL_TEXT = "Business Partner";
 
 const renderRow = (mandatory: boolean) =>
-  render(<FieldLabelRow label={<label>{LABEL_TEXT}</label>} mandatory={mandatory} widthClassName="w-[45%]" />);
+  render(<FieldLabelRow label={<span>{LABEL_TEXT}</span>} mandatory={mandatory} widthClassName="w-[45%]" />);
 
 /** The row is the parent of the label. */
 const getRow = () => screen.getByText(LABEL_TEXT).parentElement as HTMLElement;
