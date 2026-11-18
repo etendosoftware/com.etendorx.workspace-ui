@@ -40,9 +40,14 @@ export const ServerFieldErrorOverlay = ({ scope, fieldName }: ServerFieldErrorOv
   return (
     <>
       <span aria-hidden="true" className="server-field-error-overlay" data-testid="server-field-error-border" />
-      <Tooltip title={message} position="top" multiline containerClassName="server-field-error-icon">
+      <Tooltip
+        title={message}
+        position="top"
+        multiline
+        containerClassName="server-field-error-icon"
+        data-testid="Tooltip__9293a5">
         <span role="img" aria-label={message} data-testid="server-field-error-icon">
-          <AlertCircleIcon className="h-4 w-4 fill-(--color-error-main)" />
+          <AlertCircleIcon className="h-4 w-4 fill-(--color-error-main)" data-testid="AlertCircleIcon__9293a5" />
         </span>
       </Tooltip>
     </>
