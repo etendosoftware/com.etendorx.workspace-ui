@@ -163,7 +163,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
-import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
+import { isFieldReadOnly, isHiddenByDisplayLogic } from "./utils/fieldAccess";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
@@ -237,6 +237,8 @@ interface CellEditingContextProps {
   windowId?: string;
   /** Tab id, to show the highlight of the cells a callout changed in this tab's rows. */
   tabId: string;
+  /** Fields of the tab, to evaluate display and read-only logic like the form view does. */
+  tabFields?: Record<string, Field>;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -292,6 +294,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   isLoadingTableDirOptions,
   windowId,
   tabId,
+  tabFields,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -299,7 +302,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
   const isNewRow = editingData.isNew || false;
   const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
-  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session, windowId);
+  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session, windowId, tabFields);
 
   const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
   const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
@@ -447,6 +450,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   isLoadingTableDirOptions,
   windowId,
   tabId,
+  tabFields,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -478,6 +482,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         isLoadingTableDirOptions={isLoadingTableDirOptions}
         windowId={windowId}
         tabId={tabId}
+        tabFields={tabFields}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -646,58 +651,6 @@ interface ExtendedColumn extends Column {
   isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
 }
-
-/**
- * Whether the field's display logic hides it for these row values. A hidden field is neither
- * editable nor required in the grid, as in the form view. An expression that fails to evaluate
- * keeps the field visible.
- */
-const isHiddenByDisplayLogic = (
-  field: Pick<Field, "displayLogicExpression" | "name">,
-  rowValues: Record<string, unknown>,
-  session?: Record<string, unknown>,
-  windowId?: string
-): boolean => {
-  if (!field.displayLogicExpression) return false;
-  try {
-    return !compileExpression(field.displayLogicExpression)(session || {}, rowValues, windowId);
-  } catch (error) {
-    logger.warn(`Error evaluating displayLogicExpression for field ${field.name}:`, error);
-    return false;
-  }
-};
-
-// Helper function to determine if a field should be readonly in inline editing
-const isFieldReadOnly = (
-  field: Field,
-  isNewRow = false,
-  rowValues?: Record<string, unknown>,
-  session?: Record<string, unknown>,
-  windowId?: string
-): boolean => {
-  // Field explicitly marked as readonly
-  if (field.isReadOnly) return true;
-
-  // Field not updatable (readonly except for new rows)
-  if (!field.isUpdatable && !isNewRow) return true;
-
-  if (rowValues && isHiddenByDisplayLogic(field, rowValues, session, windowId)) return true;
-
-  // Evaluate readOnlyLogicExpression if present
-  if (field.readOnlyLogicExpression && rowValues) {
-    try {
-      const compiledExpr = compileExpression(field.readOnlyLogicExpression);
-      const result = compiledExpr(session || {}, rowValues, windowId);
-      return Boolean(result);
-    } catch (error) {
-      logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
-      // On error, default to readonly for safety
-      return true;
-    }
-  }
-
-  return false;
-};
 
 const getFieldTypeFromColumn = (column: Column): FieldType => {
   // Create a cache key based on column properties that affect field type
@@ -2294,7 +2247,7 @@ const DynamicTable = ({
       const fieldsArray = tab.fields ? Object.values(tab.fields) : [];
       const session = useUserStore.getState().session;
       const isHidden = (field: Field | Column) =>
-        "displayLogicExpression" in field && isHiddenByDisplayLogic(field, currentData, session, tab.window);
+        "displayLogicExpression" in field && isHiddenByDisplayLogic(field, currentData, session, tab.window, tab.fields);
 
       if (editingRowData.isNew) {
         // Use stricter validation for new rows
@@ -2964,6 +2917,7 @@ const DynamicTable = ({
           isLoadingTableDirOptions={isLoadingTableDirOptions}
           windowId={tab.window}
           tabId={tab.id}
+          tabFields={tab.fields}
           data-testid="DataColumnCell__8ca888"
         />
       );
