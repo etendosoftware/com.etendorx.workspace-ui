@@ -19,6 +19,7 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useFormPersonalizationStore } from "@/stores/formPersonalizationStore";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
+import { DATE_DISPLAY, useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
 import { useProcessMonitorStore } from "@/stores/processMonitorStore";
 import { useToolbarStore } from "@/stores/toolbarStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
@@ -43,6 +44,7 @@ function fillSessionStores() {
   useDashboardStore.setState({ loadedRoleId: "role-1" });
   useFormPersonalizationStore.setState({ entries: { key: { status: "error" } } });
   useProcessMonitorStore.setState({ isOpen: true } as never);
+  useNotesPreferencesStore.setState({ dateDisplay: DATE_DISPLAY.ABSOLUTE });
   prefetchStore.set("key", Promise.resolve());
 }
 
@@ -69,6 +71,7 @@ describe("resetSessionState", () => {
     expect(useProcessMonitorStore.getState()).toEqual(
       expect.objectContaining(useProcessMonitorStore.getInitialState())
     );
+    expect(useNotesPreferencesStore.getState().dateDisplay).toBe(DATE_DISPLAY.RELATIVE);
   });
 
   it("keeps the store actions usable after the reset", () => {

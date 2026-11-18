@@ -20,6 +20,38 @@ import { TextField, InputAdornment } from "@mui/material";
 import type { TextInputProps } from "../TextInputAutocomplete/TextInputComplete.types";
 import { useStyle } from "./TextInputBase.styles";
 import IconButton from "../../../IconButton";
+
+/** Makes the keyboard focus of the icon buttons visible. */
+const ICON_BUTTON_CLASSES =
+  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--color-dynamic-main)";
+const DECORATIVE_ICON_CLASSES = "inline-flex items-center justify-center w-8 h-8";
+
+interface AdornmentIconProps {
+  icon: React.ReactNode;
+  onClick?: () => void;
+  ariaLabel: string;
+  pressed?: boolean;
+}
+
+/**
+ * Renders an input adornment icon: a focusable button when it has an action, or a decorative icon
+ * outside the tab sequence otherwise.
+ */
+const AdornmentIcon = ({ icon, onClick, ariaLabel, pressed }: AdornmentIconProps) => {
+  if (!onClick) {
+    return (
+      <span aria-hidden="true" className={DECORATIVE_ICON_CLASSES}>
+        {icon}
+      </span>
+    );
+  }
+  return (
+    <IconButton ariaLabel={ariaLabel} aria-pressed={pressed} onClick={onClick} className={ICON_BUTTON_CLASSES}>
+      {icon}
+    </IconButton>
+  );
+};
+
 const TextInputBase = (props: TextInputProps) => {
   const {
     value,
@@ -29,6 +61,9 @@ const TextInputBase = (props: TextInputProps) => {
     rightIcon,
     onLeftIconClick,
     onRightIconClick,
+    leftIconAriaLabel = "left icon",
+    rightIconAriaLabel = "right-icon",
+    rightIconPressed,
     type,
     disabled,
     readOnly,
@@ -62,16 +97,17 @@ const TextInputBase = (props: TextInputProps) => {
           name: props.name,
           startAdornment: leftIcon && (
             <InputAdornment position="start" sx={sx.inputAdornment}>
-              <IconButton aria-label="left icon" onClick={onLeftIconClick}>
-                {leftIcon}
-              </IconButton>
+              <AdornmentIcon icon={leftIcon} onClick={onLeftIconClick} ariaLabel={leftIconAriaLabel} />
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
             <InputAdornment position="end" sx={sx.inputAdornment}>
-              <IconButton aria-label="right-icon" onClick={onRightIconClick}>
-                {rightIcon}
-              </IconButton>
+              <AdornmentIcon
+                icon={rightIcon}
+                onClick={onRightIconClick}
+                ariaLabel={rightIconAriaLabel}
+                pressed={rightIconPressed}
+              />
             </InputAdornment>
           ),
           style: styles.inputStyle,

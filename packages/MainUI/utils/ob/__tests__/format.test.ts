@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { createFormat, DEFAULT_GROUPING_SIZE, DEFAULT_NUMERIC_MASK } from "../format";
+import { createFormat, DEFAULT_GROUPING_SIZE, DEFAULT_NUMERIC_MASK, toLocale } from "../format";
 
 describe("createFormat", () => {
   it("derives en_US separators (decimal '.', grouping ',')", () => {
@@ -40,5 +40,12 @@ describe("createFormat", () => {
     const format = createFormat(null);
     expect(format.defaultDecimalSymbol).toBe(".");
     expect(format.defaultGroupingSymbol).toBe(",");
+  });
+});
+
+describe("toLocale", () => {
+  it("converts an Etendo language code to a BCP-47 locale, with the default for none", () => {
+    expect(toLocale("es_ES")).toBe("es-ES");
+    expect(toLocale(null)).toBe("en-US");
   });
 });

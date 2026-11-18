@@ -18,23 +18,39 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Icon, useTheme } from "@mui/material";
 import { VisibilityOutlined, VisibilityOffOutlined } from "@mui/icons-material";
 import TextInputBase from "../TextInputBase";
 import type { TextInputProps } from "../../TextInputAutocomplete/TextInputComplete.types";
 
-const InputPassword = (props: TextInputProps) => {
-  const theme = useTheme();
-  const { value, setValue, label, leftIcon, onLeftIconClick, ...otherProps } = props;
+const DEFAULT_SHOW_PASSWORD_LABEL = "Show password";
+const DEFAULT_HIDE_PASSWORD_LABEL = "Hide password";
+/** The icon takes the color of its button, so it keeps its contrast on hover and in dark mode. */
+const VISIBILITY_ICON_SX = { width: 20, color: "inherit" } as const;
+
+export interface InputPasswordProps extends TextInputProps {
+  /** Accessible name of the toggle while the password is hidden. */
+  showPasswordLabel?: string;
+  /** Accessible name of the toggle while the password is visible. */
+  hidePasswordLabel?: string;
+}
+
+const InputPassword = (props: InputPasswordProps) => {
+  const {
+    value,
+    setValue,
+    label,
+    leftIcon,
+    onLeftIconClick,
+    showPasswordLabel = DEFAULT_SHOW_PASSWORD_LABEL,
+    hidePasswordLabel = DEFAULT_HIDE_PASSWORD_LABEL,
+    ...otherProps
+  } = props;
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
+  // The handler lives on the adornment button, so Enter and Space toggle it as well as a click.
   const handleClickShowPassword = useCallback(() => {
     setShowPassword((prev) => !prev);
-  }, []);
-
-  const handleMouseDownPassword = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
   }, []);
 
   return (
@@ -46,14 +62,15 @@ const InputPassword = (props: TextInputProps) => {
       onLeftIconClick={onLeftIconClick}
       type={showPassword ? "text" : "password"}
       rightIcon={
-        <Icon
-          aria-label="toggle password visibility"
-          onClick={handleClickShowPassword}
-          onMouseDown={handleMouseDownPassword}
-          sx={{ color: theme.palette.baselineColor.neutral[60] }}>
-          {showPassword ? <VisibilityOutlined sx={{ width: 20 }} /> : <VisibilityOffOutlined sx={{ width: 20 }} />}
-        </Icon>
+        showPassword ? (
+          <VisibilityOutlined sx={VISIBILITY_ICON_SX} />
+        ) : (
+          <VisibilityOffOutlined sx={VISIBILITY_ICON_SX} />
+        )
       }
+      onRightIconClick={handleClickShowPassword}
+      rightIconAriaLabel={showPassword ? hidePasswordLabel : showPasswordLabel}
+      rightIconPressed={showPassword}
       {...otherProps}
     />
   );

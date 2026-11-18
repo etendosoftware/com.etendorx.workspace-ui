@@ -34,7 +34,7 @@ export const DEFAULT_GROUPING_SIZE = 3;
 export const DEFAULT_NUMERIC_MASK = "#,##0.00";
 
 /** Converts an Etendo language code (`en_US`) to a BCP-47 locale (`en-US`). */
-function toLocale(language?: string | null): string {
+export function toLocale(language?: string | null): string {
   return language ? language.replace("_", "-") : FALLBACK_LOCALE;
 }
 

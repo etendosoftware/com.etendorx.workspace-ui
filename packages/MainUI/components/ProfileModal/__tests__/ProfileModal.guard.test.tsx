@@ -23,13 +23,11 @@ import type { ProfileModalProps } from "../types";
 import { useWindowStore } from "@/stores/windowStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
+import { createProfileModalProps } from "../test-utils/profileModalProps";
 
 const WINDOW_IDENTIFIER = "143_1000";
 const FORM_SOURCE_KEY = buildDirtySourceKey(DIRTY_SOURCE_KINDS.FORM, "header");
 const SAVE_LABEL = "common.save";
-const ROLE_ID = "role-1";
-const OTHER_ROLE_ID = "role-2";
-const RELOAD_LANGUAGE = "es_ES";
 
 const mockChangeProfile = jest.fn();
 const mockSetDefaultConfiguration = jest.fn();
@@ -93,43 +91,12 @@ jest.mock("@workspaceui/componentlibrary/src/components/Menu", () => ({
   default: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
-const createRole = (id: string) => ({
-  id,
-  name: `Role ${id}`,
-  client: "client-1",
-  organizations: [{ id: "org-1", name: "Org 1", warehouses: [{ id: "wh-1", name: "WH 1" }] }],
-});
-
 const createProps = (overrides: Partial<ProfileModalProps> = {}): ProfileModalProps =>
-  ({
-    icon: null,
-    userPhotoUrl: "",
-    userName: "John Doe",
-    userEmail: "john@example.com",
-    sections: [],
-    section: "profile",
-    translations: { saveAsDefault: "saveAsDefault" },
-    saveAsDefault: true,
-    onSaveAsDefaultChange: jest.fn(),
+  createProfileModalProps({
     onSetDefaultConfiguration: mockSetDefaultConfiguration,
-    onPasswordChange: jest.fn(),
-    currentRole: { id: ROLE_ID, name: "Role 1", client: "client-1" },
-    currentWarehouse: { id: "wh-1", name: "WH 1" },
-    currentOrganization: { id: "org-1", name: "Org 1" },
-    currentClient: { id: "client-1", name: "Client 1" },
-    roles: [createRole(ROLE_ID), createRole(OTHER_ROLE_ID)],
-    logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
-    onLanguageChange: jest.fn(),
-    language: "en_US",
-    languages: [
-      { id: "lang-en", language: "en_US", name: "English" },
-      { id: "lang-es", language: RELOAD_LANGUAGE, name: "Spanish" },
-    ],
-    languagesFlags: "",
     changeProfile: mockChangeProfile,
     ...overrides,
-    // biome-ignore lint/suspicious/noExplicitAny: the untested props are stubbed above
-  }) as any;
+  });
 
 describe("ProfileModal — unsaved-changes guard", () => {
   const renderModal = (overrides: Partial<ProfileModalProps> = {}) =>

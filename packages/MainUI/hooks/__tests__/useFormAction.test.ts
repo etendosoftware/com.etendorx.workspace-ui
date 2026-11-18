@@ -48,7 +48,14 @@ jest.mock("../useTranslation", () => ({
 const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 
 describe("useFormAction execute", () => {
-  const mockTab = { id: "tab1", entityName: "TestEntity" } as any;
+  const REFERENCE_NO = "referenceNo";
+  const TOO_LONG = "BusinessPartner.referenceNo: Value too long";
+  const TOO_LONG_LABELLED = "BusinessPartner.Reference No.: Value too long";
+  const mockTab = {
+    id: "tab1",
+    entityName: "TestEntity",
+    fields: { [REFERENCE_NO]: { hqlName: REFERENCE_NO, name: "Reference No." } },
+  } as any;
   // submit() mimics react-hook-form's handleSubmit: it returns a function that, when
   // invoked, calls the given callback with the form's current values.
   const fakeSubmit =
@@ -71,6 +78,7 @@ describe("useFormAction execute", () => {
     const onError = jest.fn();
     const onSuccess = jest.fn();
     const onStaleObjectReload = jest.fn();
+    const onServerFieldErrors = jest.fn();
 
     const { result } = renderHook(() =>
       useFormAction({
@@ -80,6 +88,7 @@ describe("useFormAction execute", () => {
         onError,
         submit: fakeSubmit({ id: "1" }) as any,
         onStaleObjectReload,
+        onServerFieldErrors,
       })
     );
 
@@ -87,7 +96,7 @@ describe("useFormAction execute", () => {
       await result.current.save({});
     });
 
-    return { onError, onSuccess, onStaleObjectReload };
+    return { onError, onSuccess, onStaleObjectReload, onServerFieldErrors };
   }
 
   it("calls onError with a reload action on a structured 409 stale-object conflict", async () => {
@@ -127,14 +136,39 @@ describe("useFormAction execute", () => {
     );
   });
 
+  it("hands the labelled field errors of a rejected save over and lists them in the message", async () => {
+    const { onError, onServerFieldErrors } = await saveAndGetCallbacks({
+      ok: true,
+      status: 200,
+      data: { response: { status: -4, errors: { [REFERENCE_NO]: TOO_LONG, accountingDate: "Invalid date" } } },
+    });
+
+    expect(onServerFieldErrors).toHaveBeenCalledWith({
+      [REFERENCE_NO]: TOO_LONG_LABELLED,
+      accountingDate: "Invalid date",
+    });
+    expect(onError).toHaveBeenCalledWith(`Error: ${TOO_LONG_LABELLED}; accountingDate: Invalid date`);
+  });
+
+  it("does not report field errors for a rejection without them", async () => {
+    const { onServerFieldErrors } = await saveAndGetCallbacks({
+      ok: false,
+      status: 200,
+      data: { response: { status: -4, error: { message: "Some field is required" } } },
+    });
+
+    expect(onServerFieldErrors).not.toHaveBeenCalled();
+  });
+
   it("never calls onError on a successful save (regression check)", async () => {
-    const { onError, onSuccess } = await saveAndGetCallbacks({
+    const { onError, onSuccess, onServerFieldErrors } = await saveAndGetCallbacks({
       ok: true,
       status: 200,
       data: { response: { status: 0, data: [{ id: "1" }] } },
     });
 
     expect(onError).not.toHaveBeenCalled();
+    expect(onServerFieldErrors).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith({ id: "1" }, {});
   });
 

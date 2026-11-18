@@ -30,6 +30,19 @@ import type { SelectorListProps } from "../types";
 import { useStyle } from "./styles";
 import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
+import type { TranslationKeys } from "@workspaceui/componentlibrary/src/locales/types";
+import { resolveCatalogLabel } from "@/utils/catalogLabel";
+
+type PasswordField = "current" | "new" | "confirm";
+
+const NEW_PASSWORD_AUTOCOMPLETE = "new-password";
+
+/** Password fields, labelled with the `AD_MESSAGE` keys Classic uses (`ob-user-profile-widget.js`). */
+const PASSWORD_FIELD_LABELS: Record<PasswordField, { code: string; fallbackKey: TranslationKeys }> = {
+  current: { code: "UINAVBA_CurrentPwd", fallbackKey: "navigation.profile.currentPasswordLabel" },
+  new: { code: "UINAVBA_NewPwd", fallbackKey: "navigation.profile.newPasswordLabel" },
+  confirm: { code: "UINAVBA_ConfirmPwd", fallbackKey: "navigation.profile.confirmPasswordLabel" },
+};
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -61,7 +74,21 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
-  const { getFlag } = useLanguage();
+  const { getFlag, getLabel } = useLanguage();
+  const passwordLabel = (field: PasswordField) => {
+    const { code, fallbackKey } = PASSWORD_FIELD_LABELS[field];
+    return resolveCatalogLabel(code, fallbackKey, { getLabel, t });
+  };
+  const passwordFields: Array<{
+    field: PasswordField;
+    value: string;
+    onChange: (value: string) => void;
+    autoComplete: string;
+  }> = [
+    { field: "current", value: currentPwd, onChange: onCurrentPwdChange, autoComplete: "current-password" },
+    { field: "new", value: newPwd, onChange: onNewPwdChange, autoComplete: NEW_PASSWORD_AUTOCOMPLETE },
+    { field: "confirm", value: confirmPwd, onChange: onConfirmPwdChange, autoComplete: NEW_PASSWORD_AUTOCOMPLETE },
+  ];
 
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
@@ -238,33 +265,23 @@ const SelectorList: React.FC<SelectorListProps> = ({
       )}
       {section === "password" && (
         <Grid margin="0.5rem" data-testid="Grid__da17cd">
-          <form action="#" autoComplete="off">
-            <InputPassword
-              label={t("navigation.profile.currentPasswordLabel")}
-              value={currentPwd}
-              setValue={onCurrentPwdChange}
-              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
-              autoComplete="current-password"
-              data-testid="InputPassword__da17cd"
-            />
-            <InputPassword
-              label={t("navigation.profile.newPasswordLabel")}
-              value={newPwd}
-              setValue={onNewPwdChange}
-              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
-              autoComplete="new-password"
-              data-testid="InputPassword__da17cd"
-            />
-            <InputPassword
-              label={t("navigation.profile.confirmPasswordLabel")}
-              value={confirmPwd}
-              setValue={onConfirmPwdChange}
-              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
-              autoComplete="new-password"
-              data-testid="InputPassword__da17cd"
-            />
+          <form action="#" autoComplete="off" className="flex flex-col gap-3">
+            {passwordFields.map(({ field, value, onChange, autoComplete }) => (
+              <InputPassword
+                key={field}
+                name={`profile-${field}-password`}
+                label={passwordLabel(field)}
+                showPasswordLabel={t("navigation.profile.showPassword")}
+                hidePasswordLabel={t("navigation.profile.hidePassword")}
+                value={value}
+                setValue={onChange}
+                leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
+                autoComplete={autoComplete}
+                data-testid="InputPassword__da17cd"
+              />
+            ))}
             {passwordError && (
-              <Typography variant="caption" color="error" display="block" mt={0.5} data-testid="Typography__da17cd">
+              <Typography variant="caption" color="error" display="block" role="alert" data-testid="Typography__da17cd">
                 {passwordError}
               </Typography>
             )}

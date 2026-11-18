@@ -19,6 +19,7 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useFormPersonalizationStore } from "@/stores/formPersonalizationStore";
 import { useLiveTabValuesStore } from "@/stores/liveTabValuesStore";
+import { useNotesPreferencesStore } from "@/stores/notesPreferencesStore";
 import { useProcessMonitorStore } from "@/stores/processMonitorStore";
 import { useToolbarStore } from "@/stores/toolbarStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
@@ -40,6 +41,7 @@ const STORES_RESET_TO_INITIAL_STATE: ResettableStore[] = [
   useUnsavedChangesStore,
   useToolbarStore,
   useDashboardStore,
+  useNotesPreferencesStore,
 ];
 
 /** Registers a cleanup to run on every logout. Registering the same function twice runs it once. */

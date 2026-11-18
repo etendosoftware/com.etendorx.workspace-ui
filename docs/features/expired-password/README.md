@@ -147,6 +147,10 @@ profile modal, so the ERP validations (different from the previous password, str
 `AD_USER_EXPIRATIONPASS_TRG` trigger clears `Isexpiredpassword` and stamps `lastpasswordupdate`
 without any Java code doing it explicitly.
 
+The catalog-first resolution of `resolvePasswordErrorMessage` lives in `utils/catalogLabel.ts`
+(`resolveCatalogLabel`), which the profile menu also uses for its confirmation message and context
+labels — see [Profile menu](../profile-menu/README.md). The mandatory change keeps its own toast.
+
 ## Testing
 
 - Java (run manually): `PasswordExpirationUtilsTest`, `BaseWebServiceGuardTest` and the new cases in

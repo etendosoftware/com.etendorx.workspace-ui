@@ -8,6 +8,7 @@ const SECTION = { notes: "notes_group", attachments: "attachments_group" };
 const ADD_NOTE = "Add Note";
 const NOTE_PLACEHOLDER = "Write your note here...";
 const DELETE = "Delete";
+const DELETE_NOTE = "Delete note";
 const NOTES_REQUEST = /\/api\/erp\/notes/;
 const ATTACHMENTS_REQUEST = /\/api\/erp\/attachments/;
 const ATTACHMENT = {
@@ -44,32 +45,20 @@ test.describe("Form - notes and attachments of a record @regression @form", () =
     await app.grid.openRowForm(app.grid.rowWithCell(String(record.name)));
 
     const notes = await expandSection(page, SECTION.notes);
-    await notes.getByText(ADD_NOTE, { exact: true }).click();
-    await page.getByPlaceholder(NOTE_PLACEHOLDER).fill(note);
+    // The note is written in the inline input of the section and added with its button
+    await notes.getByPlaceholder(NOTE_PLACEHOLDER).fill(note);
     await runAndWaitForResponse(page, NOTES_REQUEST, () =>
-      page.getByRole("button", { name: ADD_NOTE, exact: true }).click()
+      notes.getByRole("button", { name: ADD_NOTE, exact: true }).click()
     );
-    const card = notes.getByText(note, { exact: true });
-    await expect(card).toBeVisible();
-    // The add-note modal stays open (cleared) after adding: it is closed by hand
-    const addNoteModal = page.getByTestId("BasicModal_Modal").filter({ has: page.getByPlaceholder(NOTE_PLACEHOLDER) });
-    await addNoteModal.getByRole("button", { name: "close", exact: true }).click();
-    await expect(addNoteModal).toBeHidden();
-    // The delete button (an icon button with no label) is only rendered while the note is hovered;
-    // `has` takes a locator relative to each candidate, hence one built from the page
-    const noteText = page.getByText(note, { exact: true });
-    await notes.locator("div").filter({ has: noteText }).last().hover();
-    await notes
-      .locator("div")
-      .filter({ has: noteText })
-      .filter({ has: page.getByRole("button") })
-      .last()
-      .getByRole("button")
-      .click();
+    const item = notes.getByRole("listitem").filter({ hasText: note });
+    await expect(item).toBeVisible();
+    await expect(notes.getByPlaceholder(NOTE_PLACEHOLDER)).toHaveValue("");
+    // Own notes show a labelled delete button, confirmed inline inside the note
+    await item.getByRole("button", { name: DELETE_NOTE }).click();
     await runAndWaitForResponse(page, NOTES_REQUEST, () =>
-      page.getByRole("button", { name: DELETE, exact: true }).click()
+      item.getByRole("button", { name: DELETE, exact: true }).click()
     );
-    await expect(card).toBeHidden();
+    await expect(item).toBeHidden();
 
     await expandSection(page, SECTION.attachments);
     await page.getByTestId(ATTACHMENT.input).setInputFiles(FILE);

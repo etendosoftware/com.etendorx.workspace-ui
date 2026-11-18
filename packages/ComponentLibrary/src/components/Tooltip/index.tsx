@@ -23,15 +23,37 @@ const SHOW_DELAY = 600;
 /** Wider titles wrap instead of leaving the screen. */
 const TOOLTIP_MAX_WIDTH = `calc(100vw - ${TOOLTIP_MARGIN * 2}px)`;
 
+const TITLE_CLASSES =
+  "bg-gray-900 text-white dark:bg-[#ececf1] dark:text-[#16171b] text-sm rounded px-2 py-1 shadow-md break-words";
+/** Keeps the line breaks of the title while still wrapping long lines. */
+const MULTILINE_TITLE_CLASSES = `${TITLE_CLASSES} whitespace-pre-line`;
+
+/**
+ * Classes of the tooltip text box.
+ *
+ * @param multiline whether the line breaks of the title are honored
+ * @returns the class list
+ */
+const getTitleClassName = (multiline: boolean): string => (multiline ? MULTILINE_TITLE_CLASSES : TITLE_CLASSES);
+
 export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
   position?: TooltipPosition;
   containerClassName?: string;
   disabled?: boolean;
+  /** Honors the line breaks of `title`, for tooltips that list one item per line. */
+  multiline?: boolean;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName, disabled }) => {
+const Tooltip: React.FC<TooltipProps> = ({
+  title,
+  children,
+  position = "bottom",
+  containerClassName,
+  disabled,
+  multiline = false,
+}) => {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<TooltipPlacement | null>(null);
 
@@ -121,9 +143,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
             className="fixed z-[1000] w-max opacity-100 transition-opacity duration-100 pointer-events-none">
             <div className="relative">
               <div className={getArrowStyles()} style={getArrowOffsetStyle()} />
-              <div className="bg-gray-900 text-white dark:bg-[#ececf1] dark:text-[#16171b] text-sm rounded px-2 py-1 shadow-md break-words">
-                {title}
-              </div>
+              <div className={getTitleClassName(multiline)}>{title}</div>
             </div>
           </div>,
           document.body
