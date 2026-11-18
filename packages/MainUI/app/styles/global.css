@@ -101,6 +101,13 @@
   filter: brightness(1000%);
 }
 
+/* Disabled, New and Save sit on a neutral chip: the icon takes a dark ink (inverted in dark mode) instead of white. */
+.toolbar-button-new:disabled .icon-base64,
+.toolbar-button-save:disabled .icon-base64 {
+  filter: brightness(0);
+  opacity: 0.6;
+}
+
 .toolbar-button-save span {
   width: 100%;
   white-space: nowrap;
@@ -734,6 +741,11 @@ html[data-theme="dark"] .hover\:bg-white:hover {
 html[data-theme="dark"] .icon-base64 {
   /* hue-rotate undoes the hue flip of invert, so colored icons (Excel) keep their color */
   filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="dark"] .toolbar-button-new:disabled .icon-base64,
+html[data-theme="dark"] .toolbar-button-save:disabled .icon-base64 {
+  filter: brightness(0) invert(1);
 }
 
 /* Disabled toolbar icons are black images dimmed with grayscale; they need the inversion too. */

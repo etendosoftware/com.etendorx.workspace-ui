@@ -37,6 +37,7 @@ import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
 import { resolveToolbarIcon } from "@/utils/toolbar/actionIcons";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 import { CircularProgress } from "@mui/material";
+import { PRIMARY_DISABLED_CLASSES } from "./constants";
 
 /** Size (px) of the spinner shown in place of a toolbar button icon while its action is running */
 const BUSY_SPINNER_SIZE = 16;
@@ -53,10 +54,8 @@ const isBase64Image = (str: string): boolean => {
 };
 
 const BUTTON_STYLES = {
-  [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white",
-  [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white",
+  [TOOLBAR_BUTTONS_ACTIONS.NEW]: `toolbar-button-new bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 ${PRIMARY_DISABLED_CLASSES}`,
+  [TOOLBAR_BUTTONS_ACTIONS.SAVE]: `toolbar-button-save bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 py-1 pl-3 pr-5 ${PRIMARY_DISABLED_CLASSES}`,
   [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
     "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
@@ -453,7 +452,7 @@ export const createButtonByType = ({
 
 export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: boolean) => {
   if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW) {
-    return "toolbar-button-new-form bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 rounded-full flex items-center justify-center disabled:bg-(--ui-accent) disabled:opacity-20 disabled:text-white";
+    return `toolbar-button-new-form bg-(--ui-accent) hover:bg-(--ui-accent-hover) text-white h-8 w-8 rounded-full flex items-center justify-center ${PRIMARY_DISABLED_CLASSES}`;
   }
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };

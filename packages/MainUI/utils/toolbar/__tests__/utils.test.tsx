@@ -1,5 +1,5 @@
 import { createButtonByType, getButtonStyles, organizeButtonsBySection, getToolbarSections } from "../utils";
-import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "../constants";
+import { PRIMARY_DISABLED_CLASSES, TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "../constants";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { UIPattern } from "@workspaceui/api-client/src/api/types";
@@ -155,6 +155,19 @@ describe("getButtonStyles", () => {
 
   it("returns undefined for unknown action", () => {
     expect(getButtonStyles(makeButtonMetadata("UNKNOWN_ACTION"))).toBeUndefined();
+  });
+});
+
+describe("getButtonStyles — disabled filled buttons", () => {
+  it.each([
+    ["New in the grid", TOOLBAR_BUTTONS_ACTIONS.NEW, false],
+    ["New in the form", TOOLBAR_BUTTONS_ACTIONS.NEW, true],
+    ["Save Changes", TOOLBAR_BUTTONS_ACTIONS.SAVE, true],
+  ])("draws %s disabled as a readable neutral chip, not a faded accent", (_name, action, isFormView) => {
+    const styles = getButtonStyles(makeButtonMetadata(action), isFormView);
+
+    expect(styles).toContain(PRIMARY_DISABLED_CLASSES);
+    expect(styles).not.toContain("disabled:opacity-20");
   });
 });
 

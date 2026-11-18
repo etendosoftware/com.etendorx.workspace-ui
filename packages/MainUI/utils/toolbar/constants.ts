@@ -59,3 +59,11 @@ export const REFRESH_TYPES = {
 } as const;
 
 export type RefreshType = (typeof REFRESH_TYPES)[keyof typeof REFRESH_TYPES];
+
+/**
+ * Disabled state of the filled toolbar buttons (New, Save Changes, Available Process). It was the accent faded to
+ * 20%, which left the label unreadable (about 1.3:1); now a neutral chip with readable text, like a disabled
+ * button elsewhere, so it still reads as unavailable.
+ */
+export const PRIMARY_DISABLED_CLASSES =
+  "disabled:bg-(--color-transparent-neutral-10) disabled:text-(--ui-text-soft) disabled:opacity-100";
