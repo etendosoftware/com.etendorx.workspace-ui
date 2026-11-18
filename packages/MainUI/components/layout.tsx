@@ -26,6 +26,7 @@ import { useMemo, useState } from "react";
 import { useUserStore } from "@/stores/userStore";
 import ThemeToggle from "./ThemeToggle";
 import { TopBarSlotsContext } from "@/contexts/TitleActionsSlot";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 /** Thin status bar under the workspace: app version and signed-in user. */
 function StatusBar({ onFooterRef }: { onFooterRef: (element: HTMLElement | null) => void }) {
@@ -53,7 +54,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <GlobalLoading data-testid="GlobalLoading__519d5c" />
         <Sidebar data-testid="Sidebar__519d5c" />
         <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden" data-shortcut-root="true">
-          <div className="flex w-full h-14 min-h-14 items-center gap-3 px-3 bg-(--ui-topbar-bg) border-b border-(--ui-topbar-line)">
+          <div
+            className={`flex w-full h-14 min-h-14 items-center gap-3 pr-3 ${WORKSPACE_EDGE_PADDING_CLASS} bg-(--ui-topbar-bg) border-b border-(--ui-topbar-line)`}>
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div ref={setTitle} className="min-w-0" data-testid="TopBarSlot__title" />
               <div ref={setTitleSuffix} className="shrink-0" data-testid="TopBarSlot__titleSuffix" />

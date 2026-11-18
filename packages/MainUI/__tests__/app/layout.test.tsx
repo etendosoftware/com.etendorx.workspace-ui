@@ -17,6 +17,7 @@
 
 import { render, screen } from "@testing-library/react";
 import Layout from "@/components/layout";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 // Mock child components
 jest.mock("@/components/navigation", () => {
@@ -90,6 +91,12 @@ describe("Layout Component", () => {
 
     const navContainer = container.querySelector(".w-full.h-14.min-h-14");
     expect(navContainer).toBeInTheDocument();
+  });
+
+  it("starts the top bar on the left edge of the window content", () => {
+    const { container } = render(<Layout>{mockChildren}</Layout>);
+
+    expect(container.querySelector(".w-full.h-14.min-h-14")).toHaveClass(WORKSPACE_EDGE_PADDING_CLASS);
   });
 
   it("should have content wrapper with correct flex layout", () => {

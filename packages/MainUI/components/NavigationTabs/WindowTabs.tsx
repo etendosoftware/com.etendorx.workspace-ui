@@ -36,6 +36,7 @@ import { getTitleForWindow } from "@/utils/window/windowTitle";
 import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
 import { useWindowTabShortcuts } from "@/hooks/navigation/useWindowTabShortcuts";
 import SaveDiscardCancelModal from "@/components/UnsavedChanges/SaveDiscardCancelModal";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 /** In-app tabs of External menu entries show the external-link icon; windows keep the default one. */
 const getIconForWindow = (window: WindowState) => {
@@ -160,7 +161,7 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--ui-tabbar-bg) rounded-none overflow-hidden px-3 h-11 min-h-11 w-full"
+      className={`flex items-center bg-(--ui-tabbar-bg) rounded-none overflow-hidden pr-3 ${WORKSPACE_EDGE_PADDING_CLASS} h-11 min-h-11 w-full`}
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton

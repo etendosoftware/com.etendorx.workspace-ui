@@ -14,7 +14,7 @@ jest.mock("@/components/window/TabButton", () => ({
   ),
 }));
 
-import { SubTabsSwitch } from "./SubTabsSwitch";
+import { SUB_TABS_BAR_PADDING, SubTabsSwitch } from "./SubTabsSwitch";
 
 describe("SubTabsSwitch - activeTabId visual state", () => {
   const tabs = [
@@ -72,6 +72,12 @@ describe("SubTabsSwitch - scrolling strip", () => {
 
   it("hides the native scrollbar", () => {
     expect(renderStrip()).toHaveClass("hide-scrollbar");
+  });
+
+  it("starts the tabs on the left edge of the child toolbar", () => {
+    const bar = renderStrip().closest(".h-10");
+
+    expect(bar).toHaveClass(...SUB_TABS_BAR_PADDING.split(" "));
   });
 
   it("does not fade the edges while every tab fits", () => {
