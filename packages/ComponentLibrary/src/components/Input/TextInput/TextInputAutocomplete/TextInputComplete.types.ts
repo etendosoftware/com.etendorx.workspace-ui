@@ -27,6 +27,12 @@ export interface TextInputProps extends StandardTextFieldProps {
   rightIcon?: React.ReactNode;
   onLeftIconClick?: () => void;
   onRightIconClick?: () => void;
+  /** Accessible name of the left icon button; only used when `onLeftIconClick` is set. */
+  leftIconAriaLabel?: string;
+  /** Accessible name of the right icon button; only used when `onRightIconClick` is set. */
+  rightIconAriaLabel?: string;
+  /** Pressed state of the right icon button, for toggles (e.g. show/hide password). */
+  rightIconPressed?: boolean;
   placeholder?: string | undefined;
   margin?: FormControlOwnProps["margin"];
   disabled?: boolean;

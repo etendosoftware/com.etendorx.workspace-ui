@@ -154,7 +154,34 @@ describe("saveOperations", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.errors).toEqual([{ field: "_general", message: "accountingDate: Invalid date", type: "server" }]);
+      expect(result.errors).toEqual([
+        { field: "accountingDate", message: "Invalid date", type: "server" },
+        { field: "_general", message: "accountingDate: Invalid date", type: "server" },
+      ]);
+    });
+
+    it("marks the cell of a known field with its labelled server message", async () => {
+      mockMetadata.datasourceServletClient.request.mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: { response: { status: -4, errors: { referenceNo: "BusinessPartner.referenceNo: Value too long" } } },
+      });
+      const tabWithField = {
+        ...mockTab,
+        fields: { referenceNo: { hqlName: "referenceNo", name: "Reference No." } },
+      } as unknown as Tab;
+
+      const result = await saveRecord({
+        saveOperation: { rowId: "new_1", isNew: true, data: { id: "new_1", name: "X" } },
+        tab: tabWithField,
+        userId: mockUserId,
+      });
+
+      const labelled = "BusinessPartner.Reference No.: Value too long";
+      expect(result.errors).toEqual([
+        { field: "Reference No.", message: labelled, type: "server" },
+        { field: "_general", message: labelled, type: "server" },
+      ]);
     });
 
     it("should successfully save new record", async () => {

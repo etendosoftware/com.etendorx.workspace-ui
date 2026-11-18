@@ -171,3 +171,36 @@ describe("Tooltip near the viewport edge", () => {
     jest.restoreAllMocks();
   });
 });
+
+describe("Tooltip multiline", () => {
+  const MULTILINE_TITLE = "Role: Admin\nClient: F&B";
+
+  /**
+   * Hovers the trigger long enough for the tooltip to show and returns its text box.
+   *
+   * @param multiline the value of the prop under test, or undefined to omit it
+   * @returns the element holding the title
+   */
+  const showTitleBox = (multiline?: boolean) => {
+    render(
+      <Tooltip title={MULTILINE_TITLE} multiline={multiline}>
+        <button type="button">Profile</button>
+      </Tooltip>
+    );
+    fireEvent.mouseEnter(screen.getByRole("button"));
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+    return screen.getByText(
+      (_content, element) => element?.textContent === MULTILINE_TITLE && !element.children.length
+    );
+  };
+
+  it("keeps the line breaks of the title when multiline is set", () => {
+    expect(showTitleBox(true)).toHaveClass("whitespace-pre-line");
+  });
+
+  it("does not change the default tooltips", () => {
+    expect(showTitleBox()).not.toHaveClass("whitespace-pre-line");
+  });
+});

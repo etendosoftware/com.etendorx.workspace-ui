@@ -67,6 +67,9 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useFormSectionsPersistenceTab } from "@/hooks/useFormSectionsPersistenceTab";
 import { useRevealFieldErrors } from "@/hooks/useRevealFieldErrors";
+import { useServerFieldErrorsStore } from "@/stores/serverFieldErrorsStore";
+import { getFormHighlightScope } from "@/utils/callouts/calloutHighlight";
+import type { ServerFieldErrors } from "@/utils/form/serverFieldErrors";
 import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
@@ -183,6 +186,18 @@ function FormViewComponent({
     tabLevel: tab.tabLevel ?? 0,
   });
   const revealFieldErrors = useRevealFieldErrors({ fieldsRootRef, fields: tab.fields, setExpandedSections });
+  const serverFieldErrorsScope = getFormHighlightScope(tab.id);
+  const setServerFieldErrors = useServerFieldErrorsStore((s) => s.setFieldErrors);
+  const clearServerFieldErrors = useServerFieldErrorsStore((s) => s.clearScope);
+
+  /** Marks the fields the server rejected on save and reveals them, like Classic's `handleFieldErrors`. */
+  const handleServerFieldErrors = useCallback(
+    (errors: ServerFieldErrors) => {
+      setServerFieldErrors(serverFieldErrorsScope, errors);
+      revealFieldErrors(Object.keys(errors));
+    },
+    [setServerFieldErrors, serverFieldErrorsScope, revealFieldErrors]
+  );
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { t } = useTranslation();
   const { resetFormChanges, parentTab, setAuxiliaryInputs, setRecordSessionAttributes, setFormValues } =
@@ -535,6 +550,14 @@ function FormViewComponent({
   // A new key means "this is a different record or a different form", which is
   // exactly when Classic re-places the focus. Post-save refreshes keep the key.
   const initialFocusKey = `${formInstanceKey}:${currentRecordId}:${currentMode}`;
+
+  // The server errors belong to the record being edited: they are dropped when the form shows
+  // another record (or a new one) and when it closes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the record keys only trigger the cleanup
+  useEffect(
+    () => () => clearServerFieldErrors(serverFieldErrorsScope),
+    [clearServerFieldErrors, serverFieldErrorsScope, formInstanceKey, currentRecordId]
+  );
 
   // Sections start collapsed until the metadata-driven preference is seeded, and a
   // collapsed section holds no focusable field, so the focus attempt has to be
@@ -947,6 +970,7 @@ function FormViewComponent({
   const onSuccess = useCallback(
     async (data: EntityData, options: SaveOptions) => {
       const { showModal = false, skipFormStateUpdate = false } = options;
+      clearServerFieldErrors(serverFieldErrorsScope);
 
       // Clear only the cache for this specific entity to get fresh data
       // This is more targeted than clearing the entire cache
@@ -1048,6 +1072,8 @@ function FormViewComponent({
       updateRecordInDatasource,
       addRecordToDatasource,
       refetch,
+      clearServerFieldErrors,
+      serverFieldErrorsScope,
     ]
   );
 
@@ -1073,6 +1099,7 @@ function FormViewComponent({
     initialState,
     submit: form.handleSubmit,
     onStaleObjectReload: refreshRecordAndSession,
+    onServerFieldErrors: handleServerFieldErrors,
   });
 
   /**

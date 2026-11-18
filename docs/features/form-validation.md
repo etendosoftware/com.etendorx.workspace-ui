@@ -100,8 +100,8 @@ every missing field. `FormView` wires it to `useRevealFieldErrors`, which:
 A successful save never calls `onFieldErrors`, so it leaves the expansion state as it is.
 
 **Decisions**
-- Only the client-side required-field validation triggers it; server-side field errors
-  keep their current handling in `useFormAction`.
+- Both the client-side required-field validation and the field errors the server returns on
+  save (see [Server Field Errors](#server-field-errors)) trigger it.
 - The focus moves even when every involved section was already expanded, matching
   Classic's `OBViewForm.setFocusInErrorField`.
 - The sections are expanded with `setExpandedSections` instead of
@@ -123,6 +123,75 @@ A successful save never calls `onFieldErrors`, so it leaves the expansion state 
   [form keyboard navigation](./form-keyboard-navigation/README.md) docs for the focus contract)
 - `components/Form/FormView/FormActions.tsx` — `onFieldErrors` prop
 - `components/Form/FormView/index.tsx` — wiring
+
+## Server Field Errors
+
+When the server rejects a save because of the value of one or more fields, it answers with a
+map of property name to message:
+`{response: {status: -4, errors: {referenceNo: "BusinessPartner.referenceNo: Value too long…"}}}`.
+The keys are DAL property names, i.e. the `hqlName` of the fields. As Classic's
+`OBViewForm.handleFieldErrors` does, the form now:
+
+1. **Marks every rejected field**: a red border around the input and an error icon at its
+   top-right corner. The tooltip of the icon holds the server message (the icon's
+   `aria-label` holds it too). The border ignores pointer events and the icon is not
+   focusable, so the field keeps its clicks and remains a single tab stop.
+2. **Reveals the first one**: the field names go through `useRevealFieldErrors`, the same
+   path as the missing required fields above, so collapsed sections are expanded and the
+   first field in form order gets the focus.
+3. **Keeps the general notification**: it lists the messages, separated by `; `.
+
+**Messages**
+- The property name inside a message is replaced by the field label, as Classic does
+  (`BusinessPartner.referenceNo: …` → `BusinessPartner.Reference No.: …`). Properties
+  without a field in the tab keep their name.
+- In the general notification, a message that does not name its field (e.g. a conversion
+  error such as `Invalid date`) is prefixed with the field label (`Accounting Date: Invalid date`),
+  so the notification always says which field failed. The field itself shows the message
+  as is.
+
+**Lifetime of the marks**
+- Changing the value of a marked field clears its mark. This covers typing, a callout
+  setting the value and discarding the changes.
+- A successful save clears all the marks.
+- Showing another record, a new record, or closing the form clears all the marks too.
+- A field that mounts after the rejected save keeps its mark: only a value change clears
+  it, not the first render.
+
+**Decisions**
+- The errors live in their own store (`serverFieldErrorsStore`, one scope per tab form), not
+  in react-hook-form's `setError`. An error set there on a key the form does not register
+  (e.g. `id`) is never cleared by the next submit and silently blocks every later save.
+  The store also keeps re-renders to the affected fields only, like the callout highlight.
+- The mark is a border and an icon with a tooltip, not a text line under the input. Form rows
+  have a fixed height, and a text line would overlap the next row.
+- Only the response's `errors` map is read. Errors returned as a single `error.message`
+  (process, trigger or database errors) keep the current single notification.
+
+**Grid inline editing**
+
+The same map is turned into cell errors when an inline row save fails: each property gets a
+`server` validation error keyed by `field.name` (the key the grid uses for every cell error),
+with the labelled message. The cell is marked and the row's actions column lists the
+messages. The general notification is kept. The row stays in edit mode, so the focus is not moved.
+A cell error is cleared by the grid's own real-time validation when the cell is edited or
+left. See the [inline editing audit](./inline-editing/2026-10-21-audit.md) for how the map
+reached the general message before this change.
+
+**Differences with Classic**
+- Classic shows the joined messages in the view's message bar; here they are shown in the
+  error notification.
+- Classic marks the field with an error icon only; here the input also gets a red border.
+- Classic's grid moves the focus to the first wrong cell; the inline grid does not.
+
+**Files**
+- `utils/form/serverFieldErrors.ts` — reads the `errors` map, labels the messages and builds the general message
+- `stores/serverFieldErrorsStore.ts` — field errors per form scope (`getFormHighlightScope(tab.id)`)
+- `components/Form/FormView/ServerFieldErrorOverlay.tsx` — border and icon with the message
+- `components/Form/FormView/selectors/BaseSelector.tsx` — renders the overlay and clears the error when the value changes
+- `hooks/useFormAction.ts` — `onServerFieldErrors` callback on a rejected save
+- `components/Form/FormView/index.tsx` — stores and reveals the errors and clears them on success or record change
+- `components/Table/utils/saveOperations.ts` — cell errors for the grid inline save
 
 ## Usage Examples
 
@@ -268,6 +337,7 @@ test('should handle reference fields correctly', () => {
 
 ### Phase 2 Considerations
 - **Real-time Validation**: Add validation during user input
-- **Field-level Indicators**: Visual validation state per field
+- **Field-level Indicators**: Visual validation state per field (done for the field
+  errors returned by the server, see [Server Field Errors](#server-field-errors))
 - **Custom Validation Rules**: Support for business-specific validation
 - **Progressive Disclosure**: Show validation errors incrementally

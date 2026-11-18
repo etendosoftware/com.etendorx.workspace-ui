@@ -69,4 +69,23 @@ describe("TextInputBase", () => {
     fireEvent.click(iconButton);
     expect(onRightClick).toHaveBeenCalled();
   });
+
+  it("renders an icon without action as decorative, outside the tab sequence", () => {
+    renderWithTheme(<TextInputBase {...defaultProps} leftIcon={<span data-testid="left-icon">Icon</span>} />);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("left-icon").parentElement).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("names the icon button and exposes its pressed state", () => {
+    renderWithTheme(
+      <TextInputBase
+        {...defaultProps}
+        rightIcon={<span>Icon</span>}
+        onRightIconClick={jest.fn()}
+        rightIconAriaLabel="Show password"
+        rightIconPressed
+      />
+    );
+    expect(screen.getByRole("button", { name: "Show password" })).toHaveAttribute("aria-pressed", "true");
+  });
 });

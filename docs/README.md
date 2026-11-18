@@ -25,7 +25,7 @@ docs/
 │   │   └── README.md
 │   ├── callout-changed-field-highlight/ # Feature: Brief highlight of the fields a callout changed
 │   │   └── README.md                # Change detection, timing, form and grid inline editing
-│   ├── form-validation.md            # Feature: Required-field validation and revealing missing fields
+│   ├── form-validation.md            # Feature: Required-field validation, server field errors and revealing them
 │   ├── link-fields/                  # Feature: Link (URL) fields — opening with http:// and URL validation
 │   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
@@ -58,6 +58,10 @@ docs/
 │   │   └── README.md
 │   ├── csv-export/                   # Feature: Export to Spreadsheet (grid query, all rows)
 │   │   └── README.md                # Request params, sort by every column, Classic differences
+│   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
+│   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
+│   ├── profile-menu/                 # Feature: Profile menu feedback and current context
+│   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
 │   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs

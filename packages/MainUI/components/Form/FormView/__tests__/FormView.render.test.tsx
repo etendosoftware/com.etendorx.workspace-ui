@@ -37,6 +37,7 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import FormView from "../index";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { useServerFieldErrorsStore } from "@/stores/serverFieldErrorsStore";
 
 jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
@@ -217,6 +218,11 @@ jest.mock("../FormActions", () => ({
     capturedFormActionsProps = props;
     return <div data-testid="FormActions-mock" />;
   },
+}));
+
+const mockRevealFieldErrors = jest.fn();
+jest.mock("@/hooks/useRevealFieldErrors", () => ({
+  useRevealFieldErrors: () => mockRevealFieldErrors,
 }));
 
 const mockSave = jest.fn().mockResolvedValue(true);
@@ -467,5 +473,62 @@ describe("FormView", () => {
     expect(setRecordId).toHaveBeenCalledWith("456");
     expect(mockAddRecordToDatasource).toHaveBeenCalled();
     expect(mockGraph.setSelectedMultiple).toHaveBeenCalled();
+  });
+
+  describe("server field errors", () => {
+    const SCOPE = `form:${mockTab.id}`;
+    const SERVER_ERRORS = { referenceNo: "BusinessPartner.Reference No.: Value too long" };
+
+    /** Arguments of the last useFormAction call, where FormView wires its save callbacks. */
+    const lastFormActionArgs = () =>
+      mockUseFormAction.mock.calls[mockUseFormAction.mock.calls.length - 1][0] as unknown as {
+        onServerFieldErrors: (errors: Record<string, string>) => void;
+        onSuccess: (data: EntityData, options: Record<string, unknown>) => Promise<void>;
+      };
+
+    const reportServerErrors = () => act(() => lastFormActionArgs().onServerFieldErrors(SERVER_ERRORS));
+
+    beforeEach(() => {
+      useServerFieldErrorsStore.setState({ errors: {} });
+    });
+
+    it("marks the fields the server rejected and reveals them", () => {
+      renderFormView();
+      reportServerErrors();
+
+      expect(useServerFieldErrorsStore.getState().errors[SCOPE]).toEqual(SERVER_ERRORS);
+      expect(mockRevealFieldErrors).toHaveBeenCalledWith(Object.keys(SERVER_ERRORS));
+    });
+
+    it("clears them on a successful save", async () => {
+      renderFormView();
+      reportServerErrors();
+
+      await act(async () => {
+        await lastFormActionArgs().onSuccess({ id: "123" } as EntityData, {});
+      });
+
+      expect(useServerFieldErrorsStore.getState().errors[SCOPE]).toBeUndefined();
+    });
+
+    it("clears them when the form shows another record or closes", () => {
+      const { rerender, unmount } = renderFormView();
+      reportServerErrors();
+
+      rerender(
+        <FormView
+          window={mockWindowMetadata}
+          tab={mockTab}
+          mode={FormMode.EDIT}
+          recordId="456"
+          setRecordId={jest.fn()}
+        />
+      );
+      expect(useServerFieldErrorsStore.getState().errors[SCOPE]).toBeUndefined();
+
+      reportServerErrors();
+      unmount();
+      expect(useServerFieldErrorsStore.getState().errors[SCOPE]).toBeUndefined();
+    });
   });
 });
