@@ -270,8 +270,6 @@ body {
   --ui-field-focus-bg: #ece8f6;
   /* Outline and thumb of an "off" switch: neutral grey (4.5:1 on the card), so it never reads as the accent "on". */
   --ui-switch-off: #74777f;
-  /* Surface of the "My Favorites" home widget. */
-  --ui-widget-favorites-bg: #e9e4fa;
   --ui-field-focus-fg: #2a1757;
   --ui-field-focus-border: #2a1757;
   /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
@@ -644,7 +642,6 @@ html[data-theme="dark"] {
   /* Focused field: dark lilac tint with a light lilac text (8:1). */
   --ui-field-focus-bg: #2d2650;
   --ui-switch-off: #8b8e9a;
-  --ui-widget-favorites-bg: #2d2650;
   --ui-field-focus-fg: #c8bff4;
   --ui-field-focus-border: #8b7bdc;
   --color-etendo-main: #8b7bdc;

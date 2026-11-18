@@ -18,10 +18,11 @@
 "use client";
 
 import { useState } from "react";
-import type { WidgetInstance, WidgetDataResponse, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
+import type { WidgetInstance, WidgetDataResponse } from "@workspaceui/api-client/src/api/dashboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import WidgetRenderer from "./WidgetRenderer";
+import { WidgetTypeIcon } from "./widgetTypeVisuals";
 
 interface WidgetTheme {
   card: string;
@@ -31,37 +32,17 @@ interface WidgetTheme {
   skeleton: string;
 }
 
-// Card surface with a border: the old baseline-10 fill matched the bottom of the page gradient and faded out.
-const DEFAULT_THEME: WidgetTheme = {
+/**
+ * One surface for every widget: the card colour with a border, in both themes. Coloured cards (yellow recent
+ * documents, lilac favorites) blended with the page gradient; the type is shown by the coloured icon instead.
+ */
+export const WIDGET_CARD_THEME: WidgetTheme = {
   card: "bg-(--ui-card-bg) border border-(--ui-line)",
   title: "text-baseline-100",
   icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
   iconHover: "text-baseline-50",
   skeleton: "bg-transparent-neutral-10",
 };
-
-const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
-  RECENT_DOCS: {
-    card: "bg-secondary-100",
-    title: "text-baseline-100",
-    icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
-    iconHover: "text-baseline-50",
-    skeleton: "bg-transparent-neutral-20",
-  },
-  FAVORITES: {
-    // Light lilac of the accent family in both themes; it replaced a near-black card that clashed with the
-    // light UI. Title, chips and icons keep 4.5:1 (text) and 3:1 (icons) on it.
-    card: "bg-(--ui-widget-favorites-bg) border border-(--color-transparent-neutral-10)",
-    title: "text-baseline-100",
-    icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
-    iconHover: "text-baseline-50",
-    skeleton: "bg-transparent-neutral-10",
-  },
-};
-
-function getTheme(type: WidgetType): WidgetTheme {
-  return WIDGET_THEMES[type] ?? DEFAULT_THEME;
-}
 
 const DragIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -181,7 +162,7 @@ export default function WidgetCard({
   const isCollapsed = instance.collapsed === true;
   const isUnavailable = instance.available === false || data?.available === false;
   const isLoading = data === undefined && error === undefined && !isUnavailable;
-  const theme = getTheme(instance.type);
+  const theme = WIDGET_CARD_THEME;
   const refreshStateClass = isRefreshing ? REFRESHING_ICON_CLASS : "";
   const bodyStateClass = isRefreshing ? REFRESHING_BODY_CLASS : "";
 
@@ -199,6 +180,7 @@ export default function WidgetCard({
           <span className={`shrink-0 ${theme.iconHover} opacity-50 hover:opacity-100 transition-opacity`}>
             <DragIcon data-testid="DragIcon__cb8729" />
           </span>
+          <WidgetTypeIcon type={instance.type} data-testid="WidgetTypeIcon__cb8729" />
           <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         </span>
         <div className="flex items-center gap-1 shrink-0">
