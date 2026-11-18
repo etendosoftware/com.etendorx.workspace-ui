@@ -918,6 +918,9 @@ const es = {
     widget: {
       unavailable: "Módulo no instalado",
       more: "+{{count}} más",
+      markRead: "Marcar como leída",
+      markAllRead: "Marcar todas como leídas",
+      viewAllAlerts: "Ver todas",
       refresh: "Actualizar",
       collapse: "Contraer",
       expand: "Expandir",

@@ -912,6 +912,9 @@ const en = {
     widget: {
       unavailable: "Module not installed",
       more: "+{{count}} more",
+      markRead: "Mark as read",
+      markAllRead: "Mark all as read",
+      viewAllAlerts: "View all",
       refresh: "Refresh",
       collapse: "Collapse",
       expand: "Expand",

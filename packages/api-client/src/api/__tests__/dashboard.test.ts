@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { updateDashboardLayout } from "../dashboard";
+import { acknowledgeAlerts, updateDashboardLayout } from "../dashboard";
 import { Metadata } from "../metadata";
 
 jest.mock("../metadata", () => ({
@@ -39,5 +39,22 @@ describe("api/dashboard updateDashboardLayout", () => {
         '{"instanceId":"w1","col":1.0,"row":0.5,"width":2.0,"height":2.5,"isVisible":true,"isCollapsed":true},' +
         '{"instanceId":"w2","col":0.0,"row":3.0,"width":4.0,"height":2.0,"isVisible":true,"isCollapsed":false}]}'
     );
+  });
+});
+
+describe("acknowledgeAlerts", () => {
+  it("posts the alert ids to the acknowledge endpoint and returns the count", async () => {
+    (Metadata.client.request as jest.Mock).mockResolvedValue({ ok: true, data: { acknowledged: 2 } });
+
+    await expect(acknowledgeAlerts(["A1", "A2"])).resolves.toEqual({ acknowledged: 2 });
+    const [url, options] = (Metadata.client.request as jest.Mock).mock.calls.at(-1);
+    expect(url).toContain("/dashboard/alerts/acknowledge");
+    expect(JSON.parse(options.body)).toEqual({ alertIds: ["A1", "A2"] });
+  });
+
+  it("fails when the server rejects the request", async () => {
+    (Metadata.client.request as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+
+    await expect(acknowledgeAlerts(["A1"])).rejects.toThrow("500");
   });
 });

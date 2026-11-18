@@ -169,7 +169,10 @@ window grid height.
   Documents (2, document identifiers are long) and My Favorites (1). Notifications spans the second row:
   it lists the pending alerts of the user, with the same rule as the bell of the header (the resolver
   used to read an `AN_Note` entity no module provides, so it always showed "Module not installed"). Each
-  alert shows its rule name, description and local time.
+  alert shows its rule name, description and local time. Alerts can be marked as read one by one or all
+  at once (Classic "Acknowledged"; the server only changes alerts the user receives), which also updates
+  the count of the bell through `ALERTS_CHANGED_EVENT`; "View all" opens Classic Alert Management, like the
+  bell (`useOpenAlertManagement`).
 - Home: widgets move left into columns left empty by hidden or unavailable widgets
   (`closeHorizontalGaps`, render only; positions are stored only when the user moves a widget).
 - The status bar of the form wraps instead of hiding the fields past the right edge.

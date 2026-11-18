@@ -45,9 +45,11 @@ interface WidgetRendererProps {
   type: WidgetType;
   data: WidgetData;
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
+  /** Reloads this widget, for renderers whose actions change their own data (notifications). */
+  onDataChanged?: () => Promise<void> | void;
 }
 
-export default function WidgetRenderer({ type, data, onFetchPage }: WidgetRendererProps) {
+export default function WidgetRenderer({ type, data, onFetchPage, onDataChanged }: WidgetRendererProps) {
   switch (type) {
     case "KPI":
       return <KpiRenderer data={data as KpiWidgetData} data-testid="KpiRenderer__9fb9f4" />;
@@ -64,7 +66,13 @@ export default function WidgetRenderer({ type, data, onFetchPage }: WidgetRender
     case "URL":
       return <UrlRenderer data={data as UrlWidgetData} data-testid="UrlRenderer__9fb9f4" />;
     case "NOTIFICATION":
-      return <NotificationRenderer data={data as NotificationWidgetData} data-testid="NotificationRenderer__9fb9f4" />;
+      return (
+        <NotificationRenderer
+          data={data as NotificationWidgetData}
+          onDataChanged={onDataChanged}
+          data-testid="NotificationRenderer__9fb9f4"
+        />
+      );
     case "STOCK_ALERT":
       return <StockAlertRenderer data={data as StockAlertWidgetData} data-testid="StockAlertRenderer__9fb9f4" />;
     case "FAVORITES":

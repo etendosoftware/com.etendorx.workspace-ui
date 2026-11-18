@@ -261,6 +261,7 @@ export default function WidgetCard({
               type={instance.type}
               data={data.data}
               onFetchPage={onFetchPage}
+              onDataChanged={onRefresh ? refresh : undefined}
               data-testid="WidgetRenderer__cb8729"
             />
           )}

@@ -141,6 +141,8 @@ export interface NotificationItem {
   time: string;
   /** Source of the item, such as the alert rule of an alert. When present it is shown instead of the priority. */
   title?: string;
+  /** Id of the alert, used to mark it as read. */
+  id?: string;
 }
 
 export interface NotificationWidgetData {
@@ -407,6 +409,25 @@ export async function addDashboardWidget(payload: AddWidgetRequest): Promise<Add
     throw new Error(`Failed to add widget: ${response.status}`);
   }
   return response.data as AddWidgetResponse;
+}
+
+/**
+ * Marks pending alerts of the current user as read (Classic "Acknowledged"). The server ignores ids of alerts the
+ * user does not receive.
+ *
+ * @param alertIds ids of the alerts to mark
+ * @returns how many alerts were marked
+ */
+export async function acknowledgeAlerts(alertIds: string[]): Promise<{ acknowledged: number }> {
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/alerts/acknowledge`, {
+    method: "POST",
+    body: JSON.stringify({ alertIds }),
+    headers: JSON_HEADERS,
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to acknowledge alerts: ${response.status}`);
+  }
+  return response.data as { acknowledged: number };
 }
 
 export async function fetchFavorites(): Promise<FavoritesWidgetData> {

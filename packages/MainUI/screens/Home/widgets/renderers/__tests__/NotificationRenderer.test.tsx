@@ -15,9 +15,15 @@
  *************************************************************************
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { NotificationWidgetData } from "@workspaceui/api-client/src/api/dashboard";
-import NotificationRenderer, { formatNotificationTime } from "../NotificationRenderer";
+import NotificationRenderer, { formatNotificationTime, getAlertIds } from "../NotificationRenderer";
+import { acknowledgeAlerts } from "@workspaceui/api-client/src/api/dashboard";
+import { ALERTS_CHANGED_EVENT } from "@/utils/alerts/constants";
+
+const mockOpenAlertManagement = jest.fn();
+jest.mock("@/hooks/useOpenAlertManagement", () => ({ useOpenAlertManagement: () => mockOpenAlertManagement }));
+jest.mock("@workspaceui/api-client/src/api/dashboard", () => ({ acknowledgeAlerts: jest.fn() }));
 
 jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => (key === "dashboard.widget.more" ? "+{{count}} more" : key) }),
@@ -58,5 +64,46 @@ describe("NotificationRenderer", () => {
 
   it("shows the raw time when it is not a date", () => {
     expect(formatNotificationTime("yesterday")).toBe("yesterday");
+  });
+
+  const ALERTS = [
+    { id: "A1", text: "First", title: "Rule", priority: "normal" as const, time: ALERT_TIME },
+    { id: "A2", text: "Second", title: "Rule", priority: "normal" as const, time: ALERT_TIME },
+  ];
+
+  it("marks one alert as read, reloads the widget and tells the header indicator", async () => {
+    (acknowledgeAlerts as jest.Mock).mockResolvedValue({ acknowledged: 1 });
+    const onDataChanged = jest.fn();
+    const onAlertsChanged = jest.fn();
+    window.addEventListener(ALERTS_CHANGED_EVENT, onAlertsChanged);
+    render(<NotificationRenderer data={dataWith(ALERTS)} onDataChanged={onDataChanged} />);
+
+    fireEvent.click(screen.getByTestId("NotificationRenderer__mark_1"));
+
+    await waitFor(() => expect(onDataChanged).toHaveBeenCalled());
+    expect(acknowledgeAlerts).toHaveBeenCalledWith(["A2"]);
+    expect(onAlertsChanged).toHaveBeenCalled();
+    window.removeEventListener(ALERTS_CHANGED_EVENT, onAlertsChanged);
+  });
+
+  it("marks every listed alert as read at once", async () => {
+    (acknowledgeAlerts as jest.Mock).mockResolvedValue({ acknowledged: 2 });
+    render(<NotificationRenderer data={dataWith(ALERTS)} />);
+
+    fireEvent.click(screen.getByTestId("NotificationRenderer__mark_all"));
+
+    await waitFor(() => expect(acknowledgeAlerts).toHaveBeenCalledWith(["A1", "A2"]));
+  });
+
+  it("opens Alert Management from View all, also when there is nothing pending", () => {
+    render(<NotificationRenderer data={dataWith([])} />);
+
+    expect(screen.queryByTestId("NotificationRenderer__mark_all")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("NotificationRenderer__view_all"));
+    expect(mockOpenAlertManagement).toHaveBeenCalled();
+  });
+
+  it("offers no mark action for items without an alert id", () => {
+    expect(getAlertIds([{ text: "x", priority: "normal", time: ALERT_TIME }])).toEqual([]);
   });
 });
