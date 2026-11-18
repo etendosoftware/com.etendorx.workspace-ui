@@ -95,7 +95,7 @@ export function useTabSwitchGuard(windowIdentifier: string | undefined, windowId
       }
       const policy = getAutosavePolicy(windowId);
       if (policy.autosave && !policy.confirm) {
-        void saveThenRun(move);
+        saveThenRun(move);
         return;
       }
       setPending({ tabIds, run: move, confirmOnly: policy.autosave });

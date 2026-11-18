@@ -332,7 +332,8 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const chevronClassNames = useMemo(() => {
     const base = "w-5 h-5 transition-transform";
     const isActive = isFocused || isOpen;
-    return `${base} ${isActive ? `${ACTIVE_ICON_COLOR} rotate-180` : "text-(--color-transparent-neutral-60)"}`;
+    const stateClasses = isActive ? `${ACTIVE_ICON_COLOR} rotate-180` : "text-(--color-transparent-neutral-60)";
+    return `${base} ${stateClasses}`;
   }, [isFocused, isOpen]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;

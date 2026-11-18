@@ -111,7 +111,7 @@ export default function UnsavedChangesTabGuardProvider({ children }: React.Props
       }
       const policy = getAutosavePolicy(tab?.window);
       if (policy.autosave && !policy.confirm) {
-        void autosaveThenRun(transition, onCancel);
+        autosaveThenRun(transition, onCancel);
         return;
       }
       setPending({ run: transition, onCancel, confirmOnly: policy.autosave });
