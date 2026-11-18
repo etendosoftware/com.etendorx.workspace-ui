@@ -458,7 +458,7 @@ describe("StatusBar", () => {
     it("wraps the status fields instead of hiding the ones past the right edge", () => {
       const container = renderInToolbar();
 
-      expect(container).toHaveClass("flex-wrap", "gap-y-1");
+      expect(container).toHaveClass("flex-wrap", "gap-y-1", "shrink-0");
       expect(container).not.toHaveClass("overflow-x-auto");
     });
   });

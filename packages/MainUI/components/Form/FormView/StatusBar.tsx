@@ -82,7 +82,7 @@ export default function StatusBar({
         {hasStatusFields && (
           <div
             data-testid="status-bar-container"
-            className="flex min-h-8 flex-wrap items-center gap-x-4 gap-y-1 px-1 py-1 text-sm leading-5">
+            className="flex min-h-8 shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-1 py-1 text-sm leading-5">
             {Object.entries(fields).map(([key, field]) => (
               <StatusBarField key={key} field={field} data-testid="StatusBarField__cfc328" />
             ))}
