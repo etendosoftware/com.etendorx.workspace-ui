@@ -76,6 +76,7 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import type { OnRefreshFunction } from "./processView";
 import { hasClientclassCell, isClientclassComponentColumn } from "@/utils/table/clientclassLink";
+import { isNumericReference } from "@/utils/form/constants";
 import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
@@ -840,6 +841,32 @@ const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
       {displayValue}
     </span>
   );
+};
+
+/**
+ * Column metadata of a process grid field with its reference. Some process fields carry the reference only on
+ * the field itself; the grid columns read it from `column.reference`, so without it a numeric field was neither
+ * formatted nor right-aligned.
+ *
+ * @param field the field of the referenced tab
+ * @returns its `column`, completed with the field reference when it lacks one
+ */
+export const withColumnReference = (field: { column?: Field["column"]; reference?: string }): Field["column"] => {
+  if (field.column?.reference || !field.reference) return field.column as Field["column"];
+  return { ...field.column, reference: field.reference } as Field["column"];
+};
+
+/**
+ * Cell of a read-only process grid column: numeric columns keep the formatted, right-aligned cell built by
+ * `useColumns`; the rest show their plain value.
+ *
+ * @param col the column
+ * @returns the cell renderer
+ */
+export const getReadOnlyCell = (col: Column) => {
+  const numericCell = (col as Column & { fallbackCell?: unknown }).fallbackCell;
+  if (isNumericReference(col.column?.reference) && typeof numericCell === "function") return numericCell;
+  return ReadOnlyCellRenderer;
 };
 
 // Stable renderer for interactive cells
@@ -2262,6 +2289,7 @@ const WindowReferenceGrid = ({
             {
               ...field,
               hqlName: actualColumnName,
+              column: withColumnReference(field),
             },
           ];
         })
@@ -3562,7 +3590,7 @@ const WindowReferenceGrid = ({
           // For Read-Only fields, override the Cell renderer
           // Exception: preserve custom Cell renderers from clientclass-based link columns
           if (!hasClientclassCell(col as Column)) {
-            newCol.Cell = ReadOnlyCellRenderer;
+            newCol.Cell = getReadOnlyCell(col as Column);
           }
           // Ensure Edit component is removed so it cannot be triggered
           newCol.Edit = undefined;

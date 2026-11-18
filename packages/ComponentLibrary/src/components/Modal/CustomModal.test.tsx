@@ -319,4 +319,37 @@ describe("CustomModal", () => {
       expect(screen.getByText("No data")).toBeInTheDocument();
     });
   });
+
+  describe("frame", () => {
+    const renderOpen = (handleClose = jest.fn()) =>
+      render(
+        <CustomModal
+          isOpen
+          title="Process Order"
+          iframeLoading={false}
+          url="https://example.com"
+          handleClose={handleClose}
+          texts={TEXTS}
+        />
+      );
+
+    it("draws a thin frame that clips the inner bars to its corners", () => {
+      renderOpen();
+
+      const frame = screen.getByTestId("legacy-process-modal-title").closest("div.relative") as HTMLElement;
+      expect(frame).toHaveClass("overflow-hidden", "border", "border-(--ui-line)");
+      expect(frame).not.toHaveClass("border-4");
+    });
+
+    it("uses the outlined Close button of the other process modals, aligned to the right", () => {
+      const handleClose = jest.fn();
+      renderOpen(handleClose);
+
+      const close = screen.getByTestId("close-button");
+      expect(close).toHaveClass("rounded-full", "w-auto");
+      expect(close).not.toHaveClass("mx-auto");
+      fireEvent.click(close);
+      expect(handleClose).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -388,10 +388,10 @@ const ProcessParameterSelectorImpl = ({
           />
         }
         mandatory={Boolean(parameter.mandatory)}
-        widthClassName="w-1/3"
+        widthClassName="w-[45%]"
         data-testid="FieldLabelRow__dac06b"
       />
-      <div className="w-2/3">{renderSelector()}</div>
+      <div className="w-[55%]">{renderSelector()}</div>
     </div>
   );
 };

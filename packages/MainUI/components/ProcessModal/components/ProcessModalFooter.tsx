@@ -90,7 +90,7 @@ export const ProcessModalFooter = ({
   const isStandardProcess = !isReportAndProcess && !isOBUIAPPReport;
 
   return (
-    <div className="flex gap-3 justify-end mx-3 my-3" data-testid={dataTestId}>
+    <div className="flex gap-3 justify-end mx-4 my-3" data-testid={dataTestId}>
       {isReportAndProcess && showActions && (
         <>
           {!scriptButtonState.cancelHidden && (

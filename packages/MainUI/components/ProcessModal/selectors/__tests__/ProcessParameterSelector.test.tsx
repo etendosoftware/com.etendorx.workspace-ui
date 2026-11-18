@@ -169,6 +169,18 @@ describe("ProcessParameterSelector", () => {
     expect(screen.getByLabelText(REQUIRED_MARK_LABEL)).toBeInTheDocument();
   });
 
+  it("gives the label the same share of the row as the form fields", () => {
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={baseParameter} />
+      </TestWrapper>
+    );
+
+    const labelColumn = screen.getByTestId("parameter-label").parentElement as HTMLElement;
+    expect(labelColumn).toHaveClass("w-[45%]");
+    expect(labelColumn.nextElementSibling).toHaveClass("w-[55%]");
+  });
+
   it("should render PasswordSelector for password reference", () => {
     const passwordParameter = { ...baseParameter, reference: "Password" };
 
