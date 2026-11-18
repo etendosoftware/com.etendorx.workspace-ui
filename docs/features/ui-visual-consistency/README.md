@@ -85,13 +85,6 @@ the same ink as the other database icons. They render through the same `<img cla
 so hover, disabled and dark mode keep working through the existing global rules. Any other button,
 including module buttons, keeps its database icon. Refresh no longer has a filled circle.
 
-### Grid filters look like fields
-
-Each column filter is a filled, rounded box (the fill of the sidebar search, `--ui-search-bg`) inset in
-the filter band, with an outline on hover and the accent outline while typing or open
-(`FILTER_FIELD_SX` in `components/Table/styles.ts`, shared with process grids). Empty filters at rest had
-no box and the band looked like blank header space.
-
 ### Disabled icons look disabled
 
 The grid extras of the toolbar (fullscreen, previous / next record) take the toolbar ink only when
