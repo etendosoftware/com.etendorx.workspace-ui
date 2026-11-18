@@ -26,10 +26,13 @@ import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 // The full value is already shown on hover via the native `title` attribute
 // that `muiTableBodyCellProps` sets on the table cell (Table/index.tsx), so no
 // extra tooltip is wrapped here to avoid showing two tooltips at once.
+/** Content of a grid cell that cuts a long value with an ellipsis inside the flex cell. */
+export const TRUNCATED_CELL_CLASSES = "block min-w-0 max-w-full truncate";
+
 export const renderTextCell = (value: unknown): React.ReactNode => {
   if (value === null || value === undefined || value === "") return "";
   const text = String(value);
-  return <span className="block truncate max-w-full">{text}</span>;
+  return <span className={TRUNCATED_CELL_CLASSES}>{text}</span>;
 };
 
 // Helper function to handle boolean field rendering

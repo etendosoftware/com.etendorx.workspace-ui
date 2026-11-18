@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { renderHook } from "@testing-library/react";
+import { render, renderHook, screen } from "@testing-library/react";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { NUMERIC_HEADER_CELL_PROPS, useColumns } from "@/hooks/table/useColumns";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -55,5 +55,15 @@ describe("useColumns - numeric header alignment", () => {
 
   it("leaves the header of a text column untouched", () => {
     expect(getHeaderProps("10")).toBeUndefined();
+  });
+
+  it("puts the value of a column without its own renderer in a span that can end in an ellipsis", () => {
+    const { result } = renderHook(() => useColumns(buildTab("UNKNOWN_REFERENCE")));
+    const Cell = (result.current[0] as unknown as { Cell: React.FC<Record<string, unknown>> }).Cell;
+    const value = "F&B International Group Account Account";
+
+    render(<Cell row={{ original: {} }} cell={{ getValue: () => value }} renderedCellValue={value} />);
+
+    expect(screen.getByText(value)).toHaveClass("block", "min-w-0", "truncate");
   });
 });

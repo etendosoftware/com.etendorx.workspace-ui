@@ -16,7 +16,7 @@
  */
 
 import React, { useMemo } from "react";
-import { parseColumns, renderTextCell } from "@/utils/tableColumns";
+import { parseColumns, renderTextCell, TRUNCATED_CELL_CLASSES } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -237,7 +237,7 @@ const getNumericCellText = (
 };
 
 /** Link-like buttons of grid cells: they cut long values with an ellipsis, like plain text cells. */
-const CELL_LINK_CLASSES = "block max-w-full truncate bg-transparent border-none p-0 text-left pointer-events-auto";
+const CELL_LINK_CLASSES = `${TRUNCATED_CELL_CLASSES} bg-transparent border-none p-0 text-left pointer-events-auto`;
 
 export { NUMERIC_HEADER_CELL_PROPS } from "@/utils/table/numericAlignment";
 
@@ -623,7 +623,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             if (typeof wrappedCell === "function") {
               return wrappedCell(cellProps);
             }
-            return <>{renderedCellValue ?? cell?.getValue()}</>;
+            // In a span: the grid cell is a flex box, where a bare text cannot end in an ellipsis.
+            return <span className={TRUNCATED_CELL_CLASSES}>{renderedCellValue ?? cell?.getValue()}</span>;
           },
         };
       }
