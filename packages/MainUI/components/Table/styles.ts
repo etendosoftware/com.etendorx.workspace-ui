@@ -22,6 +22,28 @@ type StylesType = {
   sx: Record<string, SxProps<Theme>>;
 };
 
+/** Filter control of a column: 22px filled box, 3px inside the 28px filter band and 4px from the separators. */
+export const FILTER_FIELD_SX = {
+  height: "1.375rem !important",
+  margin: "3px 4px",
+  width: "calc(100% - 8px) !important",
+  paddingTop: "0 !important",
+  paddingBottom: "0 !important",
+  paddingLeft: "6px !important",
+  paddingRight: "6px !important",
+  boxSizing: "border-box",
+  borderRadius: "6px",
+  backgroundColor: "var(--ui-search-bg)",
+  boxShadow: "inset 0 0 0 1px transparent",
+  transition: "box-shadow 0.15s",
+} as const;
+
+/** Hover: an outline in the soft text ink, so the field shows it takes input. */
+export const FILTER_FIELD_HOVER_SX = { boxShadow: "inset 0 0 0 1px var(--ui-text-soft)" } as const;
+
+/** Focus (typing, or a dropdown open): the accent outline of the form fields. */
+export const FILTER_FIELD_FOCUS_SX = { boxShadow: "inset 0 0 0 1px var(--color-dynamic-main)" } as const;
+
 export const useStyle = (): StylesType => {
   const theme = useTheme();
 
@@ -160,14 +182,11 @@ export const useStyle = (): StylesType => {
             padding: 0,
           },
           // Filter controls ship with a 40px height; keep the filter band as compact as the labels.
-          "& .h-10": {
-            height: "1.75rem !important",
-            paddingTop: "0 !important",
-            paddingBottom: "0 !important",
-            paddingLeft: "8px !important",
-            paddingRight: "8px !important",
-            boxSizing: "border-box",
-          },
+          // Each filter reads as a field: the filled, rounded box of the sidebar search, inset in its cell. With no
+          // box at rest the filter band looked like empty header space and did not invite typing.
+          "& .h-10": FILTER_FIELD_SX,
+          "& .h-10:hover": FILTER_FIELD_HOVER_SX,
+          "& .h-10:focus-within": FILTER_FIELD_FOCUS_SX,
           // Resting filters have no underline; an open selector keeps its full border (it has the `border` class).
           "& .h-10.border-b:not(.border)": {
             borderBottomWidth: 0,
