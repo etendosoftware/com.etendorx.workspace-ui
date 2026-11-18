@@ -61,8 +61,8 @@ export interface MenuTitleProps {
   isExpandable?: boolean;
   popperOpen?: boolean;
   isParentActive?: boolean;
-  /** Root entries get the full-width band when one of their descendants is active. */
-  isTopLevel?: boolean;
+  /** Nesting level: 0 for a top-level entry. Each level indents the entry on the left. */
+  depth?: number;
 }
 
 export interface DrawerSectionProps extends React.PropsWithChildren {
@@ -81,6 +81,8 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   windowId?: string;
   pendingWindowId?: string;
   parentId?: string;
+  /** Nesting level: 0 for a top-level section; its children are rendered one level deeper. */
+  depth?: number;
 }
 
 export interface Section {

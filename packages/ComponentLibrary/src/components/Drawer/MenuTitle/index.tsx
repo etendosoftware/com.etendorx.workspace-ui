@@ -19,6 +19,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
+import { getMenuRowIndentStyle } from "../spacing";
 import { DEFAULT_B64, EXTERNAL_LINK_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
@@ -47,16 +48,14 @@ function getIconSrc(item: { icon?: string | null; type?: string }): string {
   }
 }
 
-function getMenuButtonClassName(
-  open?: boolean,
-  selected?: boolean,
-  isParentActive?: boolean,
-  isTopLevel?: boolean
-): string {
+/** Shape of an expanded entry: the same rounded box and 8px inner padding at every level (see spacing.ts). */
+export const MENU_ROW_SHAPE_CLASSES = "rounded-lg px-2 py-0.5";
+
+export function getMenuButtonClassName(open?: boolean, selected?: boolean, isParentActive?: boolean): string {
   const base = "relative flex items-center transition-colors duration-200 cursor-pointer";
   if (open) {
-    // Nested entries add 8px per level on top of their parent's margin, so every level is indented.
-    const shape = isTopLevel ? "px-4 py-0.5" : "rounded-lg pl-4 pr-2 py-0.5";
+    // Levels indent only on the left (inline padding by depth); every box keeps the sidebar gutter on both sides.
+    const shape = MENU_ROW_SHAPE_CLASSES;
     let state = "text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)";
     if (selected) state = "bg-(--ui-selected-bg) text-(--ui-text) font-medium";
     else if (isParentActive) state = "text-(--ui-text) font-medium hover:bg-(--ui-hover)";
@@ -82,7 +81,7 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 );
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
-  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable, isTopLevel }) => {
+  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable, depth = 0 }) => {
     const favoritesCtx = useFavoritesDrawer();
     const isFav = !!(favoritesCtx && item.windowId && favoritesCtx.isFavorite(item.windowId));
     const highlightCtx = useDrawerHighlight();
@@ -136,7 +135,8 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         tabIndex={0}
         onClick={onClick}
         onKeyDown={handleTitleKeyDown}
-        className={`${getMenuButtonClassName(open, selected, isParentActive, isTopLevel)} ${highlightClasses}`.trim()}>
+        className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}
+        style={open ? getMenuRowIndentStyle(depth) : undefined}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
             <span className="text-base">

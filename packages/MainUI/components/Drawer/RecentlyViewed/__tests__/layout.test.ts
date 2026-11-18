@@ -15,22 +15,29 @@
  *************************************************************************
  */
 
-import { getButtonShapeClassName, getSectionClassName } from "../index";
+import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle";
+import { SIDEBAR_GUTTER_CLASS } from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
+import { RECENT_CHIPS_CLASSES, getButtonShapeClassName, getSectionClassName } from "../index";
 
 jest.mock("../../../../hooks/useRecentItems", () => ({ useRecentItems: jest.fn() }));
 jest.mock("../../../../hooks/useTranslation", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
 describe("RecentlyViewed layout", () => {
-  it("adds no side padding to the open section, so it lines up with the menu", () => {
-    expect(getSectionClassName(true)).toBe("py-2 rounded-lg");
+  it("takes the sidebar gutter when open, like a top-level menu section", () => {
+    expect(getSectionClassName(true)).toContain(SIDEBAR_GUTTER_CLASS);
+  });
+
+  it("starts the chips on the gutter and wraps them inside it", () => {
+    expect(RECENT_CHIPS_CLASSES).toContain("flex-wrap");
+    expect(RECENT_CHIPS_CLASSES).not.toMatch(/\b(pl-4|w-full)\b/);
   });
 
   it("keeps the padding of the collapsed rail", () => {
     expect(getSectionClassName(false)).toBe("p-2 rounded-lg");
   });
 
-  it("uses the 16px side padding of a top-level menu entry when open", () => {
-    expect(getButtonShapeClassName(true)).toContain("px-4");
+  it("uses the shape and padding of a menu entry when open", () => {
+    expect(getButtonShapeClassName(true)).toBe(MENU_ROW_SHAPE_CLASSES);
   });
 
   it("keeps the round rail button when collapsed", () => {

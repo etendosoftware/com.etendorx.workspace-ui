@@ -26,27 +26,33 @@ import ChevronDown from "../../../../ComponentLibrary/src/assets/icons/chevron-d
 import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import { CLOCK_B64 } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle/constants";
 import MenuLibrary from "../../../../ComponentLibrary/src/components/Menu";
+import { SIDEBAR_GUTTER_CLASS } from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
+import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle";
 
 /**
- * Classes of the section wrapper. Open, it adds no side padding, so the row lines up with the menu entries.
+ * Classes of the section wrapper. Open, it takes the sidebar gutter like a top-level menu section, so the row
+ * and its chips keep the same 12px on both sides as the menu entries and the search box.
  *
  * @param open whether the sidebar is expanded
  * @returns the class list
  */
+/** Chips start on the gutter, like the search box, and wrap inside it instead of overflowing on the right. */
+export const RECENT_CHIPS_CLASSES = "py-2 flex flex-wrap gap-2 min-w-0";
+
 export const getSectionClassName = (open: boolean): string => {
-  if (open) return "py-2 rounded-lg";
+  if (open) return `py-2 rounded-lg ${SIDEBAR_GUTTER_CLASS}`;
   return "p-2 rounded-lg";
 };
 
 /**
- * Shape of the section button: the same 16px side padding as a top-level menu entry when the sidebar is
- * open, and the round rail button when it is collapsed.
+ * Shape of the section button: the same shape and inner padding as a menu entry when the sidebar is open, and
+ * the round rail button when it is collapsed.
  *
  * @param open whether the sidebar is expanded
  * @returns the class list
  */
 export const getButtonShapeClassName = (open: boolean): string => {
-  if (open) return "rounded-lg px-4 py-1";
+  if (open) return MENU_ROW_SHAPE_CLASSES;
   return "p-2.5 rounded-full justify-center";
 };
 
@@ -195,7 +201,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           )}
         </button>
         {expanded && open && (
-          <div className="py-2 pl-4 flex flex-wrap gap-2 w-full">
+          <div className={RECENT_CHIPS_CLASSES}>
             {localRecentItems.map((recentItem) => (
               <button
                 key={recentItem.id}

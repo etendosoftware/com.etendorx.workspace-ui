@@ -18,6 +18,8 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { MenuTitle } from "../index";
 import { DEFAULT_B64, EXTERNAL_LINK_B64 } from "../constants";
 import { DrawerHighlightContext } from "../../DrawerHighlightContext";
+import { MENU_ROW_SHAPE_CLASSES, getMenuButtonClassName } from "../index";
+import { getMenuRowIndentStyle } from "../../spacing";
 
 const SVG_PREFIX = "data:image/svg+xml;base64,";
 
@@ -45,7 +47,7 @@ const WINDOW_ITEM: Menu = { id: "WIN_ID", name: "Sales Order", type: "Window", w
 const TITLE_TEST_ID = "MenuTitle__WIN_ID";
 
 /** Renders a window entry, optionally highlighted by the keyboard navigation. */
-const renderEntry = (props: { selected?: boolean; isTopLevel?: boolean; highlighted?: boolean } = {}) => {
+const renderEntry = (props: { selected?: boolean; depth?: number; highlighted?: boolean } = {}) => {
   const { highlighted = false, ...rest } = props;
   render(
     <DrawerHighlightContext.Provider value={{ highlightedItemId: highlighted ? WINDOW_ITEM.id : null }}>
@@ -56,12 +58,20 @@ const renderEntry = (props: { selected?: boolean; isTopLevel?: boolean; highligh
 };
 
 describe("MenuTitle layout", () => {
-  it("indents nested entries further than top-level ones", () => {
-    expect(renderEntry({ isTopLevel: false })).toHaveClass("pl-4", "pr-2");
+  it.each([
+    [0, "0.5rem"],
+    [1, "1rem"],
+    [2, "1.5rem"],
+  ])("indents an entry at depth %s on the left only (%s)", (depth, padding) => {
+    const entry = renderEntry({ depth });
+
+    expect(entry).toHaveStyle({ paddingLeft: padding });
+    expect(entry).toHaveClass(...MENU_ROW_SHAPE_CLASSES.split(" "));
   });
 
-  it("keeps the top-level padding", () => {
-    expect(renderEntry({ isTopLevel: true })).toHaveClass("px-4");
+  it("uses the same rounded shape and right padding at every level", () => {
+    expect(getMenuButtonClassName(true)).toContain(MENU_ROW_SHAPE_CLASSES);
+    expect(getMenuRowIndentStyle(0)).toEqual({ paddingLeft: "0.5rem" });
   });
 
   it("leaves a gap between a long label and the chevron", () => {

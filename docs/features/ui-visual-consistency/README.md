@@ -144,9 +144,12 @@ window grid height.
   and grid, the home page 12px. The back arrow of the top bar and the home button of the tab bar start on
   that same edge (`utils/workspaceEdge.ts`). It was 20px, which wasted width.
   The first child tab starts on the left edge of the child toolbar and grid (`SUB_TABS_BAR_PADDING`).
-- Sidebar: "Recently Viewed" lines up with the menu entries; nested entries add 8px per level, also in
-  search results; the keyboard highlight looks like a hovered entry, so only the open window looks
-  selected.
+- Sidebar (`ComponentLibrary/.../Drawer/spacing.ts`): every box keeps the same 12px gutter on both sides
+  (header, search box, "Recently Viewed" and its chips, hover and selected backgrounds). Entries have 8px
+  of inner padding on both sides at every level; each level adds 8px on the left only
+  (`getMenuRowIndentStyle`), so icons step in and chevrons stay in one column. Nested sections used to take
+  8px per level from both sides, which moved the chevrons of deep levels and narrowed their background.
+  The keyboard highlight looks like a hovered entry, so only the open window looks selected.
 - Home: the default layout comes from the SYSTEM rows of `ETMETA_DASHBOARD_WIDGET` in
   `com.etendoerp.metadata`, not from the client. It fills the four columns: Recently Viewed (1), Recent
   Documents (2, document identifiers are long), My Favorites (1), and Notifications across the second
