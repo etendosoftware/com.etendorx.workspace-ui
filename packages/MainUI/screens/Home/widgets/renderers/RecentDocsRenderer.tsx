@@ -22,7 +22,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
-import { WIDGET_CHIP_CLASSES } from "./chipClasses";
+import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 export default function RecentDocsRenderer() {
   const { t } = useTranslation();
@@ -46,7 +46,7 @@ export default function RecentDocsRenderer() {
 
   if (documents.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="RecentDocsRenderer__empty">
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="RecentDocsRenderer__empty">
         {t("dashboard.recentDocuments.empty")}
       </p>
     );

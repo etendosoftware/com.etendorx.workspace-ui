@@ -16,6 +16,7 @@
  */
 
 import type { NotificationWidgetData, NotificationItem } from "@workspaceui/api-client/src/api/dashboard";
+import { WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 const PRIORITY_STYLES: Record<NotificationItem["priority"], string> = {
   normal: "bg-baseline-10 text-baseline-60",
@@ -30,7 +31,7 @@ interface NotificationRendererProps {
 export default function NotificationRenderer({ data }: NotificationRendererProps) {
   if (data.items.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="NotificationRenderer__empty">
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="NotificationRenderer__empty">
         —
       </p>
     );

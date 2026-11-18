@@ -32,7 +32,7 @@ import { findLiveMenuEntry } from "@/utils/menu/legacyMenuEntry";
 import { MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
-import { WIDGET_CHIP_CLASSES } from "./chipClasses";
+import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
@@ -81,7 +81,7 @@ export default function RecentlyViewedRenderer() {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="RecentlyViewedRenderer__empty">
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="RecentlyViewedRenderer__empty">
         {t("dashboard.recentlyViewed.empty")}
       </p>
     );

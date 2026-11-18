@@ -49,12 +49,13 @@ const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
     skeleton: "bg-transparent-neutral-20",
   },
   FAVORITES: {
-    // In dark mode the near-black fill matched the page; the lifted surface and border keep the card visible.
-    card: "bg-[#0A0F1E] dark:bg-(--color-baseline-10) dark:border dark:border-(--ui-line)",
-    title: "text-white",
-    icon: "text-white/50 hover:text-white hover:bg-white/10",
-    iconHover: "text-white/50",
-    skeleton: "bg-white/10",
+    // Light lilac of the accent family in both themes; it replaced a near-black card that clashed with the
+    // light UI. Title, chips and icons keep 4.5:1 (text) and 3:1 (icons) on it.
+    card: "bg-(--ui-widget-favorites-bg) border border-(--color-transparent-neutral-10)",
+    title: "text-baseline-100",
+    icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
+    iconHover: "text-baseline-50",
+    skeleton: "bg-transparent-neutral-10",
   },
 };
 
