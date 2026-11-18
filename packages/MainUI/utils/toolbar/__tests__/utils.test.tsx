@@ -77,6 +77,38 @@ describe("Toolbar utils createButtonByType", () => {
       expect(result.disabled).toBe(true);
     });
 
+    describe("while the save is running or waiting for the callouts (ETP-6315)", () => {
+      const savingState = { isSaving: true, isCalloutLoading: true, isDocumentProcessing: false };
+      const translate = ((key: string) => (key === "form.saving" ? "Saving..." : key)) as never;
+
+      it("disables SAVE and says it is saving", () => {
+        const result = createButtonByType({
+          ...defaultProps,
+          button: makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SAVE),
+          saveButtonState: savingState,
+          hasFormChanges: true,
+          t: translate,
+        });
+
+        expect(result.disabled).toBe(true);
+        expect(result.iconText).toBe("Saving...");
+      });
+
+      it("shows the normal label again once the save ends", () => {
+        const button = makeButtonMetadata(TOOLBAR_BUTTONS_ACTIONS.SAVE);
+        const result = createButtonByType({
+          ...defaultProps,
+          button,
+          saveButtonState: { ...savingState, isSaving: false },
+          hasFormChanges: true,
+          t: translate,
+        });
+
+        expect(result.disabled).toBe(false);
+        expect(result.iconText).toBe(button.name);
+      });
+    });
+
     it("does NOT disable SAVE when isDocumentProcessing=false", () => {
       const result = createButtonByType({
         ...defaultProps,

@@ -20,6 +20,7 @@ import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { NOT_TABBABLE } from "@/utils/form/focus";
+import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface DatetimeSelectorProps {
   field: Field;
@@ -187,7 +188,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
         />
         <div
           className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 pointer-events-none z-10 flex items-center justify-center ${
-            isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
+            isFocused && !isReadOnly ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)"
           }`}>
           <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid={`CalendarIcon__${field.id}`} />
         </div>

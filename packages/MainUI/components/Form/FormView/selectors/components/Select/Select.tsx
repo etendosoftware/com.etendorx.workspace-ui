@@ -27,6 +27,7 @@ import DropdownPortal from "@/components/Form/FormView/selectors/components/Sele
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
+import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 const resolveOptionColor = (color?: string) => {
   if (!color) return { tagColor: undefined, textColor: undefined };
@@ -117,15 +118,15 @@ function SelectCmp({
   const clearButtonClassNames = useMemo(() => {
     const baseClasses =
       "mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded";
-    const textColorClass =
-      isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+    // On the light active background the icon takes the dark text color of the field, in both themes
+    const textColorClass = isFocused || isOpen ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)";
     return `${baseClasses} ${textColorClass}`;
   }, [isFocused, isOpen]);
 
   const chevronClassNames = useMemo(() => {
     const baseClasses = "w-5 h-5 transition-transform";
     const isActiveState = isFocused || isOpen;
-    const colorClass = isActiveState ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+    const colorClass = isActiveState ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)";
     const rotationClass = isActiveState ? "rotate-180" : "";
     return `${baseClasses} ${colorClass} ${rotationClass}`;
   }, [isFocused, isOpen]);

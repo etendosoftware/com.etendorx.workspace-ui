@@ -19,8 +19,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { useLanguage } from "@/contexts/language";
 import { evaluateMathExpression, isMathExpression } from "@/utils/form/mathExpression";
+import { isSameNumericValue } from "@/utils/form/numericValue";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
+import { rejectsNegativeValues } from "../utils/validationUtils";
 
 /** Decimal separator of the user's language, the same rule the form view's numeric fields use. */
 export const getDecimalSeparator = (language?: string | null): string => {
@@ -82,6 +84,14 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   // sync effect below because it is already focused, so an empty seed left it blank (the Line No. default).
   const [localValue, setLocalValue] = useState<string>(() => formatNumberForInput(value));
   const [validationError, setValidationError] = useState<string>("");
+  // The last value this editor handed to its row. While the input has the focus, the same value coming
+  // back is the echo of the user's own typing and must not be reformatted; any other value was set from
+  // outside (a callout) and must be shown.
+  const lastEmittedRef = useRef<number | null | undefined>(undefined);
+  const emitChange = (next: number | null) => {
+    lastEmittedRef.current = next;
+    onChange(next);
+  };
   const decimalSeparator = getDecimalSeparator(useLanguage().language);
 
   // Keyboard navigation hook
@@ -96,9 +106,13 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
   // Integer columns (reference 11) never accept decimals, as in Classic.
   const isInteger = (field as { column?: { reference?: string } }).column?.reference === INTEGER_REFERENCE;
 
-  // Auto-focus only when shouldAutoFocus is true
+  // Auto-focus only when shouldAutoFocus is true, and only once: `setFocused` is a new function on every render, so
+  // without the flag this effect ran again after each keystroke and selected the whole text, and each digit typed
+  // replaced the previous one ("45" ended up as "5")
+  const hasInitialFocus = useRef(false);
   useEffect(() => {
-    if (inputRef.current && !disabled && shouldAutoFocus) {
+    if (inputRef.current && !disabled && shouldAutoFocus && !hasInitialFocus.current) {
+      hasInitialFocus.current = true;
       inputRef.current.focus();
       // Select all text for easy replacement
       inputRef.current.select();
@@ -107,15 +121,24 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
   }, [shouldAutoFocus, disabled, setFocused]);
 
-  // Sync prop `value` → `localValue` when the input is NOT being edited.
+  // Sync prop `value` → `localValue`, except for the echo of what the user is typing.
   // The input is uncontrolled-during-editing on purpose: `parseInputValue`
   // returns the parsed number on every keystroke, and the formatter
   // (`formatNumberForInput`) would round-trip intermediate states like "01"
-  // back to "1" mid-typing, stomping the user's input. Guarding on
-  // `document.activeElement` keeps formatting deferred to `handleBlur`.
+  // back to "1" mid-typing, stomping the user's input. So, while the input has the focus,
+  // only a value other than the one this editor emitted is applied: a callout that fills in
+  // the cell (the line amount after a price change) while the focus has already moved here
+  // must show its value, or the cell keeps a stale number the row then saves.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a change of the value syncs the input
   useEffect(() => {
-    if (typeof document !== "undefined" && document.activeElement === inputRef.current) {
+    const isEditing = typeof document !== "undefined" && document.activeElement === inputRef.current;
+    if (isEditing && lastEmittedRef.current !== undefined && isSameNumericValue(value, lastEmittedRef.current)) {
       return;
+    }
+    if (isEditing && lastEmittedRef.current === undefined) {
+      // Focused without having typed anything: nothing of the user's to protect, but the mount value is
+      // already shown, so only a different value needs to replace it
+      if (formatNumberForInput(value) === localValue) return;
     }
     setLocalValue(formatNumberForInput(value));
   }, [value]);
@@ -147,7 +170,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
 
     // Additional validation for quantity fields
-    if (isQuantity && num < 0) {
+    if (rejectsNegativeValues(field) && num < 0) {
       setValidationError("Quantity cannot be negative");
       return null;
     }
@@ -179,7 +202,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     }
 
     const parsedValue = parseInputValue(newValue);
-    onChange(parsedValue);
+    emitChange(parsedValue);
   };
 
   const handleBlur = () => {
@@ -191,7 +214,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
         setValidationError((current) => current || "Invalid expression");
       } else {
         setLocalValue(String(parsed));
-        onChange(parsed);
+        emitChange(parsed);
       }
       onBlur();
       return;
@@ -308,7 +331,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     const parsedValue = parseInputValue(String(newNum));
     if (parsedValue !== null) {
       setLocalValue(String(newNum));
-      onChange(parsedValue);
+      emitChange(parsedValue);
     }
   };
 

@@ -67,6 +67,33 @@ describe("validationUtils", () => {
         expect(validateFieldValue(qtyField, 0)).toBeUndefined();
         expect(validateFieldValue(qtyField, 10)).toBeUndefined();
       });
+
+      describe("a Number column (reference 22), like Discount % (ETP-6334)", () => {
+        const discountField = makeField({
+          type: FieldType.QUANTITY,
+          name: "Discount",
+          column: { reference: "22" } as Field["column"],
+        });
+
+        it("accepts a negative value, which a callout sets when the price is above the list price", () => {
+          expect(validateFieldValue(discountField, -50)).toBeUndefined();
+          expect(validateFieldRealTime(discountField, -50, { showTypingErrors: true })).toEqual({ isValid: true });
+        });
+
+        it("still has to be a number", () => {
+          expect(validateFieldValue(discountField, "abc")).toContain("valid number");
+        });
+      });
+
+      it("still rejects a negative value for a Quantity column (reference 29)", () => {
+        const orderedQuantity = makeField({
+          type: FieldType.QUANTITY,
+          name: "Ordered Quantity",
+          column: { reference: "29" } as Field["column"],
+        });
+
+        expect(validateFieldValue(orderedQuantity, -1)).toContain("cannot be negative");
+      });
     });
 
     describe("date validation", () => {
@@ -228,6 +255,26 @@ describe("validationUtils", () => {
 
     it("should return empty record for no errors", () => {
       expect(validationErrorsToRecord([])).toEqual({});
+    });
+  });
+
+  describe("a required audit field the user cannot fill in (ETP-6334)", () => {
+    // In the Sales Invoice lines tab the field is titled "Creation Date": only its property name says what it is
+    const creationDate = makeField({
+      name: "Creation Date",
+      hqlName: "creationDate",
+      type: FieldType.TEXT,
+      isMandatory: true,
+    } as Partial<Field>);
+
+    it("does not stop a new row from being saved", () => {
+      expect(validateNewRowForSave([creationDate], {} as EntityData).isValid).toBe(true);
+    });
+
+    it("still requires an ordinary mandatory field", () => {
+      const required = makeField({ name: "Notes", hqlName: "notes", type: FieldType.TEXT, isMandatory: true });
+
+      expect(validateNewRowForSave([creationDate, required], {} as EntityData).isValid).toBe(false);
     });
   });
 

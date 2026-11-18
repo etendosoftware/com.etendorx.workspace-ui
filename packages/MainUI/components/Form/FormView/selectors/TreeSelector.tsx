@@ -46,6 +46,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
 import { TREE_TRIGGER_ACTIONS, buildDropdownPortalSelector, getTreeTriggerAction } from "@/utils/form/keyboard";
+import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface TreeSelectorProps {
   field: Field;
@@ -331,7 +332,8 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
   const chevronClassNames = useMemo(() => {
     const base = "w-5 h-5 transition-transform";
     const isActive = isFocused || isOpen;
-    return `${base} ${isActive ? "text-(--color-baseline-100) rotate-180" : "text-(--color-transparent-neutral-60)"}`;
+    const stateClasses = isActive ? `${ACTIVE_ICON_COLOR} rotate-180` : "text-(--color-transparent-neutral-60)";
+    return `${base} ${stateClasses}`;
   }, [isFocused, isOpen]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
@@ -437,7 +439,7 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
                 onClick={handleClear}
                 onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
                 className={`mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded ${
-                  isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
+                  isFocused || isOpen ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)"
                 }`}
                 tabIndex={NOT_TABBABLE}
                 aria-label="Clear selection">

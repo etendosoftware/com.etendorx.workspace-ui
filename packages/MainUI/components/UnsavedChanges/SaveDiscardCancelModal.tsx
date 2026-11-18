@@ -36,6 +36,8 @@ export interface SaveDiscardCancelModalProps {
   saveLabel?: string;
   /** Label override, e.g. "Discard changes" vs "Close window". */
   discardLabel?: string;
+  /** Leaves the discard button out, for a prompt that only asks whether to save and continue. */
+  hideDiscard?: boolean;
 }
 
 type OpenModalProps = Omit<SaveDiscardCancelModalProps, "open">;
@@ -53,6 +55,7 @@ function OpenSaveDiscardCancelModal({
   title,
   saveLabel,
   discardLabel,
+  hideDiscard,
 }: OpenModalProps) {
   const { t } = useTranslation();
   const { sx } = useUnsavedChangesStyles();
@@ -62,9 +65,11 @@ function OpenSaveDiscardCancelModal({
       <Button sx={sx.secondaryButton} onClick={onCancel} data-testid="SaveDiscardCancelModal__cancel">
         {t("common.cancel")}
       </Button>
-      <Button sx={sx.discardButton} onClick={onDiscard} data-testid="SaveDiscardCancelModal__discard">
-        {discardLabel ?? t("unsavedChanges.discardChanges")}
-      </Button>
+      {!hideDiscard && (
+        <Button sx={sx.discardButton} onClick={onDiscard} data-testid="SaveDiscardCancelModal__discard">
+          {discardLabel ?? t("unsavedChanges.discardChanges")}
+        </Button>
+      )}
       <Button sx={sx.primaryButton} onClick={onSave} disabled={isSaving} data-testid="SaveDiscardCancelModal__save">
         {saveLabel ?? t("unsavedChanges.saveChanges")}
       </Button>

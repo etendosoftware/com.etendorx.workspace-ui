@@ -136,6 +136,21 @@ function validateLinkField(field: Field, value: unknown): string | undefined {
   return undefined;
 }
 
+/** AD reference of "Number" columns (Discount %, rates...): a signed value, unlike a quantity. */
+const NUMBER_REFERENCE = "22";
+
+/**
+ * Whether a negative value is rejected for the field. Only quantities are: a "Number" column (reference 22,
+ * mapped to the same field type) can be negative, as in the form view and in Classic. A callout can fill one
+ * with a negative value (the discount when the price is above the list price), and that is a valid line.
+ */
+export function rejectsNegativeValues(field: Field): boolean {
+  if (field.type !== FieldType.QUANTITY) {
+    return false;
+  }
+  return (field as { column?: { reference?: string } }).column?.reference !== NUMBER_REFERENCE;
+}
+
 /**
  * Validates numeric field values
  */
@@ -156,7 +171,7 @@ function validateNumericField(field: Field, value: unknown): string | undefined 
   }
 
   // Quantity fields cannot be negative
-  if (field.type === FieldType.QUANTITY && numValue < 0) {
+  if (rejectsNegativeValues(field) && numValue < 0) {
     return `${field.description || field.name} cannot be negative`;
   }
 
@@ -309,6 +324,19 @@ const getRowValueKey = (field: Field | Column): string => {
   return field.name;
 };
 
+/** Names the row and the audit columns go by, which the grid never asks the user for. */
+const SYSTEM_COLUMN_NAMES = ["id", "actions", "creationDate", "createdBy", "updated", "updatedBy"];
+
+/**
+ * Whether the field is one the system fills in (the id and the audit columns). The check looks at the name the
+ * grid shows and at the property name: in a tab where the field is titled "Creation Date", only the property
+ * (`creationDate`) says what it is.
+ */
+const isSystemColumn = (field: Field | Column): boolean => {
+  const hqlName = (field as { hqlName?: string }).hqlName;
+  return SYSTEM_COLUMN_NAMES.includes(field.name) || (!!hqlName && SYSTEM_COLUMN_NAMES.includes(hqlName));
+};
+
 /**
  * Validates a new row before saving, with the form view's rule (useFormValidation): only fields
  * that are displayed, not read-only and not hidden by their display logic are required.
@@ -322,14 +350,7 @@ export function validateNewRowForSave(
   const errors: ValidationError[] = [];
 
   for (const field of fields) {
-    if (
-      field.name === "id" ||
-      field.name === "actions" ||
-      field.name === "creationDate" ||
-      field.name === "createdBy" ||
-      field.name === "updated" ||
-      field.name === "updatedBy"
-    ) {
+    if (isSystemColumn(field)) {
       continue;
     }
     const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
@@ -372,14 +393,7 @@ export function validateExistingRowForSave(
   // For existing rows, only validate fields that have been modified
 
   for (const field of fields) {
-    if (
-      field.name === "id" ||
-      field.name === "actions" ||
-      field.name === "creationDate" ||
-      field.name === "createdBy" ||
-      field.name === "updated" ||
-      field.name === "updatedBy"
-    ) {
+    if (isSystemColumn(field)) {
       continue;
     }
 
@@ -425,14 +439,7 @@ export function validateExistingRowForSave(
 export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: EntityData): boolean {
   return fields.every((field) => {
     // Skip system fields
-    if (
-      field.name === "id" ||
-      field.name === "actions" ||
-      field.name === "creationDate" ||
-      field.name === "createdBy" ||
-      field.name === "updated" ||
-      field.name === "updatedBy"
-    ) {
+    if (isSystemColumn(field)) {
       return true;
     }
 
@@ -563,7 +570,7 @@ function validateNumericFieldRealTime(
   }
 
   // Quantity fields cannot be negative
-  if (field.type === FieldType.QUANTITY && numValue < 0) {
+  if (rejectsNegativeValues(field) && numValue < 0) {
     return {
       isValid: false,
       error: `${field.description || field.name} cannot be negative`,

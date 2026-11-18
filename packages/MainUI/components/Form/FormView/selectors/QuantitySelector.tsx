@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/language";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
 import { useTranslation } from "@/hooks/useTranslation";
 import { evaluateMathExpression, isMathExpression, sanitizeMathExpression } from "@/utils/form/mathExpression";
+import { isSameNumericValue } from "@/utils/form/numericValue";
 
 interface QuantitySelectorProps {
   field: Field;
@@ -82,7 +83,9 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
       setLocalValue(sanitized);
 
       if (sanitized === "") {
-        setValue(fieldName, null, { shouldValidate: true });
+        if (!isSameNumericValue(formValue, null)) {
+          setValue(fieldName, null, { shouldValidate: true });
+        }
         return;
       }
 
@@ -100,11 +103,12 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
 
       const { isValid } = validateNumber(normalizedValue, minValue, maxValue, allowNegative);
 
-      if (isValid) {
+      // The same number typed another way ("2.640" for 2.64) is not an edit
+      if (isValid && !isSameNumericValue(formValue, Number(normalizedValue))) {
         setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
       }
     },
-    [fieldName, min, max, setValue, normalizeDecimalInput, isValidIntermediateValue, allowNegative]
+    [fieldName, formValue, min, max, setValue, normalizeDecimalInput, isValidIntermediateValue, allowNegative]
   );
 
   const handleFocus = useCallback(() => {
@@ -129,8 +133,11 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
       setLocalValue(formatDisplayValue(result));
     }
 
+    // Leaving the field without changing its number is not an edit: the form keeps what it holds
     if (normalizedValue === "" || normalizedValue === "-") {
-      setValue(fieldName, null, { shouldValidate: true });
+      if (!isSameNumericValue(formValue, null)) {
+        setValue(fieldName, null, { shouldValidate: true });
+      }
       return;
     }
     const minValue = min ? Number(min) : undefined;
@@ -138,11 +145,12 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false, isRea
 
     const { isValid } = validateNumber(normalizedValue, minValue, maxValue, allowNegative);
 
-    if (isValid) {
+    if (isValid && !isSameNumericValue(formValue, Number(normalizedValue))) {
       setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
     }
   }, [
     localValue,
+    formValue,
     normalizeDecimalInput,
     getDecimalSeparator,
     formatDisplayValue,

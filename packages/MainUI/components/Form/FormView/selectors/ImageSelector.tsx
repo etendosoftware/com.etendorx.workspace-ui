@@ -373,12 +373,18 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         className="p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
         onClick={() => imageUrl && setShowPreviewModal(true)}
         tabIndex={NOT_TABBABLE}>
-        <img
-          src={imageUrl || ""}
-          alt={field.name || t("image.selector.altText")}
-          className="max-h-[100px] w-auto max-w-full object-contain"
-          data-testid={`ImageSelector__thumbnail__${field.id}`}
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={field.name || t("image.selector.altText")}
+            className="max-h-[100px] w-auto max-w-full object-contain"
+            data-testid={`ImageSelector__thumbnail__${field.id}`}
+          />
+        ) : (
+          // The image id is known but its URL is not ready yet: an <img> with an empty src would make the browser
+          // download the whole page again
+          <Spinner size={28} data-testid={"Spinner__" + field.id} />
+        )}
       </button>
 
       {/* Spinner overlay while uploading */}
