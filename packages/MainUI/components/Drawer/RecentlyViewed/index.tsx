@@ -157,10 +157,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     };
 
     return (
-      <div
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={getSectionClassName(open)}>
+      <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className={getSectionClassName(open)}>
         <button
           type="button"
           onMouseEnter={() => {

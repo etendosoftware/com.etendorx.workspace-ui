@@ -347,7 +347,9 @@ describe("ActionsColumn", () => {
       [false, ["edit-button-test-row-123", "form-button-test-row-123"]],
       [true, ["save-button-test-row-123", "cancel-button-test-row-123"]],
     ])("keeps the row action buttons transparent at rest (editing: %s)", (isEditing, testIds) => {
-      render(<ActionsColumn row={mockRow} isEditing={isEditing} isSaving={false} hasErrors={false} {...mockCallbacks} />);
+      render(
+        <ActionsColumn row={mockRow} isEditing={isEditing} isSaving={false} hasErrors={false} {...mockCallbacks} />
+      );
 
       for (const testId of testIds) {
         expect(screen.getByTestId(testId)).toHaveClass("bg-transparent");

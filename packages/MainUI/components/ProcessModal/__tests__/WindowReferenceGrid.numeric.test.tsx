@@ -47,9 +47,9 @@ describe("WindowReferenceGrid numeric columns", () => {
 
   describe("withColumnReference", () => {
     it("completes the column with the reference the field carries", () => {
-      expect(withColumnReference({ column: { dBColumnName: "GrandTotal" } as never, reference: AMOUNT_REFERENCE })).toEqual(
-        { dBColumnName: "GrandTotal", reference: AMOUNT_REFERENCE }
-      );
+      expect(
+        withColumnReference({ column: { dBColumnName: "GrandTotal" } as never, reference: AMOUNT_REFERENCE })
+      ).toEqual({ dBColumnName: "GrandTotal", reference: AMOUNT_REFERENCE });
     });
 
     it("keeps a column that already has its reference", () => {

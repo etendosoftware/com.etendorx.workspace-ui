@@ -29,7 +29,13 @@ const FIELD_NAME = "businessPartner";
 const FIELD_LABEL = "Business Partner";
 const ACTION_TEST_ID = "field-action";
 
-const FIELD = { id: "bp", hqlName: FIELD_NAME, name: FIELD_LABEL, isMandatory: false, helpComment: "" } as unknown as Field;
+const FIELD = {
+  id: "bp",
+  hqlName: FIELD_NAME,
+  name: FIELD_LABEL,
+  isMandatory: false,
+  helpComment: "",
+} as unknown as Field;
 
 function Harness() {
   const methods = useForm({ defaultValues: { [FIELD_NAME]: "HF" } });

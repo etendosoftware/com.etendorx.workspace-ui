@@ -100,13 +100,7 @@ describe("CellContextMenu", () => {
 
   it("uses the grid text size and a separator that spans the menu", () => {
     render(
-      <CellContextMenu
-        {...defaultProps}
-        canEdit
-        isRowEditing={false}
-        onEditRow={jest.fn()}
-        onInsertRow={jest.fn()}
-      />
+      <CellContextMenu {...defaultProps} canEdit isRowEditing={false} onEditRow={jest.fn()} onInsertRow={jest.fn()} />
     );
 
     const item = screen.getByTestId("edit-row-menu-item");

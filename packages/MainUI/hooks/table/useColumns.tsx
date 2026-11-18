@@ -393,9 +393,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className={`${CELL_LINK_CLASSES} ${
-                  usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""
-                }`}
+                className={`${CELL_LINK_CLASSES} ${usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""}`}
                 onClick={(e) => {
                   const selectedId = String(selectedRecordId ?? "");
                   console.debug("[useColumns] Reference cell clicked:", {

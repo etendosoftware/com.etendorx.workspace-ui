@@ -446,17 +446,13 @@ export default function AddWidgetDialog({
                         </div>
                         {/* Already added badge */}
                         {isAlreadyAdded && !isUnavailable && (
-                          <div
-                            className={STATUS_BADGE_CLASSES}
-                            aria-label={t("dashboard.addWidget.alreadyAdded")}>
+                          <div className={STATUS_BADGE_CLASSES} aria-label={t("dashboard.addWidget.alreadyAdded")}>
                             {t("dashboard.addWidget.alreadyAdded")}
                           </div>
                         )}
                         {/* Unavailable badge */}
                         {isUnavailable && (
-                          <div
-                            className={STATUS_BADGE_CLASSES}
-                            aria-label={t("dashboard.addWidget.unavailable")}>
+                          <div className={STATUS_BADGE_CLASSES} aria-label={t("dashboard.addWidget.unavailable")}>
                             {t("dashboard.addWidget.unavailable")}
                           </div>
                         )}

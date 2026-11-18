@@ -21,7 +21,10 @@ import { type Theme, useTheme, type SxProps } from "@mui/material";
 export type TagSize = "small" | "medium";
 
 /** Dimensions per size: `small` matches the text of dense rows such as grid cells. */
-const TAG_DIMENSIONS: Record<TagSize, { height: string; padding: string; fontSize: string; fontWeight: number; lineHeight: string }> = {
+const TAG_DIMENSIONS: Record<
+  TagSize,
+  { height: string; padding: string; fontSize: string; fontWeight: number; lineHeight: string }
+> = {
   medium: { height: "1.5rem", padding: "0 0.5rem", fontSize: "0.875rem", fontWeight: 500, lineHeight: "1.25rem" },
   small: { height: "1.25rem", padding: "0 0.375rem", fontSize: "0.75rem", fontWeight: 400, lineHeight: "1rem" },
 };

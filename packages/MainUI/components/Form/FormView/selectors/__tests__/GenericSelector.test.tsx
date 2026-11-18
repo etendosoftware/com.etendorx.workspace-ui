@@ -38,8 +38,8 @@ jest.mock("../TableDirSelector", () => {
   const { useFieldTrailingAction } = jest.requireActual("../components/Select/FieldTrailingAction");
   const TableDirSelector = () => <div data-testid="TableDirSelector">TableDirSelector{useFieldTrailingAction()}</div>;
   return {
-  TableDirSelector,
-};
+    TableDirSelector,
+  };
 });
 
 jest.mock("../DateSelector", () => ({

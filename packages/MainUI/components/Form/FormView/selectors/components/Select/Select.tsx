@@ -22,7 +22,9 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import { formatPickListCell } from "@/utils/form/pickListColumns";
-import OptionItem, { SELECTED_OPTION_TEXT_CLASSES } from "@/components/Form/FormView/selectors/components/Select/OptionItem";
+import OptionItem, {
+  SELECTED_OPTION_TEXT_CLASSES,
+} from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";

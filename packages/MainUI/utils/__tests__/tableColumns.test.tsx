@@ -386,7 +386,12 @@ describe("tableColumns", () => {
       it("uses the dense tag size, which matches the grid text", () => {
         const booleanField = createFields([{ name: "active", hqlName: "active", column: { reference: "20" } }]);
         const listField = createFields([
-          { name: "status", hqlName: "status", column: { reference: "17" }, refList: [{ value: "A", label: "Active" }] },
+          {
+            name: "status",
+            hqlName: "status",
+            column: { reference: "17" },
+            refList: [{ value: "A", label: "Active" }],
+          },
         ]);
 
         expect(tagProps(parseColumns(booleanField)[0].accessorFn?.({ active: true })).size).toBe("small");

@@ -38,7 +38,14 @@ const renderPopup = (isExpanded = false) => {
     onSelectAssistant: jest.fn(),
     onSendMessage: jest.fn(),
     onResetConversation: jest.fn(),
-    translations: { copilotProfile: PROFILE_LABEL, backToSelection: "", minimize: "", maximize: "", close: "", contextText: "" },
+    translations: {
+      copilotProfile: PROFILE_LABEL,
+      backToSelection: "",
+      minimize: "",
+      maximize: "",
+      close: "",
+      contextText: "",
+    },
   } as unknown as CopilotPopupProps;
   render(<CopilotPopup {...props} />);
   const panel = screen.getByText(PROFILE_LABEL).closest(".flex-col") as HTMLElement;

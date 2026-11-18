@@ -102,7 +102,16 @@ const renderListField = (value: Record<string, unknown>, column: Field) => {
   const config = statusConfig[itemValue] || DEFAULT_STATUS_CONFIG;
   const { tagColor, textColor } = processTagColors(color);
 
-  return <Tag size="small" icon={config.icon} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+  return (
+    <Tag
+      size="small"
+      icon={config.icon}
+      label={label}
+      tagColor={tagColor}
+      textColor={textColor}
+      data-testid="Tag__2b5175"
+    />
+  );
 };
 
 // Helper function to get raw cell value

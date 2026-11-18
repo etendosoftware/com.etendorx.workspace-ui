@@ -317,7 +317,8 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
     }
     const active = "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)";
     const hover = "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
-    const focus = "focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none cursor-pointer";
+    const focus =
+      "focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none cursor-pointer";
     const interactive = isFocused || isOpen ? active : hover;
     return `${base} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactive} ${focus}`;
   }, [isReadOnly, isFocused, isOpen]);
@@ -402,7 +403,9 @@ function TreeSelectorCmp({ field, isReadOnly }: TreeSelectorProps) {
             {!node.hasChildren && <span className="w-4 flex-shrink-0" />}
             <span className={`truncate ${getNodeTextClass(selectable, isSelected)}`}>{identifier}</span>
           </span>
-          {isSelected && <CheckIcon className={`fade-in-left flex-shrink-0 ${SELECTED_CHECK_CLASSES}`} height={16} width={16} />}
+          {isSelected && (
+            <CheckIcon className={`fade-in-left flex-shrink-0 ${SELECTED_CHECK_CLASSES}`} height={16} width={16} />
+          )}
         </li>
       );
     });
