@@ -21,6 +21,8 @@ the `html[data-theme="dark"]` block. Tokens added by this task:
 |---|---|---|---|
 | `--ui-field-focus-bg` / `-fg` / `-border` | `#ece8f6` / `#2a1757` / `#2a1757` | `#2d2650` / `#c8bff4` / `#8b7bdc` | Focused or open form field |
 | `--ui-banner-accent`, `--ui-banner-cta`, `--ui-banner-cta-hover` | same in both themes | — | "What's new" banner, whose surface is dark in both themes |
+| `--ui-switch-off` | `#74777f` | `#8b8e9a` | Outline and thumb of an "off" switch (4.5:1 on the card) |
+| `--ui-widget-favorites-bg` | `#e9e4fa` | `#2d2650` | "My Favorites" home widget |
 
 Text that needs to read on the light lilac header or the footer uses `--ui-text-soft`, not
 `--ui-text-muted` (3.2:1 on the header gradient).
@@ -28,9 +30,11 @@ Text that needs to read on the light lilac header or the footer uses `--ui-text-
 ### Primary actions use the accent
 
 The filled `Button` and the confirm button of `BasicModal` (used by `ConfirmModal` and `StatusModal`)
-use the accent (`--ui-accent` / `dynamicColor.main`) instead of black. Switches use the accent when
-on and `baselineColor.neutral[50]` / `--color-baseline-50` when off, which keeps the off track above
-3:1 on the card.
+use the accent (`--ui-accent` / `dynamicColor.main`) instead of black.
+
+Switches (form `Switch` and the `Toggle` of the columns panel) differ by fill, not only by the thumb
+position: "on" is a track filled with the accent and a white thumb; "off" is an empty track with a grey
+outline and a smaller grey thumb (`--ui-switch-off`). A filled bluish "off" track read as "on".
 
 ### Text that does not fit ends in an ellipsis
 
@@ -39,6 +43,9 @@ on and `baselineColor.neutral[50]` / `--color-baseline-50` when off, which keeps
   fallback of the color-tag wrapper in `useColumns` and the link buttons of reference columns.
 - Text inputs reserve 44px on the right for the clear icon and use `text-ellipsis`.
 - Home widget chips stay on one line and show the full name in their `title`.
+- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on every card colour).
+  "My Favorites" uses the same chips as the other list widgets on a light lilac card; it was a
+  near-black card that did not match the rest of the home.
 
 ### Numbers align to the right, header included
 
@@ -77,8 +84,21 @@ the same ink as the other database icons. They render through the same `<img cla
 so hover, disabled and dark mode keep working through the existing global rules. Any other button,
 including module buttons, keeps its database icon. Refresh no longer has a filled circle.
 
+### Modals and panels are flat
+
+Modals and panels use the flat card surface (`--ui-card-bg`) in both themes. The status and confirm
+modals, the process result card and the Copilot panel had a tinted gradient (green, red, yellow,
+pastel); the type of message is now shown by the round coloured icon of `StatusIconBadge` (a warning
+badge in `ConfirmModal`) and by the coloured title of the process result.
+
+The Copilot panel is anchored to the content area: from below the top bar to above the status bar, on
+the 16px right margin.
+
 ### Menus, tooltips and panels
 
+- Every round toolbar icon button carries `toolbar-icon-button` (`ToolbarSection`); a global rule turns
+  its icon white on the dark hover fill, for every action, including Personalize Form, Tab control and
+  module buttons. Refresh is transparent at rest but keeps the accent fill on hover.
 - Tooltips hide when their trigger is pressed (`Tooltip`), so they never cover the menu or panel the
   button opens.
 - `Menu` keeps a menu taller than the room next to its button attached to it and limits its height
@@ -92,12 +112,29 @@ including module buttons, keeps its database icon. Refresh no longer has a fille
 - Below 1440px the Help panel floats over the workspace instead of pushing it, which squeezed the
   header, toolbar and form at 1280px.
 
+### Process grids look like the window grid
+
+The grids of process modals (`WindowReferenceGrid`) use the styles of the window grid
+(`components/Table/styles.ts`) through `ProcessModal/processGridStyles.ts`: two-band header (labels,
+then filters), 32px rows, 13px text, column actions and sort icons shown on hover, empty filters at
+rest and the selected row colour. Their filters were already the same components (`useColumns`).
+Differences kept on purpose: the grid has a fixed height and a closed frame, because it stands alone in
+the modal, and a small bar above it (selection count, add row, implicit filter, filters, columns,
+fullscreen) in the toolbar button style, since a modal has no window toolbar. Summary functions and
+grouping of the window grid are not offered there. The density toggle was removed: rows keep the
+window grid height.
+
 ### Other layout details
 
-- Header buttons, including the theme toggle, are 40px with the same 4px gap.
+- Header buttons, including the theme toggle, are 40px with the same 4px gap and 24px icons.
+- The back arrow of the top bar and the home button of the tab bar start on the left edge of the window
+  content: its toolbar, grid and child panel (`WORKSPACE_EDGE_PADDING_CLASS`, `utils/workspaceEdge.ts`).
+  The first child tab starts on the left edge of the child toolbar and grid (`SUB_TABS_BAR_PADDING`).
 - Sidebar: "Recently Viewed" lines up with the menu entries; nested entries add 8px per level, also in
   search results; the keyboard highlight looks like a hovered entry, so only the open window looks
   selected.
+- Home: the default order (Recently Viewed, Recent Documents, My Favorites) comes from the SYSTEM rows
+  of `ETMETA_DASHBOARD_WIDGET` in `com.etendoerp.metadata`, not from the client.
 - Home: widgets move left into columns left empty by hidden or unavailable widgets
   (`closeHorizontalGaps`, render only; positions are stored only when the user moves a widget).
 - The status bar of the form wraps instead of hiding the fields past the right edge.
@@ -125,6 +162,6 @@ None in behavior. Visual changes only.
 | Grid | `hooks/table/useColumns.tsx`, `utils/tableColumns.tsx`, `utils/table/numericAlignment.ts`, `components/Table/{styles.ts,ActionsColumn.tsx}`, `utils/menuClasses.ts` |
 | Toolbar | `utils/toolbar/actionIcons.ts`, `components/Toolbar/{TopToolbar,ToolbarSection,SearchPortal}` |
 | Form | `selectors/components/FieldLabelRow.tsx`, `selectors/components/Select/FieldTrailingAction.tsx`, `selectors/{BaseSelector,GenericSelector}.tsx`, `FormView/StatusBar.tsx` |
-| Modals | `utils/form/selectors/selectorColumns.tsx`, `ProcessModal/WindowReferenceGrid.tsx`, `ComponentLibrary/.../Modal/CustomModal.tsx` |
-| Shell | `components/{layout,ThemeToggle}.tsx`, `HelpDrawer/HelpDrawer.tsx`, `Drawer/RecentlyViewed`, `ComponentLibrary/.../Drawer/MenuTitle` |
+| Modals | `utils/form/selectors/selectorColumns.tsx`, `ProcessModal/{WindowReferenceGrid.tsx,processGridStyles.ts}`, `ProcessModal/Custom/shared/ProcessModalShared.tsx`, `ComponentLibrary/.../{Modal/CustomModal.tsx,StatusModal}` |
+| Shell | `components/{layout,ThemeToggle}.tsx`, `utils/workspaceEdge.ts`, `NavigationTabs/WindowTabs.tsx`, `window/SubTabsSwitch.tsx`, `ComponentLibrary/.../Copilot/CopilotPopup`, `HelpDrawer/HelpDrawer.tsx`, `Drawer/RecentlyViewed`, `ComponentLibrary/.../Drawer/MenuTitle` |
 | Home | `screens/Home/widgets/{DashboardGrid,WidgetCard,CTABanner,AddWidgetDialog}.tsx`, `renderers/chipClasses.ts` |
