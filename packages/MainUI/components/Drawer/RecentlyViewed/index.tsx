@@ -27,6 +27,29 @@ import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/D
 import { CLOCK_B64 } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle/constants";
 import MenuLibrary from "../../../../ComponentLibrary/src/components/Menu";
 
+/**
+ * Classes of the section wrapper. Open, it adds no side padding, so the row lines up with the menu entries.
+ *
+ * @param open whether the sidebar is expanded
+ * @returns the class list
+ */
+export const getSectionClassName = (open: boolean): string => {
+  if (open) return "py-2 rounded-lg";
+  return "p-2 rounded-lg";
+};
+
+/**
+ * Shape of the section button: the same 16px side padding as a top-level menu entry when the sidebar is
+ * open, and the round rail button when it is collapsed.
+ *
+ * @param open whether the sidebar is expanded
+ * @returns the class list
+ */
+export const getButtonShapeClassName = (open: boolean): string => {
+  if (open) return "rounded-lg px-4 py-1";
+  return "p-2.5 rounded-full justify-center";
+};
+
 export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ onClick, items, getTranslatedName, open, windowId }, ref) => {
     const [expanded, setExpanded] = useState<boolean>(false);
@@ -137,7 +160,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`${open && expanded && item.children && "m-0 p-1 pb-0"} p-2 rounded-lg`}>
+        className={getSectionClassName(open)}>
         <button
           type="button"
           onMouseEnter={() => {
@@ -148,8 +171,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           }}
           onClick={handleClick}
           className={`flex transition-colors duration-300 cursor-pointer w-full items-center
-            ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
-             text-xl justify-between p-1 gap-1 ${"text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)"}`}>
+            ${getButtonShapeClassName(open)}
+             text-xl justify-between gap-2 text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)`}>
           <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
             <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
               <img
@@ -160,7 +183,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
             </div>
             {open && (
               <div className="relative group flex items-center py-1.5">
-                <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+                <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                   {item.name}
                 </span>
               </div>
@@ -168,7 +191,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           </div>
 
           {open && item.children && (
-            <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+            <div
+              className={`shrink-0 transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
               <ChevronDown data-testid="ChevronDown__eddcab" />
             </div>
           )}

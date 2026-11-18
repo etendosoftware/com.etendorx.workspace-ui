@@ -24,9 +24,11 @@ import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
 import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
 
-/** Ring painted on the entry the keyboard navigation is currently on. */
-// Softer in dark: the full-strength lilac ring drew more attention than the entry that is actually open
-const MENU_ITEM_HIGHLIGHT_CLASSES = "ring-2 ring-inset ring-blue-500 dark:ring-blue-500/40";
+/**
+ * Entry the keyboard navigation is currently on. It looks like a hovered entry, so the open window keeps the
+ * only "selected" style of the sidebar.
+ */
+const MENU_ITEM_HIGHLIGHT_CLASSES = "bg-(--ui-hover) text-(--ui-text)";
 
 function getIconSrc(item: { icon?: string | null; type?: string }): string {
   if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;
@@ -53,11 +55,12 @@ function getMenuButtonClassName(
 ): string {
   const base = "relative flex items-center transition-colors duration-200 cursor-pointer";
   if (open) {
-    const shape = isTopLevel ? "px-4 py-0.5" : "rounded-lg px-2 py-0.5";
+    // Nested entries add 8px per level on top of their parent's margin, so every level is indented.
+    const shape = isTopLevel ? "px-4 py-0.5" : "rounded-lg pl-4 pr-2 py-0.5";
     let state = "text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)";
     if (selected) state = "bg-(--ui-selected-bg) text-(--ui-text) font-medium";
     else if (isParentActive) state = "text-(--ui-text) font-medium hover:bg-(--ui-hover)";
-    return `${base} text-xl justify-between w-full ${shape} ${state}`;
+    return `${base} text-xl justify-between gap-2 w-full ${shape} ${state}`;
   }
   const rail = selected || isParentActive ? "bg-(--ui-selected-bg)" : "hover:bg-(--ui-hover)";
   return `${base} p-2.5 rounded-full ${rail}`;
@@ -92,7 +95,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
     const canToggle = Boolean(isExpandable && item.children?.length);
     const isNavigable = canToggle || isOpenableMenuItem(item);
     const isHighlighted = Boolean(isNavigable && highlightCtx && highlightCtx.highlightedItemId === item.id);
-    const highlightClasses = isHighlighted ? MENU_ITEM_HIGHLIGHT_CLASSES : "";
+    const highlightClasses = isHighlighted && !selected ? MENU_ITEM_HIGHLIGHT_CLASSES : "";
 
     useEffect(() => {
       if (!isHighlighted) return;
@@ -166,7 +169,8 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
           )}
         </div>
         {open && item.children && !popperOpen && (
-          <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+          <div
+            className={`shrink-0 transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
             <ChevronDown />
           </div>
         )}
