@@ -22,7 +22,6 @@ the `html[data-theme="dark"]` block. Tokens added by this task:
 | `--ui-field-focus-bg` / `-fg` / `-border` | `#ece8f6` / `#2a1757` / `#2a1757` | `#2d2650` / `#c8bff4` / `#8b7bdc` | Focused or open form field |
 | `--ui-banner-accent`, `--ui-banner-cta`, `--ui-banner-cta-hover` | same in both themes | — | "What's new" banner, whose surface is dark in both themes |
 | `--ui-switch-off` | `#74777f` | `#8b8e9a` | Outline and thumb of an "off" switch (4.5:1 on the card) |
-| `--ui-widget-favorites-bg` | `#e9e4fa` | `#2d2650` | "My Favorites" home widget |
 
 Text that needs to read on the light lilac header or the footer uses `--ui-text-soft`, not
 `--ui-text-muted` (3.2:1 on the header gradient).
@@ -43,9 +42,11 @@ outline and a smaller grey thumb (`--ui-switch-off`). A filled bluish "off" trac
   fallback of the color-tag wrapper in `useColumns` and the link buttons of reference columns.
 - Text inputs reserve 44px on the right for the clear icon and use `text-ellipsis`.
 - Home widget chips stay on one line and show the full name in their `title`.
-- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on every card colour).
-  "My Favorites" uses the same chips as the other list widgets on a light lilac card; it was a
-  near-black card that did not match the rest of the home.
+- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on the card).
+- Every home widget uses the same card surface (`WIDGET_CARD_THEME`) in both themes; a coloured icon of
+  its type (`WidgetTypeIcon`, same icons and colours as the "Add widget" dialog) tells them apart.
+  Coloured cards (near-black, then lilac favorites, yellow recent documents) blended with the page
+  gradient or clashed with it.
 
 ### Numbers align to the right, header included
 
@@ -83,6 +84,18 @@ table and form glyphs. `utils/toolbar/actionIcons.ts` replaces them, by action, 
 the same ink as the other database icons. They render through the same `<img class="icon-base64">`,
 so hover, disabled and dark mode keep working through the existing global rules. Any other button,
 including module buttons, keeps its database icon. Refresh no longer has a filled circle.
+
+### Disabled filled buttons stay readable
+
+New, Save Changes and Available Process were the accent faded to 20% when disabled (about 1.3:1). They
+now turn into a neutral chip with soft text and a dark icon (`PRIMARY_DISABLED_CLASSES`,
+`utils/toolbar/constants.ts`), above 6:1 in both themes.
+
+### Option tiles keep their size
+
+The tiles of Quick Setup (interface scale, favicon badge) keep a 1px border in both states; the selected
+one adds an inset ring and the field focus surface (`--ui-field-focus-bg`), which is dark in dark mode,
+so it does not look bigger and the colour swatches keep their contrast.
 
 ### Modals and panels are flat
 
@@ -127,14 +140,17 @@ window grid height.
 ### Other layout details
 
 - Header buttons, including the theme toggle, are 40px with the same 4px gap and 24px icons.
-- The back arrow of the top bar and the home button of the tab bar start on the left edge of the window
-  content: its toolbar, grid and child panel (`WORKSPACE_EDGE_PADDING_CLASS`, `utils/workspaceEdge.ts`).
+- Content starts 12px from the menu: windows have 8px of side padding plus the 4px inset of their toolbar
+  and grid, the home page 12px. The back arrow of the top bar and the home button of the tab bar start on
+  that same edge (`utils/workspaceEdge.ts`). It was 20px, which wasted width.
   The first child tab starts on the left edge of the child toolbar and grid (`SUB_TABS_BAR_PADDING`).
 - Sidebar: "Recently Viewed" lines up with the menu entries; nested entries add 8px per level, also in
   search results; the keyboard highlight looks like a hovered entry, so only the open window looks
   selected.
-- Home: the default order (Recently Viewed, Recent Documents, My Favorites) comes from the SYSTEM rows
-  of `ETMETA_DASHBOARD_WIDGET` in `com.etendoerp.metadata`, not from the client.
+- Home: the default layout comes from the SYSTEM rows of `ETMETA_DASHBOARD_WIDGET` in
+  `com.etendoerp.metadata`, not from the client. It fills the four columns: Recently Viewed (1), Recent
+  Documents (2, document identifiers are long), My Favorites (1), and Notifications across the second
+  row, which is useful to any user and role.
 - Home: widgets move left into columns left empty by hidden or unavailable widgets
   (`closeHorizontalGaps`, render only; positions are stored only when the user moves a widget).
 - The status bar of the form wraps instead of hiding the fields past the right edge.
