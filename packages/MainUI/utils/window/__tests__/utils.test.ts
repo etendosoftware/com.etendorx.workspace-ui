@@ -988,6 +988,43 @@ describe("isSrOneToOneExtension", () => {
 
     expect(isSrOneToOneExtension(tab)).toBe(true);
   });
+
+  describe("classic parent property rule", () => {
+    const FACT_ACCT_TABLE = "FACT_ACCT_TABLE_ID";
+    const INVOICE_TABLE = "INVOICE_TABLE_ID";
+    const BPARTNER_TABLE = "BPARTNER_TABLE_ID";
+    const invoiceTab = buildTab({ table: INVOICE_TABLE });
+
+    it("returns false when the backend reports no link column (Accounting tab on Fact_Acct)", () => {
+      const tab = buildTab({ table: FACT_ACCT_TABLE, parentProperty: "" });
+
+      expect(isSrOneToOneExtension(tab, invoiceTab)).toBe(false);
+      expect(isSrOneToOneExtension(tab)).toBe(false);
+    });
+
+    it("returns true when the child tab is on its parent's table (Business Partner › Customer)", () => {
+      const tab = buildTab({ table: BPARTNER_TABLE, parentProperty: "" });
+
+      expect(isSrOneToOneExtension(tab, buildTab({ table: BPARTNER_TABLE }))).toBe(true);
+    });
+
+    it("keeps the parentColumns rule when the tables differ", () => {
+      const tab = buildTab({
+        table: FACT_ACCT_TABLE,
+        parentColumns: ["organization"],
+        parentProperty: "organization",
+        fields: { id: { column: { keyColumn: true } } } as unknown as Tab["fields"],
+      });
+
+      expect(isSrOneToOneExtension(tab, invoiceTab)).toBe(false);
+    });
+
+    it("does not compare tables when they are unknown", () => {
+      const tab = buildTab({ parentProperty: "" });
+
+      expect(isSrOneToOneExtension(tab, buildTab({}))).toBe(false);
+    });
+  });
 });
 
 describe("markLastWindowAsActive", () => {

@@ -110,7 +110,7 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   if (parentId && parentId !== "") {
     // True 1:1 SR tabs share the same PK as the parent — filter by id directly.
     // Non-1:1 SR tabs (e.g. Payment Plan) have distinct IDs and must use FK resolution.
-    if (tab.uIPattern === UIPattern.EDIT_ONLY && isSrOneToOneExtension(tab)) {
+    if (tab.uIPattern === UIPattern.EDIT_ONLY && isSrOneToOneExtension(tab, parentTab)) {
       return [{ fieldName: "id", value: parentId as EntityValue, operator: "equals" }];
     }
 

@@ -256,6 +256,18 @@ describe("class name helpers", () => {
     }
   );
 
+  it.each([TAB_VIEW_MODES.GRID, ...DUAL_PANE_MODES])(
+    "does not animate the border color of the grid pane, which flashed on a form-to-grid switch (%s)",
+    (mode) => {
+      expect(getGridPaneClassName(mode, FOCUS_BORDER)).not.toMatch(/transition|duration-/);
+    }
+  );
+
+  it("does not animate the border color of the form pane either", () => {
+    expect(getFormPaneClassName(true)).not.toMatch(/transition|duration-/);
+    expect(getFormPaneClassName(false)).not.toMatch(/transition|duration-/);
+  });
+
   it.each([TAB_VIEW_MODES.GRID, ...DUAL_PANE_MODES])("keeps the browser ring off the grid pane (%s)", (mode) => {
     expect(getGridPaneClassName(mode, FOCUS_BORDER)).toContain("outline-none");
   });

@@ -60,6 +60,10 @@ docs/
 │   │   └── README.md                # Request params, sort by every column, Classic differences
 │   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
 │   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
+│   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
+│   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
+│   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
+│   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
 │   ├── property-fields/              # Feature: Grid columns of property fields (related-record paths)
 │   │   └── README.md                # Field name after its path, _extraProperties, sort/filter/CSV
 │   ├── tab-display-logic/            # Feature: Child tab visibility (display logic, live header values)

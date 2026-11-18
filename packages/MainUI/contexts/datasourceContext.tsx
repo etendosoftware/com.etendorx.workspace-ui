@@ -17,7 +17,7 @@
 
 "use client";
 
-import { createContext, useContext, useCallback, useRef, type ReactNode, useMemo } from "react";
+import { createContext, useContext, useCallback, useRef, useSyncExternalStore, type ReactNode, useMemo } from "react";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 interface DatasourceContextValue {
@@ -36,6 +36,10 @@ interface DatasourceContextValue {
   updateRecordInDatasource: (tabId: string, record: EntityData) => void;
   registerAddRecord: (tabId: string, addFn: (record: EntityData) => void) => void;
   addRecordToDatasource: (tabId: string, record: EntityData) => void;
+  /** Publishes how many rows the grid of a tab has once loaded; `undefined` while it is not known yet. */
+  setRecordCount: (tabId: string, count: number | undefined) => void;
+  subscribeRecordCount: (listener: () => void) => () => void;
+  getRecordCount: (tabId: string) => number | undefined;
 }
 
 const DatasourceContext = createContext<DatasourceContextValue | undefined>(undefined);
@@ -50,6 +54,26 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
   // New refs for in-place record update
   const updateRecordFunctionsRef = useRef<Record<string, (recordId: string, record: EntityData) => void>>({});
   const addRecordFunctionsRef = useRef<Record<string, (record: EntityData) => void>>({});
+
+  // Reactive row count per tab: the records getters above are plain refs, so a toolbar reading them
+  // would not re-render when the grid loads or is filtered down to nothing.
+  const recordCountsRef = useRef<Record<string, number | undefined>>({});
+  const recordCountListenersRef = useRef(new Set<() => void>());
+
+  const setRecordCount = useCallback((tabId: string, count: number | undefined) => {
+    if (recordCountsRef.current[tabId] === count) return;
+    recordCountsRef.current[tabId] = count;
+    for (const listener of recordCountListenersRef.current) listener();
+  }, []);
+
+  const subscribeRecordCount = useCallback((listener: () => void) => {
+    recordCountListenersRef.current.add(listener);
+    return () => {
+      recordCountListenersRef.current.delete(listener);
+    };
+  }, []);
+
+  const getRecordCount = useCallback((tabId: string) => recordCountsRef.current[tabId], []);
 
   const registerRefetchFunction = useCallback((tabId: string, refetchFunction: () => Promise<void> | void) => {
     refetchFunctionsRef.current[tabId] = refetchFunction;
@@ -159,6 +183,9 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       updateRecordInDatasource,
       registerAddRecord,
       addRecordToDatasource,
+      setRecordCount,
+      subscribeRecordCount,
+      getRecordCount,
     }),
     [
       registerDatasource,
@@ -176,6 +203,9 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       updateRecordInDatasource,
       registerAddRecord,
       addRecordToDatasource,
+      setRecordCount,
+      subscribeRecordCount,
+      getRecordCount,
     ]
   );
 
@@ -197,4 +227,21 @@ export function useDatasourceContext() {
  */
 export function useOptionalDatasourceContext() {
   return useContext(DatasourceContext);
+}
+
+const subscribeNothing = () => () => {};
+const countUnknown = () => undefined;
+
+/**
+ * Whether the grid of a tab has rows: `false` when it loaded empty (also after filtering), `true` with rows
+ * and `undefined` while unknown (not loaded, no provider), so callers never block an action by guesswork.
+ */
+export function useGridHasRows(tabId?: string): boolean | undefined {
+  const context = useContext(DatasourceContext);
+  const count = useSyncExternalStore(
+    context?.subscribeRecordCount ?? subscribeNothing,
+    () => (tabId && context ? context.getRecordCount(tabId) : undefined),
+    countUnknown
+  );
+  return count === undefined ? undefined : count > 0;
 }

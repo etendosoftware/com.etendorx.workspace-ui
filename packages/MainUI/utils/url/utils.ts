@@ -16,7 +16,7 @@ type FormViewTabEntry = [tabId: string, tabState: TabState & { selectedRecord: s
  * @param entry - `[tabId, tabState]` entry to evaluate
  * @returns True when the tab must contribute its tab and record identifiers to the URL
  */
-const isFormViewTabEntry = (entry: [string, TabState]): entry is FormViewTabEntry => {
+export const isFormViewTabEntry = (entry: [string, TabState]): entry is FormViewTabEntry => {
   const [, tabState] = entry;
 
   if (tabState.form?.mode !== TAB_MODES.FORM) {
@@ -34,7 +34,7 @@ const isFormViewTabEntry = (entry: [string, TabState]): entry is FormViewTabEntr
  * @param window - Window whose tabs are inspected
  * @returns The entry to encode, undefined when the window shows only grids
  */
-const findDeepestFormViewTab = (window: WindowState): FormViewTabEntry | undefined => {
+export const findDeepestFormViewTab = (window: WindowState): FormViewTabEntry | undefined => {
   const formViewTabs = Object.entries(window.tabs).filter(isFormViewTabEntry);
 
   if (formViewTabs.length === 0) {

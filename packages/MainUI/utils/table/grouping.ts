@@ -59,8 +59,9 @@ export const NON_GROUPABLE_COLUMN_IDS: readonly string[] = [
 const NON_GROUPABLE_FIELD_TYPES: readonly string[] = [FieldType.BOOLEAN, FieldType.IMAGE];
 
 const IDENTIFIER_SUFFIX = "$_identifier";
-const SORT_DESC_PREFIX = "-";
-const SORT_FIELD_SEPARATOR = ",";
+/** Datasource sort notation: a leading `-` sorts descending and `,` separates the sorted fields. */
+export const SORT_DESC_PREFIX = "-";
+export const SORT_FIELD_SEPARATOR = ",";
 
 /** Placeholders of the classic (`${title}`, `%0`) and local (`{column}`, `{count}`) label templates. */
 const TITLE_PLACEHOLDER = /\$\{title\}|\{column\}/g;
@@ -162,23 +163,19 @@ export const buildGroupedSortBy = (groupField: string, userSort?: GroupingSort |
   buildGroupedMultiSortBy(groupField, userSort ? [userSort] : []);
 
 /**
- * Sorts the grid requests: the user sorts when there are any, otherwise the tab default sort.
+ * Sorts the grid requests: the user sorts when there are any, otherwise the tab default sorts.
  *
  * @param userSorts - Sorts the user set on the grid columns
- * @param getDefaultSort - Default sort of the tab, only evaluated when the user has not sorted
+ * @param defaultSorts - Default sorts of the tab, in priority order
  */
 export const resolveEffectiveSorts = (
   userSorts: readonly GroupingSort[],
-  getDefaultSort: () => GroupingSort | null
+  defaultSorts: readonly GroupingSort[]
 ): readonly GroupingSort[] => {
   if (userSorts.length > 0) {
     return userSorts;
   }
-  const defaultSort = getDefaultSort();
-  if (defaultSort) {
-    return [defaultSort];
-  }
-  return [];
+  return defaultSorts;
 };
 
 /**

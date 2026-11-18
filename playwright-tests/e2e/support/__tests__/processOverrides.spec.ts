@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { applyFieldOverrides, applyProcessOverrides, processMetadataUrl, windowMetadataUrl } from "../processOverrides";
+import {
+  applyFieldOverrides,
+  applyProcessOverrides,
+  applyTabOverrides,
+  processMetadataUrl,
+  windowMetadataUrl,
+} from "../processOverrides";
 
 type WindowMetadata = Parameters<typeof applyProcessOverrides>[0];
 
@@ -77,6 +83,37 @@ test.describe("applyFieldOverrides", () => {
       expect(applyFieldOverrides(metadata, FIELD_ID, READ_ONLY)).toBe(0);
     });
   }
+});
+
+test.describe("applyTabOverrides", () => {
+  const TAB_ID = "186";
+
+  test("sets the overrides on the tab with that id and keeps its other properties", () => {
+    const metadata = {
+      tabs: [
+        { id: TAB_ID, name: "Header" },
+        { id: "187", name: "Lines" },
+      ],
+    };
+
+    expect(applyTabOverrides(metadata, TAB_ID, { deletableRecords: false })).toBe(1);
+    expect(metadata.tabs).toEqual([
+      { id: TAB_ID, name: "Header", deletableRecords: false },
+      { id: "187", name: "Lines" },
+    ]);
+  });
+
+  test.describe("changes nothing", () => {
+    const cases: [string, WindowMetadata][] = [
+      ["no tabs", {}],
+      ["another tab", { tabs: [{ id: "187" }] }],
+    ];
+    for (const [name, metadata] of cases) {
+      test(`in metadata with ${name}`, () => {
+        expect(applyTabOverrides(metadata, TAB_ID, { deletableRecords: false })).toBe(0);
+      });
+    }
+  });
 });
 
 test.describe("windowMetadataUrl", () => {

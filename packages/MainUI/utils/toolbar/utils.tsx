@@ -27,6 +27,12 @@ import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import { AUDIT_TRAIL_STATUS, getAuditTrailStatus } from "@/utils/toolbar/auditTrail";
 import { isEmailUnavailable, isPrintUnavailable } from "@/utils/toolbar/print";
+import {
+  isAttachmentBlockedByPreference,
+  isCloneBlockedByForm,
+  isDeleteBlocked,
+  isExportBlocked,
+} from "@/utils/toolbar/enablement";
 import { getToolbarActionShortcutId } from "@/utils/toolbar/shortcuts";
 import { withShortcutHint } from "@/utils/keyboard/shortcutRegistry";
 import { CircularProgress } from "@mui/material";
@@ -226,6 +232,8 @@ export const createButtonByType = ({
   isAdvancedFilterApplied,
   isSplitView,
   isExporting = false,
+  isTreeView = false,
+  hasGridRows,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -245,6 +253,10 @@ export const createButtonByType = ({
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
+  /** True while the tab shows its tree (not merely supports it). */
+  isTreeView?: boolean;
+  /** False when the grid has no rows; unknown means "has rows". */
+  hasGridRows?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
   // Tooltip text with the keyboard shortcut of the action, e.g. `Refresh (Ctrl+Shift+R)`.
@@ -310,11 +322,13 @@ export const createButtonByType = ({
         buildDisableConfig(!(isFormView || hasSelectedRecord) || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => {
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!hasSelectedRecord || patternDisabled || isDocumentProcessing);
+        const rulesBlocked = isDeleteBlocked({ tab, selectedRecords, isNewRecord, hasParentRecordSelected });
+        return buildDisableConfig(!hasSelectedRecord || patternDisabled || rulesBlocked || isDocumentProcessing);
       },
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () =>
         buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled || isDocumentProcessing),
-      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord || isDocumentProcessing),
+      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () =>
+        buildDisableConfig(!hasSelectedRecord || isAttachmentBlockedByPreference(tab) || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => {
         const patternDisabled = isReadOnly || isEditOnly || isEditAndDeleteOnly;
         return buildDisableConfig(!hasParentRecordSelected || patternDisabled || isDocumentProcessing);
@@ -329,14 +343,20 @@ export const createButtonByType = ({
         const isCloneEnabled = tab?.obuiappShowCloneButton;
         const isSingleSelection = hasSelectedRecord;
         const patternDisabled = isReadOnly || isEditOnly;
-        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled || isDocumentProcessing);
+        const formBlocked = isCloneBlockedByForm({ hasFormChanges, isNewRecord });
+        return buildDisableConfig(
+          !isCloneEnabled || !isSingleSelection || patternDisabled || formBlocked || isDocumentProcessing
+        );
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () =>
         buildDisableConfig(isPrintUnavailable(printSelection) || isDocumentProcessing),
       [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () =>
         buildDisableConfig(isEmailUnavailable(printSelection) || isDocumentProcessing),
       // Busy while the export request is in flight, so it cannot be triggered twice.
-      [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () => buildDisableConfig(!button.active || isExporting),
+      [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: () =>
+        buildDisableConfig(
+          !button.active || isExporting || isExportBlocked({ tab, isFormView, isTreeView, hasGridRows })
+        ),
       [TOOLBAR_BUTTONS_ACTIONS.SHOW_AUDIT_TRAIL]: () => {
         const isAuditTrailReady = getAuditTrailStatus({ selectedRecords, isNewRecord }) === AUDIT_TRAIL_STATUS.READY;
         return buildDisableConfig(!isAuditTrailReady || isDocumentProcessing);
@@ -458,6 +478,8 @@ interface ButtonConfig {
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
+  isTreeView?: boolean;
+  hasGridRows?: boolean;
 }
 
 /**
@@ -488,6 +510,8 @@ const createSectionButtons = (
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
       isSplitView: config.isSplitView,
       isExporting: config.isExporting,
+      isTreeView: config.isTreeView,
+      hasGridRows: config.hasGridRows,
     });
 
     // Apply button-specific styles if available
@@ -538,6 +562,10 @@ interface ToolbarSectionsConfig {
   isAdvancedFilterApplied?: boolean;
   isSplitView?: boolean;
   isExporting?: boolean;
+  /** True while the tab shows its tree (not merely supports it). */
+  isTreeView?: boolean;
+  /** False when the grid has no rows; unknown means "has rows". */
+  hasGridRows?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -561,6 +589,8 @@ export const getToolbarSections = ({
   isAdvancedFilterApplied = false,
   isSplitView = false,
   isExporting = false,
+  isTreeView = false,
+  hasGridRows,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -593,6 +623,8 @@ export const getToolbarSections = ({
     t,
     isAdvancedFilterApplied,
     isExporting,
+    isTreeView,
+    hasGridRows,
   };
 
   return {

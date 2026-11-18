@@ -93,6 +93,7 @@ None. The CSV preferences of Classic (`OBSERDS_CSVFieldSeparator`, `OBSERDS_CSVD
 - `packages/MainUI/hooks/useDatasource.ts`: `getRequestParams`.
 - `packages/MainUI/hooks/table/useTableData.tsx`: the grid query, including the sort by every column.
 - `packages/MainUI/utils/table/grouping.ts`: `buildMultiSortBy`, `buildGroupedMultiSortBy`, `resolveEffectiveSorts`.
+- Default sort without a manual sort: the tab order-by clause as `_orderBy`, see [grid default sort](../grid-default-sort/README.md).
 - `packages/MainUI/components/Table/index.tsx`: registers the action.
 
 ## Related

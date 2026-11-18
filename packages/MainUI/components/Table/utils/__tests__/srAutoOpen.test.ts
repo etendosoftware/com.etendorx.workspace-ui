@@ -102,6 +102,18 @@ describe("getSrAutoOpenDecision", () => {
       expect(decision).toEqual({ open: true, recordId: "child-9", trackingKey: "parent-7" });
     });
 
+    it("SR without a link column (Accounting): opens the first fetched record, not the parent id", () => {
+      const tab = makeTab({ table: "FACT_ACCT_TABLE_ID", parentProperty: "" });
+      const decision = getSrAutoOpenDecision({
+        ...baseInputs,
+        tab,
+        parentTab: makeTab({ id: "parent", table: "INVOICE_TABLE_ID" }),
+        parentRecord: { id: "invoice-1" },
+        displayRecords: [makeRecord("fact-1")],
+      });
+      expect(decision).toEqual({ open: true, recordId: "fact-1", trackingKey: "invoice-1" });
+    });
+
     it("coerces numeric ids to strings in both recordId and trackingKey", () => {
       const tab = makeTab({
         parentColumns: ["organization"],

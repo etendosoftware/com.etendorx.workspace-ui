@@ -13,6 +13,8 @@ import {
   UNSAVED_ROW,
 } from "../test-utils/printFixtures";
 import { CircularProgress } from "@mui/material";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import type React from "react";
 
 /** Whether the toolbar button icon is the busy spinner */
@@ -387,6 +389,78 @@ describe("createButtonByType - extended", () => {
       const result = createButtonByType({ ...defaultProps, button: makeButton(), isExporting: true });
       expect(result.disabled).toBe(false);
       expect(isSpinnerIcon(result.icon)).toBe(false);
+    });
+  });
+
+  describe("enablement aligned with classic", () => {
+    const draftRecord = { id: "r1" };
+
+    it("disables DELETE for a processed (read-only) record and keeps it for a draft", () => {
+      const button = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.DELETE });
+      const processed = createButtonByType({
+        ...defaultProps,
+        button,
+        selectedRecords: [{ id: "r1", _readOnly: true }],
+      });
+      const draft = createButtonByType({ ...defaultProps, button, selectedRecords: [draftRecord] });
+      expect(processed.disabled).toBe(true);
+      expect(draft.disabled).toBe(false);
+    });
+
+    it("disables DELETE when any of several selected records cannot be deleted", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.DELETE }),
+        selectedRecordsLength: 2,
+        selectedRecords: [draftRecord, { id: "r2", _readOnly: true }],
+      });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("disables DELETE for a table that does not allow deleting", () => {
+      const result = createButtonByType({
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.DELETE }),
+        tab: { uIPattern: "STD", deletableRecords: false } as unknown as Tab,
+        selectedRecords: [draftRecord],
+      });
+      expect(result.disabled).toBe(true);
+    });
+
+    it("disables EXPORT_CSV in form view and in tree mode", () => {
+      const button = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV });
+      expect(createButtonByType({ ...defaultProps, button, isFormView: true }).disabled).toBe(true);
+      expect(createButtonByType({ ...defaultProps, button, isTreeView: true }).disabled).toBe(true);
+      expect(createButtonByType({ ...defaultProps, button, hasGridRows: false }).disabled).toBe(true);
+    });
+
+    it("keeps EXPORT_CSV enabled in the grid of a tab that only supports the tree", () => {
+      const button = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV });
+      expect(createButtonByType({ ...defaultProps, button, isTreeNodeView: true } as never).disabled).toBe(false);
+    });
+
+    it("disables COPY_RECORD while the form has unsaved changes or is new", () => {
+      const props = {
+        ...defaultProps,
+        button: makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD }),
+        tab: { uIPattern: "STD", obuiappShowCloneButton: true } as Tab,
+      };
+      expect(createButtonByType({ ...props }).disabled).toBe(false);
+      expect(createButtonByType({ ...props, hasFormChanges: true }).disabled).toBe(true);
+      expect(createButtonByType({ ...props, isNewRecord: true }).disabled).toBe(true);
+    });
+
+    it("disables DELETE, EXPORT_CSV and ATTACHMENT when their preference is No", () => {
+      installLocalStorageMock();
+      savePreferences({ AllowDelete: "N", ExportToCsv: "N", AllowAttachment: "N" });
+      const disabledFor = (action: string) =>
+        createButtonByType({ ...defaultProps, button: makeButton({ action }), selectedRecords: [draftRecord] })
+          .disabled;
+      expect(disabledFor(TOOLBAR_BUTTONS_ACTIONS.DELETE)).toBe(true);
+      expect(disabledFor(TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV)).toBe(true);
+      expect(disabledFor(TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT)).toBe(true);
+      savePreferences({});
+      expect(disabledFor(TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT)).toBe(false);
     });
   });
 

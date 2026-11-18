@@ -15,6 +15,7 @@ import { BPARTNER_PRINT_CONFIG, ORDER_PRINT_CONFIG } from "@/utils/toolbar/test-
 // Mocks
 jest.mock("@/contexts/datasourceContext", () => ({
   useDatasourceContext: () => ({ refetchDatasource: jest.fn() }),
+  useGridHasRows: () => undefined,
 }));
 jest.mock("@/contexts/tab", () => ({
   useTabContext: jest.fn(),

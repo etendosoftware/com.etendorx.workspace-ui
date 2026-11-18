@@ -191,6 +191,13 @@ export class ApiData {
     }
   }
 
+  /** Resets the stored grid configuration of several tabs, given as `[windowId, tabId]` pairs. */
+  async resetGridConfigurations(tabs: ReadonlyArray<readonly [string, string]>): Promise<void> {
+    for (const [windowId, tabId] of tabs) {
+      await this.resetGridConfiguration(windowId, tabId);
+    }
+  }
+
   /**
    * The metadata the backend serves for a process definition (`/meta/process/<id>`), as the process modal
    * loads it: e.g. to wire a core button to a core process the bare core does not attach to any window.

@@ -520,6 +520,8 @@ export interface Tab {
    * Absent when the metadata backend predates this key — see `resolveParentFieldName`.
    */
   parentProperty?: string;
+  /** Classic default sort property (`OBViewGridComponent.getSortField`) when the tab has no order-by clause. */
+  defaultSortField?: string;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;
@@ -533,6 +535,8 @@ export interface Tab {
   showTreeNodeIcons?: boolean;
   hqlWhereClauseForRootNodes?: string;
   obuiappShowCloneButton?: boolean;
+  /** Whether the table of the tab allows deleting records (`AD_Table.IsDeletableRecords`); absent means yes. */
+  deletableRecords?: boolean;
   obuiappCloneChildren?: boolean;
   /**
    * Mirrors AD_Tab.EM_OBUIAPP_CAN_ADD. When true, the P&E grid for this tab shows

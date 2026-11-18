@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { useDatasourceContext, useGridHasRows } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useIsActiveTab } from "@/contexts/ActiveTabContext";
@@ -90,6 +90,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
+  const hasGridRows = useGridHasRows(tab?.id);
   const {
     buttons,
     processButtons,
@@ -540,6 +541,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
       isExporting: isExporting,
+      isTreeView: Boolean(tableTreeView),
+      hasGridRows: hasGridRows,
     });
 
     const config = {
@@ -586,6 +589,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     isAdvancedFilterApplied,
     isProcessRefreshing,
     isExporting,
+    tableTreeView,
+    hasGridRows,
   ]);
 
   useToolbarShortcuts(toolbarConfig, isFocused);

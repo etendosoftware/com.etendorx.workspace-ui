@@ -940,7 +940,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     if (tab.uIPattern !== UIPattern.EDIT_ONLY || !tab.defaultEditMode) {
       return;
     }
-    if (!isSrOneToOneExtension(tab)) {
+    if (!isSrOneToOneExtension(tab, graph.getParent(tab))) {
       return;
     }
     if (!parentSelectedRecordId) {
@@ -953,7 +953,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
     srAutoOpenedForParentRef.current = parentSelectedRecordId;
     handleSetRecordId(parentSelectedRecordId);
-  }, [tab, parentSelectedRecordId, handleSetRecordId]);
+  }, [tab, graph, parentSelectedRecordId, handleSetRecordId]);
 
   const paneFocusInput = { mode: viewMode, isTabFocused: isFocused, focusedPane };
   const isGridPaneFocused = isPaneFocused({ ...paneFocusInput, pane: SPLIT_PANES.GRID });

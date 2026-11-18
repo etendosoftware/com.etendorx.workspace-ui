@@ -119,6 +119,42 @@ describe("criteriaUtils", () => {
       expect(result[0].operator).toBe("equals");
     });
 
+    it("should return _dummy for SR tabs without a link column (Accounting on Fact_Acct)", () => {
+      const accountingTab: any = {
+        ...childTab,
+        table: "FACT_ACCT_TABLE_ID",
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentColumns: [],
+        parentProperty: "",
+        fields: { id: { column: { keyColumn: true } } },
+      };
+      const result = buildBaseCriteria({
+        tab: accountingTab,
+        parentTab: { ...parentTab, table: "INVOICE_TABLE_ID" },
+        parentId: "123",
+      });
+
+      expect(result[0].fieldName).toBe("_dummy");
+    });
+
+    it("should return id criteria for SR tabs on their parent's table (Business Partner › Customer)", () => {
+      const customerTab: any = {
+        ...childTab,
+        table: "BPARTNER_TABLE_ID",
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentColumns: [],
+        parentProperty: "",
+        fields: { id: { column: { keyColumn: true } } },
+      };
+      const result = buildBaseCriteria({
+        tab: customerTab,
+        parentTab: { ...parentTab, table: "BPARTNER_TABLE_ID" },
+        parentId: "123",
+      });
+
+      expect(result[0]).toEqual({ fieldName: "id", value: "123", operator: "equals" });
+    });
+
     it("should use the backend parentProperty over the parentColumns heuristic", () => {
       const tabWithLink = { ...childTab, parentColumns: ["someOtherColumn"], parentProperty: "invoice" };
       const result = buildBaseCriteria({

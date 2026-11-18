@@ -49,6 +49,8 @@ export const PRODUCT = {
   RAW_MATERIAL_B: { id: "4028E6C72959682B01295ADC1B800224", name: "Raw material B" },
   FINAL_GOOD_A: { id: "4028E6C72959682B01295ADC1D07022A", name: "Final good A" },
   DISTRIBUTION_GOOD_A: { id: "4028E6C72959682B01295ADC2340023D", name: "Spain-Distribution good A" },
+  /** Average costing open until 12/31/9999 with sample transactions; specs only read it. */
+  LAPTOP: { id: "901CAFF074954746970719E6A2910638", name: "Laptop" },
   /** Service linked to products and price rule based, with three product categories; specs only read it. */
   WARRANTY: { id: "D67EF9E66FF447E88176DF0C054A9D3F", name: "Warranty" },
 } as const satisfies Record<string, SampleRecord>;
@@ -69,6 +71,8 @@ export const FINANCIAL_ACCOUNT = {
   SPAIN_BANK: { id: "0D0000E0A27040E383D5B03755249B61", name: "Spain Bank" },
   /** Account of USA (EUR) with sample reconciliations of July 2011; specs only read it. */
   ACCOUNTING_DOCUMENTS_EURO: { id: "FF808081328278B50132828AC43D003F", name: "Accounting Documents EURO" },
+  /** Account of USA (USD) with 18 sample transactions of one date (lines 10–180); specs only read it. */
+  ACCOUNTING_DOCUMENTS_DOLLAR: { id: "FF808081328278B50132828C8AC70058", name: "Accounting Documents DOLLAR" },
 } as const satisfies Record<string, SampleRecord>;
 
 /** G/L items of the sample data. */
@@ -124,6 +128,8 @@ export const PROCESS_PARAMETER = {
 export const SAMPLE_DOCUMENT = {
   /** Sales invoice of Customer A, organization Spain, payment method "1 (Spain)", 4290.00 pending. */
   SALES_INVOICE_PENDING: "I/25",
+  /** Posted sales invoice of Customer A, organization Spain, with six accounting entries; specs only read it. */
+  SALES_INVOICE_POSTED: "I/26",
   /** Sales invoice of Customer B, organization Spain, 258.50 pending; no spec pays it. */
   SALES_INVOICE_PENDING_CUSTOMER_B: "I/27",
   /** Accounting period of the sample calendar (Open/Close Period Control). */
