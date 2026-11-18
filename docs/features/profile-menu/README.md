@@ -112,3 +112,9 @@ None.
 3. In the *Password* tab, press Tab from a field: the focus goes to its eye button, never to the lock
    icon. Enter or Space shows/hides the password. Hover the eye button: the icon stays readable.
 4. Log in with a user whose password has expired: the mandatory change works as before.
+
+## Layout
+
+The Role selector has an icon like the other selectors, so all values start at the same position; the
+disabled Client field has no grey fill; the password fields keep the side margin of the Profile tab.
+See [UI Visual Consistency](../ui-visual-consistency/README.md).
