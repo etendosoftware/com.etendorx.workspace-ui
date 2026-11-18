@@ -16,8 +16,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import { FieldTrailingActionContext, useFieldTrailingAction } from "../FieldTrailingAction";
-import { getSearchActionClassName } from "../../../GenericSelector";
+import { FieldTrailingActionContext, getSearchActionClassName, useFieldTrailingAction } from "../FieldTrailingAction";
 
 const ACTION_TEXT = "search";
 

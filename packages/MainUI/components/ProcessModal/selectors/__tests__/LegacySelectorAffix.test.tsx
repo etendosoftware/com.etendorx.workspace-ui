@@ -4,6 +4,7 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import LegacySelectorAffix from "../LegacySelectorAffix";
 import { LEGACY_ACTIONS, LEGACY_MESSAGE_TYPE } from "../../legacyMessageProtocol";
+import { useFieldTrailingAction } from "@/components/Form/FormView/selectors/components/Select/FieldTrailingAction";
 
 jest.mock("@/hooks/useUserContext", () => ({ useUserContext: () => ({ token: "tok" }) }));
 jest.mock("@/contexts/RuntimeConfigContext", () => ({
@@ -41,7 +42,11 @@ const FormProbe = () => {
   return <span data-testid="probe">{JSON.stringify(values)}</span>;
 };
 
-const renderAffix = (isReadOnly = false, defaultValues: Record<string, unknown> = {}) => {
+const renderAffix = (
+  isReadOnly = false,
+  defaultValues: Record<string, unknown> = {},
+  control: React.ReactNode = <select data-testid="combo" />
+) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     const methods = useForm({ defaultValues });
     return (
@@ -54,7 +59,7 @@ const renderAffix = (isReadOnly = false, defaultValues: Record<string, unknown> 
   return render(
     <Wrapper>
       <LegacySelectorAffix field={buildField()} legacySearchUrl={LEGACY_URL} isReadOnly={isReadOnly}>
-        <select data-testid="combo" />
+        {control}
       </LegacySelectorAffix>
     </Wrapper>
   );
@@ -91,6 +96,14 @@ describe("LegacySelectorAffix", () => {
 
     expect(screen.getByTestId("combo")).toBeInTheDocument();
     expect(screen.getByTestId("icon-button")).toBeInTheDocument();
+  });
+
+  it("shows the search button inside a select that can host it, and only there", () => {
+    const HostSelect = () => <div data-testid="host-select">{useFieldTrailingAction()}</div>;
+    renderAffix(false, {}, <HostSelect />);
+
+    expect(screen.getAllByTestId("icon-button")).toHaveLength(1);
+    expect(screen.getByTestId("host-select")).toContainElement(screen.getByTestId("icon-button"));
   });
 
   it("does not render the search button when read-only", () => {

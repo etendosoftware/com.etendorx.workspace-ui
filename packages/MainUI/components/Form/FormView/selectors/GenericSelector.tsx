@@ -60,26 +60,12 @@ import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { useFormContext } from "react-hook-form";
-import { FieldTrailingActionContext } from "./components/Select/FieldTrailingAction";
+import { FieldTrailingActionContext, getSearchActionClassName } from "./components/Select/FieldTrailingAction";
 
 export type GenericSelectorProps = {
   field: Field;
   isReadOnly: boolean;
 };
-
-/** Round button beside the input, the original place of the magnifier. */
-const SEARCH_ACTION_OUTSIDE_CLASSES = "w-8 h-8 flex-shrink-0";
-/** Icon inside the input box, next to its clear and chevron icons. */
-const SEARCH_ACTION_INSIDE_CLASSES = "w-7 h-7 flex-shrink-0 bg-transparent";
-
-/**
- * Classes of the search magnifier of a field.
- *
- * @param hosted whether the input shows it inside its box
- * @returns the class list
- */
-export const getSearchActionClassName = (hosted: boolean): string =>
-  hosted ? SEARCH_ACTION_INSIDE_CLASSES : SEARCH_ACTION_OUTSIDE_CLASSES;
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { getValues, setValue } = useFormContext();
