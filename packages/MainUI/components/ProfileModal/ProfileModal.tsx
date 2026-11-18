@@ -24,7 +24,7 @@ import IconButton from "@workspaceui/componentlibrary/src/components/IconButton"
 import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
-import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
+import type { Language, TranslationKeys } from "@workspaceui/componentlibrary/src/locales/types";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CheckCircle from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -52,6 +52,12 @@ const PROFILE_SECTIONS = {
   PROFILE: "profile",
   PASSWORD: "password",
 } as const;
+
+/** Labels of the section tabs, so they follow the user language instead of the fixed texts of the callers. */
+const SECTION_LABEL_KEYS: Record<string, TranslationKeys> = {
+  [PROFILE_SECTIONS.PROFILE]: "navigation.profile.profileLabel",
+  [PROFILE_SECTIONS.PASSWORD]: "navigation.profile.passwordLabel",
+};
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
@@ -343,6 +349,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     handleClose();
   }, [currentPwd, newPwd, confirmPwd, onPasswordChange, getLabel, t, handleClose]);
 
+  const translatedSections = useMemo(
+    () =>
+      sections.map((section) => {
+        const labelKey = SECTION_LABEL_KEYS[section.id];
+        return labelKey ? { ...section, label: t(labelKey) } : section;
+      }),
+    [sections, t]
+  );
+
   /** Current working context shown on hover of the profile button, as the Classic user button does. */
   const contextTooltip = useMemo(
     () =>
@@ -474,7 +489,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} data-testid="UserProfile__75987a" />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection
-            sections={sections}
+            sections={translatedSections}
             currentSection={currentSection}
             onToggle={handleToggle}
             data-testid="ToggleSection__75987a"

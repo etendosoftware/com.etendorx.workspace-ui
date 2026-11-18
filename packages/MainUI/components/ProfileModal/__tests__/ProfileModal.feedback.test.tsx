@@ -28,6 +28,13 @@ const PASSWORD_CHANGED_TEXT = "Your password has been changed!";
 const FALLBACK_KEY = "navigation.profile.passwordChangedSuccess";
 const PROFILE_BUTTON = "profile-menu-button";
 const TOOLTIP_DELAY_MS = 600;
+const PASSWORD_TAB = "navigation.profile.passwordLabel";
+/** Sections as the navigation bar passes them, with fixed Spanish labels. */
+const FIXED_SECTIONS = [
+  { id: "profile", label: "Perfil", icon: null },
+  { id: "password", label: "Contraseña", icon: null },
+  { id: "other", label: "Other", icon: null },
+];
 
 let mockCatalog: Record<string, string> = {};
 
@@ -69,10 +76,20 @@ jest.mock("../ToggleSection", () => ({
 }));
 jest.mock("../ToggleButton", () => ({
   __esModule: true,
-  default: ({ onToggle }: { onToggle: (section: string) => void }) => (
-    <button type="button" onClick={() => onToggle("password")}>
-      password section
-    </button>
+  default: ({
+    sections,
+    onToggle,
+  }: {
+    sections: Array<{ id: string; label: string }>;
+    onToggle: (section: string) => void;
+  }) => (
+    <div>
+      {sections.map((section) => (
+        <button key={section.id} type="button" onClick={() => onToggle(section.id)}>
+          {section.label}
+        </button>
+      ))}
+    </div>
   ),
 }));
 jest.mock("../UserProfile", () => ({ __esModule: true, default: () => null }));
@@ -118,13 +135,13 @@ jest.mock("@workspaceui/componentlibrary/src/components/Menu", () => ({
 const renderModal = (overrides: Partial<ProfileModalProps> = {}) => {
   const view = render(
     <ThemeProvider theme={theme}>
-      <ProfileModal {...createProfileModalProps(overrides)} />
+      <ProfileModal {...createProfileModalProps({ sections: FIXED_SECTIONS, ...overrides })} />
     </ThemeProvider>
   );
   const rerender = (next: Partial<ProfileModalProps>) =>
     view.rerender(
       <ThemeProvider theme={theme}>
-        <ProfileModal {...createProfileModalProps({ ...overrides, ...next })} />
+        <ProfileModal {...createProfileModalProps({ sections: FIXED_SECTIONS, ...overrides, ...next })} />
       </ThemeProvider>
     );
   return { ...view, rerender };
@@ -132,7 +149,7 @@ const renderModal = (overrides: Partial<ProfileModalProps> = {}) => {
 
 /** Opens the password panel, fills its three fields and saves. */
 const submitPasswordChange = () => {
-  fireEvent.click(screen.getByText("password section"));
+  fireEvent.click(screen.getByText(PASSWORD_TAB));
   fireEvent.change(screen.getByLabelText("current"), { target: { value: "old" } });
   fireEvent.change(screen.getByLabelText("new"), { target: { value: NEW_PASSWORD } });
   fireEvent.change(screen.getByLabelText("confirm"), { target: { value: NEW_PASSWORD } });
@@ -243,5 +260,16 @@ describe("ProfileModal — current context tooltip", () => {
     });
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProfileModal — section tabs", () => {
+  it("translates the known tabs and keeps the label of any other one", () => {
+    renderModal();
+
+    expect(screen.getByText("navigation.profile.profileLabel")).toBeInTheDocument();
+    expect(screen.getByText(PASSWORD_TAB)).toBeInTheDocument();
+    expect(screen.getByText("Other")).toBeInTheDocument();
+    expect(screen.queryByText("Perfil")).not.toBeInTheDocument();
   });
 });
