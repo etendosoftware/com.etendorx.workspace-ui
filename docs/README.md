@@ -61,7 +61,7 @@ docs/
 │   ├── record-notes/                 # Feature: Notes section of the form (OBUIAPP_Note)
 │   │   └── README.md                # Inline list, own-note deletion, storage rules, Classic differences
 │   ├── profile-menu/                 # Feature: Profile menu feedback and current context
-│   │   └── README.md                # Password change confirmation, role/client/org/warehouse tooltip
+│   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
 │   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs

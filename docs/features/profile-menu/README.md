@@ -1,4 +1,4 @@
-# Profile Menu — Password Change Confirmation and Current Context (ETP-6004 / SEC-11)
+# Profile Menu — Password Change Confirmation, Current Context and Password Panel (ETP-6004 / SEC-11)
 
 The profile menu (avatar at the top right of the navigation bar) lets users switch role,
 organization, warehouse and language, and change their own password. This page covers the feedback
@@ -34,6 +34,26 @@ session values from the user store, so it reflects a role or organization switch
 session is refreshed. It is hidden while the menu is open. The avatar also gets the user name as its
 accessible label.
 
+### Password panel
+
+- Field labels use the Classic `AD_MESSAGE` keys `UINAVBA_CurrentPwd`, `UINAVBA_NewPwd` and
+  `UINAVBA_ConfirmPwd`, with the local `navigation.profile.*PasswordLabel` translations as fallback.
+  Each field has its own `name`/`id`, so its label is associated with the input.
+- The show/hide password toggle is a real button: it is reachable with Tab, toggles with Enter or
+  Space, announces *Show password* / *Hide password* and its pressed state (`aria-pressed`), and its
+  icon inherits the button color, so it keeps its contrast on hover and in dark mode. It shows a focus
+  ring on keyboard focus.
+- The lock icons are decorative: they are no longer buttons and are left out of the tab sequence.
+- The fields are spaced so a label does not touch the previous underline, and the error message is
+  announced (`role="alert"`).
+- The section tabs (*Profile* / *Password*) follow the user language. They used to show fixed Spanish
+  texts coming from the navigation bar.
+
+These come from `InputPassword` and `TextInputBase` in the component library. `TextInputBase` gained
+optional `leftIconAriaLabel`, `rightIconAriaLabel` and `rightIconPressed` props, and an icon passed
+without its click handler is now rendered as a decorative icon. Before, it was a focusable button that
+did nothing; the only consumer passing icons is the password input.
+
 ## Decisions
 
 | Decision | Reason |
@@ -66,6 +86,9 @@ None.
 | `packages/MainUI/utils/catalogLabel.ts` | `resolveCatalogLabel`: `AD_MESSAGE` first, local translation as fallback |
 | `packages/MainUI/utils/password.ts` | `PASSWORD_CHANGED_MESSAGE_CODE`; error resolution now delegates to `resolveCatalogLabel` |
 | `packages/ComponentLibrary/src/components/Tooltip/index.tsx` | `multiline` prop |
+| `packages/MainUI/components/ProfileModal/ToggleSection/index.tsx` | Password panel: field labels, names and spacing |
+| `packages/ComponentLibrary/src/components/Input/TextInput/TextInputBase/InputPassword/index.tsx` | Visibility toggle on the adornment button, accessible names |
+| `packages/ComponentLibrary/src/components/Input/TextInput/TextInputBase/TextInputBase.tsx` | Adornment icons: button with name and pressed state, or decorative |
 | `packages/ComponentLibrary/src/locales/{en,es}.ts` | `navigation.profile.context*` fallback labels |
 
 ## Testing
@@ -75,6 +98,9 @@ None.
   `components/ProfileModal/__tests__/ProfileModal.feedback.test.tsx` and the *multiline* cases in
   `ComponentLibrary/src/components/Tooltip/__tests__/Tooltip.test.tsx`. Shared props for the profile
   modal suites live in `components/ProfileModal/test-utils/profileModalProps.ts`.
+- Password panel and toggle: `components/ProfileModal/__tests__/ToggleSection.password.test.tsx`,
+  `ComponentLibrary/.../InputPassword/InputPassword.test.tsx` (click and Tab + Enter / Space) and the
+  adornment cases in `TextInputBase.test.tsx`.
 
 ### Manual check
 
@@ -83,4 +109,6 @@ None.
    inline error appears.
 2. Hover the avatar: user name, role, client, organization and warehouse. Switch role or organization,
    hover again: the new values are shown.
-3. Log in with a user whose password has expired: the mandatory change works as before.
+3. In the *Password* tab, press Tab from a field: the focus goes to its eye button, never to the lock
+   icon. Enter or Space shows/hides the password. Hover the eye button: the icon stays readable.
+4. Log in with a user whose password has expired: the mandatory change works as before.
