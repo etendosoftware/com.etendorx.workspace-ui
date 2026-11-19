@@ -53,6 +53,11 @@ Already applied without client changes:
   keep the login page with their message, as classic only redirects from the logout action.
 - **`StartPage` only on a real login.** A page reload, a role change or a token renewal load the session too,
   and do not open it.
+- **`ShowAuditDefault` only seeds the section, as in classic.** Classic reads it once, when the window view is
+  created, and reuses the form for every record, so a section the user collapses stays collapsed while the
+  window is open. The new UI applies it the first time the tab's form opens in that window and then keeps
+  the user's choice (in memory, per window and tab). Opening the window again or reloading the page applies
+  the preference again, in both interfaces.
 - **Administrators keep personalizing.** Administrators are the roles with user level Client or System, the
   same ones that may save shared views. No license restriction is applied.
 
@@ -70,8 +75,6 @@ Already applied without client changes:
   - **When it opens:** classic redirects on the server before the application loads. The new UI opens the
     window once the session is loaded, so the home page can show for a moment, and the windows restored
     from the URL of a previous session stay open next to it.
-- Classic re-applies `ShowAuditDefault` every time a form opens. The new UI uses it to seed the state of the
-  section the first time the tab's form opens; after that, the state the user chose is kept.
 - Classic goes to the `LogoutRedirectURL` address without any notice. The new UI shows "Logging out.
   Redirecting to ..." first, a client text (`login.logoutRedirect`), since classic has no message to reuse.
 - In classic, `DisableNotesForReadOnlyTabs` only locks the note input and the server rejects a deletion. The
