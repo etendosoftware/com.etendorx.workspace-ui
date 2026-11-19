@@ -507,6 +507,12 @@ export interface Tab {
   records: Record<string, never>;
   hqlfilterclause: string;
   filterName?: string;
+  /**
+   * Classic text over a grid filtered by the default filter of the tab ("This grid is filtered using an
+   * implicit filter ..."), built by the metadata adapter as `OBViewGridComponent.getFilterName`. May hold
+   * formatting HTML (`<i>`); empty when the tab has no implicit or transactional filter.
+   */
+  implicitFilterMessage?: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
   hqlorderbyclause?: string;

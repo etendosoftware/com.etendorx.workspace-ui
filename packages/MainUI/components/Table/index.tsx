@@ -170,6 +170,7 @@ import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDr
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
 import { isGridBottomReached } from "./utils/viewportFill";
+import GridFilterMessage from "./GridFilterMessage";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 import { buildTabExtraProperties } from "@/utils/table/extraProperties";
@@ -1251,6 +1252,7 @@ const DynamicTable = ({
     handleMRTColumnOrderChange,
     handleMRTExpandChange,
     toggleImplicitFilters,
+    isImplicitFilterApplied,
     fetchMore,
     refetch,
     removeRecordLocally,
@@ -1263,6 +1265,8 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+  // A grid filtered by the id of one record, as a link opens it (classic "single record" filter)
+  const hasGridIdFilter = useMemo(() => tableColumnFilters.some((filter) => filter.id === "id"), [tableColumnFilters]);
   const exportCSV = useGridCsvExport({ tab, windowIdentifier, getRequestParams });
 
   // Auto-open FormView for SR (Single Record) tabs once records are fetched.
@@ -4454,6 +4458,15 @@ const DynamicTable = ({
         focusRegionId={focusRegionId}
         isFocused={isFocused}
         data-testid="GridShortcuts__8ca888"
+      />
+      <GridFilterMessage
+        tab={tab}
+        windowIdentifier={windowIdentifier}
+        isGridVisible={isVisible}
+        isImplicitFilterApplied={isImplicitFilterApplied}
+        hasIdFilter={hasGridIdFilter}
+        hasParentSelection={!parentTab || Boolean(parentRecord)}
+        data-testid="GridFilterMessage__8ca888"
       />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         {tableElement}
