@@ -85,3 +85,18 @@ export function getNumericPreference(name: string, windowId: string | undefined,
   }
   return fallback;
 }
+
+/**
+ * Preference values a process reads in its display logic, resolved as classic does: `@FinancialManagement@`
+ * from the preference of the window (`Utility.getContext`), and `@#ShowAcct@` from the global `ShowAcct`
+ * value stored in the session at login (`LoginUtils.fillSessionArguments`). A missing preference is empty.
+ *
+ * @param windowId - AD window id the process is launched from
+ * @returns The `FinancialManagement` and `_ShowAcct` context entries
+ */
+export function buildProcessPreferenceContext(windowId?: string): { FinancialManagement: string; _ShowAcct: string } {
+  return {
+    FinancialManagement: getStoredPreference(CLASSIC_PREFERENCES.FINANCIAL_MANAGEMENT, windowId) ?? "",
+    _ShowAcct: getStoredPreference(CLASSIC_PREFERENCES.SHOW_ACCOUNTING) ?? "",
+  };
+}

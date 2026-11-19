@@ -1,6 +1,11 @@
 import { savePreferences } from "@/utils/propertyStore";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
-import { getNumericPreference, isPreferenceDisabled, isPreferenceYes } from "../classicPreferences";
+import {
+  buildProcessPreferenceContext,
+  getNumericPreference,
+  isPreferenceDisabled,
+  isPreferenceYes,
+} from "../classicPreferences";
 
 const NAME = "SomePreference";
 const WINDOW_ID = "143";
@@ -62,6 +67,18 @@ describe("classicPreferences", () => {
     it.each([undefined, "", "abc", "0", "-5"])("falls back for %p", (value) => {
       savePreferences(value === undefined ? {} : { [NAME]: value });
       expect(getNumericPreference(NAME, undefined, FALLBACK)).toBe(FALLBACK);
+    });
+  });
+
+  describe("buildProcessPreferenceContext", () => {
+    it("is empty when the preferences are not set", () => {
+      savePreferences({});
+      expect(buildProcessPreferenceContext(WINDOW_ID)).toEqual({ FinancialManagement: "", _ShowAcct: "" });
+    });
+
+    it("reads FinancialManagement by window and ShowAcct only globally", () => {
+      savePreferences({ [`FinancialManagement_${WINDOW_ID}`]: "Y", [`ShowAcct_${WINDOW_ID}`]: "Y" });
+      expect(buildProcessPreferenceContext(WINDOW_ID)).toEqual({ FinancialManagement: "Y", _ShowAcct: "" });
     });
   });
 });
