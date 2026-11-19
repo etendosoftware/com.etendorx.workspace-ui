@@ -24,6 +24,8 @@ import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext
 import { FormFields } from "../FormFieldsContent";
 import { useFormViewContext } from "../contexts/FormViewContext";
 import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
@@ -70,7 +72,7 @@ jest.mock("@/utils/evaluation/sharedEvaluationContext", () => ({ getEvaluationCo
 
 jest.mock("../Sections/noteSection", () => ({
   __esModule: true,
-  default: () => <div data-testid="note-section" />,
+  default: ({ readOnly }: { readOnly?: boolean }) => <div data-testid="note-section" data-read-only={String(readOnly)} />,
 }));
 
 jest.mock("../Sections/AttachmentSection", () => ({
@@ -173,6 +175,41 @@ describe("FormFields — Notes / Attachments / LinkedItems visibility by mode", 
       renderFormFields(FormMode.VIEW);
       expect(screen.getByTestId("linked-items-section")).toBeInTheDocument();
     });
+  });
+});
+
+describe("FormFields — classic preferences", () => {
+  const WINDOW_ID = "win-1";
+  const tabWith = (uIPattern: string) => ({ ...makeTab(), window: WINDOW_ID, uIPattern }) as unknown as Tab;
+  const renderTab = (tab: Tab) => render(<FormFields {...baseProps} tab={tab} mode={FormMode.EDIT} />);
+
+  beforeEach(() => {
+    installLocalStorageMock();
+  });
+
+  it("hides the LinkedItemsSection with OBUIAPP_DisableLinkedItemsSection set to Y", () => {
+    savePreferences({ [`OBUIAPP_DisableLinkedItemsSection_${WINDOW_ID}`]: "Y" });
+    renderTab(tabWith("STD"));
+    expect(screen.queryByTestId("linked-items-section")).not.toBeInTheDocument();
+  });
+
+  it("makes notes read-only in a read-only tab with DisableNotesForReadOnlyTabs set to Y", () => {
+    savePreferences({ DisableNotesForReadOnlyTabs: "Y" });
+    renderTab(tabWith("RO"));
+    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "true");
+  });
+
+  it("keeps notes editable in an editable tab even with the preference", () => {
+    savePreferences({ DisableNotesForReadOnlyTabs: "Y" });
+    renderTab(tabWith("STD"));
+    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "false");
+  });
+
+  it("keeps notes editable in a read-only tab without the preference", () => {
+    savePreferences({});
+    renderTab(tabWith("RO"));
+    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "false");
+    expect(screen.getByTestId("linked-items-section")).toBeInTheDocument();
   });
 });
 

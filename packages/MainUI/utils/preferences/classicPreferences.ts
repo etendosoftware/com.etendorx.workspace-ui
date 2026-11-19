@@ -17,6 +17,7 @@
 
 import { getStoredPreference } from "@/utils/propertyStore";
 import { PREFERENCE_ENABLED_VALUE } from "@/utils/preferences/refreshAfterDeletion";
+import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
 
 /**
  * Classic interface preferences honoured by the new UI. Every one is looked up as classic
@@ -99,4 +100,29 @@ export function buildProcessPreferenceContext(windowId?: string): { FinancialMan
     FinancialManagement: getStoredPreference(CLASSIC_PREFERENCES.FINANCIAL_MANAGEMENT, windowId) ?? "",
     _ShowAcct: getStoredPreference(CLASSIC_PREFERENCES.SHOW_ACCOUNTING) ?? "",
   };
+}
+
+/**
+ * Classic `DisableNotesForReadOnlyTabs`: with Y, notes cannot be added or deleted in a read-only tab. The
+ * metadata marks a tab read-only through its UI pattern, both for a read-only tab and for a role with
+ * read-only access, the two cases classic `NoteEventHandler` checks.
+ *
+ * @param tab - Tab the form belongs to
+ * @returns true when the notes section must not let the user change notes
+ */
+export function areNotesReadOnly(tab: Pick<Tab, "uIPattern" | "window">): boolean {
+  return (
+    tab.uIPattern === UIPattern.READ_ONLY &&
+    isPreferenceYes(CLASSIC_PREFERENCES.DISABLE_NOTES_FOR_READ_ONLY_TABS, tab.window)
+  );
+}
+
+/**
+ * Classic `OBUIAPP_DisableLinkedItemsSection`: with Y the form does not show the Linked Items section.
+ *
+ * @param windowId - AD window id of the form
+ * @returns true when the Linked Items section must be hidden
+ */
+export function isLinkedItemsSectionDisabled(windowId?: string): boolean {
+  return isPreferenceYes(CLASSIC_PREFERENCES.DISABLE_LINKED_ITEMS_SECTION, windowId);
 }

@@ -30,6 +30,8 @@ interface NoteItemProps {
   note: Note;
   /** Whether the note belongs to the current user: only then it can be deleted. */
   isOwn: boolean;
+  /** False when the tab does not allow changing notes (`DisableNotesForReadOnlyTabs`); defaults to true. */
+  canDelete?: boolean;
   /** Whether the deletion of this note is in progress. */
   isDeleting: boolean;
   onDelete: (noteId: string) => Promise<void>;
@@ -69,7 +71,16 @@ const useIsTextCut = (ref: RefObject<HTMLElement | null>, isCollapsed: boolean, 
  * a "Show more" toggle. Own notes are tinted and can be deleted after an inline confirmation, which
  * Escape cancels.
  */
-const NoteItem = ({ note, isOwn, isDeleting, onDelete, dateDisplay, now, locale }: NoteItemProps) => {
+const NoteItem = ({
+  note,
+  isOwn,
+  canDelete = true,
+  isDeleting,
+  onDelete,
+  dateDisplay,
+  now,
+  locale,
+}: NoteItemProps) => {
   const { t } = useTranslation();
   const sx = useNoteStyles();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -117,7 +128,7 @@ const NoteItem = ({ note, isOwn, isDeleting, onDelete, dateDisplay, now, locale 
             {shownDate}
           </Typography>
         )}
-        {isOwn && !isConfirming && (
+        {isOwn && canDelete && !isConfirming && (
           <Box sx={sx.deleteSlot} data-testid={`Box__a680f8_delete_${note.id}`}>
             <IconButton
               ariaLabel={t("forms.notes.deleteNote")}

@@ -34,6 +34,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { computeFieldLayout } from "@/utils/form/computeFieldLayout";
 import { FORM_FIELDS_ROOT_ATTRIBUTE } from "@/utils/form/focus";
 import { LINKED_ITEMS_SECTION_ID } from "@/utils/form/expandedSections";
+import { areNotesReadOnly, isLinkedItemsSectionDisabled } from "@/utils/preferences/classicPreferences";
 
 // Besides display logic, the form follows the record identifier (attachments section).
 const RECORD_IDENTIFIER_NAMES = ["_identifier"];
@@ -270,6 +271,7 @@ export function FormFields({
               isSectionExpanded={isSectionExpanded("notes_group")}
               onNotesChange={onNotesChange}
               showErrorModal={showErrorModal}
+              readOnly={areNotesReadOnly(tab)}
               data-testid="NoteSection__38e4a6"
             />
           </Collapsible>
@@ -304,8 +306,9 @@ export function FormFields({
           </Collapsible>
         </div>
       )}
-      {/* Linked Items Section — only visible in EDIT/VIEW mode, not during record creation */}
-      {mode !== FormMode.NEW && (
+      {/* Linked Items Section — only visible in EDIT/VIEW mode, not during record creation, unless the
+          OBUIAPP_DisableLinkedItemsSection preference hides it */}
+      {mode !== FormMode.NEW && !isLinkedItemsSectionDisabled(tab.window) && (
         <div ref={handleSectionRef(LINKED_ITEMS_SECTION_ID)} data-section-id={LINKED_ITEMS_SECTION_ID}>
           <Collapsible
             title={t("forms.sections.linkedItems")}
