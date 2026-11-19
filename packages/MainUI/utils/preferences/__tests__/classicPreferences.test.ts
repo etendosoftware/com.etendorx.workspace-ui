@@ -2,6 +2,7 @@ import { savePreferences } from "@/utils/propertyStore";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import {
   buildProcessPreferenceContext,
+  getGridPageSize,
   getNumericPreference,
   isPreferenceDisabled,
   isPreferenceYes,
@@ -79,6 +80,18 @@ describe("classicPreferences", () => {
     it("reads FinancialManagement by window and ShowAcct only globally", () => {
       savePreferences({ [`FinancialManagement_${WINDOW_ID}`]: "Y", [`ShowAcct_${WINDOW_ID}`]: "Y" });
       expect(buildProcessPreferenceContext(WINDOW_ID)).toEqual({ FinancialManagement: "Y", _ShowAcct: "" });
+    });
+  });
+
+  describe("getGridPageSize", () => {
+    it("uses dataPageSize of the window", () => {
+      savePreferences({ [`dataPageSize_${WINDOW_ID}`]: "50" });
+      expect(getGridPageSize(WINDOW_ID)).toBe(50);
+    });
+
+    it("defaults to 100 records", () => {
+      savePreferences({});
+      expect(getGridPageSize(WINDOW_ID)).toBe(100);
     });
   });
 });

@@ -18,6 +18,7 @@
 import { getStoredPreference } from "@/utils/propertyStore";
 import { PREFERENCE_ENABLED_VALUE } from "@/utils/preferences/refreshAfterDeletion";
 import { UIPattern, type Tab } from "@workspaceui/api-client/src/api/types";
+import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 
 /**
  * Classic interface preferences honoured by the new UI. Every one is looked up as classic
@@ -125,4 +126,14 @@ export function areNotesReadOnly(tab: Pick<Tab, "uIPattern" | "window">): boolea
  */
 export function isLinkedItemsSectionDisabled(windowId?: string): boolean {
   return isPreferenceYes(CLASSIC_PREFERENCES.DISABLE_LINKED_ITEMS_SECTION, windowId);
+}
+
+/**
+ * Records per grid page: classic `OB.PropertyStore.get('dataPageSize', windowId) || 100` in `OBViewGrid`.
+ *
+ * @param windowId - AD window id of the grid
+ * @returns The page size of the window, or the default one
+ */
+export function getGridPageSize(windowId?: string): number {
+  return getNumericPreference(CLASSIC_PREFERENCES.DATA_PAGE_SIZE, windowId, DEFAULT_PAGE_SIZE);
 }
