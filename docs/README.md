@@ -30,6 +30,8 @@ docs/
 │   │   └── README.md                # Classic parity, validation rules, why Classic's regex is not reused
 │   ├── form-keyboard-navigation/     # Feature: Tab order and focus in the form view
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
+│   ├── classic-preferences/          # Feature: Classic interface preferences applied by the new UI
+│   │   └── README.md                # Accounting tabs, start page, logout, audit, notes, personalization, page size
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
 │   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role, login protections

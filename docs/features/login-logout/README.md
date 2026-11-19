@@ -206,6 +206,8 @@ read once, so changing them needs a Tomcat restart.
 
 ## Related documentation
 
+- [Classic interface preferences](../classic-preferences/README.md) (`StartPage` after login, `LogoutRedirectURL` after a manual logout)
+
 - [UserContext](../../contexts/user-context.md)
 - [URL State Recovery](../url-state-recovery.md)
 - [Session keep-alive](../session-keep-alive.md)
