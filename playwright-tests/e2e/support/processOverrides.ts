@@ -82,6 +82,47 @@ export function applyTabOverrides(metadata: WindowMetadata, tabId: string, overr
   return tabs.length;
 }
 
+/** Body of `/api/erp/meta/preferences`: every preference of the session, by key. */
+interface PreferencesBody {
+  preferences?: Record<string, string>;
+}
+
+/** Body of `/api/erp/meta/session`: the role of the session among other data. */
+interface SessionBody {
+  currentRole?: Record<string, unknown>;
+}
+
+/** URL of the request that loads the preferences of the session. */
+export const PREFERENCES_URL = /\/api\/erp\/meta\/preferences(\?|$)/;
+
+/** URL of the request that loads the session (user, role, organization). */
+export const SESSION_URL = /\/api\/erp\/meta\/session(\?|$)/;
+
+/**
+ * Sets `values` in the preference map of a `meta/preferences` answer. Answers without a map (an error, a
+ * write) are left as they are.
+ * @returns whether the map was changed.
+ */
+export function applyPreferenceOverrides(body: PreferencesBody, values: Readonly<Record<string, string>>): boolean {
+  if (!body.preferences) {
+    return false;
+  }
+  Object.assign(body.preferences, values);
+  return true;
+}
+
+/**
+ * Sets `overrides` on the role of a `meta/session` answer.
+ * @returns whether the role was changed.
+ */
+export function applySessionRoleOverrides(body: SessionBody, overrides: Readonly<Record<string, unknown>>): boolean {
+  if (!body.currentRole) {
+    return false;
+  }
+  Object.assign(body.currentRole, overrides);
+  return true;
+}
+
 /** URL of the metadata request of a window (`/api/erp/meta/window/<id>`, with or without query). */
 export function windowMetadataUrl(windowId: string): RegExp {
   return new RegExp(`/api/erp/meta/window/${windowId}(\\?|$)`);
@@ -164,6 +205,41 @@ export async function overrideTab(
   const state = { applied: 0 };
   await routeChanged(page, windowMetadataUrl(windowId), (metadata) => {
     state.applied += applyTabOverrides(metadata as WindowMetadata, tabId, overrides);
+  });
+  return state;
+}
+
+/**
+ * Adds `values` to the preferences the page loads, from the next time it loads them (a login or a page
+ * load). For a preference that cannot be scoped to a window (`StartPage`, `LogoutRedirectURL`): created
+ * for real, it would reach every spec logged in as the same user meanwhile. `values` is read on every
+ * answer, so a test can change it between two logins.
+ * @returns the count of answers changed, to assert the override was used.
+ */
+export async function overridePreferences(
+  page: Page,
+  values: Readonly<Record<string, string>>
+): Promise<AppliedOverride> {
+  const state = { applied: 0 };
+  await routeChanged(page, PREFERENCES_URL, (body) => {
+    state.applied += Number(applyPreferenceOverrides(body as PreferencesBody, values));
+  });
+  return state;
+}
+
+/**
+ * Changes the role of the session the page loads, from the next time it loads it. The sample data has no
+ * role without administration rights in the client of the suite; a lower `userLevel` makes the UI treat the
+ * user as a regular one (the server keeps its own checks).
+ * @returns the count of answers changed, to assert the override was used.
+ */
+export async function overrideSessionRole(
+  page: Page,
+  overrides: Readonly<Record<string, unknown>>
+): Promise<AppliedOverride> {
+  const state = { applied: 0 };
+  await routeChanged(page, SESSION_URL, (body) => {
+    state.applied += Number(applySessionRoleOverrides(body as SessionBody, overrides));
   });
   return state;
 }

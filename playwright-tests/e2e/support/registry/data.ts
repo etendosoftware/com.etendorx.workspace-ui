@@ -146,6 +146,12 @@ export const SAMPLE_DOCUMENT = {
   SALES_ORDER_COMPLETED: "50017",
 } as const;
 
+/** Sample stock movements (Goods Transaction) a spec only reads. */
+export const GOODS_TRANSACTION = {
+  /** Receipt of one Laptop, 2011-02-03. */
+  LAPTOP_RECEIPT: { id: "058CB613C8D5418D886201CDEDCEF0C4", name: "Laptop" },
+} as const satisfies Record<string, SampleRecord>;
+
 export const ORGANIZATION = {
   SPAIN: "Spain",
 } as const;

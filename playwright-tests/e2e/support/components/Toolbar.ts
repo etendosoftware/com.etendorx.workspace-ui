@@ -15,7 +15,8 @@ export type ToolbarAction =
   | "copy-record"
   | "save-view"
   | "export-csv"
-  | "attachment";
+  | "attachment"
+  | "personalize-form";
 
 const PROCESS_MENU_TEST_ID = "IconButtonWithText__process-menu";
 /** AD key of the toolbar "New Record" button, rendered icon-only (`IconButton__<key>`) in form view. */

@@ -95,3 +95,21 @@ export async function runAndCaptureGridFetch(
   const response = await runAndWaitForResponse(page, isGridFetch, action, timeout);
   return gridFetchParams(response.request().postDataJSON(), tabId) ?? {};
 }
+
+/**
+ * Records the params of every request that fetches the grid records of `tabId` from now on, as they are
+ * sent: to check pages the UI asks for by itself (no response to wait for in between).
+ */
+export function collectGridFetches(page: Page, tabId: string): DatasourceRequestParams[] {
+  const fetches: DatasourceRequestParams[] = [];
+  page.on("request", (request) => {
+    if (!DATASOURCE_URL.test(request.url())) {
+      return;
+    }
+    const params = gridFetchParams(request.postDataJSON(), tabId);
+    if (params) {
+      fetches.push(params);
+    }
+  });
+  return fetches;
+}

@@ -39,6 +39,7 @@ export const WINDOWS = {
   // ── Sales ────────────────────────────────────────────────────────────────
   salesOrder: { search: "sales", menuId: "129", breadcrumb: /Sales Order/i },
   goodsShipment: { search: "goods S", menuId: "180", breadcrumb: /Goods Shipment/i },
+  goodsTransaction: { search: "goods t", menuId: "292", breadcrumb: /Goods Transaction/i },
   salesInvoice: { search: "sales i", menuId: "178", breadcrumb: /Sales Invoice/i },
 
   // ── Procurement ──────────────────────────────────────────────────────────
@@ -88,6 +89,8 @@ export const WINDOW_IDS = {
   FINANCIAL_ACCOUNT: "94EAA455D2644E04AB25D93BE5157B6D",
   PAYMENT_IN: "E547CE89D4C04429B6340FFA44E70716",
   PRODUCT: "140",
+  /** Query window (read-only tab) with the sample stock movements. */
+  GOODS_TRANSACTION: "223",
   BUSINESS_PARTNER: "123",
   PERIOD_CONTROL: "E66E701CCBA14B8BA480CBDE37C50D7A",
   COUNTRY_AND_REGION: "122",
@@ -113,6 +116,7 @@ export const TABS = {
   FINANCIAL_ACCOUNT_RECONCILIATION: "FF8080813320657F0133209DE21B0042",
   PROCESS_REQUEST_MONITOR: "A22C68A803DA43D3AE1FFD51BBA3234A",
   PAYMENT_IN_HEADER: "C4B6506838E14A349D6717D6856F1B56",
+  PRODUCT_HEADER: "180",
   PRODUCT_COSTING: "800057",
   PRODUCT_AVERAGE_COST_TRANSACTIONS: "9175CE3AFD764112BDB6E0647EB67FDF",
   PRODUCT_TRANSACTIONS: "289",
@@ -120,6 +124,8 @@ export const TABS = {
   ADD_PAYMENT_ORDER_INVOICES: "BE20AB937FC64221A86E93ECA0DF1C1D",
   SALES_INVOICE_ACCOUNTING: "A399D7976DD74832A0D56586E46D149A",
   BUSINESS_PARTNER_CUSTOMER: "223",
+  /** The only tab of Goods Transaction, read-only (UI pattern RO). */
+  GOODS_TRANSACTION: "384",
   /** Region tab of Country and Region: its display logic reads `@HasRegion@`. */
   COUNTRY_REGION: "136",
 } as const;
