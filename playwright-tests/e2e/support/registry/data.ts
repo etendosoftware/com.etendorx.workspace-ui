@@ -179,6 +179,10 @@ export const LOCATOR = {
  */
 export const FIELD = {
   SALES_ORDER_LINE_QUANTITY: "1130",
+  /** Net Unit Price of the Sales Order lines. */
+  SALES_ORDER_LINE_NET_UNIT_PRICE: "1138",
+  /** Description of the Sales Order header: a multi-line text field (reference Text). */
+  SALES_ORDER_DESCRIPTION: "1086",
   /** "Add Payment" process button of the Sales Invoice header (multi-record process definition). */
   SALES_INVOICE_ADD_PAYMENT: "AD7C15BA367642AFB471EFAFD768FB2D",
   /** "Process Invoices" button of the Sales Invoice header (classic APRM process, one record). */

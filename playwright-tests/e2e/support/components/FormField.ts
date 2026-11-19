@@ -12,7 +12,8 @@ const OPTION_SEARCH = 'input[aria-label="Search options"]:visible, input[placeho
 const OPTION_ITEM_PREFIX = "OptionItem__";
 const OPTION_ITEMS = `[data-testid^="${OPTION_ITEM_PREFIX}"]`;
 /** Controls of a read-only field: disabled inputs and buttons, and selectors marked aria-disabled. */
-const DISABLED_CONTROLS = 'input:disabled:not([type="hidden"]), button:disabled, [aria-disabled="true"]';
+const DISABLED_CONTROLS =
+  'input:disabled:not([type="hidden"]), textarea:disabled, button:disabled, [aria-disabled="true"]';
 /** Clickable box of a selector: its tab stop, or the tab stop the form suspended. */
 const SELECTOR_TRIGGER = 'div[tabindex="0"], div[data-original-tab-index="0"]';
 
@@ -65,7 +66,7 @@ export class FormField {
 
   /**
    * Asserts whether a field (by property name) is read-only. Read-only controls render disabled:
-   * inputs and switches with `disabled`, selectors with `aria-disabled="true"`.
+   * inputs, text areas and switches with `disabled`, selectors with `aria-disabled="true"`.
    */
   async expectReadOnly(hqlName: string, readOnly: boolean): Promise<void> {
     const field = this.byName(hqlName);

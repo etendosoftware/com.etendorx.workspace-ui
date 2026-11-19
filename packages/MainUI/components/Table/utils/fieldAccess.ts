@@ -21,6 +21,12 @@ import { getEvaluationContext } from "@/utils/evaluation/sharedEvaluationContext
 import { logger } from "@/utils/logger";
 import { toClassicBoolean } from "@/utils/toClassicBoolean";
 
+/** The record of the parent tab and its fields, which the expressions of a child tab can read as the form does. */
+export interface ParentRecordContext {
+  values?: Record<string, unknown> | null;
+  fields?: Record<string, Field>;
+}
+
 /**
  * Evaluates a display or read-only logic expression of a field for the values of a row edited inline.
  *
@@ -33,13 +39,21 @@ const evaluateRowLogic = (
   rowValues: Record<string, unknown>,
   session: Record<string, unknown> | undefined,
   windowId: string | undefined,
-  tabFields: Record<string, Field> | undefined
+  tabFields: Record<string, Field> | undefined,
+  parent?: ParentRecordContext
 ): boolean => {
   const compiled = compileExpression(expression);
   if (!tabFields) {
     return Boolean(compiled(session || {}, rowValues, windowId));
   }
-  const context = getEvaluationContext({ values: rowValues, fields: tabFields, context: session, windowId });
+  const context = getEvaluationContext({
+    values: rowValues,
+    fields: tabFields,
+    parentValues: parent?.values || undefined,
+    parentFields: parent?.fields,
+    context: session,
+    windowId,
+  });
   return toClassicBoolean(compiled(context, context, windowId));
 };
 
@@ -53,11 +67,12 @@ export const isHiddenByDisplayLogic = (
   rowValues: Record<string, unknown>,
   session?: Record<string, unknown>,
   windowId?: string,
-  tabFields?: Record<string, Field>
+  tabFields?: Record<string, Field>,
+  parent?: ParentRecordContext
 ): boolean => {
   if (!field.displayLogicExpression) return false;
   try {
-    return !evaluateRowLogic(field.displayLogicExpression, rowValues, session, windowId, tabFields);
+    return !evaluateRowLogic(field.displayLogicExpression, rowValues, session, windowId, tabFields, parent);
   } catch (error) {
     logger.warn(`Error evaluating displayLogicExpression for field ${field.name}:`, error);
     return false;
@@ -71,7 +86,8 @@ export const isFieldReadOnly = (
   rowValues?: Record<string, unknown>,
   session?: Record<string, unknown>,
   windowId?: string,
-  tabFields?: Record<string, Field>
+  tabFields?: Record<string, Field>,
+  parent?: ParentRecordContext
 ): boolean => {
   // Field explicitly marked as readonly
   if (field.isReadOnly) return true;
@@ -79,12 +95,12 @@ export const isFieldReadOnly = (
   // Field not updatable (readonly except for new rows)
   if (!field.isUpdatable && !isNewRow) return true;
 
-  if (rowValues && isHiddenByDisplayLogic(field, rowValues, session, windowId, tabFields)) return true;
+  if (rowValues && isHiddenByDisplayLogic(field, rowValues, session, windowId, tabFields, parent)) return true;
 
   // Evaluate readOnlyLogicExpression if present
   if (field.readOnlyLogicExpression && rowValues) {
     try {
-      return evaluateRowLogic(field.readOnlyLogicExpression, rowValues, session, windowId, tabFields);
+      return evaluateRowLogic(field.readOnlyLogicExpression, rowValues, session, windowId, tabFields, parent);
     } catch (error) {
       logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
       // On error, default to readonly for safety
