@@ -45,6 +45,13 @@ configure and remove buttons.
 - Text selection is turned off on the grid while an item is dragged or resized, and any selection is
   cleared when the interaction starts.
 
+## Empty columns
+
+A widget that is hidden or not available for the role leaves its stored column empty. The grid moves
+the remaining widgets left into those columns when it renders (`closeHorizontalGaps` in
+`DashboardGrid.tsx`); nothing is stored until the user moves a widget. See
+[UI Visual Consistency](../ui-visual-consistency/README.md) for the card surface and chip rules.
+
 ## Configuration
 
 None. The new labels are `dashboard.widget.collapse` and `dashboard.widget.expand` ("Collapse" /

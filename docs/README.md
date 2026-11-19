@@ -72,6 +72,8 @@ docs/
 │   │   └── README.md                # Ancestor values, per-record auxiliary inputs, preferences
 │   ├── toolbar-print-email/          # Feature: Toolbar Print and Email (Classic visibility and printing)
 │   │   └── README.md                # printConfig, enable rules, classic PrinterReports delegation
+│   ├── ui-visual-consistency/        # Feature: Shared styles, contrast and alignment rules (ETP-6287)
+│   │   └── README.md                # Theme tokens, ellipsis, numeric alignment, label column, toolbar icons
 │   └── table-state-persistence/      # Feature: Table state persistence
 │       └── README.md                # Multi-window table state management
 ├── process/                          # Process execution internals

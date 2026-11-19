@@ -29,6 +29,12 @@ import XIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import ExternalLinkIcon from "../../../ComponentLibrary/src/assets/icons/external-link.svg";
 import AlertCircleIcon from "../../../ComponentLibrary/src/assets/icons/alert-circle.svg";
 
+/**
+ * Row action buttons. Transparent at rest: the default white circle of the icon button looked like a hover
+ * left on over the tinted background of selected rows.
+ */
+const ROW_ACTION_BUTTON_CLASSES = "w-6 h-6 bg-transparent";
+
 interface ActionsColumnProps {
   /** The table row this actions column belongs to */
   row: MRT_Row<EntityData>;
@@ -107,7 +113,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           disabled={isSaving || hasErrors}
           title={hasErrors ? "Fix validation errors before saving" : "Save"}
           className={`
-            w-6 h-6 border border-gray-200
+            ${ROW_ACTION_BUTTON_CLASSES} border border-gray-200
             ${hasErrors ? "text-gray-400 cursor-not-allowed" : "text-green-600 hover:text-green-800 hover:bg-green-200"}
             transition-colors duration-200
           `}
@@ -123,7 +129,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           onClick={onCancel}
           disabled={isSaving}
           title="Cancel"
-          className="w-6 h-6 border border-gray-200 text-red-600 hover:text-red-800 hover:bg-red-200 transition-colors duration-200"
+          className={`${ROW_ACTION_BUTTON_CLASSES} border border-gray-200 text-red-600 hover:text-red-800 hover:bg-red-200 transition-colors duration-200`}
           data-testid={`cancel-button-${String(row.original.id)}`}
           {...cancelButtonAttrs}>
           <XIcon className="w-4 h-4" data-testid="XIcon__6c559a" />
@@ -153,7 +159,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
         onClick={onEdit}
         disabled={isReadOnly}
         title={isReadOnly ? "Edit disabled (Read Only)" : "Edit in grid"}
-        className={`w-6 h-6 ${isReadOnly ? "text-gray-300 cursor-not-allowed" : "text-blue-600"}`}
+        className={`${ROW_ACTION_BUTTON_CLASSES} ${isReadOnly ? "text-gray-300 cursor-not-allowed" : "text-blue-600"}`}
         data-testid={`edit-button-${String(row.original.id)}`}
         {...editButtonAttrs}>
         <EditIcon className="w-4 h-4" data-testid="EditIcon__6c559a" />
@@ -161,7 +167,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
       <IconButton
         onClick={onOpenForm}
         title="Open form view"
-        className="w-6 h-6 text-gray-600"
+        className={`${ROW_ACTION_BUTTON_CLASSES} text-gray-600`}
         data-testid={`form-button-${String(row.original.id)}`}
         {...formButtonAttrs}>
         <ExternalLinkIcon className="w-4 h-4" data-testid="ExternalLinkIcon__6c559a" />

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import FavoritesRenderer from "@/screens/Home/widgets/renderers/FavoritesRenderer";
+import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "../chipClasses";
 
 const mockSetWindowActive = jest.fn();
 const mockSeed = jest.fn();
@@ -37,6 +38,15 @@ describe("FavoritesRenderer", () => {
     expect(screen.queryByTestId("FavoritesRenderer__list")).not.toBeInTheDocument();
   });
 
+  it("uses the light chips and the contrast-safe empty text of the other list widgets", () => {
+    const { unmount } = render(<FavoritesRenderer data={dataWith([])} />);
+    expect(screen.getByTestId("FavoritesRenderer__empty")).toHaveClass(...WIDGET_EMPTY_TEXT_CLASSES.split(" "));
+    unmount();
+
+    render(<FavoritesRenderer data={dataWith([{ windowId: "143", label: "Sales Order" }])} />);
+    expect(screen.getByTestId("FavoritesRenderer__item_143")).toHaveClass(...WIDGET_CHIP_CLASSES.split(" "));
+  });
+
   it("lists each favorite by its label", () => {
     render(
       <FavoritesRenderer
@@ -49,6 +59,14 @@ describe("FavoritesRenderer", () => {
 
     expect(screen.getByTestId("FavoritesRenderer__item_143")).toHaveTextContent("Sales Order");
     expect(screen.getByTestId("FavoritesRenderer__item_140")).toHaveTextContent("Product");
+  });
+
+  it("keeps a long label on one line and shows it whole on hover", () => {
+    render(<FavoritesRenderer data={dataWith([{ windowId: "143", label: "Sales Order" }])} />);
+
+    const item = screen.getByTestId("FavoritesRenderer__item_143");
+    expect(item).toHaveClass("truncate", "whitespace-nowrap");
+    expect(item).toHaveAttribute("title", "Sales Order");
   });
 
   it("seeds the favorites store with the items", () => {

@@ -71,6 +71,7 @@ import { useServerFieldErrorsStore } from "@/stores/serverFieldErrorsStore";
 import { getFormHighlightScope } from "@/utils/callouts/calloutHighlight";
 import type { ServerFieldErrors } from "@/utils/form/serverFieldErrors";
 import { computeInitialExpandedSections, MAIN_SECTION_ID } from "@/utils/form/expandedSections";
+import { isKeptUserEdit } from "@/utils/form/keepUserEdits";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useUnsavedChangesTabGuard } from "@/contexts/UnsavedChangesTabGuard";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
@@ -170,6 +171,10 @@ function FormViewComponent({
   // Set to true after a successful EDIT-mode save so the subsequent data refresh
   // resets defaultValues (via stableReset) to clear isDirty.
   const justSavedInEditRef = useRef(false);
+  // Set in onSuccess right before the saved record is fetched again: the form already shows it as saved,
+  // so the user may be typing, and that last refresh must not overwrite what was typed. Any other
+  // refresh (process, notes, stale record reload) still replaces the values with the server's.
+  const keepUserEditsRef = useRef(false);
 
   const { graph } = useSelected();
   // Scoped to the window subtree that owns this form, not to whichever window is
@@ -303,6 +308,8 @@ function FormViewComponent({
   );
 
   const refreshRecordAndSession = useCallback(async () => {
+    // An explicit refresh brings the server values, also over a pending post-save one
+    keepUserEditsRef.current = false;
     if (!recordId || recordId === NEW_RECORD_ID) {
       await refetch();
       return;
@@ -638,7 +645,7 @@ function FormViewComponent({
   const lastInitializedContextRef = useRef<{ recordId: string | undefined; mode: FormMode } | null>(null);
 
   const applyDataRefresh = useCallback(
-    (processedData: Record<string, EntityValue>) => {
+    (processedData: Record<string, EntityValue>, keptEdits?: Record<string, unknown>) => {
       // For data-only refreshes, update changed fields immediately via setValue — even while
       // loadingFormInitialization is true (i.e. a background refetch is in progress).
       // This is key for fast parent-tab updates: datasource.get() completes quickly and
@@ -660,6 +667,9 @@ function FormViewComponent({
         // come only from formInitialization while it is being re-fetched). We'll pick those up
         // in the second pass once loadingFormInitialization becomes false.
         if (newValue === undefined) continue;
+
+        // A value the user typed after the save the refresh comes from stays as typed
+        if (isKeptUserEdit(key, keptEdits)) continue;
 
         const currentVal = currentValues[key];
 
@@ -745,6 +755,10 @@ function FormViewComponent({
   }, [currentRecordId, currentMode]);
 
   useEffect(() => {
+    // Consumed by the first run after onSuccess set it, even when that run changes nothing
+    const keptEdits = keepUserEditsRef.current ? dirtyFieldsRef.current : undefined;
+    keepUserEditsRef.current = false;
+
     // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
     // This prevents unnecessary initialization logic and potential loops
     if (!currentRecordId && currentMode !== FormMode.NEW) {
@@ -772,7 +786,7 @@ function FormViewComponent({
     lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
 
     if (isDataRefresh) {
-      applyDataRefresh(processedData);
+      applyDataRefresh(processedData, keptEdits);
       const isPostEditSave = justSavedInEditRef.current;
       if (isPostEditSave) {
         justSavedInEditRef.current = false;
@@ -1037,6 +1051,7 @@ function FormViewComponent({
 
         if (fullRecordResult.data.response?.data?.[0]) {
           completeRecord = fullRecordResult.data.response.data[0];
+          keepUserEditsRef.current = true;
           // Update the graph again just in case there are missing pieces in the partial save payload.
           // Also call setSelectedMultiple so useToolbar's processButtons re-evaluates displayLogic
           // against the complete record (the lastGraphSyncDataRef guard in the graph-sync useEffect

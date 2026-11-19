@@ -21,6 +21,7 @@ import { useItemActions } from "../../../hooks/useItemType";
 import { findActive, MENU_COLLAPSED_ATTRIBUTE } from "../../../utils/drawerUtils";
 import { MenuTitle } from "../MenuTitle";
 import type { DrawerSectionProps, ToggleFunctions } from "../types";
+import { SIDEBAR_GUTTER_CLASS } from "../spacing";
 import MenuLibrary from "../../Menu";
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
@@ -37,6 +38,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     pendingWindowId,
     isExpanded: externalExpanded,
     parentId,
+    depth = 0,
   }) => {
     const targetWindowId = windowId || pendingWindowId;
     const isSelected = Boolean(targetWindowId?.length && item.windowId === targetWindowId);
@@ -168,7 +170,9 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleClick]
     );
 
-    const nestedClasses = parentId ? "mx-2 my-0.5 rounded-lg" : "";
+    // Only the top-level section takes the gutter; nested sections live inside it, so every entry box keeps
+    // the same 12px on both sides and the levels indent on the left (MenuTitle).
+    const nestedClasses = depth === 0 ? SIDEBAR_GUTTER_CLASS : "my-0.5";
     const sectionClasses = [
       "bg-transparent",
       open
@@ -230,7 +234,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           open={open}
           isParentActive={isParentActive}
           isExpandable={isExpandable && !isSearchActive}
-          isTopLevel={!parentId}
+          depth={depth}
         />
         {hasChildren && open && (
           // The children of a collapsed section stay in the DOM, only clipped, so they are
@@ -253,6 +257,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                 isExpandable={isExpandable && !isSearchActive}
                 isExpanded={expandedSections.has(subitem.id)}
                 parentId={item.id}
+                depth={depth + 1}
                 windowId={windowId}
               />
             ))}

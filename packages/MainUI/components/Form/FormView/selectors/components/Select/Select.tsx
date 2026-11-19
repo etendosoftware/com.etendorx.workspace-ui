@@ -22,12 +22,15 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import { formatPickListCell } from "@/utils/form/pickListColumns";
-import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
+import OptionItem, {
+  SELECTED_OPTION_TEXT_CLASSES,
+} from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
 import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
-import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
+import { useFieldTrailingAction } from "./FieldTrailingAction";
+import { fieldIconColor } from "@/utils/form/activeFieldColors";
 
 const resolveOptionColor = (color?: string) => {
   if (!color) return { tagColor: undefined, textColor: undefined };
@@ -90,17 +93,20 @@ function SelectCmp({
     columnsMinWidth
   );
 
+  // Field action shown inside the box (the search magnifier of FK fields).
+  const trailingAction = useFieldTrailingAction();
+
   const mainDivClassNames = useMemo(() => {
     const baseClasses =
       "w-full flex items-center justify-between px-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 transition-colors outline-none";
     if (isReadOnly) {
       return `${baseClasses} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)`;
     }
-    const activeStateClasses = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
+    const activeStateClasses = "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)";
     const hoverStateClasses =
       "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
     const focusStateClasses =
-      "focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer";
+      "focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none cursor-pointer";
     const interactiveStateClasses = isFocused || isOpen ? activeStateClasses : hoverStateClasses;
     return `${baseClasses} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactiveStateClasses} ${focusStateClasses}`;
   }, [isReadOnly, isFocused, isOpen]);
@@ -111,7 +117,7 @@ function SelectCmp({
       return `${baseClasses} text-baseline-60`;
     }
     const isActiveState = (isFocused || isOpen) && !isReadOnly;
-    const textColorClass = isActiveState ? "text-[#2a1757]" : "text-(--color-transparent-neutral-80)";
+    const textColorClass = isActiveState ? "text-(--ui-field-focus-fg)" : "text-(--color-transparent-neutral-80)";
     return `${baseClasses} ${textColorClass}`;
   }, [selectedLabel, isFocused, isOpen, isReadOnly]);
 
@@ -119,14 +125,14 @@ function SelectCmp({
     const baseClasses =
       "mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded";
     // On the light active background the icon takes the dark text color of the field, in both themes
-    const textColorClass = isFocused || isOpen ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)";
+    const textColorClass = fieldIconColor(isFocused || isOpen);
     return `${baseClasses} ${textColorClass}`;
   }, [isFocused, isOpen]);
 
   const chevronClassNames = useMemo(() => {
     const baseClasses = "w-5 h-5 transition-transform";
     const isActiveState = isFocused || isOpen;
-    const colorClass = isActiveState ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)";
+    const colorClass = fieldIconColor(isActiveState);
     const rotationClass = isActiveState ? "rotate-180" : "";
     return `${baseClasses} ${colorClass} ${rotationClass}`;
   }, [isFocused, isOpen]);
@@ -384,7 +390,7 @@ function SelectCmp({
                   return (
                     <span
                       key={col.accessorKey}
-                      className={`truncate ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
+                      className={`truncate ${isSelected ? SELECTED_OPTION_TEXT_CLASSES : "text-baseline-90"}`}>
                       {formatPickListCell(
                         raw ?? (col === columns[0] ? option.label : undefined),
                         ident,
@@ -515,6 +521,9 @@ function SelectCmp({
                 <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
             )}
+            {/* After the clear icon: that one appears on focus, and anything to its right keeps its place, so a
+                press on the action is not moved away between mouse down and up. */}
+            {trailingAction}
             {!isReadOnly && (
               <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
             )}

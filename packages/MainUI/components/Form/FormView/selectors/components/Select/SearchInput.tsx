@@ -26,7 +26,9 @@ const SearchInput = memo(
         onKeyDown={handleKeyDown}
         onBlur={handleSearchBlur}
         placeholder={placeholder}
-        className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
+        // A hint longer than the box ends in an ellipsis instead of mid-word; the full hint shows on hover
+        title={placeholder}
+        className="w-full p-2 text-sm text-ellipsis border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
         aria-label="Search options"
         onFocus={handleFocus}
       />

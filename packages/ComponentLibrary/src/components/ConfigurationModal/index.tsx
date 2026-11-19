@@ -26,6 +26,27 @@ import IconButton from "../IconButton";
 import Menu from "../Menu";
 import AboutButton from "../About/AboutButton";
 
+/** Layout of an option tile. Both states keep a 1px border, so a selected tile never changes size. */
+export const OPTION_BASE_CLASSES =
+  "flex flex-col gap-2 rounded-xl overflow-hidden border box-border transition-colors duration-250 ease-in-out";
+/**
+ * Selected tile: accent border doubled with an inset ring (no layout change) on the tinted field surface, which
+ * is light in light mode and dark in dark mode, so the colour swatches keep their contrast in both themes.
+ */
+export const OPTION_SELECTED_CLASSES =
+  "border-(--color-dynamic-main) shadow-[inset_0_0_0_1px_var(--color-dynamic-main)] bg-(--ui-field-focus-bg)";
+export const OPTION_IDLE_CLASSES =
+  "border-(--color-transparent-neutral-10) bg-(--color-baseline-0) hover:border-(--color-baseline-90)";
+
+/**
+ * State classes of an option tile.
+ *
+ * @param selected whether the option is the current one
+ * @returns the classes of that state
+ */
+export const getOptionStateClasses = (selected: boolean): string =>
+  selected ? OPTION_SELECTED_CLASSES : OPTION_IDLE_CLASSES;
+
 const IconRenderer = ({
   icon,
   imageStyles,
@@ -145,7 +166,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                       key={id}
                       type="button"
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                      className={`relative ${hideRadioButton ? "p-3" : "p-3 pt-12"} flex flex-col gap-2 bg-[var(--color-baseline-0)] rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out box-border ${isBasicItem ? "items-center justify-center" : ""} ${isSelected(section.selectedItem, imageIndex) ? "bg-[var(--color-dynamic-contrast-text)] border-2 border-[var(--color-etendo-main)]" : "border border-[var(--color-transparent-neutral-10)]"}`}
+                      className={`relative ${hideRadioButton ? "p-3" : "p-3 pt-12"} ${OPTION_BASE_CLASSES} ${isBasicItem ? "items-center justify-center" : ""} ${getOptionStateClasses(isSelected(section.selectedItem, imageIndex))}`}
                       style={{
                         flex: `0 0 calc((100% - ${(itemsPerRow - 1) * 0.75}rem) / ${itemsPerRow})`,
                       }}>

@@ -33,7 +33,8 @@ export const useStyle = () => {
           borderRadius: "1.5rem",
           padding: "0.25rem",
           width: "20rem",
-          zIndex: 9999,
+          // Same layer as the other toolbar menus, below dialogs.
+          zIndex: 999,
         },
       },
     }),

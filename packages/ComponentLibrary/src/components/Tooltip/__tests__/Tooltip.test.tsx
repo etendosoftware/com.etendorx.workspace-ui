@@ -73,6 +73,39 @@ describe("Tooltip", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
+  /** Renders a tooltip around a button and moves the pointer onto it. */
+  const renderHovered = () => {
+    render(
+      <Tooltip title="Test tooltip">
+        <button type="button">Hover me</button>
+      </Tooltip>
+    );
+    const trigger = screen.getByRole("button");
+    fireEvent.mouseEnter(trigger.parentElement as HTMLElement);
+    return trigger;
+  };
+
+  const waitShowDelay = () =>
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+  it("hides a visible tooltip when the trigger is pressed", () => {
+    const trigger = renderHovered();
+    waitShowDelay();
+
+    fireEvent.mouseDown(trigger);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("does not open the tooltip when the trigger is pressed before the delay ends", () => {
+    const trigger = renderHovered();
+    fireEvent.mouseDown(trigger);
+    waitShowDelay();
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
   it("does not show tooltip when disabled", () => {
     render(
       <Tooltip title="Disabled tooltip" disabled>

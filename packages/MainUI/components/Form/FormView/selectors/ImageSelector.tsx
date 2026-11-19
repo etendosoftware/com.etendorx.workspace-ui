@@ -13,6 +13,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import ImagePreviewModal from "./ImagePreviewModal";
 import { NOT_TABBABLE } from "@/utils/form/focus";
+import { IDLE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface ImageSelectorProps {
   field: Field;
@@ -343,17 +344,19 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
-          className="text-gray-400 flex-shrink-0">
+          className={`${IDLE_ICON_COLOR} flex-shrink-0`}>
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" />
           <circle cx="8.5" cy="8.5" r="1.5" />
           <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
-      {isUploading && <span className="text-sm text-gray-500">{t("image.upload.uploading")}</span>}
+      {isUploading && <span className="text-sm text-(--ui-text-muted)">{t("image.upload.uploading")}</span>}
       {!isUploading && !isReadOnly && (
-        <span className="text-sm text-gray-500">{t("image.selector.clickToUpload")}</span>
+        <span className="text-sm text-(--ui-text-muted)">{t("image.selector.clickToUpload")}</span>
       )}
-      {!isUploading && isReadOnly && <span className="text-sm text-gray-400">{t("image.selector.noImage")}</span>}
+      {!isUploading && isReadOnly && (
+        <span className="text-sm text-(--ui-text-muted)">{t("image.selector.noImage")}</span>
+      )}
     </button>
   ) : null;
 

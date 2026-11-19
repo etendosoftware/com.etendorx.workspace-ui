@@ -43,6 +43,7 @@ import type {
   MRT_SortingState,
   MRT_VisibilityState,
 } from "material-react-table";
+import { MENU_CONTENT_CLASSES } from "@/utils/menuClasses";
 
 /**
  * Mirrors the backend's canManageScope gate (SavedViewService#canManageScope): a plain
@@ -329,12 +330,12 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl min-w-[220px]" data-testid="SaveViewMenu__menu">
-      <div className="rounded-2xl px-2 py-4 flex flex-col gap-1" data-testid="SaveViewMenu__container">
+      <div className={`${MENU_CONTENT_CLASSES} flex flex-col gap-1`} data-testid="SaveViewMenu__container">
         {/* Reset to standard view */}
         {!showSaveInput && (
           <button
             type="button"
-            className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) text-sm font-medium disabled:opacity-50"
+            className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) font-medium disabled:opacity-50"
             onClick={handleResetToStandard}
             disabled={isUpdatingDefault}
             data-testid="SaveViewMenu__reset-button">
@@ -346,7 +347,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         {!showSaveInput && (
           <button
             type="button"
-            className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) text-sm font-medium"
+            className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) font-medium"
             onClick={handleSaveClick}
             disabled={isSaving}
             data-testid="SaveViewMenu__save-button">
@@ -408,7 +409,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         )}
 
         {/* Divider */}
-        <hr className="my-1 border-(--color-transparent-neutral-10)" />
+        <hr className="-mx-2 my-1 border-(--color-transparent-neutral-10)" />
 
         {/* Saved views list */}
         {isLoading && (
@@ -454,7 +455,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                 <>
                   <button
                     type="button"
-                    className="flex-1 text-left text-sm cursor-pointer truncate flex items-center gap-1"
+                    className="flex-1 text-left cursor-pointer truncate flex items-center gap-1"
                     onClick={() => handleApplyView(view)}
                     title={view.name}
                     data-testid="SaveViewMenu__view-apply">

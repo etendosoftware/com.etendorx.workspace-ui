@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import BellIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
 import BellAlertIcon from "@workspaceui/componentlibrary/src/assets/icons/bell-alert.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -26,9 +26,9 @@ import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { useAlertCount } from "@/hooks/useAlertCount";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserStore } from "@/stores/userStore";
-import { ALERT_MANAGEMENT_VIEW_ID, ALERTS_LABEL_KEY, UNKNOWN_ALERT_COUNT } from "@/utils/alerts/constants";
+import { ALERTS_LABEL_KEY, UNKNOWN_ALERT_COUNT } from "@/utils/alerts/constants";
 import { resolveAlertShortcut } from "@/utils/alerts/resolveAlertShortcut";
-import { openEtendoViewPopup } from "@/utils/menu/openEtendoView";
+import { useOpenAlertManagement } from "@/hooks/useOpenAlertManagement";
 import { createI18N } from "@/utils/ob/i18n";
 
 /**
@@ -70,9 +70,7 @@ const AlertsButton: React.FC = () => {
   const label = createI18N({ getLabel }).getLabel(ALERTS_LABEL_KEY, [formatAlertCount(count)]);
   const Icon = hasPendingAlerts(count) ? BellAlertIcon : BellIcon;
 
-  const openAlertManagement = useCallback(() => {
-    openEtendoViewPopup({ baseUrl: config?.etendoClassicHost || "", viewId: ALERT_MANAGEMENT_VIEW_ID, token });
-  }, [config?.etendoClassicHost, token]);
+  const openAlertManagement = useOpenAlertManagement();
 
   const shortcuts = useMemo(
     () => ({ [resolveAlertShortcut()]: { handler: openAlertManagement, allowInInputs: true } }),

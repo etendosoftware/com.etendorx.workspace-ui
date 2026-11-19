@@ -16,6 +16,8 @@
  */
 
 import type { CalendarWidgetData, CalendarPeriod } from "@workspaceui/api-client/src/api/dashboard";
+import { useTranslation } from "@/hooks/useTranslation";
+import { WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 const STATUS_STYLES: Record<CalendarPeriod["openClose"], { badge: string; label: string }> = {
   O: { badge: "bg-success-light text-success-main", label: "Open" },
@@ -42,10 +44,11 @@ interface CalendarRendererProps {
 }
 
 export default function CalendarRenderer({ data }: CalendarRendererProps) {
+  const { t } = useTranslation();
   if (!data.currentPeriod && data.entries.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="CalendarRenderer__empty">
-        —
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="CalendarRenderer__empty">
+        {t("dashboard.widget.emptyCalendar")}
       </p>
     );
   }

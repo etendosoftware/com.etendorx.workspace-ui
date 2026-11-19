@@ -20,6 +20,7 @@ import ChevronDownIcon from "@workspaceui/componentlibrary/src/assets/icons/chev
 import type { TranslateFunction } from "@/hooks/types";
 import type { ProcessAvailableButton } from "@/components/Toolbar/types";
 import type { Field } from "@workspaceui/api-client/src/api/types";
+import { PRIMARY_DISABLED_CLASSES } from "../constants";
 
 /**
  * Tells whether the role can run the process of a button. Classic keeps the button of a process
@@ -59,12 +60,13 @@ export const isProcessButtonEnabled = (
   readOnlyButtonIds?: ReadonlySet<string>
 ): boolean => isProcessButtonAccessible(button) && !readOnlyButtonIds?.has(button.id);
 
+// Open or hovered, the button takes the accent fill of "New Record" with white text: dynamic-main with its contrast
+// text was 2.9:1 in the dark theme, where both are light.
 const getProcessButtonStyles = (anchorEl: HTMLElement | null): string => {
-  const baseClasses =
-    "hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-dynamic-contrast-text)] disabled:bg-[var(--color-baseline-70)] disabled:opacity-20 h-8 py-1 px-4";
+  const baseClasses = `hover:bg-(--ui-accent-hover) hover:text-white ${PRIMARY_DISABLED_CLASSES} h-8 py-1 px-4`;
 
   const conditionalClasses = anchorEl
-    ? "!bg-[var(--color-dynamic-main)] !border-none !text-[var(--color-dynamic-contrast-text)]"
+    ? "!bg-(--ui-accent) !border-none !text-white"
     : "bg-[var(--color-transparent-neutral-0)]";
 
   return `${conditionalClasses} ${baseClasses}`;

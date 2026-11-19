@@ -19,14 +19,17 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
+import { MENU_ICON_SLOT_OPEN_CLASS, getMenuRowIndentStyle } from "../spacing";
 import { DEFAULT_B64, EXTERNAL_LINK_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 import { useFavoritesDrawer } from "../FavoritesDrawerContext";
 import { useDrawerHighlight } from "../DrawerHighlightContext";
 import { isOpenableMenuItem, MENU_ITEM_ID_ATTRIBUTE } from "../../../utils/drawerUtils";
 
-/** Ring painted on the entry the keyboard navigation is currently on. */
-// Softer in dark: the full-strength lilac ring drew more attention than the entry that is actually open
-const MENU_ITEM_HIGHLIGHT_CLASSES = "ring-2 ring-inset ring-blue-500 dark:ring-blue-500/40";
+/**
+ * Entry the keyboard navigation is currently on. It looks like a hovered entry, so the open window keeps the
+ * only "selected" style of the sidebar.
+ */
+const MENU_ITEM_HIGHLIGHT_CLASSES = "bg-(--ui-hover) text-(--ui-text)";
 
 function getIconSrc(item: { icon?: string | null; type?: string }): string {
   if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;
@@ -45,23 +48,25 @@ function getIconSrc(item: { icon?: string | null; type?: string }): string {
   }
 }
 
-function getMenuButtonClassName(
-  open?: boolean,
-  selected?: boolean,
-  isParentActive?: boolean,
-  isTopLevel?: boolean
-): string {
+/** Shape of an expanded entry: the same rounded box and 8px inner padding at every level (see spacing.ts). */
+export const MENU_ROW_SHAPE_CLASSES = "rounded-lg px-2 py-0.5";
+
+export function getMenuButtonClassName(open?: boolean, selected?: boolean, isParentActive?: boolean): string {
   const base = "relative flex items-center transition-colors duration-200 cursor-pointer";
   if (open) {
-    const shape = isTopLevel ? "px-4 py-0.5" : "rounded-lg px-2 py-0.5";
+    // Levels indent only on the left (inline padding by depth); every box keeps the sidebar gutter on both sides.
+    const shape = MENU_ROW_SHAPE_CLASSES;
     let state = "text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)";
     if (selected) state = "bg-(--ui-selected-bg) text-(--ui-text) font-medium";
     else if (isParentActive) state = "text-(--ui-text) font-medium hover:bg-(--ui-hover)";
-    return `${base} text-xl justify-between w-full ${shape} ${state}`;
+    return `${base} text-xl justify-between gap-2 w-full ${shape} ${state}`;
   }
   const rail = selected || isParentActive ? "bg-(--ui-selected-bg)" : "hover:bg-(--ui-hover)";
   return `${base} p-2.5 rounded-full ${rail}`;
 }
+
+/** Star of a window that is not a favorite: 3:1 or more on the sidebar in both themes (slate-400 was 2.4:1 in dark). */
+const FAVORITE_STAR_IDLE_CLASS = "text-(--color-transparent-neutral-60)";
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
   <svg
@@ -79,7 +84,7 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 );
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
-  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable, isTopLevel }) => {
+  ({ item, onClick, selected, expanded, open, popperOpen, isParentActive, isExpandable, depth = 0 }) => {
     const favoritesCtx = useFavoritesDrawer();
     const isFav = !!(favoritesCtx && item.windowId && favoritesCtx.isFavorite(item.windowId));
     const highlightCtx = useDrawerHighlight();
@@ -92,7 +97,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
     const canToggle = Boolean(isExpandable && item.children?.length);
     const isNavigable = canToggle || isOpenableMenuItem(item);
     const isHighlighted = Boolean(isNavigable && highlightCtx && highlightCtx.highlightedItemId === item.id);
-    const highlightClasses = isHighlighted ? MENU_ITEM_HIGHLIGHT_CLASSES : "";
+    const highlightClasses = isHighlighted && !selected ? MENU_ITEM_HIGHLIGHT_CLASSES : "";
 
     useEffect(() => {
       if (!isHighlighted) return;
@@ -133,9 +138,11 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         tabIndex={0}
         onClick={onClick}
         onKeyDown={handleTitleKeyDown}
-        className={`${getMenuButtonClassName(open, selected, isParentActive, isTopLevel)} ${highlightClasses}`.trim()}>
+        className={`${getMenuButtonClassName(open, selected, isParentActive)} ${highlightClasses}`.trim()}
+        style={open ? getMenuRowIndentStyle(depth) : undefined}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
-          <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+          <div
+            className={`${open ? MENU_ICON_SLOT_OPEN_CLASS : "w-full h-full"} shrink-0 flex justify-center items-center`}>
             <span className="text-base">
               <img
                 alt={item.icon ? "img" : item.type || "icon"}
@@ -156,7 +163,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                   className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
                     isFav
                       ? "text-yellow-400 opacity-100"
-                      : "text-slate-400 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
+                      : `${FAVORITE_STAR_IDLE_CLASS} opacity-0 group-hover:opacity-100 hover:text-yellow-400`
                   }`}
                   title={isFav ? "Remove from favorites" : "Add to favorites"}>
                   <StarIcon filled={isFav} />
@@ -166,7 +173,8 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
           )}
         </div>
         {open && item.children && !popperOpen && (
-          <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+          <div
+            className={`shrink-0 transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
             <ChevronDown />
           </div>
         )}

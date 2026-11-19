@@ -21,6 +21,7 @@ import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { MRT_Column } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { MENU_CONTENT_CLASSES, SUB_MENU_CONTENT_CLASSES } from "@/utils/menuClasses";
 
 export type SummaryType = "min" | "max" | "count" | "sum" | "avg";
 
@@ -89,7 +90,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="HeaderMenu__summary">
-      <div className="rounded-2xl px-2 py-4">
+      <div className={MENU_CONTENT_CLASSES}>
         <div
           className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20) flex justify-between items-center relative"
           onMouseEnter={handleMouseEnterSubMenu}
@@ -102,7 +103,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
             onClose={handleCloseSubMenu}
             className="rounded-xl ml-2"
             data-testid="Menu__3c9781">
-            <div className="rounded-2xl px-2 py-2" onMouseLeave={handleCloseSubMenu}>
+            <div className={SUB_MENU_CONTENT_CLASSES} onMouseLeave={handleCloseSubMenu}>
               <div
                 onClick={() => handleSetSummary("min")}
                 className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">

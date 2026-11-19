@@ -18,7 +18,12 @@
 import { act, renderHook } from "@testing-library/react";
 import { useAlertCount } from "../useAlertCount";
 import { fetchAlertCount } from "@/utils/alerts/fetchAlertCount";
-import { ALERT_COUNT_MESSAGE_ACTION, ALERT_COUNT_MESSAGE_TYPE, ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
+import {
+  ALERT_COUNT_MESSAGE_ACTION,
+  ALERT_COUNT_MESSAGE_TYPE,
+  ALERTS_POLL_DELAY_MS,
+  ALERTS_CHANGED_EVENT,
+} from "@/utils/alerts/constants";
 
 jest.mock("@/utils/alerts/fetchAlertCount", () => ({
   fetchAlertCount: jest.fn(),
@@ -133,6 +138,20 @@ describe("useAlertCount", () => {
     await advanceToNextPoll();
 
     expect(mockFetchAlertCount).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts again at once when alerts are marked as read in the new UI", async () => {
+    mockFetchAlertCount.mockResolvedValueOnce(3).mockResolvedValueOnce(1);
+
+    const { result } = renderAlertCount();
+    await flushPoll();
+    act(() => {
+      window.dispatchEvent(new Event(ALERTS_CHANGED_EVENT));
+    });
+    await flushPoll();
+
+    expect(mockFetchAlertCount).toHaveBeenCalledTimes(2);
+    expect(result.current).toBe(1);
   });
 
   it("polls immediately when the role changes", async () => {

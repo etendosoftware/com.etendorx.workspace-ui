@@ -15,10 +15,11 @@
  *************************************************************************
  */
 
-import { Box, Typography, useTheme } from "@mui/material";
-import { useCallback, useMemo } from "react";
+import { Box, Typography } from "@mui/material";
+import { useCallback } from "react";
 import { Modal } from "..";
 import { statusConfig } from "./states";
+import StatusIconBadge from "./StatusIconBadge";
 import { useStyle } from "./styles";
 import type { StatusModalProps } from "./types";
 import CheckIcon from "../../assets/icons/check.svg";
@@ -36,14 +37,9 @@ const StatusModal: React.FC<StatusModalProps> = ({
   isDeleteSuccess,
   open = true,
 }) => {
-  const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
-  const theme = useTheme();
+  const { iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
   const { sx } = useStyle();
 
-  const backgroundGradient = useMemo(
-    () => `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`,
-    [gradientColor]
-  );
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -64,7 +60,6 @@ const StatusModal: React.FC<StatusModalProps> = ({
       showHeader={false}
       saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
       secondaryButtonLabel={secondaryLabel}
-      backgroundGradient={backgroundGradient}
       onSave={onSave || handleClose}
       onAfterClose={handleAfterClose}
       onCancel={onCancel || handleClose}
@@ -72,13 +67,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
       SaveIcon={CheckIcon}
       buttons={isDeleteSuccess ? null : undefined}>
       <Box sx={sx.statusModalContainer}>
-        <Box
-          sx={{
-            ...sx.statusIcon,
-            background: iconBackgroundColor,
-          }}>
-          <StatusIcon fill={theme.palette.baselineColor.neutral[0]} />
-        </Box>
+        <StatusIconBadge color={iconBackgroundColor} Icon={StatusIcon} data-testid="StatusIconBadge__status" />
         {statusType === "error" && errorMessage && <Typography sx={sx.errorMessage}>{errorMessage}</Typography>}
         <Typography sx={sx.statusText}>{statusText}</Typography>
       </Box>

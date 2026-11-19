@@ -25,6 +25,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 
+/** 8px on the left puts the first child tab on the left edge of the child toolbar and grid below it. */
+export const SUB_TABS_BAR_PADDING = "pl-2 pr-3";
+
 /** Width of the fade that hints there are more tabs on that side. */
 const EDGE_FADE_PX = 28;
 /** Least a press of an arrow moves the strip. */
@@ -134,7 +137,7 @@ export const SubTabsSwitch = ({
       onDoubleClick={() => {
         onDoubleClick(current);
       }}
-      className="flex h-10 items-stretch justify-between px-3 pt-1 bg-(--ui-tabbar-bg) shadow-[inset_0_-1px_0_var(--color-transparent-neutral-10)]">
+      className={`flex h-10 items-stretch justify-between ${SUB_TABS_BAR_PADDING} pt-1 bg-(--ui-tabbar-bg) shadow-[inset_0_-1px_0_var(--color-transparent-neutral-10)]`}>
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
           ref={stripRef}

@@ -84,7 +84,7 @@ export default function StatusBarField({ field }: { field: Field }) {
 
   return (
     <div className="inline-flex gap-1 items-center whitespace-nowrap">
-      <label htmlFor={field.hqlName} className="font-semibold">
+      <label htmlFor={field.hqlName} className="font-semibold text-gray-700">
         {field.name}:
       </label>
       {badge}

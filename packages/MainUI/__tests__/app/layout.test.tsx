@@ -17,6 +17,7 @@
 
 import { render, screen } from "@testing-library/react";
 import Layout from "@/components/layout";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 // Mock child components
 jest.mock("@/components/navigation", () => {
@@ -92,6 +93,12 @@ describe("Layout Component", () => {
     expect(navContainer).toBeInTheDocument();
   });
 
+  it("starts the top bar on the left edge of the window content", () => {
+    const { container } = render(<Layout>{mockChildren}</Layout>);
+
+    expect(container.querySelector(".w-full.h-14.min-h-14")).toHaveClass(WORKSPACE_EDGE_PADDING_CLASS);
+  });
+
   it("should have content wrapper with correct flex layout", () => {
     const { container } = render(<Layout>{mockChildren}</Layout>);
 
@@ -150,5 +157,19 @@ describe("Layout Component", () => {
 
     const mainContainer = container.firstChild;
     expect(mainContainer).toHaveClass("overflow-hidden");
+  });
+
+  it("keeps the theme toggle in the same group as the navigation buttons", () => {
+    render(<Layout>{mockChildren}</Layout>);
+
+    const group = screen.getByTestId("TopBar__actions");
+    expect(group).toContainElement(screen.getByTestId("ThemeToggle__button"));
+    expect(group).toHaveTextContent("Navigation");
+  });
+
+  it("shows the footer text with the readable soft colour", () => {
+    render(<Layout>{mockChildren}</Layout>);
+
+    expect(screen.getByTestId("StatusBar__container")).toHaveClass("text-(--ui-text-soft)");
   });
 });

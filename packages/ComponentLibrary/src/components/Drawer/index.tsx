@@ -34,6 +34,7 @@ import { DrawerHighlightContext } from "./DrawerHighlightContext";
 import { DrawerItems } from "./Search";
 import type { DrawerProps } from "./types";
 import ResizeHandle from "../ResizeHandle";
+import { SIDEBAR_SEARCH_INSET_CLASS } from "./spacing";
 
 const DRAWER_STATE_KEY = "etendo-drawer-open";
 
@@ -235,7 +236,8 @@ const Drawer: React.FC<DrawerProps> = ({
           // `TextInputAutocomplete` keeps working untouched — passing it an `onKeyDown`
           // would replace its own handler instead of composing with it.
           <div className="px-3 pt-3 pb-2" onKeyDown={handleSearchKeyDown}>
-            <div className="drawer-search rounded-lg bg-(--ui-search-bg) [&_div]:bg-transparent! [&_div]:rounded-lg! [&_fieldset]:border-0! [&_input]:text-(--ui-text)! [&_input]:text-[13px]! [&_input::placeholder]:text-(--ui-text-muted)! [&_svg]:text-(--ui-text-muted)">
+            <div
+              className={`drawer-search ${SIDEBAR_SEARCH_INSET_CLASS} rounded-lg bg-(--ui-search-bg) [&_div]:bg-transparent! [&_div]:rounded-lg! [&_fieldset]:border-0! [&_input]:text-(--ui-text)! [&_input]:text-[13px]! [&_input::placeholder]:text-(--ui-text-muted)! [&_svg]:text-(--ui-text-muted)`}>
               <TextInputAutocomplete
                 value={searchValue}
                 setValue={setSearchValue}

@@ -23,12 +23,15 @@ import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
+import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
 }
 
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
+  const { t } = useTranslation();
   const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const seed = useFavoritesStore((s) => s.seed);
   const prefetchOnHover = usePrefetchWindowOnHover();
@@ -47,8 +50,8 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
 
   if (data.items.length === 0) {
     return (
-      <p className="text-sm text-white/50" data-testid="FavoritesRenderer__empty">
-        —
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="FavoritesRenderer__empty">
+        {t("dashboard.widget.emptyFavorites")}
       </p>
     );
   }
@@ -62,7 +65,8 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
           onClick={() => handleClick(item.windowId, item.label)}
           onMouseEnter={() => prefetchOnHover(item.windowId)}
           onFocus={() => prefetchOnHover(item.windowId)}
-          className="rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer"
+          className={WIDGET_CHIP_CLASSES}
+          title={item.label}
           data-testid={`FavoritesRenderer__item_${item.windowId}`}>
           {item.label}
         </button>

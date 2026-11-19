@@ -3,6 +3,7 @@ import { GenericSelector } from "../GenericSelector";
 import { useFormContext } from "react-hook-form";
 import { FIELD_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
 import { DROPDOWN_PORTAL_ATTRIBUTE } from "@/utils/form/keyboard";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
@@ -33,9 +34,14 @@ jest.mock("../NumericSelector", () => ({
   NumericSelector: () => <div data-testid="NumericSelector">NumericSelector</div>,
 }));
 
-jest.mock("../TableDirSelector", () => ({
-  TableDirSelector: () => <div data-testid="TableDirSelector">TableDirSelector</div>,
-}));
+// Like the real one (a Select), it shows the field action inside its own box.
+jest.mock("../TableDirSelector", () => {
+  const { useFieldTrailingAction } = jest.requireActual("../components/Select/FieldTrailingAction");
+  const TableDirSelector = () => <div data-testid="TableDirSelector">TableDirSelector{useFieldTrailingAction()}</div>;
+  return {
+    TableDirSelector,
+  };
+});
 
 jest.mock("../DateSelector", () => ({
   DateSelector: () => <div data-testid="DateSelector">DateSelector</div>,
@@ -265,6 +271,20 @@ describe("GenericSelector", () => {
     // Should render without throwing error
     const { container } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it("shows the magnifier inside a select field once, so the field keeps the width of its column", () => {
+    const field = {
+      id: "field-fk",
+      hqlName: "businessPartner",
+      column: { reference: "19" },
+      selector: { hasTableRelated: true, datasourceName: "BusinessPartner" },
+    } as unknown as Field;
+
+    const { getAllByTestId, getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+
+    expect(getAllByTestId("icon-button")).toHaveLength(1);
+    expect(getByTestId("TableDirSelector")).toContainElement(getByTestId("icon-button"));
   });
 
   it("handles field with processDefinitionRelated selector property", () => {

@@ -36,6 +36,8 @@ export interface SearchPortalProps {
   width?: string;
   autoCompleteTexts?: string[];
   theme?: Theme;
+  /** Toolbar row the box opens under; without it the box keeps its fixed place at the top right. */
+  anchorEl?: HTMLElement | null;
 }
 
 export interface ToolbarProps {
@@ -130,4 +132,6 @@ export interface TopToolbarProps {
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
   processButton?: ProcessAvailableButton;
+  /** Receives the toolbar row, for the panels that open under it. */
+  rootRef?: (element: HTMLDivElement | null) => void;
 }

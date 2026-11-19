@@ -27,6 +27,9 @@ export const ALERTS_LABEL_KEY = "UINAVBA_Alerts";
 /** Placeholder shown in the label until the first response arrives (classic `"Alerts (-)"`). */
 export const UNKNOWN_ALERT_COUNT = "-";
 
+/** Window event sent after alerts change status in the new UI, so the alerts indicator counts again at once. */
+export const ALERTS_CHANGED_EVENT = "etendo:alerts-changed";
+
 /** Classic view opened by the alerts indicator (`OB.Layout.ViewManager.openView`). */
 export const ALERT_MANAGEMENT_VIEW_ID = "OBUIAPP_AlertManagement";
 

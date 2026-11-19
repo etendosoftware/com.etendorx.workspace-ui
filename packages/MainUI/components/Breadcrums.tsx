@@ -33,6 +33,7 @@ import { useFocusContext } from "@/contexts/focus";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useSelected } from "@/hooks/useSelected";
+import { IDLE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -310,7 +311,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       type="button"
       onClick={handleFavToggle}
       className={`shrink-0 p-1 rounded transition-all ${
-        isCurWindowFav ? "text-yellow-400" : "text-baseline-40 hover:text-yellow-400"
+        isCurWindowFav ? "text-yellow-400" : `${IDLE_ICON_COLOR} hover:text-yellow-400`
       }`}
       title={isCurWindowFav ? "Remove from favorites" : "Add to favorites"}
       data-testid="Breadcrumb__favorite_toggle">

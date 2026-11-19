@@ -26,6 +26,46 @@ import ChevronDown from "../../../../ComponentLibrary/src/assets/icons/chevron-d
 import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import { CLOCK_B64 } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle/constants";
 import MenuLibrary from "../../../../ComponentLibrary/src/components/Menu";
+import {
+  MENU_ICON_SLOT_OPEN_CLASS,
+  SIDEBAR_GUTTER_CLASS,
+} from "@workspaceui/componentlibrary/src/components/Drawer/spacing";
+import { MENU_ROW_SHAPE_CLASSES } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle";
+
+/**
+ * Classes of the section wrapper. Open, it takes the sidebar gutter like a top-level menu section, so the row
+ * and its chips keep the same 12px on both sides as the menu entries and the search box.
+ *
+ * @param open whether the sidebar is expanded
+ * @returns the class list
+ */
+/**
+ * Chips start on the column of the menu icons (8px inside the gutter) and may reach the gutter on the right, like
+ * the entry backgrounds; they wrap there instead of overflowing.
+ */
+export const RECENT_CHIPS_CLASSES = "py-2 pl-2 flex flex-wrap gap-1.5 min-w-0";
+/**
+ * Compact chip: 12px text and 8px side padding, so two or three short window names fit per line instead of one
+ * chip per line.
+ */
+export const RECENT_CHIP_SHAPE_CLASSES = "max-w-full truncate rounded-full px-2 py-0.5 text-xs font-medium border";
+
+export const getSectionClassName = (open: boolean): string => {
+  if (open) return `py-2 rounded-lg ${SIDEBAR_GUTTER_CLASS}`;
+  return "p-2 rounded-lg";
+};
+
+/**
+ * Shape of the section button: the same shape and inner padding as a menu entry when the sidebar is open, and
+ * the round rail button when it is collapsed.
+ *
+ * @param open whether the sidebar is expanded
+ * @returns the class list
+ */
+export const getButtonShapeClassName = (open: boolean): string => {
+  if (open) return MENU_ROW_SHAPE_CLASSES;
+  return "p-2.5 rounded-full justify-center";
+};
 
 export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ onClick, items, getTranslatedName, open, windowId }, ref) => {
@@ -134,10 +174,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     };
 
     return (
-      <div
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`${open && expanded && item.children && "m-0 p-1 pb-0"} p-2 rounded-lg`}>
+      <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className={getSectionClassName(open)}>
         <button
           type="button"
           onMouseEnter={() => {
@@ -148,10 +185,11 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           }}
           onClick={handleClick}
           className={`flex transition-colors duration-300 cursor-pointer w-full items-center
-            ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
-             text-xl justify-between p-1 gap-1 ${"text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)"}`}>
+            ${getButtonShapeClassName(open)}
+             text-xl justify-between gap-2 text-(--ui-text-soft) hover:bg-(--ui-hover) hover:text-(--ui-text)`}>
           <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
-            <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+            <div
+              className={`${open ? MENU_ICON_SLOT_OPEN_CLASS : "w-full h-full"} shrink-0 flex justify-center items-center`}>
               <img
                 alt="img"
                 src={`data:image/svg+xml;base64,${CLOCK_B64}`}
@@ -160,7 +198,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
             </div>
             {open && (
               <div className="relative group flex items-center py-1.5">
-                <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+                <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                   {item.name}
                 </span>
               </div>
@@ -168,20 +206,22 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           </div>
 
           {open && item.children && (
-            <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+            <div
+              className={`shrink-0 transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
               <ChevronDown data-testid="ChevronDown__eddcab" />
             </div>
           )}
         </button>
         {expanded && open && (
-          <div className="py-2 pl-4 flex flex-wrap gap-2 w-full">
+          <div className={RECENT_CHIPS_CLASSES}>
             {localRecentItems.map((recentItem) => (
               <button
                 key={recentItem.id}
                 type="button"
                 onClick={() => handleRecentItemClick(recentItem)}
+                title={recentItem.name}
                 className={clsx(
-                  "rounded-full px-2.5 py-1 text-[13px] font-medium border",
+                  RECENT_CHIP_SHAPE_CLASSES,
                   "bg-(--ui-chip-bg) text-(--ui-text) border-transparent hover:bg-(--ui-chip-hover) transition"
                 )}>
                 {recentItem.name}

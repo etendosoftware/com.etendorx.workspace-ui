@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClickOutside, useEscapeKey, useWindowResize } from "../../hooks/useEventListeners";
 import { cleanDefaultClasses } from "../../utils/classUtil";
+import { computeMenuVerticalPlacement } from "./placement";
 
 type DropdownMenuProps = {
   /**
@@ -104,30 +105,20 @@ const Menu: React.FC<DropdownMenuProps> = ({
     menuElement: HTMLDivElement,
     offsetY = 0
   ) => {
-    const spaceBelow = window.innerHeight - anchorRect.bottom;
-    const spaceAbove = anchorRect.top;
-    let y = anchorRect.bottom + offsetY;
+    const { y, maxHeight } = computeMenuVerticalPlacement({
+      anchorTop: anchorRect.top,
+      anchorBottom: anchorRect.bottom,
+      menuHeight,
+      viewportHeight: window.innerHeight,
+      offsetY,
+    });
 
-    const setMaxHeight = (maxHeight: number) => {
+    if (maxHeight !== null) {
       menuElement.style.maxHeight = `${maxHeight}px`;
       menuElement.style.overflowY = "auto";
-    };
-
-    if (menuHeight > spaceBelow) {
-      if (spaceAbove > spaceBelow && menuHeight <= spaceAbove) {
-        y = anchorRect.top - menuHeight - offsetY;
-      } else if (spaceBelow > spaceAbove) {
-        y = anchorRect.bottom + offsetY;
-        const maxHeight = spaceBelow - 16;
-        if (menuHeight > maxHeight) setMaxHeight(maxHeight);
-      } else {
-        y = 8;
-        const maxHeight = spaceAbove - 16;
-        if (menuHeight > maxHeight) setMaxHeight(maxHeight);
-      }
     }
 
-    return Math.max(8, Math.min(y, window.innerHeight - Math.min(menuHeight, window.innerHeight - 16) - 8));
+    return y;
   };
 
   const calculatePosition = useCallback(() => {

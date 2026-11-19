@@ -33,6 +33,7 @@ jest.mock("material-react-table", () => ({
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { GridTopToolbar } from "../WindowReferenceGrid";
+import { GRID_BAR_CLASSES } from "../processGridStyles";
 
 const ADD_ROW_TESTID = "GridTopToolbar__AddRowButton";
 const ADD_ROW_I18N_KEY = "processModal.gridToolbar.addRow";
@@ -87,5 +88,20 @@ describe("GridTopToolbar — Add row button", () => {
   it("uses the processModal.gridToolbar.addRow i18n key for the aria-label", () => {
     renderToolbar({ canAdd: true });
     expect(screen.getByTestId(ADD_ROW_TESTID)).toHaveAttribute("aria-label", ADD_ROW_I18N_KEY);
+  });
+});
+
+describe("GridTopToolbar — window grid look", () => {
+  it("has no density toggle, since rows keep the 32px height of the window grid", () => {
+    renderToolbar();
+
+    expect(screen.queryByText("Padding")).not.toBeInTheDocument();
+    expect(screen.getByText("Filters")).toBeInTheDocument();
+  });
+
+  it("uses the card surface of the grid instead of a grey band", () => {
+    const { container } = renderToolbar();
+
+    expect(container.firstElementChild).toHaveClass(...GRID_BAR_CLASSES.split(" "));
   });
 });

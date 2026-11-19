@@ -115,6 +115,12 @@ once the record is saved and the form transitions to `FormMode.EDIT`.
   fields are never shown in `FormMode.NEW`.
 - **Silent post-save refresh.** After saving, fields are updated via `setValue` without
   remounting the form (`hasLoadedOnce` guard). This avoids a visible spinner on every save.
+- **Typing right after a save is kept.** The save button turns disabled before the saved record
+  is fetched again (with `_extraProperties`, for the grid). That last refresh skips the fields the
+  user changed in the meantime (`keepUserEditsRef` + `isKeptUserEdit` in
+  `utils/form/keepUserEdits.ts`; a derived key such as `<field>$_identifier` follows its field), so
+  a value typed in that window is not reverted to the saved one. Any other refresh (toolbar
+  refresh, process, notes, stale record reload) still replaces the values with the server's.
 
 ## Usage
 

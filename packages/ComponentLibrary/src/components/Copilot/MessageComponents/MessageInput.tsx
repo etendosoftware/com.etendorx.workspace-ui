@@ -25,6 +25,16 @@ import IconButton from "../../IconButton";
 import ContextPreview from "../ContextPreview";
 import type { MessageInputProps } from "../types";
 
+/**
+ * Color of the attach and send buttons. The theme tokens keep the box, its text and these icons readable in the
+ * dark theme too: the box was always white and the icons a fixed dark blue.
+ *
+ * @param enabled whether the button can be used now
+ * @returns the color classes of the button
+ */
+const getActionColorClasses = (enabled: boolean): string =>
+  enabled ? "text-(--ui-field-focus-border) hover:bg-(--ui-hover)" : "text-(--color-transparent-neutral-30)";
+
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   placeholder,
@@ -118,16 +128,16 @@ const MessageInput: React.FC<MessageInputProps> = ({
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
-              <span className="text-gray-700 truncate max-w-[200px]" title={file.name}>
+              className="flex items-center gap-2 px-3 py-2 bg-(--ui-hover) rounded-lg text-sm">
+              <span className="text-(--ui-text-soft) truncate max-w-[200px]" title={file.name}>
                 {file.name}
               </span>
-              <span className="text-gray-500 text-xs">({(file.size / 1024).toFixed(1)} KB)</span>
+              <span className="text-(--ui-text-muted) text-xs">({(file.size / 1024).toFixed(1)} KB)</span>
               {onRemoveFile && (
                 <button
                   type="button"
                   onClick={() => onRemoveFile(index)}
-                  className="text-gray-500 hover:text-red-600 transition-colors"
+                  className="text-(--ui-text-muted) hover:text-red-600 transition-colors"
                   aria-label={`Remove ${file.name}`}>
                   <XIcon className="w-4 h-4" />
                 </button>
@@ -139,13 +149,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
       <div
         className={`
-          flex items-end gap-2 p-2 rounded-2xl border bg-white transition-colors duration-200
-          ${
-            isFocused
-              ? "border-[#002f5c]" // Focus color (using a deep blue similar to the screenshot)
-              : "border-gray-300"
-          }
-           ${disabled ? "opacity-60 bg-gray-50 cursor-not-allowed" : ""}
+          flex items-end gap-2 p-2 rounded-2xl border bg-(--ui-card-bg) transition-colors duration-200
+          ${isFocused ? "border-(--ui-field-focus-border)" : "border-(--ui-line)"}
+           ${disabled ? "opacity-60 cursor-not-allowed" : ""}
         `}>
         {/* Hidden file input */}
         <input
@@ -167,7 +173,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           placeholder={translations?.placeholder || placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full resize-none border-none outline-none bg-transparent text-sm text-gray-800 placeholder-gray-400 py-2 pl-2 max-h-[120px] overflow-y-auto"
+          className="w-full resize-none border-none outline-none bg-transparent text-sm text-(--ui-text) placeholder-(--ui-text-muted) py-2 pl-2 max-h-[120px] overflow-y-auto"
           style={{ minHeight: "24px" }}
         />
 
@@ -177,7 +183,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             disabled={disabled || !onFileSelect}
             className={`
               rounded-full w-8 h-8 flex items-center justify-center transition-colors
-              ${!disabled && onFileSelect ? "text-[#002f5c] hover:bg-blue-50" : "text-gray-300"}
+              ${getActionColorClasses(!disabled && Boolean(onFileSelect))}
             `}>
             <AttachFile className="w-5 h-5" />
           </IconButton>
@@ -187,17 +193,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
             disabled={disabled || !message.trim()}
             className={`
                rounded-full w-8 h-8 flex items-center justify-center transition-colors
-              ${!disabled && message.trim() ? "text-[#002f5c] hover:bg-blue-50" : "text-gray-300"}
+              ${getActionColorClasses(!disabled && Boolean(message.trim()))}
             `}>
             <Send className="w-5 h-5" />
           </IconButton>
 
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <div className="w-px h-5 bg-(--ui-line) mx-1" />
 
           <IconButton
             onClick={handleVoiceClick}
             disabled
-            className="text-gray-500 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+            className="text-(--ui-text-muted) hover:bg-(--ui-hover) rounded-full w-8 h-8 flex items-center justify-center transition-colors">
             <MicIcon className="w-5 h-5" />
           </IconButton>
         </div>

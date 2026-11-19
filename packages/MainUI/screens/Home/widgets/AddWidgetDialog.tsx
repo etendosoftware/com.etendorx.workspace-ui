@@ -19,10 +19,11 @@
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { WidgetClass, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
+import type { WidgetClass } from "@workspaceui/api-client/src/api/dashboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CloseIcon, SpinnerIcon } from "./icons";
 import WidgetParamFields, { useUrlErrors } from "./WidgetParamFields";
+import { WIDGET_TYPE_COLOR, WIDGET_TYPE_ICONS } from "./widgetTypeVisuals";
 
 // ── Icons (local to this dialog) ─────────────────────────────────────────────
 
@@ -39,146 +40,12 @@ const PlusIcon = () => (
   </svg>
 );
 
-const WIDGET_TYPE_ICONS: Record<WidgetType, React.ReactElement> = {
-  FAVORITES: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  RECENT_DOCS: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  RECENTLY_VIEWED: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  NOTIFICATION: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  STOCK_ALERT: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M12 9v4M12 17h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  KPI: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M18 20V10M12 20V4M6 20v-6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  COPILOT: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 2L9.5 8.5 3 9.27l5 4.87-1.18 6.88L12 17.77l5.18 3.25L16 14.14l5-4.87-6.5-.77L12 2z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  QUERY_LIST: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  HTML: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="m16 18 6-6-6-6M8 6l-6 6 6 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  URL: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-    </svg>
-  ),
-  PROCESS: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0M12 2v2M12 20v2M2 12h2M20 12h2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  ),
-  CALENDAR: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-};
-
-const TYPE_COLOR: Record<WidgetType, string> = {
-  FAVORITES: "bg-yellow-500/15 text-yellow-600",
-  RECENT_DOCS: "bg-blue-500/15 text-blue-600",
-  RECENTLY_VIEWED: "bg-indigo-500/15 text-indigo-600",
-  NOTIFICATION: "bg-orange-500/15 text-orange-600",
-  STOCK_ALERT: "bg-red-500/15 text-red-600",
-  KPI: "bg-green-500/15 text-green-600",
-  COPILOT: "bg-purple-500/15 text-purple-600",
-  QUERY_LIST: "bg-cyan-500/15 text-cyan-600",
-  HTML: "bg-zinc-500/15 text-zinc-600",
-  URL: "bg-teal-500/15 text-teal-600",
-  PROCESS: "bg-slate-500/15 text-slate-600",
-  CALENDAR: "bg-blue-500/15 text-blue-600",
-};
+/** "Added" / "Unavailable" badges of a widget card. */
+const STATUS_BADGE_CLASSES =
+  "shrink-0 text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-70 whitespace-nowrap";
+/** Cancel / Back buttons of the dialog footer. */
+const SECONDARY_ACTION_CLASSES =
+  "px-4 py-2 text-sm font-medium rounded-lg text-baseline-70 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -297,7 +164,7 @@ export default function AddWidgetDialog({
             <h2 className="text-base font-semibold text-baseline-100" data-testid="AddWidgetDialog__title">
               {step === "configure" && selected ? selected.title || selected.name : t("dashboard.addWidget.title")}
             </h2>
-            <p className="text-xs text-baseline-50">
+            <p className="text-xs text-baseline-70">
               {step === "configure" ? t("dashboard.addWidget.configureSubtitle") : t("dashboard.addWidget.subtitle")}
             </p>
           </div>
@@ -337,7 +204,7 @@ export default function AddWidgetDialog({
           {step === "configure" && selected && (
             <div className="flex flex-col gap-4" data-testid="AddWidgetDialog__configure">
               {selected.description && (
-                <p className="text-xs text-baseline-50 leading-relaxed" data-testid="AddWidgetDialog__configure_desc">
+                <p className="text-xs text-baseline-70 leading-relaxed" data-testid="AddWidgetDialog__configure_desc">
                   {selected.description}
                 </p>
               )}
@@ -379,7 +246,7 @@ export default function AddWidgetDialog({
 
               {/* Empty state */}
               {!isLoadingClasses && !classesError && filtered.length === 0 && (
-                <p className="text-sm text-baseline-50 py-8 text-center" data-testid="AddWidgetDialog__empty">
+                <p className="text-sm text-baseline-70 py-8 text-center" data-testid="AddWidgetDialog__empty">
                   {t("dashboard.addWidget.noResults")}
                 </p>
               )}
@@ -413,7 +280,7 @@ export default function AddWidgetDialog({
                         <div
                           className={[
                             "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                            TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
+                            WIDGET_TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
                           ].join(" ")}>
                           {WIDGET_TYPE_ICONS[wc.type] ?? WIDGET_TYPE_ICONS.PROCESS}
                         </div>
@@ -423,29 +290,25 @@ export default function AddWidgetDialog({
                             {wc.title || wc.name}
                           </span>
                           {wc.description && (
-                            <span className="text-xs text-baseline-50 leading-snug line-clamp-2">{wc.description}</span>
+                            <span className="text-xs text-baseline-70 leading-snug line-clamp-2">{wc.description}</span>
                           )}
                           <span
                             className={[
-                              "mt-1 inline-block self-start text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                              TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
+                              "mt-1 inline-block self-start text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded",
+                              WIDGET_TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
                             ].join(" ")}>
                             {wc.type.replace("_", " ")}
                           </span>
                         </div>
                         {/* Already added badge */}
                         {isAlreadyAdded && !isUnavailable && (
-                          <div
-                            className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
-                            aria-label={t("dashboard.addWidget.alreadyAdded")}>
+                          <div className={STATUS_BADGE_CLASSES} aria-label={t("dashboard.addWidget.alreadyAdded")}>
                             {t("dashboard.addWidget.alreadyAdded")}
                           </div>
                         )}
                         {/* Unavailable badge */}
                         {isUnavailable && (
-                          <div
-                            className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
-                            aria-label={t("dashboard.addWidget.unavailable")}>
+                          <div className={STATUS_BADGE_CLASSES} aria-label={t("dashboard.addWidget.unavailable")}>
                             {t("dashboard.addWidget.unavailable")}
                           </div>
                         )}
@@ -480,7 +343,7 @@ export default function AddWidgetDialog({
             <button
               type="button"
               onClick={handleBack}
-              className="px-4 py-2 text-sm font-medium rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
+              className={SECONDARY_ACTION_CLASSES}
               data-testid="AddWidgetDialog__back">
               {t("dashboard.addWidget.back")}
             </button>
@@ -488,7 +351,7 @@ export default function AddWidgetDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
+              className={SECONDARY_ACTION_CLASSES}
               data-testid="AddWidgetDialog__cancel">
               {t("dashboard.addWidget.cancel")}
             </button>
@@ -497,7 +360,7 @@ export default function AddWidgetDialog({
             type="button"
             disabled={!selected || isAdding || (step === "configure" && hasUrlErrors)}
             onClick={handlePrimaryClick}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-(--ui-accent) hover:bg-(--ui-accent-hover) disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
             data-testid="AddWidgetDialog__add">
             {isAdding ? <SpinnerIcon data-testid="SpinnerIcon__18a9ac" /> : <PlusIcon data-testid="PlusIcon__18a9ac" />}
             {(() => {
