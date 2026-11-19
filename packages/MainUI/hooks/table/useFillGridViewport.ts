@@ -40,8 +40,9 @@ interface UseFillGridViewportParams {
  * requests the next page after each load, and when the grid is resized, until a scroll bar appears or there
  * are no more records.
  *
- * Only one request is in flight at a time (two `fetchMore` calls would skip a page), and a failed load is
- * not retried, so an error never turns into a chain of requests.
+ * Only one request is in flight at a time (two `fetchMore` calls would skip a page). A failed load is not
+ * retried, and neither is a load that added no rows (a search replaces the rows instead of adding them), until
+ * the number of rows changes: an error or a stalled query never turns into a chain of requests.
  */
 export function useFillGridViewport({
   containerRef,
@@ -53,32 +54,43 @@ export function useFillGridViewport({
 }: UseFillGridViewportParams): void {
   const isRequestPendingRef = useRef(false);
   const wasLoadingRef = useRef(loading);
+  const recordCountRef = useRef(recordCount);
+  recordCountRef.current = recordCount;
+  /** Rows when the pending request was sent. */
+  const requestedAtCountRef = useRef<number | null>(null);
+  /** Rows after a request that added none: no more requests until the number of rows changes. */
+  const stalledAtCountRef = useRef<number | null>(null);
 
   // A request is over once its load finishes; the render right after fetchMore (still not loading) is not.
   useEffect(() => {
-    if (wasLoadingRef.current && !loading) {
+    if (wasLoadingRef.current && !loading && isRequestPendingRef.current) {
       isRequestPendingRef.current = false;
+      if (recordCountRef.current <= (requestedAtCountRef.current ?? 0)) {
+        stalledAtCountRef.current = recordCountRef.current;
+      }
     }
     wasLoadingRef.current = loading;
   }, [loading]);
 
   const fillViewport = useCallback(() => {
     const container = containerRef.current;
-    if (!container || loading || !hasMoreRecords || error || isRequestPendingRef.current) {
+    const isStalled = stalledAtCountRef.current === recordCount;
+    if (!container || loading || !hasMoreRecords || error || isRequestPendingRef.current || isStalled) {
       return;
     }
     if (!isGridViewportUnfilled(container)) {
       return;
     }
     isRequestPendingRef.current = true;
+    requestedAtCountRef.current = recordCount;
     fetchMore();
-  }, [containerRef, loading, hasMoreRecords, error, fetchMore]);
+  }, [containerRef, loading, hasMoreRecords, error, fetchMore, recordCount]);
 
-  // After each render of new rows: effects run once the DOM holds them, so the heights are up to date.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: recordCount re-runs the check after a page renders
+  // After each render of new rows (fillViewport changes with recordCount): effects run once the DOM holds
+  // them, so the heights are up to date.
   useEffect(() => {
     fillViewport();
-  }, [fillViewport, recordCount]);
+  }, [fillViewport]);
 
   // A taller grid (split view resized, window maximized) can leave room for more rows.
   useEffect(() => {

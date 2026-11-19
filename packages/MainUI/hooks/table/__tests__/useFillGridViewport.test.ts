@@ -107,6 +107,20 @@ describe("useFillGridViewport", () => {
     expect(fetchMore).toHaveBeenCalledTimes(2);
   });
 
+  it("stops when a page adds no rows, until the number of rows changes", () => {
+    const { rerender, initialProps } = renderFill(PAGE_HEIGHT);
+    expect(fetchMore).toHaveBeenCalledTimes(1);
+
+    // The page arrived without new rows (a search replaces them): no chain of requests
+    rerender({ ...initialProps, loading: true });
+    rerender({ ...initialProps, loading: false });
+    expect(fetchMore).toHaveBeenCalledTimes(1);
+
+    // Another query brings a different number of rows: the grid fills its height again
+    rerender({ ...initialProps, recordCount: 8 });
+    expect(fetchMore).toHaveBeenCalledTimes(2);
+  });
+
   it("requests a page when the grid grows taller than its rows", () => {
     const { containerRef } = renderFill(1000);
     expect(fetchMore).not.toHaveBeenCalled();
