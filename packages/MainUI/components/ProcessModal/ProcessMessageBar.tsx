@@ -18,30 +18,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { FC, SVGProps } from "react";
-import InfoIcon from "../../../ComponentLibrary/src/assets/icons/info.svg";
-import CheckCircleIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
-import AlertTriangleIcon from "../../../ComponentLibrary/src/assets/icons/alert-triangle.svg";
-import AlertOctagonIcon from "../../../ComponentLibrary/src/assets/icons/alert-octagon.svg";
-import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  getMessageBarState,
-  type MessageBarSeverity,
-  messageBar,
-  subscribeMessageBar,
-} from "@/utils/processes/definition/messageBarStore";
-
-/** Per-severity border + accent colour (reusing existing CSS tokens) and icon. */
-const SEVERITY_STYLES: Record<
-  MessageBarSeverity,
-  { border: string; accent: string; Icon: FC<SVGProps<SVGSVGElement>> }
-> = {
-  info: { border: "border-(--color-etendo-main)", accent: "text-(--color-etendo-main)", Icon: InfoIcon },
-  success: { border: "border-(--color-success-main)", accent: "text-(--color-success-main)", Icon: CheckCircleIcon },
-  warning: { border: "border-(--color-warning-main)", accent: "text-(--color-warning-main)", Icon: AlertTriangleIcon },
-  error: { border: "border-(--color-error-main)", accent: "text-(--color-error-main)", Icon: AlertOctagonIcon },
-};
+import MessageBanner from "@/components/MessageBanner";
+import { getMessageBarState, messageBar, subscribeMessageBar } from "@/utils/processes/definition/messageBarStore";
 
 /**
  * Renders the in-modal message bar requested by a migrated script through
@@ -58,47 +37,17 @@ export default function ProcessMessageBar() {
 
   if (!state) return null;
 
-  const { border, accent, Icon } = SEVERITY_STYLES[state.severity];
-
+  // Body is sanitized in the store via DOMPurify (formatting tags only).
   return (
-    <div
-      role="alert"
-      className={`p-3 rounded mb-4 border-l-4 bg-gray-50 flex items-start gap-3 ${border}`}
-      data-testid="ProcessMessageBar__container">
-      <span className={`shrink-0 mt-0.5 ${accent}`}>
-        <Icon className="w-5 h-5" data-testid="Icon__ab7595" />
-      </span>
-      <div className="flex-1 min-w-0">
-        {state.title && <h4 className="font-bold text-sm mb-0.5">{state.title}</h4>}
-        {/* Body is sanitized in the store via DOMPurify (formatting tags only). */}
-        <div
-          className="text-sm break-words"
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized by sanitizeMessageHtml in the store.
-          dangerouslySetInnerHTML={{ __html: state.html }}
-        />
-        {state.actions.length > 0 && (
-          <div className="flex flex-wrap gap-3 mt-2">
-            {state.actions.map((action, index) => (
-              <button
-                key={`${action.label}-${index}`}
-                type="button"
-                onClick={action.onClick}
-                className="text-sm font-medium underline hover:opacity-80 transition-opacity"
-                data-testid="ProcessMessageBar__action">
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => messageBar.hide()}
-        aria-label={t("common.close")}
-        className="shrink-0 text-gray-500 hover:text-gray-700 transition-colors"
-        data-testid="ProcessMessageBar__close">
-        <CloseIcon className="w-4 h-4" data-testid="CloseIcon__ab7595" />
-      </button>
-    </div>
+    <MessageBanner
+      severity={state.severity}
+      title={state.title}
+      html={state.html}
+      actions={state.actions}
+      onClose={() => messageBar.hide()}
+      closeLabel={t("common.close")}
+      testIdPrefix="ProcessMessageBar"
+      data-testid="MessageBanner__ab7595"
+    />
   );
 }
