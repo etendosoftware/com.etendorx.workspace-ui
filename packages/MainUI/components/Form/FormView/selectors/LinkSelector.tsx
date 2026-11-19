@@ -21,6 +21,7 @@ import { TextInput } from "./components/TextInput";
 import { useFormContext, useWatch, type FieldValues } from "react-hook-form";
 import { useTranslation } from "@/hooks/useTranslation";
 import { isValidLinkUrl, toOpenableLinkUrl } from "@/utils/form/linkUrl";
+import { IDLE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface LinkSelectorProps {
   field: Field;
@@ -38,7 +39,7 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
 
   if (isReadOnly) {
     if (!currentValue) {
-      return <span className="text-sm text-gray-400 h-10.5 flex items-center px-3">&mdash;</span>;
+      return <span className="text-sm text-(--ui-text-muted) h-10.5 flex items-center px-3">&mdash;</span>;
     }
 
     return (
@@ -76,7 +77,7 @@ export const LinkSelector = ({ field, isReadOnly }: LinkSelectorProps) => {
     <button
       type="button"
       onClick={handleOpenLink}
-      className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-blue-600 transition-colors z-10"
+      className={`absolute right-8 top-1/2 -translate-y-1/2 p-1 ${IDLE_ICON_COLOR} hover:text-(--ui-link) transition-colors z-10`}
       title="Open link"
       data-testid={`LinkSelector__open__${field.id}`}>
       <svg

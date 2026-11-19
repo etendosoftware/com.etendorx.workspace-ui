@@ -22,10 +22,12 @@ import MenuOpen from "../../../assets/icons/menu-open.svg";
 import IconButton from "../../IconButton";
 import Logo from "../../Logo";
 import type { DrawerHeaderProps } from "../types";
+import { SIDEBAR_GUTTER_PADDING_CLASS } from "../spacing";
 
 const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
   return (
-    <div className="h-14 min-h-14 flex items-center justify-end p-2 border-b border-(--ui-line)">
+    <div
+      className={`h-14 min-h-14 flex items-center justify-end py-2 ${SIDEBAR_GUTTER_PADDING_CLASS} border-b border-(--ui-line)`}>
       {open && (
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">

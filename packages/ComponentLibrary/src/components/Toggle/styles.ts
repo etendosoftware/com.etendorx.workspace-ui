@@ -18,6 +18,11 @@
 import { type SxProps, type Theme, useTheme } from "@mui/material";
 import { useMemo } from "react";
 
+/** Grey of an "off" switch (token of the app, with its light value as fallback outside it). */
+export const SWITCH_OFF_COLOR = "var(--ui-switch-off, #74777f)";
+/** Width of the "off" outline. */
+const OFF_OUTLINE = "0.125rem";
+
 type StylesType = {
   sx: Record<string, SxProps<Theme>>;
 };
@@ -36,14 +41,17 @@ export const useStyle = (): StylesType => {
             padding: 0,
             margin: "0.125rem",
             transitionDuration: "300ms",
+            // Off: smaller grey thumb inside the outlined track; the checked rules below restore the white one.
+            color: SWITCH_OFF_COLOR,
+            "&:not(.Mui-checked) .MuiSwitch-thumb": {
+              transform: "scale(0.75)",
+            },
             "&.Mui-checked": {
               transform: "translateX(1.25rem)",
               color: theme.palette.baselineColor.neutral[0],
               "& + .MuiSwitch-track": {
-                backgroundColor:
-                  theme.palette.mode === "dark"
-                    ? theme.palette.specificColor.warning
-                    : theme.palette.baselineColor.neutral[80],
+                backgroundColor: theme.palette.dynamicColor.main,
+                boxShadow: "none",
                 opacity: 1,
                 border: 0,
               },
@@ -52,7 +60,7 @@ export const useStyle = (): StylesType => {
               },
             },
             "&.Mui-focusVisible .MuiSwitch-thumb": {
-              color: theme.palette.specificColor.warning,
+              color: theme.palette.dynamicColor.main,
               border: `0.375rem solid ${theme.palette.baselineColor.neutral[0]}`,
             },
             "&.Mui-disabled .MuiSwitch-thumb": {
@@ -70,12 +78,12 @@ export const useStyle = (): StylesType => {
           },
           "& .MuiSwitch-track": {
             borderRadius: "1.625rem",
-            backgroundColor:
-              theme.palette.mode === "light"
-                ? theme.palette.baselineColor.neutral[30]
-                : theme.palette.specificColor.draft.contrastText,
+            // Off: empty track with a grey outline (3:1 or more on the card); only "on" is filled.
+            backgroundColor: "transparent",
+            boxShadow: `inset 0 0 0 ${OFF_OUTLINE} ${SWITCH_OFF_COLOR}`,
+            boxSizing: "border-box",
             opacity: 1,
-            transition: theme.transitions.create(["background-color"], {
+            transition: theme.transitions.create(["background-color", "box-shadow"], {
               duration: 500,
             }),
           },

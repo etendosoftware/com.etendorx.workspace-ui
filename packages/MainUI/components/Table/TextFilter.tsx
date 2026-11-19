@@ -52,7 +52,7 @@ export const TextFilter: React.FC<TextFilterProps> = ({ column, onFilterChange, 
         placeholder={`Filter ${column.name || column.columnName}...`}
         value={inputValue}
         onChange={handleInputChange}
-        className="w-full bg-transparent text-sm font-normal outline-none placeholder:text-slate-400 placeholder:font-normal"
+        className="w-full bg-transparent text-sm font-normal outline-none placeholder:text-(--ui-text-muted) placeholder:font-normal"
       />
     </div>
   );

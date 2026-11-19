@@ -70,6 +70,15 @@ describe("RecentDocsRenderer", () => {
     consoleError.mockRestore();
   });
 
+  it("keeps a long identifier on one line and shows it whole on hover", () => {
+    mockedUseRecentDocuments.mockReturnValue({ documents: [doc] });
+    render(<RecentDocsRenderer />);
+
+    const item = screen.getByTestId(`RecentDocsRenderer__item_${doc.windowId}_${doc.recordId}`);
+    expect(item).toHaveClass("truncate", "whitespace-nowrap", "max-w-full");
+    expect(item).toHaveAttribute("title", doc.identifier);
+  });
+
   it("renders one entry per document and navigates via useRedirect on click", () => {
     mockedUseRecentDocuments.mockReturnValue({ documents: [doc] });
     render(<RecentDocsRenderer />);

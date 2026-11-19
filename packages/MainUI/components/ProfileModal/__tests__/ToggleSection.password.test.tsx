@@ -90,4 +90,13 @@ describe("SelectorList — password panel", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Current password is incorrect");
   });
+
+  it("spaces the fields so each label clears the underline of the previous one", () => {
+    const { container } = renderPasswordPanel();
+
+    const form = container.querySelector("form") as HTMLFormElement;
+    expect(form).toHaveClass("gap-5");
+    // No extra margin of its own: the fields keep the side margin of the Profile tab and the buttons.
+    expect(getComputedStyle(form.parentElement as HTMLElement).margin).not.toBe("0.5rem");
+  });
 });

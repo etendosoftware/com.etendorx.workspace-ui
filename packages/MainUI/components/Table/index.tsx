@@ -920,7 +920,7 @@ const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, t }: TitleRec
   const label = isLoading ? "" : t("table.counter.titleCount").replace("{count}", String(count));
   return createPortal(
     <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
-      <span className="whitespace-nowrap text-xs text-(--ui-text-muted)">{label}</span>
+      <span className="whitespace-nowrap text-xs text-(--ui-text-soft)">{label}</span>
     </span>,
     slot
   );
@@ -2800,7 +2800,7 @@ const DynamicTable = ({
               )}
             </div>
             {HierarchyIcon}
-            <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
+            <span className={`flex-1 min-w-0 truncate ${isSummary ? "font-bold" : ""}`}>
               {originalCell && typeof originalCell === "function"
                 ? originalCell({ renderedCellValue, row, table })
                 : renderedCellValue}
@@ -2810,7 +2810,7 @@ const DynamicTable = ({
       }
 
       return (
-        <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
+        <span className={`flex-1 min-w-0 truncate ${isSummary ? "font-bold" : ""}`}>
           {originalCell && typeof originalCell === "function"
             ? originalCell({ renderedCellValue, row, table })
             : renderedCellValue}

@@ -27,6 +27,7 @@ import { getMinCharsHint, isBelowSearchThreshold, isSearchSelectorDatasource } f
 
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import CheckCircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
+import { SELECTED_CHECK_CLASSES } from "@/utils/iconClasses";
 
 /**
  * TABLEDIR cell editor that uses a dropdown similar to MultiSelect but for single selection
@@ -554,7 +555,13 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             tabIndex={-1}>
             <span className="truncate">{option.label}</span>
             {isSelected && (
-              <CheckCircleFilledIcon width={16} height={16} aria-label="Selected" data-testid={"Image__" + field.id} />
+              <CheckCircleFilledIcon
+                width={16}
+                height={16}
+                className={SELECTED_CHECK_CLASSES}
+                aria-label="Selected"
+                data-testid={`Image__${field.id}`}
+              />
             )}
           </div>
         );
@@ -654,6 +661,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                 <CheckCircleFilledIcon
                   width={16}
                   height={16}
+                  className={SELECTED_CHECK_CLASSES}
                   aria-label="Selected"
                   data-testid={"Image__" + field.id}
                 />

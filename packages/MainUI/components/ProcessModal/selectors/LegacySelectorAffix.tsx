@@ -17,12 +17,14 @@
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
-import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
-import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
+import {
+  FieldTrailingActionContext,
+  useFieldSearchAction,
+} from "@/components/Form/FormView/selectors/components/Select/FieldTrailingAction";
 import {
   SELECTOR_SAVE_ACTION,
   buildLegacySelectorUrl,
@@ -76,21 +78,21 @@ const LegacySelectorAffix = ({ field, legacySearchUrl, isReadOnly, children }: L
     popupRef.current = openLegacySelectorPopup(url);
   }, [getValues, fieldName, publicHost, legacySearchUrl, token]);
 
+  const search = useFieldSearchAction({ enabled: !isReadOnly, fieldId: field.id, onOpen: handleOpen });
+
   if (isReadOnly) {
     return <>{children}</>;
   }
 
+  // Inside the select box when the control can host it, so the field keeps the width of its column.
   return (
     <div className="flex w-full items-center gap-1">
-      <div className="min-w-0 flex-grow">{children}</div>
-      <IconButton
-        onClick={handleOpen}
-        className="h-8 w-8 flex-shrink-0"
-        tooltip="Search"
-        tooltipPosition="top"
-        data-testid={`IconButton__${field.id}`}>
-        <SearchIcon className="h-5 w-5 fill-current" data-testid={`SearchIcon__${field.id}`} />
-      </IconButton>
+      <div className="min-w-0 flex-grow">
+        <FieldTrailingActionContext.Provider value={search.contextValue}>
+          {children}
+        </FieldTrailingActionContext.Provider>
+      </div>
+      {!search.isHosted && search.action}
     </div>
   );
 };

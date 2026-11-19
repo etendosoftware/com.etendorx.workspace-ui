@@ -101,6 +101,13 @@
   filter: brightness(1000%);
 }
 
+/* Disabled, New and Save sit on a neutral chip: the icon takes a dark ink (inverted in dark mode) instead of white. */
+.toolbar-button-new:disabled .icon-base64,
+.toolbar-button-save:disabled .icon-base64 {
+  filter: brightness(0);
+  opacity: 0.6;
+}
+
 .toolbar-button-save span {
   width: 100%;
   white-space: nowrap;
@@ -141,7 +148,19 @@
 .toolbar-button-advanced-filters:hover .icon-base64,
 .toolbar-button-send-mail:hover .icon-base64,
 .toolbar-button-show-audit-trail:hover .icon-base64,
-.toolbar-button-save-view:hover .icon-base64 {
+.toolbar-button-save-view:hover .icon-base64,
+.toolbar-button-export-csv:hover .icon-base64,
+.toolbar-button-show-table-and-form:hover .icon-base64 {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+/*
+ * Every round toolbar icon button fills with the dark accent on hover, so its icon turns white, like the enabled
+ * ones listed above. It also covers the actions without their own class (Personalize Form, Tab control) and the
+ * buttons added by modules, whose icon was left dark on the dark fill.
+ */
+.toolbar-icon-button:hover:not(:disabled) .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
 }
@@ -247,6 +266,18 @@ body {
   --ui-accent: var(--color-dynamic-main);
   --ui-accent-hover: var(--color-dynamic-dark);
   --ui-accent-dark: var(--color-dynamic-dark);
+  /* Focused or open form field: tinted background, accent text and border. */
+  --ui-field-focus-bg: #ece8f6;
+  /* Outline and thumb of an "off" switch: neutral grey (4.5:1 on the card), so it never reads as the accent "on". */
+  --ui-switch-off: #74777f;
+  --ui-field-focus-fg: #2a1757;
+  --ui-field-focus-border: #2a1757;
+  /* What's-new banner: its surface is dark in both themes, so these are not redefined for dark mode. */
+  --ui-banner-accent: #b9acd9;
+  /* Light button on the dark banner: 11.5:1 against it (the violet one was 1.4:1 and blended in), 12.5:1 text. */
+  --ui-banner-cta: #e9e4fa;
+  --ui-banner-cta-hover: #ffffff;
+  --ui-banner-cta-fg: #2a1757;
   --ui-ink: #0f172a;
   --ui-line: #e1e1e3;
   --ui-canvas: hsl(220 14% 95%);
@@ -610,6 +641,11 @@ html[data-theme="dark"] {
   --color-dynamic-dark: #5a49a8;
   --color-dynamic-light: #2d2650;
   --color-dynamic-contrast-text: #e9e6fb;
+  /* Focused field: dark lilac tint with a light lilac text (8:1). */
+  --ui-field-focus-bg: #2d2650;
+  --ui-switch-off: #8b8e9a;
+  --ui-field-focus-fg: #c8bff4;
+  --ui-field-focus-border: #8b7bdc;
   --color-etendo-main: #8b7bdc;
   --color-etendo-dark: #5a49a8;
   --color-etendo-contrast-text: #e9e6fb;
@@ -704,6 +740,11 @@ html[data-theme="dark"] .hover\:bg-white:hover {
 html[data-theme="dark"] .icon-base64 {
   /* hue-rotate undoes the hue flip of invert, so colored icons (Excel) keep their color */
   filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="dark"] .toolbar-button-new:disabled .icon-base64,
+html[data-theme="dark"] .toolbar-button-save:disabled .icon-base64 {
+  filter: brightness(0) invert(1);
 }
 
 /* Disabled toolbar icons are black images dimmed with grayscale; they need the inversion too. */

@@ -36,6 +36,14 @@ describe("TabContainer", () => {
     expect(container.className).toContain("gap-1");
   });
 
+  it("indents a child tab by the parent panes' focus border, so the left edges line up", () => {
+    expect(renderContainer({ level: 1, collapsed: false })).toHaveClass("ml-1");
+  });
+
+  it("keeps the main tab flush with the window", () => {
+    expect(renderContainer({ level: 0 })).not.toHaveClass("ml-1");
+  });
+
   it("has no gap or band on a collapsed child tab, which has no content", () => {
     const container = renderContainer({ level: 1, collapsed: true });
 

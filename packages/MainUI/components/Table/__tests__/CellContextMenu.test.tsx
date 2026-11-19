@@ -19,6 +19,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CellContextMenu } from "../CellContextMenu";
 import type { MRT_Cell, MRT_Row } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { MENU_TEXT_CLASS } from "@/utils/menuClasses";
 
 // Mock the translation hook
 jest.mock("@/hooks/useTranslation", () => ({
@@ -95,6 +96,16 @@ describe("CellContextMenu", () => {
     expect(screen.getByTestId("insert-row-menu-item")).toBeInTheDocument();
     expect(screen.getByText("Edit Row")).toBeInTheDocument();
     expect(screen.getByText("Insert Row")).toBeInTheDocument();
+  });
+
+  it("uses the grid text size and a separator that spans the menu", () => {
+    render(
+      <CellContextMenu {...defaultProps} canEdit isRowEditing={false} onEditRow={jest.fn()} onInsertRow={jest.fn()} />
+    );
+
+    const item = screen.getByTestId("edit-row-menu-item");
+    expect(item.parentElement).toHaveClass(MENU_TEXT_CLASS);
+    expect(item.parentElement?.querySelector(".border-t")).toHaveClass("-mx-2");
   });
 
   it("hides inline editing options when canEdit is false", () => {

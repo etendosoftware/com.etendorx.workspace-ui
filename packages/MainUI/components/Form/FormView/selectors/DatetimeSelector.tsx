@@ -20,7 +20,7 @@ import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { NOT_TABBABLE } from "@/utils/form/focus";
-import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
+import { fieldIconColor } from "@/utils/form/activeFieldColors";
 
 interface DatetimeSelectorProps {
   field: Field;
@@ -125,7 +125,10 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
         bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
         text-(--color-transparent-neutral-80) font-medium text-sm leading-5`;
 
-    const focusClass = isFocused && !isReadOnly ? "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]" : "";
+    const focusClass =
+      isFocused && !isReadOnly
+        ? "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)"
+        : "";
 
     const hoverClass = !isReadOnly
       ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
@@ -187,9 +190,9 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           value={value ? formatDateForInputSafe(value) : ""}
         />
         <div
-          className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 pointer-events-none z-10 flex items-center justify-center ${
-            isFocused && !isReadOnly ? ACTIVE_ICON_COLOR : "text-(--color-transparent-neutral-60)"
-          }`}>
+          className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 pointer-events-none z-10 flex items-center justify-center ${fieldIconColor(
+            isFocused && !isReadOnly
+          )}`}>
           <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid={`CalendarIcon__${field.id}`} />
         </div>
       </div>

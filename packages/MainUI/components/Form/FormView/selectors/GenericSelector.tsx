@@ -16,7 +16,6 @@
  */
 
 import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
-import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { memo, useCallback, useMemo, useState } from "react";
@@ -60,6 +59,7 @@ import { useProcessDefinitionTrigger } from "@/hooks/useProcessDefinitionTrigger
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { useFormContext } from "react-hook-form";
+import { FieldTrailingActionContext, useFieldSearchAction } from "./components/Select/FieldTrailingAction";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -138,6 +138,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     },
     [canOpenSearchModal, popupShortcutId]
   );
+
+  // The magnifier sits inside the input box when the input can host it (FK selects), so the field keeps the
+  // width of its column; any other input keeps it outside, as before.
+  // Declared before the early returns, like every Hook here.
+  const openSearchModal = useCallback(() => setIsSearchModalOpen(true), []);
+  const search = useFieldSearchAction({
+    enabled: canOpenSearchModal,
+    fieldId: field.id,
+    onOpen: openSearchModal,
+    tabIndex: NOT_TABBABLE,
+  });
 
   const { reference } = effectiveField.column;
 
@@ -326,29 +337,21 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           focus sits inside it, which is what the bubbling keydown gives us. */}
       <div className="flex w-full items-center gap-1" onKeyDown={handleFieldKeyDown}>
         <div className="flex-grow min-w-0">
-          {hasLegacySearchPopup ? (
-            <LegacySelectorAffix
-              field={effectiveField}
-              legacySearchUrl={legacySearchUrl}
-              isReadOnly={isReadOnly}
-              data-testid={`LegacySelectorAffix__${field.id}`}>
-              {SelectorComponent}
-            </LegacySelectorAffix>
-          ) : (
-            SelectorComponent
-          )}
+          <FieldTrailingActionContext.Provider value={search.contextValue}>
+            {hasLegacySearchPopup ? (
+              <LegacySelectorAffix
+                field={effectiveField}
+                legacySearchUrl={legacySearchUrl}
+                isReadOnly={isReadOnly}
+                data-testid={`LegacySelectorAffix__${field.id}`}>
+                {SelectorComponent}
+              </LegacySelectorAffix>
+            ) : (
+              SelectorComponent
+            )}
+          </FieldTrailingActionContext.Provider>
         </div>
-        {canOpenSearchModal && (
-          <IconButton
-            onClick={() => setIsSearchModalOpen(true)}
-            className="w-8 h-8 flex-shrink-0"
-            tooltip="Search"
-            tooltipPosition="top"
-            tabIndex={NOT_TABBABLE}
-            data-testid={`IconButton__${field.id}`}>
-            <SearchIcon className="w-5 h-5 fill-current" data-testid={`SearchIcon__${field.id}`} />
-          </IconButton>
-        )}
+        {!search.isHosted && search.action}
         {hasProcessDefinitionRelated && !isReadOnly && (
           <IconButton
             onClick={handleProcessClick}

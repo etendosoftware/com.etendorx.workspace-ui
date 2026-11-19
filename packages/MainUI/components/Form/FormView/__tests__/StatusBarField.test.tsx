@@ -104,6 +104,13 @@ describe("StatusBarField", () => {
     expect(screen.getByText("Status:")).toBeInTheDocument();
   });
 
+  it("uses the colour of the form labels for its label", () => {
+    mockUseFieldValue.mockReturnValue({ displayValue: "DR", colorValue: undefined, value: "DR" });
+    render(<StatusBarField field={makeField()} />);
+
+    expect(screen.getByText("Status:")).toHaveClass("text-gray-700");
+  });
+
   it("renders a Tag when a matching refItem exists (no custom color)", () => {
     mockUseFieldValue.mockReturnValue({ displayValue: "DR", colorValue: undefined, value: "DR" });
     render(<StatusBarField field={makeField()} />);

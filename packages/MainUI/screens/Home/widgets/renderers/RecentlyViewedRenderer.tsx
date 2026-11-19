@@ -32,6 +32,7 @@ import { findLiveMenuEntry } from "@/utils/menu/legacyMenuEntry";
 import { MENU_CLICK_INTENT_KINDS, resolveMenuClickIntent } from "@/utils/menu/menuItemDispatch";
 import { MENU_ITEM_TYPES } from "@/utils/menu/menuItemTypes";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
+import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
@@ -80,7 +81,7 @@ export default function RecentlyViewedRenderer() {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="RecentlyViewedRenderer__empty">
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="RecentlyViewedRenderer__empty">
         {t("dashboard.recentlyViewed.empty")}
       </p>
     );
@@ -95,7 +96,8 @@ export default function RecentlyViewedRenderer() {
           onClick={() => handleClick(item)}
           onMouseEnter={() => !isExternalMenuEntry(item) && prefetchOnHover(item.windowId ?? item.id)}
           onFocus={() => !isExternalMenuEntry(item) && prefetchOnHover(item.windowId ?? item.id)}
-          className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
+          className={WIDGET_CHIP_CLASSES}
+          title={item.name}
           data-testid={`RecentlyViewedRenderer__item_${item.id}`}>
           {item.name}
         </button>

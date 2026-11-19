@@ -15,11 +15,13 @@
  *************************************************************************
  */
 
-import { useMemo, memo } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
+import { memo } from "react";
+import { Box, Typography } from "@mui/material";
 import { Modal } from "..";
 import SaveIcon from "../../assets/icons/trash.svg";
 import { useStyle } from "../StatusModal/styles";
+import { statusConfig } from "./states";
+import StatusIconBadge from "./StatusIconBadge";
 import type { ConfirmModalProps } from "./types";
 
 const ConfirmModal = memo(
@@ -32,13 +34,8 @@ const ConfirmModal = memo(
     hideSecondaryButton = false,
     open = true,
   }: ConfirmModalProps) => {
-    const theme = useTheme();
     const { sx } = useStyle();
-
-    const backgroundGradient = useMemo(
-      () => `linear-gradient(to bottom, ${theme.palette.specificColor.warning.light}, rgba(255, 255, 255, 0))`,
-      [theme.palette.specificColor.warning.light]
-    );
+    const { iconBackgroundColor, icon: WarningIcon } = statusConfig.warning;
     return (
       <Modal
         open={open}
@@ -46,11 +43,11 @@ const ConfirmModal = memo(
         saveButtonLabel={saveLabel}
         secondaryButtonLabel={hideSecondaryButton ? undefined : secondaryButtonLabel}
         SaveIcon={SaveIcon}
-        backgroundGradient={backgroundGradient}
         autoFocusSave
         onSave={onConfirm}
         onCancel={onCancel}>
         <Box sx={sx.statusModalContainer}>
+          <StatusIconBadge color={iconBackgroundColor} Icon={WarningIcon} data-testid="StatusIconBadge__confirm" />
           <Typography sx={sx.statusText}>{confirmText}</Typography>
         </Box>
       </Modal>

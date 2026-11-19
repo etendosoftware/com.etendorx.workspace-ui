@@ -59,6 +59,38 @@ function toRglLayout(instances: WidgetInstance[]): Layout {
   );
 }
 
+/** Whether two layout items cover a common grid cell. */
+const overlaps = (a: LayoutItem, b: LayoutItem): boolean =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+/**
+ * Leftmost column the item can take without covering an item already placed; its own column at most.
+ */
+const findLeftmostFreeX = (item: LayoutItem, placed: LayoutItem[]): number => {
+  for (let x = 0; x < item.x; x++) {
+    const candidate = { ...item, x };
+    if (!placed.some((other) => overlaps(candidate, other))) return x;
+  }
+  return item.x;
+};
+
+/**
+ * Moves every widget left into the free columns before it, keeping its row. A widget that is hidden or not
+ * available for the role leaves its column empty in the stored layout; without this the dashboard shows
+ * that column as a gap between the remaining widgets.
+ *
+ * @param layout the layout built from the stored positions
+ * @returns the same items without empty columns on their left
+ */
+export function closeHorizontalGaps(layout: Layout): Layout {
+  const placed: LayoutItem[] = [];
+  const ordered = [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
+  for (const item of ordered) {
+    placed.push({ ...item, x: findLeftmostFreeX(item, placed) });
+  }
+  return placed;
+}
+
 function toUpdatePayload(layout: Layout, instances: WidgetInstance[]): UpdateLayoutWidget[] {
   return layout.map((item) => {
     const instance = instances.find((w) => w.instanceId === item.i);
@@ -138,7 +170,7 @@ export default function DashboardGrid({
     [onUpdateLayout, instances]
   );
 
-  const rglLayout = toRglLayout(instances);
+  const rglLayout = closeHorizontalGaps(toRglLayout(instances));
 
   return (
     <div ref={containerRef} className="w-full" data-testid="DashboardGrid__container">

@@ -25,6 +25,16 @@ import BackIcon from "../../../assets/icons/arrow-left.svg";
 import SparksIcon from "../../../assets/icons/sparks.svg";
 import type { CopilotPopupProps } from "../types";
 
+/**
+ * Collapsed panel: a side panel anchored to the content area, from the top of the content (56px top bar + 16px)
+ * down to just above the 28px status bar, on the 16px right margin.
+ */
+export const COLLAPSED_PANEL_POSITION = "top-[4.5rem] right-4 bottom-9";
+/** Size of the collapsed panel: fixed width, the whole height of its position. */
+export const COLLAPSED_PANEL_SIZE = "w-[26.25rem] h-full";
+/** Flat card surface in both themes, like the other panels (no pastel gradient). */
+export const PANEL_SURFACE = "bg-(--ui-card-bg)";
+
 const CopilotPopup: React.FC<CopilotPopupProps> = ({
   open,
   onClose,
@@ -88,9 +98,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   const isHeaderClickable = selectedAssistant !== null && selectedAssistant !== undefined;
 
   return (
-    <div className={`fixed z-500 ${isExpanded ? "inset-4" : "right-2 bottom-2"}`}>
+    <div className={`fixed z-500 ${isExpanded ? "inset-4" : COLLAPSED_PANEL_POSITION}`}>
       <div
-        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-1  border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
+        className={`${PANEL_SURFACE} rounded-lg border-1 border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : COLLAPSED_PANEL_SIZE} flex flex-col`}>
         <div className="flex justify-between items-center p-4 pb-2 border-b border-(--color-transparent-neutral-20)">
           <div className="flex-1 pr-2 min-w-0">
             <button

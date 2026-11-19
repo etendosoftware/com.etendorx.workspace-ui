@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchAlertCount } from "@/utils/alerts/fetchAlertCount";
-import { ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
+import { ALERTS_CHANGED_EVENT, ALERTS_POLL_DELAY_MS } from "@/utils/alerts/constants";
 import { getOrigin, readAlertCountMessage } from "@/utils/alerts/readAlertCountMessage";
 
 /**
@@ -59,9 +59,17 @@ export function useAlertCount(enabled: boolean, roleId?: string, classicHost?: s
 
     poll();
 
+    // Alerts marked as read elsewhere in the new UI (notifications widget): count again without waiting.
+    const pollNow = () => {
+      clearTimeout(timer);
+      poll();
+    };
+    window.addEventListener(ALERTS_CHANGED_EVENT, pollNow);
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      window.removeEventListener(ALERTS_CHANGED_EVENT, pollNow);
     };
   }, [enabled, roleId]);
 

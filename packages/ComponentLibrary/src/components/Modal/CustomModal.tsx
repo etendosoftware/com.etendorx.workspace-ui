@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
+import Button from "../Button/Button";
 
 const FORM_TARGET_PREFIX = "etendo-legacy-iframe-";
 const FORM_METHOD = "POST";
@@ -118,8 +119,8 @@ const CustomModal = ({
     <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
       {/* NOTE: sizes inherited from the modal for manual processes from the previous UI */}
       <div
-        className={`relative flex h-[625px] w-[900px] flex-col rounded-xl border-4 border-gray-300 bg-white ${customContentClass}`}>
-        <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] px-4 py-2">
+        className={`relative flex h-[625px] w-[900px] flex-col overflow-hidden rounded-xl border border-(--ui-line) bg-white ${customContentClass}`}>
+        <div className="flex items-center justify-between border-gray-200 border-b bg-[var(--color-baseline-10)] px-4 py-2">
           <h2 className="font-semibold text-lg" data-testid="legacy-process-modal-title">
             {title}
           </h2>
@@ -152,14 +153,11 @@ const CustomModal = ({
             iframeTitle={texts.iframeTitle}
           />
         </div>
-        <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] px-4 py-2">
-          <button
-            data-testid="close-button"
-            type="button"
-            onClick={handleClose}
-            className="mx-auto rounded bg-[var(--color-etendo-main)] px-4 py-2 font-medium text-white hover:bg-[var(--color-etendo-dark)] focus:outline-none">
+        {/* Same Close button as the footer of the other process modals: outlined and on the right. */}
+        <div className="flex justify-end border-gray-200 border-t bg-[var(--color-baseline-10)] px-4 py-2">
+          <Button variant="outlined" size="large" className="w-auto" onClick={handleClose} data-testid="close-button">
             {texts.closeButton}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

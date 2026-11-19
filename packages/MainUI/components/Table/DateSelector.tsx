@@ -162,7 +162,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
           placeholder={`Filter ${column.name || column.columnName}...`}
           value={inputValue}
           onChange={handleInputChange}
-          className="min-w-0 flex-1 bg-transparent text-sm font-normal outline-none placeholder:text-slate-400 placeholder:font-normal"
+          className="min-w-0 flex-1 bg-transparent text-sm font-normal outline-none placeholder:text-(--ui-text-muted) placeholder:font-normal"
         />
         <button
           type="button"

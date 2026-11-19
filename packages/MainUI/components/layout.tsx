@@ -26,13 +26,14 @@ import { useMemo, useState } from "react";
 import { useUserStore } from "@/stores/userStore";
 import ThemeToggle from "./ThemeToggle";
 import { TopBarSlotsContext } from "@/contexts/TitleActionsSlot";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 /** Thin status bar under the workspace: app version and signed-in user. */
 function StatusBar({ onFooterRef }: { onFooterRef: (element: HTMLElement | null) => void }) {
   const name = useUserStore((s) => s.profile.name);
   return (
     <div
-      className="flex h-7 min-h-7 w-full items-center justify-end gap-6 border-t border-(--ui-line) bg-(--ui-footer-bg) px-4 text-xs text-(--ui-text-muted)"
+      className="flex h-7 min-h-7 w-full items-center justify-end gap-6 border-t border-(--ui-line) bg-(--ui-footer-bg) px-4 text-xs text-(--ui-text-soft)"
       data-testid="StatusBar__container">
       <div ref={onFooterRef} className="mr-auto flex items-center" data-testid="FooterSlot__counter" />
       <span>Version: {process.env.NEXT_PUBLIC_APP_VERSION}</span>
@@ -53,16 +54,18 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <GlobalLoading data-testid="GlobalLoading__519d5c" />
         <Sidebar data-testid="Sidebar__519d5c" />
         <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden" data-shortcut-root="true">
-          <div className="flex w-full h-14 min-h-14 items-center gap-3 px-3 bg-(--ui-topbar-bg) border-b border-(--ui-topbar-line)">
+          <div
+            className={`flex w-full h-14 min-h-14 items-center gap-3 pr-3 ${WORKSPACE_EDGE_PADDING_CLASS} bg-(--ui-topbar-bg) border-b border-(--ui-topbar-line)`}>
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div ref={setTitle} className="min-w-0" data-testid="TopBarSlot__title" />
               <div ref={setTitleSuffix} className="shrink-0" data-testid="TopBarSlot__titleSuffix" />
             </div>
-            <div className="shrink-0">
+            {/* One group, so the toggle keeps the same 4px gap as the navigation buttons. */}
+            <div className="flex h-full shrink-0 items-center" data-testid="TopBar__actions">
               <ThemeToggle data-testid="ThemeToggle__519d5c" />
-            </div>
-            <div className="h-full shrink-0 [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:not(:disabled):hover]:bg-(--color-dynamic-main)">
-              <Navigation data-testid="Navigation__519d5c" />
+              <div className="h-full [&_nav_button]:bg-(--ui-nav-btn-bg) [&_nav_button:not(:disabled):hover]:bg-(--color-dynamic-main)">
+                <Navigation data-testid="Navigation__519d5c" />
+              </div>
             </div>
           </div>
           <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>

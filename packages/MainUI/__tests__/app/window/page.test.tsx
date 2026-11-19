@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import Page from "@/app/(main)/window/page";
 import { useWindowStore } from "@/stores/windowStore";
 import { IFRAME_SANDBOX_PERMISSIVE } from "@/utils/iframeSandbox";
+import { WINDOW_CONTENT_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 // Mock dependencies
 jest.mock("@/stores/windowStore", () => ({
@@ -106,6 +107,17 @@ describe("Window Page", () => {
     render(<Page />);
 
     expect(screen.getByTestId("Window__123")).toBeInTheDocument();
+  });
+
+  it("pads the window with the shared 8px side padding", () => {
+    mockWindowStore({
+      windows: { "123": { windowIdentifier: "123", isActive: true } },
+      isRecoveryLoading: false,
+    });
+
+    render(<Page />);
+
+    expect(screen.getByTestId("Window__123").closest(".absolute.inset-0")).toHaveClass(WINDOW_CONTENT_PADDING_CLASS);
   });
 
   it("embeds the URL of an External menu entry tab instead of rendering a Window", () => {

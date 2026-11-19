@@ -16,7 +16,7 @@
  */
 
 import React, { useMemo } from "react";
-import { parseColumns, renderTextCell } from "@/utils/tableColumns";
+import { GRID_TAG_SIZE, parseColumns, renderTextCell, TRUNCATED_CELL_CLASSES } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -27,6 +27,7 @@ import { useLanguage } from "@/contexts/language";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 import { FIELD_REFERENCE_CODES, isNumericReference } from "@/utils/form/constants";
+import { NUMERIC_CELL_CLASSES, NUMERIC_HEADER_CELL_PROPS } from "@/utils/table/numericAlignment";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
@@ -235,6 +236,11 @@ const getNumericCellText = (
   return value == null ? "" : String(value);
 };
 
+/** Link-like buttons of grid cells: they cut long values with an ellipsis, like plain text cells. */
+const CELL_LINK_CLASSES = `${TRUNCATED_CELL_CLASSES} bg-transparent border-none p-0 text-left pointer-events-auto`;
+
+export { NUMERIC_HEADER_CELL_PROPS } from "@/utils/table/numericAlignment";
+
 /**
  * Numeric columns (not references) align to the right and use the configured mask, as in Classic. Any other
  * column is returned unchanged.
@@ -250,8 +256,10 @@ const withNumericCell = (
   }
   return {
     ...columnConfig,
+    // The header follows its values; MRT merges this shallowly with the grid-level header props.
+    muiTableHeadCellProps: NUMERIC_HEADER_CELL_PROPS,
     Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => (
-      <span className="block w-full text-right tabular-nums">{getNumericCellText(cell, row, column, language)}</span>
+      <span className={NUMERIC_CELL_CLASSES}>{getNumericCellText(cell, row, column, language)}</span>
     ),
   };
 };
@@ -385,9 +393,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className={`bg-transparent border-none p-0 text-left pointer-events-auto ${
-                  usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""
-                }`}
+                className={`${CELL_LINK_CLASSES} ${usePlainLinkStyle ? "text-(--ui-link) hover:underline" : ""}`}
                 onClick={(e) => {
                   const selectedId = String(selectedRecordId ?? "");
                   console.debug("[useColumns] Reference cell clicked:", {
@@ -470,7 +476,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced record"
-                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--ui-link) hover:underline"
+                className={`${CELL_LINK_CLASSES} text-(--ui-link) hover:underline`}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -602,6 +608,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
               return (
                 <Tag
+                  size={GRID_TAG_SIZE}
                   label={displayValue}
                   tagColor={normalizedColor}
                   textColor={getContrastTextColor(normalizedColor)}
@@ -614,7 +621,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             if (typeof wrappedCell === "function") {
               return wrappedCell(cellProps);
             }
-            return <>{renderedCellValue ?? cell?.getValue()}</>;
+            // In a span: the grid cell is a flex box, where a bare text cannot end in an ellipsis.
+            return <span className={TRUNCATED_CELL_CLASSES}>{renderedCellValue ?? cell?.getValue()}</span>;
           },
         };
       }

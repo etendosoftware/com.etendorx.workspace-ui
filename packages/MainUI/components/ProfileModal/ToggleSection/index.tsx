@@ -26,6 +26,7 @@ import ClientIcon from "../../../../ComponentLibrary/src/assets/icons/github.svg
 import LockOutlined from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import OrganizationIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import WarehouseIcon from "../../../../ComponentLibrary/src/assets/icons/warehouse.svg";
+import RoleIcon from "../../../../ComponentLibrary/src/assets/icons/user-check.svg";
 import type { SelectorListProps } from "../types";
 import { useStyle } from "./styles";
 import { useLanguage } from "@/contexts/language";
@@ -93,7 +94,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
   const icons: { [key in Item]: React.ReactElement } = {
-    [Item.Role]: <></>,
+    // Every selector has an icon, so the values of the panel start at the same position.
+    [Item.Role]: <RoleIcon fill={defaultFill} data-testid="RoleIcon__da17cd" />,
     [Item.Client]: <ClientIcon fill={defaultFill} data-testid="ClientIcon__da17cd" />,
     [Item.Organization]: <OrganizationIcon fill={defaultFill} data-testid="OrganizationIcon__da17cd" />,
     [Item.Warehouse]: <WarehouseIcon fill={defaultFill} data-testid="WarehouseIcon__da17cd" />,
@@ -264,8 +266,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
         </>
       )}
       {section === "password" && (
-        <Grid margin="0.5rem" data-testid="Grid__da17cd">
-          <form action="#" autoComplete="off" className="flex flex-col gap-3">
+        <Grid data-testid="Grid__da17cd">
+          <form action="#" autoComplete="off" className="flex flex-col gap-5">
             {passwordFields.map(({ field, value, onChange, autoComplete }) => (
               <InputPassword
                 key={field}

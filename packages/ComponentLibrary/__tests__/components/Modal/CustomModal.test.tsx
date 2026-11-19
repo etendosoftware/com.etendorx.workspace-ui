@@ -182,15 +182,9 @@ describe("CustomModal", () => {
       render(<CustomModal {...defaultProps} />);
 
       const closeButton = screen.getByTestId("close-button");
-      expect(closeButton).toHaveClass(
-        "mx-auto",
-        "rounded",
-        "bg-[var(--color-etendo-main)]",
-        "px-4",
-        "py-2",
-        "font-medium",
-        "text-white"
-      );
+      // The outlined shared Button, like the Close of the other process modals.
+      expect(closeButton).toHaveClass("rounded-full", "border", "px-4", "font-medium", "w-auto");
+      expect(closeButton).not.toHaveClass("mx-auto");
     });
   });
 
@@ -222,7 +216,9 @@ describe("CustomModal", () => {
 
       const closeButton = screen.getByTestId("close-button");
       const footer = closeButton.parentElement;
-      expect(footer).toHaveClass("flex", "justify-end", "rounded-xl");
+      // Square bars: the frame clips them to its rounded corners.
+      expect(footer).toHaveClass("flex", "justify-end");
+      expect(footer).not.toHaveClass("rounded-xl");
     });
   });
 
@@ -440,7 +436,7 @@ describe("CustomModal", () => {
       render(<CustomModal {...defaultProps} />);
 
       const closeButton = screen.getByTestId("close-button");
-      expect(closeButton).toHaveClass("hover:bg-[var(--color-etendo-dark)]");
+      expect(closeButton).toHaveClass("hover:bg-(--color-etendo-dark)");
     });
   });
 });

@@ -19,6 +19,7 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row, MRT_Cell } from "material-react-table";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
+import { MENU_CONTENT_CLASSES, MENU_SEPARATOR_CLASSES } from "@/utils/menuClasses";
 
 interface ExtendedColumnDef {
   columnName?: string;
@@ -194,7 +195,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__704a8f">
-      <div className="rounded-2xl px-2 py-4">
+      <div className={MENU_CONTENT_CLASSES}>
         {isEmptyTableMenu ? (
           // Menu for empty table background
           canEdit && (
@@ -256,7 +257,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
                   data-testid="insert-row-menu-item">
                   {t("table.insertRow")}
                 </div>
-                {!areFiltersDisabled && <div className="border-t border-(--color-transparent-neutral-30) my-2" />}
+                {!areFiltersDisabled && <div className={MENU_SEPARATOR_CLASSES} />}
               </>
             )}
             {!areFiltersDisabled && (

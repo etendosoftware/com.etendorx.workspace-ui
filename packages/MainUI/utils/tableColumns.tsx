@@ -26,10 +26,16 @@ import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 // The full value is already shown on hover via the native `title` attribute
 // that `muiTableBodyCellProps` sets on the table cell (Table/index.tsx), so no
 // extra tooltip is wrapped here to avoid showing two tooltips at once.
+/** Tags inside grid cells use the dense size, which matches the grid text. */
+export const GRID_TAG_SIZE = "small";
+
+/** Content of a grid cell that cuts a long value with an ellipsis inside the flex cell. */
+export const TRUNCATED_CELL_CLASSES = "block min-w-0 max-w-full truncate";
+
 export const renderTextCell = (value: unknown): React.ReactNode => {
   if (value === null || value === undefined || value === "") return "";
   const text = String(value);
-  return <span className="block truncate max-w-full">{text}</span>;
+  return <span className={TRUNCATED_CELL_CLASSES}>{text}</span>;
 };
 
 // Helper function to handle boolean field rendering
@@ -42,7 +48,9 @@ const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: T
 
   const config = fieldValue ? yesNoConfig.Y : yesNoConfig.N;
 
-  return <Tag icon={config.icon} label={fieldValue ? yesText : noText} data-testid="Tag__2b5175" />;
+  return (
+    <Tag size={GRID_TAG_SIZE} icon={config.icon} label={fieldValue ? yesText : noText} data-testid="Tag__2b5175" />
+  );
 };
 
 // Helper function to process and validate tag colors
@@ -75,7 +83,7 @@ const renderColoredFkField = (value: Record<string, unknown>, column: Field) => 
   const color = value[colorKey] as string | undefined;
   const { tagColor, textColor } = processTagColors(color);
 
-  return <Tag label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+  return <Tag size={GRID_TAG_SIZE} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to handle list field rendering
@@ -99,7 +107,16 @@ const renderListField = (value: Record<string, unknown>, column: Field) => {
   const config = statusConfig[itemValue] || DEFAULT_STATUS_CONFIG;
   const { tagColor, textColor } = processTagColors(color);
 
-  return <Tag icon={config.icon} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+  return (
+    <Tag
+      size={GRID_TAG_SIZE}
+      icon={config.icon}
+      label={label}
+      tagColor={tagColor}
+      textColor={textColor}
+      data-testid="Tag__2b5175"
+    />
+  );
 };
 
 // Helper function to get raw cell value

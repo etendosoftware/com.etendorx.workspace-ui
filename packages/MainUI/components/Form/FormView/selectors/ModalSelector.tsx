@@ -33,11 +33,11 @@ export const ModalSelector = ({
     if (isReadOnly) {
       return `${baseClasses} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) focus:bg-transparent`;
     }
-    const activeStateClasses = "border-[#2a1757] text-[#2a1757] bg-[#ece8f6]";
+    const activeStateClasses = "border-(--ui-field-focus-border) text-(--ui-field-focus-fg) bg-(--ui-field-focus-bg)";
     const hoverStateClasses =
       "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
     const focusStateClasses =
-      "focus:border-[#2a1757] focus:text-[#2a1757] focus:bg-[#ece8f6] focus:outline-none cursor-pointer";
+      "focus:border-(--ui-field-focus-border) focus:text-(--ui-field-focus-fg) focus:bg-(--ui-field-focus-bg) focus:outline-none cursor-pointer";
     const interactiveStateClasses = isFocused || isModalOpen ? activeStateClasses : hoverStateClasses;
     return `${baseClasses} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactiveStateClasses} ${focusStateClasses}`;
   }, [isReadOnly, isFocused, isModalOpen]);
@@ -48,7 +48,7 @@ export const ModalSelector = ({
       return `${baseClasses} text-baseline-60`;
     }
     const isActiveState = (isFocused || isModalOpen) && !isReadOnly;
-    const textColorClass = isActiveState ? "text-[#2a1757]" : "text-(--color-transparent-neutral-80)";
+    const textColorClass = isActiveState ? "text-(--ui-field-focus-fg)" : "text-(--color-transparent-neutral-80)";
     return `${baseClasses} ${textColorClass}`;
   }, [identifier, value, isFocused, isModalOpen, isReadOnly]);
 

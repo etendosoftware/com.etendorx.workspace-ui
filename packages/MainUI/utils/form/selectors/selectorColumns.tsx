@@ -7,6 +7,8 @@ import { DateSelector } from "../../../components/Table/DateSelector";
 import { ColumnFilter } from "../../../components/Table/ColumnFilter";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check.svg";
 import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
+import { isNumericReference } from "@/utils/form/constants";
+import { NUMERIC_CELL_CLASSES, NUMERIC_HEADER_CELL_PROPS } from "@/utils/table/numericAlignment";
 import type { SelectorCriteria, DefaultFilterResponse } from "./defaultFilters";
 
 const DATE_REFERENCE_IDS = new Set(["15", "16", "478169542A1747BD942DD70C8B45089C"]);
@@ -87,6 +89,8 @@ export function buildSelectorColumnDefs(
         return <>{label ?? ""}</>;
       },
     };
+
+    if (isNumericReference(col.referenceId)) alignNumericColumn(columnDef);
 
     if (!(col.enableFiltering ?? true)) return columnDef;
 
@@ -252,6 +256,17 @@ export function preloadFiltersFromCriteria(
   }
 
   return filters;
+}
+
+/**
+ * Right-aligns a numeric selector column, header included, like the numeric columns of the window grids.
+ *
+ * @param columnDef the column to align; its cell content is kept
+ */
+export function alignNumericColumn(columnDef: MRT_ColumnDef<EntityData>): void {
+  const renderCell = columnDef.Cell;
+  columnDef.muiTableHeadCellProps = NUMERIC_HEADER_CELL_PROPS;
+  columnDef.Cell = (props) => <span className={NUMERIC_CELL_CLASSES}>{renderCell?.(props)}</span>;
 }
 
 export function buildDatasourceColumns(gridColumns: SelectorColumn[]): Column[] {

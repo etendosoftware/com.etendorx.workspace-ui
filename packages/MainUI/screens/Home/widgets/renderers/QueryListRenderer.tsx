@@ -21,6 +21,8 @@ import { useState, useTransition } from "react";
 import type { QueryListColumn, QueryListWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { WIDGET_PAGE_SIZE } from "@/hooks/useDashboard";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { useTranslation } from "@/hooks/useTranslation";
+import { WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 
 interface QueryListRendererProps {
   data: QueryListWidgetData;
@@ -43,6 +45,7 @@ function isNavigable(col: QueryListColumn): boolean {
 }
 
 export default function QueryListRenderer({ data, onFetchPage }: QueryListRendererProps) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
   const { handleClickRedirect } = useRedirect();
@@ -59,8 +62,8 @@ export default function QueryListRenderer({ data, onFetchPage }: QueryListRender
 
   if (data.rows.length === 0 && page === 1) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="QueryListRenderer__empty">
-        —
+      <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="QueryListRenderer__empty">
+        {t("dashboard.widget.emptyList")}
       </p>
     );
   }

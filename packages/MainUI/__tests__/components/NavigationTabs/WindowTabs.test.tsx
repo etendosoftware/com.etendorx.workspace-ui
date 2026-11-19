@@ -111,6 +111,7 @@ jest.mock("@/hooks/useMetadataContext", () => ({
 
 // Import the mock after it's defined
 import { useMetadataContext } from "../../../hooks/useMetadataContext";
+import { WORKSPACE_EDGE_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 describe("WindowTabs", () => {
   const mockUseTabs = useTabs as jest.Mock;
@@ -183,6 +184,12 @@ describe("WindowTabs", () => {
     render(<WindowTabs />);
     const homeButton = screen.getAllByTestId("IconButton__c8117d")[0];
     expect(homeButton.className).not.toContain("bg-(--color-etendo-main) text-(--color-etendo-contrast-text)");
+  });
+
+  it("puts the home button on the left edge of the window content", () => {
+    render(<WindowTabs />);
+    const bar = screen.getAllByTestId("IconButton__c8117d")[0].closest(`.${WORKSPACE_EDGE_PADDING_CLASS}`);
+    expect(bar).toBeInTheDocument();
   });
 
   it("calls setAllWindowsInactive when home button is clicked", () => {

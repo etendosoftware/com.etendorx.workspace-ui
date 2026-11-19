@@ -49,7 +49,7 @@ import { toClassicBoolean } from "@/utils/toClassicBoolean";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import { FORM_FIELD_NAME_ATTRIBUTE } from "@/utils/form/focus";
 import { handleFieldLinkOutShortcut } from "@/utils/form/keyboard";
-import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
+import FieldLabelRow from "./components/FieldLabelRow";
 
 // Module-level cache: expressions come from fixed application-dictionary metadata and
 // never change at runtime, so a compiled Function can be reused indefinitely.
@@ -165,16 +165,18 @@ const COL_SPAN_CLASS: Record<number, string> = {
   3: "col-span-3",
 };
 
-// A field that spans several columns keeps the label as wide as in a single column, so its input takes the rest
+// A field that spans several columns keeps the label as wide as in a single column, so its input takes the rest.
+// The label takes 45% of a single column: with a third, the leader, the gaps and the asterisk left only a few
+// characters of the label at 1280px.
 const LABEL_WIDTH_CLASS: Record<number, string> = {
-  1: "w-1/3",
-  2: "w-1/6",
-  3: "w-1/9",
+  1: "w-[45%]",
+  2: "w-[22.5%]",
+  3: "w-[15%]",
 };
 const INPUT_WIDTH_CLASS: Record<number, string> = {
-  1: "w-2/3",
-  2: "w-5/6",
-  3: "w-8/9",
+  1: "w-[55%]",
+  2: "w-[77.5%]",
+  3: "w-[85%]",
 };
 const labelWidthClass = (colSpan: number | null | undefined): string =>
   LABEL_WIDTH_CLASS[colSpan ?? 1] ?? LABEL_WIDTH_CLASS[1];
@@ -594,16 +596,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT, forceReadOnly, colS
           }
         }}
         onKeyDown={handleFieldLinkOutShortcut}>
-        <div className={`${labelWidthClass(field.obuiappColspan)} flex items-center gap-2 pr-2`}>
-          <Label field={field} data-testid="Label__38060a" />
-          {field.isMandatory && (
-            <Asterisk
-              className="fill-(--color-error-main) h-3 w-3 min-w-3 min-h-3"
-              data-testid={`Asterisk__${field.id}`}
-            />
-          )}
-          <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
-        </div>
+        <FieldLabelRow
+          label={<Label field={field} data-testid="Label__38060a" />}
+          mandatory={Boolean(field.isMandatory)}
+          widthClassName={labelWidthClass(field.obuiappColspan)}
+          asteriskTestId={`Asterisk__${field.id}`}
+          data-testid={`FieldLabelRow__${field.id}`}
+        />
         <div className={`${inputWidthClass(field.obuiappColspan)} relative`}>
           <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
           <CalloutHighlightOverlay

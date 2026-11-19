@@ -16,10 +16,11 @@
  */
 
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Box, Portal } from "@mui/material";
 import TextInputAutocomplete from "@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete";
 import { useStyle } from "./styles";
+import { computeSearchBoxPosition } from "./position";
 import type { SearchPortalProps } from "../types";
 
 const SearchPortal: React.FC<SearchPortalProps> = ({
@@ -29,8 +30,13 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
   onClose,
   placeholder,
   autoCompleteTexts = [],
+  anchorEl,
 }) => {
   const { styles } = useStyle();
+  const anchoredPosition = useMemo(() => {
+    if (!isOpen || !anchorEl) return null;
+    return computeSearchBoxPosition(anchorEl.getBoundingClientRect(), window.innerWidth);
+  }, [isOpen, anchorEl]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -52,7 +58,7 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
 
   return (
     <Portal data-testid="Portal__b0b7d2">
-      <Box sx={styles.portal} data-testid="Box__b0b7d2">
+      <Box sx={{ ...styles.portal, ...anchoredPosition }} data-testid="Box__b0b7d2">
         <TextInputAutocomplete
           value={searchValue}
           setValue={onSearchChange}

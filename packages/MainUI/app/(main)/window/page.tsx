@@ -27,6 +27,7 @@ import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
 import { AccessDeniedScreen } from "@/components/AccessDeniedDisplay";
 import type { WindowState } from "@/utils/window/constants";
+import { WINDOW_CONTENT_PADDING_CLASS } from "@/utils/workspaceEdge";
 
 /** In-app tabs of External menu entries embed their URL; every other tab is an AD window. */
 const renderWindowContent = (win: WindowState) => {
@@ -114,7 +115,7 @@ const WindowSlot = memo(function WindowSlot({ windowIdentifier, isVisible }: Win
   const isShown = isVisible || isLeaving;
   return (
     <div
-      className="absolute inset-0 flex flex-col overflow-hidden px-4 pt-2"
+      className={`absolute inset-0 flex flex-col overflow-hidden ${WINDOW_CONTENT_PADDING_CLASS} pt-2`}
       style={{
         visibility: isShown ? "visible" : "hidden",
         // Skips style, layout and paint of a window that is not on screen, keeping it mounted and its size.

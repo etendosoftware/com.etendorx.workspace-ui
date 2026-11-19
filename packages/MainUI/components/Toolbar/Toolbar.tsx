@@ -78,6 +78,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   isSplitView = false,
   isFocused = false,
 }) => {
+  // Toolbar row element: the search box opens under it, inside the content area.
+  const [toolbarRow, setToolbarRow] = useState<HTMLDivElement | null>(null);
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -599,7 +601,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
   }
 
-  const topToolbar = <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />;
+  const topToolbar = <TopToolbar {...toolbarConfig} rootRef={setToolbarRow} data-testid="TopToolbar__a2dd07" />;
 
   return (
     <>
@@ -664,6 +666,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           onClose={handleCloseSearch}
           placeholder={t("table.placeholders.search")}
           autoCompleteTexts={EMPTY_ARRAY}
+          anchorEl={toolbarRow}
           data-testid="SearchPortal__a2dd07"
         />
       )}
