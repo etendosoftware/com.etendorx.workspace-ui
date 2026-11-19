@@ -29,7 +29,7 @@ without repeating it. Reading preferences from process scripts is described in
 | `ShowTrl` | Yes | Hidden | Translation tabs (`AD_Tab.IsTranslationTab`) and their child tabs are shown only with Y. |
 | `FinancialManagement` | Yes | Empty | Value of `@FinancialManagement@` in the display logic of process parameters. |
 | `ShowAcct` (processes) | No | Empty | Value of `@#ShowAcct@` in processes. Global only, as the classic session value set at login. |
-| `StartPage` | No | Home | After login, the window of the tab in `/?tabId=<AD_Tab_ID>` opens as from the menu. |
+| `StartPage` | No | Home | After login, opens what `/?tabId=<AD_Tab_ID>[&recordId=<id>][&command=NEW]` names, as classic `OB.Utilities.openDirectTab`: the window of the tab as from the menu, the record in the form of that tab, or a new record in the top tab of the window. |
 | `LogoutRedirectURL` | No | Login page | After a manual logout the browser goes to this address. Empty or `Default` keeps the login page. |
 | `ShowAuditDefault` | Yes | Collapsed | With Y the audit section of the form opens expanded. |
 | `DisableNotesForReadOnlyTabs` | Yes | Allowed | With Y, a read-only tab shows its notes but does not let the user add or delete them. |
@@ -58,8 +58,18 @@ Already applied without client changes:
 
 ## Differences with Classic
 
-- `StartPage` only supports the `?tabId=` form: other pages (classic servlets) have no equivalent and the
-  home page stays. A `recordId` in the value is not opened.
+- `StartPage`:
+  - **Supported as in classic:** `tabId`, `recordId` (the parent tabs of a sub-tab get their records, as
+    with a link) and `command=NEW`, which, as in classic, always creates the record in the top tab.
+  - **Not supported:** a value that is not a `?tabId=` address, such as a classic servlet or form
+    (`/ad_forms/...`). Classic navigates to it; the new UI has no equivalent page and stays on the home page.
+  - **A tab without `recordId`** opens its window as from the menu, on the top tab. Classic selects the
+    named sub-tab.
+  - **Conflicting values** (two preferences with the same priority): classic logs the conflict and shows the
+    normal page; the new UI opens the value that `meta/preferences` publishes first.
+  - **When it opens:** classic redirects on the server before the application loads. The new UI opens the
+    window once the session is loaded, so the home page can show for a moment, and the windows restored
+    from the URL of a previous session stay open next to it.
 - Classic re-applies `ShowAuditDefault` every time a form opens. The new UI uses it to seed the state of the
   section the first time the tab's form opens; after that, the state the user chose is kept.
 - In classic, `DisableNotesForReadOnlyTabs` only locks the note input and the server rejects a deletion. The
@@ -70,6 +80,12 @@ Already applied without client changes:
 - With the personalization blocked, going back to the standard view does not clear the stored default view,
   which would be a change to the views.
 
+## Public documentation
+
+The differences above, and the preferences not supported yet, are documented for users and partners on the
+Etendo documentation site (https://docs.etendo.software/), in the "Differences with Classic" entry of the New
+UI section. That work belongs to task ETP-6355; this page only records the technical behaviour.
+
 ## Main files
 
 - `packages/MainUI/utils/preferences/classicPreferences.ts`: names and helpers.
@@ -77,6 +93,8 @@ Already applied without client changes:
   translation tabs.
 - `packages/MainUI/utils/index.ts` (`buildProcessPayload`): process context.
 - `packages/MainUI/utils/session/startPage.ts` and `packages/MainUI/contexts/user.tsx`: start page and logout.
+- `packages/MainUI/utils/window/recordWindowData.ts`: window state of a record, shared by the start page and
+  the links that open a record (`useRedirect`).
 - `packages/MainUI/utils/form/expandedSections.ts`: audit section.
 - `packages/MainUI/components/Form/FormView/FormFieldsContent.tsx`, `Sections/noteSection.tsx`: notes and
   linked items.
