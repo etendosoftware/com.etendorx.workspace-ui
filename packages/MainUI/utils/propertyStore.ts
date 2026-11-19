@@ -68,6 +68,20 @@ export function getStoredPreferences(): Record<string, any> {
 }
 
 /**
+ * Key a preference is stored under, as classic `OB.Properties`: `name_windowId` when it belongs to a window,
+ * the bare `name` otherwise.
+ *
+ * @param name - Preference name
+ * @param windowId - AD window id the preference belongs to, if any
+ */
+export function buildPreferenceKey(name: string, windowId?: string): string {
+  if (windowId) {
+    return `${name}_${windowId}`;
+  }
+  return name;
+}
+
+/**
  * Merges a single preference key into the stored preferences, preserving the
  * rest. Backing for the `OB.PropertyStore.set(key, value)` shim.
  *

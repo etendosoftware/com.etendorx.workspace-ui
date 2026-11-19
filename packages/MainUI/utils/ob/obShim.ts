@@ -17,7 +17,8 @@
 
 import { IDENTIFIER_KEY } from "@/utils/columnsConstants";
 import { MESSAGE_BAR_TYPES } from "@/utils/processes/definition/messageBarStore";
-import { getStoredPreference, setStoredPreference } from "@/utils/propertyStore";
+import { buildPreferenceKey, getStoredPreference, setStoredPreference } from "@/utils/propertyStore";
+import { persistPreference } from "@/utils/preferences/persistPreference";
 import { createAction } from "./action";
 import { createDatasourceManager } from "./datasource";
 import { createFormat } from "./format";
@@ -35,16 +36,20 @@ const FIELD_SEPARATOR = "$";
  * Builds the `OB.PropertyStore` namespace. `get` reads a preference the way classic
  * `OB.PropertyStore.get(propertyName, windowId)` does — window-scoped key first, then the
  * global one — falling back to `shimWindowId` when the caller passes no window id, which is
- * what classic scripts relied on the view for. `set` merges a single key into the stored
- * preferences.
+ * what classic scripts relied on the view for. `set` stores a single preference for the session and,
+ * unless `noSetInServer`, for the user in the server.
  *
  * @param shimWindowId - AD window id the shim is scoped to
  */
 function createPropertyStore(shimWindowId?: string): OBPropertyStore {
   return {
     get: (key: string, windowId?: string): string | undefined => getStoredPreference(key, windowId ?? shimWindowId),
-    set: (key: string, value: unknown): void => {
-      setStoredPreference(key, value);
+    set: (key: string, value: unknown, windowId?: string, noSetInServer?: boolean): void => {
+      if (noSetInServer) {
+        setStoredPreference(buildPreferenceKey(key, windowId), value);
+        return;
+      }
+      void persistPreference(key, String(value), windowId);
     },
   };
 }

@@ -120,7 +120,12 @@ export interface OBPropertyStore {
    * own window id is used, and failing that only the global key resolves.
    */
   get: (key: string, windowId?: string) => string | undefined;
-  set: (key: string, value: unknown) => void;
+  /**
+   * Writes a preference, matching classic `OB.PropertyStore.set(propertyName, value, windowId, noSetInServer)`:
+   * stored at once for the session (under `key_windowId` when a window is given) and, unless `noSetInServer`,
+   * saved for the user in the server. Saving at System level (`setAsSystem`) is not supported.
+   */
+  set: (key: string, value: unknown, windowId?: string, noSetInServer?: boolean) => void;
 }
 
 /**

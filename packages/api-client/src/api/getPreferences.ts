@@ -27,11 +27,33 @@ export type PreferencesMap = Record<string, string>;
  * @returns A map of preference key -> value pairs
  */
 export const getPreferences = async (): Promise<PreferencesMap> => {
-  const response = await Metadata.client.request("meta/preferences");
+  const response = await Metadata.client.request(PREFERENCES_PATH);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch preferences: HTTP ${response.status}`);
   }
 
   return response.data?.preferences ?? {};
+};
+
+export const PREFERENCES_PATH = "meta/preferences";
+
+/**
+ * Stores a Property List preference for the current user (client, organization, user and role), as classic
+ * `OB.PropertyStore.set` does through `StorePropertyActionHandler`.
+ *
+ * @param property - Property List value, e.g. `OBUIAPP_ShowImplicitFilterMsg`
+ * @param value - Value to store
+ * @param windowId - AD window id to scope the preference to; global when omitted
+ */
+export const savePreference = async (property: string, value: string, windowId?: string): Promise<void> => {
+  const response = await Metadata.client.request(PREFERENCES_PATH, {
+    method: "POST",
+    body: JSON.stringify({ property, value, windowId }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save preference ${property}: HTTP ${response.status}`);
+  }
 };
