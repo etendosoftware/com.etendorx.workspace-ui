@@ -25,6 +25,9 @@ const NO = "N";
 const REGULAR_USER_LEVEL = "  O";
 const PAGE_SIZE = 5;
 const LOGOUT_TARGET = "e2e-logout-redirect";
+const SINGLE_RECORD_PREFERENCE = "OBUIAPP_ShowSingleRecordFilterMsg";
+const FILTER_MESSAGE = "GridFilterMessage__container";
+const SAVED_PREFERENCE_REQUEST = /\/api\/erp\/meta\/preferences/;
 
 /** Address that opens `recordId` of `tabId` in a new window instance (the URL state the UI restores). */
 function recordLink(windowId: string, tabId: string, recordId: string): string {
@@ -32,10 +35,17 @@ function recordLink(windowId: string, tabId: string, recordId: string): string {
 }
 
 const preferences: SavedRecord[] = [];
+/** Set by the test that clicks "Never show this message again", which stores the preference for the user. */
+let restoreSingleRecordMessage = false;
 
 // Removed while the page is still open, also when the test failed or timed out
 test.afterEach(async ({ api }) => {
   await removePreferences(api, preferences);
+  if (restoreSingleRecordMessage) {
+    // Stored in the System client as classic does, so it is set back instead of deleted
+    await api.savePreference(SINGLE_RECORD_PREFERENCE, "Y");
+    restoreSingleRecordMessage = false;
+  }
 });
 
 /**
@@ -185,5 +195,37 @@ test.describe("Session - Classic interface preferences @regression @session", ()
 
     await app.auth.logout();
     await expect(app.page).toHaveURL(new RegExp(LOGOUT_TARGET));
+  });
+
+  test("shows the classic filter messages and stops showing them when the user asks", async ({ app, data, page }) => {
+    const message = page.getByTestId(FILTER_MESSAGE);
+    const order = recordLink(WINDOW_IDS.SALES_ORDER, TABS.SALES_ORDER_HEADER, data.SAMPLE_ORDER.COMPLETED.id);
+    /** Opens the sample order from a link and goes back to the grid, which keeps that record only. */
+    const openOrderGridFromLink = async () => {
+      await page.goto(order);
+      await app.breadcrumb.waitFor(data.SAMPLE_DOCUMENT.SALES_ORDER_COMPLETED);
+      await app.toolbar.button("cancel").click();
+    };
+
+    // The top tab of a transactional window applies its default filter
+    await app.sidebar.navigateTo("salesOrder");
+    await expect(message).toContainText("This grid is filtered using");
+
+    await openOrderGridFromLink();
+    await expect(message).toContainText("filtered for the last document viewed");
+    const saved = page.waitForResponse(
+      (response) => SAVED_PREFERENCE_REQUEST.test(response.url()) && response.request().method() === "POST"
+    );
+    restoreSingleRecordMessage = true;
+    await page.getByTestId("GridFilterMessage__action").click();
+    expect((await saved).ok(), "the preference was not stored").toBe(true);
+    await expect(message).toHaveCount(0);
+
+    // Stored for the user: a new session does not show it either
+    await app.auth.logout();
+    await app.auth.login();
+    await openOrderGridFromLink();
+    await expect(app.grid.rows()).toHaveCount(1);
+    await expect(message).toHaveCount(0);
   });
 });

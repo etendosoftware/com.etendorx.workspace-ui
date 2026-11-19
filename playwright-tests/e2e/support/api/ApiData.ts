@@ -15,6 +15,7 @@ const DATASOURCE_PATH = "/api/datasource";
 /** Column order, visibility and sort the grid saves per user, window and tab (ETMETA_GridConfiguration). */
 const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
 const PROCESS_METADATA_PATH = "/api/erp/meta/process";
+const PREFERENCES_PATH = "/api/erp/meta/preferences";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -210,6 +211,21 @@ export class ApiData {
       throw new Error(`Reading the metadata of process ${processId} failed: ${response.status()}`);
     }
     return (await response.json()) as RecordValues;
+  }
+
+  /**
+   * Stores a Property List preference for the logged-in user through the endpoint the UI uses
+   * (`OB.PropertyStore.set`): the row belongs to the System client, so the datasource cannot delete it, and
+   * a spec restores its default value instead.
+   */
+  async savePreference(property: string, value: string): Promise<void> {
+    const response = await this.page.request.post(PREFERENCES_PATH, {
+      headers: await this.authHeaders(),
+      data: { property, value },
+    });
+    if (!response.ok()) {
+      throw new Error(`Storing the preference ${property} failed: ${response.status()}`);
+    }
   }
 
   private async authHeaders(): Promise<Record<string, string>> {
