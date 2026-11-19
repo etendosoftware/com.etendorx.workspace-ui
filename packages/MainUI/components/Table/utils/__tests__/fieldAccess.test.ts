@@ -71,4 +71,30 @@ describe("fieldAccess (ETP-6334)", () => {
       expect(isFieldReadOnly(field({ isUpdatable: false }), true, {}, {}, "167", tabFields)).toBe(false);
     });
   });
+  describe("logic that names a column of the parent record (ETP-6335)", () => {
+    const parentFields = {
+      documentStatus: { hqlName: "documentStatus", columnName: "DocStatus", name: "Document Status" },
+    } as unknown as Record<string, Field>;
+    const quantity = field({ readOnlyLogicExpression: "@DocStatus@='CO'" });
+    const parent = (documentStatus: string) => ({ values: { documentStatus }, fields: parentFields });
+
+    it("is read-only when the parent record is completed, as the form view is", () => {
+      expect(isFieldReadOnly(quantity, false, { processed: false }, {}, "143", tabFields, parent("CO"))).toBe(true);
+    });
+
+    it("is editable when the parent record is a draft", () => {
+      expect(isFieldReadOnly(quantity, false, { processed: false }, {}, "143", tabFields, parent("DR"))).toBe(false);
+    });
+
+    it("hides the field with display logic that reads the parent record", () => {
+      const hidden = field({ displayLogicExpression: "@DocStatus@='DR'" });
+
+      expect(isHiddenByDisplayLogic(hidden, {}, {}, "143", tabFields, parent("DR"))).toBe(false);
+      expect(isHiddenByDisplayLogic(hidden, {}, {}, "143", tabFields, parent("CO"))).toBe(true);
+    });
+
+    it("keeps working without a parent record", () => {
+      expect(isFieldReadOnly(quantity, false, { processed: false }, {}, "143", tabFields)).toBe(false);
+    });
+  });
 });

@@ -28,7 +28,11 @@ export function useExpressionDependencies(expression?: string): Record<string, u
     const result: Record<string, unknown> = {};
     if (dependencies && watchedValuesArray) {
       dependencies.forEach((depName, index) => {
-        result[depName] = watchedValuesArray[index];
+        // A column the form does not hold (e.g. one of the parent record that a child tab's logic reads) stays out:
+        // as an `undefined` entry it would hide the value the evaluation context takes from the parent record.
+        if (watchedValuesArray[index] !== undefined) {
+          result[depName] = watchedValuesArray[index];
+        }
       });
     }
     return result;
