@@ -164,7 +164,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
-import { isFieldReadOnly, isHiddenByDisplayLogic } from "./utils/fieldAccess";
+import { isFieldReadOnly, isHiddenByDisplayLogic, type ParentRecordContext } from "./utils/fieldAccess";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
@@ -242,6 +242,8 @@ interface CellEditingContextProps {
   tabId: string;
   /** Fields of the tab, to evaluate display and read-only logic like the form view does. */
   tabFields?: Record<string, Field>;
+  /** Record and fields of the parent tab, which the expressions of this tab can read as in the form view. */
+  parentContext?: ParentRecordContext;
   editingRowUtils: EditingRowStateUtils;
   keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
@@ -298,6 +300,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   windowId,
   tabId,
   tabFields,
+  parentContext,
 }) => {
   const currentValue =
     fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
@@ -305,7 +308,15 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
   const isNewRow = editingData.isNew || false;
   const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
-  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session, windowId, tabFields);
+  const shouldBeReadOnly = isFieldReadOnly(
+    fieldMapping.field,
+    isNewRow,
+    rowValues,
+    session,
+    windowId,
+    tabFields,
+    parentContext
+  );
 
   const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
   const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
@@ -454,6 +465,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   windowId,
   tabId,
   tabFields,
+  parentContext,
 }) => {
   const rowId = String(row.original.id);
   const isEditing = editingRowUtils.isRowEditing(rowId);
@@ -486,6 +498,7 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
         windowId={windowId}
         tabId={tabId}
         tabFields={tabFields}
+        parentContext={parentContext}
         data-testid="EditableCellContent__8ca888"
       />
     );
@@ -1166,6 +1179,10 @@ const DynamicTable = ({
   }, []);
   const setWindowDirtySource = useWindowStore((s) => s.setWindowDirtySource);
   const { tab, parentTab, parentRecord } = useTabContext();
+  const parentContext = useMemo<ParentRecordContext>(
+    () => ({ values: parentRecord, fields: parentTab?.fields }),
+    [parentRecord, parentTab?.fields]
+  );
   const highlightCalloutFields = useCalloutHighlightStore((s) => s.highlightFields);
   const { footer: footerSlot, titleSuffix: titleSuffixSlot } = useTopBarSlots();
   const { slot: toolbarExtrasSlot, isGridVisible } = useToolbarExtrasSlot();
@@ -2254,7 +2271,10 @@ const DynamicTable = ({
       const session = useUserStore.getState().session;
       const isHidden = (field: Field | Column) =>
         "displayLogicExpression" in field &&
-        isHiddenByDisplayLogic(field, currentData, session, tab.window, tab.fields);
+        isHiddenByDisplayLogic(field, currentData, session, tab.window, tab.fields, {
+          values: parentRecord,
+          fields: parentTab?.fields,
+        });
 
       if (editingRowData.isNew) {
         // Use stricter validation for new rows
@@ -2925,6 +2945,7 @@ const DynamicTable = ({
           windowId={tab.window}
           tabId={tab.id}
           tabFields={tab.fields}
+          parentContext={parentContext}
           data-testid="DataColumnCell__8ca888"
         />
       );
@@ -2954,6 +2975,7 @@ const DynamicTable = ({
       renderFirstColumnCell,
       tab.window,
       tab.id,
+      parentContext,
     ]
   );
 
