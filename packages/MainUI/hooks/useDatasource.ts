@@ -25,6 +25,7 @@ import type {
 } from "@workspaceui/api-client/src/api/types";
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isTooManyNodesResponse } from "@/utils/table/treeMode";
 
 const loadData = async (
   entity: string,
@@ -235,6 +236,8 @@ export function useDatasource({
   const [hasFirstFetchCompleted, setHasFirstFetchCompleted] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
+  // The tree datasource answered that the request returns more nodes than TreeDatasourceFetchLimit
+  const [isTreeLimitExceeded, setIsTreeLimitExceeded] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
@@ -420,6 +423,7 @@ export function useDatasource({
         if (pendingFetchRef.current === 1) {
           return;
         }
+        setIsTreeLimitExceeded(isTooManyNodesResponse(data));
         setHasMoreRecords(data.response.data.length >= safePageSize);
         setRecords((prev) => {
           const fetched = data.response.data;
@@ -573,5 +577,6 @@ export function useDatasource({
     refetch,
     hasMoreRecords,
     getRequestParams,
+    isTreeLimitExceeded,
   };
 }
