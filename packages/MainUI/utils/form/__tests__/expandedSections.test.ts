@@ -61,6 +61,12 @@ describe("computeInitialExpandedSections", () => {
       expect(computeInitialExpandedSections(groups, WINDOW_ID)).toEqual([MAIN_SECTION_ID, AUDIT_SECTION_ID]);
     });
 
+    it("expands the audit section that shows up after the seed, once the record is loaded", () => {
+      savePreferences({ [`ShowAuditDefault_${WINDOW_ID}`]: "Y" });
+      const withoutAudit = [makeGroup(MAIN_SECTION_ID, "Main Section")];
+      expect(computeInitialExpandedSections(withoutAudit, WINDOW_ID)).toEqual([MAIN_SECTION_ID, AUDIT_SECTION_ID]);
+    });
+
     it("keeps the audit section collapsed when the preference is N", () => {
       savePreferences({ ShowAuditDefault: "N" });
       expect(computeInitialExpandedSections(groups, WINDOW_ID)).toEqual([MAIN_SECTION_ID]);

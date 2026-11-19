@@ -71,9 +71,15 @@ function isInitiallyExpanded([id, group]: FormSectionGroupEntry, auditExpanded: 
  */
 export function computeInitialExpandedSections(groups: readonly FormSectionGroupEntry[], windowId?: string): string[] {
   const auditExpanded = isPreferenceYes(CLASSIC_PREFERENCES.SHOW_AUDIT_DEFAULT, windowId);
-  return groups
+  const expanded = groups
     .filter((entry) => isInitiallyExpanded(entry, auditExpanded))
     .map(([id]) => String(id ?? MAIN_SECTION_ID));
+  // The audit fields join the form only once its record is loaded, usually after this seed: the section is
+  // kept expanded beforehand so it opens expanded when it shows up.
+  if (auditExpanded && !expanded.includes(AUDIT_SECTION_ID)) {
+    expanded.push(AUDIT_SECTION_ID);
+  }
+  return expanded;
 }
 
 /**
