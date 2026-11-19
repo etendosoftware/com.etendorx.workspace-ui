@@ -181,6 +181,7 @@ describe("FormFields — Notes / Attachments / LinkedItems visibility by mode", 
 });
 
 describe("FormFields — classic preferences", () => {
+  const READ_ONLY_ATTRIBUTE = "data-read-only";
   const WINDOW_ID = "win-1";
   const tabWith = (uIPattern: string) => ({ ...makeTab(), window: WINDOW_ID, uIPattern }) as unknown as Tab;
   const renderTab = (tab: Tab) => render(<FormFields {...baseProps} tab={tab} mode={FormMode.EDIT} />);
@@ -198,19 +199,19 @@ describe("FormFields — classic preferences", () => {
   it("makes notes read-only in a read-only tab with DisableNotesForReadOnlyTabs set to Y", () => {
     savePreferences({ DisableNotesForReadOnlyTabs: "Y" });
     renderTab(tabWith("RO"));
-    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "true");
+    expect(screen.getByTestId("note-section")).toHaveAttribute(READ_ONLY_ATTRIBUTE, "true");
   });
 
   it("keeps notes editable in an editable tab even with the preference", () => {
     savePreferences({ DisableNotesForReadOnlyTabs: "Y" });
     renderTab(tabWith("STD"));
-    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "false");
+    expect(screen.getByTestId("note-section")).toHaveAttribute(READ_ONLY_ATTRIBUTE, "false");
   });
 
   it("keeps notes editable in a read-only tab without the preference", () => {
     savePreferences({});
     renderTab(tabWith("RO"));
-    expect(screen.getByTestId("note-section")).toHaveAttribute("data-read-only", "false");
+    expect(screen.getByTestId("note-section")).toHaveAttribute(READ_ONLY_ATTRIBUTE, "false");
     expect(screen.getByTestId("linked-items-section")).toBeInTheDocument();
   });
 });

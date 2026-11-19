@@ -132,6 +132,8 @@ jest.mock("@/screens/ForcePasswordChange", () => {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const NEW_PASSWORD = "Str0ng-P4ss!";
+/** Test id of the button that logs out as the profile menu does. */
+const MANUAL_LOGOUT_ID = "trigger-manual-logout";
 
 /** Response-like object exposing only what the interceptor reads. */
 const erpResponse = (status: number, url: string, errorCode?: string) => ({
@@ -169,7 +171,7 @@ function Dashboard() {
       <button type="button" data-testid="trigger-logout" onClick={() => ctx.logout()}>
         logout
       </button>
-      <button type="button" data-testid="trigger-manual-logout" onClick={() => ctx.logout({ manual: true })}>
+      <button type="button" data-testid={MANUAL_LOGOUT_ID} onClick={() => ctx.logout({ manual: true })}>
         manual logout
       </button>
     </div>
@@ -304,7 +306,7 @@ describe("UserProvider classic session preferences", () => {
 
   it("goes to LogoutRedirectURL after a manual logout", async () => {
     await loginAndWait();
-    fireEvent.click(screen.getByTestId("trigger-manual-logout"));
+    fireEvent.click(screen.getByTestId(MANUAL_LOGOUT_ID));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(REDIRECT_URL));
     expect(doLogout).toHaveBeenCalledWith("jwt-token");
   });
@@ -320,7 +322,7 @@ describe("UserProvider classic session preferences", () => {
   it("stays on the login screen after a manual logout without the preference", async () => {
     (getLogoutRedirectUrl as jest.Mock).mockReturnValue(undefined);
     await loginAndWait();
-    fireEvent.click(screen.getByTestId("trigger-manual-logout"));
+    fireEvent.click(screen.getByTestId(MANUAL_LOGOUT_ID));
     expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
   });

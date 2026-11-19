@@ -86,9 +86,10 @@ describe("tabUtils", () => {
 
   describe("accounting and translation tabs", () => {
     const WINDOW_ID = "167";
-    const parent = { id: "parent-1", window: WINDOW_ID, tabLevel: 0 } as any;
-    const accountingTab = { tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, accountingTab: true } as any;
-    const translationTab = { tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, translationTab: true } as any;
+    const asTab = (tab: Partial<TabWithParentInfo>) => tab as TabWithParentInfo;
+    const parent = asTab({ id: "parent-1", window: WINDOW_ID, tabLevel: 0 });
+    const accountingTab = asTab({ tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, accountingTab: true });
+    const translationTab = asTab({ tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, translationTab: true });
 
     beforeEach(() => {
       installLocalStorageMock();
@@ -112,13 +113,13 @@ describe("tabUtils", () => {
 
     it("hides the children of a hidden accounting tab", () => {
       savePreferences({ ShowAcct: "N" });
-      const child = { tabLevel: 2, parentTabId: "acct-1", window: WINDOW_ID } as any;
+      const child = asTab({ tabLevel: 2, parentTabId: "acct-1", window: WINDOW_ID });
       expect(shouldShowTab(child, { ...accountingTab, id: "acct-1" })).toBe(false);
     });
 
     it("never hides a regular tab", () => {
       savePreferences({});
-      expect(isTabHiddenByPreference({ window: WINDOW_ID } as any)).toBe(false);
+      expect(isTabHiddenByPreference(asTab({ window: WINDOW_ID }))).toBe(false);
     });
   });
 });
