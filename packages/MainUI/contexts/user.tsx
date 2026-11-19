@@ -280,6 +280,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const sessionToken = useUserStore.getState().token;
       // Read before clearUserData(), which drops the preferences. Only a manual logout redirects, as in classic.
       const redirectUrl = options?.manual ? getLogoutRedirectUrl() : undefined;
+      if (redirectUrl) {
+        // The new page can take a moment to load: tell the user where they are going while the session closes.
+        toast.info(t("login.logoutRedirect").replace("{{url}}", redirectUrl));
+      }
       clearUserData();
       resetSessionState();
       pendingPasswordRef.current = "";
@@ -297,7 +301,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         window.location.assign(redirectUrl);
       }
     },
-    [clearUserData]
+    [clearUserData, t]
   );
 
   /**

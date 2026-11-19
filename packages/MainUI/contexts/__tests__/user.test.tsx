@@ -86,7 +86,7 @@ jest.mock("@/utils/preferences/classicPreferences", () => ({
   ...jest.requireActual("@/utils/preferences/classicPreferences"),
   getLogoutRedirectUrl: jest.fn(),
 }));
-jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }));
+jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), info: jest.fn() } }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 
 // The login screen is the only thing rendered while logged out, so it doubles
@@ -309,6 +309,7 @@ describe("UserProvider classic session preferences", () => {
     fireEvent.click(screen.getByTestId(MANUAL_LOGOUT_ID));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(REDIRECT_URL));
     expect(doLogout).toHaveBeenCalledWith("jwt-token");
+    expect(toast.info).toHaveBeenCalledWith("login.logoutRedirect");
   });
 
   it("stays on the login screen after an automatic logout", async () => {
@@ -317,6 +318,7 @@ describe("UserProvider classic session preferences", () => {
     expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
     expect(getLogoutRedirectUrl).not.toHaveBeenCalled();
     expect(assign).not.toHaveBeenCalled();
+    expect(toast.info).not.toHaveBeenCalled();
   });
 
   it("stays on the login screen after a manual logout without the preference", async () => {

@@ -30,7 +30,7 @@ without repeating it. Reading preferences from process scripts is described in
 | `FinancialManagement` | Yes | Empty | Value of `@FinancialManagement@` in the display logic of process parameters. |
 | `ShowAcct` (processes) | No | Empty | Value of `@#ShowAcct@` in processes. Global only, as the classic session value set at login. |
 | `StartPage` | No | Home | After login, opens what `/?tabId=<AD_Tab_ID>[&recordId=<id>][&command=NEW]` names, as classic `OB.Utilities.openDirectTab`: the window of the tab as from the menu, the record in the form of that tab, or a new record in the top tab of the window. |
-| `LogoutRedirectURL` | No | Login page | After a manual logout the browser goes to this address. Empty or `Default` keeps the login page. |
+| `LogoutRedirectURL` | No | Login page | After a manual logout the browser goes to this address, and a notice tells the user where they are being redirected while the session closes. Empty or `Default` keeps the login page. |
 | `ShowAuditDefault` | Yes | Collapsed | With Y the audit section of the form opens expanded. |
 | `DisableNotesForReadOnlyTabs` | Yes | Allowed | With Y, a read-only tab shows its notes but does not let the user add or delete them. |
 | `OBUIAPP_WindowPersonalization_Override` | Yes | Allowed | With `N` or `false`, a user who is not a client or system administrator can only pick and reset saved views: saving, deleting and setting the default view are hidden, and Personalize Form is disabled. |
@@ -72,6 +72,8 @@ Already applied without client changes:
     from the URL of a previous session stay open next to it.
 - Classic re-applies `ShowAuditDefault` every time a form opens. The new UI uses it to seed the state of the
   section the first time the tab's form opens; after that, the state the user chose is kept.
+- Classic goes to the `LogoutRedirectURL` address without any notice. The new UI shows "Logging out.
+  Redirecting to ..." first, a client text (`login.logoutRedirect`), since classic has no message to reuse.
 - In classic, `DisableNotesForReadOnlyTabs` only locks the note input and the server rejects a deletion. The
   new UI hides both the input and the delete action.
 - Classic disables Personalize Form for every user, administrators included, and administrators personalize
