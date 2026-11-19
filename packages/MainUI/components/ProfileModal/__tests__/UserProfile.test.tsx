@@ -67,7 +67,7 @@ describe("UserProfile", () => {
 
     fireEvent.click(screen.getByRole("button"));
 
-    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(logout).toHaveBeenCalledWith({ manual: true }));
   });
 
   it("uses the i18n key for the logout tooltip", () => {
@@ -93,6 +93,6 @@ describe("UserProfile", () => {
     fireEvent.click(screen.getByRole("button"));
     useUnsavedChangesStore.getState().request?.onProceed();
 
-    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(logout).toHaveBeenCalledWith({ manual: true }));
   });
 });

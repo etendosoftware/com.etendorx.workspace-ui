@@ -19,6 +19,8 @@
 
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { logger } from "../utils/logger";
+import { openStartPage } from "@/utils/session/startPage";
+import { getLogoutRedirectUrl } from "@/utils/preferences/classicPreferences";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
@@ -29,7 +31,7 @@ import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
 import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
-import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
+import type { DefaultConfiguration, IUserContext, Language, LanguageOption, LogoutOptions } from "./types";
 import type { ISession, ProfileInfo, SessionResponse } from "@workspaceui/api-client/src/api/types";
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import { useLanguage } from "./language";
@@ -85,6 +87,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
   // The password typed at login, needed as `currentPwd` by the ERP change-password handler when the
   // mandatory change is forced. Kept in memory only — it is never persisted anywhere.
   const pendingPasswordRef = useRef<string>("");
+  // Set by login() so the session loaded right after it opens the classic StartPage; a reload, a role change
+  // or a token renewal load the session too and must not.
+  const isFreshLoginRef = useRef(false);
 
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -141,6 +146,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
         savePreferences(prefs);
       } catch (prefError) {
         logger.warn("Failed to load preferences:", prefError);
+      }
+
+      if (isFreshLoginRef.current) {
+        isFreshLoginRef.current = false;
+        await openStartPage();
       }
     },
     [language, setLanguage, updateProfile]
@@ -243,6 +253,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const loginResponse = await doLogin(username, password);
       // Retained only for the forced password-change flow (see completeExpiredPasswordChange).
       pendingPasswordRef.current = password;
+      isFreshLoginRef.current = true;
 
       localStorage.setItem("token", loginResponse.token);
       Metadata.setToken(loginResponse.token);
@@ -258,7 +269,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (options?: LogoutOptions) => {
     // Optimistic logout: clear local state and every client token first so the
     // user is fully logged out regardless of the backend outcome. doLogout()
     // asks the backend to revoke the token (closing the reuse window for
@@ -266,6 +277,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
     // its failure is swallowed and never surfaces as an unhandled rejection.
     // The token is captured first: the revocation request needs it, and both clears below drop it.
     const sessionToken = useUserStore.getState().token;
+    // Read before clearUserData(), which drops the preferences. Only a manual logout redirects, as in classic.
+    const redirectUrl = options?.manual ? getLogoutRedirectUrl() : undefined;
     clearUserData();
     resetSessionState();
     pendingPasswordRef.current = "";
@@ -277,6 +290,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       await doLogout(sessionToken);
     } catch (error) {
       logger.warn("Logout error:", error);
+    }
+
+    if (redirectUrl) {
+      window.location.assign(redirectUrl);
     }
   }, [clearUserData]);
 

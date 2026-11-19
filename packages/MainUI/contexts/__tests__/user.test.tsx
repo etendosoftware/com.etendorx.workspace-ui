@@ -16,7 +16,7 @@
  */
 
 import { useContext } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import UserProvider, { UserContext } from "../user";
 import { useUserStore } from "@/stores/userStore";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
@@ -29,6 +29,8 @@ import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { toast } from "sonner";
 import { DEFAULT_PASSWORD_EXPIRED_ERROR, ERP_ERROR_CODE_HEADER } from "@/utils/session/constants";
 import { resetSessionState } from "@/utils/session/resetSessionState";
+import { openStartPage } from "@/utils/session/startPage";
+import { getLogoutRedirectUrl } from "@/utils/preferences/classicPreferences";
 
 const mockRouterPush = jest.fn();
 
@@ -79,6 +81,11 @@ jest.mock("@/utils/propertyStore", () => ({
   clearPreferences: jest.fn(),
 }));
 jest.mock("@/utils/session/resetSessionState", () => ({ resetSessionState: jest.fn() }));
+jest.mock("@/utils/session/startPage", () => ({ openStartPage: jest.fn() }));
+jest.mock("@/utils/preferences/classicPreferences", () => ({
+  ...jest.requireActual("@/utils/preferences/classicPreferences"),
+  getLogoutRedirectUrl: jest.fn(),
+}));
 jest.mock("sonner", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 
@@ -161,6 +168,9 @@ function Dashboard() {
     <div data-testid="dashboard">
       <button type="button" data-testid="trigger-logout" onClick={() => ctx.logout()}>
         logout
+      </button>
+      <button type="button" data-testid="trigger-manual-logout" onClick={() => ctx.logout({ manual: true })}>
+        manual logout
       </button>
     </div>
   );
@@ -249,6 +259,70 @@ describe("UserProvider auth UX", () => {
     expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
     expect(resetSessionState).toHaveBeenCalledTimes(1);
     expect(doLogout).toHaveBeenCalledWith("jwt-token");
+  });
+});
+
+describe("UserProvider classic session preferences", () => {
+  const REDIRECT_URL = "https://www.example.com/bye";
+  const assign = jest.fn();
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    useUserStore.setState({ token: null, currentRole: undefined, passwordExpired: false });
+    (getPreferences as jest.Mock).mockResolvedValue({});
+    (getSession as jest.Mock).mockResolvedValue(makeSessionResponse());
+    (doLogin as jest.Mock).mockResolvedValue({ token: "jwt-token" });
+    (doLogout as jest.Mock).mockResolvedValue(undefined);
+    (getLogoutRedirectUrl as jest.Mock).mockReturnValue(REDIRECT_URL);
+    Object.defineProperty(window, "location", { configurable: true, value: { ...originalLocation, assign } });
+  });
+
+  afterAll(() => {
+    Object.defineProperty(window, "location", { configurable: true, value: originalLocation });
+  });
+
+  /** Logs in through the login screen and waits for the app. */
+  const loginAndWait = async () => {
+    renderProvider();
+    fireEvent.click(await screen.findByTestId("trigger-login"));
+    await screen.findByTestId("dashboard");
+  };
+
+  it("opens the start page once, right after a login", async () => {
+    await loginAndWait();
+    await waitFor(() => expect(openStartPage).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not open the start page when the session is restored without a login", async () => {
+    useUserStore.setState({ token: "stored-token" });
+    renderProvider();
+    await screen.findByTestId("dashboard");
+    expect(openStartPage).not.toHaveBeenCalled();
+  });
+
+  it("goes to LogoutRedirectURL after a manual logout", async () => {
+    await loginAndWait();
+    fireEvent.click(screen.getByTestId("trigger-manual-logout"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(REDIRECT_URL));
+    expect(doLogout).toHaveBeenCalledWith("jwt-token");
+  });
+
+  it("stays on the login screen after an automatic logout", async () => {
+    await loginAndWait();
+    fireEvent.click(screen.getByTestId("trigger-logout"));
+    expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+    expect(getLogoutRedirectUrl).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it("stays on the login screen after a manual logout without the preference", async () => {
+    (getLogoutRedirectUrl as jest.Mock).mockReturnValue(undefined);
+    await loginAndWait();
+    fireEvent.click(screen.getByTestId("trigger-manual-logout"));
+    expect(await screen.findByTestId("trigger-login")).toBeInTheDocument();
+    expect(assign).not.toHaveBeenCalled();
   });
 });
 

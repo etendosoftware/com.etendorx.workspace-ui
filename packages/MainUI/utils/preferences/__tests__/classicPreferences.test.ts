@@ -3,6 +3,7 @@ import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import {
   buildProcessPreferenceContext,
   getGridPageSize,
+  getLogoutRedirectUrl,
   getNumericPreference,
   isPreferenceDisabled,
   isPreferenceYes,
@@ -92,6 +93,18 @@ describe("classicPreferences", () => {
     it("defaults to 100 records", () => {
       savePreferences({});
       expect(getGridPageSize(WINDOW_ID)).toBe(100);
+    });
+  });
+
+  describe("getLogoutRedirectUrl", () => {
+    it("returns the configured address", () => {
+      savePreferences({ LogoutRedirectURL: " https://www.example.com " });
+      expect(getLogoutRedirectUrl()).toBe("https://www.example.com");
+    });
+
+    it.each([undefined, "", "Default"])("keeps the standard logout for %p", (value) => {
+      savePreferences(value === undefined ? {} : { LogoutRedirectURL: value });
+      expect(getLogoutRedirectUrl()).toBeUndefined();
     });
   });
 });

@@ -154,3 +154,20 @@ export function isWindowPersonalizationBlocked(windowId: string | undefined, use
   const isAdmin = ADMIN_USER_LEVELS.some((level) => (userLevel ?? "").includes(level));
   return !isAdmin && isPreferenceDisabled(CLASSIC_PREFERENCES.WINDOW_PERSONALIZATION, windowId);
 }
+
+/** `LogoutRedirectURL` value that keeps the standard logout (classic `KernelConstants.LOGOUT_REDIRECT_DEFAULT`). */
+const LOGOUT_REDIRECT_DEFAULT = "Default";
+
+/**
+ * Address classic `OB.Utilities.logout` goes to after a manual logout: the `LogoutRedirectURL` preference,
+ * unless it is empty or `Default`.
+ *
+ * @returns The address to go to, or `undefined` to keep the standard logout
+ */
+export function getLogoutRedirectUrl(): string | undefined {
+  const value = getStoredPreference(CLASSIC_PREFERENCES.LOGOUT_REDIRECT_URL)?.trim();
+  if (!value || value === LOGOUT_REDIRECT_DEFAULT) {
+    return undefined;
+  }
+  return value;
+}
