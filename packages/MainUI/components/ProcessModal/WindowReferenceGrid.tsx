@@ -1607,6 +1607,8 @@ const deepMergeFilterExpressions = (
 /** Live grid handles the embedded-grid controller reads at call time. */
 export interface EmbeddedGridApi {
   rows: EntityData[];
+  /** The grid still has records to load (it pages its datasource while scrolling). */
+  hasMoreRecords?: boolean;
   refetch?: () => void;
   criteria: unknown;
   fields?: Field[];
@@ -1713,6 +1715,7 @@ export function createEmbeddedGridController(
     getRecordIndex: (record) => rows().findIndex((row) => String(row.id) === String(record?.id)),
     getEditedRecord: (index) => rows()[index],
     getTotalRows: () => rows().length,
+    hasMoreRecords: () => Boolean(getApi().hasMoreRecords),
     setEditValue: (rowIndex, colName, value) => {
       const record = rows()[rowIndex];
       // Programmatic write (script distribute/seed): flag it so handleRecordChange
@@ -3315,6 +3318,7 @@ const WindowReferenceGrid = ({
   });
   gridApiRef.current = {
     rows: localRecords,
+    hasMoreRecords,
     refetch,
     criteria: datasourceOptions?.criteria,
     fields,

@@ -69,8 +69,22 @@ export interface OBShimDeps {
   windowId?: string;
 }
 
+/** Where classic `OB.I18N.getLabelFromServer` delivers a label: `object[property] = label`, or a call when a function. */
+export type LabelTarget = Record<string, unknown>;
+
 export interface OBI18N {
   getLabel: (key: string, params?: LabelParams) => string;
+  /**
+   * Classic `OB.I18N.getLabelFromServer(key, params, object, property)`: reads a message that is not in the
+   * label catalog and delivers it to `object[property]` (called when it is a function). Also resolves with the
+   * label, `undefined` when the message does not exist.
+   */
+  getLabelFromServer: (
+    key: string,
+    params?: LabelParams,
+    object?: LabelTarget,
+    property?: string
+  ) => Promise<string | undefined>;
 }
 
 export interface OBFormat {

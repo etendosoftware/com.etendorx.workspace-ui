@@ -24,7 +24,7 @@ const ROWS: EntityData[] = [
   { id: "2", quantity: 5, amount: 50 } as unknown as EntityData,
 ];
 
-const makeController = () => {
+const makeController = (hasMoreRecords?: boolean) => {
   const recordChangeSubs: Array<(record: EntityData, changes: Record<string, unknown>) => void> = [];
   const selectionToggleSubs: Array<(record: EntityData, state: boolean) => void> = [];
   const columnOnChange = new Map<string, ColumnOnChange>();
@@ -33,6 +33,7 @@ const makeController = () => {
     () =>
       ({
         rows: ROWS,
+        hasMoreRecords,
         refetch: jest.fn(),
         criteria: undefined,
         fields: [{ columnName: "quantity", hqlName: "quantity", inputName: "inpquantity" }],
@@ -55,6 +56,11 @@ const makeController = () => {
 };
 
 describe("createEmbeddedGridController", () => {
+  it("tells whether the grid still has records to load", () => {
+    expect(makeController(true).controller.hasMoreRecords?.()).toBe(true);
+    expect(makeController().controller.hasMoreRecords?.()).toBe(false);
+  });
+
   it("registers onRecordChange / onSelectionToggle subscribers into the shared arrays", () => {
     const { controller, recordChangeSubs, selectionToggleSubs } = makeController();
     const recordFn = jest.fn();

@@ -16,31 +16,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchServerLabel } from "@workspaceui/api-client/src/api/serverLabel";
 import { useLanguage } from "@/contexts/language";
-import { registerSessionReset } from "@/utils/session/resetSessionState";
-import { logger } from "@/utils/logger";
-
-/** Texts already asked for in this session, by language and key: each message is requested once. */
-const cache = new Map<string, Promise<string | undefined>>();
-
-// The texts belong to the session that is closing (its language)
-registerSessionReset(() => cache.clear());
-
-/** Reads one message once per session and language; a failed request is forgotten so it can be retried. */
-function loadLabel(language: string, key: string): Promise<string | undefined> {
-  const cacheKey = `${language}|${key}`;
-  let label = cache.get(cacheKey);
-  if (!label) {
-    label = fetchServerLabel(key).catch((error) => {
-      cache.delete(cacheKey);
-      logger.warn(`Could not read the message ${key}:`, error);
-      return undefined;
-    });
-    cache.set(cacheKey, label);
-  }
-  return label;
-}
+import { loadServerLabel } from "@/utils/serverLabels";
 
 /**
  * Translated texts of AD_Messages that are not in the label catalog of the session (`meta/labels` only holds
@@ -60,11 +37,15 @@ export function useServerLabels(keys: readonly string[], enabled = true): Record
     }
     let cancelled = false;
     const sessionLanguage = language ?? "";
-    Promise.all(keys.map(async (key) => [key, await loadLabel(sessionLanguage, key)] as const)).then((entries) => {
-      if (!cancelled) {
-        setLabels(Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => Boolean(entry[1]))));
+    Promise.all(keys.map(async (key) => [key, await loadServerLabel(sessionLanguage, key)] as const)).then(
+      (entries) => {
+        if (!cancelled) {
+          setLabels(
+            Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => Boolean(entry[1])))
+          );
+        }
       }
-    });
+    );
     return () => {
       cancelled = true;
     };
