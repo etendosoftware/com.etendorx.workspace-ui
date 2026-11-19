@@ -30,11 +30,13 @@ import ChevronUpIcon from "@workspaceui/componentlibrary/src/assets/icons/chevro
 const ACTIVE_TAB_THRESHOLD_PX = 16;
 const PANEL_WIDTH = "42rem";
 /**
- * Below 1440px the panel floats over the workspace instead of pushing it: pushing would leave the window
- * too narrow for its header, toolbar and form. From 1440px on it sits beside the workspace as before.
+ * Below 1920px the panel floats over the workspace instead of pushing it: the panel takes 42rem (672px), and
+ * pushing would leave the window narrower than at 1280px, too narrow for its header, toolbar and form (at 1440px
+ * the labels and values were cut to three letters and the toolbar buttons overlapped). From 1920px on the window
+ * keeps at least that width, so the panel sits beside it as before.
  */
 const PANEL_LAYOUT_CLASSES =
-  "absolute right-0 top-0 z-40 shadow-xl min-[1440px]:relative min-[1440px]:z-auto min-[1440px]:shadow-none";
+  "absolute right-0 top-0 z-40 shadow-xl min-[1920px]:relative min-[1920px]:z-auto min-[1920px]:shadow-none";
 
 /**
  * Right-hand panel showing contextual Help for the active window: window-level

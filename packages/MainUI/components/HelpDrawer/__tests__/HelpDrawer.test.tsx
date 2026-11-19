@@ -72,7 +72,7 @@ describe("HelpDrawer", () => {
     expect(screen.getByTestId("help-drawer-panel")).toHaveStyle({ width: "42rem" });
   });
 
-  it("floats over the workspace on narrow screens and sits beside it from 1440px", () => {
+  it("floats over the workspace on narrow screens and sits beside it from 1920px", () => {
     setWindow(createMockWindowMetadata("W1"));
     useHelpPanelStore.setState({ isOpen: true });
     render(<HelpDrawer />);
@@ -80,7 +80,7 @@ describe("HelpDrawer", () => {
       "absolute",
       "right-0",
       "max-w-[90vw]",
-      "min-[1440px]:relative"
+      "min-[1920px]:relative"
     );
   });
 

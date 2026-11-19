@@ -46,6 +46,10 @@ export const useStyle = (): StylesType => {
           "& thead tr": {
             boxShadow: "none !important",
           },
+          // The sticky header ships at 0.97 opacity, so the rows scrolled under it showed through the filter band.
+          "& thead": {
+            opacity: "1 !important",
+          },
         },
         // Two bands, like the reference: lavender label row on top, white filter row below. The bands are
         // painted on the cell itself so the pinned checkbox/actions columns get them too.

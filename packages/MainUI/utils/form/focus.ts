@@ -187,3 +187,12 @@ export const findAdjacentFocusableField = (
 
   return fields[currentIndex + offset] ?? null;
 };
+
+/** Marks the box of a field whose clear icon follows {@link CLEAR_ICON_VISIBILITY_CLASSES}. */
+export const FIELD_BOX_GROUP_CLASS = "group/field";
+
+/**
+ * The clear icon of a text field shows only while the pointer is over the field or the field has the focus, like the
+ * clear icon of the selectors. Always shown, it made a filled text field look different from a filled selector.
+ */
+export const CLEAR_ICON_VISIBILITY_CLASSES = "invisible group-hover/field:visible group-focus-within/field:visible";

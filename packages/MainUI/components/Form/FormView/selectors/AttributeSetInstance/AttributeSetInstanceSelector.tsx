@@ -7,6 +7,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import AttributeSetInstanceModal from "./AttributeSetInstanceModal";
 import { useProductAttributeSet } from "@/hooks/useProductAttributeSet";
 import { NOT_TABBABLE, TABBABLE } from "@/utils/form/focus";
+import { IDLE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 interface AttributeSetInstanceSelectorProps {
   field: Field;
@@ -185,10 +186,10 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-0.5 hover:text-gray-600 transition-colors"
+                className="p-0.5 hover:text-(--ui-text) transition-colors"
                 tabIndex={NOT_TABBABLE}
                 data-testid={`clear-attr__${field.id}`}>
-                <X className="w-3.5 h-3.5 text-gray-400" data-testid={"X__" + field.id} />
+                <X className={`w-3.5 h-3.5 ${IDLE_ICON_COLOR}`} data-testid={"X__" + field.id} />
               </button>
             )}
             <SearchOutlined

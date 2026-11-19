@@ -15,7 +15,12 @@
  *************************************************************************
  */
 
-import { buttonNeedsContext, isProcessButtonAccessible, isProcessButtonEnabled } from "../utils";
+import {
+  buttonNeedsContext,
+  createProcessMenuButton,
+  isProcessButtonAccessible,
+  isProcessButtonEnabled,
+} from "../utils";
 
 describe("isProcessButtonAccessible", () => {
   it("is false only when the metadata flags the process as not accessible", () => {
@@ -56,5 +61,25 @@ describe("isProcessButtonEnabled", () => {
     ["not accessible", { id: "F2", isProcessAccessible: false }, READ_ONLY_IDS, false],
   ])("is %s → %s", (_, button, readOnlyIds, expected) => {
     expect(isProcessButtonEnabled(button, readOnlyIds)).toBe(expected);
+  });
+});
+
+describe("createProcessMenuButton", () => {
+  const create = (anchorEl: HTMLElement | null) =>
+    createProcessMenuButton(2, true, jest.fn(), (key: string) => key, anchorEl);
+
+  it("fills the open button with the accent and white text, readable in both themes", () => {
+    const styles = create(document.createElement("button")).customContainerStyles;
+
+    expect(styles).toContain("!bg-(--ui-accent)");
+    expect(styles).toContain("!text-white");
+    expect(styles).not.toContain("dynamic-contrast-text");
+  });
+
+  it("keeps the closed button transparent, with the accent on hover", () => {
+    const styles = create(null).customContainerStyles;
+
+    expect(styles).toContain("bg-[var(--color-transparent-neutral-0)]");
+    expect(styles).toContain("hover:bg-(--ui-accent-hover)");
   });
 });

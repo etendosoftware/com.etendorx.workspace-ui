@@ -18,6 +18,7 @@
 import { render, screen } from "@testing-library/react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "../TextInput";
+import { CLEAR_ICON_VISIBILITY_CLASSES, FIELD_BOX_GROUP_CLASS } from "@/utils/form/focus";
 
 const FIELD = { id: "f1", name: "Description", isMandatory: false } as unknown as Field;
 
@@ -45,5 +46,12 @@ describe("TextInput", () => {
       "focus:text-(--ui-field-focus-fg)",
       "focus:border-(--ui-field-focus-border)"
     );
+  });
+
+  it("shows the clear icon only on hover or focus", () => {
+    renderInput(true);
+
+    expect(screen.getByRole("button")).toHaveClass(...CLEAR_ICON_VISIBILITY_CLASSES.split(" "));
+    expect(screen.getByLabelText(FIELD.name).parentElement).toHaveClass(FIELD_BOX_GROUP_CLASS);
   });
 });

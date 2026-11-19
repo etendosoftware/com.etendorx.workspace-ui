@@ -26,6 +26,15 @@ the `html[data-theme="dark"]` block. Tokens added by this task:
 Text that needs to read on the light lilac header or the footer uses `--ui-text-soft`, not
 `--ui-text-muted` (3.2:1 on the header gradient).
 
+Field icons (clear, chevron, calendar, eye, link) take their color from `utils/form/activeFieldColors.ts`:
+`fieldIconColor(active)` gives `ACTIVE_ICON_COLOR` (`--ui-field-focus-fg`, the text color of a focused
+field) or `IDLE_ICON_COLOR` (`--color-transparent-neutral-60`, 3:1 or more at rest in both themes). The
+focused color must follow the focused background: a fixed `#2a1757` left the icons at 1.1:1 on the dark
+focused field. The idle favorite stars of the sidebar and the window title use the same idle color.
+
+Filled controls that open or are hovered (the "Available Process" button) use the accent with white text,
+like "New Record": `--color-dynamic-main` with its contrast text is light on light in the dark theme.
+
 ### Primary actions use the accent
 
 The filled `Button` and the confirm button of `BasicModal` (used by `ConfirmModal` and `StatusModal`)
@@ -40,11 +49,17 @@ outline and a smaller grey thumb (`--ui-switch-off`). A filled bluish "off" trac
 - Grid cells are flex boxes, where a bare text node cannot end in an ellipsis. Every cell value is
   rendered inside a span with `TRUNCATED_CELL_CLASSES` (`utils/tableColumns.tsx`), including the
   fallback of the color-tag wrapper in `useColumns` and the link buttons of reference columns.
-- Text inputs reserve 44px on the right for the clear icon and use `text-ellipsis`.
+- Text inputs reserve 44px on the right for the clear icon and use `text-ellipsis`. Their clear icon
+  shows only on hover or focus (`CLEAR_ICON_VISIBILITY_CLASSES` in `utils/form/focus.ts`), like the
+  clear icon of the selectors.
+- The search box of a selector ends its hint in an ellipsis when it does not fit and shows the full hint
+  on hover. Chrome does not apply the ellipsis while the box has the focus, which is how it opens.
 - Home widget chips stay on one line and show the full name in their `title`.
-- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (baseline-60, 4.5:1 on the card) and say why
+- Home widget empty messages use `WIDGET_EMPTY_TEXT_CLASSES` (`--ui-text-muted`, 4.5:1 on the card;
+  baseline-60 was violet in the light theme and read as a link) and say why
   the widget is empty in the user's language (`dashboard.widget.empty*`, for example "No pending alerts.
   You're all caught up."), instead of a lone dash.
+- An empty Notifications widget shows "View all" on the row of its empty message, not on a row of its own.
 - Every home widget uses the same card surface (`WIDGET_CARD_THEME`) in both themes; a coloured icon of
   its type (`WidgetTypeIcon`, same icons and colours as the "Add widget" dialog) tells them apart.
   Coloured cards (near-black, then lilac favorites, yellow recent documents) blended with the page
@@ -130,14 +145,17 @@ the 16px right margin.
   button opens.
 - `Menu` keeps a menu taller than the room next to its button attached to it and limits its height
   (`computeMenuVerticalPlacement`); it no longer jumps to the top of the screen over the header.
-- Row, header and Save View menus share `utils/menuClasses.ts`: 13px text and separators that span
-  the whole menu.
+- Row, header, Save View and process menus share `utils/menuClasses.ts`: 13px text and separators
+  that span the whole menu.
+- The sticky grid header is opaque: Material React Table ships it at 0.97 opacity, and the rows
+  scrolled under it showed through the filter band.
 - The grid search box opens right under its toolbar row, aligned with its right edge
   (`computeSearchBoxPosition`), instead of a fixed place at the top right.
 - The "Available Process" button sits beside the scrolling toolbar icons, so a narrow row does not cut
   it.
-- Below 1440px the Help panel floats over the workspace instead of pushing it, which squeezed the
-  header, toolbar and form at 1280px.
+- Below 1920px the Help panel floats over the workspace instead of pushing it. The panel is 42rem
+  (672px) wide: pushing left the window narrower than at 1280px, and at 1440px the labels and values
+  were cut to three letters and the toolbar buttons overlapped.
 
 ### Process grids look like the window grid
 

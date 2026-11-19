@@ -24,6 +24,7 @@ import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { isProcessButtonEnabled } from "@/utils/toolbar/process-button/utils";
+import { MENU_CONTENT_CLASSES } from "@/utils/menuClasses";
 
 /**
  * Resolves the display name for a process action button based on the selected record's state.
@@ -151,7 +152,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__541926">
-      <div className="rounded-2xl px-2 py-4">
+      <div className={MENU_CONTENT_CLASSES}>
         {processButtons.map((button: ProcessButton, index: number) => {
           const buttonName = getProcessButtonName(button, selectedRecord);
           const isItemDisabled = isDisabled || !isProcessButtonEnabled(button, readOnlyButtonIds);

@@ -21,5 +21,8 @@ export const WIDGET_CHIP_LAYOUT_CLASSES = "max-w-full truncate whitespace-nowrap
 /** Chip of the light list widgets (recent documents, recently viewed). */
 export const WIDGET_CHIP_CLASSES = `${WIDGET_CHIP_LAYOUT_CLASSES} rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer`;
 
-/** Empty-list message of a widget: baseline-60 keeps 4.5:1 on every card colour, in both themes. */
-export const WIDGET_EMPTY_TEXT_CLASSES = "text-sm text-baseline-60";
+/**
+ * Empty-list message of a widget: the muted text of the shell (slate in light, light grey in dark), which keeps
+ * 4.5:1 on the card in both themes. baseline-60 was violet in the light theme and read as a link.
+ */
+export const WIDGET_EMPTY_TEXT_CLASSES = "text-sm text-(--ui-text-muted)";

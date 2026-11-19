@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { ACTIVE_ICON_COLOR } from "@/utils/form/activeFieldColors";
+import { ACTIVE_ICON_COLOR, IDLE_ICON_COLOR } from "@/utils/form/activeFieldColors";
 
 // Base CSS class constants for date/time inputs
 export const INPUT_BASE_CLASS = `w-full pl-3 pr-10 rounded-t tracking-normal h-10.5 border-0 border-b-2 
@@ -39,7 +39,7 @@ export const BUTTON_BASE_CLASS =
   "absolute right-3 top-1/2 transform -translate-y-1/2 transition-transform z-10 flex items-center justify-center";
 
 export const BUTTON_FOCUSED_COLOR_CLASS = ACTIVE_ICON_COLOR;
-export const BUTTON_UNFOCUSED_COLOR_CLASS = "text-(--color-transparent-neutral-60)";
+export const BUTTON_UNFOCUSED_COLOR_CLASS = IDLE_ICON_COLOR;
 
 export const LABEL_BASE_CLASS =
   "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";

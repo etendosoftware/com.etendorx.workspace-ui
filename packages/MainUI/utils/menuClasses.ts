@@ -16,7 +16,7 @@
  */
 
 /**
- * @fileoverview Shared look of the grid and toolbar menus (row, header and Save View menus), so they use the
+ * @fileoverview Shared look of the grid and toolbar menus (row, header, Save View and process menus), so they use the
  * same text size as the grid and separators that span the whole menu.
  */
 

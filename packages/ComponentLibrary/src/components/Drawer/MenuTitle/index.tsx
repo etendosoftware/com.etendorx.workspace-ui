@@ -65,6 +65,9 @@ export function getMenuButtonClassName(open?: boolean, selected?: boolean, isPar
   return `${base} p-2.5 rounded-full ${rail}`;
 }
 
+/** Star of a window that is not a favorite: 3:1 or more on the sidebar in both themes (slate-400 was 2.4:1 in dark). */
+const FAVORITE_STAR_IDLE_CLASS = "text-(--color-transparent-neutral-60)";
+
 const StarIcon = ({ filled }: { filled: boolean }) => (
   <svg
     width="13"
@@ -160,7 +163,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                   className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
                     isFav
                       ? "text-yellow-400 opacity-100"
-                      : "text-slate-400 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
+                      : `${FAVORITE_STAR_IDLE_CLASS} opacity-0 group-hover:opacity-100 hover:text-yellow-400`
                   }`}
                   title={isFav ? "Remove from favorites" : "Add to favorites"}>
                   <StarIcon filled={isFav} />
