@@ -35,7 +35,7 @@ without repeating it. Reading preferences from process scripts is described in
 | `DisableNotesForReadOnlyTabs` | Yes | Allowed | With Y, a read-only tab shows its notes but does not let the user add or delete them. |
 | `OBUIAPP_WindowPersonalization_Override` | Yes | Allowed | With `N` or `false`, a user who is not a client or system administrator can only pick and reset saved views: saving, deleting and setting the default view are hidden, and Personalize Form is disabled. |
 | `OBUIAPP_DisableLinkedItemsSection` | Yes | Shown | With Y the Linked Items section is not shown. |
-| `dataPageSize` | Yes | 100 | Records requested per grid page. A value that is not a positive number keeps 100. |
+| `dataPageSize` | Yes | 100 | Records requested per grid page. A value that is not a positive number keeps 100. When a page does not fill the height of the grid, the next one is requested without waiting for a scroll. |
 
 Already applied without client changes:
 
@@ -58,6 +58,12 @@ Already applied without client changes:
   window is open. The new UI applies it the first time the tab's form opens in that window and then keeps
   the user's choice (in memory, per window and tab). Opening the window again or reloading the page applies
   the preference again, in both interfaces.
+- **The grid fills its height by itself.** The next page is requested when the grid is scrolled to the
+  bottom, so a small `dataPageSize` on a tall screen left no scroll bar and the rest of the records could not
+  be reached. Like the classic grid, which loads the rows its visible area needs, the grid now requests pages
+  after each load and when it is resized until a scroll bar appears or there are no more records
+  (`hooks/table/useFillGridViewport.ts`). Only one request is in flight at a time and a failed load is not
+  retried. This applies to every grid, but with 100 records per page it rarely triggers.
 - **Administrators keep personalizing.** Administrators are the roles with user level Client or System, the
   same ones that may save shared views. No license restriction is applied.
 
@@ -105,7 +111,8 @@ UI section. That work belongs to task ETP-6355; this page only records the techn
   linked items.
 - `packages/MainUI/components/Toolbar/Menus/SaveViewMenu.tsx`, `utils/toolbar/utils.tsx`: saved views and
   form personalization.
-- `packages/MainUI/hooks/table/useTableData.tsx`: page size.
+- `packages/MainUI/hooks/table/useTableData.tsx`: page size; `hooks/table/useFillGridViewport.ts` and
+  `components/Table/utils/viewportFill.ts`: filling the height of the grid.
 
 ## Related documentation
 

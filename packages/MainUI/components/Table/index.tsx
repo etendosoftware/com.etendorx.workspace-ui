@@ -83,6 +83,7 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
+import { useFillGridViewport } from "@/hooks/table/useFillGridViewport";
 import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { isSameColumnVisibility, resolveUpdater } from "@/utils/table/columnState";
@@ -168,6 +169,7 @@ import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
+import { isGridBottomReached } from "./utils/viewportFill";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 import { buildTabExtraProperties } from "@/utils/table/extraProperties";
@@ -3397,22 +3399,23 @@ const DynamicTable = ({
       handleScroll(event);
       const containerRefElement = event.target as HTMLDivElement;
 
-      if (containerRefElement) {
-        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-        // Ensure the container has height (is visible) and has scrollable content before fetching more
-        if (
-          clientHeight > 0 &&
-          scrollHeight > clientHeight &&
-          scrollHeight - scrollTop - clientHeight < 10 &&
-          !loading &&
-          hasMoreRecords
-        ) {
-          fetchMore();
-        }
+      // Ensure the container has height (is visible) and has scrollable content before fetching more
+      if (containerRefElement && isGridBottomReached(containerRefElement) && !loading && hasMoreRecords) {
+        fetchMore();
       }
     },
     [fetchMore, hasMoreRecords, loading, handleScroll]
   );
+
+  // Without a scroll bar the grid can never be scrolled to the bottom, so it fills its height by itself.
+  useFillGridViewport({
+    containerRef: tableContainerRef,
+    recordCount: effectiveRecords.length,
+    loading,
+    hasMoreRecords,
+    error,
+    fetchMore,
+  });
 
   // Generate ARIA attributes for the table container
   const editingRowsCount = Object.keys(editingRows).length;
