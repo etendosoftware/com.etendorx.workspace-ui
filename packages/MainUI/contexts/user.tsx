@@ -269,33 +269,36 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
-  const logout = useCallback(async (options?: LogoutOptions) => {
-    // Optimistic logout: clear local state and every client token first so the
-    // user is fully logged out regardless of the backend outcome. doLogout()
-    // asks the backend to revoke the token (closing the reuse window for
-    // /sws/com.etendoerp.metadata.meta/* requests), but the call is best-effort:
-    // its failure is swallowed and never surfaces as an unhandled rejection.
-    // The token is captured first: the revocation request needs it, and both clears below drop it.
-    const sessionToken = useUserStore.getState().token;
-    // Read before clearUserData(), which drops the preferences. Only a manual logout redirects, as in classic.
-    const redirectUrl = options?.manual ? getLogoutRedirectUrl() : undefined;
-    clearUserData();
-    resetSessionState();
-    pendingPasswordRef.current = "";
-    Metadata.setToken("");
-    datasource.setToken("");
-    CopilotClient.setToken("");
+  const logout = useCallback(
+    async (options?: LogoutOptions) => {
+      // Optimistic logout: clear local state and every client token first so the
+      // user is fully logged out regardless of the backend outcome. doLogout()
+      // asks the backend to revoke the token (closing the reuse window for
+      // /sws/com.etendoerp.metadata.meta/* requests), but the call is best-effort:
+      // its failure is swallowed and never surfaces as an unhandled rejection.
+      // The token is captured first: the revocation request needs it, and both clears below drop it.
+      const sessionToken = useUserStore.getState().token;
+      // Read before clearUserData(), which drops the preferences. Only a manual logout redirects, as in classic.
+      const redirectUrl = options?.manual ? getLogoutRedirectUrl() : undefined;
+      clearUserData();
+      resetSessionState();
+      pendingPasswordRef.current = "";
+      Metadata.setToken("");
+      datasource.setToken("");
+      CopilotClient.setToken("");
 
-    try {
-      await doLogout(sessionToken);
-    } catch (error) {
-      logger.warn("Logout error:", error);
-    }
+      try {
+        await doLogout(sessionToken);
+      } catch (error) {
+        logger.warn("Logout error:", error);
+      }
 
-    if (redirectUrl) {
-      window.location.assign(redirectUrl);
-    }
-  }, [clearUserData]);
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+      }
+    },
+    [clearUserData]
+  );
 
   /**
    * Adopts a token issued by the keep-alive renewal.

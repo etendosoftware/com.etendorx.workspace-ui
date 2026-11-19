@@ -71,7 +71,9 @@ function isInitiallyExpanded([id, group]: FormSectionGroupEntry, auditExpanded: 
  */
 export function computeInitialExpandedSections(groups: readonly FormSectionGroupEntry[], windowId?: string): string[] {
   const auditExpanded = isPreferenceYes(CLASSIC_PREFERENCES.SHOW_AUDIT_DEFAULT, windowId);
-  return groups.filter((entry) => isInitiallyExpanded(entry, auditExpanded)).map(([id]) => String(id ?? MAIN_SECTION_ID));
+  return groups
+    .filter((entry) => isInitiallyExpanded(entry, auditExpanded))
+    .map(([id]) => String(id ?? MAIN_SECTION_ID));
 }
 
 /**

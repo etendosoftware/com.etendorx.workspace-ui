@@ -72,7 +72,9 @@ jest.mock("@/utils/evaluation/sharedEvaluationContext", () => ({ getEvaluationCo
 
 jest.mock("../Sections/noteSection", () => ({
   __esModule: true,
-  default: ({ readOnly }: { readOnly?: boolean }) => <div data-testid="note-section" data-read-only={String(readOnly)} />,
+  default: ({ readOnly }: { readOnly?: boolean }) => (
+    <div data-testid="note-section" data-read-only={String(readOnly)} />
+  ),
 }));
 
 jest.mock("../Sections/AttachmentSection", () => ({

@@ -71,16 +71,7 @@ const useIsTextCut = (ref: RefObject<HTMLElement | null>, isCollapsed: boolean, 
  * a "Show more" toggle. Own notes are tinted and can be deleted after an inline confirmation, which
  * Escape cancels.
  */
-const NoteItem = ({
-  note,
-  isOwn,
-  canDelete = true,
-  isDeleting,
-  onDelete,
-  dateDisplay,
-  now,
-  locale,
-}: NoteItemProps) => {
+const NoteItem = ({ note, isOwn, canDelete = true, isDeleting, onDelete, dateDisplay, now, locale }: NoteItemProps) => {
   const { t } = useTranslation();
   const sx = useNoteStyles();
   const [isExpanded, setIsExpanded] = useState(false);
