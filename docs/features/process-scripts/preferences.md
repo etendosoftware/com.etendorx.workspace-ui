@@ -306,6 +306,24 @@ const lines = response.data.map(...);
 
 ---
 
+## Writing preferences and reading classic messages (ETP-6356)
+
+```javascript
+// Classic signature: (name, value, windowId, noSetInServer). Stored at once for the session and, unless
+// noSetInServer, for the user in the server (Property List values only, never at System level).
+OB.PropertyStore.set('APRM_ShowNoDistributeMsg', 'N');
+
+// A message that is not in the label catalog of the session, read from the server as classic does.
+const text = await OB.I18N.getLabelFromServer('APRM_NoDistributeMsg');
+
+// Process grids page their records: classic `cachedRows < totalRows` tells that records are left to load.
+const partial = grid.data.cachedRows < grid.data.totalRows;
+```
+
+See [Classic interface preferences](../classic-preferences/README.md) for the endpoint and the message cache.
+
+---
+
 ## Implementation reference
 
 | File | Role |
