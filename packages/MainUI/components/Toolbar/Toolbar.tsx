@@ -24,6 +24,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserStore } from "@/stores/userStore";
+import { isWindowPersonalizationBlocked } from "@/utils/preferences/classicPreferences";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -118,6 +119,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
   const isActiveTab = useIsActiveTab();
   const isSessionSyncLoading = useUserStore((s) => isActiveTab && s.isSessionSyncLoading);
   const isCopilotInstalled = useUserStore((s) => s.isCopilotInstalled);
+  const userLevel = useUserStore((s) => s.currentRole?.userLevel);
   const session = useUserStore((s) => s.session);
   const token = useUserStore((s) => s.token);
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
@@ -545,6 +547,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
       isExporting: isExporting,
       isTreeView: Boolean(tableTreeView),
       hasGridRows: hasGridRows,
+      isPersonalizationBlocked: isWindowPersonalizationBlocked(tab.window, userLevel),
     });
 
     const config = {
@@ -593,6 +596,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
     isExporting,
     tableTreeView,
     hasGridRows,
+    userLevel,
   ]);
 
   useToolbarShortcuts(toolbarConfig, isFocused);
@@ -611,6 +615,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({
           anchorEl={saveViewAnchorEl}
           onClose={handleSaveViewMenuClose}
           tabId={tab.id}
+          windowId={tab.window}
           currentFilters={tableColumnFilters}
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}

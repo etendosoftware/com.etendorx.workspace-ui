@@ -234,6 +234,7 @@ export const createButtonByType = ({
   isExporting = false,
   isTreeView = false,
   hasGridRows,
+  isPersonalizationBlocked = false,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -257,6 +258,8 @@ export const createButtonByType = ({
   isTreeView?: boolean;
   /** False when the grid has no rows; unknown means "has rows". */
   hasGridRows?: boolean;
+  /** True when `OBUIAPP_WindowPersonalization_Override` keeps the user from personalizing the form. */
+  isPersonalizationBlocked?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
   // Tooltip text with the keyboard shortcut of the action, e.g. `Refresh (Ctrl+Shift+R)`.
@@ -376,6 +379,7 @@ export const createButtonByType = ({
       // With a form open it toggles split ⇄ maximized form; from the grid it
       // needs a selected record to open in split view.
       [TOOLBAR_BUTTONS_ACTIONS.SHOW_TABLE_AND_FORM]: () => buildDisableConfig(!isFormView && !hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM]: () => buildDisableConfig(!button.active || isPersonalizationBlocked),
     };
 
     const handler = actionHandlers[button.action];
@@ -485,6 +489,7 @@ interface ButtonConfig {
   isExporting?: boolean;
   isTreeView?: boolean;
   hasGridRows?: boolean;
+  isPersonalizationBlocked?: boolean;
 }
 
 /**
@@ -517,6 +522,7 @@ const createSectionButtons = (
       isExporting: config.isExporting,
       isTreeView: config.isTreeView,
       hasGridRows: config.hasGridRows,
+      isPersonalizationBlocked: config.isPersonalizationBlocked,
     });
 
     // Apply button-specific styles if available
@@ -571,6 +577,8 @@ interface ToolbarSectionsConfig {
   isTreeView?: boolean;
   /** False when the grid has no rows; unknown means "has rows". */
   hasGridRows?: boolean;
+  /** True when `OBUIAPP_WindowPersonalization_Override` keeps the user from personalizing the form. */
+  isPersonalizationBlocked?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -596,6 +604,7 @@ export const getToolbarSections = ({
   isExporting = false,
   isTreeView = false,
   hasGridRows,
+  isPersonalizationBlocked = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -630,6 +639,7 @@ export const getToolbarSections = ({
     isExporting,
     isTreeView,
     hasGridRows,
+    isPersonalizationBlocked,
   };
 
   return {

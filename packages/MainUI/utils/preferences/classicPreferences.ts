@@ -137,3 +137,20 @@ export function isLinkedItemsSectionDisabled(windowId?: string): boolean {
 export function getGridPageSize(windowId?: string): number {
   return getNumericPreference(CLASSIC_PREFERENCES.DATA_PAGE_SIZE, windowId, DEFAULT_PAGE_SIZE);
 }
+
+/** Role user levels (`AD_Role.UserLevel`) of client and system administrators, who manage views for others. */
+const ADMIN_USER_LEVELS = ["C", "S"];
+
+/**
+ * Classic `OBUIAPP_WindowPersonalization_Override` set to No: a user without administration rights can only
+ * pick existing saved views, and cannot save, delete, set a default view or personalize the form.
+ * Administrators (the same roles that may save shared views) are never blocked.
+ *
+ * @param windowId - AD window id of the tab
+ * @param userLevel - User level of the current role
+ * @returns true when the window personalization is blocked for the current user
+ */
+export function isWindowPersonalizationBlocked(windowId: string | undefined, userLevel: string | undefined): boolean {
+  const isAdmin = ADMIN_USER_LEVELS.some((level) => (userLevel ?? "").includes(level));
+  return !isAdmin && isPreferenceDisabled(CLASSIC_PREFERENCES.WINDOW_PERSONALIZATION, windowId);
+}
