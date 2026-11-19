@@ -91,6 +91,15 @@ Already applied without client changes:
 - With the personalization blocked, going back to the standard view does not clear the stored default view,
   which would be a change to the views.
 
+## End-to-end tests
+
+`playwright-tests/e2e/regression/12_Session/PREFaClassicPreferencesTest.spec.ts` (regression tier) checks the
+rows that depend on the real login, session and preferences: accounting and translation tabs, audit section,
+Linked Items, notes in a read-only tab, page size and filling the grid height, window personalization,
+StartPage (record and new record) and LogoutRedirectURL. See the
+[E2E suite](../../testing/playwright-e2e/README.md#feature-probes) for the data it uses. The process context
+(`FinancialManagement`, `_ShowAcct`) has no visible effect in the core and is covered by unit tests.
+
 ## Public documentation
 
 The differences above, and the preferences not supported yet, are documented for users and partners on the
