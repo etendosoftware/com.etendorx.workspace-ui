@@ -26,8 +26,11 @@
  * - fieldGroupCollapsed === true or undefined → collapsed.
  */
 
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import {
   addSectionsToExpand,
+  AUDIT_SECTION_ID,
   computeInitialExpandedSections,
   MAIN_SECTION_ID,
   resolveFieldSectionId,
@@ -40,6 +43,30 @@ const makeGroup = (id: string | null, identifier: string, fieldGroupCollapsed?: 
 ];
 
 describe("computeInitialExpandedSections", () => {
+  beforeEach(() => {
+    installLocalStorageMock();
+  });
+
+  describe("audit section and ShowAuditDefault", () => {
+    const WINDOW_ID = "143";
+    const groups = [makeGroup(MAIN_SECTION_ID, "Main Section"), makeGroup(AUDIT_SECTION_ID, "Audit")];
+
+    it("keeps the audit section collapsed without the preference", () => {
+      savePreferences({});
+      expect(computeInitialExpandedSections(groups, WINDOW_ID)).toEqual([MAIN_SECTION_ID]);
+    });
+
+    it("expands the audit section when the preference is Y for the window", () => {
+      savePreferences({ [`ShowAuditDefault_${WINDOW_ID}`]: "Y" });
+      expect(computeInitialExpandedSections(groups, WINDOW_ID)).toEqual([MAIN_SECTION_ID, AUDIT_SECTION_ID]);
+    });
+
+    it("keeps the audit section collapsed when the preference is N", () => {
+      savePreferences({ ShowAuditDefault: "N" });
+      expect(computeInitialExpandedSections(groups, WINDOW_ID)).toEqual([MAIN_SECTION_ID]);
+    });
+  });
+
   it("returns an empty array when no groups are provided", () => {
     expect(computeInitialExpandedSections([])).toEqual([]);
   });

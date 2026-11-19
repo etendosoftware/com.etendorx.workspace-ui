@@ -15,6 +15,8 @@
  *************************************************************************
  */
 
+import { CLASSIC_PREFERENCES, isPreferenceYes } from "@/utils/preferences/classicPreferences";
+
 /**
  * Section id that useFormFields assigns to the fields without an explicit
  * AD_FieldGroup, i.e. the main section of the form.
@@ -34,31 +36,42 @@ export const LINKED_ITEMS_SECTION_ID = "linked-items";
 export type FormSectionGroupEntry = readonly [string | null, { fieldGroupCollapsed?: boolean }];
 
 /**
+ * Section id that useFormFields assigns to the audit fields (created, created by, updated, updated by).
+ */
+export const AUDIT_SECTION_ID = "audit";
+
+/**
  * Decides whether a section is expanded by default, following the metadata:
  * - the main section is always expanded,
+ * - the audit section is expanded when the `ShowAuditDefault` preference is Y,
  * - any other section is expanded only when AD_FieldGroup.IsCollapsed is
  *   explicitly false (an undefined flag means collapsed).
  *
  * @param entry - Section entry as produced by useFormFields
+ * @param auditExpanded - Whether `ShowAuditDefault` asks for the audit section expanded
  * @returns True when the section must start expanded
  */
-function isInitiallyExpanded([id, group]: FormSectionGroupEntry): boolean {
+function isInitiallyExpanded([id, group]: FormSectionGroupEntry, auditExpanded: boolean): boolean {
   if (id === MAIN_SECTION_ID) return true;
+  if (id === AUDIT_SECTION_ID && auditExpanded) return true;
   return group.fieldGroupCollapsed === false;
 }
 
 /**
  * Computes the ids of the form sections that must start expanded, based on the
- * `fieldGroupCollapsed` metadata flag (AD_FieldGroup.IsCollapsed).
+ * `fieldGroupCollapsed` metadata flag (AD_FieldGroup.IsCollapsed) and, for the audit
+ * section, on the classic `ShowAuditDefault` preference of the window.
  *
  * Used only to seed the expansion state the first time a tab's form is opened;
  * afterwards the user preference persisted per tab takes precedence.
  *
  * @param groups - Section entries as produced by useFormFields
+ * @param windowId - AD window id used to look the `ShowAuditDefault` preference up
  * @returns Ids of the sections that must start expanded, in the given order
  */
-export function computeInitialExpandedSections(groups: readonly FormSectionGroupEntry[]): string[] {
-  return groups.filter(isInitiallyExpanded).map(([id]) => String(id ?? MAIN_SECTION_ID));
+export function computeInitialExpandedSections(groups: readonly FormSectionGroupEntry[], windowId?: string): string[] {
+  const auditExpanded = isPreferenceYes(CLASSIC_PREFERENCES.SHOW_AUDIT_DEFAULT, windowId);
+  return groups.filter((entry) => isInitiallyExpanded(entry, auditExpanded)).map(([id]) => String(id ?? MAIN_SECTION_ID));
 }
 
 /**
