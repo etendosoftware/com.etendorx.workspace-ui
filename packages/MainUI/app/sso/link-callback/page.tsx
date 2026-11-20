@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
+import { buildSsoLinkBody, SSO_STATE_KEY } from "@/utils/session/ssoProvider";
 
 // Middleware redirects here with ?access_token= after the user authorizes linking.
 // We forward it (with the logged-in JWT) to the authenticated /sso/link endpoint,
@@ -14,9 +15,16 @@ export default function SSOLinkCallback() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const accessToken = new URLSearchParams(window.location.search).get("access_token");
+    // The middleware sends back an access_token; Auth0 a code with the state stored when linking started
+    const expectedState = sessionStorage.getItem(SSO_STATE_KEY);
+    sessionStorage.removeItem(SSO_STATE_KEY);
+    const linkBody = buildSsoLinkBody(
+      new URLSearchParams(window.location.search),
+      expectedState,
+      window.location.origin
+    );
     const jwt = localStorage.getItem("token");
-    if (!accessToken || !jwt) {
+    if (!linkBody || !jwt) {
       router.replace("/");
       return;
     }
@@ -24,7 +32,7 @@ export default function SSOLinkCallback() {
     fetch("/api/erp/meta/sso/link", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
-      body: JSON.stringify({ accessToken }),
+      body: JSON.stringify(linkBody),
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(`link failed: ${res.status}`);

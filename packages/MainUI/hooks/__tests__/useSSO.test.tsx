@@ -132,6 +132,18 @@ describe("useSSO", () => {
     expect(url).toContain("redirect_uri=https%3A%2F%2Flocalhost%3A3000%2Fsso%2Flink-callback");
   });
 
+  it("startAuth0Link asks Auth0 to log in again and comes back to the link-callback route", async () => {
+    mockFetch(AUTH0);
+    const { result } = renderHook(() => useSSO());
+    await waitFor(() => expect(result.current.config).toEqual(AUTH0));
+    act(() => result.current.startAuth0Link());
+    const url = assign.mock.calls[0][0] as string;
+    expect(url).toContain("https://etendo.auth0.com/authorize");
+    expect(url).toContain("redirect_uri=https%3A%2F%2Flocalhost%3A3000%2Fsso%2Flink-callback");
+    expect(url).toContain("prompt=login");
+    expect(window.sessionStorage.getItem("sso_state")).toBe("test-state");
+  });
+
   it("does not auto-exchange without the autoCallback flag", async () => {
     mockLocation("?access_token=tok");
     mockFetch(MIDDLEWARE, { ok: true, body: { token: "jwt" } });

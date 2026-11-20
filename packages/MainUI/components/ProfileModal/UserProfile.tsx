@@ -28,7 +28,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useGlobalUnsavedChangesGuard } from "@/hooks/useGlobalUnsavedChangesGuard";
 
-const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onBeforeSignOff }) => {
   const { styles } = useStyle();
   const { logout } = useUserContext();
   const { t } = useTranslation();
@@ -40,9 +40,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
    */
   const handleSignOff = useCallback(() => {
     guard(() => {
+      // Closes the single sign-on provider session first, while the preferences are still loaded
+      onBeforeSignOff?.();
       logout({ manual: true });
     });
-  }, [guard, logout]);
+  }, [guard, logout, onBeforeSignOff]);
 
   return (
     <div className="flex flex-col items-center justify-center h-[9.5rem]">

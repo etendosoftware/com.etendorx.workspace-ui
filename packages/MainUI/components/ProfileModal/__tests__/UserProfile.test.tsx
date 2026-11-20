@@ -70,6 +70,18 @@ describe("UserProfile", () => {
     await waitFor(() => expect(logout).toHaveBeenCalledWith({ manual: true }));
   });
 
+  it("closes the single sign-on session right before logging out", async () => {
+    const calls: string[] = [];
+    const onBeforeSignOff = jest.fn(() => calls.push("sso"));
+    logout.mockImplementation(() => calls.push("logout"));
+    render(<UserProfile name="John Doe" onBeforeSignOff={onBeforeSignOff} />);
+
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => expect(calls).toEqual(["sso", "logout"]));
+    logout.mockReset();
+  });
+
   it("uses the i18n key for the logout tooltip", () => {
     render(<UserProfile name="John Doe" />);
 

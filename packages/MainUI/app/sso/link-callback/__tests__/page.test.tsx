@@ -20,9 +20,9 @@ function mockLocation(search: string) {
 }
 
 // The jest env ships a no-op Storage; install a real Map-backed one.
-function installLocalStorage() {
+function installStorage(name: "localStorage" | "sessionStorage") {
   const m = new Map<string, string>();
-  Object.defineProperty(window, "localStorage", {
+  Object.defineProperty(window, name, {
     configurable: true,
     value: {
       getItem: (k: string) => (m.has(k) ? m.get(k) : null),
@@ -35,7 +35,8 @@ function installLocalStorage() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  installLocalStorage();
+  installStorage("localStorage");
+  installStorage("sessionStorage");
   (global.fetch as jest.Mock) = jest.fn();
 });
 
@@ -61,6 +62,22 @@ describe("SSOLinkCallback", () => {
     expect(opts.headers.Authorization).toBe("Bearer jwt-abc");
     expect(JSON.parse(opts.body)).toEqual({ accessToken: "mw-token" });
     expect(replace).toHaveBeenCalledWith("/");
+  });
+
+  it("posts an Auth0 code whose state matches the stored one", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { search: "?code=auth0-code&state=s1", pathname: "/sso/link-callback", origin: "https://ui.example" },
+    });
+    window.sessionStorage.setItem("sso_state", "s1");
+    window.localStorage.setItem("token", "jwt-abc");
+    (global.fetch as jest.Mock) = jest.fn(() => Promise.resolve({ ok: true }));
+
+    render(<SSOLinkCallback />);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [, opts] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(JSON.parse(opts.body)).toEqual({ code: "auth0-code", redirectUri: "https://ui.example/sso/link-callback" });
   });
 
   it("shows an error toast when the link request fails", async () => {
