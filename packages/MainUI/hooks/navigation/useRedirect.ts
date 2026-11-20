@@ -18,11 +18,11 @@
 import { useCallback } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
 import { buildRecordWindowData } from "@/utils/window/recordWindowData";
+import { showWindow } from "@/utils/window/showWindow";
 
 /**
  * Response from the Etendo Classic ReferencedLink endpoint.
@@ -75,8 +75,6 @@ interface HandleKeyDownRedirectProps {
 }
 
 export const useRedirect = () => {
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
-
   /**
    * Calls the Etendo Classic ReferencedLink endpoint to resolve the correct
    * windowId and tabId for navigation. This is the same mechanism used by
@@ -186,7 +184,11 @@ export const useRedirect = () => {
       // matching Classic UI behavior instead of forcing a Form View with no record.
       if (!selectedRecordId) {
         const tabs = { [resolvedTabId]: createDefaultTabState(tabLevel) };
-        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
+        showWindow({
+          windowId: resolvedWindowId,
+          windowIdentifier: newWindowIdentifier,
+          windowData: { title: resolvedTitle, tabs },
+        });
         return;
       }
 
@@ -202,9 +204,9 @@ export const useRedirect = () => {
         recordId: selectedRecordId,
         tabLevel,
       });
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
+      showWindow({ windowId: resolvedWindowId, windowIdentifier: newWindowIdentifier, windowData });
     },
-    [setWindowActive, resolveViaReferencedLink]
+    [resolveViaReferencedLink]
   );
 
   const handleClickRedirect = useCallback(
@@ -311,9 +313,13 @@ export const useRedirect = () => {
           }
         : {};
 
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: menuItem.name, tabs } });
+      showWindow({
+        windowId: resolvedWindowId,
+        windowIdentifier: newWindowIdentifier,
+        windowData: { title: menuItem.name, tabs },
+      });
     },
-    [setWindowActive]
+    []
   );
 
   return {

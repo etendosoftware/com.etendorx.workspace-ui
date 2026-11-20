@@ -33,6 +33,7 @@ import {
   removeWindowParameters,
   appendWindowToUrl,
   buildEtendoClassicBookmarkUrl,
+  setWindowInUrl,
 } from "../utils";
 import type { WindowState } from "../../window/constants";
 import { TAB_MODES, FORM_MODES, NEW_RECORD_ID, URL_PREFIXS } from "../constants";
@@ -1420,5 +1421,24 @@ describe("buildEtendoClassicBookmarkUrl", () => {
       expect(locationParam).not.toContain("%26");
       expect(locationParam).not.toContain("%3D");
     });
+  });
+});
+
+describe("setWindowInUrl", () => {
+  const NEW_WINDOW = { windowIdentifier: "143_2", tabId: "186", recordId: "R2" };
+  const current = () => new URLSearchParams("wi_0=167_1&ti_0=263&ri_0=I1&wi_1=143_1&ti_1=186&ri_1=R1");
+
+  it("puts the new window in the index of the instance it replaces", () => {
+    const params = new URLSearchParams(setWindowInUrl(current(), "143_1", NEW_WINDOW));
+
+    expect(params.get("wi_1")).toBe("143_2");
+    expect(params.get("ri_1")).toBe("R2");
+    expect(params.get("wi_0")).toBe("167_1");
+    expect(params.has("wi_2")).toBe(false);
+  });
+
+  it("appends the window when nothing is replaced or the instance is not in the URL", () => {
+    expect(new URLSearchParams(setWindowInUrl(current(), undefined, NEW_WINDOW)).get("wi_2")).toBe("143_2");
+    expect(new URLSearchParams(setWindowInUrl(current(), "999_1", NEW_WINDOW)).get("wi_2")).toBe("143_2");
   });
 });

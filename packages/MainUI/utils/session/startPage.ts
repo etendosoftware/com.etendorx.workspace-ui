@@ -17,13 +17,13 @@
 
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { useWindowStore } from "@/stores/windowStore";
 import { getStoredPreference } from "@/utils/propertyStore";
 import { CLASSIC_PREFERENCES } from "@/utils/preferences/classicPreferences";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import type { WindowState } from "@/utils/window/constants";
 import { buildRecordWindowData } from "@/utils/window/recordWindowData";
 import { createDefaultTabState, getNewTabFormState, getNewWindowIdentifier } from "@/utils/window/utils";
+import { showWindow } from "@/utils/window/showWindow";
 import { logger } from "@/utils/logger";
 
 /** Query parameters of a classic start page (`/?tabId=<AD_Tab_ID>&recordId=<id>&command=NEW`). */
@@ -119,7 +119,7 @@ export async function openStartPage(): Promise<void> {
     const windowIdentifier = getNewWindowIdentifier(tab.window);
     const title = tab.window$_identifier ?? tab.title;
     const windowData = await buildStartPageWindowData(target, tab, windowIdentifier, title);
-    useWindowStore.getState().setWindowActive({ windowIdentifier, windowData });
+    showWindow({ windowId: tab.window, windowIdentifier, windowData });
   } catch (error) {
     logger.warn("Could not open the start page:", error);
   }

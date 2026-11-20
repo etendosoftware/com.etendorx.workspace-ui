@@ -172,6 +172,41 @@ export const removeWindowParameters = (searchParams: URLSearchParams, windowInde
 };
 
 /**
+ * URL params with `newWindow` in place of the open instance `replacedIdentifier`, at its same index (so it keeps
+ * its position when the windows are rebuilt from the URL); appended when that instance is not in the URL.
+ *
+ * @param currentParams - Current URL params
+ * @param replacedIdentifier - Identifier of the instance to replace, or `undefined` to append
+ * @param newWindow - Window instance, tab and record to open
+ */
+export const setWindowInUrl = (
+  currentParams: URLSearchParams,
+  replacedIdentifier: string | undefined,
+  newWindow: { windowIdentifier: string; tabId: string; recordId: string }
+): string => {
+  const slot = replacedIdentifier ? findWindowIndex(currentParams, replacedIdentifier) : undefined;
+  if (slot === undefined) {
+    return appendWindowToUrl(currentParams, newWindow);
+  }
+  const params = new URLSearchParams(currentParams);
+  params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${slot}`, newWindow.windowIdentifier);
+  params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${slot}`, newWindow.tabId);
+  params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${slot}`, newWindow.recordId);
+  return params.toString();
+};
+
+/** URL index (`wi_<index>`) of the window instance `windowIdentifier`, or `undefined` when it is not there. */
+const findWindowIndex = (params: URLSearchParams, windowIdentifier: string): string | undefined => {
+  const prefix = `${URL_PREFIXS.WINDOW_IDENTIFIER}_`;
+  for (const [key, value] of params.entries()) {
+    if (key.startsWith(prefix) && value === windowIdentifier) {
+      return key.slice(prefix.length);
+    }
+  }
+  return undefined;
+};
+
+/**
  * Appends a new window to existing URL parameters.
  *
  * Reads current URL parameters and adds a new window at the next available index.

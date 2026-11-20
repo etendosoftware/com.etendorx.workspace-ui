@@ -210,6 +210,15 @@ export interface WindowStore {
 
   // ---- Window lifecycle --------------------------------------------------
   setWindowActive: (params: { windowIdentifier: string; windowData?: Partial<WindowState> }) => void;
+  /**
+   * Replaces an open window with a new instance in the same position of the window bar, active: what classic
+   * does when a window that is already open is opened again (a fresh view, or the record of a link).
+   */
+  replaceWindow: (params: {
+    windowIdentifier: string;
+    newWindowIdentifier: string;
+    windowData?: Partial<WindowState>;
+  }) => void;
   setWindowInactive: (windowIdentifier: string) => void;
   setAllWindowsInactive: () => void;
   cleanupWindow: (windowIdentifier: string) => void;
@@ -258,6 +267,29 @@ export interface WindowStore {
 // ---------------------------------------------------------------------------
 // Store creation
 // ---------------------------------------------------------------------------
+/**
+ * State of a window that is being opened, active, from the data the opener provides.
+ *
+ * @param windowIdentifier - Identifier of the new window instance (`windowId_timestamp`)
+ * @param windowData - Initial title, tabs, navigation or external address
+ */
+function createWindowState(windowIdentifier: string, windowData?: Partial<WindowState>): WindowState {
+  return {
+    windowId: getWindowIdFromIdentifier(windowIdentifier),
+    windowIdentifier,
+    isActive: true,
+    initialized: windowData?.initialized ?? false,
+    title: windowData?.title ?? "",
+    navigation: windowData?.navigation ?? {
+      activeLevels: [0],
+      activeTabsByLevel: new Map(),
+      initialized: false,
+    },
+    tabs: windowData?.tabs ?? {},
+    externalUrl: windowData?.externalUrl,
+  };
+}
+
 export const useWindowStore = create<WindowStore>()(
   devtools(
     immer((set, get) => ({
@@ -497,25 +529,33 @@ export const useWindowStore = create<WindowStore>()(
                 Object.assign(draft.windows[windowIdentifier], windowData);
               }
             } else {
-              const windowId = getWindowIdFromIdentifier(windowIdentifier);
-              draft.windows[windowIdentifier] = {
-                windowId,
-                windowIdentifier,
-                isActive: true,
-                initialized: windowData?.initialized ?? false,
-                title: windowData?.title ?? "",
-                navigation: windowData?.navigation ?? {
-                  activeLevels: [0],
-                  activeTabsByLevel: new Map(),
-                  initialized: false,
-                },
-                tabs: windowData?.tabs ?? {},
-                externalUrl: windowData?.externalUrl,
-              };
+              draft.windows[windowIdentifier] = createWindowState(windowIdentifier, windowData);
             }
           },
           false,
           "window/setWindowActive"
+        ),
+
+      replaceWindow: ({ windowIdentifier, newWindowIdentifier, windowData }) =>
+        set(
+          (draft) => {
+            if (!draft.windows[windowIdentifier]) return;
+            draft.accessDeniedWindowCount = 0;
+            // Rebuilt in order so the new instance keeps the position of the one it replaces
+            const windows: typeof draft.windows = {};
+            for (const [identifier, win] of Object.entries(draft.windows)) {
+              if (identifier === windowIdentifier) {
+                windows[newWindowIdentifier] = createWindowState(newWindowIdentifier, windowData);
+              } else {
+                win.isActive = false;
+                windows[identifier] = win;
+              }
+            }
+            draft.windows = windows;
+            delete draft.dirtyWindows[windowIdentifier];
+          },
+          false,
+          "window/replaceWindow"
         ),
 
       setWindowInactive: (windowIdentifier) =>

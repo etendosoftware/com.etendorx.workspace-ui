@@ -69,7 +69,7 @@ describe("openStartPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     installLocalStorageMock();
-    (useWindowStore.getState as jest.Mock).mockReturnValue({ setWindowActive });
+    (useWindowStore.getState as jest.Mock).mockReturnValue({ windows: {}, dirtyWindows: {}, setWindowActive });
   });
 
   it("opens the window of the start page tab as the menu does", async () => {
