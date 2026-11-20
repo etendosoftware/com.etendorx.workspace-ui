@@ -15,6 +15,12 @@ const CATEGORIES_TIMEOUT = 60_000;
 /** Child tabs of the opened record load after its window is shown. */
 const TAB_TIMEOUT = 30_000;
 
+/** Where a linked record opens: a window that is not open yet, or the open window of the same kind. */
+const LINK_TARGET = { NEW_WINDOW: "newWindow", SAME_WINDOW: "sameWindow" } as const;
+type LinkTarget = (typeof LINK_TARGET)[keyof typeof LINK_TARGET];
+/** Windows added by opening a linked record, per target. */
+const WINDOWS_ADDED: Record<LinkTarget, number> = { newWindow: 1, sameWindow: 0 };
+
 /** Visible button with exactly `text`: section and category tabs are buttons with role="tab". */
 const buttonWithText = (page: Page, text: string | RegExp) =>
   page.locator("button:visible").filter({ hasText: text }).first();
@@ -61,15 +67,20 @@ test.describe("LinkedItems Navigation @smoke", () => {
     /**
      * Opens the linked record `item` and waits until its window is the active one. Until then the
      * window it was opened from is still shown, and a window opened meanwhile is discarded when
-     * the linked one is restored.
+     * the linked one is restored. A record of a window that is already open replaces that window
+     * (AllowMultiTab is not Y, as classic), so no window is added.
      */
-    const openLinkedItem = async (item: string | RegExp) => {
+    const openLinkedItem = async (item: string | RegExp, target: LinkTarget) => {
       const openWindows = await app.windows.closeButtons.count();
+      const urlBefore = page.url();
       const entry = page.locator(LINKED_ITEMS).filter({ hasText: item }).first();
       await entry.waitFor({ state: "visible", timeout: 15_000 });
       await entry.scrollIntoViewIfNeeded();
       await entry.click();
-      await expect(app.windows.closeButtons).toHaveCount(openWindows + 1, { timeout: NAVIGATION_TIMEOUT });
+      await page.waitForURL((url) => url.toString() !== urlBefore, { timeout: NAVIGATION_TIMEOUT });
+      await expect(app.windows.closeButtons).toHaveCount(openWindows + WINDOWS_ADDED[target], {
+        timeout: NAVIGATION_TIMEOUT,
+      });
       await app.breadcrumb.waitFor(item, NAVIGATION_TIMEOUT);
     };
 
@@ -82,7 +93,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Sales Quotation - Line Tax");
-    await openLinkedItem(/50012.*Exempt.*VAT/);
+    await openLinkedItem(/50012.*Exempt.*VAT/, LINK_TARGET.NEW_WINDOW);
 
     await expect(
       page
@@ -106,7 +117,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Goods Shipment - Lines");
-    await openLinkedItem(/500014.*Customer A.*costing Product 2/);
+    await openLinkedItem(/500014.*Customer A.*costing Product 2/, LINK_TARGET.SAME_WINDOW);
 
     await expect(
       page
@@ -125,7 +136,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
 
     await openLinkedItemsTab();
     await clickLinkedItemButton("Purchase Invoice - Basic Discounts");
-    await openLinkedItem("10000017");
+    await openLinkedItem("10000017", LINK_TARGET.SAME_WINDOW);
 
     await expect(
       page
