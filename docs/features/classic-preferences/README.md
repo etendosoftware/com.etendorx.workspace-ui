@@ -48,6 +48,10 @@ preferences from process scripts is described in
 | `APRM_ShowNoDistributeMsg` | No | Shown | Add Payment warns (`APRM_NoDistributeMsg`) when it distributes the amount while the order/invoice grid still has records to load. |
 | `TreeDatasourceFetchLimit` | No | 200 | A tree asks for at most this number of nodes, root and children, as classic. When the server answers that the request is over the limit, the tree stays empty, the filters stay on screen and `OBUIAPP_TooManyNodes` is shown. |
 | `dataPageSize` | Yes | 100 | Records requested per grid page. A value that is not a positive number keeps 100. When a page does not fill the height of the grid, the next one is requested without waiting for a scroll. |
+| `AllowMultiTab` | Yes | One tab per window | Opening a window that is already open replaces that tab with the new target (menu, favorites, recent items, process monitor, links to a record, the start page and the "go to" of a process), as classic. With Y every opening adds a new tab. If the replaced tab has unsaved changes, the user is asked first. |
+| `ForcedLoginURL` | No (system) | Empty | The login page redirects to this address when the browser opened the new UI at a different one (e.g. another host name). Read without a session through `meta/login-config`. |
+| `ETRX_AllowSSOLogin` | No | Not shown | With Y the profile menu offers to link the account with the single sign-on provider (Auth0 or the Etendo middleware), with the classic text `ETRX_LinkSSOAccount`, and a manual logout also closes the session of the provider. |
+| `RestrictErpAccessInStoreServer` | No (system) | Allowed | On a store server, a login, a role change or an SSO login with a role other than System is refused with `BACKEND_LOGIN_RESTRICTED`. Without a store server (`ServerController`) it has no effect. |
 
 Already applied without client changes:
 
@@ -99,6 +103,16 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
 - **Administrators keep personalizing.** Administrators are the roles with user level Client or System, the
   same ones that may save shared views. No license restriction is applied.
 
+- **`AllowMultiTab` replaces instead of focusing.** Classic, with the preference not Y, reuses the open tab of
+  the window and shows what was asked in it. The new UI does the same: the open tab keeps its position and
+  takes the new target (`utils/window/showWindow.ts`, store action `replaceWindow`). External menu entries
+  (pages that are not windows) keep focusing their open tab.
+- **`ForcedLoginURL` only when it points to the new UI.** Classic uses it for its own login page. The new UI
+  redirects only when the path of the value contains the current path, so a value with the classic login
+  address (`/security/Login`) is ignored instead of sending the user out of the new UI.
+- **`RestrictErpAccessInStoreServer` only allows System**, as the classic login: the role of a login is the
+  default role of the user (`LoginUtils.getLoginDefaults`), and a role change is checked with the chosen role.
+
 ## Differences with Classic
 
 - `StartPage`:
@@ -123,6 +137,14 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
 - With the personalization blocked, going back to the standard view does not clear the stored default view,
   which would be a change to the views.
 
+- `ForcedLoginURL` is checked by the login page of the new UI, after it loads; classic checks it on the server.
+- Linking an Auth0 account needs the address `<new UI>/sso/link-callback` allowed as a callback in the Auth0
+  application, and closing the Auth0 session needs the login page allowed as logout return address. The
+  provider logout is opened when the user confirms the logout; a browser that blocks pop-ups can stop it when
+  the logout first waited for the unsaved-changes question.
+- A login refused by `RestrictErpAccessInStoreServer` shows the message of the server. A refused role change or
+  SSO login shows the generic error of those flows.
+
 ## End-to-end tests
 
 `playwright-tests/e2e/regression/12_Session/PREFaClassicPreferencesTest.spec.ts` (regression tier) checks the
@@ -131,6 +153,9 @@ Linked Items, notes in a read-only tab, page size and filling the grid height, w
 StartPage (record and new record) and LogoutRedirectURL. See the
 [E2E suite](../../testing/playwright-e2e/README.md#feature-probes) for the data it uses. The process context
 (`FinancialManagement`, `_ShowAcct`) has no visible effect in the core and is covered by unit tests.
+
+The preferences of login, SSO and store server (`AllowMultiTab`, `ForcedLoginURL`, `ETRX_AllowSSOLogin`,
+`RestrictErpAccessInStoreServer`) are covered by unit tests only for now; their end-to-end tests are pending.
 
 ## Public documentation
 
@@ -163,9 +188,19 @@ UI section. That work belongs to task ETP-6355; this page only records the techn
 - `packages/MainUI/hooks/table/useTableData.tsx`: page size; `hooks/table/useFillGridViewport.ts` and
   `components/Table/utils/viewportFill.ts`: filling the height of the grid.
 
+- `packages/MainUI/utils/window/showWindow.ts`, `stores/windowStore.ts` (`replaceWindow`),
+  `utils/url/utils.ts` (`setWindowInUrl`): one tab per window.
+- `packages/MainUI/utils/session/forcedLoginUrl.ts`, `app/api/auth/login-config/route.ts`; metadata
+  `LoginConfigService`: forced login address.
+- `packages/MainUI/utils/session/ssoProvider.ts`, `components/ProfileModal/SsoLinkSection.tsx`,
+  `hooks/useSSO.ts` (`startAuth0Link`), `app/sso/link-callback/page.tsx`: SSO account link and provider logout.
+- `com.etendoerp.metadata`: `auth/StoreServerAccess.java`, used by `LoginGuardService`, `ChangeProfileService`
+  and `SSOService`: store server restriction.
+
 ## Related documentation
 
 - [Saved views](../saved-views/README.md)
 - [Record notes](../record-notes/README.md)
 - [Login and logout](../login-logout/README.md)
 - [Process payload building](../process-payload-building.md)
+- [Profile menu](../profile-menu/README.md)

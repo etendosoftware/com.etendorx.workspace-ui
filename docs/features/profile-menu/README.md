@@ -54,6 +54,14 @@ optional `leftIconAriaLabel`, `rightIconAriaLabel` and `rightIconPressed` props,
 without its click handler is now rendered as a decorative icon. Before, it was a focusable button that
 did nothing; the only consumer passing icons is the password input.
 
+### Single sign-on account link
+
+With the preference `ETRX_AllowSSOLogin` set to Y, the profile menu shows a section to link the account with
+the SSO provider: one button per provider of the Etendo middleware, or one button for Auth0 with the classic
+text `ETRX_LinkSSOAccount` (read with `useServerLabels`). The provider answers at `/sso/link-callback`, which
+links the account. The logout of this menu then also closes the session of the provider (`onBeforeSignOff`).
+See [Classic interface preferences](../classic-preferences/README.md).
+
 ## Decisions
 
 | Decision | Reason |
@@ -83,6 +91,7 @@ None.
 |---|---|
 | `packages/MainUI/components/ProfileModal/ProfileModal.tsx` | Success toast and context tooltip |
 | `packages/MainUI/components/ProfileModal/profileContext.ts` | Builds the tooltip text (`buildProfileContextTooltip`, `PROFILE_CONTEXT_LINES`) |
+| `packages/MainUI/components/ProfileModal/SsoLinkSection.tsx`, `packages/MainUI/utils/session/ssoProvider.ts` | SSO account link and provider logout |
 | `packages/MainUI/utils/catalogLabel.ts` | `resolveCatalogLabel`: `AD_MESSAGE` first, local translation as fallback |
 | `packages/MainUI/utils/password.ts` | `PASSWORD_CHANGED_MESSAGE_CODE`; error resolution now delegates to `resolveCatalogLabel` |
 | `packages/ComponentLibrary/src/components/Tooltip/index.tsx` | `multiline` prop |
