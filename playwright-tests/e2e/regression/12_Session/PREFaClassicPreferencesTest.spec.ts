@@ -2,6 +2,14 @@ import type { ApiData, SavedRecord } from "../../support/api/ApiData";
 import type { App } from "../../support/components";
 import { expect, test } from "../../support/fixtures";
 import {
+  characteristicDescriptionOf,
+  createCharacteristics,
+  createProductsWithCharacteristics,
+  emptyCharacteristicsDataSet,
+  removeCharacteristicsDataSet,
+} from "../../support/flows/characteristics";
+import {
+  addUserPreference,
   addWindowPreferences,
   reloginToReadPreferences,
   removePreferences,
@@ -42,6 +50,10 @@ const CORE_TREE_FETCH_LIMIT = 200;
 /** Start of `OBUIAPP_TooManyNodes`. */
 const TOO_MANY_NODES_TEXT = "This query criteria returns a number of nodes larger than the established limit";
 const SAVED_PREFERENCE_REQUEST = /\/api\/erp\/meta\/preferences/;
+/** Grouped characteristic value and its group, for `ShowProductCharacteristicsParents`. */
+const BOTTLE = "Botella";
+const GLASS = "Vidrio";
+const SIZE_330 = "330 ml";
 
 /** Address that opens `recordId` of `tabId` in a new window instance (the URL state the UI restores). */
 function recordLink(windowId: string, tabId: string, recordId: string): string {
@@ -49,6 +61,7 @@ function recordLink(windowId: string, tabId: string, recordId: string): string {
 }
 
 const preferences: SavedRecord[] = [];
+const characteristics = emptyCharacteristicsDataSet();
 /** Set by the tests that click "Never show this message again", which stores the preference for the user. */
 let restoreSingleRecordMessage = false;
 let restoreImplicitFilterMessage = false;
@@ -56,6 +69,7 @@ let restoreImplicitFilterMessage = false;
 // Removed while the page is still open, also when the test failed or timed out
 test.afterEach(async ({ api }) => {
   await removePreferences(api, preferences);
+  await removeCharacteristicsDataSet(api, characteristics);
   if (restoreSingleRecordMessage) {
     // Stored in the System client as classic does, so it is set back instead of deleted
     await api.savePreference(SINGLE_RECORD_PREFERENCE, "Y");
@@ -287,6 +301,46 @@ test.describe("Session - Classic interface preferences @regression @session", ()
     await expectFilteredOrders();
     await reloadSalesOrders();
     await expect(message).toHaveCount(0);
+  });
+
+  test("shows each product characteristic with its parents by ShowProductCharacteristicsParents", async ({
+    api,
+    app,
+    data,
+    page,
+  }) => {
+    const prefix = data.uniqueValue("PREFa");
+    const packaging = `${prefix} Envase`;
+    const size = `${prefix} Formato`;
+    await createCharacteristics(api, characteristics, [
+      { name: packaging, values: [{ name: BOTTLE, values: [{ name: GLASS }] }] },
+      { name: size, values: [{ name: SIZE_330 }] },
+    ]);
+    const product = `${prefix} Zumo`;
+    await createProductsWithCharacteristics(api, characteristics, [{ name: product, values: [GLASS, SIZE_330] }]);
+    const productId = characteristics.products.get(product) ?? "";
+    // The server builds the description a few seconds later; the form lists the characteristics only with it
+    await expect.poll(() => characteristicDescriptionOf(api, productId)).not.toBe("");
+    const field = page.getByTestId(`ProductCharacteristics__${data.FIELD.PRODUCT_CHARACTERISTIC_DESCRIPTION}`);
+    const openProduct = async () => {
+      await page.goto(recordLink(WINDOW_IDS.PRODUCT, TABS.PRODUCT_HEADER, productId));
+      await expect(app.formSections.main).toBeVisible();
+      await expect(field).toBeVisible();
+    };
+
+    // One line per characteristic, without parents by default
+    await openProduct();
+    await expect(field.getByText(packaging, { exact: true })).toBeVisible();
+    await expect(field.getByText(GLASS, { exact: true })).toBeVisible();
+    await expect(field.getByText(SIZE_330, { exact: true })).toBeVisible();
+
+    // Read by the server on every form load, for every window: no new session is needed
+    preferences.push(
+      await addUserPreference(api, { name: "ShowProductCharacteristicsParents", value: "1", propertyList: true })
+    );
+    await openProduct();
+    await expect(field.getByText(`${BOTTLE} / ${GLASS}`, { exact: true })).toBeVisible();
+    await expect(field.getByText(SIZE_330, { exact: true })).toBeVisible();
   });
 
   test("refuses a tree filter that matches more nodes than TreeDatasourceFetchLimit", async ({ app, page }) => {

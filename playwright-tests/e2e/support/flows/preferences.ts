@@ -19,6 +19,18 @@ function preferenceName({ name, propertyList }: WindowPreference): Record<string
   return { attribute: name };
 }
 
+/** Creates a preference for the user of the suite, for `windowId` only or, without it, for every window. */
+function addPreference(api: ApiData, preference: WindowPreference, windowId?: string): Promise<SavedRecord> {
+  return api.add(DATASOURCE.PREFERENCE, {
+    organization: ORGANIZATION_ID.ALL,
+    propertyList: preference.propertyList,
+    ...preferenceName(preference),
+    searchKey: preference.value,
+    userContact: USER_ID.ADMIN,
+    window: windowId,
+  });
+}
+
 /**
  * Creates `preferences` for the user of the suite and `windowId` only, so no other spec is affected. The
  * caller removes the returned records in `test.afterEach`.
@@ -30,18 +42,17 @@ export async function addWindowPreferences(
 ): Promise<SavedRecord[]> {
   const records: SavedRecord[] = [];
   for (const preference of preferences) {
-    records.push(
-      await api.add(DATASOURCE.PREFERENCE, {
-        organization: ORGANIZATION_ID.ALL,
-        propertyList: preference.propertyList,
-        ...preferenceName(preference),
-        searchKey: preference.value,
-        userContact: USER_ID.ADMIN,
-        window: windowId,
-      })
-    );
+    records.push(await addPreference(api, preference, windowId));
   }
   return records;
+}
+
+/**
+ * Creates a preference for the user of the suite in every window, for a preference the server reads without
+ * a window (e.g. `ShowProductCharacteristicsParents`). The caller removes it in `test.afterEach`.
+ */
+export function addUserPreference(api: ApiData, preference: WindowPreference): Promise<SavedRecord> {
+  return addPreference(api, preference);
 }
 
 /**
