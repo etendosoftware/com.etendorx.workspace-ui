@@ -31,6 +31,22 @@ import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/sr
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { buildNodeMap, buildTreeFromFilterOptions, filterVisibleNodes, getNodeTextClass } from "@/utils/form/treeUtils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import {
+  CHARACTERISTICS_TREE_DATASOURCE_ID,
+  type CharacteristicsFilterContext,
+  type CheckState,
+  buildCharacteristicsExistsQuery,
+  buildCharacteristicsLabel,
+  buildCharacteristicsTreeParams,
+  buildChildrenMap,
+  buildLeafIdsIndex,
+  getCheckState,
+  resolveProductPath,
+  toggleLeafSelection,
+} from "@/utils/table/characteristicsFilter";
+
+/** Product path of the base entity, used when the grid of the filter is unknown. */
+const BASE_PRODUCT_PATH = "e";
 
 /**
  * Maps reference IDs to their tree datasource IDs and HQL exists queries.
@@ -39,10 +55,32 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
  */
 const TREE_REFERENCE_CONFIG: Record<string, { datasourceId: string; existsQuery: string }> = {
   [FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id]: {
-    datasourceId: "BE2735798ECC4EF88D131F16F1C4EC72",
-    existsQuery:
-      "exists (from ProductCharacteristicValue v where e = v.product and v.characteristicValue.id in ($value))",
+    datasourceId: CHARACTERISTICS_TREE_DATASOURCE_ID,
+    existsQuery: buildCharacteristicsExistsQuery(BASE_PRODUCT_PATH),
   },
+};
+
+/** Field name the criteria of a column use, as `LegacyColumnFilterUtils.createColumnFilterCriteria`. */
+const getColumnFieldName = (column: Column): string =>
+  ((column as Record<string, unknown>).filterFieldName as string) || column.columnName;
+
+/** Returns the selected options in the order of the ids, taking them from the loaded or applied options. */
+const resolveSelectedOptions = (ids: string[], options: FilterOption[], appliedOptions: FilterOption[]) => {
+  const byId = new Map<string, FilterOption>();
+  for (const option of [...appliedOptions, ...options]) byId.set(option.id, option);
+  return ids.map((id) => byId.get(id)).filter((option): option is FilterOption => !!option);
+};
+
+/** Text of the filter cell of a characteristics filter, as Classic shows it. */
+const getCharacteristicsDisplayText = (
+  options: FilterOption[],
+  appliedOptions: FilterOption[],
+  selectedValues: string[]
+): string => {
+  const loadedIds = new Set(options.map((option) => option.id));
+  const isTreeLoaded = selectedValues.every((id) => loadedIds.has(id));
+  if (isTreeLoaded) return buildCharacteristicsLabel(options, selectedValues);
+  return buildCharacteristicsLabel(appliedOptions, selectedValues);
 };
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -68,6 +106,13 @@ interface TreeColumnFilterProps {
   column?: Column;
   entityName?: string;
   tabId?: string;
+  /**
+   * Grid of a Product Characteristics filter. With it, the filter follows Classic: it loads the tree of
+   * the grid on every opening, sorts it, selects groups with their values and shows the Classic text.
+   */
+  characteristicsContext?: CharacteristicsFilterContext;
+  /** Options applied in the grid filter; when provided they are the selection of a self-loading filter. */
+  appliedOptions?: FilterOption[];
 }
 
 function TreeColumnFilterCmp({
@@ -81,6 +126,8 @@ function TreeColumnFilterCmp({
   column,
   entityName,
   tabId,
+  characteristicsContext,
+  appliedOptions,
 }: TreeColumnFilterProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,15 +145,42 @@ function TreeColumnFilterCmp({
   const [selfLoaded, setSelfLoaded] = useState(false);
   const [selfSelectedValues, setSelfSelectedValues] = useState<string[]>([]);
 
+  const isCharacteristics = isSelfLoading && !!characteristicsContext;
+  const appliedSelection = useMemo(() => appliedOptions ?? [], [appliedOptions]);
   const options = isSelfLoading ? selfLoadedOptions : (externalOptions ?? []);
-  const selectedValues = isSelfLoading ? selfSelectedValues : (externalSelectedValues ?? []);
   const loading = isSelfLoading ? selfLoading : externalLoading;
+  const selectedValues = useMemo(() => {
+    if (!isSelfLoading) return externalSelectedValues ?? [];
+    if (appliedOptions) return appliedOptions.map((option) => option.id);
+    return selfSelectedValues;
+  }, [isSelfLoading, externalSelectedValues, appliedOptions, selfSelectedValues]);
+
+  /** Loads the characteristics tree of the grid, with the exists query of its product path. */
+  const loadCharacteristicsOptions = useCallback(async (): Promise<FilterOption[]> => {
+    if (!column || !characteristicsContext) return [];
+    const productPath = resolveProductPath(
+      getColumnFieldName(column),
+      characteristicsContext.entityName,
+      characteristicsContext.alias
+    );
+    const result = await fetchFilterOptions({
+      datasourceId: CHARACTERISTICS_TREE_DATASOURCE_ID,
+      treeParams: buildCharacteristicsTreeParams(characteristicsContext, productPath),
+    });
+    const existsQuery = buildCharacteristicsExistsQuery(productPath);
+    return result.map((opt) => ({ ...opt, existsQuery }));
+  }, [column, characteristicsContext, fetchFilterOptions]);
 
   const loadSelfOptions = useCallback(
     async (searchQuery?: string) => {
       if (!column) return;
       setSelfLoading(true);
       try {
+        if (isCharacteristics) {
+          setSelfLoadedOptions(await loadCharacteristicsOptions());
+          setSelfLoaded(true);
+          return;
+        }
         // Resolve datasource: check reference-specific mapping, then column metadata, then entity _distinct
         const refConfig = column.column?.reference ? TREE_REFERENCE_CONFIG[column.column.reference] : undefined;
         const refDatasourceId = refConfig?.datasourceId;
@@ -139,7 +213,7 @@ function TreeColumnFilterCmp({
         setSelfLoading(false);
       }
     },
-    [entityName, column, tabId, fetchFilterOptions]
+    [entityName, column, tabId, fetchFilterOptions, isCharacteristics, loadCharacteristicsOptions]
   );
 
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -147,8 +221,18 @@ function TreeColumnFilterCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
 
-  // Build tree hierarchy from options
-  const treeNodes = useMemo(() => buildTreeFromFilterOptions(options), [options]);
+  // Build tree hierarchy from options; the characteristics tree is sorted on each level, as Classic
+  const treeNodes = useMemo(
+    () => buildTreeFromFilterOptions(options, { sortSiblings: isCharacteristics }),
+    [options, isCharacteristics]
+  );
+
+  // Leaves below each node: selecting a group or a characteristic selects all its values
+  const leafIndex = useMemo(() => {
+    if (!isCharacteristics) return new Map<string, string[]>();
+    return buildLeafIdsIndex(options, buildChildrenMap(options));
+  }, [options, isCharacteristics]);
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   const nodeMap = useMemo(() => buildNodeMap(treeNodes), [treeNodes]);
 
@@ -167,6 +251,21 @@ function TreeColumnFilterCmp({
   }, []);
 
   const getSelectedOptions = useCallback((ids: string[]) => options.filter((opt) => ids.includes(opt.id)), [options]);
+
+  const getNodeCheckState = useCallback(
+    (nodeId: string): CheckState => getCheckState(leafIndex.get(nodeId) ?? [nodeId], selectedSet),
+    [leafIndex, selectedSet]
+  );
+
+  /** Toggles a node of the characteristics tree with its values; only the values filter, as in Classic. */
+  const handleCharacteristicsToggle = useCallback(
+    (id: string) => {
+      const newSelection = toggleLeafSelection(selectedValues, leafIndex.get(id) ?? [id]);
+      if (isSelfLoading) setSelfSelectedValues(newSelection);
+      onSelectionChange(newSelection, resolveSelectedOptions(newSelection, options, appliedSelection));
+    },
+    [selectedValues, leafIndex, isSelfLoading, onSelectionChange, options, appliedSelection]
+  );
 
   const handleToggle = useCallback(
     (id: string) => {
@@ -205,7 +304,8 @@ function TreeColumnFilterCmp({
     setIsOpen((prev) => {
       if (!prev) {
         setIsFetchingInitial(true);
-        if (isSelfLoading && !selfLoaded) {
+        // The characteristics tree depends on the other filters of the grid: Classic reloads it on every opening
+        if (isCharacteristics || (isSelfLoading && !selfLoaded)) {
           loadSelfOptions();
         } else {
           onFocus?.();
@@ -213,16 +313,28 @@ function TreeColumnFilterCmp({
       }
       return !prev;
     });
-  }, [onFocus, isSelfLoading, selfLoaded, loadSelfOptions]);
+  }, [onFocus, isSelfLoading, selfLoaded, loadSelfOptions, isCharacteristics]);
+
+  /** Click or Enter on a node: characteristics toggle with cascade; other trees select one value. */
+  const activateNode = useCallback(
+    (node: (typeof visibleNodes)[number] | undefined) => {
+      if (!node) return;
+      const nodeId = node.id as string;
+      if (isCharacteristics) handleCharacteristicsToggle(nodeId);
+      else if (!node.isCharacteristic) handleSingleSelect(nodeId);
+      else if (node.hasChildren) toggleCollapse(nodeId);
+    },
+    [isCharacteristics, handleCharacteristicsToggle, handleSingleSelect, toggleCollapse]
+  );
 
   // Keyboard: arrow keys skip non-selectable nodes
   const selectableIndices = useMemo(() => {
     const indices: number[] = [];
     for (let i = 0; i < visibleNodes.length; i++) {
-      if (!visibleNodes[i].isCharacteristic) indices.push(i);
+      if (isCharacteristics || !visibleNodes[i].isCharacteristic) indices.push(i);
     }
     return indices;
-  }, [visibleNodes]);
+  }, [visibleNodes, isCharacteristics]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -252,12 +364,10 @@ function TreeColumnFilterCmp({
       }
       if (e.key === "Enter" && highlightedIndex >= 0) {
         e.preventDefault();
-        const node = visibleNodes[highlightedIndex];
-        if (node && !node.isCharacteristic) handleSingleSelect(node.id as string);
-        else if (node?.hasChildren) toggleCollapse(node.id as string);
+        activateNode(visibleNodes[highlightedIndex]);
       }
     },
-    [visibleNodes, highlightedIndex, selectableIndices, handleSingleSelect, toggleCollapse]
+    [visibleNodes, highlightedIndex, selectableIndices, activateNode]
   );
 
   const clickOutsideRefs = useMemo(() => [portalRef], []);
@@ -269,6 +379,11 @@ function TreeColumnFilterCmp({
 
   const handleOnSearch = useCallback(
     (term: string) => {
+      // The characteristics tree is searched locally: its datasource reads the criteria as grid filters
+      if (isCharacteristics) {
+        setIsDebouncing(false);
+        return;
+      }
       if (isSelfLoading) {
         loadSelfOptions(term);
       } else {
@@ -276,7 +391,7 @@ function TreeColumnFilterCmp({
       }
       setIsDebouncing(false);
     },
-    [onSearch, isSelfLoading, loadSelfOptions]
+    [onSearch, isSelfLoading, loadSelfOptions, isCharacteristics]
   );
   const debouncedSearch = useDebouncedCallback(handleOnSearch, 500);
 
@@ -325,10 +440,32 @@ function TreeColumnFilterCmp({
   );
 
   const displayText = useMemo(() => {
+    if (isCharacteristics && selectedValues.length > 0) {
+      return getCharacteristicsDisplayText(options, appliedSelection, selectedValues) || placeholder;
+    }
     if (!selectedLabels.length) return placeholder;
     if (selectedLabels.length === 1) return selectedLabels[0];
     return `${selectedLabels.length} selected`;
-  }, [selectedLabels, placeholder]);
+  }, [selectedLabels, placeholder, isCharacteristics, options, appliedSelection, selectedValues]);
+  const hasSelection = selectedLabels.length > 0 || (isCharacteristics && selectedValues.length > 0);
+
+  /** Check state of a row: groups and characteristics are partially checked when some values are. */
+  const getRowCheckState = useCallback(
+    (nodeId: string): CheckState => {
+      if (isCharacteristics) return getNodeCheckState(nodeId);
+      return selectedSet.has(nodeId) ? "checked" : "unchecked";
+    },
+    [isCharacteristics, getNodeCheckState, selectedSet]
+  );
+
+  /** Checkbox click: characteristics toggle with cascade; other trees add or remove one value. */
+  const toggleNode = useCallback(
+    (nodeId: string) => {
+      if (isCharacteristics) handleCharacteristicsToggle(nodeId);
+      else handleToggle(nodeId);
+    },
+    [isCharacteristics, handleCharacteristicsToggle, handleToggle]
+  );
 
   const showSkeleton = isFetchingInitial && loading;
   const showLoading = loading || isDebouncing;
@@ -349,8 +486,9 @@ function TreeColumnFilterCmp({
       return visibleNodes.map((node, index) => {
         const nodeId = node.id as string;
         const identifier = node._identifier as string;
-        const selectable = !node.isCharacteristic;
-        const isSelected = selectedValues.includes(nodeId);
+        const selectable = isCharacteristics || !node.isCharacteristic;
+        const checkState = getRowCheckState(nodeId);
+        const isSelected = checkState === "checked";
         const isHighlighted = highlightedIndex === index;
         const isCollapsed = collapsedNodes.has(nodeId);
 
@@ -358,15 +496,11 @@ function TreeColumnFilterCmp({
           <li
             key={nodeId}
             aria-selected={isSelected}
-            onClick={() => {
-              if (selectable) handleSingleSelect(nodeId);
-              else if (node.hasChildren) toggleCollapse(nodeId);
-            }}
+            onClick={() => activateNode(node)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                if (selectable) handleSingleSelect(nodeId);
-                else if (node.hasChildren) toggleCollapse(nodeId);
+                activateNode(node);
               }
             }}
             onMouseEnter={() => {
@@ -396,9 +530,10 @@ function TreeColumnFilterCmp({
               <CustomCheckbox
                 size="small"
                 checked={isSelected}
+                indeterminate={checkState === "indeterminate"}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggle(nodeId);
+                  toggleNode(nodeId);
                 }}
                 disableRipple
               />
@@ -421,10 +556,11 @@ function TreeColumnFilterCmp({
   }, [
     visibleNodes,
     highlightedIndex,
-    selectedValues,
     collapsedNodes,
-    handleSingleSelect,
-    handleToggle,
+    activateNode,
+    toggleNode,
+    getRowCheckState,
+    isCharacteristics,
     toggleCollapse,
     showSkeleton,
     showLoading,
@@ -441,12 +577,12 @@ function TreeColumnFilterCmp({
           text-baseline-20 cursor-pointer hover:border-baseline-60 transition-colors outline-none`}>
         <div
           className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length ? "text-baseline-90 font-medium" : "text-slate-400 font-medium"
+            hasSelection ? "text-baseline-90 font-medium" : "text-slate-400 font-medium"
           }`}>
           {displayText}
         </div>
         <div className="flex items-center flex-shrink-0 ml-2">
-          {selectedLabels.length > 0 && (
+          {hasSelection && (
             <button
               type="button"
               onClick={handleClear}

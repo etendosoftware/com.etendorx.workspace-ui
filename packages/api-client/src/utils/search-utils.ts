@@ -510,20 +510,39 @@ export class LegacyColumnFilterUtils {
     return result;
   }
 
+  /**
+   * Groups the ids of the selected values by the characteristic they belong to. Values without a
+   * characteristic (e.g. options stored before it was sent) fall in a single group.
+   */
+  private static groupIdsByCharacteristic(values: unknown[]): string[][] {
+    const groups = new Map<string, string[]>();
+    for (const value of values) {
+      if (typeof value !== "object" || value === null || !("id" in value)) continue;
+      const option = value as Record<string, unknown>;
+      if (option.isCharacteristic) continue;
+      const key = String(option.characteristic ?? "");
+      const ids = groups.get(key) ?? [];
+      ids.push(String(option.id));
+      groups.set(key, ids);
+    }
+    return Array.from(groups.values());
+  }
+
+  /**
+   * Builds the criteria of the Product Characteristics filter as Classic does
+   * (`OBCharacteristicsFilterItem.getCriterion`): an `and` group with one `exists` criterion per
+   * characteristic, so values of the same characteristic are combined with OR and different
+   * characteristics with AND.
+   */
   private static buildExistsQueryCriteria(fieldName: string, values: unknown[], existsQuery: string): BaseCriteria[] {
-    const ids = values
-      .filter(
-        (v) => typeof v === "object" && v !== null && "id" in v && !(v as Record<string, unknown>).isCharacteristic
-      )
-      .map((v) => String((v as { id: unknown }).id));
-    if (ids.length === 0) return [];
+    const groups = LegacyColumnFilterUtils.groupIdsByCharacteristic(values);
+    if (groups.length === 0) return [];
     return [
       {
-        fieldName,
-        operator: "exists",
-        value: ids,
-        existsQuery,
+        _constructor: "AdvancedCriteria",
+        operator: "and",
         isProductCharacteristicsCriteria: true,
+        criteria: groups.map((ids) => ({ fieldName, operator: "exists", value: ids, existsQuery })),
       } as unknown as BaseCriteria,
     ];
   }

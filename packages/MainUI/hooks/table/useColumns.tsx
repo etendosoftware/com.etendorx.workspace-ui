@@ -48,6 +48,7 @@ import {
   resolveLevel,
 } from "@/utils/table/clientclassLink";
 import { LevelIndicatorCell } from "../../components/Table/Cells/LevelIndicatorCell";
+import type { CharacteristicsFilterContext } from "@/utils/table/characteristicsFilter";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -78,6 +79,8 @@ interface UseColumnsOptions {
   tableColumnFilters?: Array<{ id: string; value: unknown }>;
   /** Called after a clientclass-based navigation (e.g. SalesOrderTabLink) so the parent can close itself. */
   onNavigate?: () => void;
+  /** Grid of the Product Characteristics columns, so their filter offers the Classic characteristics tree. */
+  characteristicsContext?: CharacteristicsFilterContext;
 }
 
 // Columnas booleanas conocidas
@@ -274,6 +277,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     columnFilterStates,
     tableColumnFilters,
     onNavigate,
+    characteristicsContext,
   } = options || {};
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -531,6 +535,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
                     : undefined
                 }
+                characteristicsContext={characteristicsContext}
                 data-testid="ColumnFilter__46c09c"
               />
             );
@@ -648,6 +653,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     tableColumnFilters,
     tab.window,
     language,
+    characteristicsContext,
   ]);
 
   return columns;

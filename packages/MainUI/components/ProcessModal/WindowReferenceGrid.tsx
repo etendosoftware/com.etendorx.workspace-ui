@@ -90,6 +90,7 @@ import {
   addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
 import { logger } from "@/utils/logger";
+import { buildProcessCharacteristicsContext } from "@/utils/table/characteristicsFilter";
 import {
   buildGridVisibility,
   createGridProxy,
@@ -2330,6 +2331,16 @@ const WindowReferenceGrid = ({
     [stableRawColumns, setAppliedTableFilters, setColumnFilters]
   );
 
+  const characteristicsContext = useMemo(
+    () =>
+      buildProcessCharacteristicsContext(
+        entityName ? String(entityName) : undefined,
+        processConfig?.processId,
+        stableRecordValues
+      ),
+    [entityName, processConfig?.processId, stableRecordValues]
+  );
+
   const columnOptions = useMemo(
     () => ({
       onColumnFilter: handleColumnFilterChange,
@@ -2339,6 +2350,7 @@ const WindowReferenceGrid = ({
       columnFilterStates: advancedColumnFilters,
       tableColumnFilters: columnFilters,
       onNavigate: onClose,
+      characteristicsContext,
     }),
     [
       handleColumnFilterChange,
@@ -2348,6 +2360,7 @@ const WindowReferenceGrid = ({
       advancedColumnFilters,
       columnFilters,
       onClose,
+      characteristicsContext,
     ]
   );
 

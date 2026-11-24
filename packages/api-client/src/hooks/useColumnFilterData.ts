@@ -19,6 +19,24 @@ import { useCallback } from "react";
 import { datasource } from "../api/datasource";
 import type { FilterOption } from "../utils/column-filter-utils";
 
+/** Response key of the characteristic name of a Product Characteristics tree node. */
+const CHARACTERISTIC_IDENTIFIER_KEY = "characteristic$_identifier";
+
+/**
+ * Parameters of a tree datasource that limits its nodes to the records of a parent grid, as the Classic
+ * Product Characteristics filter sends them.
+ */
+export interface TreeFilterParams {
+  _parentDSIdentifier?: string;
+  _propertyPath?: string;
+  _processId?: string;
+  _selectorDefinition?: string;
+  /** Context of the window that launched a process, serialized as JSON. */
+  _buttonOwnerContextInfo?: string;
+  /** Criteria of the parent grid, without the criteria of the filtered column. */
+  criteria?: object[];
+}
+
 const buildDistinctCriteria = (distinctField: string, searchQuery?: string, extraCriteria?: unknown): object[] => {
   const criteriaItems: object[] = [];
 
@@ -127,8 +145,28 @@ const formatOptionItem = (item: Record<string, unknown>, distinctField?: string)
   // Preserve tree hierarchy fields when present (used by tree column filters)
   if (item.parentId) option.parentId = String(item.parentId);
   if (item.isCharacteristic) option.isCharacteristic = true;
+  // Product Characteristics tree: the characteristic each value belongs to
+  if (item.characteristic) option.characteristic = String(item.characteristic);
+  if (item[CHARACTERISTIC_IDENTIFIER_KEY]) option.characteristicName = String(item[CHARACTERISTIC_IDENTIFIER_KEY]);
 
   return option;
+};
+
+/**
+ * Applies the parameters of a tree datasource that restricts its nodes to the records of a parent grid
+ * (e.g. the Product Characteristics tree, which reads `_parentDSIdentifier`, `_propertyPath` and the
+ * grid criteria). A criteria list is sent as an `and` AdvancedCriteria, like a grid fetch.
+ */
+const applyTreeParams = (params: Record<string, unknown>, treeParams: TreeFilterParams): void => {
+  const { criteria, ...rest } = treeParams;
+  for (const [key, value] of Object.entries(rest)) {
+    if (value !== undefined && value !== null && value !== "") params[key] = value;
+  }
+  if (criteria && criteria.length > 0) {
+    params.criteria = criteria;
+    params.operator = "and";
+    params._constructor = "AdvancedCriteria";
+  }
 };
 
 export interface FetchFilterOptionsParams {
@@ -141,6 +179,8 @@ export interface FetchFilterOptionsParams {
   offset?: number;
   isImplicitFilterApplied?: boolean;
   extraParams?: Record<string, unknown>;
+  /** Parameters of a tree datasource restricted to a parent grid (not used with `distinctField`). */
+  treeParams?: TreeFilterParams;
 }
 
 /**
@@ -158,6 +198,7 @@ export const useColumnFilterData = () => {
       offset = 0,
       isImplicitFilterApplied,
       extraParams,
+      treeParams,
     }: FetchFilterOptionsParams): Promise<FilterOption[]> => {
       try {
         const params: Record<string, unknown> = {
@@ -174,6 +215,8 @@ export const useColumnFilterData = () => {
 
         if (distinctField && tabId) {
           applyDistinctParams(params, distinctField, tabId, searchQuery, extraParams?.criteria);
+        } else if (treeParams) {
+          applyTreeParams(params, treeParams);
         } else {
           applySelectorParams(params, selectorDefinitionId, searchQuery);
         }

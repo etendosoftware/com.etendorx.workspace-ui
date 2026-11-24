@@ -111,6 +111,7 @@ import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
 import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
+import { buildGridCharacteristicsContext, toAppliedFilterOptions } from "@/utils/table/characteristicsFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { FIELD_REFERENCE_CODES, isImmediateCalloutReference } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -1040,11 +1041,14 @@ const getHierarchyIcon = (
 const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
   const props = (mrtColumn.columnDef as any)._treeFilterProps;
   if (!props) return null;
+  const appliedOptions = props.characteristicsContext ? toAppliedFilterOptions(mrtColumn.getFilterValue()) : undefined;
   return (
     <TreeColumnFilter
       column={props.column}
       entityName={props.entityName}
       tabId={props.tabId}
+      characteristicsContext={props.characteristicsContext}
+      appliedOptions={appliedOptions}
       onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
         const colId = props.column.id || props.column.columnName;
         props.onFilterChange((prev: ColumnFiltersState) => {
@@ -3031,6 +3035,7 @@ const DynamicTable = ({
           entityName: tab.entityName,
           tabId: tab.id,
           onFilterChange: handleMRTColumnFiltersChange,
+          characteristicsContext: buildGridCharacteristicsContext(ref, tab.entityName, getRequestParams),
         };
         column.Filter = TreeColumnFilterWrapper;
       }
@@ -3111,6 +3116,7 @@ const DynamicTable = ({
     handleMRTColumnFiltersChange,
     groupedColumnId,
     summaryState,
+    getRequestParams,
   ]);
 
   // Helper function to check if a row is being edited
