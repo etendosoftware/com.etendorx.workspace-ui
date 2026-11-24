@@ -157,6 +157,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     // Form personalization changes whenever a user saves or discards it, and the cache never revalidates:
     // a cached GET would keep serving the layout as it was when the form was first opened.
     slug.includes("meta/form-personalization") ||
+    // Preferences are written during the session ("Never show this message again", OB.PropertyStore.set) and
+    // classic reads them again on every page load: a cached GET would bring back the values of the login.
+    slug.includes("meta/preferences") ||
     // The session payload reflects mutations that do not change the token (and therefore not the
     // cache key), such as a password change clearing the expired flag. Caching it would keep serving
     // the pre-mutation state indefinitely — the cache has no revalidation window.

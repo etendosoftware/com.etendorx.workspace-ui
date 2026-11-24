@@ -500,7 +500,8 @@ describe("ERP slug route coverage", () => {
     });
 
     // Only the uncached mutation path captures the session cookie, so each case proves its data (per-user
-    // recent items and grid configuration, polled executions, the configured instance purpose) is never
+    // recent items and grid configuration, polled executions, the configured instance purpose, preferences written
+    // during the session) is never
     // served from the Next.js Data Cache, which never revalidates.
     it.each([
       ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
@@ -528,6 +529,7 @@ describe("ERP slug route coverage", () => {
         ["meta", "form-personalization"],
         "FORMPERS123",
       ],
+      ["meta/preferences", "https://localhost/api/erp/meta/preferences", ["meta", "preferences"], "PREFERENCES123"],
     ])("serves %s GET requests through the uncached mutation path", async (_name, url, slug, sessionId) => {
       const { getErpSessionCookie, clearErpSessionCookie } = require("../../../_utils/sessionStore");
       clearErpSessionCookie("test-token");

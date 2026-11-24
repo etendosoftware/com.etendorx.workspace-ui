@@ -13,6 +13,8 @@ recent items, saved views, autosave) are not repeated here.
 The client loads every preference once per session from `GET meta/preferences` (`PreferencesService` in
 `com.etendoerp.metadata`), which resolves the priority (system, client, organization, role, user) with the
 classic `Preferences.getAllPreferences`. A preference set for a window is published as `KEY_<windowId>`.
+Like classic, which reads them again on every page load, the Next proxy never caches this request: a value
+written during the session (e.g. "Never show this message again") is still there after a reload.
 
 `utils/propertyStore.ts` → `resolvePreference(key, windowId)` reads it as classic
 `OB.PropertyStore.get(key, windowId)`: the value of the window first, the global value second.
