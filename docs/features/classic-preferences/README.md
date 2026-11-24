@@ -162,15 +162,26 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
 
 ## End-to-end tests
 
-`playwright-tests/e2e/regression/12_Session/PREFaClassicPreferencesTest.spec.ts` (regression tier) checks the
-rows that depend on the real login, session and preferences: accounting and translation tabs, audit section,
-Linked Items, notes in a read-only tab, page size and filling the grid height, window personalization,
-StartPage (record and new record) and LogoutRedirectURL. See the
-[E2E suite](../../testing/playwright-e2e/README.md#feature-probes) for the data it uses. The process context
-(`FinancialManagement`, `_ShowAcct`) has no visible effect in the core and is covered by unit tests.
+Two regression specs in `playwright-tests/e2e/regression/12_Session/` check the rows that depend on the real
+login, session and preferences. See the [E2E suite](../../testing/playwright-e2e/README.md#feature-probes) for
+the data they use.
 
-The preferences of login, SSO and store server (`AllowMultiTab`, `ForcedLoginURL`, `ETRX_AllowSSOLogin`,
-`RestrictErpAccessInStoreServer`) are covered by unit tests only for now; their end-to-end tests are pending.
+- `PREFaClassicPreferencesTest.spec.ts`: accounting and translation tabs, audit section, Linked Items, notes in a
+  read-only tab, page size and filling the grid height, window personalization, StartPage (record and new
+  record), LogoutRedirectURL, the filter messages (closing, the funnel and "Never show this message again"
+  after a reload and a new session) and the tree fetch limit (a broad filter on Account Tree is refused with
+  `OBUIAPP_TooManyNodes`, with the limit of 200 the core ships).
+- `PREFbClassicSessionPreferencesTest.spec.ts`: one tab per window (`AllowMultiTab`, with the unsaved changes
+  prompt and Y for one window), the SSO account link and provider logout (`ETRX_AllowSSOLogin`) and
+  `ForcedLoginURL`. The core has no SSO and a real forced login address would reach every spec and the classic
+  login, so both server answers are mocked for the page only.
+
+Covered by unit tests only:
+
+- The process context (`FinancialManagement`, `_ShowAcct`): no visible effect in the core.
+- `APRM_ShowNoDistributeMsg`: the core sample data has no business partner with more pending documents than
+  one page of Add Payment.
+- `RestrictErpAccessInStoreServer`: there is no store server in the core (Java tests).
 
 ## Public documentation
 
