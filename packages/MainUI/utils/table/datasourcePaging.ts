@@ -48,6 +48,51 @@ export function isRestartedPage(requestedStartRow: number, responseStartRow: unk
   return requestedStartRow > 0 && typeof responseStartRow === "number" && responseStartRow < requestedStartRow;
 }
 
+/** A page of records read from a datasource answer. */
+export interface FetchedPage {
+  rows: EntityData[];
+  /** Start row of the page after this one: the server rows loaded once it is applied. */
+  nextStartRow: number;
+  /** Whether more records may follow: the answer holds at least `pageSize` rows. */
+  hasMore: boolean;
+}
+
+/**
+ * Reads the page a datasource answered for a request that started at `startRow`.
+ *
+ * @param startRow - Start row of the request
+ * @param pageSize - Rows of a page
+ * @param response - `response` of the datasource answer
+ * @returns The page, or null when Classic answered the first rows again: there is nothing after the loaded rows
+ */
+export function readFetchedPage(
+  startRow: number,
+  pageSize: number,
+  response: { data: EntityData[]; startRow?: number }
+): FetchedPage | null {
+  if (isRestartedPage(startRow, response.startRow)) {
+    return null;
+  }
+  const rows = response.data;
+  return { rows, nextStartRow: startRow + rows.length, hasMore: rows.length >= pageSize };
+}
+
+/**
+ * Rows the grid shows once a page is applied: a following page is appended, a first page (a new query, a refetch,
+ * a search) replaces the loaded rows.
+ *
+ * @param loaded - Rows already loaded
+ * @param fetched - Rows of the page
+ * @param appendsPage - Whether the page follows the loaded rows
+ * @returns The rows the grid shows
+ */
+export function mergeFetchedPage(loaded: EntityData[], fetched: EntityData[], appendsPage: boolean): EntityData[] {
+  if (appendsPage) {
+    return appendUniqueRecords(loaded, fetched);
+  }
+  return replaceWithFirstPage(loaded, fetched);
+}
+
 /**
  * Appends the rows of a new page to the loaded ones, leaving out the records already loaded, so that a record
  * never shows twice even when two loads overlap (e.g. a record created meanwhile moved the rows of the server).

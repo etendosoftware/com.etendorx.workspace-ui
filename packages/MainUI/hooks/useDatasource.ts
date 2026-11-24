@@ -26,12 +26,7 @@ import type {
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isTooManyNodesResponse } from "@/utils/table/treeMode";
-import {
-  appendUniqueRecords,
-  getPageRange,
-  isRestartedPage,
-  replaceWithFirstPage,
-} from "@/utils/table/datasourcePaging";
+import { getPageRange, mergeFetchedPage, readFetchedPage } from "@/utils/table/datasourcePaging";
 
 const loadData = async (
   entity: string,
@@ -442,19 +437,15 @@ export function useDatasource({
           return;
         }
         setIsTreeLimitExceeded(isTooManyNodesResponse(data));
-        const fetched = data.response.data;
-        if (isRestartedPage(startRow, data.response.startRow)) {
-          // The page after the last record came out empty and Classic answered the first rows again
-          setHasMoreRecords(false);
-        } else {
-          nextStartRowRef.current = startRow + fetched.length;
-          setHasMoreRecords(fetched.length >= safePageSize);
+        // null when the page after the last record came out empty and Classic answered the first rows again
+        const fetchedPage = readFetchedPage(startRow, safePageSize, data.response);
+        setHasMoreRecords(fetchedPage?.hasMore ?? false);
+        if (fetchedPage) {
+          nextStartRowRef.current = fetchedPage.nextStartRow;
           // Page-1 replace (default and search refetches) keeps the `_locallyAdded` rows of Pick & Execute
           // input grids, which survive refetches triggered by unrelated param changes.
           const appendsPage = targetPage !== 1 && !searchQuery;
-          setRecords((prev) =>
-            appendsPage ? appendUniqueRecords(prev, fetched) : replaceWithFirstPage(prev, fetched)
-          );
+          setRecords((prev) => mergeFetchedPage(prev, fetchedPage.rows, appendsPage));
         }
         setLoaded(true);
         setHasFirstFetchCompleted(true);

@@ -20,6 +20,8 @@ import {
   appendUniqueRecords,
   getPageRange,
   isRestartedPage,
+  mergeFetchedPage,
+  readFetchedPage,
   replaceWithFirstPage,
 } from "@/utils/table/datasourcePaging";
 
@@ -72,5 +74,30 @@ describe("replaceWithFirstPage", () => {
   it("drops a locally added row the server returns", () => {
     const fetched = rows("new");
     expect(replaceWithFirstPage([{ id: "new", _locallyAdded: true }], fetched)).toBe(fetched);
+  });
+});
+
+describe("readFetchedPage", () => {
+  it("returns the rows, the start of the next page and that more may follow", () => {
+    const page = readFetchedPage(101, 100, { data: rows("a", "b"), startRow: 101 });
+    expect(page).toEqual({ rows: rows("a", "b"), nextStartRow: 103, hasMore: false });
+  });
+
+  it("says more may follow when the page holds pageSize rows or more", () => {
+    expect(readFetchedPage(0, 2, { data: rows("1", "2", "3") })?.hasMore).toBe(true);
+  });
+
+  it("returns null when Classic answered the first rows again", () => {
+    expect(readFetchedPage(101, 100, { data: rows("1"), startRow: 0 })).toBeNull();
+  });
+});
+
+describe("mergeFetchedPage", () => {
+  it("appends a following page without repeated records", () => {
+    expect(ids(mergeFetchedPage(rows("1", "2"), rows("2", "3"), true))).toEqual(["1", "2", "3"]);
+  });
+
+  it("replaces the loaded rows with a first page", () => {
+    expect(ids(mergeFetchedPage(rows("1", "2"), rows("3"), false))).toEqual(["3"]);
   });
 });
