@@ -495,6 +495,7 @@ function TreeColumnFilterCmp({
         return (
           <li
             key={nodeId}
+            data-testid={`TreeColumnFilterNode__${nodeId}`}
             aria-selected={isSelected}
             onClick={() => activateNode(node)}
             onKeyDown={(e) => {
@@ -531,6 +532,7 @@ function TreeColumnFilterCmp({
                 size="small"
                 checked={isSelected}
                 indeterminate={checkState === "indeterminate"}
+                inputProps={{ "aria-label": identifier }}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleNode(nodeId);
@@ -570,6 +572,7 @@ function TreeColumnFilterCmp({
   return (
     <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
       <div
+        data-testid={`TreeColumnFilter__${column?.columnName ?? "options"}`}
         onClick={handleClick}
         onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
@@ -585,6 +588,7 @@ function TreeColumnFilterCmp({
           {hasSelection && (
             <button
               type="button"
+              data-testid="TreeColumnFilter__clear"
               onClick={handleClear}
               className="mr-1 text-baseline-60 hover:text-baseline-80 rounded">
               <CloseIcon className="w-4 h-4" />
