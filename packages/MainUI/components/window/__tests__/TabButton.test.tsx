@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useWindowStore } from "@/stores/windowStore";
+import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
 import { DIRTY_TITLE_PREFIX, DIRTY_SOURCE_KINDS, buildDirtySourceKey } from "@/utils/window/dirtyState";
 
 // Mocks
@@ -51,6 +52,24 @@ describe("TabButton", () => {
       render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
 
       expect(screen.getByText("Tab Name")).toBeInTheDocument();
+    });
+  });
+
+  describe("record count badge", () => {
+    const renderWithCount = (count: number, hasMore: boolean) => {
+      useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), count, hasMore);
+      render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+      return screen.getByTestId(`TabButton__count_${mockTab.id}`);
+    };
+
+    beforeEach(() => useTabCountsStore.setState({ counts: {}, partial: {} }));
+
+    it("shows the exact count once every record is loaded", () => {
+      expect(renderWithCount(119, false)).toHaveTextContent(/^119$/);
+    });
+
+    it("marks the count as partial while more records exist", () => {
+      expect(renderWithCount(101, true)).toHaveTextContent(/^101\+$/);
     });
   });
 
