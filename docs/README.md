@@ -67,6 +67,7 @@ docs/
 │   ├── profile-menu/                 # Feature: Profile menu feedback and current context
 │   │   └── README.md                # Password confirmation, context tooltip, accessible password panel
 │   ├── grid-default-sort/            # Feature: Grid default sort as classic (order-by clause or default field)
+│   ├── grid-paging-and-record-count/   # Feature: Grid paging without repeated records and the N+ record count
 │   │   └── README.md                # _orderBy as classic, defaultSortField, sort indicator, manual sort precedence
 │   ├── sr-tabs/                      # Feature: Single Record (SR) child tabs
 │   │   └── README.md                # 1:1, logical, no-link and same-table variants, criteria and auto-open
