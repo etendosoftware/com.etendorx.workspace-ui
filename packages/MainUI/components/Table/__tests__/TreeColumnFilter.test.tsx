@@ -151,7 +151,8 @@ describe("TreeColumnFilter - Product Characteristics", () => {
     const { onSelectionChange } = renderCharacteristicsFilter({ appliedOptions: pickOptions(BOTTLE_LEAVES) });
     await openFilter("Envase:[Vidrio - PET - Vidrio retornable]");
 
-    expect(screen.getByText("Envase:[Vidrio - PET - Retornable]")).toBeInTheDocument();
+    // Once loaded, the text follows the sorted tree, as Classic lists the selection
+    expect(screen.getByText("Envase:[PET - Retornable - Vidrio]")).toBeInTheDocument();
     expect(getCheckbox("Botella").checked).toBe(true);
     fireEvent.click(getCheckbox("Botella"));
 

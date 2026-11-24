@@ -233,6 +233,11 @@ function TreeColumnFilterCmp({
     return buildLeafIdsIndex(options, buildChildrenMap(options));
   }, [options, isCharacteristics]);
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  // Options in the order of the tree on screen: Classic lists the selection in that order
+  const optionsInTreeOrder = useMemo(() => {
+    const byId = new Map(options.map((option) => [option.id, option]));
+    return treeNodes.map((node) => byId.get(node.id as string)).filter((option): option is FilterOption => !!option);
+  }, [options, treeNodes]);
 
   const nodeMap = useMemo(() => buildNodeMap(treeNodes), [treeNodes]);
 
@@ -441,12 +446,12 @@ function TreeColumnFilterCmp({
 
   const displayText = useMemo(() => {
     if (isCharacteristics && selectedValues.length > 0) {
-      return getCharacteristicsDisplayText(options, appliedSelection, selectedValues) || placeholder;
+      return getCharacteristicsDisplayText(optionsInTreeOrder, appliedSelection, selectedValues) || placeholder;
     }
     if (!selectedLabels.length) return placeholder;
     if (selectedLabels.length === 1) return selectedLabels[0];
     return `${selectedLabels.length} selected`;
-  }, [selectedLabels, placeholder, isCharacteristics, options, appliedSelection, selectedValues]);
+  }, [selectedLabels, placeholder, isCharacteristics, optionsInTreeOrder, appliedSelection, selectedValues]);
   const hasSelection = selectedLabels.length > 0 || (isCharacteristics && selectedValues.length > 0);
 
   /** Check state of a row: groups and characteristics are partially checked when some values are. */
