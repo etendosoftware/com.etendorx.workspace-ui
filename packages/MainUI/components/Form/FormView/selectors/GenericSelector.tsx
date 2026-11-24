@@ -38,6 +38,7 @@ import { SelectSelector } from "./SelectSelector";
 
 import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
+import { ProductCharacteristicsSelector } from "./ProductCharacteristicsSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { MultiRecordSelector } from "./MultiRecordSelector";
 import { PasswordSelector } from "./PasswordSelector";
@@ -301,12 +302,12 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           <LinkSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={"LinkSelector__" + field.id} />
         );
       // Product Characteristics: always read-only — composed from Product Characteristics window, not editable inline.
+      // One line per characteristic, as Classic shows it.
       case FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id:
         return (
-          <StringSelector
+          <ProductCharacteristicsSelector
             field={effectiveField}
-            readOnly={true}
-            data-testid={`StringSelector__prodchar__${field.id}`}
+            data-testid={`ProductCharacteristicsSelector__${field.id}`}
           />
         );
       // Tree Reference: hierarchical FK selector (e.g. Characteristic Values)

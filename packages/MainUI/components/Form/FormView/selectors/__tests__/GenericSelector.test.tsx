@@ -90,6 +90,10 @@ jest.mock("../RichTextSelector", () => ({
   RichTextSelector: () => <div data-testid="RichTextSelector__mock">RichTextSelector</div>,
 }));
 
+jest.mock("../ProductCharacteristicsSelector", () => ({
+  ProductCharacteristicsSelector: () => <div data-testid="ProductCharacteristicsSelector__mock">Characteristics</div>,
+}));
+
 jest.mock("../SelectorModal", () => ({
   __esModule: true,
   default: () => <div data-testid="SelectorModal">SelectorModal</div>,
@@ -245,6 +249,11 @@ describe("GenericSelector", () => {
       title: "RICH_TEXT fields",
       expected: "RichTextSelector__mock",
       field: { column: { reference: FIELD_REFERENCE_CODES.RICH_TEXT.id }, id: "rt-1" },
+    },
+    {
+      title: "PRODUCT_CHARACTERISTICS fields",
+      expected: "ProductCharacteristicsSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id }, id: "pc-1" },
     },
   ];
 

@@ -71,6 +71,24 @@ describe("useFormInitialState", () => {
     );
   });
 
+  it("keeps the stored text of a Product Characteristics value and its characteristics apart", () => {
+    const characteristics = { Envase: "Botella / Vidrio", Formato: "330 ml" };
+    const formInit = {
+      columnValues: {
+        COL1: { value: { dbValue: "Envase: Vidrio, Formato: 330 ml", characteristics }, classicValue: "x" },
+      },
+    } as any;
+
+    const { result } = renderHook(() => useFormInitialState(formInit));
+
+    expect(result.current).toEqual(
+      expect.objectContaining({
+        field1: "Envase: Vidrio, Formato: 330 ml",
+        field1$_characteristics: characteristics,
+      })
+    );
+  });
+
   it("should handle property fields by stripping 'inp' prefix", () => {
     const formInit = {
       columnValues: {
