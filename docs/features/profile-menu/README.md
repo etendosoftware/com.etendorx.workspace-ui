@@ -61,6 +61,8 @@ the SSO provider: one button per provider of the Etendo middleware, or one butto
 text `ETRX_LinkSSOAccount` (read with `useServerLabels`). The provider answers at `/sso/link-callback`, which
 links the account. The logout of this menu then also closes the session of the provider (`onBeforeSignOff`).
 See [Classic interface preferences](../classic-preferences/README.md).
+The preference does not change the login page: its single sign-on buttons follow the `sso.auth.type` setting
+of the server, as in Classic.
 
 ## Decisions
 
