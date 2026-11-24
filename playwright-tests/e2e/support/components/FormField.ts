@@ -204,6 +204,32 @@ export class FormField {
     });
   }
 
+  /** Opens the dropdown of a field and waits for its first options. */
+  async openOptions(label: string, options: FieldOptions = {}): Promise<void> {
+    await this.openSelector(label, options);
+    await this.page.locator(OPTION_ITEMS).first().waitFor({ state: "visible", timeout: FIELD_TIMEOUT });
+  }
+
+  /** Scrolls the open dropdown to its last option, where it loads the next ones. */
+  async scrollOptionsToEnd(): Promise<void> {
+    await this.page
+      .locator(OPTION_ITEMS)
+      .filter({ visible: true })
+      .last()
+      .evaluate((item) => {
+        const list = item.closest("ul");
+        if (list) {
+          list.scrollTop = list.scrollHeight;
+        }
+      });
+  }
+
+  /** Closes the open dropdown without picking an option. */
+  async closeOptions(): Promise<void> {
+    await this.page.keyboard.press("Escape");
+    await expect(this.page.locator(OPTION_ITEMS).filter({ visible: true })).toHaveCount(0);
+  }
+
   /**
    * Opens a dropdown. The trigger can re-render while a callout runs: click re-resolves it and
    * scrolls it into view by itself.
