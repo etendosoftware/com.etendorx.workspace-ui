@@ -45,8 +45,8 @@ export async function addWindowPreferences(
 }
 
 /**
- * Logs in again with the role of the suite. Preferences are read once per session, and the UI server caches
- * them per token: only a new login (a new token) reads the preferences just created.
+ * Logs in again with the role of the suite, so the session reads the preferences just created (a page load
+ * reads them too) and starts without the windows of the previous steps.
  */
 export async function reloginToReadPreferences(app: App): Promise<void> {
   await app.auth.logout();

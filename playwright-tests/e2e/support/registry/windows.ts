@@ -70,6 +70,8 @@ export const WINDOWS = {
     breadcrumb: /Open\/Close Period Control/i,
     landing: "grid",
   },
+  /** Chart of accounts: the Element Value tab can show the accounts of an element as a tree. */
+  accountTree: { search: "account t", menuId: "105", breadcrumb: /Account Tree/i },
 
   // ── General setup ────────────────────────────────────────────────────────
   currency: { search: "currency", menuId: "102", breadcrumb: /Currency/i },
@@ -96,6 +98,8 @@ export const WINDOW_IDS = {
   COUNTRY_AND_REGION: "122",
   SALES_ORDER: "143",
   SALES_INVOICE: "167",
+  /** Opened by no other regression spec: its window preferences reach no one else. */
+  TAX_CATEGORY: "138",
 } as const;
 
 /**
@@ -128,4 +132,6 @@ export const TABS = {
   GOODS_TRANSACTION: "384",
   /** Region tab of Country and Region: its display logic reads `@HasRegion@`. */
   COUNTRY_REGION: "136",
+  /** Accounts of an element in Account Tree, a tab that can show them as a tree. */
+  ACCOUNT_TREE_ELEMENT_VALUE: "132",
 } as const;
