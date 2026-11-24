@@ -99,6 +99,21 @@ const fetchWindowConfiguration = async (windowIdentifier: string) => {
 };
 
 /**
+ * Loads the stored configuration of every tab of an open window, with a single request shared by all its
+ * tabs; a failure behaves as "nothing stored".
+ */
+export const loadWindowGridConfiguration = (
+  windowIdentifier: string
+): Promise<WindowGridConfiguration<ColumnConfiguration>> => {
+  let request = windowConfigurations.get(windowIdentifier);
+  if (!request) {
+    request = fetchWindowConfiguration(windowIdentifier);
+    windowConfigurations.set(windowIdentifier, request);
+  }
+  return request;
+};
+
+/**
  * Loads the stored configuration of a tab. All the tabs of an open window share a single request;
  * a failure behaves as "nothing stored", so the grid keeps its metadata defaults.
  */
@@ -106,12 +121,7 @@ export const loadTabColumnConfiguration = async (
   windowIdentifier: string,
   tabId: string
 ): Promise<ColumnConfiguration | null> => {
-  let request = windowConfigurations.get(windowIdentifier);
-  if (!request) {
-    request = fetchWindowConfiguration(windowIdentifier);
-    windowConfigurations.set(windowIdentifier, request);
-  }
-  const configuration = await request;
+  const configuration = await loadWindowGridConfiguration(windowIdentifier);
   return configuration[tabId] ?? null;
 };
 

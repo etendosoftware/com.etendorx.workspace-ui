@@ -28,6 +28,7 @@ import type { WindowState } from "@/utils/window/constants";
 import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { CurrentWindowProvider } from "@/contexts/CurrentWindowContext";
+import { prefetchWindowViewSettings } from "@/utils/savedViews/defaultViews";
 
 function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -53,6 +54,14 @@ function Window({ window }: { window: WindowState }) {
       });
     }
   }, [windowId, getWindowMetadata, isWindowLoading, loadWindowData]);
+
+  // The grids of the window wait for their default view or stored columns before their first load: request
+  // them now, in parallel with the metadata, so they are there when the tabs mount.
+  useEffect(() => {
+    if (windowIdentifier) {
+      prefetchWindowViewSettings(windowIdentifier);
+    }
+  }, [windowIdentifier]);
 
   const error = windowId ? metadataError : undefined;
 

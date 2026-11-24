@@ -34,6 +34,7 @@ import { useCurrentWindowIdentifier } from "../../contexts/CurrentWindowContext"
 import { useToolbarCommands } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useSettledParent } from "@/hooks/table/useSettledParent";
+import { useInitialViewPending } from "@/hooks/table/useInitialViewPending";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
@@ -616,6 +617,10 @@ export const useTableData = ({
     return false;
   }, [parentTab, parentRecords, parentId]);
 
+  // The first load waits for the default saved view (or the stored columns) of the tab, so it is made once and
+  // already with them, as in classic.
+  const isInitialViewPending = useInitialViewPending(windowIdentifier || "", tab.id);
+
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {
     return rawColumns;
@@ -639,7 +644,7 @@ export const useTableData = ({
     params: query,
     columns: stableDatasourceColumns,
     searchQuery,
-    skip,
+    skip: skip || isInitialViewPending,
     treeOptions,
     activeColumnFilters: tableColumnFilters,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
@@ -1403,8 +1408,8 @@ export const useTableData = ({
 
     // State
     expanded,
-    // A held parent change shows as loading, like the fetch that follows it.
-    loading: loading || isParentPending,
+    // A held parent change, or the wait for the initial view, shows as loading, like the fetch that follows it.
+    loading: loading || isParentPending || isInitialViewPending,
     error: error || null,
 
     // Tree mode
