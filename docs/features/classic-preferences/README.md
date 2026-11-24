@@ -53,6 +53,7 @@ preferences from process scripts is described in
 | `AllowMultiTab` | Yes | One tab per window | Opening a window that is already open replaces that tab with the new target (menu, favorites, recent items, process monitor, links to a record, the start page and the "go to" of a process), as classic. With Y every opening adds a new tab. If the replaced tab has unsaved changes, the user is asked about that tab alone: saving or discarding replaces it in place, cancelling keeps it. |
 | `ForcedLoginURL` | No (system) | Empty | The login page redirects to this address when the browser opened the new UI at a different one (e.g. another host name). Read without a session through `meta/login-config`. |
 | `ETRX_AllowSSOLogin` | No | Not shown | With Y the profile menu offers to link the account with the single sign-on provider (Auth0 or the Etendo middleware), with the classic text `ETRX_LinkSSOAccount`, and a manual logout also closes the session of the provider. It does not hide the single sign-on buttons of the login page, which follow the `sso.auth.type` server setting, nor block a single sign-on login, in both interfaces. |
+| `ShowProductCharacteristicsParents` | No | 0 | The "Characteristic Description" field of the product form shows one line per characteristic, with as many parent levels before each value as the number set (1 shows "Botella / Vidrio" instead of "Vidrio"). Applied by the server, see below. |
 | `RestrictErpAccessInStoreServer` | No (system) | Allowed | On a store server, a login, a role change or an SSO login with a role other than System is refused with `BACKEND_LOGIN_RESTRICTED`. Without a store server (`ServerController`) it has no effect. |
 
 Already applied without client changes:
@@ -125,6 +126,13 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
 - **`ForcedLoginURL` only when it points to the new UI.** Classic uses it for its own login page. The new UI
   redirects only when the path of the value contains the current path, so a value with the classic login
   address (`/security/Login`) is ignored instead of sending the user out of the new UI.
+- **`ShowProductCharacteristicsParents` is applied by the server.** As in Classic, the form initialization in
+  edit mode (`CharacteristicsUIDefinition.getFieldProperties`) reads the preference and answers the field with
+  `{dbValue, characteristics}`: the stored text and, per characteristic of the product (ordered by its type), the
+  value with its parents. The client keeps the text in the field and the characteristics under
+  `<field>$_characteristics` (`useFormInitialState`), and `ProductCharacteristicsSelector` shows one read-only line
+  per characteristic. A missing or non-numeric preference means no parents, in both interfaces. The grid filter of
+  the same column is documented in [Product characteristics filter](../product-characteristics-filter/README.md).
 - **`RestrictErpAccessInStoreServer` only allows System**, as the classic login: the role of a login is the
   default role of the user (`LoginUtils.getLoginDefaults`), and a role change is checked with the chosen role.
 
@@ -157,6 +165,10 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
   application, and closing the Auth0 session needs the login page allowed as logout return address. The
   provider logout is opened when the user confirms the logout; a browser that blocks pop-ups can stop it when
   the logout first waited for the unsaved-changes question.
+- Product characteristics: a new product, a product without characteristics or with an empty description shows
+  the stored text in a read-only box (the server sends no characteristics then), where Classic shows the text or
+  hides the field when it is empty. The lines are a compact list inside the field, where Classic draws a section
+  with one read-only text field per characteristic.
 - A login refused by `RestrictErpAccessInStoreServer` shows the message of the server. A refused role change or
   SSO login shows the generic error of those flows.
 
@@ -220,6 +232,8 @@ UI section. That work belongs to task ETP-6355; this page only records the techn
   `LoginConfigService`: forced login address.
 - `packages/MainUI/utils/session/ssoProvider.ts`, `components/ProfileModal/SsoLinkSection.tsx`,
   `hooks/useSSO.ts` (`startAuth0Link`), `app/sso/link-callback/page.tsx`: SSO account link and provider logout.
+- `packages/MainUI/utils/form/productCharacteristics.ts`, `hooks/useFormInitialState.ts` (`applyEntryValue`),
+  `components/Form/FormView/selectors/ProductCharacteristicsSelector.tsx`: product characteristics in the form.
 - `com.etendoerp.metadata`: `auth/StoreServerAccess.java`, used by `LoginGuardService`, `ChangeProfileService`
   and `SSOService`: store server restriction.
 
@@ -230,3 +244,4 @@ UI section. That work belongs to task ETP-6355; this page only records the techn
 - [Login and logout](../login-logout/README.md)
 - [Process payload building](../process-payload-building.md)
 - [Profile menu](../profile-menu/README.md)
+- [Product characteristics filter](../product-characteristics-filter/README.md)

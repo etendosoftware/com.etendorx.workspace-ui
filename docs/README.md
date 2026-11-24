@@ -32,6 +32,8 @@ docs/
 │   │   └── README.md                # Tab-sequence contract, initial focus, shortcuts
 │   ├── classic-preferences/          # Feature: Classic interface preferences applied by the new UI
 │   │   └── README.md                # Accounting tabs, start page, logout, audit, notes, personalization, page size
+│   ├── product-characteristics-filter/ # Feature: Product characteristics column filter (Classic parity)
+│   │   └── README.md                # Tree selection, order, AND/OR criterion, values offered per grid
 │   ├── keyboard-shortcuts/           # Feature: Classic keyboard shortcuts (OBUIAPP_KeyboardShortcuts)
 │   │   └── README.md                # Grammar, preference source, shortcut map per surface
 │   ├── login-logout/                 # Feature: Clean session start after logout, Classic default role, login protections
