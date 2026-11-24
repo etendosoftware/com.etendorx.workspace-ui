@@ -24,6 +24,7 @@ import { useCurrentWindowIdentifier } from "@/contexts/CurrentWindowContext";
 import { useWindowStore } from "@/stores/windowStore";
 import { formatDirtyTitle, isTabDirty } from "@/utils/window/dirtyState";
 import { getTabCountKey, useTabCountsStore } from "@/stores/tabCountsStore";
+import { formatRecordCount } from "@workspaceui/componentlibrary/src/components/Table/RecordCounters/formatRecordCount";
 
 export const TabButton = ({
   tab,
@@ -40,7 +41,9 @@ export const TabButton = ({
   // Outside a Window subtree the identifier defaults to "", which is never dirty.
   const windowIdentifier = useCurrentWindowIdentifier();
   const isDirty = useWindowStore((s) => isTabDirty(s.dirtyWindows, windowIdentifier, tab.id));
-  const recordCount = useTabCountsStore((s) => s.counts[getTabCountKey(windowIdentifier, tab.id)]);
+  const tabCountKey = getTabCountKey(windowIdentifier, tab.id);
+  const recordCount = useTabCountsStore((s) => s.counts[tabCountKey]);
+  const hasMoreRecords = useTabCountsStore((s) => Boolean(s.partial[tabCountKey]));
 
   const baseTitle = useMemo(() => {
     if (isWindow) {
@@ -174,7 +177,7 @@ export const TabButton = ({
         <span
           className="flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
           data-testid={`TabButton__count_${tab.id}`}>
-          {recordCount}
+          {formatRecordCount(recordCount, hasMoreRecords)}
         </span>
       )}
     </button>

@@ -27,6 +27,8 @@ interface UseTabRecordCountParams {
   hasMultipleParents: boolean;
   isLoading: boolean;
   loadedRecordsCount: number;
+  /** More records than the loaded ones exist: the badge shows "N+". */
+  hasMoreRecords?: boolean;
 }
 
 /** Publishes the record count of a child tab to the tab strip, and clears it while it has no meaning. */
@@ -36,6 +38,7 @@ export function useTabRecordCount({
   hasMultipleParents,
   isLoading,
   loadedRecordsCount,
+  hasMoreRecords = false,
 }: UseTabRecordCountParams): void {
   const setTabCount = useTabCountsStore((s) => s.setCount);
   const clearTabCount = useTabCountsStore((s) => s.clearCount);
@@ -46,6 +49,15 @@ export function useTabRecordCount({
       clearTabCount(tabCountKey);
       return;
     }
-    if (!isLoading) setTabCount(tabCountKey, loadedRecordsCount);
-  }, [isChildTab, hasMultipleParents, isLoading, loadedRecordsCount, setTabCount, clearTabCount, tabCountKey]);
+    if (!isLoading) setTabCount(tabCountKey, loadedRecordsCount, hasMoreRecords);
+  }, [
+    isChildTab,
+    hasMultipleParents,
+    isLoading,
+    loadedRecordsCount,
+    hasMoreRecords,
+    setTabCount,
+    clearTabCount,
+    tabCountKey,
+  ]);
 }

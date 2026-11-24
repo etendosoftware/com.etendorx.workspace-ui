@@ -18,6 +18,7 @@
 import type React from "react";
 import LoadingSkeleton from "./LoadingSkeleton";
 import type { RecordCounterProps } from "./types";
+import { formatRecordCount } from "./formatRecordCount";
 
 /**
  * RecordCounter component displays the count of loaded records versus total available records
@@ -27,6 +28,7 @@ import type { RecordCounterProps } from "./types";
 const RecordCounter: React.FC<RecordCounterProps> = ({
   totalRecords,
   loadedRecords,
+  hasMoreRecords = false,
   isLoading = false,
   labels = {},
 }) => {
@@ -53,10 +55,10 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
     );
   }
 
-  // Always show simple format: "Showing X records"
+  // Always show simple format: "Showing X records", or "Showing X+ records" while more exist
   return (
     <span data-testid="RecordCounter-simple" className="text-sm font-medium text-gray-600">
-      {finalLabels.showingRecords.replace("{count}", loadedRecords.toString())}
+      {finalLabels.showingRecords.replace("{count}", formatRecordCount(loadedRecords, hasMoreRecords))}
     </span>
   );
 };

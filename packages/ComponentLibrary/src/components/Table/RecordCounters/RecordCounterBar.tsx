@@ -30,6 +30,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
   totalRecords,
   loadedRecords,
   selectedCount,
+  hasMoreRecords = false,
   isLoading = false,
   labels = {},
   actions,
@@ -49,6 +50,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
             <RecordCounter
               totalRecords={totalRecords}
               loadedRecords={loadedRecords}
+              hasMoreRecords={hasMoreRecords}
               isLoading={isLoading}
               labels={labels}
             />
