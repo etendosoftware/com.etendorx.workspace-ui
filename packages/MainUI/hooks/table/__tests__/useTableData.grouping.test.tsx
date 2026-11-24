@@ -8,6 +8,7 @@ import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import { useTableData } from "../useTableData";
 import { DEFAULT_TREE_FETCH_LIMIT, TOO_MANY_NODES_MESSAGE } from "@/utils/table/treeMode";
 import { toast } from "sonner";
+import { markInitialViewResolved, useInitialViewStore } from "@/stores/initialViewStore";
 
 const GROUP_COLUMN = "Business Partner";
 const GROUP_FIELD = "businessPartner";
@@ -370,5 +371,30 @@ describe("useTableData tree fetch limit", () => {
       mockTab.entityName,
       expect.objectContaining({ startRow: 0, endRow: DEFAULT_TREE_FETCH_LIMIT })
     );
+  });
+});
+
+describe("useTableData first load", () => {
+  const lastDatasourceSkip = () => (mockUseDatasource.mock.calls.at(-1)?.[0] as { skip: boolean }).skip;
+
+  beforeEach(() => {
+    mockUseDatasource.mockClear();
+    useInitialViewStore.setState({ resolved: {} });
+  });
+
+  it("waits for the initial view of the tab before loading, showing the grid as loading", () => {
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    expect(lastDatasourceSkip()).toBe(true);
+    expect(result.current.loading).toBe(true);
+  });
+
+  it("loads once the initial view of the tab is resolved", () => {
+    const { result } = renderHook(() => useTableData({ isTreeMode: false }));
+
+    act(() => markInitialViewResolved("143_1", mockTab.id));
+
+    expect(lastDatasourceSkip()).toBe(false);
+    expect(result.current.loading).toBe(false);
   });
 });

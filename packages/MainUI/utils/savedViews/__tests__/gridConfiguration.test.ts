@@ -8,6 +8,7 @@ import {
   clearGridConfiguration,
   GRID_CONFIGURATION_SAVE_DELAY_MS,
   loadTabColumnConfiguration,
+  loadWindowGridConfiguration,
   scheduleGridConfigurationSave,
   toColumnTableState,
 } from "../gridConfiguration";
@@ -122,6 +123,16 @@ describe("gridConfiguration", () => {
       mockFetch.mockRejectedValue(new Error("boom"));
 
       await expect(loadTabColumnConfiguration(nextWindowIdentifier(), TAB_ID)).resolves.toBeNull();
+    });
+
+    it("shares the window request it started with the tabs that ask later", async () => {
+      const configuration = { version: 1, visibility: VISIBILITY, order: ORDER };
+      mockFetch.mockResolvedValue({ windowId: WINDOW_ID, configuration: { [TAB_ID]: configuration } });
+      const windowIdentifier = nextWindowIdentifier();
+
+      await expect(loadWindowGridConfiguration(windowIdentifier)).resolves.toEqual({ [TAB_ID]: configuration });
+      await expect(loadTabColumnConfiguration(windowIdentifier, TAB_ID)).resolves.toEqual(configuration);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
