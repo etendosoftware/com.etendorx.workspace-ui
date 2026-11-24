@@ -182,7 +182,9 @@ the data they use.
   read-only tab, page size and filling the grid height, window personalization, StartPage (record and new
   record), LogoutRedirectURL, the filter messages (closing, the funnel and "Never show this message again"
   after a reload and a new session) and the tree fetch limit (a broad filter on Account Tree is refused with
-  `OBUIAPP_TooManyNodes`, with the limit of 200 the core ships).
+  `OBUIAPP_TooManyNodes`, with the limit of 200 the core ships) and `ShowProductCharacteristicsParents` (with 1, a
+  grouped value of the product form shows its group, with a preference of the user without window, as the server
+  reads it).
 - `PREFbClassicSessionPreferencesTest.spec.ts`: one tab per window (`AllowMultiTab`, with the unsaved changes
   prompt and Y for one window), the SSO account link and provider logout (`ETRX_AllowSSOLogin`) and
   `ForcedLoginURL`. The core has no SSO and a real forced login address would reach every spec and the classic

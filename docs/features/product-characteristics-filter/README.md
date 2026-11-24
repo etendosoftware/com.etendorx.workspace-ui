@@ -23,7 +23,8 @@ This document covers the filter of that column, which follows Classic (`ob-formi
   "Certificación = Bio" and "Formato = 330 ml" shows the products that are Bio **and** 330 ml. The criterion is
   the Classic one: an `and` group marked `isProductCharacteristicsCriteria` with one `exists` criterion per
   characteristic (`LegacyColumnFilterUtils.buildExistsQueryCriteria`).
-- **Values offered.** The tree is loaded again every time the dropdown opens:
+- **Values offered.** The tree is asked for again every time the dropdown opens (the datasource client reuses an
+  identical answer for 30 seconds, as for every datasource request):
   - In a window grid it sends `_parentDSIdentifier` (the grid entity), `_propertyPath` (the product of the row)
     and the criteria of the grid without the characteristics criterion, so it offers only the values of the
     records the grid can show with its other filters.
@@ -79,6 +80,18 @@ criterion itself (`ManageVariantsDS.readCriteria`) and ignores the query.
   (`_selectorDefinition`). This is out of the scope of ETP-6330 and is left for a separate task.
 - A Pick and Execute grid of a module whose HQL table has its own alias builds the exists query with `e`; Classic
   uses the alias of the table. No core process is affected.
+
+## End-to-end tests
+
+`playwright-tests/e2e/regression/10_Grid/CHARaProductCharacteristicsFilterTest.spec.ts` (`@regression @grid`) runs
+on the Product grid with its own data: three characteristics created in a non alphabetical order, a group with an
+inner group next to a value without group (moved into their groups through the tree datasource, as a drop in the
+tree view), and seven products, one without characteristics. It checks the order of the tree, the cascading and
+partial selection, OR inside a characteristic and AND between them (also in the request: one `exists` per
+characteristic), three characteristics at once, an empty result, the filter together with the Name filter, the
+cell text and clearing. The column is hidden by default in that grid, so the spec shows it first with a metadata
+override of the page instead of a stored grid configuration, which other specs of the same user write in parallel.
+Making the characteristics combine with OR again makes the second test fail.
 
 ## Main files
 
