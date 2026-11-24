@@ -65,7 +65,7 @@ describe("showWindow", () => {
 
     expect(Object.keys(useWindowStore.getState().windows)).toEqual([OPEN_WINDOW]);
     const request = useUnsavedChangesStore.getState().request;
-    expect(request).not.toBeNull();
+    expect(request?.windowIdentifier).toBe(OPEN_WINDOW);
     request?.onProceed();
     expect(Object.keys(useWindowStore.getState().windows)).toEqual([NEW_WINDOW]);
   });

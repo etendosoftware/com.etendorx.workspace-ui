@@ -55,7 +55,7 @@ export function findWindowToReplace(windowId: string): string | undefined {
 export function runReplacingWindow(replacedIdentifier: string | undefined, action: () => void): void {
   const dirtyWindows = useWindowStore.getState().dirtyWindows;
   if (replacedIdentifier && isWindowDirty(dirtyWindows, replacedIdentifier)) {
-    useUnsavedChangesStore.getState().openRequest({ onProceed: action });
+    useUnsavedChangesStore.getState().openRequest({ onProceed: action, windowIdentifier: replacedIdentifier });
     return;
   }
   action();
