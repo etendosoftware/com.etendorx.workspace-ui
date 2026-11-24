@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   // Classic ForcedLoginURL: the login page is always reached through the configured address
   useEffect(() => {
-    void applyForcedLoginUrl();
+    applyForcedLoginUrl();
   }, []);
 
   const handleLogin = useCallback(

@@ -49,7 +49,7 @@ function createPropertyStore(shimWindowId?: string): OBPropertyStore {
         setStoredPreference(buildPreferenceKey(key, windowId), value);
         return;
       }
-      void persistPreference(key, String(value), windowId);
+      persistPreference(key, String(value), windowId);
     },
   };
 }

@@ -121,7 +121,7 @@ export default function GridFilterMessage({
         {
           label: neverShowLabel,
           onClick: () => {
-            void persistPreference(FILTER_MESSAGE_PREFERENCES[visibleKind], "N");
+            persistPreference(FILTER_MESSAGE_PREFERENCES[visibleKind], "N");
             dismiss(visibleKind);
           },
         },
