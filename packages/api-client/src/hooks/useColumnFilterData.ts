@@ -19,6 +19,9 @@ import { useCallback } from "react";
 import { datasource } from "../api/datasource";
 import type { FilterOption } from "../utils/column-filter-utils";
 
+/** Constructor of the criteria the datasource reads. */
+const ADVANCED_CRITERIA = "AdvancedCriteria";
+
 /** Response key of the characteristic name of a Product Characteristics tree node. */
 const CHARACTERISTIC_IDENTIFIER_KEY = "characteristic$_identifier";
 
@@ -53,14 +56,14 @@ const buildDistinctCriteria = (distinctField: string, searchQuery?: string, extr
       fieldName: `${distinctField}$_identifier`,
       operator: "iContains",
       value: searchQuery.trim(),
-      _constructor: "AdvancedCriteria",
+      _constructor: ADVANCED_CRITERIA,
     });
   } else {
     criteriaItems.push({
       fieldName: "_dummy",
       operator: "equals",
       value: Date.now(),
-      _constructor: "AdvancedCriteria",
+      _constructor: ADVANCED_CRITERIA,
     });
   }
 
@@ -77,7 +80,7 @@ const applyDistinctParams = (
   params._distinct = distinctField;
   params.tabId = tabId;
   params.operator = "and";
-  params._constructor = "AdvancedCriteria";
+  params._constructor = ADVANCED_CRITERIA;
   params.criteria = buildDistinctCriteria(distinctField, searchQuery, extraCriteria);
   params._selectedProperties = `id,${distinctField},${distinctField}$_identifier`;
 };
@@ -97,11 +100,11 @@ const applySelectorParams = (
       fieldName: "_identifier",
       operator: "iContains",
       value: searchQuery.trim(),
-      _constructor: "AdvancedCriteria",
+      _constructor: ADVANCED_CRITERIA,
     });
 
     params.operator = "and";
-    params._constructor = "AdvancedCriteria";
+    params._constructor = ADVANCED_CRITERIA;
   }
 };
 
@@ -165,7 +168,7 @@ const applyTreeParams = (params: Record<string, unknown>, treeParams: TreeFilter
   if (criteria && criteria.length > 0) {
     params.criteria = criteria;
     params.operator = "and";
-    params._constructor = "AdvancedCriteria";
+    params._constructor = ADVANCED_CRITERIA;
   }
 };
 

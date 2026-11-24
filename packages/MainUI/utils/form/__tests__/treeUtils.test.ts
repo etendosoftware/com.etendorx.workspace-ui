@@ -249,5 +249,6 @@ describe("sorted tree levels (characteristics filter)", () => {
     expect(compareTreeLabels({ _identifier: "abc" }, { _identifier: "ABC" })).toBe(0);
     expect(compareTreeLabels({ _identifier: "a" }, { _identifier: "B" })).toBe(-1);
     expect(compareTreeLabels({ _identifier: "b" }, {})).toBe(1);
+    expect(compareTreeLabels({}, { _identifier: "b" })).toBe(-1);
   });
 });

@@ -130,6 +130,26 @@ describe("characteristicsFilter", () => {
       ).toBe("Envase:[Lata], Formato:[500 ml]");
     });
 
+    it("groups values without characteristic data together", () => {
+      const nodes = [
+        { id: "a", label: "A" },
+        { id: "b", label: "B" },
+      ];
+
+      expect(buildCharacteristicsLabel(nodes, ["a", "b"])).toBe(":[A - B]");
+    });
+
+    it("ignores a group with no known leaves", () => {
+      const nodes = [
+        { id: "g", label: "G" },
+        { id: "x", label: "X", parentId: "g" },
+      ];
+      const childrenMap = buildChildrenMap(nodes);
+
+      expect(buildCharacteristicsLabel(nodes, [])).toBe("");
+      expect(childrenMap.get("g")).toEqual(["x"]);
+    });
+
     it("is empty without selection", () => {
       expect(label([])).toBe("");
     });

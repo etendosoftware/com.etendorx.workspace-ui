@@ -26,6 +26,7 @@ jest.mock("../StringSelector", () => ({
   ),
 }));
 
+const STRING_SELECTOR = "string-selector";
 const FIELD_NAME = "characteristicDescription";
 const field = { id: "field-1", hqlName: FIELD_NAME, name: "Characteristic Description" } as unknown as Field;
 
@@ -53,12 +54,12 @@ describe("ProductCharacteristicsSelector", () => {
     expect(screen.getByText("Botella / Vidrio")).toBeInTheDocument();
     expect(screen.getByText("Formato")).toBeInTheDocument();
     expect(screen.getByText("330 ml")).toBeInTheDocument();
-    expect(screen.queryByTestId("string-selector")).toBeNull();
+    expect(screen.queryByTestId(STRING_SELECTOR)).toBeNull();
   });
 
   it("shows the stored text, read-only, without characteristics", () => {
     render(<Harness values={{ [FIELD_NAME]: "Envase: Vidrio" }} />);
 
-    expect(screen.getByTestId("string-selector")).toHaveAttribute("data-readonly", "true");
+    expect(screen.getByTestId(STRING_SELECTOR)).toHaveAttribute("data-readonly", "true");
   });
 });

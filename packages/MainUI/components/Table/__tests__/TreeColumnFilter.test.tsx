@@ -207,6 +207,18 @@ describe("TreeColumnFilter - Product Characteristics", () => {
     }
   });
 
+  it("toggles a row with Enter or Space on it", async () => {
+    const { onSelectionChange } = renderCharacteristicsFilter();
+    await openFilter();
+
+    fireEvent.keyDown(getRow("Lata"), { key: " " });
+
+    expect(onSelectionChange).toHaveBeenCalledWith(
+      [VALUE_IDS.LATA],
+      [expect.objectContaining({ id: VALUE_IDS.LATA, characteristic: "C_ENV" })]
+    );
+  });
+
   it("toggles the highlighted node with Enter", async () => {
     const { onSelectionChange } = renderCharacteristicsFilter();
     await openFilter();
@@ -222,6 +234,37 @@ describe("TreeColumnFilter - Product Characteristics", () => {
 });
 
 describe("TreeColumnFilter - other tree references", () => {
+  const renderExternalTree = () => {
+    const onSelectionChange = jest.fn();
+    render(
+      <TreeColumnFilter
+        options={buildCharacteristicsTreeOptions()}
+        selectedValues={[]}
+        onSelectionChange={onSelectionChange}
+        placeholder={PLACEHOLDER}
+      />
+    );
+    fireEvent.click(screen.getByText(PLACEHOLDER));
+    return { onSelectionChange };
+  };
+
+  it("collapses a characteristic when its row is clicked", () => {
+    renderExternalTree();
+
+    fireEvent.click(getRow("Formato"));
+
+    expect(screen.queryByText("330 ml")).toBeNull();
+  });
+
+  it("adds one value with its checkbox and keeps the dropdown open", () => {
+    const { onSelectionChange } = renderExternalTree();
+
+    fireEvent.click(getCheckbox("Lata"));
+
+    expect(onSelectionChange).toHaveBeenCalledWith([VALUE_IDS.LATA], pickOptions([VALUE_IDS.LATA]));
+    expect(getRow("Vidrio")).toBeInTheDocument();
+  });
+
   it("keeps selecting a single value and the characteristic nodes not selectable", () => {
     const onSelectionChange = jest.fn();
     render(

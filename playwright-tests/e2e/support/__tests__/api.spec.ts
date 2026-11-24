@@ -14,6 +14,7 @@ import {
 import { DATASOURCE } from "../registry/datasources";
 
 const TARGET = DATASOURCE.BUSINESS_PARTNER_CATEGORY;
+const OPERATION_TYPE = "_operationType";
 const RECORD_ID = "44B5B43219F943A99CA55FF32030A9CE";
 
 function queryOf(url: string): URLSearchParams {
@@ -27,13 +28,13 @@ test.describe("datasourceWriteUrl", () => {
     const query = queryOf(url);
     expect(query.get("windowId")).toBe(TARGET.windowId);
     expect(query.get("tabId")).toBe(TARGET.tabId);
-    expect(query.get("_operationType")).toBe("add");
+    expect(query.get(OPERATION_TYPE)).toBe("add");
     expect(query.has("id")).toBe(false);
   });
 
   test("carries the record id of a removal", () => {
     const query = queryOf(datasourceWriteUrl(TARGET, "remove", RECORD_ID));
-    expect(query.get("_operationType")).toBe("remove");
+    expect(query.get(OPERATION_TYPE)).toBe("remove");
     expect(query.get("id")).toBe(RECORD_ID);
   });
 });
@@ -142,7 +143,7 @@ test.describe("tree node move", () => {
     const url = treeNodeMoveUrl(move);
     expect(url.startsWith(`/api/datasource/${AD_TREE_DATASOURCE}?`)).toBe(true);
     const query = queryOf(url);
-    expect(query.get("_operationType")).toBe("update");
+    expect(query.get(OPERATION_TYPE)).toBe("update");
     expect(query.get("tabId")).toBe(move.tabId);
     expect(query.get("referencedTableId")).toBe(move.tableId);
   });
