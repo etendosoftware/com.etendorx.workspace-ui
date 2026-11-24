@@ -2,7 +2,8 @@
 
 How a tab grid loads its records page by page while the user scrolls, and how it counts them, as the Classic
 grid does (ETP-6303). It applies to every grid that loads through `useDatasource`: header and child tabs, tree
-mode, Pick & Execute grids and selector popups.
+mode, Pick & Execute grids and selector popups. The dropdown options of TableDir and Select fields
+(`useTableDirDatasource`) page by the same rule.
 
 ## Behavior
 
@@ -30,6 +31,10 @@ datasource has more.
 - **Offset from the loaded rows, not from the page number.** Because the Classic `_endRow` is inclusive, a page
   number times the page size points at the last row of the previous page; that is what repeated one record per
   page (G/L Journal showed 120 records for 119).
+- **Dropdown options too.** A field dropdown asked for its next options with the page number, so the first scroll
+  to its end fetched the first page again and showed nothing new (the dropdown already left out repeated
+  options), and each later page overlapped the previous one by a row. It now starts each page right after the
+  last option loaded and stops when the server answers the first rows again.
 - **Page size unchanged.** The size comes from the `dataPageSize` preference
   ([classic preferences](../classic-preferences/README.md)); saved views are not involved.
 
@@ -44,6 +49,8 @@ None.
 ## Main files
 
 - `packages/MainUI/hooks/useDatasource.ts`: page requests, offset of the next page, end of paging, local removals.
+- `packages/MainUI/hooks/datasource/useTableDirDatasource.ts`: the same offset and end of paging for the options
+  of TableDir and Select fields.
 - `packages/MainUI/utils/table/datasourcePaging.ts`: pure helpers (page range, restarted answer, appending
   without repeated records, first page replacement).
 - `packages/ComponentLibrary/src/components/Table/RecordCounters/formatRecordCount.ts`: the `N+` rule, used by the
