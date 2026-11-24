@@ -9,7 +9,7 @@ import {
 } from "../../support/flows/preferences";
 import { overridePreferences, overrideSessionRole } from "../../support/processOverrides";
 import { TABS, WINDOW_IDS } from "../../support/registry/windows";
-import { collectGridFetches } from "../../support/wait";
+import { collectGridFetches, runAndCaptureGridFetch } from "../../support/wait";
 
 const NAME = "Name";
 const PRICE = "Price";
@@ -26,7 +26,21 @@ const REGULAR_USER_LEVEL = "  O";
 const PAGE_SIZE = 5;
 const LOGOUT_TARGET = "e2e-logout-redirect";
 const SINGLE_RECORD_PREFERENCE = "OBUIAPP_ShowSingleRecordFilterMsg";
+const IMPLICIT_FILTER_PREFERENCE = "OBUIAPP_ShowImplicitFilterMsg";
+const IMPLICIT_FILTER_TEXT = "This grid is filtered using";
 const FILTER_MESSAGE = "GridFilterMessage__container";
+/** Element of the sample chart of accounts, with more than a thousand accounts. */
+const MAIN_ACCOUNT = "Main Account";
+const ELEMENT_VALUE = "Element Value";
+const SEARCH_KEY = "Search Key";
+const BROAD_FILTER = "1";
+const PRECISE_FILTER = "57001";
+/** What an empty grid shows instead of its rows. */
+const EMPTY_GRID_TEXT = "No records to show";
+/** `TreeDatasourceFetchLimit` as the core ships it (System level). */
+const CORE_TREE_FETCH_LIMIT = 200;
+/** Start of `OBUIAPP_TooManyNodes`. */
+const TOO_MANY_NODES_TEXT = "This query criteria returns a number of nodes larger than the established limit";
 const SAVED_PREFERENCE_REQUEST = /\/api\/erp\/meta\/preferences/;
 
 /** Address that opens `recordId` of `tabId` in a new window instance (the URL state the UI restores). */
@@ -35,8 +49,9 @@ function recordLink(windowId: string, tabId: string, recordId: string): string {
 }
 
 const preferences: SavedRecord[] = [];
-/** Set by the test that clicks "Never show this message again", which stores the preference for the user. */
+/** Set by the tests that click "Never show this message again", which stores the preference for the user. */
 let restoreSingleRecordMessage = false;
+let restoreImplicitFilterMessage = false;
 
 // Removed while the page is still open, also when the test failed or timed out
 test.afterEach(async ({ api }) => {
@@ -45,6 +60,10 @@ test.afterEach(async ({ api }) => {
     // Stored in the System client as classic does, so it is set back instead of deleted
     await api.savePreference(SINGLE_RECORD_PREFERENCE, "Y");
     restoreSingleRecordMessage = false;
+  }
+  if (restoreImplicitFilterMessage) {
+    await api.savePreference(IMPLICIT_FILTER_PREFERENCE, "Y");
+    restoreImplicitFilterMessage = false;
   }
 });
 
@@ -209,7 +228,7 @@ test.describe("Session - Classic interface preferences @regression @session", ()
 
     // The top tab of a transactional window applies its default filter
     await app.sidebar.navigateTo("salesOrder");
-    await expect(message).toContainText("This grid is filtered using");
+    await expect(message).toContainText(IMPLICIT_FILTER_TEXT);
 
     await openOrderGridFromLink();
     await expect(message).toContainText("filtered for the last document viewed");
@@ -227,5 +246,68 @@ test.describe("Session - Classic interface preferences @regression @session", ()
     await openOrderGridFromLink();
     await expect(app.grid.rows()).toHaveCount(1);
     await expect(message).toHaveCount(0);
+  });
+  test("hides the implicit filter message when closed, with the funnel and for good", async ({ app, page }) => {
+    const message = page.getByTestId(FILTER_MESSAGE);
+    /** Waits until the Sales Order grid shows its records with the default filter on. */
+    const expectFilteredOrders = async () => {
+      await expect(app.grid.rows().first()).toBeVisible();
+      expect(await app.toolbar.isImplicitFilterOn(), "the default filter is off").toBe(true);
+    };
+    const reloadSalesOrders = async () => {
+      await runAndCaptureGridFetch(page, TABS.SALES_ORDER_HEADER, () => page.reload());
+      await expectFilteredOrders();
+    };
+
+    await app.sidebar.navigateTo("salesOrder");
+    await expect(message).toContainText(IMPLICIT_FILTER_TEXT);
+
+    // Closed, it stays hidden while the window is open, and comes back with the next load
+    await page.getByTestId("GridFilterMessage__close").click();
+    await expect(message).toHaveCount(0);
+    await reloadSalesOrders();
+    await expect(message).toContainText(IMPLICIT_FILTER_TEXT);
+
+    // Turning the default filter off removes the message; turning it on shows it again
+    await app.toolbar.disableImplicitFilter();
+    await expect(message).toHaveCount(0);
+    await app.toolbar.button("filter").click();
+    await expect(message).toContainText(IMPLICIT_FILTER_TEXT);
+
+    // "Never show this message again" is read back from the server on the next load, as classic
+    const saved = page.waitForResponse(
+      (response) => SAVED_PREFERENCE_REQUEST.test(response.url()) && response.request().method() === "POST"
+    );
+    restoreImplicitFilterMessage = true;
+    await page.getByTestId("GridFilterMessage__action").click();
+    expect((await saved).ok(), "the preference was not stored").toBe(true);
+    await expect(message).toHaveCount(0);
+    // Opened again from the menu the window starts over, with its default filter
+    await app.sidebar.navigateTo("salesOrder");
+    await expectFilteredOrders();
+    await reloadSalesOrders();
+    await expect(message).toHaveCount(0);
+  });
+
+  test("refuses a tree filter that matches more nodes than TreeDatasourceFetchLimit", async ({ app, page }) => {
+    const tab = page.getByTestId(`Tab__${TABS.ACCOUNT_TREE_ELEMENT_VALUE}`);
+    await app.sidebar.navigateTo("accountTree");
+    await app.grid.selectRow(MAIN_ACCOUNT);
+    await app.tabs.open(ELEMENT_VALUE);
+    await app.toolbar.inTab(TABS.ACCOUNT_TREE_ELEMENT_VALUE).button("toggle-tree-view").click();
+
+    // The core ships the limit at 200 nodes: hundreds of accounts of the element contain a 1
+    const tooMany = await runAndCaptureGridFetch(page, TABS.ACCOUNT_TREE_ELEMENT_VALUE, () =>
+      app.grid.filter(SEARCH_KEY, BROAD_FILTER, tab)
+    );
+    expect(tooMany._endRow).toBe(String(CORE_TREE_FETCH_LIMIT));
+    await app.toast.expectError(TOO_MANY_NODES_TEXT);
+    await expect(tab.getByText(EMPTY_GRID_TEXT)).toBeVisible();
+    await expect(app.grid.filterInput(SEARCH_KEY, tab)).toHaveValue(BROAD_FILTER);
+
+    // A filter that matches a few accounts shows them in the tree
+    await app.grid.filter(SEARCH_KEY, PRECISE_FILTER, tab);
+    await expect(tab.getByText(EMPTY_GRID_TEXT)).toHaveCount(0);
+    await expect(app.grid.rows(tab).first()).toBeVisible();
   });
 });
