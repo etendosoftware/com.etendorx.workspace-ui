@@ -14,6 +14,11 @@ export interface DatasourceTarget {
 }
 
 export const DATASOURCE = {
+  COUNTRY: {
+    entity: "Country",
+    windowId: WINDOW_IDS.COUNTRY_AND_REGION,
+    tabId: TABS.COUNTRY,
+  },
   BANK_STATEMENT: {
     entity: "FIN_BankStatement",
     windowId: WINDOW_IDS.FINANCIAL_ACCOUNT,

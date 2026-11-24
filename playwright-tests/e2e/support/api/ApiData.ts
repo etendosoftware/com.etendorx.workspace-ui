@@ -69,6 +69,8 @@ export interface FetchQuery {
   criteria: FetchCriterion[];
   sortBy?: string;
   limit?: number;
+  /** Also read the inactive records, as a window grid does (`_noActiveFilter`). */
+  includeInactive?: boolean;
 }
 
 const DEFAULT_FETCH_LIMIT = 100;
@@ -88,6 +90,9 @@ export function datasourceFetchBody(target: DatasourceTarget, query: FetchQuery)
   };
   if (query.sortBy) {
     params._sortBy = query.sortBy;
+  }
+  if (query.includeInactive) {
+    params._noActiveFilter = "true";
   }
   return { entity: target.entity, params };
 }

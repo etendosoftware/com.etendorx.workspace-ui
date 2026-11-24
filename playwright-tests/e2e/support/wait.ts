@@ -97,6 +97,26 @@ export async function runAndCaptureGridFetch(
 }
 
 /**
+ * Records the ids of the rows every response to a grid fetch of `tabId` brings from now on, in the order they
+ * arrive: a record the grid asked for twice shows twice. Await `ids()` once the pages of interest loaded.
+ */
+export function collectGridFetchedIds(page: Page, tabId: string): { ids: () => Promise<string[]> } {
+  const pages: Promise<string[]>[] = [];
+  page.on("response", (response) => {
+    if (DATASOURCE_URL.test(response.url()) && gridFetchParams(response.request().postDataJSON(), tabId)) {
+      pages.push(response.json().then(fetchedIds));
+    }
+  });
+  return { ids: async () => (await Promise.all(pages)).flat() };
+}
+
+/** Ids of the rows of a datasource response body. */
+export function fetchedIds(body: unknown): string[] {
+  const rows = (body as { response?: { data?: Array<{ id?: unknown }> } } | null)?.response?.data ?? [];
+  return rows.map((row) => String(row.id));
+}
+
+/**
  * Records the params of every request that fetches the grid records of `tabId` from now on, as they are
  * sent: to check pages the UI asks for by itself (no response to wait for in between).
  */

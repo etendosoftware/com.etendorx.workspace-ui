@@ -136,6 +136,8 @@ export const TABS = {
   BUSINESS_PARTNER_CUSTOMER: "223",
   /** The only tab of Goods Transaction, read-only (UI pattern RO). */
   GOODS_TRANSACTION: "384",
+  /** Root tab of Country and Region: the core countries, more than one page of the grid. */
+  COUNTRY: "135",
   /** Region tab of Country and Region: its display logic reads `@HasRegion@`. */
   COUNTRY_REGION: "136",
   /** Accounts of an element in Account Tree, a tab that can show them as a tree. */

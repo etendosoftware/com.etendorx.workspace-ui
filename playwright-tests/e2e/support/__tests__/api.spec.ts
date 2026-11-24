@@ -91,6 +91,13 @@ test.describe("assertRemoved", () => {
 test.describe("datasourceFetchBody", () => {
   const criterion = { fieldName: "bankStatement.processed", operator: "equals", value: true };
 
+  test("reads the inactive records too only when asked, as a window grid does", () => {
+    expect(datasourceFetchBody(TARGET, { criteria: [] }).params).not.toHaveProperty("_noActiveFilter");
+    expect(datasourceFetchBody(TARGET, { criteria: [], includeInactive: true }).params).toMatchObject({
+      _noActiveFilter: "true",
+    });
+  });
+
   test("reads the entity with the window and tab of the target and every condition", () => {
     const body = datasourceFetchBody(TARGET, { criteria: [criterion] });
     expect(body.entity).toBe(TARGET.entity);

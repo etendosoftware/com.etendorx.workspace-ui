@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { datasourceCriteria, gridFetchParams } from "../wait";
+import { datasourceCriteria, fetchedIds, gridFetchParams } from "../wait";
 
 const TAB_ID = "23691259D1BD4496BCC5F32645BCA4B9";
 const OTHER_TAB_ID = "800057";
@@ -36,5 +36,16 @@ test.describe("datasourceCriteria", () => {
   test("keeps criteria already parsed and returns none without criteria", () => {
     expect(datasourceCriteria({ criteria: [byId] })).toEqual([byId]);
     expect(datasourceCriteria({})).toEqual([]);
+  });
+});
+
+test.describe("fetchedIds", () => {
+  test("returns the ids of the rows of a datasource response, in order", () => {
+    expect(fetchedIds({ response: { data: [{ id: "B" }, { id: "A" }] } })).toEqual(["B", "A"]);
+  });
+
+  test("returns no ids for a body without rows", () => {
+    expect(fetchedIds({ response: {} })).toEqual([]);
+    expect(fetchedIds(null)).toEqual([]);
   });
 });
