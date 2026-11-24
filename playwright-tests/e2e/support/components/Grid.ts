@@ -195,9 +195,7 @@ export class Grid {
       if (!(await this.shownCount()).hasMore) return;
       await runAndWaitForDatasource(this.page, () => this.scrollToBottom());
     }
-    expect((await this.shownCount()).hasMore, `the grid still has records to load after ${maxPages} pages`).toBe(
-      false
-    );
+    expect((await this.shownCount()).hasMore, `the grid still has records to load after ${maxPages} pages`).toBe(false);
   }
 
   /** Scrolls the visible grid to its last loaded row, where it loads the next page. */

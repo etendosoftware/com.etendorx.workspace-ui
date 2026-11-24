@@ -20,7 +20,13 @@ import { useTabRecordCount } from "@/hooks/table/useTabRecordCount";
 import { useTabCountsStore } from "@/stores/tabCountsStore";
 
 const KEY = "143_1000:tab1";
-const BASE = { tabCountKey: KEY, isChildTab: true, hasMultipleParents: false, isLoading: false, loadedRecordsCount: 101 };
+const BASE = {
+  tabCountKey: KEY,
+  isChildTab: true,
+  hasMultipleParents: false,
+  isLoading: false,
+  loadedRecordsCount: 101,
+};
 const state = () => useTabCountsStore.getState();
 
 describe("useTabRecordCount", () => {

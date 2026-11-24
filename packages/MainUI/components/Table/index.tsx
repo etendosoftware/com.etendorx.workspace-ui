@@ -937,7 +937,9 @@ interface TitleRecordCountProps {
 /** Record count of the active grid, shown in the shared title bar through a portal. */
 const TitleRecordCount = ({ slot, isGridVisible, isLoading, count, hasMoreRecords, t }: TitleRecordCountProps) => {
   if (!slot || !isGridVisible) return null;
-  const label = isLoading ? "" : t("table.counter.titleCount").replace("{count}", formatRecordCount(count, hasMoreRecords));
+  const label = isLoading
+    ? ""
+    : t("table.counter.titleCount").replace("{count}", formatRecordCount(count, hasMoreRecords));
   return createPortal(
     <span className="flex items-center gap-2" data-testid="TitleRecordCount__table">
       <span className="whitespace-nowrap text-xs text-(--ui-text-soft)">{label}</span>

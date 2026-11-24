@@ -452,7 +452,9 @@ export function useDatasource({
           // Page-1 replace (default and search refetches) keeps the `_locallyAdded` rows of Pick & Execute
           // input grids, which survive refetches triggered by unrelated param changes.
           const appendsPage = targetPage !== 1 && !searchQuery;
-          setRecords((prev) => (appendsPage ? appendUniqueRecords(prev, fetched) : replaceWithFirstPage(prev, fetched)));
+          setRecords((prev) =>
+            appendsPage ? appendUniqueRecords(prev, fetched) : replaceWithFirstPage(prev, fetched)
+          );
         }
         setLoaded(true);
         setHasFirstFetchCompleted(true);
