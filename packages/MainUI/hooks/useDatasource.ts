@@ -26,10 +26,16 @@ import type {
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isTooManyNodesResponse } from "@/utils/table/treeMode";
+import {
+  appendUniqueRecords,
+  getPageRange,
+  isRestartedPage,
+  replaceWithFirstPage,
+} from "@/utils/table/datasourcePaging";
 
 const loadData = async (
   entity: string,
-  page: number,
+  firstRow: number,
   pageSize: number,
   params: DatasourceOptions,
   treeOptions?: {
@@ -42,8 +48,7 @@ const loadData = async (
   _isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
-  const startRow = (page - 1) * pageSize;
-  const endRow = startRow + pageSize;
+  const { startRow, endRow } = getPageRange(firstRow, pageSize);
 
   const processedParams = {
     ...params,
@@ -261,7 +266,18 @@ export function useDatasource({
   // retry uses the current queryParams, not the stale in-flight one.
   const pendingFetchRef = useRef<number | null>(null);
   const fetchDataRef = useRef<((targetPage?: number) => Promise<void>) | null>(null);
+  // Server rows loaded so far: the next page starts right after them, as in the Classic grid. It is not derived
+  // from the page number because Classic answers pageSize + 1 rows (inclusive `_endRow`).
+  const nextStartRowRef = useRef(0);
+  // Latest rows, read by removeRecordLocally outside the state updater
+  const recordsRef = useRef(records);
+  recordsRef.current = records;
   const removeRecordLocally = useCallback((recordId: string) => {
+    // A record deleted from the loaded rows moves the next server rows up by one
+    const removed = recordsRef.current.find((record) => String(record.id) === recordId);
+    if (removed && !removed._locallyAdded && nextStartRowRef.current > 0) {
+      nextStartRowRef.current -= 1;
+    }
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
 
@@ -295,6 +311,7 @@ export function useDatasource({
     setPage(1);
     setHasMoreRecords(true);
     dataLoadedRef.current = false;
+    nextStartRowRef.current = 0;
   }, []);
 
   // The MRT filter id `"id"` does NOT always mean "the entity's raw primary key
@@ -400,18 +417,19 @@ export function useDatasource({
 
       fetchInProgressRef.current = true;
       const safePageSize = pageSize ?? 1000;
+      const startRow = targetPage === 1 ? 0 : nextStartRowRef.current;
 
       try {
         const { ok, data } = (await loadData(
           entity,
-          targetPage,
+          startRow,
           safePageSize,
           requestParamsRef.current,
           memoizedTreeOptions,
           isFiltering
         )) as {
           ok: boolean;
-          data: { response: { data: EntityData[] } };
+          data: { response: { data: EntityData[]; startRow?: number } };
         };
 
         if (!(ok && data.response.data)) {
@@ -424,22 +442,18 @@ export function useDatasource({
           return;
         }
         setIsTreeLimitExceeded(isTooManyNodesResponse(data));
-        setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => {
-          const fetched = data.response.data;
-          if (targetPage !== 1 && !searchQuery) {
-            return prev.concat(fetched);
-          }
-          // Page-1 replace (default and search refetches). Preserve `_locallyAdded`
-          // rows so user-created rows in Pick & Execute input grids (e.g. GL Items
-          // in Add Payment) survive datasource refetches triggered by unrelated
-          // param changes (form values folded into datasourceOptions).
-          const locallyAdded = prev.filter((r) => r._locallyAdded);
-          if (locallyAdded.length === 0) return fetched;
-          const fetchedIds = new Set(fetched.map((r) => String(r.id)));
-          const survivors = locallyAdded.filter((r) => !fetchedIds.has(String(r.id)));
-          return survivors.length === 0 ? fetched : [...survivors, ...fetched];
-        });
+        const fetched = data.response.data;
+        if (isRestartedPage(startRow, data.response.startRow)) {
+          // The page after the last record came out empty and Classic answered the first rows again
+          setHasMoreRecords(false);
+        } else {
+          nextStartRowRef.current = startRow + fetched.length;
+          setHasMoreRecords(fetched.length >= safePageSize);
+          // Page-1 replace (default and search refetches) keeps the `_locallyAdded` rows of Pick & Execute
+          // input grids, which survive refetches triggered by unrelated param changes.
+          const appendsPage = targetPage !== 1 && !searchQuery;
+          setRecords((prev) => (appendsPage ? appendUniqueRecords(prev, fetched) : replaceWithFirstPage(prev, fetched)));
+        }
         setLoaded(true);
         setHasFirstFetchCompleted(true);
         dataLoadedRef.current = true;

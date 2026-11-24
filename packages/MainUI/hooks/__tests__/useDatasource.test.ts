@@ -290,6 +290,90 @@ describe("useDatasource hook", () => {
     expect(result.current.records).toHaveLength(0);
   });
 
+  describe("paging (ETP-6303)", () => {
+    const PAGE_SIZE = 2;
+    const page = (...ids: string[]) => ({ ok: true, data: { response: { data: ids.map((id) => ({ id })) } } });
+    const restartedPage = (...ids: string[]) => {
+      const response = page(...ids);
+      return { ...response, data: { response: { ...response.data.response, startRow: 0 } } };
+    };
+    const lastRange = () => {
+      const params = (datasource.get as jest.Mock).mock.calls.at(-1)[1];
+      return { startRow: params.startRow, endRow: params.endRow };
+    };
+    const renderPaged = async (...pages: unknown[]) => {
+      for (const response of pages) {
+        (datasource.get as jest.Mock).mockResolvedValueOnce(response);
+      }
+      const hook = renderHook(() => useDatasource({ entity: mockEntity, params: { pageSize: PAGE_SIZE } }));
+      await waitFor(() => expect(hook.result.current.loading).toBe(false));
+      return hook;
+    };
+    const loadNextPage = async (result: { current: ReturnType<typeof useDatasource> }, calls: number) => {
+      act(() => result.current.fetchMore());
+      await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(calls));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+    };
+
+    it("starts the next page right after the last loaded row, without repeating it", async () => {
+      // Classic answers pageSize + 1 rows: the first page holds rows 0..2
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+      expect(lastRange()).toEqual({ startRow: 0, endRow: PAGE_SIZE });
+
+      await loadNextPage(result, 2);
+
+      expect(lastRange()).toEqual({ startRow: 3, endRow: 3 + PAGE_SIZE });
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3", "4", "5"]);
+    });
+
+    it("never shows a record twice when two pages overlap", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("3", "4"));
+
+      await loadNextPage(result, 2);
+
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3", "4"]);
+    });
+
+    it("stops paging when Classic answers the first rows again", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), restartedPage("1", "2", "3"));
+
+      await loadNextPage(result, 2);
+
+      expect(result.current.hasMoreRecords).toBe(false);
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3"]);
+    });
+
+    it("moves the next page back one row after a loaded record is removed", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+
+      act(() => result.current.removeRecordLocally("2"));
+      await loadNextPage(result, 2);
+
+      expect(lastRange().startRow).toBe(2);
+    });
+
+    it("keeps the next page when the removed record was not loaded from the server", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"));
+
+      act(() => result.current.removeRecordLocally("missing"));
+      await loadNextPage(result, 2);
+
+      expect(lastRange().startRow).toBe(3);
+    });
+
+    it("asks for the first rows again on a refetch", async () => {
+      const { result } = await renderPaged(page("1", "2", "3"), page("4", "5"), page("1", "2", "3"));
+      await loadNextPage(result, 2);
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+
+      expect(lastRange().startRow).toBe(0);
+      expect(result.current.records.map((r) => r.id)).toEqual(["1", "2", "3"]);
+    });
+  });
+
   describe("hasFirstFetchCompleted", () => {
     // Distinguishes "a real datasource fetch has delivered a result" from the
     // pre-fetch placeholder (initial state or the `skip` phase). Consumers gate
