@@ -37,6 +37,7 @@ import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { isBelowSearchThreshold, isSearchSelectorDatasource } from "@/utils/selectorUtils";
 import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import { getPageRange, isRestartedPage } from "@/utils/table/datasourcePaging";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
 const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
@@ -167,11 +168,13 @@ export const useTableDirDatasource = ({
   const [columns, setColumns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
-  const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const value = useWatch({ name: field.hqlName });
   const fetchInProgressRef = useRef(false);
+  // Server rows loaded so far: the next page starts right after them, as in Classic (its `_endRow` is inclusive,
+  // so a page holds pageSize + 1 rows and a page number would point at the last row of the previous page).
+  const nextStartRowRef = useRef(0);
 
   const isProductField =
     field.column?.reference === REFERENCE_IDS.PRODUCT ||
@@ -641,10 +644,6 @@ export const useTableDirDatasource = ({
       updateColumns();
       checkHasMore();
       mergeRecords();
-
-      if (!reset) {
-        setCurrentPage((prev) => prev + 1);
-      }
     },
     [pageSize, records]
   );
@@ -681,13 +680,12 @@ export const useTableDirDatasource = ({
       setLoading(true);
 
       if (reset) {
-        setCurrentPage(0);
         setHasMore(true);
       }
 
       try {
-        const startRow = reset ? 0 : currentPage * pageSize;
-        const endRow = reset ? initialPageSize : startRow + pageSize;
+        const startRow = reset ? 0 : nextStartRowRef.current;
+        const { endRow } = getPageRange(startRow, reset ? initialPageSize : pageSize);
 
         const params = buildRequestBody(startRow, endRow, _currentValue);
         applyCriteria(params, search);
@@ -700,7 +698,13 @@ export const useTableDirDatasource = ({
           params,
         });
 
+        if (isRestartedPage(startRow, data?.response?.startRow)) {
+          // The page after the last option came out empty and the server answered the first rows again
+          setHasMore(false);
+          return;
+        }
         processApiResponse(data, reset);
+        nextStartRowRef.current = startRow + data.response.data.length;
       } catch (err) {
         logger.warn(err);
         if (reset) {
@@ -714,7 +718,6 @@ export const useTableDirDatasource = ({
     },
     [
       field,
-      currentPage,
       pageSize,
       initialPageSize,
       buildRequestBody,
