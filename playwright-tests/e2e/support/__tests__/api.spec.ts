@@ -7,6 +7,9 @@ import {
   fetchedRecordsFrom,
   gridConfigurationResetBody,
   savedRecordFrom,
+  treeNodeMoveBody,
+  treeNodeMoveUrl,
+  AD_TREE_DATASOURCE,
 } from "../api/ApiData";
 import { DATASOURCE } from "../registry/datasources";
 
@@ -124,5 +127,31 @@ test.describe("fetchedRecordsFrom", () => {
     expect(() => fetchedRecordsFrom({ error: "Unauthorized" }, TARGET.entity)).toThrow(
       /BusinessPartnerCategory.*Unauthorized/
     );
+  });
+});
+
+test.describe("tree node move", () => {
+  const move = {
+    tabId: "367D9DF685DA42A38CAE641D30A0BEBF",
+    tableId: "E913D17C9B3847CF92235082DBE2EC44",
+    nodeId: "N1",
+    parentId: "P1",
+  };
+
+  test("targets the ADTree datasource with the tab and table of the tree", () => {
+    const url = treeNodeMoveUrl(move);
+    expect(url.startsWith(`/api/datasource/${AD_TREE_DATASOURCE}?`)).toBe(true);
+    const query = queryOf(url);
+    expect(query.get("_operationType")).toBe("update");
+    expect(query.get("tabId")).toBe(move.tabId);
+    expect(query.get("referencedTableId")).toBe(move.tableId);
+  });
+
+  test("sends the node with its new parent", () => {
+    expect(treeNodeMoveBody(move)).toEqual({
+      operationType: "update",
+      data: { id: "N1", parentId: "P1" },
+      oldValues: { id: "N1" },
+    });
   });
 });

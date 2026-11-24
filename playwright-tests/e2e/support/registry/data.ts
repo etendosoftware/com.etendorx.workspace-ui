@@ -191,6 +191,8 @@ export const LOCATOR = {
  */
 export const FIELD = {
   SALES_ORDER_LINE_QUANTITY: "1130",
+  /** Characteristic Description of the Product header (one line per characteristic in the form). */
+  PRODUCT_CHARACTERISTIC_DESCRIPTION: "DA77D45513848AC2E040007F010002E3",
   /** Net Unit Price of the Sales Order lines. */
   SALES_ORDER_LINE_NET_UNIT_PRICE: "1138",
   /** Description of the Sales Order header: a multi-line text field (reference Text). */

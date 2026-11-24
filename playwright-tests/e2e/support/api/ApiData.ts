@@ -109,6 +109,44 @@ export function gridConfigurationResetBody(windowId: string, tabId: string): Rec
   return { windowId, tabId, configuration: null };
 }
 
+/**
+ * Datasource of the trees with an `ADTree` structure (`ADTreeDatasourceService`), e.g. product categories or
+ * characteristic values.
+ */
+export const AD_TREE_DATASOURCE = "90034CAE96E847D78FBEF6D38CB1930D";
+
+/** A tree node moved under a new parent, as a node dropped on another one in the tree view of a tab. */
+export interface TreeNodeMove {
+  /** AD_Tab_ID of the tab whose tree holds the node. */
+  tabId: string;
+  /** AD_Table_ID of the records of the tree, which finds the tree of the node. */
+  tableId: string;
+  /** Id of the record of the node. */
+  nodeId: string;
+  /** Id of the record of its new parent. */
+  parentId: string;
+}
+
+/** URL of a tree node move, with the parameters the tree view sends when a node is dropped. */
+export function treeNodeMoveUrl(move: TreeNodeMove): string {
+  const params = new URLSearchParams({
+    _operationType: "update",
+    _noActiveFilter: "true",
+    tabId: move.tabId,
+    referencedTableId: move.tableId,
+  });
+  return `${DATASOURCE_PATH}/${AD_TREE_DATASOURCE}?${params.toString()}`;
+}
+
+/** Body of a tree node move: the node with its new parent. */
+export function treeNodeMoveBody(move: TreeNodeMove): RecordValues {
+  return {
+    operationType: "update",
+    data: { id: move.nodeId, parentId: move.parentId },
+    oldValues: { id: move.nodeId },
+  };
+}
+
 type WriteResponse = { status?: number; data?: SavedRecord[]; error?: { message?: string } };
 
 /**
@@ -176,6 +214,19 @@ export class ApiData {
       headers: await this.authHeaders(),
     });
     assertRemoved(await response.json(), target.entity);
+  }
+
+  /**
+   * Moves a tree node under another node, with the request the tree view sends when a node is dropped on
+   * another one (e.g. a characteristic value into a group).
+   * @throws when the backend rejected the move, with its message.
+   */
+  async moveTreeNode(move: TreeNodeMove): Promise<void> {
+    const response = await this.page.request.put(treeNodeMoveUrl(move), {
+      headers: await this.authHeaders(),
+      data: treeNodeMoveBody(move),
+    });
+    acceptedResponse(await response.json(), "tree node");
   }
 
   /**

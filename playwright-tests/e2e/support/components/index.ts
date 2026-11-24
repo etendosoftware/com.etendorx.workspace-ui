@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { AttributeSelector } from "./AttributeSelector";
 import { Auth } from "./Auth";
 import { Breadcrumb } from "./Breadcrumb";
+import { CharacteristicsFilter } from "./CharacteristicsFilter";
 import { CreateLinesFrom } from "./CreateLinesFrom";
 import { FormField } from "./FormField";
 import { FormSections } from "./FormSections";
@@ -47,6 +48,7 @@ export class App {
   readonly instancePurpose: InstancePurpose;
   readonly savedViews: SavedViews;
   readonly matchStatement: MatchStatement;
+  readonly characteristicsFilter: CharacteristicsFilter;
 
   constructor(readonly page: Page) {
     this.auth = new Auth(page);
@@ -66,6 +68,7 @@ export class App {
     this.instancePurpose = new InstancePurpose(page);
     this.savedViews = new SavedViews(page);
     this.matchStatement = new MatchStatement(page);
+    this.characteristicsFilter = new CharacteristicsFilter(page);
   }
 
   /** Lookup (magnifying glass) of the field with the given AD_Field_ID. */
