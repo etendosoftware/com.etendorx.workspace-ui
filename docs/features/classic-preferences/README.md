@@ -88,6 +88,19 @@ adapter as classic `OBViewGridComponent.getFilterName` (`ImplicitFilterMessage`)
   the preference again, in both interfaces.
 - **Filter messages are dismissed per window.** Closing the message hides it while the window stays open. Classic
   shows it again after the next load of the grid; "Never show this message again" is the way to stop it in both.
+- **"Never show this message again" is stored as classic does.** Both interfaces call
+  `Preferences.setPreferenceValue` with the session data, so the stored preference is the same row:
+  - **Scope:** global (no window), so the message stops in every window. It is visible only for the user who
+    chose it, with the role, client and organization of that session. With another role the message shows
+    again until the user chooses it there too.
+  - **Owner:** a new row always belongs to the System client and organization `*`; the visibility fields hold
+    the session client, organization and role.
+  - **Changing it later:** the method rewrites the existing row with the same visibility, so choosing it again
+    from either interface never creates a second row.
+  - **Showing the message again:** neither interface has an action for it. The value must be set to `Y`, or the
+    row deleted, in the Preference window. Since the row belongs to the System client, a client role usually
+    can see it but not edit it, so an administrator with the System Administrator role has to do it. This is a
+    limitation of classic that the new UI keeps.
 - **No new-record message.** Classic shows `OBUIAPP_NewRecordFilterMsg` only when a window opened with
   `command=NEW` goes back to the grid without loading it (a deferred load the new UI does not have), so
   `OBUIAPP_ShowNewRecordFilterMsg` has no effect.
