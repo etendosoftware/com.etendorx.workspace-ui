@@ -115,4 +115,83 @@ describe("hooks/useColumnFilterData", () => {
     expect(consoleSpy).toHaveBeenCalledWith("Error fetching filter options:", error);
     consoleSpy.mockRestore();
   });
+  describe("characteristics tree", () => {
+    const TREE_DS = "BE2735798ECC4EF88D131F16F1C4EC72";
+    const NAME_CRITERIA = { fieldName: "name", operator: "iContains", value: "Cola" };
+
+    const mockTreeResponse = (data: Record<string, unknown>[]) =>
+      (datasource.get as jest.Mock).mockResolvedValue({ ok: true, data: { response: { data } } });
+
+    it("keeps the characteristic of each value", async () => {
+      mockTreeResponse([
+        { id: "C1", _identifier: "Formato", isCharacteristic: true },
+        {
+          id: "V1",
+          _identifier: "330 ml",
+          parentId: "C1",
+          characteristic: "C1",
+          characteristic$_identifier: "Formato",
+        },
+      ]);
+
+      const { result } = renderHook(() => useColumnFilterData());
+      const options = await result.current.fetchFilterOptions({ datasourceId: TREE_DS });
+
+      expect(options).toEqual([
+        { id: "C1", label: "Formato", value: "Formato", isCharacteristic: true },
+        {
+          id: "V1",
+          label: "330 ml",
+          value: "330 ml",
+          parentId: "C1",
+          characteristic: "C1",
+          characteristicName: "Formato",
+        },
+      ]);
+    });
+
+    it("sends the grid parameters and criteria instead of a search", async () => {
+      mockTreeResponse([]);
+
+      const { result } = renderHook(() => useColumnFilterData());
+      await result.current.fetchFilterOptions({
+        datasourceId: TREE_DS,
+        searchQuery: "ignored",
+        treeParams: {
+          _parentDSIdentifier: "Product",
+          _propertyPath: "e",
+          _processId: undefined,
+          _buttonOwnerContextInfo: "",
+          criteria: [NAME_CRITERIA],
+        },
+      });
+
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params).toEqual(
+        expect.objectContaining({
+          _parentDSIdentifier: "Product",
+          _propertyPath: "e",
+          criteria: [NAME_CRITERIA],
+          operator: "and",
+          _constructor: "AdvancedCriteria",
+        })
+      );
+      expect(params).not.toHaveProperty("_processId");
+      expect(params).not.toHaveProperty("_buttonOwnerContextInfo");
+    });
+
+    it("sends no criteria when the grid has none", async () => {
+      mockTreeResponse([]);
+
+      const { result } = renderHook(() => useColumnFilterData());
+      await result.current.fetchFilterOptions({
+        datasourceId: TREE_DS,
+        treeParams: { _processId: "P1", criteria: [] },
+      });
+
+      const params = (datasource.get as jest.Mock).mock.calls[0][1];
+      expect(params._processId).toBe("P1");
+      expect(params).not.toHaveProperty("criteria");
+    });
+  });
 });

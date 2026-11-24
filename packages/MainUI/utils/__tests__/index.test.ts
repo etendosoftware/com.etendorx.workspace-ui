@@ -36,6 +36,8 @@ import {
 import { FieldType, FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "../form/constants";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 
 const field = (overrides: Record<string, unknown> = {}) => overrides as unknown as Field;
 const tab = (overrides: Record<string, unknown> = {}) => overrides as unknown as Tab;
@@ -333,6 +335,17 @@ describe("utils/index", () => {
       expect(result.inpkeyColumnId).toBe("C_Order_ID");
       expect(result.DOCBASETYPE).toBe("");
       expect(result.$Element_BP).toBe("");
+    });
+
+    it("takes FinancialManagement and _ShowAcct from the preferences instead of a fixed Y", () => {
+      installLocalStorageMock();
+      const orderTab = tab({ id: "tab-1", window: "win-1", table: "table-1", entityName: "C_Order", fields: {} });
+
+      savePreferences({});
+      expect(buildProcessPayload({ id: "123" }, orderTab)).toMatchObject({ FinancialManagement: "", _ShowAcct: "" });
+
+      savePreferences({ "FinancialManagement_win-1": "Y", ShowAcct: "Y" });
+      expect(buildProcessPayload({ id: "123" }, orderTab)).toMatchObject({ FinancialManagement: "Y", _ShowAcct: "Y" });
     });
   });
 

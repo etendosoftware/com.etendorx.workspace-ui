@@ -25,6 +25,7 @@ import type {
 } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { FIELD_REFERENCE_CODES, isNumericReference } from "@/utils/form/constants";
+import { getCharacteristicsKey, isProductCharacteristicsValue } from "@/utils/form/productCharacteristics";
 import { useMemo } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
@@ -60,6 +61,19 @@ function applyAuxiliaryInputs(
 }
 
 /**
+ * Writes the value of a column. A Product Characteristics value (`{dbValue, characteristics}`, sent by
+ * Classic in edit mode) keeps the stored text in the field and the characteristics in a side key.
+ */
+function applyEntryValue(acc: EntityData, newKey: string, value: unknown, field: Field | undefined): void {
+  if (isProductCharacteristicsValue(value)) {
+    acc[newKey] = value.dbValue;
+    acc[getCharacteristicsKey(newKey)] = value.characteristics as unknown as EntityValue;
+    return;
+  }
+  acc[newKey] = toBooleanEntityValue(value as string, field);
+}
+
+/**
  * Writes a single column value entry (value, identifier, entries) into the accumulator.
  */
 function applyColumnValueEntry(
@@ -68,7 +82,7 @@ function applyColumnValueEntry(
   entry: ColumnValueEntry,
   field: Field | undefined
 ): void {
-  acc[newKey] = toBooleanEntityValue(entry.value, field);
+  applyEntryValue(acc, newKey, entry.value, field);
 
   if (entry.entries) {
     acc[`${newKey}$_entries`] = entry.entries.map((e) => ({

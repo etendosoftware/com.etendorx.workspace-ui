@@ -37,6 +37,7 @@ jest.mock("@/utils/window/utils", () => ({
 
 jest.mock("@/utils/url/utils", () => ({
   appendWindowToUrl: jest.fn(() => "window=wi_0"),
+  setWindowInUrl: jest.fn(() => "window=wi_0"),
 }));
 
 jest.mock("@/components/ToastContent", () => ({

@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
 import {
   applyFieldOverrides,
+  applyPreferenceOverrides,
   applyProcessOverrides,
+  applySessionRoleOverrides,
   applyTabOverrides,
+  PREFERENCES_URL,
   processMetadataUrl,
+  SESSION_URL,
   windowMetadataUrl,
 } from "../processOverrides";
 
@@ -143,5 +147,40 @@ test.describe("processMetadataUrl", () => {
   test("does not match another process or the window metadata", () => {
     expect(url.test(`http://localhost:3000/api/erp/meta/process/${PROCESS_ID}0`)).toBe(false);
     expect(url.test(`http://localhost:3000/api/erp/meta/window/${PROCESS_ID}`)).toBe(false);
+  });
+});
+
+test.describe("applyPreferenceOverrides", () => {
+  test("adds the values to the preference map and keeps the rest", () => {
+    const body = { preferences: { ShowAcct: "Y" } };
+    expect(applyPreferenceOverrides(body, { StartPage: "/?tabId=180" })).toBe(true);
+    expect(body.preferences).toEqual({ ShowAcct: "Y", StartPage: "/?tabId=180" });
+  });
+
+  test("leaves an answer without a preference map as it is", () => {
+    const body = {};
+    expect(applyPreferenceOverrides(body, { StartPage: "/?tabId=180" })).toBe(false);
+    expect(body).toEqual({});
+  });
+});
+
+test.describe("applySessionRoleOverrides", () => {
+  test("changes the role of the session and keeps the rest", () => {
+    const body = { currentRole: { id: "R1", userLevel: " CO" } };
+    expect(applySessionRoleOverrides(body, { userLevel: "  O" })).toBe(true);
+    expect(body.currentRole).toEqual({ id: "R1", userLevel: "  O" });
+  });
+
+  test("leaves an answer without a role as it is", () => {
+    expect(applySessionRoleOverrides({}, { userLevel: "  O" })).toBe(false);
+  });
+});
+
+test.describe("session URLs", () => {
+  test("match the preferences and session requests only", () => {
+    expect(PREFERENCES_URL.test("http://localhost:3000/api/erp/meta/preferences")).toBe(true);
+    expect(PREFERENCES_URL.test("http://localhost:3000/api/erp/meta/preferences-other")).toBe(false);
+    expect(SESSION_URL.test("http://localhost:3000/api/erp/meta/session?x=1")).toBe(true);
+    expect(SESSION_URL.test("http://localhost:3000/api/erp/meta/sessions")).toBe(false);
   });
 });

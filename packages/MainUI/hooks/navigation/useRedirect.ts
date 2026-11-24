@@ -18,13 +18,11 @@
 import { useCallback } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import type { TabState } from "@/utils/window/constants";
-import type { ParsedUrlState } from "@/utils/recovery/urlStateParser";
-import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
-import { reconstructState } from "@/utils/recovery/stateReconstructor";
+import { buildRecordWindowData } from "@/utils/window/recordWindowData";
+import { showWindow } from "@/utils/window/showWindow";
 
 /**
  * Response from the Etendo Classic ReferencedLink endpoint.
@@ -77,8 +75,6 @@ interface HandleKeyDownRedirectProps {
 }
 
 export const useRedirect = () => {
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
-
   /**
    * Calls the Etendo Classic ReferencedLink endpoint to resolve the correct
    * windowId and tabId for navigation. This is the same mechanism used by
@@ -188,7 +184,11 @@ export const useRedirect = () => {
       // matching Classic UI behavior instead of forcing a Form View with no record.
       if (!selectedRecordId) {
         const tabs = { [resolvedTabId]: createDefaultTabState(tabLevel) };
-        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
+        showWindow({
+          windowId: resolvedWindowId,
+          windowIdentifier: newWindowIdentifier,
+          windowData: { title: resolvedTitle, tabs },
+        });
         return;
       }
 
@@ -196,50 +196,17 @@ export const useRedirect = () => {
       // page-reload recovery, so parent tabs (levels above the target) get their selectedRecord
       // and filters populated too. Without this, redirecting into a sub-tab (tabLevel > 0) left
       // parent tabs empty, so the child tab had no context to render against.
-      try {
-        const windowMetadata = await Metadata.getWindow(resolvedWindowId);
-        const targetTab = windowMetadata.tabs.find((t) => t.id === resolvedTabId);
-
-        const parsedState: ParsedUrlState = {
-          windowIdentifier: newWindowIdentifier,
-          tabId: resolvedTabId,
-          recordId: selectedRecordId,
-          windowId: resolvedWindowId,
-          tabTitle: resolvedTitle,
-          tabLevel: targetTab?.tabLevel ?? tabLevel,
-          keyParameter: "",
-        };
-
-        const hierarchy = await calculateHierarchy(parsedState, windowMetadata);
-        const reconstructed = await reconstructState(hierarchy, windowMetadata);
-
-        setWindowActive({
-          windowIdentifier: newWindowIdentifier,
-          windowData: {
-            title: resolvedTitle,
-            tabs: reconstructed.tabs,
-            navigation: reconstructed.navigation,
-            initialized: true,
-          },
-        });
-      } catch (err) {
-        console.warn("[useRedirect] Hierarchy reconstruction failed, falling back to single-tab state:", err);
-        const defaultTabState = createDefaultTabState(tabLevel);
-        const tabs = {
-          [resolvedTabId]: {
-            ...defaultTabState,
-            form: {
-              recordId: selectedRecordId,
-              mode: TAB_MODES.FORM,
-              formMode: FORM_MODES.EDIT,
-            },
-            selectedRecord: selectedRecordId,
-          } as TabState,
-        };
-        setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: resolvedTitle, tabs } });
-      }
+      const windowData = await buildRecordWindowData({
+        windowIdentifier: newWindowIdentifier,
+        windowId: resolvedWindowId,
+        tabId: resolvedTabId,
+        title: resolvedTitle,
+        recordId: selectedRecordId,
+        tabLevel,
+      });
+      showWindow({ windowId: resolvedWindowId, windowIdentifier: newWindowIdentifier, windowData });
     },
-    [setWindowActive, resolveViaReferencedLink]
+    [resolveViaReferencedLink]
   );
 
   const handleClickRedirect = useCallback(
@@ -346,9 +313,13 @@ export const useRedirect = () => {
           }
         : {};
 
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: menuItem.name, tabs } });
+      showWindow({
+        windowId: resolvedWindowId,
+        windowIdentifier: newWindowIdentifier,
+        windowData: { title: menuItem.name, tabs },
+      });
     },
-    [setWindowActive]
+    []
   );
 
   return {

@@ -12,6 +12,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { SELECTOR_MIN_SEARCH_CHARS } from "@/hooks/datasource/constants";
 import { isBelowSearchThreshold, isSearchSelectorDatasource } from "@/utils/selectorUtils";
+import type { CharacteristicsFilterContext } from "@/utils/table/characteristicsFilter";
 
 const TREE_REFERENCE_IDS: Set<string> = new Set([
   FIELD_REFERENCE_CODES.TREE_REFERENCE.id,
@@ -27,7 +28,12 @@ export interface ColumnFilterProps {
   onFilterChange: (selectedOptions: FilterOption[]) => void;
   onLoadOptions?: (searchQuery?: string) => void;
   onLoadMoreOptions?: (searchQuery?: string) => void;
+  /** Grid of a Product Characteristics column; with it the column uses the Classic characteristics tree. */
+  characteristicsContext?: CharacteristicsFilterContext;
 }
+
+const isCharacteristicsColumn = (column: Column): boolean =>
+  column.column?.reference === FIELD_REFERENCE_CODES.PRODUCT_CHARACTERISTICS.id;
 
 export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   column,
@@ -35,6 +41,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   onFilterChange,
   onLoadOptions,
   onLoadMoreOptions,
+  characteristicsContext,
 }) => {
   const { t } = useTranslation();
 
@@ -110,6 +117,20 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
       onLoadMoreOptions(filterState?.searchQuery);
     }
   };
+
+  if (isTree && characteristicsContext && isCharacteristicsColumn(column)) {
+    return (
+      <TreeColumnFilter
+        column={column}
+        entityName={characteristicsContext.entityName}
+        characteristicsContext={characteristicsContext}
+        appliedOptions={filterState?.selectedOptions ?? []}
+        onSelectionChange={(_selectedIds, selectedOptions) => onFilterChange(selectedOptions ?? [])}
+        placeholder={`Filter ${column.name || column.columnName}...`}
+        data-testid="TreeColumnFilter__characteristics"
+      />
+    );
+  }
 
   if (isTree) {
     return (

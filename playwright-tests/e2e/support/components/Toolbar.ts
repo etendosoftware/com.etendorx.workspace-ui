@@ -15,7 +15,8 @@ export type ToolbarAction =
   | "copy-record"
   | "save-view"
   | "export-csv"
-  | "attachment";
+  | "attachment"
+  | "personalize-form";
 
 const PROCESS_MENU_TEST_ID = "IconButtonWithText__process-menu";
 /** AD key of the toolbar "New Record" button, rendered icon-only (`IconButton__<key>`) in form view. */
@@ -123,15 +124,20 @@ export class Toolbar {
     await atLevel(this.scope.getByTestId(PROCESS_MENU_TEST_ID).filter({ visible: true }), level).click();
   }
 
+  /** Whether the implicit filter of the grid is on: the button shows it with an inline background color. */
+  async isImplicitFilterOn(): Promise<boolean> {
+    const toggle = this.button("filter");
+    await toggle.waitFor({ state: "visible", timeout: BUTTON_TIMEOUT });
+    return toggle.evaluate((element) => (element as HTMLElement).style.backgroundColor !== "");
+  }
+
   /**
    * Turns off the implicit filter of the grid (e.g. processed='N') when it is on, and waits
    * for the unfiltered data. The button shows it is on with an inline background color.
    */
   async disableImplicitFilter(): Promise<void> {
     const toggle = this.button("filter");
-    await toggle.waitFor({ state: "visible", timeout: BUTTON_TIMEOUT });
-    const isOn = await toggle.evaluate((element) => (element as HTMLElement).style.backgroundColor !== "");
-    if (isOn) {
+    if (await this.isImplicitFilterOn()) {
       await runAndWaitForDatasource(this.page, () => toggle.click());
     }
   }

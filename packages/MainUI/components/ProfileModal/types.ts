@@ -118,6 +118,8 @@ export interface UserProfileProps {
   photoUrl: string;
   name: string;
   email: string;
+  /** Runs right before a manual logout (e.g. closing the single sign-on provider session). */
+  onBeforeSignOff?: () => void;
 }
 
 export interface SelectorListProps {

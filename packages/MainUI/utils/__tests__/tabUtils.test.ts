@@ -16,7 +16,9 @@
  *************************************************************************
  */
 
-import { shouldShowTab, type TabWithParentInfo } from "../tabUtils";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import { isTabHiddenByPreference, shouldShowTab, type TabWithParentInfo } from "../tabUtils";
 
 describe("tabUtils", () => {
   describe("shouldShowTab", () => {
@@ -79,6 +81,45 @@ describe("tabUtils", () => {
         fields: {},
       } as any;
       expect(shouldShowTab(tab, parentTab)).toBe(false);
+    });
+  });
+
+  describe("accounting and translation tabs", () => {
+    const WINDOW_ID = "167";
+    const asTab = (tab: Partial<TabWithParentInfo>) => tab as TabWithParentInfo;
+    const parent = asTab({ id: "parent-1", window: WINDOW_ID, tabLevel: 0 });
+    const accountingTab = asTab({ tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, accountingTab: true });
+    const translationTab = asTab({ tabLevel: 1, parentTabId: "parent-1", window: WINDOW_ID, translationTab: true });
+
+    beforeEach(() => {
+      installLocalStorageMock();
+    });
+
+    it("hides both kinds of tab when the preferences are not set, as classic does", () => {
+      savePreferences({});
+      expect(shouldShowTab(accountingTab, parent)).toBe(false);
+      expect(shouldShowTab(translationTab, parent)).toBe(false);
+    });
+
+    it("shows each kind of tab only with its own preference set to Y", () => {
+      savePreferences({ ShowAcct: "Y" });
+      expect(shouldShowTab(accountingTab, parent)).toBe(true);
+      expect(shouldShowTab(translationTab, parent)).toBe(false);
+
+      savePreferences({ [`ShowTrl_${WINDOW_ID}`]: "Y" });
+      expect(shouldShowTab(accountingTab, parent)).toBe(false);
+      expect(shouldShowTab(translationTab, parent)).toBe(true);
+    });
+
+    it("hides the children of a hidden accounting tab", () => {
+      savePreferences({ ShowAcct: "N" });
+      const child = asTab({ tabLevel: 2, parentTabId: "acct-1", window: WINDOW_ID });
+      expect(shouldShowTab(child, { ...accountingTab, id: "acct-1" })).toBe(false);
+    });
+
+    it("never hides a regular tab", () => {
+      savePreferences({});
+      expect(isTabHiddenByPreference(asTab({ window: WINDOW_ID }))).toBe(false);
     });
   });
 });

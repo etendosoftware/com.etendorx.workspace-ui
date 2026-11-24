@@ -21,6 +21,7 @@ import {
   clearPreferences,
   getStoredPreferences,
   setStoredPreference,
+  buildPreferenceKey,
   resolvePreference,
   getStoredPreference,
 } from "../propertyStore";
@@ -107,6 +108,13 @@ describe("propertyStore", () => {
 
       expect(getStoredPreferences()).toEqual({});
       global.window = originalWindow;
+    });
+  });
+
+  describe("buildPreferenceKey", () => {
+    it("adds the window id to the name of a window preference", () => {
+      expect(buildPreferenceKey("dataPageSize", "143")).toBe("dataPageSize_143");
+      expect(buildPreferenceKey("dataPageSize")).toBe("dataPageSize");
     });
   });
 

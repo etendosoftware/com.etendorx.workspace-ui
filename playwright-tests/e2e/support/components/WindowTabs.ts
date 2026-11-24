@@ -12,6 +12,12 @@ export class WindowTabs {
     return this.page.locator(`div:has(> ${CLOSE_WINDOW})`).filter({ hasText: title }).first();
   }
 
+  /** Titles of the open windows, in the order of the bar. */
+  async titles(): Promise<string[]> {
+    const texts = await this.page.locator(`div:has(> ${CLOSE_WINDOW}):visible`).allInnerTexts();
+    return texts.map((text) => text.trim());
+  }
+
   /** Close buttons of all open windows: their count is the number of open windows. */
   get closeButtons(): Locator {
     return this.page.locator(`${CLOSE_WINDOW}:visible`);

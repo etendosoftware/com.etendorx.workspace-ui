@@ -40,8 +40,9 @@ const systemContext = {
   IsReversalDocument: "N",
   DOCBASETYPE: record.docBaseType || "",
   VoidAutomaticallyCreated: 0,
-  FinancialManagement: "Y",
-  _ShowAcct: "Y",
+  // Classic preferences: FinancialManagement (window first, then global) and the
+  // global ShowAcct; empty when the preference is not set (ETP-6356)
+  ...buildProcessPreferenceContext(tab.window),
 
   // Accounting dimension display logic
   ACCT_DIMENSION_DISPLAY: "",

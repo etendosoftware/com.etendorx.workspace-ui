@@ -75,6 +75,7 @@ const NoteSection = ({
   isSectionExpanded,
   onNotesChange,
   showErrorModal,
+  readOnly = false,
 }: NoteSectionProps) => {
   const { t } = useTranslation();
   const sx = useNoteStyles();
@@ -221,6 +222,7 @@ const NoteSection = ({
               key={note.id}
               note={note}
               isOwn={isOwnNote(note, currentUserId)}
+              canDelete={!readOnly}
               isDeleting={deletingNoteId === note.id}
               onDelete={handleDeleteNote}
               dateDisplay={dateDisplay}
@@ -242,12 +244,14 @@ const NoteSection = ({
 
   return (
     <Box sx={sx.container} data-testid="Box__a680f8_1">
-      <NoteComposer
-        onSubmit={handleAddNote}
-        placeholder={noteInputPlaceholder}
-        submitLabel={addNoteSubmitText}
-        data-testid="NoteComposer__a680f8"
-      />
+      {!readOnly && (
+        <NoteComposer
+          onSubmit={handleAddNote}
+          placeholder={noteInputPlaceholder}
+          submitLabel={addNoteSubmitText}
+          data-testid="NoteComposer__a680f8"
+        />
+      )}
       {renderNotes()}
     </Box>
   );

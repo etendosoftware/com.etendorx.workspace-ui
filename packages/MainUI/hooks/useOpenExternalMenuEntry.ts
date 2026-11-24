@@ -20,15 +20,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowStore } from "@/stores/windowStore";
 import { notifyReportPopupBlocked } from "@/utils/reportPopup";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { findOpenWindowIdentifier } from "@/utils/window/showWindow";
 import {
   buildExternalPageWindowId,
   normalizeExternalUrl,
   openUrlInNewBrowserTab,
 } from "@/utils/menu/externalMenuEntry";
-
-/** Identifier of the already open in-app tab for the given `windowId`, if any. */
-const findOpenWindowIdentifier = (windowId: string): string | undefined =>
-  Object.values(useWindowStore.getState().windows).find((win) => win.windowId === windowId)?.windowIdentifier;
 
 /**
  * Returns the opener of External (external link) menu entries, mirroring Classic:

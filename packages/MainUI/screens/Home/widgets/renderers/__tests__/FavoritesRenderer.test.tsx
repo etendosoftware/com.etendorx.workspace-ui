@@ -9,7 +9,10 @@ const mockPrefetchOnHover = jest.fn();
 const mockNewWindowIdentifier = jest.fn((windowId: string) => `${windowId}_123`);
 
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (state: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
+  useWindowStore: Object.assign(
+    (selector: (state: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
+    { getState: () => ({ windows: {}, dirtyWindows: {}, setWindowActive: mockSetWindowActive }) }
+  ),
 }));
 
 jest.mock("@/stores/favoritesStore", () => ({

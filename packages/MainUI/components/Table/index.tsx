@@ -83,6 +83,7 @@ import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { useFrozenWhileHidden } from "@/hooks/table/useFrozenWhileHidden";
+import { useFillGridViewport } from "@/hooks/table/useFillGridViewport";
 import { useIsActiveTab } from "@/contexts/ActiveTabContext";
 import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { isSameColumnVisibility, resolveUpdater } from "@/utils/table/columnState";
@@ -110,6 +111,7 @@ import { useCalloutHighlightStore } from "@/stores/calloutHighlightStore";
 import { CalloutHighlightOverlay } from "@/components/CalloutHighlightOverlay";
 import { COLUMN_NAMES } from "./constants";
 import { TreeColumnFilter } from "./TreeColumnFilter";
+import { buildGridCharacteristicsContext, toAppliedFilterOptions } from "@/utils/table/characteristicsFilter";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { FIELD_REFERENCE_CODES, isImmediateCalloutReference } from "@/utils/form/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -168,6 +170,8 @@ import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatTimeTo12Hour, getTimeFormatters } from "@/utils/date/utils";
 import { getSingleRecordAutoSelectDecision } from "./utils/singleRecordAutoSelect";
+import { isGridBottomReached } from "./utils/viewportFill";
+import GridFilterMessage from "./GridFilterMessage";
 import { getSrAutoOpenDecision } from "./utils/srAutoOpen";
 import { notifyStaleObjectAwareError } from "./utils/saveOperations";
 import { buildTabExtraProperties } from "@/utils/table/extraProperties";
@@ -1037,11 +1041,14 @@ const getHierarchyIcon = (
 const TreeColumnFilterWrapper = ({ column: mrtColumn }: { column: MRT_Column<EntityData> }) => {
   const props = (mrtColumn.columnDef as any)._treeFilterProps;
   if (!props) return null;
+  const appliedOptions = props.characteristicsContext ? toAppliedFilterOptions(mrtColumn.getFilterValue()) : undefined;
   return (
     <TreeColumnFilter
       column={props.column}
       entityName={props.entityName}
       tabId={props.tabId}
+      characteristicsContext={props.characteristicsContext}
+      appliedOptions={appliedOptions}
       onSelectionChange={(_selectedIds: string[], selectedOptions?: FilterOption[]) => {
         const colId = props.column.id || props.column.columnName;
         props.onFilterChange((prev: ColumnFiltersState) => {
@@ -1266,6 +1273,7 @@ const DynamicTable = ({
     handleMRTColumnOrderChange,
     handleMRTExpandChange,
     toggleImplicitFilters,
+    isImplicitFilterApplied,
     fetchMore,
     refetch,
     removeRecordLocally,
@@ -1278,6 +1286,8 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+  // A grid filtered by the id of one record, as a link opens it (classic "single record" filter)
+  const hasGridIdFilter = useMemo(() => tableColumnFilters.some((filter) => filter.id === "id"), [tableColumnFilters]);
   const exportCSV = useGridCsvExport({ tab, windowIdentifier, getRequestParams });
 
   // Auto-open FormView for SR (Single Record) tabs once records are fetched.
@@ -3025,6 +3035,7 @@ const DynamicTable = ({
           entityName: tab.entityName,
           tabId: tab.id,
           onFilterChange: handleMRTColumnFiltersChange,
+          characteristicsContext: buildGridCharacteristicsContext(ref, tab.entityName, getRequestParams),
         };
         column.Filter = TreeColumnFilterWrapper;
       }
@@ -3105,6 +3116,7 @@ const DynamicTable = ({
     handleMRTColumnFiltersChange,
     groupedColumnId,
     summaryState,
+    getRequestParams,
   ]);
 
   // Helper function to check if a row is being edited
@@ -3419,22 +3431,23 @@ const DynamicTable = ({
       handleScroll(event);
       const containerRefElement = event.target as HTMLDivElement;
 
-      if (containerRefElement) {
-        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-        // Ensure the container has height (is visible) and has scrollable content before fetching more
-        if (
-          clientHeight > 0 &&
-          scrollHeight > clientHeight &&
-          scrollHeight - scrollTop - clientHeight < 10 &&
-          !loading &&
-          hasMoreRecords
-        ) {
-          fetchMore();
-        }
+      // Ensure the container has height (is visible) and has scrollable content before fetching more
+      if (containerRefElement && isGridBottomReached(containerRefElement) && !loading && hasMoreRecords) {
+        fetchMore();
       }
     },
     [fetchMore, hasMoreRecords, loading, handleScroll]
   );
+
+  // Without a scroll bar the grid can never be scrolled to the bottom, so it fills its height by itself.
+  useFillGridViewport({
+    containerRef: tableContainerRef,
+    recordCount: effectiveRecords.length,
+    loading,
+    hasMoreRecords,
+    error,
+    fetchMore,
+  });
 
   // Generate ARIA attributes for the table container
   const editingRowsCount = Object.keys(editingRows).length;
@@ -4473,6 +4486,15 @@ const DynamicTable = ({
         focusRegionId={focusRegionId}
         isFocused={isFocused}
         data-testid="GridShortcuts__8ca888"
+      />
+      <GridFilterMessage
+        tab={tab}
+        windowIdentifier={windowIdentifier}
+        isGridVisible={isVisible}
+        isImplicitFilterApplied={isImplicitFilterApplied}
+        hasIdFilter={hasGridIdFilter}
+        hasParentSelection={!parentTab || Boolean(parentRecord)}
+        data-testid="GridFilterMessage__8ca888"
       />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         {tableElement}

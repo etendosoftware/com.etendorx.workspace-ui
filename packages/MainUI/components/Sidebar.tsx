@@ -13,6 +13,7 @@ import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/sr
 import { useLanguage } from "@/contexts/language";
 import { useMenu } from "@/hooks/useMenu";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { showWindow } from "@/utils/window/showWindow";
 import { useWindowStore } from "@/stores/windowStore";
 import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
@@ -111,7 +112,6 @@ export default function Sidebar() {
     const wins = Object.values(windowsObj);
     return wins.find((w) => w.isActive) ?? null;
   }, [windowsObj]);
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
   const openExternalMenuEntry = useOpenExternalMenuEntry();
   const openLegacyMenuEntry = useOpenLegacyMenuEntry();
@@ -191,9 +191,13 @@ export default function Sidebar() {
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
       // Eager fetch: start metadata loading immediately on click
       loadWindowData(windowId).catch(() => {});
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
+      showWindow({
+        windowId,
+        windowIdentifier: newWindowIdentifier,
+        windowData: { title: item.name, initialized: true },
+      });
     },
-    [setWindowActive, loadWindowData]
+    [loadWindowData]
   );
 
   /**

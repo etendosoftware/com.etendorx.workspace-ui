@@ -16,6 +16,7 @@
  */
 
 import { type Tab, UIPattern } from "@workspaceui/api-client/src/api/types";
+import { getGridPageSize, getNumericPreference } from "@/utils/preferences/classicPreferences";
 
 export interface TreeMetadata {
   supportsTreeMode: boolean;
@@ -51,4 +52,49 @@ export const getTreeMetadata = (tab: Tab): TreeMetadata => {
     referencedTableId: tab.tableId,
     canMoveNodes: canMoveTreeNodes(tab),
   };
+};
+
+/** Classic preference with the maximum number of nodes a tree request may return. */
+export const TREE_FETCH_LIMIT_PREFERENCE = "TreeDatasourceFetchLimit";
+
+/** Classic default of `TreeDatasourceFetchLimit`, the value the core ships at System level. */
+export const DEFAULT_TREE_FETCH_LIMIT = 200;
+
+/** Message classic shows when a tree request returns more nodes than the limit. */
+export const TOO_MANY_NODES_MESSAGE = "OBUIAPP_TooManyNodes";
+
+/** Error type of the tree datasource answer when the limit is exceeded (`TreeDatasourceService`). */
+const TOO_MANY_NODES_ERROR = "tooManyNodes";
+
+/**
+ * Number of nodes a tree request asks for, as classic sends `_endRow = OB.Properties.TreeDatasourceFetchLimit`.
+ *
+ * @returns The `TreeDatasourceFetchLimit` preference, or its classic default
+ */
+export const getTreeFetchLimit = (): number =>
+  getNumericPreference(TREE_FETCH_LIMIT_PREFERENCE, undefined, DEFAULT_TREE_FETCH_LIMIT);
+
+/**
+ * True when a tree datasource answer reports more nodes than `TreeDatasourceFetchLimit`
+ * (`{ response: { status: -1, error: { type: "tooManyNodes" }, data: [] } }`).
+ *
+ * @param body - Body of the datasource answer
+ */
+export const isTooManyNodesResponse = (body: unknown): boolean => {
+  const response = (body as { response?: { error?: { type?: string } } } | null)?.response;
+  return response?.error?.type === TOO_MANY_NODES_ERROR;
+};
+
+/**
+ * Records a grid request asks for: the tree fetch limit while the tab shows its tree, as classic does, and
+ * the page size of the window (`dataPageSize`) otherwise.
+ *
+ * @param isTreeMode - Whether the tab shows its tree
+ * @param windowId - AD window id of the tab
+ */
+export const getFetchPageSize = (isTreeMode: boolean, windowId?: string): number => {
+  if (isTreeMode) {
+    return getTreeFetchLimit();
+  }
+  return getGridPageSize(windowId);
 };

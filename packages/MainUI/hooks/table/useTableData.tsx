@@ -51,7 +51,13 @@ import {
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
-import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import {
+  getFetchPageSize,
+  getTreeFetchLimit,
+  isTooManyNodesResponse,
+  TOO_MANY_NODES_MESSAGE,
+} from "@/utils/table/treeMode";
+import { toast } from "sonner";
 import {
   type GroupingSort,
   buildGroupedMultiSortBy,
@@ -156,7 +162,7 @@ export const useTableData = ({
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
-  const { language } = useLanguage();
+  const { language, getLabel } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const windowIdentifier = useCurrentWindowIdentifier();
 
@@ -483,7 +489,7 @@ export const useTableData = ({
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
-      pageSize: DEFAULT_PAGE_SIZE,
+      pageSize: getFetchPageSize(shouldUseTreeMode, tab.window),
       ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       _className: "OBViewDataSource",
       Constants_IDENTIFIER: "_identifier",
@@ -572,6 +578,7 @@ export const useTableData = ({
     graph,
     parentTab,
     getParentFieldName,
+    shouldUseTreeMode,
   ]);
 
   // Tree options
@@ -626,6 +633,7 @@ export const useTableData = ({
     loading,
     hasMoreRecords,
     getRequestParams,
+    isTreeLimitExceeded,
   } = useDatasource({
     entity: treeEntity,
     params: query,
@@ -641,6 +649,18 @@ export const useTableData = ({
     // must hard-filter to the single record, matching Classic.
     enableDirectNavigation: tabFormState?.mode === "form",
   });
+
+  // Classic shows OBUIAPP_TooManyNodes when a tree request returns more nodes than TreeDatasourceFetchLimit;
+  // the tree stays empty and the filters on screen, so the user can narrow them down.
+  const notifyTreeLimitExceeded = useCallback(() => {
+    toast.error(getLabel(TOO_MANY_NODES_MESSAGE));
+  }, [getLabel]);
+
+  useEffect(() => {
+    if (isTreeLimitExceeded) {
+      notifyTreeLimitExceeded();
+    }
+  }, [isTreeLimitExceeded, notifyTreeLimitExceeded]);
 
   // Apply client-side search filter in tree mode (keeps matches + ancestor chain)
   const filteredFlattenedRecords = useMemo(() => {
@@ -726,9 +746,10 @@ export const useTableData = ({
         const baseCriteria = (childQuery.criteria as any[]) || [];
         const finalCriteria = [...baseCriteria, ...searchCriteriaArray, ...columnFilterCriteria, parentIdCriteria];
 
-        const safePageSize = 1000;
+        // As classic, a tree request asks for at most TreeDatasourceFetchLimit nodes
+        const safePageSize = getTreeFetchLimit();
         const startRow = 0;
-        const endRow = safePageSize - 1;
+        const endRow = safePageSize;
 
         const processedParams = {
           ...childQuery,
@@ -748,7 +769,9 @@ export const useTableData = ({
           data: { response?: { data?: EntityData[] } };
         };
 
-        if (response.ok && response.data?.response?.data) {
+        if (response.ok && isTooManyNodesResponse(response.data)) {
+          notifyTreeLimitExceeded();
+        } else if (response.ok && response.data?.response?.data) {
           const childNodes = response.data.response.data;
 
           setChildrenData((prev) => new Map(prev.set(parentId, childNodes)));
@@ -763,6 +786,7 @@ export const useTableData = ({
     [
       shouldUseTreeMode,
       loadedNodes,
+      notifyTreeLimitExceeded,
       treeEntity,
       tab,
       treeMetadata,

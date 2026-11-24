@@ -6,8 +6,9 @@ import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { useUserStore } from "@/stores/userStore";
 import { useTranslation } from "./useTranslation";
 import { logger } from "../utils/logger";
+import { SSO_LINK_CALLBACK_PATH, SSO_STATE_KEY } from "@/utils/session/ssoProvider";
 
-type SSOConfig =
+export type SSOConfig =
   | { enabled: false }
   | {
       enabled: true;
@@ -25,7 +26,9 @@ type SSOConfig =
       providers: { id: string; name: string }[];
     };
 
-const STATE_KEY = "sso_state";
+const STATE_KEY = SSO_STATE_KEY;
+/** Classic account linking asks the user to log in at the provider again (`webAuth.authorize({ prompt: 'login' })`). */
+const LINK_PROMPT = "login";
 const redirectUri = () => (typeof window !== "undefined" ? window.location.origin : "");
 
 function plumbToken(token: string) {
@@ -110,20 +113,33 @@ export function useSSO({ autoCallback = false }: { autoCallback?: boolean } = {}
     }
   }, [autoCallback, runCallback, t, setLoginErrorText, setLoginErrorDescription]);
 
-  const startAuth0 = useCallback(() => {
-    if (config?.enabled !== true || config.authType !== "Auth0") return;
-    const state = crypto.randomUUID();
-    sessionStorage.setItem(STATE_KEY, state);
-    const url = new URL(`https://${config.domain}/authorize`);
-    url.search = new URLSearchParams({
-      response_type: "code",
-      client_id: config.clientId,
-      redirect_uri: redirectUri(),
-      scope: "openid profile email",
-      state,
-    }).toString();
-    window.location.assign(url.toString());
-  }, [config]);
+  /** Sends the user to the Auth0 authorization, back to `redirect` with a code and the stored `state`. */
+  const authorizeWithAuth0 = useCallback(
+    (redirect: string, extraParams: Record<string, string> = {}) => {
+      if (config?.enabled !== true || config.authType !== "Auth0") return;
+      const state = crypto.randomUUID();
+      sessionStorage.setItem(STATE_KEY, state);
+      const url = new URL(`https://${config.domain}/authorize`);
+      url.search = new URLSearchParams({
+        response_type: "code",
+        client_id: config.clientId,
+        redirect_uri: redirect,
+        scope: "openid profile email",
+        state,
+        ...extraParams,
+      }).toString();
+      window.location.assign(url.toString());
+    },
+    [config]
+  );
+
+  const startAuth0 = useCallback(() => authorizeWithAuth0(redirectUri()), [authorizeWithAuth0]);
+
+  // Account linking with Auth0: back to the link route, after logging in at the provider again
+  const startAuth0Link = useCallback(
+    () => authorizeWithAuth0(`${redirectUri()}${SSO_LINK_CALLBACK_PATH}`, { prompt: LINK_PROMPT }),
+    [authorizeWithAuth0]
+  );
 
   const middlewareRedirect = useCallback(
     (provider: string, redirect: string) => {
@@ -147,9 +163,9 @@ export function useSSO({ autoCallback = false }: { autoCallback?: boolean } = {}
 
   // Account linking: bounce to a dedicated callback route so it isn't treated as a login.
   const startLink = useCallback(
-    (provider: string) => middlewareRedirect(provider, `${redirectUri()}/sso/link-callback`),
+    (provider: string) => middlewareRedirect(provider, `${redirectUri()}${SSO_LINK_CALLBACK_PATH}`),
     [middlewareRedirect]
   );
 
-  return { config, startAuth0, startMiddleware, startLink };
+  return { config, startAuth0, startAuth0Link, startMiddleware, startLink };
 }

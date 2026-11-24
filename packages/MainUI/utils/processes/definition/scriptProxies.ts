@@ -225,6 +225,8 @@ export interface GridController {
   getRecordIndex: (record: EntityData) => number;
   getEditedRecord: (index: number) => EntityData | undefined;
   getTotalRows: () => number;
+  /** Whether the grid still has records to load; absent means every record is loaded. */
+  hasMoreRecords?: () => boolean;
   // Edit values (overlay merged into the loaded rows)
   setEditValue: (rowIndex: number, colName: string, value: unknown) => void;
   getEditValues: (rowIndex: number) => Record<string, unknown>;
@@ -349,12 +351,41 @@ export interface FormProxy extends Record<string, unknown> {
   redraw: () => void;
 }
 
+/**
+ * `grid.data` as classic scripts read the SmartClient ResultSet: the loaded rows (`localData`, `allRows`), how
+ * many are loaded (`cachedRows`) and the total (`totalRows`). While the grid still has records to load the total
+ * is not known yet, so `totalRows` is one more than `cachedRows`: `cachedRows < totalRows` tells a partial load,
+ * as classic Add Payment checks before distributing an amount.
+ */
+export interface GridProxyData {
+  localData: EntityData[];
+  allRows: EntityData[];
+  cachedRows: number;
+  totalRows: number;
+}
+
+/**
+ * Reads `grid.data` from a grid controller.
+ *
+ * @param controller - Controller of the grid
+ */
+export function readGridData(
+  controller: Pick<GridController, "getRows" | "getTotalRows" | "hasMoreRecords">
+): GridProxyData {
+  const rows = controller.getRows();
+  const cachedRows = rows.length;
+  if (controller.hasMoreRecords?.()) {
+    return { localData: rows, allRows: rows, cachedRows, totalRows: cachedRows + 1 };
+  }
+  return { localData: rows, allRows: rows, cachedRows, totalRows: controller.getTotalRows() };
+}
+
 export interface GridProxy extends Record<string, unknown> {
   getData: () => { getLength: () => number };
   getSelectedRecords: () => EntityData[];
   getRecord: (index: number) => EntityData | undefined;
   getRecordIndex: (record: EntityData) => number;
-  data: { localData: EntityData[]; allRows: EntityData[]; totalRows: number };
+  data: GridProxyData;
   /** Methods below are live only when a `GridController` backs the proxy. */
   getEditedRecord?: (index: number) => EntityData | undefined;
   getTotalRows?: () => number;
@@ -967,10 +998,7 @@ function assignLiveGridMethods(grid: GridProxy, controller: GridController): voi
   grid.setColumnOnChange = (colName, fn) => controller.setColumnOnChange(colName, fn);
   grid.setColumnValidator = (colName, fn) => controller.setColumnValidator(colName, fn);
   Object.defineProperty(grid, "data", {
-    get: () => {
-      const rows = controller.getRows();
-      return { localData: rows, allRows: rows, totalRows: controller.getTotalRows() };
-    },
+    get: () => readGridData(controller),
     enumerable: true,
     configurable: true,
   });
@@ -1067,7 +1095,7 @@ export function createGridProxy(state: GridState, controller?: GridController, v
     getSelectedRecords: () => state.selectedRecords,
     getRecord: (index: number) => state.rows[index],
     getRecordIndex: (record: EntityData) => state.rows.findIndex((row) => row.id === record?.id),
-    data: { localData: state.rows, allRows: state.rows, totalRows: state.rows.length },
+    data: { localData: state.rows, allRows: state.rows, cachedRows: state.rows.length, totalRows: state.rows.length },
   };
   if (controller) {
     assignLiveGridMethods(gridProxy, controller);

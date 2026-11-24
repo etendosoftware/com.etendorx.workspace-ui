@@ -159,6 +159,13 @@ record. `/meta/login` and the SSO callback did not record anything either.
   that fails afterwards, or the `/meta/login` fallback, does not leave an extra active session.
 - **Recording the session never blocks a login or a logout** (best-effort), as in Classic.
 - **SSO does not check the lock**, like the Classic SSO login.
+- **Store server restriction.** With `RestrictErpAccessInStoreServer` on a store server, the guard, the role
+  change and the SSO callback refuse every role but System (`StoreServerAccess`), as the Classic login.
+- **Forced login address.** The login page reads `ForcedLoginURL` from `meta/login-config` (no session) and
+  redirects when the new UI was opened at another address. See
+  [Classic interface preferences](../classic-preferences/README.md).
+- **Provider logout.** With `ETRX_AllowSSOLogin`, a manual logout from the profile menu also closes the session
+  of the SSO provider before the New UI session is closed.
 
 ### Differences with Classic
 
@@ -203,8 +210,12 @@ read once, so changing them needs a Tomcat restart.
 | com.etendoerp.metadata | `src/com/etendoerp/metadata/auth/LoginAttemptGuard.java`, `LoginSessionRegistry.java` |
 | com.etendoerp.metadata | `src/com/etendoerp/metadata/service/LoginGuardService.java`, `LoginSessionService.java`, `LogoutService.java` |
 | com.etendoerp.metadata | `src/com/etendoerp/metadata/http/UnauthenticatedLoginServlet.java` |
+| com.etendoerp.metadata | `src/com/etendoerp/metadata/auth/StoreServerAccess.java`, `src/com/etendoerp/metadata/service/LoginConfigService.java` |
+| client | `packages/MainUI/utils/session/forcedLoginUrl.ts`, `packages/MainUI/utils/session/ssoProvider.ts` |
 
 ## Related documentation
+
+- [Classic interface preferences](../classic-preferences/README.md) (`StartPage` after login, `LogoutRedirectURL` after a manual logout, `ForcedLoginURL`, `ETRX_AllowSSOLogin`, `RestrictErpAccessInStoreServer`)
 
 - [UserContext](../../contexts/user-context.md)
 - [URL State Recovery](../url-state-recovery.md)

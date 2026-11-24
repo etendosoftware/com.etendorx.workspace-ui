@@ -50,8 +50,12 @@ jest.mock("@workspaceui/api-client/src/api/linkedItems", () => ({
 }));
 
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (s: unknown) => unknown) =>
-    selector({ triggerRecovery: mockTriggerRecovery, isRecoveryLoading: mockState.isRecoveryLoading }),
+  useWindowStore: Object.assign(
+    (selector: (s: unknown) => unknown) =>
+      selector({ triggerRecovery: mockTriggerRecovery, isRecoveryLoading: mockState.isRecoveryLoading }),
+    // No window open yet: the linked window is added, never replaces another one
+    { getState: () => ({ windows: {}, dirtyWindows: {} }) }
+  ),
 }));
 
 jest.mock("@/stores/userStore", () => ({
@@ -77,6 +81,7 @@ jest.mock("@/utils/window/utils", () => ({
 
 jest.mock("@/utils/url/utils", () => ({
   appendWindowToUrl: () => "wi_0=window-2_new",
+  setWindowInUrl: () => "wi_0=window-2_new",
 }));
 
 const mockFetchCategories = fetchLinkedItemCategories as jest.Mock;

@@ -90,6 +90,7 @@ import {
   addSelectedIDsToCriteria,
 } from "@/utils/processes/definition/utils";
 import { logger } from "@/utils/logger";
+import { buildProcessCharacteristicsContext } from "@/utils/table/characteristicsFilter";
 import {
   buildGridVisibility,
   createGridProxy,
@@ -1607,6 +1608,8 @@ const deepMergeFilterExpressions = (
 /** Live grid handles the embedded-grid controller reads at call time. */
 export interface EmbeddedGridApi {
   rows: EntityData[];
+  /** The grid still has records to load (it pages its datasource while scrolling). */
+  hasMoreRecords?: boolean;
   refetch?: () => void;
   criteria: unknown;
   fields?: Field[];
@@ -1713,6 +1716,7 @@ export function createEmbeddedGridController(
     getRecordIndex: (record) => rows().findIndex((row) => String(row.id) === String(record?.id)),
     getEditedRecord: (index) => rows()[index],
     getTotalRows: () => rows().length,
+    hasMoreRecords: () => Boolean(getApi().hasMoreRecords),
     setEditValue: (rowIndex, colName, value) => {
       const record = rows()[rowIndex];
       // Programmatic write (script distribute/seed): flag it so handleRecordChange
@@ -2327,6 +2331,16 @@ const WindowReferenceGrid = ({
     [stableRawColumns, setAppliedTableFilters, setColumnFilters]
   );
 
+  const characteristicsContext = useMemo(
+    () =>
+      buildProcessCharacteristicsContext(
+        entityName ? String(entityName) : undefined,
+        processConfig?.processId,
+        stableRecordValues
+      ),
+    [entityName, processConfig?.processId, stableRecordValues]
+  );
+
   const columnOptions = useMemo(
     () => ({
       onColumnFilter: handleColumnFilterChange,
@@ -2336,6 +2350,7 @@ const WindowReferenceGrid = ({
       columnFilterStates: advancedColumnFilters,
       tableColumnFilters: columnFilters,
       onNavigate: onClose,
+      characteristicsContext,
     }),
     [
       handleColumnFilterChange,
@@ -2345,6 +2360,7 @@ const WindowReferenceGrid = ({
       advancedColumnFilters,
       columnFilters,
       onClose,
+      characteristicsContext,
     ]
   );
 
@@ -3315,6 +3331,7 @@ const WindowReferenceGrid = ({
   });
   gridApiRef.current = {
     rows: localRecords,
+    hasMoreRecords,
     refetch,
     criteria: datasourceOptions?.criteria,
     fields,

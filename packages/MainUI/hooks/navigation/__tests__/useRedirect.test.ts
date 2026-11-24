@@ -28,8 +28,10 @@ const mockCalculateHierarchy = jest.fn();
 const mockReconstructState = jest.fn();
 
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ setWindowActive: mockSetWindowActive }),
+  useWindowStore: Object.assign(
+    (selector: (s: Record<string, unknown>) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
+    { getState: () => ({ windows: {}, dirtyWindows: {}, setWindowActive: mockSetWindowActive }) }
+  ),
 }));
 
 jest.mock("@/utils/window/utils", () => ({

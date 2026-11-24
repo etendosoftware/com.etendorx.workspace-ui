@@ -17,6 +17,7 @@
 
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { extractDependenciesFromExpression } from "@/utils/expressions/dependencies";
+import { CLASSIC_PREFERENCES, isPreferenceYes } from "@/utils/preferences/classicPreferences";
 
 export interface TabWithParentInfo extends Tab {
   parentTabId?: string;
@@ -53,12 +54,27 @@ function normalizeIdentifier(str: string): string {
   return normalized.substring(start, end + 1);
 }
 
+/**
+ * Classic `OBStandardView.addChildView`: an accounting tab is only shown when `ShowAcct` is Y, and a
+ * translation tab only when `ShowTrl` is Y, both looked up for the tab's window.
+ *
+ * @param tab - Tab to check
+ * @returns true when the preferences hide the tab
+ */
+export function isTabHiddenByPreference(tab: Tab): boolean {
+  if (tab.accountingTab && !isPreferenceYes(CLASSIC_PREFERENCES.SHOW_ACCOUNTING, tab.window)) {
+    return true;
+  }
+  return Boolean(tab.translationTab) && !isPreferenceYes(CLASSIC_PREFERENCES.SHOW_TRANSLATION, tab.window);
+}
+
 export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | null): boolean {
   if (tab.tabLevel === 0) {
     return true;
   }
 
-  if (!activeParentTab) {
+  // A tab hidden by preference is never added in classic, and neither is its subtree.
+  if (!activeParentTab || isTabHiddenByPreference(tab) || isTabHiddenByPreference(activeParentTab)) {
     return false;
   }
 

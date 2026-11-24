@@ -60,7 +60,10 @@ jest.mock("@/stores/userStore", () => ({
     selector({ token: "jwt", currentRole: { id: "r1" }, passwordExpired: false }),
 }));
 jest.mock("@/stores/windowStore", () => ({
-  useWindowStore: (selector: (s: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
+  useWindowStore: Object.assign(
+    (selector: (s: unknown) => unknown) => selector({ setWindowActive: mockSetWindowActive }),
+    { getState: () => ({ windows: {}, dirtyWindows: {}, setWindowActive: mockSetWindowActive }) }
+  ),
 }));
 jest.mock("@/stores/metadataStore", () => ({
   useMetadataZustandStore: (selector: (s: unknown) => unknown) => selector({ loadWindowData: mockLoadWindowData }),

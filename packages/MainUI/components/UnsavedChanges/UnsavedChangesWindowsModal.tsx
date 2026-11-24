@@ -27,6 +27,7 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { useSaveDirtyWindow } from "@/hooks/useSaveDirtyWindow";
+import ReplaceWindowPrompt from "@/components/UnsavedChanges/ReplaceWindowPrompt";
 import { buildDirtyWindowRows, type DirtyWindowRow } from "@/utils/window/dirtyWindowRows";
 import { UNSAVED_CHANGES_MODAL_WIDTH, useUnsavedChangesStyles } from "@/components/UnsavedChanges/styles";
 
@@ -283,12 +284,17 @@ function OpenUnsavedChangesWindowsModal() {
 
 /**
  * Menu the user resolves before an app-level exit when some window still holds unsaved
- * changes. Mounted once, inside WindowProvider.
+ * changes. Mounted once, inside WindowProvider. A request scoped to one window (it is about to be
+ * replaced) asks about that window alone.
  */
 export default function UnsavedChangesWindowsModal() {
   const hasRequest = useUnsavedChangesStore((s) => s.request !== null);
+  const replacedWindow = useUnsavedChangesStore((s) => s.request?.windowIdentifier);
   if (!hasRequest) {
     return null;
+  }
+  if (replacedWindow) {
+    return <ReplaceWindowPrompt windowIdentifier={replacedWindow} data-testid="ReplaceWindowPrompt__modal" />;
   }
   return <OpenUnsavedChangesWindowsModal data-testid="OpenUnsavedChangesWindowsModal__modal" />;
 }

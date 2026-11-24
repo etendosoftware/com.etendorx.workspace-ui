@@ -21,9 +21,9 @@ import { useCallback } from "react";
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserStore } from "@/stores/userStore";
-import { useWindowStore } from "@/stores/windowStore";
 import { useRecentItemsStore } from "@/stores/recentItemsStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { showWindow } from "@/utils/window/showWindow";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { findExternalMenuEntry, isExternalMenuEntry } from "@/utils/menu/externalMenuEntry";
 import { useOpenExternalMenuEntry } from "@/hooks/useOpenExternalMenuEntry";
@@ -37,7 +37,6 @@ import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 export default function RecentlyViewedRenderer() {
   const { t } = useTranslation();
   const currentRole = useUserStore((s) => s.currentRole);
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const recentItems = useRecentItemsStore((s) => s.items);
   const openExternalMenuEntry = useOpenExternalMenuEntry();
   const openLegacyMenuEntry = useOpenLegacyMenuEntry();
@@ -74,9 +73,9 @@ export default function RecentlyViewedRenderer() {
       const windowId = item.windowId ?? item.id;
       if (!windowId) return;
       const windowIdentifier = getNewWindowIdentifier(windowId);
-      setWindowActive({ windowIdentifier, windowData: { title: item.name, initialized: true } });
+      showWindow({ windowId, windowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [setWindowActive, openExternalMenuEntry, openClassicRecentItem]
+    [openExternalMenuEntry, openClassicRecentItem]
   );
 
   if (items.length === 0) {

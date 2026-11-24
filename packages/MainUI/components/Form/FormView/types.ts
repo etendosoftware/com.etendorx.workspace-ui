@@ -103,6 +103,8 @@ export interface NoteSectionProps {
   noteInputPlaceholder: string | undefined;
   addNoteSubmitText: string | undefined;
   showErrorModal?: (message: string) => void;
+  /** Hides the composer and the delete action: classic `DisableNotesForReadOnlyTabs` on a read-only tab. */
+  readOnly?: boolean;
 }
 
 // TableDir Selector

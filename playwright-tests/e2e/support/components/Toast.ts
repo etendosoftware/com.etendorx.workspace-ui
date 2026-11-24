@@ -10,6 +10,7 @@ const DISMISS_TIMEOUT = 2_000;
 
 const SUCCESS_TOASTS = '[data-sonner-toast][data-type="success"]';
 const WARNING_TOASTS = '[data-sonner-toast][data-type="warning"]';
+const ERROR_TOASTS = '[data-sonner-toast][data-type="error"]';
 const SUCCESS_TIMEOUT = 15_000;
 
 /** Sonner toasts shown after saves and processes. */
@@ -28,6 +29,11 @@ export class Toast {
   /** Asserts a warning toast with the given text is shown (e.g. a process that failed for some records). */
   async expectWarning(text: string | RegExp, timeout = SUCCESS_TIMEOUT): Promise<void> {
     await expect(this.page.locator(WARNING_TOASTS).filter({ hasText: text }).first()).toBeVisible({ timeout });
+  }
+
+  /** Asserts an error toast with the given text is shown. */
+  async expectError(text: string | RegExp, timeout = SUCCESS_TIMEOUT): Promise<void> {
+    await expect(this.page.locator(ERROR_TOASTS).filter({ hasText: text }).first()).toBeVisible({ timeout });
   }
 
   /** Waits for a success toast with the given text and returns its whole text. */
