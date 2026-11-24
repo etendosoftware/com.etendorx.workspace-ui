@@ -21,6 +21,7 @@ import { useFormInitialState } from "../useFormInitialState";
 import { useTabContext } from "@/contexts/tab";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import useFormParent from "../useFormParent";
+import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@/contexts/tab");
 jest.mock("@workspaceui/api-client/src/utils/metadata");
@@ -77,7 +78,7 @@ describe("useFormInitialState", () => {
       columnValues: {
         COL1: { value: { dbValue: "Envase: Vidrio, Formato: 330 ml", characteristics }, classicValue: "x" },
       },
-    } as any;
+    } as unknown as FormInitializationResponse;
 
     const { result } = renderHook(() => useFormInitialState(formInit));
 
