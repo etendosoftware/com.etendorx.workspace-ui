@@ -17,7 +17,8 @@
 
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { showWindow } from "@/utils/window/showWindow";
@@ -25,6 +26,9 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLiveMenu } from "@/hooks/useLiveMenu";
+import { useEntryUnavailableNotice } from "@/hooks/useEntryUnavailableNotice";
+import { isStoredMenuEntryAvailable, toFavoriteMenuEntry } from "@/utils/menu/menuAvailability";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
@@ -39,12 +43,29 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
     seed(data.items);
   }, [seed, data.items]);
 
-  const handleClick = useCallback((windowId: string, label: string) => {
-    const windowIdentifier = getNewWindowIdentifier(windowId);
-    showWindow({ windowId, windowIdentifier, windowData: { title: label, initialized: true } });
-  }, []);
+  const notifyEntryUnavailable = useEntryUnavailableNotice();
+  const menu = useLiveMenu();
 
-  if (data.items.length === 0) {
+  // Favorites the role's menu no longer has are not offered; they are kept, in case access comes back (ETP-6431).
+  const items = useMemo(
+    () => data.items.filter((item) => isStoredMenuEntryAvailable(menu, toFavoriteMenuEntry(item))),
+    [data.items, menu]
+  );
+
+  const handleClick = useCallback(
+    (windowId: string, label: string) => {
+      // The menu may have changed since the list was drawn: never open a window the role can no longer open.
+      if (!isStoredMenuEntryAvailable(Metadata.getCachedMenu(), toFavoriteMenuEntry({ windowId }))) {
+        notifyEntryUnavailable();
+        return;
+      }
+      const windowIdentifier = getNewWindowIdentifier(windowId);
+      showWindow({ windowId, windowIdentifier, windowData: { title: label, initialized: true } });
+    },
+    [notifyEntryUnavailable]
+  );
+
+  if (items.length === 0) {
     return (
       <p className={WIDGET_EMPTY_TEXT_CLASSES} data-testid="FavoritesRenderer__empty">
         {t("dashboard.widget.emptyFavorites")}
@@ -54,7 +75,7 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
 
   return (
     <div className="flex flex-wrap gap-2" data-testid="FavoritesRenderer__list">
-      {data.items.map((item) => (
+      {items.map((item) => (
         <button
           key={item.windowId}
           type="button"

@@ -910,6 +910,7 @@ const es = {
   },
   dashboard: {
     title: "Panel",
+    entryUnavailable: "Su rol actual no le da acceso a esta funcionalidad.",
     ctaBanner: {
       badge: "Novedades",
       title: "Noticias y actualizaciones de Etendo",
@@ -919,7 +920,6 @@ const es = {
     recentlyViewed: {
       title: "Vistos recientemente",
       empty: "No hay elementos vistos recientemente",
-      unavailable: "Su rol actual no le da acceso a esta funcionalidad.",
     },
     recentDocuments: {
       title: "Documentos recientes",

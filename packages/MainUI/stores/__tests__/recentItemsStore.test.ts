@@ -173,4 +173,35 @@ describe("recentItemsStore", () => {
       expect(getState().items).toEqual([itemB, itemC]);
     });
   });
+
+  describe("remove (ETP-6431)", () => {
+    beforeEach(() => {
+      useRecentItemsStore.setState({ scopeKey: SCOPE_KEY, items: [itemA, itemB], size: 2 });
+    });
+
+    it("saves the list without the item", async () => {
+      mockedSave.mockResolvedValue({ items: [itemB], size: 2 });
+
+      await getState().remove(itemA.id);
+
+      expect(mockedSave).toHaveBeenCalledWith([itemB]);
+      expect(getState().items).toEqual([itemB]);
+      expect(readRecentItemsCache()[SCOPE_KEY]).toEqual([itemB]);
+    });
+
+    it("does not save when the item is not in the list", async () => {
+      await getState().remove(itemC.id);
+
+      expect(mockedSave).not.toHaveBeenCalled();
+    });
+
+    it("does nothing while the scope is unknown", async () => {
+      useRecentItemsStore.setState({ scopeKey: "" });
+
+      await getState().remove(itemA.id);
+
+      expect(mockedSave).not.toHaveBeenCalled();
+      expect(getState().items).toEqual([itemA, itemB]);
+    });
+  });
 });

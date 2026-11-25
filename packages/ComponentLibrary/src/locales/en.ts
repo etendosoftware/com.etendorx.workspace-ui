@@ -904,6 +904,7 @@ const en = {
   },
   dashboard: {
     title: "Dashboard",
+    entryUnavailable: "Your current role does not give you access to this functionality.",
     ctaBanner: {
       badge: "What's New",
       title: "Etendo News & Updates",
@@ -913,7 +914,6 @@ const en = {
     recentlyViewed: {
       title: "Recently Viewed",
       empty: "No recently viewed items",
-      unavailable: "Your current role does not give you access to this functionality.",
     },
     recentDocuments: {
       title: "Recent Documents",

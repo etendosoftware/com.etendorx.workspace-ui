@@ -18,8 +18,10 @@
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { findItemByIdentifier } from "@workspaceui/componentlibrary/src/utils/menuUtils";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRecentItemsStore } from "@/stores/recentItemsStore";
+import { useEntryUnavailableNotice } from "@/hooks/useEntryUnavailableNotice";
+import { findStoredMenuEntry, isStoredMenuEntryAvailable } from "@/utils/menu/menuAvailability";
 
 const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string): string => {
   return getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? "";
@@ -71,6 +73,8 @@ export function useRecentItems(
   const recentItems = useRecentItemsStore((s) => s.items);
   const addToRecentItems = useRecentItemsStore((s) => s.add);
   const setRecentItems = useRecentItemsStore((s) => s.setItems);
+  const removeRecentItem = useRecentItemsStore((s) => s.remove);
+  const notifyEntryUnavailable = useEntryUnavailableNotice();
   const [isExpanded, setIsExpanded] = useState(false);
   const hasManuallyToggled = useRef(false);
   const isFirstLoad = useRef(true);
@@ -109,16 +113,18 @@ export function useRecentItems(
   const handleRecentItemClick = useCallback(
     (item: Menu) => {
       const itemId = item.id;
-      // findItemByIdentifier matches Window items by windowId, not by menu item id.
-      // For non-Window types (Process, Report) it matches by id.
-      const lookupId = item.type === "Window" ? (item.windowId ?? item.id) : item.id;
-      const menuItem = lookupId ? findItemByIdentifier(menuItems, lookupId) : null;
+      // Matched by window for Window items and by id for the rest, with the same type: a Window with the same
+      // windowId as a Process's id must not be used to navigate (e.g. BP Category instead of Generate Invoices).
+      const validMenuItem = findStoredMenuEntry(menuItems, item);
 
-      // Validate type match: a Window with the same windowId as a Process's id must not
-      // be used to navigate — it would open the wrong item (e.g. BP Category instead of Generate Invoices).
-      const validMenuItem = menuItem?.type === item.type ? menuItem : null;
+      // The role's menu no longer has the entry: it cannot be opened with this role (ETP-6431).
+      if (!validMenuItem && menuItems.length > 0) {
+        notifyEntryUnavailable();
+        removeRecentItem(item.id);
+        return;
+      }
 
-      // Use the full menu item when available and type-valid, falling back to the stored item.
+      // Use the full menu item when available, falling back to the stored item while the menu is not loaded.
       onClick(validMenuItem ?? item);
 
       if (!itemId || !roleId) return;
@@ -126,7 +132,7 @@ export function useRecentItems(
 
       addRecentItem(validMenuItem);
     },
-    [addRecentItem, menuItems, onClick, roleId]
+    [addRecentItem, menuItems, onClick, roleId, notifyEntryUnavailable, removeRecentItem]
   );
 
   useEffect(() => {
@@ -148,6 +154,12 @@ export function useRecentItems(
     }
   }, [menuItems, roleId, getTranslatedName, recentItems, setRecentItems]);
 
+  // Entries the role's menu no longer has are not offered (ETP-6431).
+  const availableItems = useMemo(
+    () => recentItems.filter((item) => isStoredMenuEntryAvailable(menuItems, item)),
+    [recentItems, menuItems]
+  );
+
   useEffect(() => {
     if (isFirstLoad.current && roleId && recentItems.length) {
       setIsExpanded(true);
@@ -156,12 +168,12 @@ export function useRecentItems(
   }, [roleId, recentItems]);
 
   return {
-    localRecentItems: roleId ? recentItems : [],
+    localRecentItems: roleId ? availableItems : [],
     isExpanded,
     setIsExpanded,
     handleRecentItemClick,
     handleToggleExpand,
-    hasItems: Boolean(roleId && recentItems.length),
+    hasItems: Boolean(roleId && availableItems.length),
     addRecentItem,
     updateTranslations,
   };
