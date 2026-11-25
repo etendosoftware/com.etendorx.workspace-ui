@@ -913,10 +913,12 @@ const en = {
     recentlyViewed: {
       title: "Recently Viewed",
       empty: "No recently viewed items",
+      unavailable: "Your current role does not give you access to this functionality.",
     },
     recentDocuments: {
       title: "Recent Documents",
       empty: "No recent documents",
+      recordNoLongerExists: "The record no longer exists. It has been removed from the recent documents.",
     },
     widget: {
       unavailable: "Module not installed",

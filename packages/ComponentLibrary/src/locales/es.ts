@@ -919,10 +919,12 @@ const es = {
     recentlyViewed: {
       title: "Vistos recientemente",
       empty: "No hay elementos vistos recientemente",
+      unavailable: "Su rol actual no le da acceso a esta funcionalidad.",
     },
     recentDocuments: {
       title: "Documentos recientes",
       empty: "No hay documentos recientes",
+      recordNoLongerExists: "El registro ya no existe. Se ha quitado de los documentos recientes.",
     },
     widget: {
       unavailable: "Módulo no instalado",
