@@ -8,7 +8,7 @@ import {
   useInfiniteScroll,
   useKeyboardNavigation,
   useOpenDropdownEffect,
-  useSearchHandler,
+  usePendingSearch,
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
 import { FIELD_NAVIGATION_OFFSETS, NOT_TABBABLE, TABBABLE, findAdjacentFocusableField } from "@/utils/form/focus";
@@ -75,7 +75,11 @@ function SelectCmp({
 
   const dropdownId = useMemo(() => `dropdown-${name}`, [name]);
 
-  const handleSearchChange = useSearchHandler(onSearch);
+  const { handleSearchChange, isSearchPending } = usePendingSearch(onSearch, minSearchChars);
+  // A typed term waiting for its search counts as loading, so "No options found" only follows a finished search.
+  const showLoading = loading || isSearchPending;
+  const loadingText = t("common.loading");
+  const noOptionsText = t("multiselect.noOptionsFound");
 
   const minCharsHint = getMinCharsHint(t, minSearchChars);
   const isBelowThreshold = isBelowSearchThreshold(searchTerm, minSearchChars);
@@ -353,8 +357,8 @@ function SelectCmp({
   );
 
   const renderedOptions = useMemo(() => {
-    if (loading && filteredOptions.length === 0) {
-      return <li className="px-4 py-3 text-sm text-baseline-60">Loading...</li>;
+    if (showLoading && filteredOptions.length === 0) {
+      return <li className="px-4 py-3 text-sm text-baseline-60">{loadingText}</li>;
     }
 
     if (filteredOptions.length > 0) {
@@ -418,17 +422,17 @@ function SelectCmp({
             />
           ));
 
-      if (loading) {
+      if (showLoading) {
         optionsList.push(
           <li key="loading-indicator" className="px-4 py-3 text-sm text-baseline-60">
-            Loading...
+            {loadingText}
           </li>
         );
       }
 
       return optionsList;
     }
-    return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
+    return <li className="px-4 py-3 text-sm text-baseline-60">{noOptionsText}</li>;
   }, [
     filteredOptions,
     highlightedIndex,
@@ -436,7 +440,9 @@ function SelectCmp({
     selectedDataRowId,
     handleOptionClick,
     handleOptionMouseEnter,
-    loading,
+    showLoading,
+    loadingText,
+    noOptionsText,
     columns,
     gridStyle,
   ]);
