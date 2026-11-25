@@ -173,14 +173,42 @@ export const TabButton = ({
       aria-label={title}
       className={baseClass}>
       {title}
-      {tab.tabLevel > 0 && recordCount !== undefined && (
-        <span
-          className="flex h-5 min-w-6 items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 text-(--ui-text-soft)"
-          data-testid={`TabButton__count_${tab.id}`}>
-          {formatRecordCount(recordCount, hasMoreRecords)}
-        </span>
-      )}
+      {tab.tabLevel > 0 && <TabCountBadge tabId={tab.id} count={recordCount} hasMoreRecords={hasMoreRecords} />}
     </button>
+  );
+};
+
+/**
+ * Badge of a child tab. Its width is reserved for four characters ("101+") before the count is known, so the
+ * tab strip does not move when the count arrives or changes.
+ */
+export const TAB_COUNT_BADGE_CLASSES =
+  "flex h-5 min-w-[2.75rem] items-center justify-center rounded-full bg-(--ui-hover) px-2 text-[11px] font-medium leading-4 tabular-nums text-(--ui-text-soft)";
+
+interface TabCountBadgeProps {
+  tabId: string;
+  /** Records of the tab; undefined while it is unknown (tab not loaded yet, loading, or several parents selected). */
+  count?: number;
+  hasMoreRecords: boolean;
+}
+
+/** Record count of a child tab, or an empty placeholder of the same width while the count is unknown. */
+const TabCountBadge = ({ tabId, count, hasMoreRecords }: TabCountBadgeProps) => {
+  if (count === undefined) {
+    return (
+      <span
+        className={`${TAB_COUNT_BADGE_CLASSES} animate-pulse`}
+        aria-hidden="true"
+        data-loading="true"
+        data-testid={`TabButton__count_${tabId}`}
+      />
+    );
+  }
+
+  return (
+    <span className={TAB_COUNT_BADGE_CLASSES} data-testid={`TabButton__count_${tabId}`}>
+      {formatRecordCount(count, hasMoreRecords)}
+    </span>
   );
 };
 

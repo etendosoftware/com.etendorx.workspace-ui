@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { TabButton } from "../TabButton";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useWindowStore } from "@/stores/windowStore";
@@ -70,6 +70,41 @@ describe("TabButton", () => {
 
     it("marks the count as partial while more records exist", () => {
       expect(renderWithCount(101, true)).toHaveTextContent(/^101\+$/);
+    });
+
+    // ETP-6431: the badge keeps its place while the count is unknown, so the tab strip does not move.
+    const renderBadge = (tab = mockTab) => {
+      render(<TabButton tab={tab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
+      return screen.queryByTestId(`TabButton__count_${tab.id}`);
+    };
+
+    it("reserves an empty badge while the count of a child tab is unknown", () => {
+      const badge = renderBadge();
+      expect(badge).toBeEmptyDOMElement();
+      expect(badge).toHaveAttribute("data-loading", "true");
+      expect(badge).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("gives the placeholder and the count the same reserved width", () => {
+      const placeholder = renderBadge();
+      const placeholderWidth = placeholder?.className.match(/min-w-\S+/)?.[0];
+      act(() => useTabCountsStore.getState().setCount(getTabCountKey(WINDOW_IDENTIFIER, mockTab.id), 7, false));
+      const counted = screen.getByTestId(`TabButton__count_${mockTab.id}`);
+      expect(counted).toHaveTextContent(/^7$/);
+      expect(counted).not.toHaveAttribute("data-loading");
+      expect(counted.className).toContain(placeholderWidth);
+    });
+
+    it("goes back to the placeholder when the count is cleared", () => {
+      const key = getTabCountKey(WINDOW_IDENTIFIER, mockTab.id);
+      useTabCountsStore.getState().setCount(key, 3, false);
+      renderBadge();
+      act(() => useTabCountsStore.getState().clearCount(key));
+      expect(screen.getByTestId(`TabButton__count_${mockTab.id}`)).toHaveAttribute("data-loading", "true");
+    });
+
+    it("shows no badge on the header tab", () => {
+      expect(renderBadge({ ...mockTab, tabLevel: 0 })).toBeNull();
     });
   });
 
