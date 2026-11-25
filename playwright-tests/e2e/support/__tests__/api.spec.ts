@@ -7,6 +7,7 @@ import {
   fetchedRecordsFrom,
   gridConfigurationBody,
   gridConfigurationResetBody,
+  recentDocumentRemoveUrl,
   savedRecordFrom,
   treeNodeMoveBody,
   treeNodeMoveUrl,
@@ -173,5 +174,15 @@ test.describe("tree node move", () => {
       data: { id: "N1", parentId: "P1" },
       oldValues: { id: "N1" },
     });
+  });
+});
+
+test.describe("recentDocumentRemoveUrl", () => {
+  test("names the tab and the record of the document to remove", () => {
+    const url = recentDocumentRemoveUrl({ tabId: TARGET.tabId, recordId: RECORD_ID });
+    expect(url.startsWith("/api/erp/sws/com.etendoerp.metadata.meta/recent-documents?")).toBe(true);
+    const query = queryOf(url);
+    expect(query.get("tabId")).toBe(TARGET.tabId);
+    expect(query.get("recordId")).toBe(RECORD_ID);
   });
 });

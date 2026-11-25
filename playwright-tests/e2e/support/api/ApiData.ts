@@ -16,6 +16,7 @@ const DATASOURCE_PATH = "/api/datasource";
 const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
 const PROCESS_METADATA_PATH = "/api/erp/meta/process";
 const PREFERENCES_PATH = "/api/erp/meta/preferences";
+const RECENT_DOCUMENTS_PATH = "/api/erp/sws/com.etendoerp.metadata.meta/recent-documents";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -201,6 +202,21 @@ export function assertRemoved(body: unknown, entity: string): void {
  * For data a spec needs to exist but does not test the creation of: it is much faster than the
  * UI. Needs a logged-in page (the request reuses its token and server-side session).
  */
+/** A record the user viewed in form view, as the Home "Recent documents" widget lists it. */
+export interface RecentDocument {
+  windowId: string;
+  windowTitle: string;
+  tabId: string;
+  tabLevel: number;
+  recordId: string;
+  identifier: string;
+}
+
+/** URL that removes a recent document of the current user and role. */
+export function recentDocumentRemoveUrl({ tabId, recordId }: Pick<RecentDocument, "tabId" | "recordId">): string {
+  return `${RECENT_DOCUMENTS_PATH}?${new URLSearchParams({ tabId, recordId }).toString()}`;
+}
+
 export class ApiData {
   constructor(private readonly page: Page) {}
 
@@ -298,6 +314,30 @@ export class ApiData {
     });
     if (!response.ok()) {
       throw new Error(`Storing the preference ${property} failed: ${response.status()}`);
+    }
+  }
+
+  /**
+   * Adds a record to the recent documents of the user and role, as the form does after the user stays on it.
+   * @throws when the backend rejected it.
+   */
+  async trackRecentDocument(document: RecentDocument): Promise<void> {
+    const response = await this.page.request.post(RECENT_DOCUMENTS_PATH, {
+      headers: await this.authHeaders(),
+      data: document,
+    });
+    if (!response.ok()) {
+      throw new Error(`Tracking the recent document ${document.recordId} failed: ${response.status()}`);
+    }
+  }
+
+  /** Removes a record from the recent documents of the user and role; nothing happens when it is not there. */
+  async removeRecentDocument(document: Pick<RecentDocument, "tabId" | "recordId">): Promise<void> {
+    const response = await this.page.request.delete(recentDocumentRemoveUrl(document), {
+      headers: await this.authHeaders(),
+    });
+    if (!response.ok()) {
+      throw new Error(`Removing the recent document ${document.recordId} failed: ${response.status()}`);
     }
   }
 
