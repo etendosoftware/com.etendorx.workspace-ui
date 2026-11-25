@@ -204,6 +204,7 @@ const es = {
     },
     internalServerError: {
       title: "Algo salió mal",
+      description: "El servidor no pudo completar la solicitud. Tu sesión sigue abierta: inténtalo de nuevo.",
       retry: "Reintentar",
     },
     missingRecord: {

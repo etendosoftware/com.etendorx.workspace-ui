@@ -203,6 +203,7 @@ const en = {
     },
     internalServerError: {
       title: "Something went wrong",
+      description: "The server could not complete the request. Your session is still open: try again.",
       retry: "Retry",
     },
     missingRecord: {
