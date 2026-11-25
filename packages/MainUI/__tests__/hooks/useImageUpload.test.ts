@@ -1,5 +1,11 @@
 import { renderHook, act } from "@testing-library/react";
 import { useImageUpload } from "../../hooks/useImageUpload";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
+
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
 import { mockTranslationState, createFetchMock, createFetchRejectMock } from "../../hooks/test-utils/imageMockHelpers";
 
 let currentToken: string | null = "mock-token";
@@ -84,6 +90,7 @@ describe("useImageUpload", () => {
 
     expect(callArgs[1].body.get("inpColumnName")).toBe("AD_Image_ID");
     expect(callArgs[1].body.get("inpadOrgId")).toBe("org-1");
+    expectSessionAwareFetchFor("/api/erp/utility/ImageInfoBLOB", true);
 
     expect(result.current.isUploading).toBe(false);
     expect(result.current.error).toBe(null);

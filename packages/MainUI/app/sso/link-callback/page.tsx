@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { buildSsoLinkBody, SSO_STATE_KEY } from "@/utils/session/ssoProvider";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 // Middleware redirects here with ?access_token= after the user authorizes linking.
 // We forward it (with the logged-in JWT) to the authenticated /sso/link endpoint,
@@ -29,10 +30,12 @@ export default function SSOLinkCallback() {
       return;
     }
 
-    fetch("/api/erp/meta/sso/link", {
+    sessionAwareFetch("/api/erp/meta/sso/link", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
       body: JSON.stringify(linkBody),
+      // A failure is shown in its own toast and on the page.
+      handlesOwnError: true,
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(`link failed: ${res.status}`);
