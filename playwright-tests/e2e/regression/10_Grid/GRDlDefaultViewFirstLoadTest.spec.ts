@@ -46,7 +46,8 @@ const VIEW_NAME = "GRDl";
 const waitForSortedFetch = (fetches: DatasourceRequestParams[]) =>
   expect.poll(() => fetches.some((params) => DESCENDING_SORT.test(String(params[SORT_BY] ?? "")))).toBe(true);
 
-const sentFilter = (params: DatasourceRequestParams, value: string) => JSON.stringify(params.criteria ?? []).includes(value);
+const sentFilter = (params: DatasourceRequestParams, value: string) =>
+  JSON.stringify(params.criteria ?? []).includes(value);
 
 let savedViewIds: string[] = [];
 
