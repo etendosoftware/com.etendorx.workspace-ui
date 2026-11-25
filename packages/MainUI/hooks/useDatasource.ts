@@ -133,6 +133,12 @@ export type UseDatasourceOptions = {
    * so the retained `id` criterion filters to a single row. Defaults to `true`.
    */
   enableDirectNavigation?: boolean;
+  /**
+   * Adds to every request what it must carry but must not trigger a fetch, read when the request is sent (the
+   * context of the record selected in the grid's own tab, as classic `getContextInfo`). Also applied to
+   * `getRequestParams`, so other requests asking for the same records send it too.
+   */
+  withRequestContext?: (params: DatasourceOptions) => DatasourceOptions;
 };
 
 /** The `criteria` request param: omitted when empty, a single criterion unwrapped. */
@@ -219,6 +225,7 @@ export function useDatasource({
   setIsImplicitFilterApplied,
   refetchKey,
   enableDirectNavigation = true,
+  withRequestContext,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
@@ -408,6 +415,13 @@ export function useDatasource({
   // on every request too.
   const requestParamsRef = useRef(queryParams);
   requestParamsRef.current = stableParams === params ? queryParams : buildQueryParams(params, queryContext);
+  // Read when a request is sent, never part of what decides when to fetch
+  const withRequestContextRef = useRef(withRequestContext);
+  withRequestContextRef.current = withRequestContext;
+  const readRequestParams = useCallback((): DatasourceOptions => {
+    const addContext = withRequestContextRef.current;
+    return addContext ? addContext(requestParamsRef.current) : requestParamsRef.current;
+  }, []);
 
   // queryParams is kept as a dependency although the body reads requestParamsRef: it is what
   // makes fetchData (and the effect that calls it) change when a refetch is due.
@@ -431,7 +445,7 @@ export function useDatasource({
           entity,
           startRow,
           safePageSize,
-          requestParamsRef.current,
+          readRequestParams(),
           memoizedTreeOptions,
           isFiltering
         )) as {
@@ -498,6 +512,7 @@ export function useDatasource({
       isImplicitFilterApplied,
       searchQuery,
       setIsImplicitFilterApplied,
+      readRequestParams,
     ]
   );
 
@@ -579,7 +594,7 @@ export function useDatasource({
    * context) but without paging. Lets other requests, such as the CSV export, ask for exactly
    * the records the grid shows.
    */
-  const getRequestParams = useCallback((): DatasourceOptions => requestParamsRef.current, []);
+  const getRequestParams = readRequestParams;
 
   return {
     loading,

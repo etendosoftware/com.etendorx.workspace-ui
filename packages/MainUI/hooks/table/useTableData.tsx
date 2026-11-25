@@ -35,6 +35,7 @@ import { useToolbarCommands } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useSettledParent } from "@/hooks/table/useSettledParent";
 import { useInitialViewPending } from "@/hooks/table/useInitialViewPending";
+import { useParentRecordPending } from "@/hooks/table/useParentRecordPending";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
@@ -50,7 +51,12 @@ import {
   resolveImplicitFilterToggle,
 } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
-import { buildEtendoContext, buildParentSessionContext } from "@/utils/contextUtils";
+import {
+  buildAncestorContext,
+  buildParentSessionContext,
+  buildRecordContext,
+  type EtendoContext,
+} from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import {
   getFetchPageSize,
@@ -479,7 +485,9 @@ export const useTableData = ({
     [resolveSortField, resolveSorts, tab.window]
   );
 
-  const query: DatasourceOptions = useMemo(() => {
+  // What the records depend on. The context of the record selected in this tab is not part of it: it travels in
+  // every request (withOwnRecordContext) but, as in classic, selecting a record never reloads its own grid.
+  const { query, parentContext } = useMemo((): { query: DatasourceOptions; parentContext: EtendoContext } => {
     const { fieldName } = getParentFieldName();
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
@@ -497,10 +505,11 @@ export const useTableData = ({
       Constants_FIELDSEPARATOR: "$",
     };
 
-    // Add Etendo Classic Context Variables
-    const context = buildEtendoContext(tab, graph);
+    // Add Etendo Classic Context Variables of the ancestors (the direct parent with the record this tab fetches with)
+    const context = buildAncestorContext(tab, graph, queryParentRecord);
     // Merge context into params (using casting if necessary as DatasourceOptions might be strict)
     Object.assign(options, context);
+    let parentContext: EtendoContext = {};
 
     if (language) {
       options.language = language;
@@ -534,12 +543,15 @@ export const useTableData = ({
       // (ob-view-grid.js:2736). The server answers @AD_Org_ID@ / @AD_Client_ID@ inside a child
       // tab's hqlwhereclause by reading exactly these params, so a missing organization leaves
       // the variable empty and AD_ISORGINCLUDED drops every row.
-      Object.assign(options, buildParentSessionContext(parentTab, queryParentRecord ?? graph.getSelected(parentTab)));
-      // Keep existing format for backward compat (e.g. Process Request datasource)
-      options[`@${parentTab.entityName}.id@`] = parentId;
-      // OB Classic context variable format for hqlwhereclause substitution
-      // e.g. ETASK_Task → @ETASK_TASK_ID@
-      options[`@${parentTab.entityName.toUpperCase()}_ID@`] = parentId;
+      parentContext = {
+        ...buildParentSessionContext(parentTab, queryParentRecord ?? graph.getSelected(parentTab)),
+        // Keep existing format for backward compat (e.g. Process Request datasource)
+        [`@${parentTab.entityName}.id@`]: parentId,
+        // OB Classic context variable format for hqlwhereclause substitution
+        // e.g. ETASK_Task → @ETASK_TASK_ID@
+        [`@${parentTab.entityName.toUpperCase()}_ID@`]: parentId,
+      };
+      Object.assign(options, parentContext);
     }
 
     // Apply advanced criteria
@@ -562,7 +574,7 @@ export const useTableData = ({
       applyGroupingToOptions(options, activeGroupColumnId, currentSorts);
     }
 
-    return options;
+    return { query: options, parentContext };
   }, [
     activeGroupColumnId,
     applyGroupingToOptions,
@@ -581,6 +593,19 @@ export const useTableData = ({
     getParentFieldName,
     shouldUseTreeMode,
   ]);
+
+  // The record selected in this tab, read when a request is sent: it overrides the ancestors, never the parent
+  // context the query wrote after them (same precedence as when it was part of the query).
+  const parentContextRef = useRef(parentContext);
+  parentContextRef.current = parentContext;
+  const withOwnRecordContext = useCallback(
+    (params: DatasourceOptions): DatasourceOptions => ({
+      ...params,
+      ...buildRecordContext(tab, graph.getSelected(tab)),
+      ...parentContextRef.current,
+    }),
+    [tab, graph]
+  );
 
   // Tree options
   const treeOptions = useMemo(
@@ -620,6 +645,13 @@ export const useTableData = ({
   // The first load waits for the default saved view (or the stored columns) of the tab, so it is made once and
   // already with them, as in classic.
   const isInitialViewPending = useInitialViewPending(windowIdentifier || "", tab.id);
+  // A recovered or linked window knows the parent id before the parent record: the first load waits for it
+  const isParentRecordPending = useParentRecordPending({
+    windowIdentifier: windowIdentifier || "",
+    parentTabId: parentTab?.id,
+    parentId,
+    parentRecord: queryParentRecord,
+  });
 
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {
@@ -644,7 +676,7 @@ export const useTableData = ({
     params: query,
     columns: stableDatasourceColumns,
     searchQuery,
-    skip: skip || isInitialViewPending,
+    skip: skip || isInitialViewPending || isParentRecordPending,
     treeOptions,
     activeColumnFilters: tableColumnFilters,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
@@ -653,6 +685,7 @@ export const useTableData = ({
     // mode an `id` filter (e.g. reconstructed ancestor tabs from a linked-item nav)
     // must hard-filter to the single record, matching Classic.
     enableDirectNavigation: tabFormState?.mode === "form",
+    withRequestContext: withOwnRecordContext,
   });
 
   // Classic shows OBUIAPP_TooManyNodes when a tree request returns more nodes than TreeDatasourceFetchLimit;
@@ -723,9 +756,7 @@ export const useTableData = ({
           parentId: parentId,
         };
 
-        const childQuery = {
-          ...query,
-        };
+        const childQuery = withOwnRecordContext(query);
 
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
@@ -796,6 +827,7 @@ export const useTableData = ({
       tab,
       treeMetadata,
       query,
+      withOwnRecordContext,
       searchQuery,
       tableColumnFilters,
       stableDatasourceColumns,
@@ -1356,7 +1388,12 @@ export const useTableData = ({
       if (Object.keys(summaryRequest).length === 0) return null;
 
       const combinedCriteria = getSummaryCriteria(query, tableColumnFilters, baseColumns);
-      const { sortBy: _sortBy, pageSize: _pageSize, [ORDER_BY_PARAM]: _orderBy, ...cleanQuery } = query;
+      const {
+        sortBy: _sortBy,
+        pageSize: _pageSize,
+        [ORDER_BY_PARAM]: _orderBy,
+        ...cleanQuery
+      } = withOwnRecordContext(query);
 
       const summaryQuery = {
         ...cleanQuery,
@@ -1397,7 +1434,7 @@ export const useTableData = ({
         return null;
       }
     },
-    [query, treeEntity, baseColumns, tableColumnFilters]
+    [query, withOwnRecordContext, treeEntity, baseColumns, tableColumnFilters]
   );
 
   return {
@@ -1409,7 +1446,7 @@ export const useTableData = ({
     // State
     expanded,
     // A held parent change, or the wait for the initial view, shows as loading, like the fetch that follows it.
-    loading: loading || isParentPending || isInitialViewPending,
+    loading: loading || isParentPending || isInitialViewPending || isParentRecordPending,
     error: error || null,
 
     // Tree mode

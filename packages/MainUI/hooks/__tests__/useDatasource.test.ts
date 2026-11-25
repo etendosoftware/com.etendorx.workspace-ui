@@ -536,6 +536,51 @@ describe("useDatasource hook", () => {
     });
   });
 
+  describe("withRequestContext", () => {
+    const CONTEXT_KEY = "@Order.id@";
+    type Props = { selected: string };
+    /** The record selected in the grid's own tab, added when each request is sent. */
+    const renderWithContext = (initialProps: Props) =>
+      renderHook(
+        ({ selected }: Props) =>
+          useDatasource({
+            entity: mockEntity,
+            withRequestContext: (params) => ({ ...params, [CONTEXT_KEY]: selected }),
+          }),
+        { initialProps }
+      );
+    const lastSent = () => (datasource.get as jest.Mock).mock.calls.at(-1)?.[1];
+
+    it("adds the context to the request and to the params other requests reuse", async () => {
+      const { result } = renderWithContext({ selected: "r1" });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(lastSent()[CONTEXT_KEY]).toBe("r1");
+      expect(result.current.getRequestParams()[CONTEXT_KEY]).toBe("r1");
+    });
+
+    it("does not fetch again when only the context changes, and sends the new one with the next request", async () => {
+      const { result, rerender } = renderWithContext({ selected: "r1" });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      const callsAfterFirstFetch = (datasource.get as jest.Mock).mock.calls.length;
+
+      rerender({ selected: "r2" });
+      expect(datasource.get).toHaveBeenCalledTimes(callsAfterFirstFetch);
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+      expect(lastSent()[CONTEXT_KEY]).toBe("r2");
+    });
+
+    it("sends the params as they are without it", async () => {
+      const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(lastSent()).not.toHaveProperty(CONTEXT_KEY);
+    });
+  });
+
   describe("refetchKey", () => {
     type Props = { trxType: string; refetchKey: string };
     const renderWithKey = (initialProps: Props) =>
