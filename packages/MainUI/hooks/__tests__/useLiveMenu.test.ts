@@ -41,7 +41,7 @@ describe("useLiveMenu (ETP-6431)", () => {
   });
 
   it("starts with the cached menu and asks nothing while there is no role", () => {
-    setRole(undefined);
+    setRole();
     const { result } = renderHook(() => useLiveMenu());
 
     expect(result.current).toBe(CACHED_MENU);

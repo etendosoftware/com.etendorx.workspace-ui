@@ -88,7 +88,7 @@ describe("DateSelector", () => {
 
     it("empties the field when the filter is cleared", () => {
       const { input, rerenderWith } = renderSelector(ISO_OCT_13);
-      rerenderWith(undefined);
+      rerenderWith();
       expect(input).toHaveValue("");
     });
   });
