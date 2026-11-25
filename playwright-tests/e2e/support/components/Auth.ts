@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_PASSWORD, DEFAULT_USER } from "../../../playwright.config";
 import { ORGANIZATION, ROLE } from "../registry/data";
 import { runAndWaitForResponse } from "../wait";
@@ -121,6 +121,22 @@ export class Auth {
   async logout(): Promise<void> {
     await this.page.getByTestId(AUTH_TEST_IDS.profileMenu).click();
     await this.page.getByTestId(AUTH_TEST_IDS.logout).click();
+  }
+
+  /** Asserts the session was closed: the login form is back and shows `message` (its title). */
+  async expectLoggedOutWith(message: string | RegExp): Promise<void> {
+    await expect(this.loginForm).toBeVisible({ timeout: LANDING_TIMEOUT });
+    await expect(this.page.getByText(message)).toBeVisible();
+  }
+
+  /** Asserts the session is still open: the login form is not on screen. */
+  async expectStillLoggedIn(): Promise<void> {
+    await expect(this.loginForm).toHaveCount(0);
+  }
+
+  /** The user name input of the login form. */
+  private get loginForm(): Locator {
+    return this.page.locator("#username");
   }
 
   /**

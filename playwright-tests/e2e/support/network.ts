@@ -18,3 +18,21 @@ export async function blockRequests(page: Page, url: RegExp): Promise<BlockedReq
   });
   return state;
 }
+
+/**
+ * Answers every request whose URL matches `url` with `status` instead of sending it to the backend, and
+ * records that it was attempted. Simulates a server failure (500) or a rejected session (401) on one
+ * service without changing any data or configuration.
+ */
+export async function answerWithStatus(page: Page, url: RegExp, status: number): Promise<BlockedRequest> {
+  const state = { sent: false };
+  await page.route(url, (route) => {
+    state.sent = true;
+    return route.fulfill({
+      status,
+      contentType: "application/json",
+      body: JSON.stringify({ error: `Simulated ${status} answer` }),
+    });
+  });
+  return state;
+}
