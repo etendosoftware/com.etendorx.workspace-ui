@@ -97,6 +97,15 @@ configuration, image upload, tab messages, the warehouse processes, `Tab.tsx`, `
 SSO) still bypass the rule: a 401 there does not close the session until another request does. They are
 left for a follow-up task.
 
+## Tests
+
+- Unit tests: `sessionResponsePolicy`, `sessionAwareFetch`, the user provider (`user.test.tsx`), the client
+  option (`client.test.ts`), the proxies (`sessionFailureStatus`, `route.helpers`, datasource session
+  recovery) and, in the module, `BearerTokenGuardFilterTest` and `BaseWebServiceGuardTest`.
+- End to end: `playwright-tests/e2e/smoke/12_Session/SESbServerErrorKeepsSessionTest.spec.ts` (`@smoke`, about
+  15 s). It simulates a 500 and a 401 on one request (`answerWithStatus`), forges an expired token, and checks the
+  grid's own error replaces the toast. Making a 500 close the session again makes it fail.
+
 ## Main files
 
 | File | Role |
