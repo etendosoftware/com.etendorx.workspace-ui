@@ -10,6 +10,7 @@ import {
   createHtmlResponse,
   rewriteHtmlResourceUrls,
   buildErpErrorCodeHeaders,
+  resolveErpErrorStatus,
 } from "./route.helpers";
 import { withCompression } from "../../_utils/compression";
 
@@ -92,8 +93,8 @@ const getCachedErpData = unstable_cache(
 
     if (!response.ok) {
       // NOTE: Handle ERP request errors
-      // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
-      const defaultResponseStatus = slugContainsCopilot ? 404 : response.status;
+      // NOTE: use 404 for copilot to indicate not installed (except a 401), otherwise use the actual response status
+      const defaultResponseStatus = resolveErpErrorStatus(slugContainsCopilot, response.status);
       const errorText = await response.text();
       throw new ErpRequestError({
         message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
@@ -425,7 +426,7 @@ async function handleMutationRequest(
   }
 
   if (!response.ok) {
-    const status = erpUrl.includes("copilot") ? 404 : response.status;
+    const status = resolveErpErrorStatus(erpUrl.includes("copilot"), response.status);
     const errorText = await response.text();
     throw new ErpRequestError({
       message: `ERP request failed: ${status} ${response.statusText}. ${errorText}`,

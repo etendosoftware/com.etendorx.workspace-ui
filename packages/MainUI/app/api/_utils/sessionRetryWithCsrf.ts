@@ -36,6 +36,8 @@ export interface EnhancedRetryResult<T> {
   recovered?: boolean;
   csrfRecovered?: boolean;
   newToken?: string;
+  /** HTTP status of the last ERP answer when the session could not be used, e.g. 401 for an invalid token. */
+  status?: number;
 }
 
 /**
@@ -103,6 +105,7 @@ export async function executeWithSessionAndCsrfRetry<T>(
         success: false,
         error: `Request failed with status ${result.response.status}`,
         data: result.data,
+        status: result.response.status,
       };
     }
 
@@ -116,6 +119,7 @@ export async function executeWithSessionAndCsrfRetry<T>(
         success: false,
         error: `Session recovery failed: ${recoveryResult.error}`,
         data: result.data,
+        status: result.response.status,
       };
     }
 
@@ -132,6 +136,7 @@ export async function executeWithSessionAndCsrfRetry<T>(
         success: false,
         error: "Request failed even after session recovery",
         data: result.data,
+        status: result.response.status,
       };
     }
 

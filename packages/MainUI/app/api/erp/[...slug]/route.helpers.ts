@@ -29,6 +29,25 @@ export function buildErpErrorCodeHeaders(errorText: string | undefined): Record<
   return {};
 }
 
+const HTTP_UNAUTHORIZED = 401;
+const COPILOT_NOT_INSTALLED_STATUS = 404;
+
+/**
+ * Status to answer a failed ERP request with. Copilot failures answer 404, which the client reads as
+ * "Copilot is not installed", except an authentication failure: it keeps its 401 so the session is
+ * closed like for any other service.
+ *
+ * @param isCopilot - Whether the request targets Copilot
+ * @param status - Status answered by the ERP
+ * @returns The status to answer the client with
+ */
+export function resolveErpErrorStatus(isCopilot: boolean, status: number): number {
+  if (isCopilot && status !== HTTP_UNAUTHORIZED) {
+    return COPILOT_NOT_INSTALLED_STATUS;
+  }
+  return status;
+}
+
 /**
  * Detect charset from Content-Type header
  * @param contentType - Content-Type header value
