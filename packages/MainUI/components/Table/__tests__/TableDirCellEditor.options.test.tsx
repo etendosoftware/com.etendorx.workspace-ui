@@ -153,6 +153,16 @@ describe("TableDirCellEditor — loading while searching (ETP-6431)", () => {
     expect(optionList().getByText(NO_OPTIONS)).toBeInTheDocument();
   });
 
+  it("shows 'No options found' when the search fails", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    renderEditor({ loadOptions: jest.fn().mockRejectedValue(new Error("down")) });
+
+    await openAndSearch("zzz");
+
+    expect(optionList().getByText(NO_OPTIONS)).toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
   it("keeps the options of the latest search when an older answer arrives later", async () => {
     const { loadOptions, release } = deferredLoader();
     renderEditor({ loadOptions });
