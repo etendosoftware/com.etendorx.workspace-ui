@@ -1,4 +1,5 @@
 import { expect, test } from "../../support/fixtures";
+import { SAMPLE_DOCUMENT } from "../../support/registry/data";
 import { TABS, WINDOW_IDS } from "../../support/registry/windows";
 import { collectGridFetches, type DatasourceRequestParams } from "../../support/wait";
 
@@ -42,6 +43,14 @@ const KILOGRAM_SORTED_BY_NAME = gridState({
 });
 
 const VIEW_NAME = "GRDl";
+
+/** Grid loads only: the form's own record request and the selectors of the tab post to the datasource too. */
+const gridLoads = (fetches: DatasourceRequestParams[]) =>
+  fetches.filter((params) => params._className === "OBViewDataSource");
+/** A session property of the parent record, which only a child load made with the whole record carries. */
+const PARENT_RECORD_CONTEXT = "@Order.priceList@";
+/** The record of the URL and its parents are loaded again after a reload: up to a minute on a busy CI. */
+const RECOVERY_TIMEOUT = 60_000;
 
 /** Waits for the grid to ask for the records sorted as stored: a load sent before it would also be counted. */
 const waitForSortedFetch = (fetches: DatasourceRequestParams[]) =>
@@ -147,6 +156,29 @@ test.describe("Grid - default view on the first load @regression @grid", () => {
     await expect(app.grid.rowWithCell(CENTIMETER)).toBeVisible();
     expect(fetches).toHaveLength(1);
     expect(sentFilter(fetches[0], KILOGRAM)).toBe(false);
+  });
+
+  test("loads the header and its lines once when the record of the URL is restored", async ({ app, page }) => {
+    const order = SAMPLE_DOCUMENT.SALES_ORDER_DRAFT_WITH_LINES;
+    await app.sidebar.navigateTo("salesOrder");
+    await app.toolbar.disableImplicitFilter();
+    await app.grid.filter("Document No.", order);
+    await app.grid.openRowForm(app.grid.rowWithCell(order));
+    await app.breadcrumb.waitFor(order);
+    const header = collectGridFetches(page, TABS.SALES_ORDER_HEADER);
+    const lines = collectGridFetches(page, TABS.SALES_ORDER_LINES);
+    // Loads that waited for nothing would go out again when the record arrives, before its form is initialized
+    const formLoaded = page.waitForResponse((response) => response.url().includes("MODE=EDIT"), {
+      timeout: RECOVERY_TIMEOUT,
+    });
+
+    await page.reload();
+    await formLoaded;
+
+    await expect.poll(() => gridLoads(lines).length).toBeGreaterThan(0);
+    expect(gridLoads(header), "the header loaded again when its record arrived").toHaveLength(1);
+    expect(gridLoads(lines), "the lines loaded before and after the order arrived").toHaveLength(1);
+    expect(gridLoads(lines)[0], "the lines loaded without the order record").toHaveProperty(PARENT_RECORD_CONTEXT);
   });
 
   test("loads a child tab once, already sorted by its default view", async ({ app, data, page }) => {
