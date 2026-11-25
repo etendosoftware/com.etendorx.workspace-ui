@@ -300,3 +300,28 @@ describe("TreeColumnFilter - other tree references", () => {
     expect(mockFetchFilterOptions).toHaveBeenCalledWith(expect.not.objectContaining({ treeParams: expect.anything() }));
   });
 });
+
+describe("TreeColumnFilter - searching a self-loaded tree (ETP-6431)", () => {
+  const NO_OPTIONS = "multiselect.noOptionsFound";
+
+  it("shows that it is loading while the typed term waits for its search, and the empty text after it", async () => {
+    mockFetchFilterOptions.mockReset();
+    mockFetchFilterOptions.mockResolvedValueOnce(buildCharacteristicsTreeOptions()).mockResolvedValueOnce([]);
+    render(
+      <TreeColumnFilter
+        column={buildColumn(FIELD_REFERENCE_CODES.TREE_REFERENCE.id)}
+        entityName="OrderLine"
+        onSelectionChange={jest.fn()}
+        placeholder={PLACEHOLDER}
+      />
+    );
+    await openFilter();
+
+    fireEvent.change(getSearchInput(), { target: { value: "zzz" } });
+
+    expect(screen.getByText("multiselect.loadingOptions")).toBeInTheDocument();
+    expect(screen.queryByText(NO_OPTIONS)).not.toBeInTheDocument();
+    expect(await screen.findByText(NO_OPTIONS, undefined, { timeout: 2000 })).toBeInTheDocument();
+    expect(mockFetchFilterOptions).toHaveBeenLastCalledWith(expect.objectContaining({ searchQuery: "zzz" }));
+  });
+});

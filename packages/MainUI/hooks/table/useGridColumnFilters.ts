@@ -27,6 +27,16 @@ const TREE_REFERENCE_IDS: Set<string> = new Set([
 
 const isTreeReferenceColumn = (column: Column): boolean =>
   !!column.column?.reference && TREE_REFERENCE_IDS.has(column.column.reference);
+
+/**
+ * Whether the filter options of a column come from a datasource, like TableDir: TableDir columns (also those without
+ * referencedEntity) and tree reference columns (e.g. Product Characteristics), the last two only with an entity.
+ */
+const loadsTableDirOptions = (column: Column, entityName?: string): boolean => {
+  if (ColumnFilterUtils.isTableDirColumn(column)) return true;
+  if (!entityName) return false;
+  return column.type === FieldType.TABLEDIR || isTreeReferenceColumn(column);
+};
 import type { MRT_ColumnFiltersState } from "material-react-table";
 import {
   ColumnFilterUtils,
@@ -63,6 +73,7 @@ export const useGridColumnFilters = ({
     columnFilters: advancedColumnFilters,
     setColumnFilter,
     setFilterOptions,
+    loadFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
     columns,
@@ -116,23 +127,9 @@ export const useGridColumnFilters = ({
         return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
-      // isTableDirColumn requires referencedEntity; also handle TABLEDIR columns without it
-      if (ColumnFilterUtils.isTableDirColumn(column) || (column.type === FieldType.TABLEDIR && entityName)) {
-        return loadTableDirFilterOptions({
-          column,
-          columnId,
-          searchQuery,
-          tabId,
-          entityName,
-          fetchFilterOptions,
-          setFilterOptions,
-          isImplicitFilterApplied,
-          extraParams,
-        });
-      }
-
-      // Tree reference columns (e.g. Product Characteristics) — load from datasource like TableDir
-      if (isTreeReferenceColumn(column) && entityName) {
+      if (loadsTableDirOptions(column, entityName)) {
+        // Loading until the answer arrives, so the dropdown never reads "No options found" meanwhile (ETP-6431)
+        await loadFilterOptions(columnId, searchQuery);
         return loadTableDirFilterOptions({
           column,
           columnId,
@@ -148,7 +145,7 @@ export const useGridColumnFilters = ({
 
       return [];
     },
-    [columns, fetchFilterOptions, setFilterOptions, tabId, entityName, extraParams]
+    [columns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tabId, entityName, extraParams]
   );
 
   const fetchingRefs = useRef<Record<string, boolean>>({});
