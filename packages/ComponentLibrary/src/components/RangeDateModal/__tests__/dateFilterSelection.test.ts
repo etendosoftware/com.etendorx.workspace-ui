@@ -63,12 +63,19 @@ describe("dateFilterSelection", () => {
       expect(parseDateFilterValue(value)).toEqual(expected);
     });
 
-    it.each([undefined, "", "   ", ">=01/10/2026", "13/10/2026", "2026-02-31", " - ", `${ISO_OCT_1} - abc`])(
-      "returns null for %p",
-      (value) => {
-        expect(parseDateFilterValue(value)).toBeNull();
-      }
-    );
+    it.each([
+      undefined,
+      "",
+      "   ",
+      ">=01/10/2026",
+      "13/10/2026",
+      "2026-02-31",
+      " - ",
+      `${ISO_OCT_1} - abc`,
+      "2026-02-31 - ",
+    ])("returns null for %p", (value) => {
+      expect(parseDateFilterValue(value)).toBeNull();
+    });
 
     it("reads back every value it builds", () => {
       for (const selection of [single(OCT_13), range(OCT_1, OCT_31), range(OCT_1, null), range(null, OCT_31)]) {

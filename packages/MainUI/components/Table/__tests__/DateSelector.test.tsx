@@ -42,6 +42,9 @@ const OCT_13 = new Date(2026, 9, 13);
 const OCT_20 = new Date(2026, 9, 20);
 const ISO_OCT_13 = "2026-10-13";
 const ISO_OCT_20 = "2026-10-20";
+const ARIA_INVALID = "aria-invalid";
+const PICKER_TITLE = "Open date picker for Order Date";
+const EXPRESSION = ">=2026-10-01";
 const COLUMN = { id: "orderDate", name: "Order Date", columnName: "orderDate" } as unknown as Column;
 
 const renderSelector = (filterValue?: string) => {
@@ -56,7 +59,7 @@ const renderSelector = (filterValue?: string) => {
 const typeText = (input: HTMLElement, text: string) => fireEvent.change(input, { target: { value: text } });
 
 const openWindowAndConfirmDay = (day: string) => {
-  fireEvent.click(screen.getByTitle("Open date picker for Order Date"));
+  fireEvent.click(screen.getByTitle(PICKER_TITLE));
   fireEvent.click(screen.getByRole("button", { name: day }));
   fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 };
@@ -64,6 +67,12 @@ const openWindowAndConfirmDay = (day: string) => {
 describe("DateSelector", () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
+
+  it("names the column by its column name when it has no name", () => {
+    const unnamed = { id: "created", columnName: "creationDate" } as unknown as Column;
+    render(<DateSelector column={unnamed} onFilterChange={jest.fn()} />);
+    expect(screen.getByPlaceholderText("Filter creationDate...")).toBeInTheDocument();
+  });
 
   describe("showing the applied filter", () => {
     it.each([
@@ -96,9 +105,9 @@ describe("DateSelector", () => {
 
     it("sends a filter expression as typed", () => {
       const { input, onFilterChange } = renderSelector();
-      typeText(input, ">=2026-10-01");
+      typeText(input, EXPRESSION);
       act(() => jest.advanceTimersByTime(DEBOUNCE_MS));
-      expect(onFilterChange).toHaveBeenCalledWith(">=2026-10-01");
+      expect(onFilterChange).toHaveBeenCalledWith(EXPRESSION);
     });
 
     it("clears the filter when the text is deleted", () => {
@@ -112,9 +121,9 @@ describe("DateSelector", () => {
       const { input, onFilterChange } = renderSelector();
       typeText(input, "31/02/2026");
       act(() => jest.advanceTimersByTime(DEBOUNCE_MS));
-      expect(input).toHaveAttribute("aria-invalid", "false");
+      expect(input).toHaveAttribute(ARIA_INVALID, "false");
       fireEvent.blur(input);
-      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute(ARIA_INVALID, "true");
       expect(screen.getByTitle("Invalid date")).toBeInTheDocument();
       expect(onFilterChange).not.toHaveBeenCalled();
     });
@@ -124,7 +133,7 @@ describe("DateSelector", () => {
       typeText(input, "abc");
       fireEvent.blur(input);
       typeText(input, "ab");
-      expect(input).toHaveAttribute("aria-invalid", "false");
+      expect(input).toHaveAttribute(ARIA_INVALID, "false");
     });
 
     it("applies the typed date at once with Enter, only once", () => {
@@ -140,14 +149,14 @@ describe("DateSelector", () => {
     it("does not check a shown filter that was not edited", () => {
       const { input } = renderSelector(`${ISO_OCT_13} - `);
       fireEvent.blur(input);
-      expect(input).toHaveAttribute("aria-invalid", "false");
+      expect(input).toHaveAttribute(ARIA_INVALID, "false");
     });
   });
 
   describe("the date window", () => {
     it("reopens one date in one-date mode and applies the new day", () => {
       const { input, onFilterChange } = renderSelector(ISO_OCT_13);
-      fireEvent.click(screen.getByTitle("Open date picker for Order Date"));
+      fireEvent.click(screen.getByTitle(PICKER_TITLE));
       expect(screen.getByRole("button", { name: "One date" })).toHaveAttribute("aria-pressed", "true");
       fireEvent.click(screen.getByRole("button", { name: "20" }));
       fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
@@ -157,7 +166,7 @@ describe("DateSelector", () => {
 
     it("applies an open range chosen in range mode", () => {
       const { input, onFilterChange } = renderSelector(`${ISO_OCT_13} - `);
-      fireEvent.click(screen.getByTitle("Open date picker for Order Date"));
+      fireEvent.click(screen.getByTitle(PICKER_TITLE));
       expect(screen.getByRole("button", { name: "Range" })).toHaveAttribute("aria-pressed", "true");
       fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
       expect(onFilterChange).toHaveBeenCalledWith(`${ISO_OCT_13} - `);
@@ -166,7 +175,7 @@ describe("DateSelector", () => {
 
     it("replaces a pending typed value", () => {
       const { input, onFilterChange } = renderSelector(ISO_OCT_13);
-      typeText(input, ">=2026-10-01");
+      typeText(input, EXPRESSION);
       openWindowAndConfirmDay("20");
       act(() => jest.advanceTimersByTime(DEBOUNCE_MS));
       expect(onFilterChange).toHaveBeenCalledTimes(1);
