@@ -22,6 +22,16 @@ the "Showing N records" bar of grids that keep their own counter. It changes wit
 refreshes and records created or deleted, because it is always derived from the loaded rows and from whether the
 datasource has more.
 
+### Child tab badge
+
+The badge of a child tab keeps its place in the tab strip before its count is known (ETP-6431). A child tab only
+loads its grid when it is opened, or when the pointer passes over it (the tab is prewarmed), so its count arrives
+late, and it is cleared while several parent records are selected. Until then the badge is an empty pill with a
+soft pulse, `aria-hidden` and marked `data-loading="true"`, of the same width as the count. The width is reserved
+for four characters with tabular digits, so `7`, `42`, `100` and `101+` all fit and the tabs to its right never
+move when the count arrives or changes. Only a count of five characters or more (`1010+`, after scrolling a large
+child tab) widens it. No count is loaded for a tab that was not visited: the badge only reserves the space.
+
 ## Decisions
 
 - **No total count.** Showing the real total would need a count query (`_onlyCount`) on every load, filter and
@@ -35,6 +45,9 @@ datasource has more.
   to its end fetched the first page again and showed nothing new (the dropdown already left out repeated
   options), and each later page overlapped the previous one by a row. It now starts each page right after the
   last option loaded and stops when the server answers the first rows again.
+- **Reserved badge instead of loading every count.** Loading the count of every child tab when a record is
+  selected would add a request per tab; Classic shows no count at all. The badge reserves the space instead, as the
+  task asks (an empty or loading badge that the number fills).
 - **Page size unchanged.** The size comes from the `dataPageSize` preference
   ([classic preferences](../classic-preferences/README.md)); saved views are not involved.
 
@@ -56,6 +69,7 @@ None.
 - `packages/ComponentLibrary/src/components/Table/RecordCounters/formatRecordCount.ts`: the `N+` rule, used by the
   record counter bar, the title count (`components/Table/index.tsx`) and the child tab badge
   (`components/window/TabButton.tsx`, `stores/tabCountsStore.ts`, `hooks/table/useTabRecordCount.ts`).
+  `TabButton.tsx` also holds the reserved badge (`TabCountBadge`, `TAB_COUNT_BADGE_CLASSES`).
 - `playwright-tests/e2e/regression/10_Grid/GRDkGridPagingAndCountTest.spec.ts`: end-to-end check (see the
   [E2E suite](../../testing/playwright-e2e/README.md)).
 

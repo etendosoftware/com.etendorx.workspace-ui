@@ -52,6 +52,10 @@ docs/
 │   │   └── README.md                # OBUIAPP_ProcessFileUploadMaxSize check before sending
 │   ├── recent-items/                 # Feature: Recently viewed items (drawer + Home widget)
 │   │   └── README.md                # AD_Preference storage, size limit vs UINAVBA_RecentListSize
+│   ├── unavailable-recent-entries/   # Feature: Recent documents, favorites and recents that can no longer be opened
+│   │   └── README.md                # Deleted record check, role menu filter, ETMETA_RecordNoLongerExists
+│   ├── selector-loading-state/       # Feature: Loading state of selectors while searching
+│   │   └── README.md                # Pending search as loading, queued search, grid editor and filters
 │   ├── saved-views/                  # Feature: Saved views and per-user grid configuration
 │   │   └── README.md                # Widths, pinning, window layout, ETMETA_GridConfiguration
 │   ├── dashboard-widget-refresh/     # Feature: Manual refresh of dashboard widgets
