@@ -53,6 +53,7 @@ import {
 
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
+import { getFullScreenWrapperStyle, useExitFullScreenOnEscape } from "./hooks/useGridFullScreen";
 import { useColumns } from "@/hooks/table/useColumns";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { tabAllowsMultipleSelection } from "@/utils/processes/definition/pickAndExecute";
@@ -3826,19 +3827,10 @@ const WindowReferenceGrid = ({
 
   const table = useMaterialReactTable(tableOptions);
 
-  // Escape in full screen leaves the full screen first, without closing the process window. The window
-  // capture listener runs before the modal's document capture one, which it stops (ETP-6312).
+  // Escape in full screen leaves the full screen first, without closing the process window (ETP-6312)
   const isGridFullScreen = table.getState().isFullScreen;
-  useEffect(() => {
-    if (!isGridFullScreen) return;
-    const exitFullScreen = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      table.setIsFullScreen(false);
-    };
-    window.addEventListener("keydown", exitFullScreen, true);
-    return () => window.removeEventListener("keydown", exitFullScreen, true);
-  }, [isGridFullScreen, table]);
+  const exitGridFullScreen = useCallback(() => table.setIsFullScreen(false), [table]);
+  useExitFullScreenOnEscape(isGridFullScreen, exitGridFullScreen);
 
   // Separate initial loading from filter/refresh loading.
   // The previous predicate `(... ) && !records` short-circuited as soon as
@@ -3884,9 +3876,7 @@ const WindowReferenceGrid = ({
         className={`flex flex-col w-full overflow-hidden transition duration-100 ${
           datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
         }`}
-        // In full screen the grid leaves the flow (`position: fixed`): the wrapper keeps its height so the
-        // process window behind does not shrink, move or cut its parameters and buttons (ETP-6312).
-        style={table.getState().isFullScreen ? { minHeight: TABLE_PAPER_HEIGHT } : undefined}
+        style={getFullScreenWrapperStyle(isGridFullScreen, TABLE_PAPER_HEIGHT)}
         ref={contentRef}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
       </div>
