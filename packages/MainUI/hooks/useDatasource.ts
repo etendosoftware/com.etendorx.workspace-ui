@@ -545,6 +545,12 @@ export function useDatasource({
     const queryChanged = queryKey !== prevQueryKeyRef.current;
     prevQueryKeyRef.current = queryKey;
 
+    // The first load of this same query is already on its way: a re-run (a dependency rebuilt with the same
+    // content) must not queue it again, or the grid loads twice.
+    if (!queryChanged && page === 1 && !dataLoadedRef.current && fetchInProgressRef.current) {
+      return;
+    }
+
     setError(undefined);
 
     if (queryChanged && page !== 1) {

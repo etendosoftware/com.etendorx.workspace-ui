@@ -536,6 +536,31 @@ describe("useDatasource hook", () => {
     });
   });
 
+  it("does not repeat a first load still on its way when it is asked again for the same query", async () => {
+    let resolveFirst: (v: unknown) => void = () => {};
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
+    (datasource.get as jest.Mock).mockReturnValueOnce(firstPromise);
+    const columnsOf = () => [{ id: "name", columnName: "name", accessorKey: "name" }] as unknown as Column[];
+    const { rerender } = renderHook(
+      ({ columns }: { columns: Column[] }) => useDatasource({ entity: mockEntity, columns }),
+      {
+        initialProps: { columns: columnsOf() },
+      }
+    );
+    await waitFor(() => expect(datasource.get).toHaveBeenCalledTimes(1));
+
+    // Same columns, rebuilt: the query is recomputed with the same content while the first load is in flight
+    rerender({ columns: columnsOf() });
+    await act(async () => {
+      resolveFirst({ ok: true, data: { response: { data: mockRecords } } });
+      await firstPromise;
+    });
+
+    expect(datasource.get).toHaveBeenCalledTimes(1);
+  });
+
   describe("withRequestContext", () => {
     const CONTEXT_KEY = "@Order.id@";
     type Props = { selected: string };
