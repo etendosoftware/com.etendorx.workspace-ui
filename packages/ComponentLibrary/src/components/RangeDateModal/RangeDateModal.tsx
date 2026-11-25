@@ -379,7 +379,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             {/* Sidebar Izquierdo (Inputs) */}
             <div className="w-full md:w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col justify-between">
               <div className="space-y-5">
-                <div role="group" className="flex gap-1 rounded-lg bg-gray-100 p-1">
+                <fieldset className="m-0 flex min-w-0 gap-1 rounded-lg border-0 bg-gray-100 p-1">
                   {MODE_OPTIONS.map((option) => (
                     <button
                       key={option.mode}
@@ -392,7 +392,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                       {translate(option.labelKey)}
                     </button>
                   ))}
-                </div>
+                </fieldset>
                 {isSingleMode && renderDateInput("start", "dateModal.date", startDate)}
                 {!isSingleMode && renderDateInput("start", "dateModal.from", startDate)}
                 {!isSingleMode && renderDateInput("end", "dateModal.to", endDate)}
