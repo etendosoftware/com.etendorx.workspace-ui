@@ -1,4 +1,10 @@
 import { createCallAction, createFetchDatasource } from "../warehouseApiHelpers";
+import { expectSessionAwareFetchFor } from "@/utils/tests/sessionAwareFetchMock";
+
+jest.mock(
+  "@/utils/session/sessionAwareFetch",
+  () => require("@/utils/tests/sessionAwareFetchMock").sessionAwareFetchModule
+);
 
 describe("warehouseApiHelpers", () => {
   beforeEach(() => {
@@ -32,6 +38,16 @@ describe("warehouseApiHelpers", () => {
         })
       );
       expect(result).toEqual({ result: "ok" });
+      expectSessionAwareFetchFor("_action=com.example.Handler", false);
+    });
+
+    it("tells the session rule when the process shows its own error", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
+      const ownErrorCall = createCallAction("test-token", "default-pid", { handlesOwnError: true });
+
+      await ownErrorCall("com.example.OwnError", {});
+
+      expectSessionAwareFetchFor("_action=com.example.OwnError", true);
     });
 
     it("should wrap params in _params by default", async () => {
@@ -118,6 +134,7 @@ describe("warehouseApiHelpers", () => {
         })
       );
       expect(result).toEqual({ rows: [{ id: "1" }] });
+      expectSessionAwareFetchFor("/api/datasource", false);
     });
 
     it("should throw when response is not ok", async () => {

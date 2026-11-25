@@ -60,6 +60,7 @@ import type {
   OnScanResult,
   OnScanError,
 } from "./types";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -124,7 +125,11 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
 
   // Created via shared factory function to avoid duplication with useWarehousePlugin.
   // token is guaranteed non-null here — the parent modal only renders this component after auth.
-  const callAction = useMemo(() => createCallAction(token ?? "", processId), [token, processId]);
+  // Scan and process failures are shown inline (setError): no generic notice on top.
+  const callAction = useMemo(
+    () => createCallAction(token ?? "", processId, { handlesOwnError: true }),
+    [token, processId]
+  );
 
   // ---------------------------------------------------------------------------
   // Add box
@@ -296,9 +301,11 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
     async (tabId: string, recordId: string) => {
       if (isRecoveryLoading) return;
       try {
-        const res = await fetch(`/api/erp/meta/tab/${tabId}?language=en_US`, {
+        const res = await sessionAwareFetch(`/api/erp/meta/tab/${tabId}?language=en_US`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          // A failure falls back to opening the tab directly.
+          handlesOwnError: true,
         });
         const tabData = await res.json();
         const resolvedWindowId = tabData?.window || tabData?.windowId || tabId;
