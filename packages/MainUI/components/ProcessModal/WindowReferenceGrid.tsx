@@ -85,6 +85,7 @@ import {
   convertDatasourceValue,
   resolveContextValue,
   applyMergedParam,
+  toDatasourceParamValue,
   buildFilterCriteriaEntry,
   normalizeContextKey,
   addSelectedIDsToCriteria,
@@ -1429,7 +1430,8 @@ export function applyRecordValues(
     const rawValue = extractActualValue(recordValues[param.name]);
     if (rawValue === undefined || rawValue === "" || rawValue === null || !param.dBColumnName) continue;
     if (validColumnNames.has(param.dBColumnName.toLowerCase())) {
-      options[param.dBColumnName] = rawValue;
+      const outValue = toDatasourceParamValue(param, rawValue);
+      if (outValue !== undefined) options[param.dBColumnName] = outValue;
     }
   }
 }
