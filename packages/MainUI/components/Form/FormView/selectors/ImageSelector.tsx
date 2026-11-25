@@ -7,7 +7,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { useTabContext } from "@/contexts/tab";
 import { useUserStore } from "@/stores/userStore";
-import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
+import { useAuthenticatedImageState } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
@@ -42,6 +42,62 @@ const Spinner = ({ size = 24 }: { size?: number }) => (
 );
 
 // Returns a dimension value as string, substituting "ANY" for unconfigured (0) dimensions
+/** Picture outline shown where there is no image to display. */
+const ImagePlaceholderIcon = () => (
+  <svg
+    aria-hidden="true"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    className={`${IDLE_ICON_COLOR} flex-shrink-0`}>
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+interface ImageThumbnailProps {
+  imageUrl: string | null;
+  failed: boolean;
+  alt: string;
+  missingLabel: string;
+  fieldId: string;
+}
+
+/**
+ * Thumbnail of a stored image: the image once loaded, a missing-image placeholder when it could not be
+ * loaded (Classic shows a broken image without a message), and a spinner meanwhile.
+ */
+const ImageThumbnail = ({ imageUrl, failed, alt, missingLabel, fieldId }: ImageThumbnailProps) => {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={alt}
+        className="max-h-[100px] w-auto max-w-full object-contain"
+        data-testid={`ImageSelector__thumbnail__${fieldId}`}
+      />
+    );
+  }
+  if (failed) {
+    return (
+      <span
+        role="img"
+        aria-label={missingLabel}
+        className="flex items-center justify-center"
+        data-testid={`ImageSelector__missing__${fieldId}`}>
+        <ImagePlaceholderIcon />
+      </span>
+    );
+  }
+  // The image id is known but its URL is not ready yet: an <img> with an empty src would make the browser
+  // download the whole page again
+  return <Spinner size={28} data-testid={`Spinner__${fieldId}`} />;
+};
+
 function dimStr(value: number): string {
   return value === 0 ? "ANY" : String(value);
 }
@@ -137,7 +193,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
   const configW = Number(field.column?.imageWidth ?? 0);
   const configH = Number(field.column?.imageHeight ?? 0);
 
-  const imageUrl = useAuthenticatedImage(imageId || null, cacheBuster);
+  const { url: imageUrl, failed: imageFailed } = useAuthenticatedImageState(imageId || null, cacheBuster);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -333,23 +389,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
       disabled={isReadOnly || isUploading}
       className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${buttonDynamicClasses}`}
       data-testid={`ImageSelector__empty__${field.id}`}>
-      {isUploading ? (
-        <Spinner size={24} data-testid={`Spinner__${field.id}`} />
-      ) : (
-        <svg
-          aria-hidden="true"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className={`${IDLE_ICON_COLOR} flex-shrink-0`}>
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
+      {isUploading ? <Spinner size={24} data-testid={`Spinner__${field.id}`} /> : <ImagePlaceholderIcon />}
       {isUploading && <span className="text-sm text-(--ui-text-muted)">{t("image.upload.uploading")}</span>}
       {!isUploading && !isReadOnly && (
         <span className="text-sm text-(--ui-text-muted)">{t("image.selector.clickToUpload")}</span>
@@ -376,18 +416,13 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         className="p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
         onClick={() => imageUrl && setShowPreviewModal(true)}
         tabIndex={NOT_TABBABLE}>
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={field.name || t("image.selector.altText")}
-            className="max-h-[100px] w-auto max-w-full object-contain"
-            data-testid={`ImageSelector__thumbnail__${field.id}`}
-          />
-        ) : (
-          // The image id is known but its URL is not ready yet: an <img> with an empty src would make the browser
-          // download the whole page again
-          <Spinner size={28} data-testid={"Spinner__" + field.id} />
-        )}
+        <ImageThumbnail
+          imageUrl={imageUrl}
+          failed={imageFailed}
+          alt={field.name || t("image.selector.altText")}
+          missingLabel={t("image.selector.noImage")}
+          fieldId={field.id}
+        />
       </button>
 
       {/* Spinner overlay while uploading */}
