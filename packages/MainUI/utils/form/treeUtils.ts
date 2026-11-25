@@ -22,6 +22,22 @@ export interface TreeNode extends EntityData {
   hasChildren: boolean;
 }
 
+export interface FlatTreeOptions {
+  /** Sorts the nodes of each level by their `_identifier`, as the Classic characteristics tree does. */
+  sortSiblings?: boolean;
+}
+
+/**
+ * Compares two tree records by their `_identifier`, ignoring case. Classic sorts the characteristics
+ * tree alphanumerically on each level once its data arrives.
+ */
+export function compareTreeLabels(a: EntityData, b: EntityData): number {
+  const labelA = String(a._identifier ?? "").toLowerCase();
+  const labelB = String(b._identifier ?? "").toLowerCase();
+  if (labelA === labelB) return 0;
+  return labelA < labelB ? -1 : 1;
+}
+
 /**
  * Transforms a flat array of records with parentId references into a
  * depth-annotated flat list suitable for rendering an indented tree dropdown.
@@ -32,7 +48,7 @@ export interface TreeNode extends EntityData {
  * Walks depth-first so children appear directly after their parent.
  * Tracks visited nodes to prevent infinite loops from circular references.
  */
-export function buildFlatTreeList(records: EntityData[]): TreeNode[] {
+export function buildFlatTreeList(records: EntityData[], options: FlatTreeOptions = {}): TreeNode[] {
   if (records.length === 0) return [];
 
   const idSet = new Set(records.map((r) => r.id as string));
@@ -48,6 +64,11 @@ export function buildFlatTreeList(records: EntityData[]): TreeNode[] {
       siblings.push(record);
       childrenMap.set(parentId, siblings);
     }
+  }
+
+  if (options.sortSiblings) {
+    roots.sort(compareTreeLabels);
+    for (const siblings of childrenMap.values()) siblings.sort(compareTreeLabels);
   }
 
   const result: TreeNode[] = [];
@@ -89,7 +110,8 @@ export interface TreeFilterNode extends TreeNode {
 
 /** Builds tree hierarchy from filter options that have parentId. */
 export function buildTreeFromFilterOptions(
-  options: { id: string; label: string; value: string; parentId?: string | null; isCharacteristic?: boolean }[]
+  options: { id: string; label: string; value: string; parentId?: string | null; isCharacteristic?: boolean }[],
+  treeOptions: FlatTreeOptions = {}
 ): TreeFilterNode[] {
   const records = options.map((opt) => ({
     id: opt.id,
@@ -98,7 +120,7 @@ export function buildTreeFromFilterOptions(
     isCharacteristic: opt.isCharacteristic ?? false,
     filterValue: opt.value,
   }));
-  const nodes = buildFlatTreeList(records);
+  const nodes = buildFlatTreeList(records, treeOptions);
   return nodes as TreeFilterNode[];
 }
 

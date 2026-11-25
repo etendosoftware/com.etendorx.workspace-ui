@@ -21,6 +21,7 @@ import { useFormInitialState } from "../useFormInitialState";
 import { useTabContext } from "@/contexts/tab";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import useFormParent from "../useFormParent";
+import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@/contexts/tab");
 jest.mock("@workspaceui/api-client/src/utils/metadata");
@@ -67,6 +68,24 @@ describe("useFormInitialState", () => {
         field1: "val1",
         field1$_identifier: "ID1",
         parentId: "123",
+      })
+    );
+  });
+
+  it("keeps the stored text of a Product Characteristics value and its characteristics apart", () => {
+    const characteristics = { Envase: "Botella / Vidrio", Formato: "330 ml" };
+    const formInit = {
+      columnValues: {
+        COL1: { value: { dbValue: "Envase: Vidrio, Formato: 330 ml", characteristics }, classicValue: "x" },
+      },
+    } as unknown as FormInitializationResponse;
+
+    const { result } = renderHook(() => useFormInitialState(formInit));
+
+    expect(result.current).toEqual(
+      expect.objectContaining({
+        field1: "Envase: Vidrio, Formato: 330 ml",
+        field1$_characteristics: characteristics,
       })
     );
   });

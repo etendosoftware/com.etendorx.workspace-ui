@@ -146,6 +146,18 @@ export const SAMPLE_DOCUMENT = {
   SALES_ORDER_COMPLETED: "50017",
 } as const;
 
+/** Sample orders a spec opens by id (deep links); the document number is in `SAMPLE_DOCUMENT`. */
+export const SAMPLE_ORDER = {
+  /** Booked sales order 50017 (`SAMPLE_DOCUMENT.SALES_ORDER_COMPLETED`). */
+  COMPLETED: { id: "F1AAB8C608AA434C9FC7FC1D685BA016", name: "50017" },
+} as const satisfies Record<string, SampleRecord>;
+
+/** Sample stock movements (Goods Transaction) a spec only reads. */
+export const GOODS_TRANSACTION = {
+  /** Receipt of one Laptop, 2011-02-03. */
+  LAPTOP_RECEIPT: { id: "058CB613C8D5418D886201CDEDCEF0C4", name: "Laptop" },
+} as const satisfies Record<string, SampleRecord>;
+
 export const ORGANIZATION = {
   SPAIN: "Spain",
 } as const;
@@ -179,6 +191,8 @@ export const LOCATOR = {
  */
 export const FIELD = {
   SALES_ORDER_LINE_QUANTITY: "1130",
+  /** Characteristic Description of the Product header (one line per characteristic in the form). */
+  PRODUCT_CHARACTERISTIC_DESCRIPTION: "DA77D45513848AC2E040007F010002E3",
   /** Net Unit Price of the Sales Order lines. */
   SALES_ORDER_LINE_NET_UNIT_PRICE: "1138",
   /** Description of the Sales Order header: a multi-line text field (reference Text). */

@@ -38,6 +38,10 @@ export interface FilterOption {
   isCharacteristic?: boolean;
   /** HQL exists subquery for special filter criteria (e.g. Product Characteristics) */
   existsQuery?: string;
+  /** Id of the product characteristic a characteristic value belongs to (Product Characteristics tree). */
+  characteristic?: string;
+  /** Name of the product characteristic a characteristic value belongs to (Product Characteristics tree). */
+  characteristicName?: string;
 }
 
 export interface ColumnFilterState {

@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { DatasourceOptions } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { GROUPING_ENABLED_PREFERENCE, getGroupingMaxRecords } from "@/utils/table/grouping";
@@ -6,6 +6,8 @@ import { ORDER_BY_PARAM } from "@/utils/table/defaultOrderBy";
 import { clearPreferences, savePreferences } from "@/utils/propertyStore";
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import { useTableData } from "../useTableData";
+import { DEFAULT_TREE_FETCH_LIMIT, TOO_MANY_NODES_MESSAGE } from "@/utils/table/treeMode";
+import { toast } from "sonner";
 
 const GROUP_COLUMN = "Business Partner";
 const GROUP_FIELD = "businessPartner";
@@ -32,7 +34,8 @@ const mockPersistenceSetters = {
 };
 const mockGetRequestParams = jest.fn();
 const mockDatasourceResult = {
-  records: [],
+  records: [] as Record<string, unknown>[],
+  isTreeLimitExceeded: false,
   loading: false,
   error: null,
   hasMoreRecords: false,
@@ -61,7 +64,10 @@ const mockTab: { hqlorderbyclause?: string; defaultSortField?: string; [key: str
 };
 
 jest.mock("../../../contexts/searchContext", () => ({ useSearch: () => ({ searchQuery: "" }) }));
-jest.mock("../../../contexts/language", () => ({ useLanguage: () => ({ language: "en_US" }) }));
+jest.mock("../../../contexts/language", () => ({
+  useLanguage: () => ({ language: "en_US", getLabel: (code: string) => code }),
+}));
+jest.mock("sonner", () => ({ toast: { error: jest.fn() } }));
 jest.mock("../../../contexts/tab", () => ({
   useTabContext: () => ({ tab: mockTab, parentTab: null, parentRecord: null, parentRecords: [] }),
 }));
@@ -212,7 +218,8 @@ describe("useTableData grouping query", () => {
 
     savePreferences({ [GROUPING_ENABLED_PREFERENCE]: "Y" });
     mockSupportsTree = true;
-    expect(renderQuery(true).pageSize).toBe(DEFAULT_PAGE_SIZE);
+    // A tree asks for TreeDatasourceFetchLimit nodes, as classic, never the size of a grouped page
+    expect(renderQuery(true).pageSize).toBe(DEFAULT_TREE_FETCH_LIMIT);
   });
 });
 
@@ -321,5 +328,47 @@ describe("useTableData default order-by clause", () => {
     expect(summaryQuery._summary).toBeDefined();
     expect(summaryQuery[ORDER_BY_PARAM]).toBeUndefined();
     expect(summaryQuery.sortBy).toBeUndefined();
+  });
+});
+
+describe("useTableData tree fetch limit", () => {
+  const TOO_MANY_NODES = { ok: true, data: { response: { status: -1, error: { type: "tooManyNodes" }, data: [] } } };
+  const NODE_ID = "node-1";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installLocalStorageMock();
+    mockSupportsTree = true;
+    mockDatasourceResult.records = [];
+    mockDatasourceResult.isTreeLimitExceeded = false;
+  });
+
+  afterAll(() => {
+    mockSupportsTree = false;
+    mockDatasourceResult.isTreeLimitExceeded = false;
+    mockDatasourceResult.records = [];
+  });
+
+  it("shows OBUIAPP_TooManyNodes when the tree answer is over the limit", () => {
+    mockDatasourceResult.isTreeLimitExceeded = true;
+
+    renderHook(() => useTableData({ isTreeMode: true }));
+
+    expect(toast.error).toHaveBeenCalledWith(TOO_MANY_NODES_MESSAGE);
+  });
+
+  it("asks for the children up to the limit and shows the message when they are over it", async () => {
+    mockDatasourceResult.records = [{ id: NODE_ID, __isParent: true }];
+    mockDatasourceGet.mockResolvedValue(TOO_MANY_NODES);
+    const { result } = renderHook(() => useTableData({ isTreeMode: true }));
+
+    await waitFor(() => expect(result.current.displayRecords).toHaveLength(1));
+    act(() => result.current.handleMRTExpandChange({ newExpanded: { [NODE_ID]: true } }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(TOO_MANY_NODES_MESSAGE));
+    expect(mockDatasourceGet).toHaveBeenCalledWith(
+      mockTab.entityName,
+      expect.objectContaining({ startRow: 0, endRow: DEFAULT_TREE_FETCH_LIMIT })
+    );
   });
 });

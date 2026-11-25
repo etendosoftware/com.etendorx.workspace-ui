@@ -466,6 +466,7 @@ const en = {
     title: "Log In",
     subtitle: "Enter your username and password to continue.",
     loadingSession: "Loading your workspace...",
+    logoutRedirect: "Logging out. Redirecting to {{url}}...",
     fields: {
       username: {
         label: "Username",

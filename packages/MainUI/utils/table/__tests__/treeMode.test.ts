@@ -1,5 +1,15 @@
 import { type Tab, UIPattern } from "@workspaceui/api-client/src/api/types";
-import { canMoveTreeNodes, getTreeMetadata, isTreeModeSupported } from "../treeMode";
+import { savePreferences } from "@/utils/propertyStore";
+import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
+import {
+  canMoveTreeNodes,
+  DEFAULT_TREE_FETCH_LIMIT,
+  getFetchPageSize,
+  getTreeFetchLimit,
+  getTreeMetadata,
+  isTooManyNodesResponse,
+  isTreeModeSupported,
+} from "../treeMode";
 
 const TREE_DATASOURCE_ID = "90034CAE96E847D78FBEF6D38CB1930D";
 const TABLE_ID = "155";
@@ -71,5 +81,41 @@ describe("treeMode", () => {
     it("returns no tree support when the tab has no tree", () => {
       expect(getTreeMetadata(buildTab())).toEqual({ supportsTreeMode: false, canMoveNodes: false });
     });
+  });
+
+  describe("tree fetch limit", () => {
+    const WINDOW_ID = "144";
+
+    beforeEach(() => {
+      installLocalStorageMock();
+    });
+
+    it("reads TreeDatasourceFetchLimit and defaults to the classic 200", () => {
+      savePreferences({});
+      expect(getTreeFetchLimit()).toBe(DEFAULT_TREE_FETCH_LIMIT);
+      savePreferences({ TreeDatasourceFetchLimit: "3" });
+      expect(getTreeFetchLimit()).toBe(3);
+    });
+
+    it("asks a tree for the fetch limit and a grid for its page size", () => {
+      savePreferences({ TreeDatasourceFetchLimit: "3", [`dataPageSize_${WINDOW_ID}`]: "20" });
+      expect(getFetchPageSize(true, WINDOW_ID)).toBe(3);
+      expect(getFetchPageSize(false, WINDOW_ID)).toBe(20);
+    });
+  });
+
+  describe("isTooManyNodesResponse", () => {
+    it("recognizes the answer of a tree over the limit", () => {
+      expect(isTooManyNodesResponse({ response: { status: -1, error: { type: "tooManyNodes" }, data: [] } })).toBe(
+        true
+      );
+    });
+
+    it.each([null, {}, { response: { data: [] } }, { response: { error: { type: "other" } } }])(
+      "ignores any other answer: %p",
+      (body) => {
+        expect(isTooManyNodesResponse(body)).toBe(false);
+      }
+    );
   });
 });

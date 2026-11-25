@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import type { LabelParams, OBI18N, OBShimDeps } from "./types";
+import type { LabelParams, LabelTarget, OBI18N, OBShimDeps } from "./types";
+import { loadServerLabel } from "@/utils/serverLabels";
 
 /**
  * Applies classic positional substitution to a label template: each `%n`
@@ -46,5 +47,27 @@ export function createI18N(deps: OBShimDeps = {}): OBI18N {
   const resolve = deps.getLabel ?? ((key: string) => key);
   return {
     getLabel: (key: string, params?: LabelParams): string => substituteParams(resolve(key), params),
+    getLabelFromServer: async (key, params, object, property) => {
+      const template = await loadServerLabel(deps.language ?? "", key);
+      if (template === undefined) {
+        return undefined;
+      }
+      const label = substituteParams(template, params);
+      deliverLabel(label, object, property);
+      return label;
+    },
   };
+}
+
+/** Sets the label where classic expects it: `object[property](label)` when a function, else the value. */
+function deliverLabel(label: string, object?: LabelTarget, property?: string): void {
+  if (!object || !property) {
+    return;
+  }
+  const target = object[property];
+  if (typeof target === "function") {
+    target(label);
+    return;
+  }
+  object[property] = label;
 }

@@ -110,6 +110,7 @@ how notes are stored and how the section differs from Classic (Jira ETP-5999).
 | Date | Relative interval ("2 hours ago") | Time elapsed in words or exact date and time, switchable |
 | Long notes | Full text in the grid row | Cut after 6 lines with Show more / Show less |
 | Note organization | Organization of the record | Same (previously the session organization) |
+| Read-only tab with `DisableNotesForReadOnlyTabs` = Y | Note input locked; the server rejects a deletion | Input and delete action hidden, notes still listed (see [Classic interface preferences](../classic-preferences/README.md)) |
 
 ## Main files
 

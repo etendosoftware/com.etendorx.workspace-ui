@@ -56,10 +56,15 @@ export interface LanguageOption {
   key?: string;
 }
 
+export interface LogoutOptions {
+  /** Manual sign-off from the profile: follows the classic `LogoutRedirectURL` preference. */
+  manual?: boolean;
+}
+
 export interface IUserContext {
   user: User;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (options?: LogoutOptions) => Promise<void>;
   // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   changePassword: (params: { currentPwd: string; newPwd: string; confirmPwd: string }) => Promise<void>;

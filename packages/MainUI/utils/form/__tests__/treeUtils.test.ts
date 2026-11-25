@@ -21,6 +21,7 @@ import {
   buildNodeMap,
   filterVisibleNodes,
   buildTreeFromFilterOptions,
+  compareTreeLabels,
   type TreeNode,
 } from "../treeUtils";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -222,5 +223,32 @@ describe("buildTreeFromFilterOptions", () => {
     const result = buildTreeFromFilterOptions(options);
     expect(result[0].filterValue).toBe("actual-value");
     expect(result[0]._identifier).toBe("Display");
+  });
+});
+
+describe("sorted tree levels (characteristics filter)", () => {
+  const options = [
+    { id: "ROOT_B", label: "Formato", value: "Formato" },
+    { id: "ROOT_A", label: "certificación", value: "certificación" },
+    { id: "V", label: "Vegano", value: "Vegano", parentId: "ROOT_A" },
+    { id: "B", label: "bio", value: "bio", parentId: "ROOT_A" },
+    { id: "S", label: "Sin azúcar", value: "Sin azúcar", parentId: "ROOT_A" },
+  ];
+
+  it("keeps the server order by default", () => {
+    expect(buildTreeFromFilterOptions(options).map((node) => node.id)).toEqual(["ROOT_B", "ROOT_A", "V", "B", "S"]);
+  });
+
+  it("sorts every level alphabetically ignoring case when asked", () => {
+    const result = buildTreeFromFilterOptions(options, { sortSiblings: true });
+
+    expect(result.map((node) => node.id)).toEqual(["ROOT_A", "B", "S", "V", "ROOT_B"]);
+  });
+
+  it("compares labels ignoring case", () => {
+    expect(compareTreeLabels({ _identifier: "abc" }, { _identifier: "ABC" })).toBe(0);
+    expect(compareTreeLabels({ _identifier: "a" }, { _identifier: "B" })).toBe(-1);
+    expect(compareTreeLabels({ _identifier: "b" }, {})).toBe(1);
+    expect(compareTreeLabels({}, { _identifier: "b" })).toBe(-1);
   });
 });

@@ -36,4 +36,27 @@ export const DATASOURCE = {
   PURCHASE_ORDER: { entity: "Order", windowId: "181", tabId: "294" },
   SALES_INVOICE: { entity: "Invoice", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_HEADER },
   SALES_INVOICE_LINE: { entity: "InvoiceLine", windowId: WINDOW_IDS.SALES_INVOICE, tabId: TABS.SALES_INVOICE_LINES },
+  PRODUCT: { entity: "Product", windowId: WINDOW_IDS.PRODUCT, tabId: TABS.PRODUCT_HEADER },
+  /** A value of a product characteristic, what the characteristics filter of the grid reads. */
+  PRODUCT_CHARACTERISTIC_VALUE: {
+    entity: "ProductCharacteristicValue",
+    windowId: WINDOW_IDS.PRODUCT,
+    tabId: TABS.PRODUCT_CHARACTERISTIC_VALUES,
+  },
+  /** A characteristic of a product (`M_Product_Ch`), which its characteristic description is built from. */
+  PRODUCT_CHARACTERISTIC: {
+    entity: "ProductCharacteristic",
+    windowId: WINDOW_IDS.PRODUCT,
+    tabId: TABS.PRODUCT_CHARACTERISTICS,
+  },
+  CHARACTERISTIC: {
+    entity: "Characteristic",
+    windowId: WINDOW_IDS.PRODUCT_CHARACTERISTIC,
+    tabId: TABS.CHARACTERISTIC_HEADER,
+  },
+  CHARACTERISTIC_VALUE: {
+    entity: "CharacteristicValue",
+    windowId: WINDOW_IDS.PRODUCT_CHARACTERISTIC,
+    tabId: TABS.CHARACTERISTIC_VALUE,
+  },
 } as const satisfies Record<string, DatasourceTarget>;

@@ -587,8 +587,8 @@ function FormViewComponent({
   // incomplete metadata snapshot is never persisted as a preference.
   useEffect(() => {
     if (!windowIdentifier || groups.length === 0 || !personalizationSettled) return;
-    initializeExpandedSections(() => computeInitialExpandedSections(groups));
-  }, [windowIdentifier, groups, personalizationSettled, initializeExpandedSections]);
+    initializeExpandedSections(() => computeInitialExpandedSections(groups, tab.window));
+  }, [windowIdentifier, groups, personalizationSettled, initializeExpandedSections, tab.window]);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;

@@ -62,6 +62,8 @@ No setup is needed. The grid configuration uses the `/meta/grid-configuration` e
 
 ## Differences with classic
 
+- **`OBUIAPP_WindowPersonalization_Override` set to No** leaves a regular user picking existing views only, as in classic; see [Classic interface preferences](../classic-preferences/README.md).
+
 - **The grid configuration uses its own preference attribute** instead of `OBUIAPP_GridConfiguration`. The classic value is a SmartClient view state (an `eval` string) that the new UI cannot write without breaking classic.
 - **The preference follows the user across roles and organizations** (client + user + window).
 - **Views are per tab** (`ETMETA_SAVEDVIEW`), so the layout stored in a view is the window layout at the moment that tab's view was saved.

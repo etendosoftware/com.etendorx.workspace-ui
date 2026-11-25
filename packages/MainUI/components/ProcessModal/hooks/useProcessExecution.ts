@@ -39,7 +39,8 @@ import { logger } from "@/utils/logger";
 import { useTranslation } from "@/hooks/useTranslation";
 import { parseSmartClientMessage } from "../Custom/shared/processModalUtils";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { appendWindowToUrl } from "@/utils/url/utils";
+import { setWindowInUrl } from "@/utils/url/utils";
+import { findWindowToReplace, runReplacingWindow } from "@/utils/window/showWindow";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
@@ -418,13 +419,17 @@ export function useProcessExecution({
         setResult(null);
         onClose();
         const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-        triggerRecovery();
-        const newUrlParams = appendWindowToUrl(searchParams, {
-          windowIdentifier: newWindowIdentifier,
-          tabId: targetTabId,
-          recordId,
+        // As classic, an open instance of the window is replaced instead of opening it twice (AllowMultiTab)
+        const replacedIdentifier = findWindowToReplace(resolvedWindowId);
+        runReplacingWindow(replacedIdentifier, () => {
+          triggerRecovery();
+          const newUrlParams = setWindowInUrl(searchParams, replacedIdentifier, {
+            windowIdentifier: newWindowIdentifier,
+            tabId: targetTabId,
+            recordId,
+          });
+          router.replace(`window?${newUrlParams}`);
         });
-        router.replace(`window?${newUrlParams}`);
       } catch (e) {
         logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
         window.location.href = `/window?wi_0=${targetTabId}_${Date.now()}&ri_0=${recordId}`;

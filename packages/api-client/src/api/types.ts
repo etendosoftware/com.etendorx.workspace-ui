@@ -507,6 +507,12 @@ export interface Tab {
   records: Record<string, never>;
   hqlfilterclause: string;
   filterName?: string;
+  /**
+   * Classic text over a grid filtered by the default filter of the tab ("This grid is filtered using an
+   * implicit filter ..."), built by the metadata adapter as `OBViewGridComponent.getFilterName`. May hold
+   * formatting HTML (`<i>`); empty when the tab has no implicit or transactional filter.
+   */
+  implicitFilterMessage?: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
   hqlorderbyclause?: string;
@@ -522,6 +528,10 @@ export interface Tab {
   parentProperty?: string;
   /** Classic default sort property (`OBViewGridComponent.getSortField`) when the tab has no order-by clause. */
   defaultSortField?: string;
+  /** `AD_Tab.IsAccountingTab`: hidden unless the `ShowAcct` preference is Y, as in classic `addChildView`. */
+  accountingTab?: boolean;
+  /** `AD_Tab.IsTranslationTab`: hidden unless the `ShowTrl` preference is Y, as in classic `addChildView`. */
+  translationTab?: boolean;
   table$_identifier?: string;
   window$_identifier?: string;
   tableTree?: boolean | string;

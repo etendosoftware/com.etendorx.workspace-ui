@@ -472,6 +472,7 @@ const es = {
   login: {
     title: "Iniciar sesión",
     subtitle: "Ingresa tu usuario y contraseña para continuar.",
+    logoutRedirect: "Cerrando sesión. Redirigiendo a {{url}}...",
     loadingSession: "Cargando tu espacio de trabajo...",
     fields: {
       username: {

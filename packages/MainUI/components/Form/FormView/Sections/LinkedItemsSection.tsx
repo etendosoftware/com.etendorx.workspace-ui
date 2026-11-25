@@ -27,7 +27,8 @@ import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useExpandedOnce } from "@/hooks/useExpandedOnce";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
-import { appendWindowToUrl } from "@/utils/url/utils";
+import { setWindowInUrl } from "@/utils/url/utils";
+import { findWindowToReplace, runReplacingWindow } from "@/utils/window/showWindow";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -106,25 +107,23 @@ export const LinkedItemsSection = ({ entityName, recordId, isSectionExpanded = t
 
       // Generate unique window identifier
       const newWindowIdentifier = getNewWindowIdentifier(item.adWindowId);
+      // As classic, an open instance of the window is replaced instead of opening it twice (AllowMultiTab)
+      const replacedIdentifier = findWindowToReplace(item.adWindowId);
 
-      // Extract tab and record information
-      const newTabId = item.adTabId;
-      const newRecordId = item.id;
+      runReplacingWindow(replacedIdentifier, () => {
+        // Trigger recovery mechanism (resets hasRun guard)
+        triggerRecovery();
 
-      // Trigger recovery mechanism (resets hasRun guard)
-      triggerRecovery();
+        // Build new URL with the window, in place of the instance it replaces (uses current URL params)
+        const newUrlParams = setWindowInUrl(searchParams, replacedIdentifier, {
+          windowIdentifier: newWindowIdentifier,
+          tabId: item.adTabId,
+          recordId: item.id,
+        });
 
-      // Build new URL with appended window (uses current URL params)
-      const newUrlParams = appendWindowToUrl(searchParams, {
-        windowIdentifier: newWindowIdentifier,
-        tabId: newTabId,
-        recordId: newRecordId,
+        // Update URL to trigger recovery
+        router.replace(`window?${newUrlParams}`);
       });
-
-      // Update URL to trigger recovery
-      const newUrl = `window?${newUrlParams}`;
-
-      router.replace(newUrl);
 
       // Note: Recovery system will handle:
       // - Fetching window metadata

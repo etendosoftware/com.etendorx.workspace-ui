@@ -2,6 +2,7 @@ import type { SavedRecord } from "../../support/api/ApiData";
 import { expect, test } from "../../support/fixtures";
 import { DATASOURCE } from "../../support/registry/datasources";
 import { WINDOW_IDS } from "../../support/registry/windows";
+import { addWindowPreferences, reloginToReadPreferences } from "../../support/flows/preferences";
 
 /** Grouping is off unless this preference is "Y"; only the F&B sample client sets it. */
 const GROUPING_ENABLED = "OBUIAPP_GroupingEnabled";
@@ -33,20 +34,11 @@ test.afterEach(async ({ api }) => {
  * this window only while the test runs (created through the datasource, removed afterwards).
  */
 test.describe("Grid - grouping and summary rows @regression @grid", () => {
-  test("counts the rows in the summary and groups them by a column", async ({ app, api, data, page }) => {
-    preference = await api.add(DATASOURCE.PREFERENCE, {
-      organization: data.ORGANIZATION_ID.ALL,
-      propertyList: true,
-      property: GROUPING_ENABLED,
-      searchKey: "Y",
-      userContact: data.USER_ID.ADMIN,
-      window: WINDOW_IDS.COUNTRY_AND_REGION,
-    });
-    // Preferences are read once per session, and the UI server caches them per token: only a new
-    // login (a new token) reads the preference just created
-    await app.auth.logout();
-    await app.auth.login();
-    await app.auth.selectRoleOrgWarehouse();
+  test("counts the rows in the summary and groups them by a column", async ({ app, api, page }) => {
+    [preference] = await addWindowPreferences(api, WINDOW_IDS.COUNTRY_AND_REGION, [
+      { name: GROUPING_ENABLED, value: "Y", propertyList: true },
+    ]);
+    await reloginToReadPreferences(app);
     await app.sidebar.navigateTo("countryAndRegion");
     await app.grid.filter("Name", NAME_FILTER);
     const rows = await app.grid.shownRecords();

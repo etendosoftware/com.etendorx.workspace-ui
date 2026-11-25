@@ -366,6 +366,17 @@ describe("NoteSection", () => {
     });
   });
 
+  describe("read-only tab", () => {
+    it("shows the notes without the composer nor the delete option", async () => {
+      renderWithTheme(<NoteSection {...defaultProps} readOnly />);
+      await screen.findByText(EXISTING_NOTE_TEXT);
+
+      expect(screen.queryByTestId(INPUT_ID)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: DELETE_LABEL })).not.toBeInTheDocument();
+      expect(screen.getByText("forms.notes.youLabel")).toBeInTheDocument();
+    });
+  });
+
   describe("deleting", () => {
     it("offers the delete option only on the notes of the current user", async () => {
       (fetchNotes as jest.Mock).mockResolvedValue([existingNote, otherUserNote]);

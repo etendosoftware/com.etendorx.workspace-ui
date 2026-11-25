@@ -17,6 +17,14 @@
 
 import { installLocalStorageMock } from "@/utils/testUtils/localStorageMock";
 import { createOBShim } from "../obShim";
+import { persistPreference } from "@/utils/preferences/persistPreference";
+
+jest.mock("@/utils/preferences/persistPreference", () => ({
+  persistPreference: jest.fn((key: string, value: string, windowId?: string) => {
+    const store = jest.requireActual("@/utils/propertyStore");
+    store.setStoredPreference(store.buildPreferenceKey(key, windowId), value);
+  }),
+}));
 
 const PREF_KEY = "UomManagement";
 
@@ -73,6 +81,28 @@ describe("createOBShim", () => {
     const ob = createOBShim();
     ob.PropertyStore.set(PREF_KEY, "Y");
     expect(ob.PropertyStore.get(PREF_KEY)).toBe("Y");
+  });
+
+  describe("PropertyStore.set as classic", () => {
+    const WINDOW_ID = "143";
+
+    it("saves the preference in the server under its window", () => {
+      const ob = createOBShim();
+      ob.PropertyStore.set(PREF_KEY, "N", WINDOW_ID);
+
+      expect(persistPreference).toHaveBeenCalledWith(PREF_KEY, "N", WINDOW_ID);
+      expect(ob.PropertyStore.get(PREF_KEY, WINDOW_ID)).toBe("N");
+    });
+
+    it("keeps the preference in the session only with noSetInServer", () => {
+      const ob = createOBShim();
+      (persistPreference as jest.Mock).mockClear();
+      ob.PropertyStore.set(PREF_KEY, "N", WINDOW_ID, true);
+
+      expect(persistPreference).not.toHaveBeenCalled();
+      expect(ob.PropertyStore.get(PREF_KEY, WINDOW_ID)).toBe("N");
+      expect(ob.PropertyStore.get(PREF_KEY)).toBeUndefined();
+    });
   });
 
   describe("PropertyStore window scoping", () => {

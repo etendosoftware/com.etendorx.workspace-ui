@@ -29,6 +29,11 @@ export interface UnsavedChangesRequest {
   onProceed: () => void;
   /** Runs when the user backs out and keeps working. */
   onCancel?: () => void;
+  /**
+   * The only window the action replaces. The user is then asked about that window alone: saving or
+   * discarding its changes keeps it open, so the action can reuse it.
+   */
+  windowIdentifier?: string;
 }
 
 interface UnsavedChangesStore {

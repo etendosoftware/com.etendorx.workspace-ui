@@ -44,6 +44,7 @@ import type {
   MRT_VisibilityState,
 } from "material-react-table";
 import { MENU_CONTENT_CLASSES } from "@/utils/menuClasses";
+import { isWindowPersonalizationBlocked } from "@/utils/preferences/classicPreferences";
 
 /**
  * Mirrors the backend's canManageScope gate (SavedViewService#canManageScope): a plain
@@ -63,8 +64,8 @@ function getManageableScopes(userLevel: string | undefined): SavedViewScope[] {
   return scopes;
 }
 
-function getSetDefaultTitle(view: ParsedSavedView, t: TranslateFunction): string {
-  if (!view.editable) {
+function getSetDefaultTitle(view: ParsedSavedView, canEdit: boolean, t: TranslateFunction): string {
+  if (!canEdit) {
     return t("savedViews.notEditable");
   }
   return view.isDefault ? t("savedViews.defaultView") : t("savedViews.setAsDefault");
@@ -82,6 +83,8 @@ export interface SaveViewMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
   tabId: string;
+  /** AD window id of the tab, used to look `OBUIAPP_WindowPersonalization_Override` up. */
+  windowId?: string;
   currentFilters: MRT_ColumnFiltersState;
   currentVisibility: MRT_VisibilityState;
   currentSorting: MRT_SortingState;
@@ -126,6 +129,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   anchorEl,
   onClose,
   tabId,
+  windowId,
   currentFilters,
   currentVisibility,
   currentSorting,
@@ -159,6 +163,9 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
 
   const currentRole = useUserStore((s) => s.currentRole);
   const manageableScopes = useMemo(() => getManageableScopes(currentRole?.userLevel), [currentRole?.userLevel]);
+  // With the preference set to No a regular user can only pick existing views (classic ManageViews toolbar).
+  const canManageViews = !isWindowPersonalizationBlocked(windowId, currentRole?.userLevel);
+  const canEditView = (view: ParsedSavedView) => canManageViews && view.editable;
 
   const [newViewName, setNewViewName] = useState("");
   const [scope, setScope] = useState<SavedViewScope>("USER");
@@ -271,18 +278,25 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     [setDefaultView, t]
   );
 
-  const handleResetToStandard = useCallback(async () => {
-    setOperationError(null);
+  /** Clears the stored default view; a user who cannot manage views only goes back to the standard one. */
+  const clearDefaultView = useCallback(async (): Promise<boolean> => {
+    if (!canManageViews) return true;
     try {
       await unsetDefaultView(tabId);
+      return true;
     } catch {
       setOperationError(t("savedViews.setDefaultError"));
-      return;
+      return false;
     }
+  }, [canManageViews, unsetDefaultView, tabId, t]);
+
+  const handleResetToStandard = useCallback(async () => {
+    setOperationError(null);
+    if (!(await clearDefaultView())) return;
     onApplyView(getStandardViewState(defaultImplicitFilterApplied));
     onResetToStandard?.();
     onClose();
-  }, [unsetDefaultView, tabId, onApplyView, onResetToStandard, onClose, t, defaultImplicitFilterApplied]);
+  }, [clearDefaultView, onApplyView, onResetToStandard, onClose, defaultImplicitFilterApplied]);
 
   const handleApplyView = useCallback(
     (view: ParsedSavedView) => {
@@ -344,7 +358,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         )}
 
         {/* Save current view action */}
-        {!showSaveInput && (
+        {!showSaveInput && canManageViews && (
           <button
             type="button"
             className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) font-medium"
@@ -476,10 +490,10 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                         ? "text-(--color-dynamic-main)"
                         : "text-(--color-transparent-neutral-40) hover:text-(--color-dynamic-main) opacity-0 group-hover:opacity-100"
                     }`}
-                    onClick={() => !view.isDefault && view.editable && handleSetDefault(view.id)}
-                    disabled={isUpdatingDefault || view.isDefault || !view.editable}
+                    onClick={() => !view.isDefault && canEditView(view) && handleSetDefault(view.id)}
+                    disabled={isUpdatingDefault || view.isDefault || !canEditView(view)}
                     aria-label={t("savedViews.setAsDefault")}
-                    title={getSetDefaultTitle(view, t)}
+                    title={getSetDefaultTitle(view, canEditView(view), t)}
                     data-testid="SaveViewMenu__view-set-default">
                     {view.isDefault ? (
                       <StarIcon fontSize="small" data-testid="StarIcon__f77826" />
@@ -487,7 +501,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                       <StarBorderIcon fontSize="small" data-testid="StarBorderIcon__f77826" />
                     )}
                   </button>
-                  {view.editable && (
+                  {canEditView(view) && (
                     <button
                       type="button"
                       className="text-xs text-(--color-transparent-neutral-40) hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"

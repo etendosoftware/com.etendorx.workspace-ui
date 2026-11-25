@@ -26,9 +26,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useProcessMonitorPolling } from "@/hooks/useProcessMonitorPolling";
 import { useProcessMonitorStore } from "@/stores/processMonitorStore";
 import { useUserStore } from "@/stores/userStore";
-import { useWindowStore } from "@/stores/windowStore";
 import { useMetadataZustandStore } from "@/stores/metadataStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { showWindow } from "@/utils/window/showWindow";
 import { PROCESS_MONITOR_WINDOW_ID, PROCESS_REQUEST_WINDOW_ID } from "@/utils/processMonitor/constants";
 import { failedExecutions, misfiredExecutions, runningExecutions } from "@/utils/processMonitor/mergeExecutions";
 import { formatTimestamp } from "@/utils/processMonitor/format";
@@ -123,7 +123,6 @@ const ProcessMonitorButton: React.FC = () => {
   const executions = useProcessMonitorStore((s) => s.executions);
   const hasError = useProcessMonitorStore((s) => s.hasError);
   const openDetail = useProcessMonitorStore((s) => s.openDetail);
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const loadWindowData = useMetadataZustandStore((s) => s.loadWindowData);
   const anchorRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -139,12 +138,13 @@ const ProcessMonitorButton: React.FC = () => {
     (windowId: string, title: string) => {
       setOpen(false);
       loadWindowData(windowId).catch(() => {});
-      setWindowActive({
+      showWindow({
+        windowId,
         windowIdentifier: getNewWindowIdentifier(windowId),
         windowData: { title, initialized: true },
       });
     },
-    [loadWindowData, setWindowActive]
+    [loadWindowData]
   );
 
   if (forbidden) {

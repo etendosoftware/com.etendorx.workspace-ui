@@ -950,6 +950,31 @@ describe("scriptProxies", () => {
       expect((grid.getEditedCell as (i: number, c: string) => unknown)(0, "amount")).toBe(42);
     });
 
+    it("reports a partial load as classic: fewer cached rows than the total", () => {
+      const rows = [row("1"), row("2")];
+      const controller = makeGridController({
+        getRows: jest.fn(() => rows),
+        getTotalRows: jest.fn(() => rows.length),
+        hasMoreRecords: jest.fn(() => true),
+      });
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+
+      expect(grid.data.cachedRows).toBe(2);
+      expect(grid.data.totalRows).toBe(3);
+    });
+
+    it("reports every row loaded when the grid has no more records", () => {
+      const rows = [row("1"), row("2")];
+      const controller = makeGridController({
+        getRows: jest.fn(() => rows),
+        getTotalRows: jest.fn(() => rows.length),
+        hasMoreRecords: jest.fn(() => false),
+      });
+      const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);
+
+      expect(grid.data.cachedRows).toBe(grid.data.totalRows);
+    });
+
     it("delegates the live mutation/lifecycle methods to the controller", () => {
       const controller = makeGridController();
       const grid = createGridProxy({ rows: [], selectedRecords: [] }, controller);

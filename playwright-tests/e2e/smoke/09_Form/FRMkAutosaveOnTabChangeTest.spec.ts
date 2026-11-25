@@ -4,6 +4,7 @@ import { expect, test } from "../../support/fixtures";
 import type * as Data from "../../support/registry/data";
 import { DATASOURCE } from "../../support/registry/datasources";
 import { WINDOW_IDS } from "../../support/registry/windows";
+import { addWindowPreferences, reloginToReadPreferences, removePreferences } from "../../support/flows/preferences";
 
 const BUSINESS_PARTNER = "Business Partner";
 const ORDER_REFERENCE = "Order Reference";
@@ -57,29 +58,14 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
       const category = categories.pop();
       if (category) await api.remove(DATASOURCE.PRODUCT_CATEGORY, category.id);
     }
-    while (preferences.length > 0) {
-      const preference = preferences.pop();
-      if (preference) await api.remove(DATASOURCE.PREFERENCE, preference.id);
-    }
+    await removePreferences(api, preferences);
   });
 
   /** The preferences are read once per session: a new login reads the ones just created, for this window only. */
-  async function setPreferences(app: App, api: ApiData, data: typeof Data, values: Record<string, string>) {
-    for (const [attribute, value] of Object.entries(values)) {
-      preferences.push(
-        await api.add(DATASOURCE.PREFERENCE, {
-          organization: data.ORGANIZATION_ID.ALL,
-          propertyList: false,
-          attribute,
-          searchKey: value,
-          userContact: data.USER_ID.ADMIN,
-          window: WINDOW_IDS.SALES_ORDER,
-        })
-      );
-    }
-    await app.auth.logout();
-    await app.auth.login();
-    await app.auth.selectRoleOrgWarehouse();
+  async function setPreferences(app: App, api: ApiData, values: Record<string, string>) {
+    const attributes = Object.entries(values).map(([name, value]) => ({ name, value, propertyList: false }));
+    preferences.push(...(await addWindowPreferences(api, WINDOW_IDS.SALES_ORDER, attributes)));
+    await reloginToReadPreferences(app);
   }
 
   /** A saved Sales Order open in form view, with its reference filled in and nothing pending. */
@@ -150,7 +136,7 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
   });
 
   test("with Autosave off nothing is saved: the user chooses to stay or to discard", async ({ app, api, data }) => {
-    await setPreferences(app, api, data, { [AUTOSAVE]: "N" });
+    await setPreferences(app, api, { [AUTOSAVE]: "N" });
     await openSavedOrder(app, data);
     await changeReference(app);
 
@@ -176,7 +162,7 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
     api,
     data,
   }) => {
-    await setPreferences(app, api, data, { [AUTOSAVE]: "Y", [SHOW_CONFIRMATION]: "Y" });
+    await setPreferences(app, api, { [AUTOSAVE]: "Y", [SHOW_CONFIRMATION]: "Y" });
     await openSavedOrder(app, data);
     await changeReference(app);
 
@@ -196,7 +182,7 @@ test.describe("Form - autosave when changing tab or record @smoke @form", () => 
   });
 
   test("Autosave off for the Sales Order window does not change another window", async ({ app, api, data }) => {
-    await setPreferences(app, api, data, { [AUTOSAVE]: "N" });
+    await setPreferences(app, api, { [AUTOSAVE]: "N" });
     const prefix = data.uniqueValue("FRMk");
     for (const suffix of ["1", "2"]) {
       categories.push(

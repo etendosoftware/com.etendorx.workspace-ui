@@ -26,6 +26,7 @@ import {
 import { FIELD_REFERENCE_CODES } from "./form/constants";
 import { buildSavePayload } from "@/components/Table/utils/saveOperations";
 import { buildTabExtraProperties } from "@/utils/table/extraProperties";
+import { buildProcessPreferenceContext } from "@/utils/preferences/classicPreferences";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -489,8 +490,7 @@ export const buildProcessPayload = (
     IsReversalDocument: "N",
     DOCBASETYPE: record.docBaseType || "",
     VoidAutomaticallyCreated: 0,
-    FinancialManagement: "Y",
-    _ShowAcct: "Y",
+    ...buildProcessPreferenceContext(tab.window),
 
     // Accounting dimension display logic
     ACCT_DIMENSION_DISPLAY: "",

@@ -15,6 +15,7 @@ const DATASOURCE_PATH = "/api/datasource";
 /** Column order, visibility and sort the grid saves per user, window and tab (ETMETA_GridConfiguration). */
 const GRID_CONFIGURATION_PATH = "/api/erp/meta/grid-configuration";
 const PROCESS_METADATA_PATH = "/api/erp/meta/process";
+const PREFERENCES_PATH = "/api/erp/meta/preferences";
 const DATA_SOURCE = "isc_OBViewDataSource_0";
 const ADD: WriteOperation = "add";
 const REMOVE: WriteOperation = "remove";
@@ -108,6 +109,44 @@ export function gridConfigurationResetBody(windowId: string, tabId: string): Rec
   return { windowId, tabId, configuration: null };
 }
 
+/**
+ * Datasource of the trees with an `ADTree` structure (`ADTreeDatasourceService`), e.g. product categories or
+ * characteristic values.
+ */
+export const AD_TREE_DATASOURCE = "90034CAE96E847D78FBEF6D38CB1930D";
+
+/** A tree node moved under a new parent, as a node dropped on another one in the tree view of a tab. */
+export interface TreeNodeMove {
+  /** AD_Tab_ID of the tab whose tree holds the node. */
+  tabId: string;
+  /** AD_Table_ID of the records of the tree, which finds the tree of the node. */
+  tableId: string;
+  /** Id of the record of the node. */
+  nodeId: string;
+  /** Id of the record of its new parent. */
+  parentId: string;
+}
+
+/** URL of a tree node move, with the parameters the tree view sends when a node is dropped. */
+export function treeNodeMoveUrl(move: TreeNodeMove): string {
+  const params = new URLSearchParams({
+    _operationType: "update",
+    _noActiveFilter: "true",
+    tabId: move.tabId,
+    referencedTableId: move.tableId,
+  });
+  return `${DATASOURCE_PATH}/${AD_TREE_DATASOURCE}?${params.toString()}`;
+}
+
+/** Body of a tree node move: the node with its new parent. */
+export function treeNodeMoveBody(move: TreeNodeMove): RecordValues {
+  return {
+    operationType: "update",
+    data: { id: move.nodeId, parentId: move.parentId },
+    oldValues: { id: move.nodeId },
+  };
+}
+
 type WriteResponse = { status?: number; data?: SavedRecord[]; error?: { message?: string } };
 
 /**
@@ -178,6 +217,19 @@ export class ApiData {
   }
 
   /**
+   * Moves a tree node under another node, with the request the tree view sends when a node is dropped on
+   * another one (e.g. a characteristic value into a group).
+   * @throws when the backend rejected the move, with its message.
+   */
+  async moveTreeNode(move: TreeNodeMove): Promise<void> {
+    const response = await this.page.request.put(treeNodeMoveUrl(move), {
+      headers: await this.authHeaders(),
+      data: treeNodeMoveBody(move),
+    });
+    acceptedResponse(await response.json(), "tree node");
+  }
+
+  /**
    * Removes the grid configuration (column order, visibility, sort) the user has saved for a tab,
    * so the grid shows its defaults. The grid saves it by itself when it is sorted or rearranged.
    */
@@ -210,6 +262,21 @@ export class ApiData {
       throw new Error(`Reading the metadata of process ${processId} failed: ${response.status()}`);
     }
     return (await response.json()) as RecordValues;
+  }
+
+  /**
+   * Stores a Property List preference for the logged-in user through the endpoint the UI uses
+   * (`OB.PropertyStore.set`): the row belongs to the System client, so the datasource cannot delete it, and
+   * a spec restores its default value instead.
+   */
+  async savePreference(property: string, value: string): Promise<void> {
+    const response = await this.page.request.post(PREFERENCES_PATH, {
+      headers: await this.authHeaders(),
+      data: { property, value },
+    });
+    if (!response.ok()) {
+      throw new Error(`Storing the preference ${property} failed: ${response.status()}`);
+    }
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

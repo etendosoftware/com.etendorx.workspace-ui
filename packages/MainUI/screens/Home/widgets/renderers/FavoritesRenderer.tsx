@@ -19,8 +19,8 @@
 
 import { useCallback, useEffect } from "react";
 import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashboard";
-import { useWindowStore } from "@/stores/windowStore";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { showWindow } from "@/utils/window/showWindow";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { usePrefetchWindowOnHover } from "@/hooks/usePrefetchWindowOnHover";
 import { WIDGET_CHIP_CLASSES, WIDGET_EMPTY_TEXT_CLASSES } from "./chipClasses";
@@ -32,7 +32,6 @@ interface FavoritesRendererProps {
 
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
   const { t } = useTranslation();
-  const setWindowActive = useWindowStore((s) => s.setWindowActive);
   const seed = useFavoritesStore((s) => s.seed);
   const prefetchOnHover = usePrefetchWindowOnHover();
 
@@ -40,13 +39,10 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
     seed(data.items);
   }, [seed, data.items]);
 
-  const handleClick = useCallback(
-    (windowId: string, label: string) => {
-      const windowIdentifier = getNewWindowIdentifier(windowId);
-      setWindowActive({ windowIdentifier, windowData: { title: label, initialized: true } });
-    },
-    [setWindowActive]
-  );
+  const handleClick = useCallback((windowId: string, label: string) => {
+    const windowIdentifier = getNewWindowIdentifier(windowId);
+    showWindow({ windowId, windowIdentifier, windowData: { title: label, initialized: true } });
+  }, []);
 
   if (data.items.length === 0) {
     return (

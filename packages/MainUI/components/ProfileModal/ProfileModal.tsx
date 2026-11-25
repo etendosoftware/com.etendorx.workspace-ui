@@ -38,7 +38,8 @@ import { useWindowStore } from "@/stores/windowStore";
 import { useUnsavedChangesStore } from "@/stores/unsavedChangesStore";
 import { useGlobalUnsavedChangesGuard } from "@/hooks/useGlobalUnsavedChangesGuard";
 import { useSSO } from "@/hooks/useSSO";
-import ProviderIconButtons from "../SSO/ProviderIconButtons";
+import { closeSsoProviderSession } from "@/utils/session/ssoProvider";
+import SsoLinkSection from "./SsoLinkSection";
 import { toast } from "sonner";
 import { computeProfileUpdates } from "./profileUpdates";
 import { PASSWORD_CHANGED_MESSAGE_CODE, resolvePasswordErrorMessage, submitPasswordChange } from "@/utils/password";
@@ -85,7 +86,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { styles } = useStyle();
-  const { config: ssoConfig, startLink } = useSSO();
+  const { config: ssoConfig, startLink, startAuth0Link } = useSSO();
+  // Classic closes the provider session on logout only with ETRX_AllowSSOLogin = Y (see closeSsoProviderSession)
+  const closeSsoSession = useCallback(() => closeSsoProviderSession(ssoConfig), [ssoConfig]);
   const [currentSection, setCurrentSection] = useState<string>(PROFILE_SECTIONS.PROFILE);
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -486,7 +489,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         </IconButton>
       </Tooltip>
       <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]" data-testid="Menu__75987a">
-        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} data-testid="UserProfile__75987a" />
+        <UserProfile
+          photoUrl={userPhotoUrl}
+          name={userName}
+          email={userEmail}
+          onBeforeSignOff={closeSsoSession}
+          data-testid="UserProfile__75987a"
+        />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection
             sections={translatedSections}
@@ -535,17 +544,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {t("common.save")}
           </Button>
         </div>
-        {currentSection === PROFILE_SECTIONS.PROFILE && ssoConfig?.enabled && ssoConfig.authType === "Middleware" && (
-          <div className="flex flex-col items-center gap-3 border-t border-(--color-transparent-neutral-10) px-4 pt-4 pb-6">
-            <span className="font-inter font-medium text-sm text-(--color-transparent-neutral-70)">
-              {t("navigation.profile.linkWith")}
-            </span>
-            <ProviderIconButtons
-              providers={ssoConfig.providers}
-              onSelect={startLink}
-              data-testid="ProviderIconButtons__75987a"
-            />
-          </div>
+        {currentSection === PROFILE_SECTIONS.PROFILE && (
+          <SsoLinkSection
+            config={ssoConfig}
+            onLinkProvider={startLink}
+            onLinkAuth0={startAuth0Link}
+            data-testid="SsoLinkSection__75987a"
+          />
         )}
       </Menu>
     </div>

@@ -409,6 +409,27 @@ describe("createButtonByType - extended", () => {
     selectedRecordsLength: 1,
   };
 
+  describe("PERSONALIZE_FORM and window personalization", () => {
+    const personalizeButton = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.PERSONALIZE_FORM, name: "Personalize" });
+
+    it("is enabled unless the personalization is blocked", () => {
+      expect(createButtonByType({ ...defaultProps, button: personalizeButton }).disabled).toBe(false);
+      expect(
+        createButtonByType({ ...defaultProps, button: personalizeButton, isPersonalizationBlocked: true }).disabled
+      ).toBe(true);
+    });
+
+    it("passes the blocked flag through getToolbarSections", () => {
+      const { rightSection } = getToolbarSections({
+        ...defaultProps,
+        buttons: [{ ...personalizeButton, section: "right" }],
+        isFormView: true,
+        isPersonalizationBlocked: true,
+      });
+      expect(rightSection.buttons[0].disabled).toBe(true);
+    });
+  });
+
   describe("EXPORT_CSV busy state", () => {
     const exportButton = makeButton({ action: TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV, name: "Export CSV" });
 

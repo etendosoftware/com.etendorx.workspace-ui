@@ -235,6 +235,28 @@ describe("useDatasource hook", () => {
     });
   });
 
+  it("flags a tree answer over TreeDatasourceFetchLimit, with no records", async () => {
+    (datasource.get as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { response: { status: -1, error: { type: "tooManyNodes" }, data: [] } },
+    });
+    const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.isTreeLimitExceeded).toBe(true);
+    expect(result.current.records).toEqual([]);
+    expect(result.current.hasMoreRecords).toBe(false);
+  });
+
+  it("does not flag a regular answer", async () => {
+    const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.isTreeLimitExceeded).toBe(false);
+  });
+
   it("should handle error during fetch", async () => {
     (datasource.get as jest.Mock).mockRejectedValue(new Error("Fetch failed"));
 
