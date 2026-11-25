@@ -69,7 +69,10 @@ describe("useLiveMenu (ETP-6431)", () => {
   it("ignores a menu that arrives after unmounting", async () => {
     setRole("ROLE");
     let resolveMenu: (menu: unknown) => void = () => undefined;
-    jest.mocked(Metadata.getMenu).mockReturnValue(new Promise((resolve) => (resolveMenu = resolve)) as never);
+    const pendingMenu = new Promise((resolve) => {
+      resolveMenu = resolve;
+    });
+    jest.mocked(Metadata.getMenu).mockReturnValue(pendingMenu as never);
     const { result, unmount } = renderHook(() => useLiveMenu());
 
     unmount();
