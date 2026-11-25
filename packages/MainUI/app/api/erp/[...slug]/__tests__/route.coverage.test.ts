@@ -506,6 +506,12 @@ describe("ERP slug route coverage", () => {
     it.each([
       ["meta/recent-items", "https://localhost/api/erp/meta/recent-items", ["meta", "recent-items"], "RECENTITEMS123"],
       [
+        "meta/recent-documents",
+        "https://localhost/api/erp/sws/com.etendoerp.metadata.meta/recent-documents",
+        ["sws", "com.etendoerp.metadata.meta", "recent-documents"],
+        "RECENTDOCS123",
+      ],
+      [
         "meta/grid-configuration",
         "https://localhost/api/erp/meta/grid-configuration?windowId=143",
         ["meta", "grid-configuration"],

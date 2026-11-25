@@ -146,6 +146,9 @@ function isMutationRoute(slug: string, method: string): boolean {
     // Recent items are rewritten on every menu access and shared across devices — a cached GET would
     // keep serving the list as it was at login for the whole life of the token.
     slug.includes("meta/recent-items") ||
+    // Recent documents are added on every form visit and removed when their record no longer exists
+    // (ETP-6431): a cached GET would bring a removed document back after a reload.
+    slug.includes("meta/recent-documents") ||
     // The per-user grid configuration is rewritten whenever the user resizes, pins, hides or
     // reorders a column; a cached GET would restore the layout as it was at login.
     slug.includes("meta/grid-configuration") ||
