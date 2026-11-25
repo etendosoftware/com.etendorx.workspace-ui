@@ -81,5 +81,9 @@ itself is missing from the catalog.
 - `packages/MainUI/screens/Home/widgets/renderers/RecentDocsRenderer.tsx`, `FavoritesRenderer.tsx`,
   `RecentlyViewedRenderer.tsx`, and `packages/MainUI/hooks/useRecentItems.ts` (drawer).
 - `com.etendoerp.metadata`: `RecentDocumentsService` (`DELETE`), `src-db/database/sourcedata/AD_MESSAGE.xml`.
+- `packages/MainUI/app/api/erp/[...slug]/route.ts`: `meta/recent-documents` is never served from the Next.js data
+  cache, which never revalidates; a cached list would bring a removed document back after a reload.
+- `playwright-tests/e2e/regression/11_Navigation/NAVdRecentDocumentsTest.spec.ts`: end-to-end check (see the
+  [E2E suite](../../testing/playwright-e2e/README.md)).
 
 Related: [recently viewed items](../recent-items/README.md), [role access restrictions](../role-access-restrictions/README.md).
