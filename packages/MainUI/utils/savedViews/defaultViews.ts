@@ -31,6 +31,7 @@ import type { MRTViewConfig, RawSavedViewRecord } from "@/utils/savedViews/types
 import { registerSessionReset } from "@/utils/session/resetSessionState";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 import { isExternalPageWindowId } from "@/utils/menu/externalMenuEntry";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 export const SAVED_VIEWS_URL = "/api/meta/saved-views";
 
@@ -69,8 +70,10 @@ export const toDefaultViewsByTab = (records: RawSavedViewRecord[]): WindowDefaul
 const fetchWindowDefaultViews = async (windowIdentifier: string, token: string): Promise<WindowDefaultViews> => {
   const windowId = getWindowIdFromIdentifier(windowIdentifier);
   try {
-    const res = await fetch(`${SAVED_VIEWS_URL}?window=${encodeURIComponent(windowId)}&isdefault=true`, {
+    // Without them the window simply opens with no default view.
+    const res = await sessionAwareFetch(`${SAVED_VIEWS_URL}?window=${encodeURIComponent(windowId)}&isdefault=true`, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      handlesOwnError: true,
     });
     if (!res.ok) {
       logger.warn("[defaultViews] Failed to fetch the default views of window:", windowId, res.status);

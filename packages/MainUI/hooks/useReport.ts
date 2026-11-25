@@ -18,6 +18,7 @@
 import { logger } from "@/utils/logger";
 import type { ReportField, ReportMetadata } from "@workspaceui/api-client/src/hooks/types";
 import { useState } from "react";
+import { sessionAwareFetch } from "@/utils/session/sessionAwareFetch";
 
 type ReportFields = {
   [K in ReportField["name"]]: unknown;
@@ -84,7 +85,8 @@ export function useReport(url: string) {
     try {
       const formData = setupFormData(data, format);
 
-      const response = await fetch(`${url}/ad_reports/${data.metadata.sourcePath}.html`, {
+      const response = await sessionAwareFetch(`${url}/ad_reports/${data.metadata.sourcePath}.html`, {
+        handlesOwnError: true,
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
